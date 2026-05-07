@@ -40,6 +40,9 @@ def metadata_gate(path: Path, failures: list[str]) -> None:
     meta = json.loads(path.read_text())
     require(bool(meta.get("claim_grade_ready")), "barcode metadata is not claim-grade: real barcode sheet is missing", failures)
     require(as_int(str(meta.get("barcode_count", "0"))) > 0, "barcode metadata has zero parsed barcodes", failures)
+    require(as_int(str(meta.get("barcode_length", "0"))) > 0,
+            "barcode metadata must declare a fixed barcode length for the current fixed-position benchmark",
+            failures)
     require(bool(meta.get("runs")), "barcode metadata has no ENA run metadata", failures)
     for run in meta.get("runs", []):
         require(bool(run.get("local_md5") or run.get("ena", {}).get("fastq_md5")),

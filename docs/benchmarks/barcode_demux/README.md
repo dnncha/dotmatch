@@ -25,4 +25,6 @@ Current status: DotMatch now has a native `demux` command for fixed-position inl
 
 Do not describe DotMatch as barcode state of the art until this table includes real public barcode workloads and fair competitor rows, at minimum Cutadapt. Additional fair comparators should include Ultraplex, Je, deML, sabre/fastx-style splitters, and Illumina demux tools where their input model matches the benchmark.
 
-Suggested real-data starting point: SRP009896 / SRR391079-SRR391082, a maize GBS dataset described in public Cutadapt demultiplexing examples as 5-prime inline barcode reads with 96 demultiplexed outputs.
+Suggested real-data starting point: SRP009896 / SRR391079-SRR391082, a maize GBS dataset described in public Cutadapt demultiplexing examples as 5-prime inline barcode reads with 96 demultiplexed outputs. `scripts/fetch_srp009896_barcode_demo.py --use-public-example-barcodes` extracts the first-member barcode sheet from the public Google Drive example archive with a ranged request instead of downloading the full 7.4 GB ZIP.
+
+Important boundary: the SRP009896 barcode sheet contains variable-length barcodes (`4-8 bp`), while the current DotMatch `demux` benchmark is fixed-length. Treat any fixed-length subset result as a subset claim unless DotMatch adds variable-length inline demux semantics.

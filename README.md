@@ -382,13 +382,20 @@ The default `make bench-barcode-demux` fixture is for smoke testing the graph/re
 Claim-grade inline barcode evidence is gated separately:
 
 ```bash
-export DOTMATCH_BARCODE_SOTA_BARCODES=/path/to/real_barcodes.tsv
+python3 scripts/fetch_srp009896_barcode_demo.py \
+  --metadata-only \
+  --use-public-example-barcodes \
+  --require-barcodes
+
+# Or provide an already curated fixed-length barcode sheet:
+export DOTMATCH_BARCODE_SOTA_BARCODES=/path/to/real_fixed_length_barcodes.tsv
 # or: export DOTMATCH_BARCODE_SOTA_BARCODES_URL=https://...
 make bench-barcode-sota
 make barcode-sota-gate
 ```
 
 `make barcode-sota-gate` intentionally fails if the SRP009896 workflow has no real barcode sheet, if rows are fixture-only, or if comparator rows are missing. This is distinct from raw BCL/CBCL demultiplexing.
+The public SRP009896 example barcode sheet is variable-length (`4-8 bp`); DotMatch's current `demux` benchmark is fixed-length, so a full-dataset barcode SOTA claim remains blocked until the benchmark uses a fixed-length real sheet, a clearly labeled fixed-length subset, or DotMatch adds variable-length inline demux semantics.
 
 Raw BCL demultiplexing benchmark/report:
 

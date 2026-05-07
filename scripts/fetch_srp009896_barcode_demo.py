@@ -17,15 +17,43 @@ import argparse
 import csv
 import gzip
 import hashlib
+import html.parser
 import json
+import re
 import shutil
+import urllib.parse
 import urllib.request
+import zlib
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUT = ROOT / "examples" / "barcode_demux" / "data"
 ENA_FIELDS = "run_accession,fastq_ftp,fastq_bytes,fastq_md5,read_count,base_count,sample_alias,experiment_title,study_accession"
+PUBLIC_EXAMPLE_ZIP_URL = "https://drive.google.com/file/d/1sxiF4ijqp9jHvFrPa3LWsnxtIHmA0rHJ/view?usp=sharing"
+PUBLIC_EXAMPLE_BARCODE_MEMBER = "BarcodesPerSample.csv"
+
+
+class DriveDownloadFormParser(html.parser.HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.in_download_form = False
+        self.action = ""
+        self.hidden: dict[str, str] = {}
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        values = {name: value or "" for name, value in attrs}
+        if tag == "form" and values.get("id") == "download-form":
+            self.in_download_form = True
+            self.action = values.get("action", "")
+        if self.in_download_form and tag == "input" and values.get("type") == "hidden":
+            name = values.get("name")
+            if name:
+                self.hidden[name] = values.get("value", "")
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "form" and self.in_download_form:
+            self.in_download_form = False
 
 
 def ena_metadata(accession: str) -> dict[str, str]:
@@ -45,6 +73,70 @@ def https_from_ftp(ftp_path: str) -> str:
     if ftp_path.startswith("ftp://"):
         ftp_path = ftp_path[len("ftp://"):]
     return "https://" + ftp_path
+
+
+def google_drive_download_url(url: str) -> str:
+    match = re.search(r"drive\.google\.com/file/d/([^/?#]+)", url)
+    if not match:
+        return url
+    file_id = match.group(1)
+    return f"https://drive.usercontent.google.com/uc?id={file_id}&export=download"
+
+
+def fetch_range(url: str, start: int, end: int, timeout: int = 60) -> bytes:
+    request = urllib.request.Request(url, headers={"Range": f"bytes={start}-{end}"})
+    with urllib.request.urlopen(request, timeout=timeout) as resp:
+        return resp.read()
+
+
+def confirm_google_drive_download_url(url: str, warning_html: bytes) -> str:
+    parser = DriveDownloadFormParser()
+    parser.feed(warning_html.decode("utf-8", errors="replace"))
+    if not parser.action or not parser.hidden:
+        raise RuntimeError("Google Drive warning page did not include a download form")
+    query = urllib.parse.urlencode(parser.hidden)
+    return f"{parser.action}?{query}"
+
+
+def extract_first_zip_member(prefix: bytes) -> tuple[str, bytes]:
+    if len(prefix) < 30 or prefix[:4] != b"PK\x03\x04":
+        raise RuntimeError("downloaded prefix is not a ZIP local-file header")
+    flags = int.from_bytes(prefix[6:8], "little")
+    method = int.from_bytes(prefix[8:10], "little")
+    compressed_size = int.from_bytes(prefix[18:22], "little")
+    uncompressed_size = int.from_bytes(prefix[22:26], "little")
+    name_len = int.from_bytes(prefix[26:28], "little")
+    extra_len = int.from_bytes(prefix[28:30], "little")
+    if flags & 0x08:
+        raise RuntimeError("first ZIP member uses a data descriptor; cannot extract from prefix safely")
+    name_start = 30
+    data_start = name_start + name_len + extra_len
+    data_end = data_start + compressed_size
+    if len(prefix) < data_end:
+        raise RuntimeError("downloaded ZIP prefix does not contain the full first member")
+    name = prefix[name_start:name_start + name_len].decode("utf-8", errors="replace")
+    compressed = prefix[data_start:data_end]
+    if method == 8:
+        content = zlib.decompress(compressed, -zlib.MAX_WBITS)
+    elif method == 0:
+        content = compressed
+    else:
+        raise RuntimeError(f"unsupported ZIP compression method for first member: {method}")
+    if uncompressed_size and len(content) != uncompressed_size:
+        raise RuntimeError(f"first ZIP member size mismatch: expected {uncompressed_size}, got {len(content)}")
+    return name, content
+
+
+def fetch_first_zip_member(url: str, member_name: str = PUBLIC_EXAMPLE_BARCODE_MEMBER) -> tuple[str, bytes]:
+    download_url = google_drive_download_url(url)
+    prefix = fetch_range(download_url, 0, 1024 * 1024 - 1)
+    if not prefix.startswith(b"PK\x03\x04"):
+        download_url = confirm_google_drive_download_url(download_url, prefix)
+        prefix = fetch_range(download_url, 0, 1024 * 1024 - 1)
+    name, content = extract_first_zip_member(prefix)
+    if name != member_name:
+        raise RuntimeError(f"expected first ZIP member {member_name}, found {name}")
+    return name, content
 
 
 def copy_first_fastq_records(remote_url: str, out: Path, records: int) -> int:
@@ -111,18 +203,29 @@ def count_barcodes(path: Path | None) -> tuple[int, list[int]]:
     return count, sorted(lengths)
 
 
-def install_barcodes(out_dir: Path, barcodes_file: str | None, barcodes_url: str | None) -> str | None:
+def install_barcodes(
+    out_dir: Path,
+    barcodes_file: str | None,
+    barcodes_url: str | None,
+    barcodes_example_zip_url: str | None,
+    barcode_zip_member: str,
+) -> tuple[str | None, str]:
     if barcodes_file:
         src = Path(barcodes_file)
         dest = out_dir / "barcodes.tsv"
         shutil.copyfile(src, dest)
-        return str(dest)
+        return str(dest), str(src)
     if barcodes_url:
         dest = out_dir / "barcodes.tsv"
         with urllib.request.urlopen(barcodes_url, timeout=30) as resp:
             dest.write_bytes(resp.read())
-        return str(dest)
-    return None
+        return str(dest), barcodes_url
+    if barcodes_example_zip_url:
+        member, content = fetch_first_zip_member(barcodes_example_zip_url, barcode_zip_member)
+        dest = out_dir / "barcodes.tsv"
+        dest.write_bytes(content)
+        return str(dest), f"{barcodes_example_zip_url}#{member}"
+    return None, ""
 
 
 def main() -> None:
@@ -132,6 +235,9 @@ def main() -> None:
     parser.add_argument("--subsample", type=int, default=100000, help="records per run; use 0 for full FASTQ download")
     parser.add_argument("--barcodes-file")
     parser.add_argument("--barcodes-url")
+    parser.add_argument("--barcodes-example-zip-url")
+    parser.add_argument("--use-public-example-barcodes", action="store_true")
+    parser.add_argument("--barcode-zip-member", default=PUBLIC_EXAMPLE_BARCODE_MEMBER)
     parser.add_argument("--barcode-start", type=int, default=0)
     parser.add_argument("--barcode-length", type=int, default=0, help="expected barcode length; 0 infers from barcode sheet")
     parser.add_argument("--require-barcodes", action="store_true")
@@ -168,7 +274,16 @@ def main() -> None:
             "ena": meta,
         })
 
-    barcode_path = install_barcodes(args.out, args.barcodes_file, args.barcodes_url)
+    example_zip_url = args.barcodes_example_zip_url
+    if args.use_public_example_barcodes:
+        example_zip_url = example_zip_url or PUBLIC_EXAMPLE_ZIP_URL
+    barcode_path, barcode_source = install_barcodes(
+        args.out,
+        args.barcodes_file,
+        args.barcodes_url,
+        example_zip_url,
+        args.barcode_zip_member,
+    )
     barcode_count, barcode_lengths = count_barcodes(Path(barcode_path) if barcode_path else None)
     if args.require_barcodes and barcode_path is None:
         raise SystemExit("barcode SOTA fetch requires --barcodes-file or --barcodes-url")
@@ -189,13 +304,17 @@ def main() -> None:
         ],
         "runs": runs,
         "barcodes": barcode_path,
+        "barcode_source": barcode_source,
+        "barcode_md5": md5_file(Path(barcode_path)) if barcode_path else "",
         "barcodes_required_for_benchmark": barcode_path is None,
         "claim_grade_ready": barcode_path is not None and barcode_count > 0,
         "note": (
-            "ENA exposes FASTQ files for the SRP009896 runs. Provide --barcodes-file or --barcodes-url "
-            "to install the matching sample/barcode sheet before running state-of-the-art demux benchmarks. "
-            "The public Cutadapt example links a Google Drive ExampleDataset.zip that includes the FASTQ files "
-            "and barcode file; this script avoids downloading that full archive by default."
+            "ENA exposes FASTQ files for the SRP009896 runs. Provide --barcodes-file, --barcodes-url, "
+            "or --use-public-example-barcodes to install the matching sample/barcode sheet before running "
+            "state-of-the-art demux benchmarks. The public Cutadapt example links a Google Drive "
+            "ExampleDataset.zip that includes the FASTQ files and barcode file; --use-public-example-barcodes "
+            "extracts the first ZIP member barcode sheet with a ranged request instead of downloading "
+            "the full archive."
         ),
     }
     metadata_path = args.out / "metadata.json"
