@@ -47,4 +47,86 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v5
+        name: Deploy to GitHub Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          artifact_id="$(
+            gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" \
+              --jq '.artifacts[] | select(.name == "github-pages") | .id' \
+              | head -n 1
+          )"
+
+          if [ -z "${artifact_id}" ]; then
+            echo "No github-pages artifact found for run ${GITHUB_RUN_ID}" >&2
+            exit 1
+          fi
+
+          owner_lc="${GITHUB_REPOSITORY_OWNER,,}"
+          oidc_token="$(
+            curl -fsSL \
+              -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+              "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https://github.com/${owner_lc}" \
+              | jq -r '.value'
+          )"
+
+          if [ -z "${oidc_token}" ] || [ "${oidc_token}" = "null" ]; then
+            echo "Failed to request a GitHub Pages OIDC token" >&2
+            exit 1
+          fi
+
+          payload="$(
+            jq -n \
+              --argjson artifact_id "${artifact_id}" \
+              --arg build_version "${GITHUB_SHA}" \
+              --arg oidc_token "${oidc_token}" \
+              '{artifact_id: $artifact_id, pages_build_version: $build_version, oidc_token: $oidc_token}'
+          )"
+
+          deployment="$(
+            gh api \
+              --method POST \
+              "repos/${GITHUB_REPOSITORY}/pages/deployments" \
+              --input - <<< "${payload}"
+          )"
+
+          page_url="$(jq -r '.page_url // empty' <<< "${deployment}")"
+          deployment_id="$(jq -r '.id // (.status_url // "" | split("/")[-1]) // empty' <<< "${deployment}")"
+
+          if [ -z "${page_url}" ]; then
+            page_url="https://${owner_lc}.github.io/${{ github.event.repository.name }}/"
+          fi
+          echo "page_url=${page_url}" >> "${GITHUB_OUTPUT}"
+
+          if [ -z "${deployment_id}" ]; then
+            echo "Pages deployment response did not include a deployment id" >&2
+            echo "${deployment}" | jq .
+            exit 1
+          fi
+
+          for _ in {1..120}; do
+            status="$(
+              gh api \
+                "repos/${GITHUB_REPOSITORY}/pages/deployments/${deployment_id}" \
+                --jq '.status'
+            )"
+
+            case "${status}" in
+              succeed)
+                echo "Pages deployment succeeded: ${page_url}"
+                exit 0
+                ;;
+              deployment_failed|deployment_content_failed|deployment_cancelled|deployment_lost)
+                echo "Pages deployment failed with status: ${status}" >&2
+                exit 1
+                ;;
+            esac
+
+            echo "Pages deployment status: ${status}"
+            sleep 5
+          done
+
+          echo "Timed out waiting for Pages deployment ${deployment_id}" >&2
+          exit 1
