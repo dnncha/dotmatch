@@ -160,3 +160,15 @@ def test_publication_ready_rejects_dev_readme_status(tmp_path):
     result = checker.audit(tmp_path)
 
     assert any("README.md must not describe the launch version as dev" in failure for failure in result.failures)
+
+
+def test_publication_ready_rejects_local_absolute_paths(tmp_path):
+    checker = _load_checker()
+    _write_minimal_repo(tmp_path)
+    raw = tmp_path / "benchmarks" / "raw" / "example.csv"
+    raw.parent.mkdir(parents=True, exist_ok=True)
+    raw.write_text("tool,command\nx,/" + "Users/alice/projects/dotmatch/dotmatch count\n", encoding="utf-8")
+
+    result = checker.audit(tmp_path)
+
+    assert any("local absolute path" in failure and "example.csv" in failure for failure in result.failures)

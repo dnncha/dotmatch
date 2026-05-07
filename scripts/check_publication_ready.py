@@ -55,6 +55,17 @@ GENERATED_PATH_PARTS = {
     "dist",
 }
 
+LOCAL_ABSOLUTE_PATH_PREFIXES = [
+    "/" + "Users/",
+    "/" + "private/tmp/",
+    "/" + "var/folders/",
+    "/" + "tmp/dotmatch",
+]
+LOCAL_ABSOLUTE_PATH_PATTERNS = [
+    re.compile(re.escape(prefix.encode("utf-8")) + rb"[^,\s\"')<]*")
+    for prefix in LOCAL_ABSOLUTE_PATH_PREFIXES
+]
+
 
 @dataclass
 class AuditResult:
@@ -236,6 +247,28 @@ def check_publishable_tree(root: Path, result: AuditResult) -> None:
         result.passed.append(f"publishable tree size ok ({total} bytes)")
 
 
+def check_no_local_absolute_paths(root: Path, result: AuditResult) -> None:
+    offenders: list[str] = []
+    for path in publishable_files(root):
+        relative = rel(path, root)
+        try:
+            data = path.read_bytes()
+        except OSError as exc:
+            result.failures.append(f"could not read publishable file {relative}: {exc}")
+            continue
+        for pattern in LOCAL_ABSOLUTE_PATH_PATTERNS:
+            if pattern.search(data):
+                offenders.append(relative)
+                break
+    if offenders:
+        for relative in offenders[:20]:
+            result.failures.append(f"publishable file contains local absolute path: {relative}")
+        if len(offenders) > 20:
+            result.failures.append(f"publishable file contains local absolute path: {len(offenders) - 20} more files")
+    else:
+        result.passed.append("no local absolute paths in publishable files")
+
+
 def audit(root: Path) -> AuditResult:
     root = root.resolve()
     result = AuditResult()
@@ -245,6 +278,7 @@ def audit(root: Path) -> AuditResult:
     check_claim_docs(root, result)
     check_manifest(root, result)
     check_publishable_tree(root, result)
+    check_no_local_absolute_paths(root, result)
     return result
 
 

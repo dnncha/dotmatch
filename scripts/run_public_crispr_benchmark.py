@@ -7,6 +7,7 @@ import argparse
 import csv
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -17,6 +18,22 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLE = ROOT / "examples" / "crispr_guides"
+
+
+def public_text(value: str | Path) -> str:
+    text = str(value)
+    root = str(ROOT)
+    text = text.replace(root + os.sep, "")
+    if text == root:
+        text = "."
+    private_tmp = "/" + "private/tmp/"
+    tmp_root = "/" + "tmp/"
+    var_folders = "/" + "var/folders/"
+    dotmatch_tmp = "/" + "tmp/dotmatch"
+    text = text.replace(private_tmp, tmp_root)
+    text = re.sub(re.escape(var_folders) + r'[^,\s"]*/([^/,\s"]+)', r"<tmp>/\1", text)
+    text = re.sub(re.escape(dotmatch_tmp) + r'[^,\s"]*/([^/,\s"]+)', r"<tmp>/\1", text)
+    return text
 
 
 def parse_time_rss(path: Path) -> int:
@@ -65,7 +82,7 @@ def run(cmd: list[str], cwd: Path = ROOT, allow_missing: bool = False) -> tuple[
 
 
 def command_text(cmd: list[str]) -> str:
-    return " ".join(cmd)
+    return " ".join(public_text(arg) for arg in cmd)
 
 
 def tool_version(cmd: str, args: list[str]) -> str:

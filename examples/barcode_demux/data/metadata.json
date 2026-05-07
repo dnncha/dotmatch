@@ -10,7 +10,7 @@
     {
       "accession": "SRR391079",
       "remote_fastq": "https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR391/SRR391079/SRR391079.fastq.gz",
-      "local_fastq": "/Users/donncha/Documents/GitHub/dotmatch/examples/barcode_demux/data/SRR391079.subsample100000.fastq.gz",
+      "local_fastq": "examples/barcode_demux/data/SRR391079.subsample100000.fastq.gz",
       "subsample_records": 100000,
       "written_records": 0,
       "ena": {

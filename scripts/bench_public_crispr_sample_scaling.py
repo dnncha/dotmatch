@@ -11,7 +11,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from run_public_crispr_benchmark import count_fastq_gz, dotmatch_stats, guide_counter_stats, run, tool_version
+from run_public_crispr_benchmark import command_text, count_fastq_gz, dotmatch_stats, guide_counter_stats, run, tool_version
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -87,7 +87,7 @@ def main() -> None:
                 "assigned_reads": stats.get("assigned_reads", ""),
                 "overcount_reads": "0",
                 "exit_code": str(rc),
-                "command": " ".join(dot_cmd),
+                "command": command_text(dot_cmd),
             })
 
             if args.run_guide_counter:
@@ -134,7 +134,7 @@ def main() -> None:
                         "assigned_reads": stats.get("assigned_reads", ""),
                         "overcount_reads": stats.get("overcount_reads", ""),
                         "exit_code": str(rc),
-                        "command": " ".join(cmd),
+                        "command": command_text(cmd),
                     })
 
     out_path = Path(args.out)

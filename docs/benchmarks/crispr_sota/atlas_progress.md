@@ -12,11 +12,11 @@ This report is intentionally not a SOTA claim. It summarizes the latest atlas re
 
 ## Figures
 
-![Runtime](/Users/donncha/Documents/GitHub/dotmatch/benchmarks/figures/crispr_atlas_progress_runtime.svg)
+![Runtime](../../../benchmarks/figures/crispr_atlas_progress_runtime.svg)
 
-![Throughput](/Users/donncha/Documents/GitHub/dotmatch/benchmarks/figures/crispr_atlas_progress_throughput.svg)
+![Throughput](../../../benchmarks/figures/crispr_atlas_progress_throughput.svg)
 
-![Peak memory](/Users/donncha/Documents/GitHub/dotmatch/benchmarks/figures/crispr_atlas_progress_memory.svg)
+![Peak memory](../../../benchmarks/figures/crispr_atlas_progress_memory.svg)
 
 ## Rows
 
