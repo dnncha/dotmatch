@@ -156,7 +156,7 @@ FASTQ barcode demultiplexing:
   --unmatched-out unmatched.fastq
 ```
 
-`demux` writes one FASTQ per uniquely assigned barcode under `--out-dir`. Ambiguous reads are never assigned silently; use `--ambiguous-out` and `--unmatched-out` to inspect rejected reads. This demux surface targets fixed-position inline barcodes in single-end FASTQ/FASTQ.gz.
+`demux` writes one FASTQ per uniquely assigned barcode under `--out-dir`. Ambiguous reads are never assigned silently; use `--ambiguous-out` and `--unmatched-out` to inspect rejected reads. This demux surface targets fixed-position inline barcodes in single-end FASTQ/FASTQ.gz. Use `--barcode-length auto` when the barcode sheet contains multiple barcode lengths; prefix-overlapping exact matches are reported as ambiguous rather than silently assigned to the longest prefix.
 
 Classic Illumina BCL demultiplexing:
 
@@ -370,8 +370,8 @@ make bench-barcode-demux
 python3 scripts/bench_barcode_demux.py \
   --reads SRR391079.fastq.gz \
   --barcodes barcodes.tsv \
-  --barcode-start 0 \
-  --barcode-length 8 \
+  --barcode-start 1 \
+  --barcode-length auto \
   --k 0 \
   --run-cutadapt \
   --run-hash-splitter
@@ -391,12 +391,16 @@ python3 scripts/fetch_srp009896_barcode_demo.py \
 # Or provide an already curated fixed-length barcode sheet:
 export DOTMATCH_BARCODE_SOTA_BARCODES=/path/to/real_fixed_length_barcodes.tsv
 # or: export DOTMATCH_BARCODE_SOTA_BARCODES_URL=https://...
+# or for the public SRP009896 example barcode sheet:
+export DOTMATCH_BARCODE_SOTA_USE_PUBLIC_EXAMPLE=1
+export DOTMATCH_BARCODE_START=1
+export DOTMATCH_BARCODE_K=0
 make bench-barcode-sota
 make barcode-sota-gate
 ```
 
 `make barcode-sota-gate` intentionally fails if the SRP009896 workflow has no real barcode sheet, if rows are fixture-only, or if comparator rows are missing. This is distinct from raw BCL/CBCL demultiplexing.
-The public SRP009896 example barcode sheet is variable-length (`4-8 bp`); DotMatch's current `demux` benchmark is fixed-length, so a full-dataset barcode SOTA claim remains blocked until the benchmark uses a fixed-length real sheet, a clearly labeled fixed-length subset, or DotMatch adds variable-length inline demux semantics.
+The public SRP009896 example barcode sheet is variable-length (`4-8 bp`) and contains separate run blocks with reused barcode sequences. The fetcher filters the installed sheet to the requested accession when that run column is present. SRP009896 reads include a leading `N`, so use `DOTMATCH_BARCODE_START=1` with the public example sheet, and use the `k=0` exact-prefix lane with `--barcode-length auto` unless you provide a separate fixed-length sheet. A barcode SOTA claim remains blocked until real repeated rows and comparator evidence pass the gate.
 
 Raw BCL demultiplexing benchmark/report:
 

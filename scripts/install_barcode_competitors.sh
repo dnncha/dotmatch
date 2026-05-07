@@ -19,12 +19,12 @@ PATH="$PREFIX/bin:\$PATH" python3 scripts/bench_barcode_demux.py --run-cutadapt 
 
 For real SRP009896-style data:
 
-python3 scripts/fetch_srp009896_barcode_demo.py --accession SRR391079 --subsample 100000 --barcodes-file /path/to/barcodes.tsv
+python3 scripts/fetch_srp009896_barcode_demo.py --accession SRR391079 --subsample 100000 --use-public-example-barcodes
 PATH="$PREFIX/bin:\$PATH" python3 scripts/bench_barcode_demux.py \\
   --reads examples/barcode_demux/data/SRR391079.subsample100000.fastq.gz \\
   --barcodes examples/barcode_demux/data/barcodes.tsv \\
-  --barcode-start 0 \\
-  --barcode-length 8 \\
+  --barcode-start 1 \\
+  --barcode-length auto \\
   --k 0 \\
   --workflow-name srp009896_srr391079_real_subsample \\
   --run-cutadapt \\

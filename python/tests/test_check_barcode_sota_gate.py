@@ -15,13 +15,14 @@ def _load_gate():
     return module
 
 
-def _metadata(path: Path, barcode_length: int, barcode_lengths: list[int]) -> None:
+def _metadata(path: Path, barcode_length: int, barcode_lengths: list[int], barcode_length_mode: str = "fixed") -> None:
     path.write_text(
         json.dumps(
             {
                 "claim_grade_ready": True,
                 "barcode_count": 192,
                 "barcode_length": barcode_length,
+                "barcode_length_mode": barcode_length_mode,
                 "barcode_lengths": barcode_lengths,
                 "runs": [
                     {
@@ -35,15 +36,26 @@ def _metadata(path: Path, barcode_length: int, barcode_lengths: list[int]) -> No
     )
 
 
-def test_barcode_metadata_rejects_variable_length_sheet_without_fixed_benchmark_length(tmp_path):
+def test_barcode_metadata_rejects_variable_length_sheet_without_length_mode(tmp_path):
     gate = _load_gate()
     metadata = tmp_path / "metadata.json"
-    _metadata(metadata, barcode_length=0, barcode_lengths=[4, 5, 6, 7, 8])
+    _metadata(metadata, barcode_length=0, barcode_lengths=[4, 5, 6, 7, 8], barcode_length_mode="")
     failures = []
 
     gate.metadata_gate(metadata, failures)
 
-    assert any("fixed barcode length" in failure for failure in failures)
+    assert any("barcode length mode" in failure for failure in failures)
+
+
+def test_barcode_metadata_accepts_auto_length_sheet(tmp_path):
+    gate = _load_gate()
+    metadata = tmp_path / "metadata.json"
+    _metadata(metadata, barcode_length=0, barcode_lengths=[4, 5, 6, 7, 8], barcode_length_mode="auto")
+    failures = []
+
+    gate.metadata_gate(metadata, failures)
+
+    assert not any("barcode length" in failure for failure in failures)
 
 
 def test_barcode_metadata_accepts_declared_fixed_benchmark_length(tmp_path):
@@ -64,6 +76,7 @@ def _row(tool: str, k: str = "0") -> dict[str, str]:
         "exit_code": "0",
         "n_reads": "100",
         "n_barcodes": "4",
+        "assigned_reads": "80",
         "k": k,
     }
 
@@ -94,3 +107,19 @@ def test_hash_splitter_counts_as_second_comparator_for_k0_exact_lane():
         allow_fixture=False, failures=failures)
 
     assert not any("second successful comparator" in failure for failure in failures)
+
+
+def test_real_barcode_rows_must_assign_reads():
+    gate = _load_gate()
+    failures = []
+    dotmatch = _row("dotmatch_demux", k="0")
+    dotmatch["assigned_reads"] = "0"
+
+    gate.row_gate([
+        dotmatch,
+        _row("cutadapt_demux", k="0"),
+        _row("hash_splitter_exact", k="0"),
+    ], min_repeats=1, require_cutadapt=True, require_second_comparator=True,
+        allow_fixture=False, failures=failures)
+
+    assert any("assigned zero reads" in failure for failure in failures)

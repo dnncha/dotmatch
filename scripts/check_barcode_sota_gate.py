@@ -40,8 +40,11 @@ def metadata_gate(path: Path, failures: list[str]) -> None:
     meta = json.loads(path.read_text())
     require(bool(meta.get("claim_grade_ready")), "barcode metadata is not claim-grade: real barcode sheet is missing", failures)
     require(as_int(str(meta.get("barcode_count", "0"))) > 0, "barcode metadata has zero parsed barcodes", failures)
-    require(as_int(str(meta.get("barcode_length", "0"))) > 0,
-            "barcode metadata must declare a fixed barcode length for the current fixed-position benchmark",
+    length_mode = str(meta.get("barcode_length_mode") or "").strip()
+    has_fixed_length = as_int(str(meta.get("barcode_length", "0"))) > 0
+    has_auto_lengths = length_mode == "auto" and bool(meta.get("barcode_lengths"))
+    require(has_fixed_length or has_auto_lengths,
+            "barcode metadata must declare a fixed barcode length or barcode length mode auto with parsed lengths",
             failures)
     require(bool(meta.get("runs")), "barcode metadata has no ENA run metadata", failures)
     for run in meta.get("runs", []):
@@ -74,6 +77,10 @@ def row_gate(rows: list[dict[str, str]], min_repeats: int, require_cutadapt: boo
     for row in by_tool.get("dotmatch_demux", []):
         require(as_int(row.get("n_reads")) > 0, "DotMatch barcode row has zero reads", failures)
         require(as_int(row.get("n_barcodes")) > 0, "DotMatch barcode row has zero barcodes", failures)
+        require(as_int(row.get("assigned_reads")) > 0, "DotMatch barcode row assigned zero reads", failures)
+    for tool in ["cutadapt_demux", "hash_splitter_exact", "ultraplex_demux", "je_demux"]:
+        for row in by_tool.get(tool, []):
+            require(as_int(row.get("assigned_reads")) > 0, f"{tool} barcode row assigned zero reads", failures)
 
 
 def main() -> None:

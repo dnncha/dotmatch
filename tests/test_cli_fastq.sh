@@ -170,6 +170,55 @@ grep '"unmatched": 1' "$TMPDIR/demux_summary.json" >/dev/null
 grep '"invalid": 1' "$TMPDIR/demux_summary.json" >/dev/null
 grep '^d2	AGGA	1	bc1	AGGT	1	-1	2	ambiguous$' "$TMPDIR/demux_assignments.tsv" >/dev/null
 
+cat > "$TMPDIR/variable_barcodes.tsv" <<'VARBC'
+long	ACGA
+short	TTT
+prefix_short	GG
+prefix_long	GGGG
+VARBC
+
+cat > "$TMPDIR/variable_reads.fastq" <<'VARFASTQ'
+@v0
+ACGAAAAA
++
+IIIIIIII
+@v1
+TTTAAAAA
++
+IIIIIIII
+@v2
+GGGGAAAA
++
+IIIIIIII
+@v3
+CCCCAAAA
++
+IIIIIIII
+VARFASTQ
+
+mkdir "$TMPDIR/demux_variable"
+"$DOTMATCH_BIN" demux \
+  --barcodes "$TMPDIR/variable_barcodes.tsv" \
+  --reads "$TMPDIR/variable_reads.fastq" \
+  --barcode-start 0 \
+  --barcode-length auto \
+  --k 0 \
+  --metric hamming \
+  --out-dir "$TMPDIR/demux_variable" \
+  --summary "$TMPDIR/demux_variable_summary.json" \
+  --assignments "$TMPDIR/demux_variable_assignments.tsv" \
+  --ambiguous-out "$TMPDIR/demux_variable_ambiguous.fastq" \
+  --unmatched-out "$TMPDIR/demux_variable_unmatched.fastq"
+
+grep '^@v0$' "$TMPDIR/demux_variable/long.fastq" >/dev/null
+grep '^@v1$' "$TMPDIR/demux_variable/short.fastq" >/dev/null
+grep '^@v2$' "$TMPDIR/demux_variable_ambiguous.fastq" >/dev/null
+grep '^@v3$' "$TMPDIR/demux_variable_unmatched.fastq" >/dev/null
+grep '"barcode_length_mode": "auto"' "$TMPDIR/demux_variable_summary.json" >/dev/null
+grep '"assigned_unique": 2' "$TMPDIR/demux_variable_summary.json" >/dev/null
+grep '"ambiguous": 1' "$TMPDIR/demux_variable_summary.json" >/dev/null
+grep '^v2	GG	2	prefix_short	GG	0	-1	2	ambiguous$' "$TMPDIR/demux_variable_assignments.tsv" >/dev/null
+
 python3 - "$TMPDIR/bcl_run" <<'PY'
 import gzip
 import struct

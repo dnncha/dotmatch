@@ -40,7 +40,7 @@ static void usage(const char *argv0) {
     fprintf(stderr, "  %s assign K barcodes.txt reads.txt\n", argv0);
     fprintf(stderr, "  %s match K targets.txt reads.txt\n", argv0);
     fprintf(stderr, "  %s fastq-assign --barcodes barcodes.tsv --reads reads.fastq[.gz] --barcode-start N --barcode-length L --k 0|1 --out assignments.tsv\n", argv0);
-    fprintf(stderr, "  %s demux --barcodes barcodes.tsv|barcodes.csv --reads reads.fastq[.gz] --barcode-start N --barcode-length L --k 0|1 --metric hamming|levenshtein --out-dir demux_dir [--summary qc.json]\n", argv0);
+    fprintf(stderr, "  %s demux --barcodes barcodes.tsv|barcodes.csv --reads reads.fastq[.gz] --barcode-start N --barcode-length L|auto --k 0|1 --metric hamming|levenshtein --out-dir demux_dir [--summary qc.json]\n", argv0);
     fprintf(stderr, "  %s bcl-demux --run-folder RUN --sample-sheet SampleSheet.csv --out-dir demux_dir --barcode-mismatches 0|1|1,1 [--threads N] [--gzip-level 0..9] [--emit-index-fastqs] [--summary summary.json]\n", argv0);
     fprintf(stderr, "  %s bcl-validate --dotmatch-out DIR --truth-out DIR\n", argv0);
     fprintf(stderr, "  %s count --targets targets.tsv|targets.csv --reads reads.fastq[.gz] [--reads more.fastq.gz] --sample-label labels --target-start N --target-length L --k 0|1 --metric hamming|levenshtein [--hamming-index auto|query|precompute] --ambiguity-policy best|radius --offset-mode best|multi --out counts.tsv [--format dotmatch|mageck]\n", argv0);
@@ -1498,6 +1498,33 @@ static int all_targets_have_length(const seq_table *targets, size_t len) {
     return 1;
 }
 
+static int cmp_size_asc(const void *a, const void *b) {
+    size_t aa = *(const size_t *)a;
+    size_t bb = *(const size_t *)b;
+    return aa > bb ? 1 : (aa < bb ? -1 : 0);
+}
+
+static int collect_target_lengths(const seq_table *targets, size_t **lengths_out, size_t *count_out) {
+    size_t *lengths = (size_t *)malloc((targets->count == 0 ? 1 : targets->count) * sizeof(size_t));
+    if (lengths == NULL) return -1;
+    size_t count = 0;
+    for (size_t i = 0; i < targets->count; ++i) {
+        size_t len = targets->records[i].len;
+        int seen = 0;
+        for (size_t j = 0; j < count; ++j) {
+            if (lengths[j] == len) {
+                seen = 1;
+                break;
+            }
+        }
+        if (!seen) lengths[count++] = len;
+    }
+    qsort(lengths, count, sizeof(size_t), cmp_size_asc);
+    *lengths_out = lengths;
+    *count_out = count;
+    return 0;
+}
+
 typedef struct match_merge_hit {
     int target_index;
     int distance;
@@ -1736,6 +1763,33 @@ done:
     merge_state_finish(&merge, result);
     merge_state_free(&merge);
     return rc;
+}
+
+static int assign_count_length_set(const qdaln_index *index, const char *seq, size_t seq_len, size_t target_start,
+                                   const size_t *lengths, size_t n_lengths, int k, count_metric metric,
+                                   size_t indel_window, qdaln_match_result *result, qdaln_index_stats *stats,
+                                   char *observed, size_t observed_cap, int best_exact_shortcut) {
+    *result = (qdaln_match_result){-1, -1, -1, 0, QDALN_MATCH_INVALID};
+    if (stats != NULL) {
+        stats->candidates_considered = 0;
+        stats->candidates_verified = 0;
+    }
+    if (observed_cap != 0) observed[0] = '\0';
+    for (size_t i = 0; i < n_lengths; ++i) {
+        qdaln_match_result r = {-1, -1, -1, 0, QDALN_MATCH_INVALID};
+        qdaln_index_stats s = {0, 0};
+        char candidate[8192];
+        if (assign_count_window(index, seq, seq_len, target_start, lengths[i], k, metric, indel_window,
+                                &r, &s, candidate, sizeof(candidate), best_exact_shortcut) != 0) {
+            return -1;
+        }
+        if (stats != NULL) {
+            stats->candidates_considered += s.candidates_considered;
+            stats->candidates_verified += s.candidates_verified;
+        }
+        merge_summary_result(result, observed, observed_cap, candidate, r);
+    }
+    return 0;
 }
 
 static int assign_count_offsets(const qdaln_index *index, const char *seq, size_t seq_len,
@@ -5016,6 +5070,7 @@ static int run_demux(const char *argv0, int argc, char **argv) {
     count_metric metric = COUNT_METRIC_LEVENSHTEIN;
     size_t barcode_start = 0;
     size_t barcode_len = 0;
+    int auto_barcode_len = 0;
     size_t indel_window = 0;
     int k = -1;
 
@@ -5030,7 +5085,11 @@ static int run_demux(const char *argv0, int argc, char **argv) {
                 return 2;
             }
         } else if ((strcmp(argv[i], "--barcode-length") == 0 || strcmp(argv[i], "--target-length") == 0) && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &barcode_len) != 0 || barcode_len == 0) {
+            const char *value = argv[++i];
+            if (strcmp(value, "auto") == 0) {
+                auto_barcode_len = 1;
+                barcode_len = 0;
+            } else if (parse_size_value(value, &barcode_len) != 0 || barcode_len == 0) {
                 usage(argv0);
                 return 2;
             }
@@ -5072,7 +5131,7 @@ static int run_demux(const char *argv0, int argc, char **argv) {
         }
     }
 
-    if (barcodes_path == NULL || reads_path == NULL || out_dir == NULL || barcode_len == 0 || k < 0) {
+    if (barcodes_path == NULL || reads_path == NULL || out_dir == NULL || (barcode_len == 0 && !auto_barcode_len) || k < 0) {
         usage(argv0);
         return 2;
     }
@@ -5090,6 +5149,11 @@ static int run_demux(const char *argv0, int argc, char **argv) {
     qdaln_index *index = NULL;
     const char **target_ptrs = NULL;
     size_t *target_lens = NULL;
+    size_t *auto_barcode_lens = NULL;
+    size_t auto_barcode_lens_count = 0;
+    size_t fixed_barcode_lens[1] = {0};
+    const size_t *barcode_lens = NULL;
+    size_t barcode_lens_count = 0;
     FILE **target_files = NULL;
     FILE *assignments = NULL;
     FILE *ambiguous_out = NULL;
@@ -5102,9 +5166,21 @@ static int run_demux(const char *argv0, int argc, char **argv) {
         fprintf(stderr, "failed to read barcodes\n");
         goto done;
     }
-    if (metric == COUNT_METRIC_HAMMING && !all_targets_have_length(&targets, barcode_len)) {
+    if (!auto_barcode_len && metric == COUNT_METRIC_HAMMING && !all_targets_have_length(&targets, barcode_len)) {
         fprintf(stderr, "--metric hamming requires every barcode to have --barcode-length bases\n");
         goto done;
+    }
+    if (auto_barcode_len) {
+        if (collect_target_lengths(&targets, &auto_barcode_lens, &auto_barcode_lens_count) != 0) {
+            fprintf(stderr, "out of memory\n");
+            goto done;
+        }
+        barcode_lens = auto_barcode_lens;
+        barcode_lens_count = auto_barcode_lens_count;
+    } else {
+        fixed_barcode_lens[0] = barcode_len;
+        barcode_lens = fixed_barcode_lens;
+        barcode_lens_count = 1;
     }
     if (build_target_arrays(&targets, &target_ptrs, &target_lens) != 0) {
         fprintf(stderr, "out of memory\n");
@@ -5167,8 +5243,8 @@ static int run_demux(const char *argv0, int argc, char **argv) {
         observed[0] = '\0';
         ++stats.total;
 
-        if (assign_count_window(index, seq, seq_len, barcode_start, barcode_len, k, metric, indel_window,
-                                &result, &istats, observed, sizeof(observed), 0) != 0) {
+        if (assign_count_length_set(index, seq, seq_len, barcode_start, barcode_lens, barcode_lens_count, k, metric,
+                                    indel_window, &result, &istats, observed, sizeof(observed), 0) != 0) {
             fprintf(stderr, "FASTQ assignment failed\n");
             goto done;
         }
@@ -5223,8 +5299,15 @@ static int run_demux(const char *argv0, int argc, char **argv) {
             }
         }
         fprintf(summary,
-                "{\n  \"workflow\": \"demux\",\n  \"k\": %d,\n  \"metric\": \"%s\",\n  \"indel_window\": %zu,\n  \"barcode_start\": %zu,\n  \"barcode_length\": %zu,\n  \"n_barcodes\": %zu,\n  \"total_reads\": %llu,\n  \"assigned_unique\": %llu,\n  \"assigned_exact\": %llu,\n  \"assigned_corrected\": %llu,\n  \"ambiguous\": %llu,\n  \"unmatched\": %llu,\n  \"invalid\": %llu,\n  \"nonempty_outputs\": %zu,\n  \"top_barcode_id\": \"%s\",\n  \"top_barcode_count\": %llu,\n  \"candidates_considered\": %llu,\n  \"candidates_verified\": %llu\n}\n",
-                k, metric_name(metric), indel_window, barcode_start, barcode_len, targets.count, stats.total,
+                "{\n  \"workflow\": \"demux\",\n  \"k\": %d,\n  \"metric\": \"%s\",\n  \"indel_window\": %zu,\n  \"barcode_start\": %zu,\n  \"barcode_length\": %zu,\n  \"barcode_length_mode\": \"%s\",\n  \"barcode_lengths\": [",
+                k, metric_name(metric), indel_window, barcode_start, barcode_len,
+                auto_barcode_len ? "auto" : "fixed");
+        for (size_t i = 0; i < barcode_lens_count; ++i) {
+            fprintf(summary, "%s%zu", i == 0 ? "" : ", ", barcode_lens[i]);
+        }
+        fprintf(summary,
+                "],\n  \"n_barcodes\": %zu,\n  \"total_reads\": %llu,\n  \"assigned_unique\": %llu,\n  \"assigned_exact\": %llu,\n  \"assigned_corrected\": %llu,\n  \"ambiguous\": %llu,\n  \"unmatched\": %llu,\n  \"invalid\": %llu,\n  \"nonempty_outputs\": %zu,\n  \"top_barcode_id\": \"%s\",\n  \"top_barcode_count\": %llu,\n  \"candidates_considered\": %llu,\n  \"candidates_verified\": %llu\n}\n",
+                targets.count, stats.total,
                 stats.unique, stats.exact, stats.corrected, stats.ambiguous, stats.unmatched, stats.invalid,
                 nonempty, targets.count == 0 ? "" : targets.records[top_target].id, top_count,
                 stats.candidates_considered, stats.candidates_verified);
@@ -5246,6 +5329,7 @@ done:
     qdaln_index_free(index);
     free(target_ptrs);
     free(target_lens);
+    free(auto_barcode_lens);
     free(target_files);
     free(target_counts);
     free_table(&targets);

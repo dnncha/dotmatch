@@ -8,7 +8,9 @@ demultiplexed outputs for runs such as SRR391079-SRR391082.
 The FASTQ files are public through ENA. The barcode/sample sheet is not always
 available through ENA metadata, so this script accepts either --barcodes-file or
 --barcodes-url and records a clear metadata warning when no barcode file is
-provided.
+provided. When a barcode sheet includes run accessions, rows are filtered to the
+requested accession(s). SRP009896 reads include a leading N before the barcode,
+so the default barcode start is 1.
 """
 
 from __future__ import annotations
@@ -17,10 +19,14 @@ import argparse
 import csv
 import gzip
 import hashlib
+import http.client
 import html.parser
 import json
 import re
 import shutil
+import sys
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import zlib
@@ -32,6 +38,15 @@ DEFAULT_OUT = ROOT / "examples" / "barcode_demux" / "data"
 ENA_FIELDS = "run_accession,fastq_ftp,fastq_bytes,fastq_md5,read_count,base_count,sample_alias,experiment_title,study_accession"
 PUBLIC_EXAMPLE_ZIP_URL = "https://drive.google.com/file/d/1sxiF4ijqp9jHvFrPa3LWsnxtIHmA0rHJ/view?usp=sharing"
 PUBLIC_EXAMPLE_BARCODE_MEMBER = "BarcodesPerSample.csv"
+USER_AGENT = "DotMatch benchmark fetcher/0.2 (+https://github.com/donncha/dotmatch)"
+TRANSIENT_NETWORK_ERRORS = (
+    ConnectionError,
+    EOFError,
+    TimeoutError,
+    http.client.IncompleteRead,
+    http.client.RemoteDisconnected,
+    urllib.error.URLError,
+)
 
 
 class DriveDownloadFormParser(html.parser.HTMLParser):
@@ -61,7 +76,7 @@ def ena_metadata(accession: str) -> dict[str, str]:
         "https://www.ebi.ac.uk/ena/portal/api/filereport"
         f"?accession={accession}&result=read_run&fields={ENA_FIELDS}&format=tsv&download=false"
     )
-    with urllib.request.urlopen(url, timeout=30) as resp:
+    with urlopen_with_retries(url, timeout=30) as resp:
         text = resp.read().decode("utf-8")
     rows = list(csv.DictReader(text.splitlines(), delimiter="\t"))
     if not rows:
@@ -83,9 +98,42 @@ def google_drive_download_url(url: str) -> str:
     return f"https://drive.usercontent.google.com/uc?id={file_id}&export=download"
 
 
+def request_with_headers(url_or_request: str | urllib.request.Request) -> urllib.request.Request:
+    if isinstance(url_or_request, urllib.request.Request):
+        for key, value in {"User-Agent": USER_AGENT, "Accept": "*/*"}.items():
+            if not url_or_request.has_header(key):
+                url_or_request.add_header(key, value)
+        return url_or_request
+    return urllib.request.Request(url_or_request, headers={"User-Agent": USER_AGENT, "Accept": "*/*"})
+
+
+def urlopen_with_retries(
+    url_or_request: str | urllib.request.Request,
+    timeout: int,
+    attempts: int = 3,
+    sleep_seconds: float = 1.0,
+):
+    request = request_with_headers(url_or_request)
+    last_error: BaseException | None = None
+    for attempt in range(1, attempts + 1):
+        try:
+            return urllib.request.urlopen(request, timeout=timeout)
+        except urllib.error.HTTPError as exc:
+            last_error = exc
+            if exc.code not in {429, 500, 502, 503, 504} or attempt == attempts:
+                raise
+        except TRANSIENT_NETWORK_ERRORS as exc:
+            last_error = exc
+            if attempt == attempts:
+                raise
+        time.sleep(sleep_seconds * attempt)
+    assert last_error is not None
+    raise last_error
+
+
 def fetch_range(url: str, start: int, end: int, timeout: int = 60) -> bytes:
     request = urllib.request.Request(url, headers={"Range": f"bytes={start}-{end}"})
-    with urllib.request.urlopen(request, timeout=timeout) as resp:
+    with urlopen_with_retries(request, timeout=timeout) as resp:
         return resp.read()
 
 
@@ -141,31 +189,49 @@ def fetch_first_zip_member(url: str, member_name: str = PUBLIC_EXAMPLE_BARCODE_M
 
 def copy_first_fastq_records(remote_url: str, out: Path, records: int) -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
-    written = 0
-    with urllib.request.urlopen(remote_url, timeout=60) as resp:
-        with gzip.GzipFile(fileobj=resp, mode="rb") as gz_in:
-            with gzip.open(out, "wt") as gz_out:
-                while written < records:
-                    header = gz_in.readline()
-                    if not header:
-                        break
-                    seq = gz_in.readline()
-                    plus = gz_in.readline()
-                    qual = gz_in.readline()
-                    if not seq or not plus or not qual:
-                        raise RuntimeError("remote FASTQ ended mid-record")
-                    gz_out.write(header.decode("utf-8", errors="replace"))
-                    gz_out.write(seq.decode("utf-8", errors="replace"))
-                    gz_out.write(plus.decode("utf-8", errors="replace"))
-                    gz_out.write(qual.decode("utf-8", errors="replace"))
-                    written += 1
-    return written
+    tmp = out.with_suffix(out.suffix + ".tmp")
+    last_error: BaseException | None = None
+    for attempt in range(1, 4):
+        written = 0
+        try:
+            if tmp.exists():
+                tmp.unlink()
+            with urlopen_with_retries(remote_url, timeout=60, attempts=1) as resp:
+                with gzip.GzipFile(fileobj=resp, mode="rb") as gz_in:
+                    with gzip.open(tmp, "wt") as gz_out:
+                        while written < records:
+                            header = gz_in.readline()
+                            if not header:
+                                break
+                            seq = gz_in.readline()
+                            plus = gz_in.readline()
+                            qual = gz_in.readline()
+                            if not seq or not plus or not qual:
+                                raise RuntimeError("remote FASTQ ended mid-record")
+                            gz_out.write(header.decode("utf-8", errors="replace"))
+                            gz_out.write(seq.decode("utf-8", errors="replace"))
+                            gz_out.write(plus.decode("utf-8", errors="replace"))
+                            gz_out.write(qual.decode("utf-8", errors="replace"))
+                            written += 1
+            tmp.replace(out)
+            return written
+        except TRANSIENT_NETWORK_ERRORS as exc:
+            last_error = exc
+            if tmp.exists():
+                tmp.unlink()
+            if attempt == 3:
+                raise
+            print(f"retrying FASTQ stream after transient network error: {exc}", file=sys.stderr)
+            time.sleep(float(attempt))
+    assert last_error is not None
+    raise last_error
 
 
 def download_full(remote_url: str, out: Path) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     tmp = out.with_suffix(out.suffix + ".tmp")
-    urllib.request.urlretrieve(remote_url, tmp)
+    with urlopen_with_retries(remote_url, timeout=120) as resp, tmp.open("wb") as fh:
+        shutil.copyfileobj(resp, fh)
     tmp.replace(out)
 
 
@@ -203,6 +269,30 @@ def count_barcodes(path: Path | None) -> tuple[int, list[int]]:
     return count, sorted(lengths)
 
 
+def filter_barcodes_for_accessions(path: Path | None, accessions: list[str]) -> tuple[int, int, bool]:
+    if path is None or not path.exists() or not accessions:
+        return 0, 0, False
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if not lines:
+        return 0, 0, False
+    first = lines[0]
+    delim = "\t" if "\t" in first else ","
+    fields = [f.strip().lower() for f in first.split(delim)]
+    has_header = any(f in {"barcode", "sequence", "index", "sample_id", "sample", "run", "accession"} for f in fields)
+    header = [first] if has_header else []
+    body = lines[1:] if has_header else lines
+    accessions_set = set(accessions)
+    matched = [
+        line for line in body
+        if line.strip() and any(field.strip() in accessions_set for field in line.split(delim))
+    ]
+    total = sum(1 for line in body if line.strip())
+    if not matched or len(matched) == total:
+        return total, len(matched) if matched else total, False
+    path.write_text("\n".join([*header, *matched]) + "\n", encoding="utf-8")
+    return total, len(matched), True
+
+
 def install_barcodes(
     out_dir: Path,
     barcodes_file: str | None,
@@ -217,7 +307,7 @@ def install_barcodes(
         return str(dest), str(src)
     if barcodes_url:
         dest = out_dir / "barcodes.tsv"
-        with urllib.request.urlopen(barcodes_url, timeout=30) as resp:
+        with urlopen_with_retries(barcodes_url, timeout=30) as resp:
             dest.write_bytes(resp.read())
         return str(dest), barcodes_url
     if barcodes_example_zip_url:
@@ -231,14 +321,14 @@ def install_barcodes(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
-    parser.add_argument("--accession", action="append", default=["SRR391079"])
+    parser.add_argument("--accession", action="append", default=None)
     parser.add_argument("--subsample", type=int, default=100000, help="records per run; use 0 for full FASTQ download")
     parser.add_argument("--barcodes-file")
     parser.add_argument("--barcodes-url")
     parser.add_argument("--barcodes-example-zip-url")
     parser.add_argument("--use-public-example-barcodes", action="store_true")
     parser.add_argument("--barcode-zip-member", default=PUBLIC_EXAMPLE_BARCODE_MEMBER)
-    parser.add_argument("--barcode-start", type=int, default=0)
+    parser.add_argument("--barcode-start", type=int, default=1, help="0-based barcode start; SRP009896 reads include a leading N")
     parser.add_argument("--barcode-length", type=int, default=0, help="expected barcode length; 0 infers from barcode sheet")
     parser.add_argument("--require-barcodes", action="store_true")
     parser.add_argument("--metadata-only", action="store_true")
@@ -246,7 +336,8 @@ def main() -> None:
 
     args.out.mkdir(parents=True, exist_ok=True)
     runs: list[dict[str, object]] = []
-    for accession in args.accession:
+    accessions = args.accession or ["SRR391079"]
+    for accession in accessions:
         meta = ena_metadata(accession)
         fastq_ftp = meta.get("fastq_ftp", "")
         if not fastq_ftp:
@@ -284,19 +375,29 @@ def main() -> None:
         example_zip_url,
         args.barcode_zip_member,
     )
+    barcode_rows_before_filter, barcode_rows_after_filter, barcode_filter_applied = filter_barcodes_for_accessions(
+        Path(barcode_path) if barcode_path else None,
+        accessions,
+    )
     barcode_count, barcode_lengths = count_barcodes(Path(barcode_path) if barcode_path else None)
     if args.require_barcodes and barcode_path is None:
         raise SystemExit("barcode SOTA fetch requires --barcodes-file or --barcodes-url")
     if args.require_barcodes and barcode_count == 0:
         raise SystemExit("barcode SOTA fetch installed a barcode file but no barcodes could be parsed")
     barcode_length = args.barcode_length or (barcode_lengths[0] if len(barcode_lengths) == 1 else 0)
+    barcode_length_mode = "fixed" if barcode_length else ("auto" if barcode_lengths else "unknown")
     metadata = {
         "dataset": "SRP009896 maize GBS inline barcode demultiplexing",
         "barcode_position": "5-prime / read start",
         "barcode_start": args.barcode_start,
         "barcode_length": barcode_length,
+        "barcode_length_mode": barcode_length_mode,
         "barcode_count": barcode_count,
         "barcode_lengths": barcode_lengths,
+        "barcode_filter_accessions": accessions,
+        "barcode_rows_before_filter": barcode_rows_before_filter,
+        "barcode_rows_after_filter": barcode_rows_after_filter,
+        "barcode_filter_applied": barcode_filter_applied,
         "sources": [
             "https://biobam.atlassian.net/wiki/spaces/OED0324/pages/3525084904/Reads%2BDemultiplexing%2Bwith%2BCutadapt",
             "https://drive.google.com/file/d/1sxiF4ijqp9jHvFrPa3LWsnxtIHmA0rHJ/view?usp=sharing",
@@ -314,7 +415,8 @@ def main() -> None:
             "state-of-the-art demux benchmarks. The public Cutadapt example links a Google Drive "
             "ExampleDataset.zip that includes the FASTQ files and barcode file; --use-public-example-barcodes "
             "extracts the first ZIP member barcode sheet with a ranged request instead of downloading "
-            "the full archive."
+            "the full archive. When a run-accession column is present, this script keeps only rows for "
+            "the requested accession(s). SRP009896 reads include a leading N before the inline barcode."
         ),
     }
     metadata_path = args.out / "metadata.json"

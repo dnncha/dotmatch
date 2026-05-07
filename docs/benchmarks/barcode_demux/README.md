@@ -2,7 +2,7 @@
 
 This report is the barcode-demultiplexing evidence track. It is separate from the CRISPR guide-counting report.
 
-Current status: DotMatch now has a native `demux` command for fixed-position inline barcodes. A state-of-the-art barcode claim requires real public barcode datasets plus competitor rows, not only the built-in fixture.
+Current status: DotMatch now has a native `demux` command for fixed-position inline barcodes, including `--barcode-length auto` for barcode sheets with multiple lengths. A state-of-the-art barcode claim requires real public barcode datasets plus competitor rows, not only the built-in fixture.
 
 The benchmark script can also emit a simple `hash_splitter_exact` row. This is a transparent exact-prefix baseline, not an edit-distance demultiplexer.
 
@@ -28,6 +28,6 @@ The benchmark script can also emit a simple `hash_splitter_exact` row. This is a
 
 Do not describe DotMatch as barcode state of the art until this table includes real public barcode workloads and fair competitor rows, at minimum Cutadapt plus a second comparator such as Ultraplex, Je, deML, sabre/fastx-style splitters, an exact hash splitter for the exact-prefix lane, and Illumina demux tools where their input model matches the benchmark.
 
-Suggested real-data starting point: SRP009896 / SRR391079-SRR391082, a maize GBS dataset described in public Cutadapt demultiplexing examples as 5-prime inline barcode reads with 96 demultiplexed outputs. `scripts/fetch_srp009896_barcode_demo.py --use-public-example-barcodes` extracts the first-member barcode sheet from the public Google Drive example archive with a ranged request instead of downloading the full 7.4 GB ZIP.
+Suggested real-data starting point: SRP009896 / SRR391079-SRR391082, a maize GBS dataset described in public Cutadapt demultiplexing examples as 5-prime inline barcode reads with 96 demultiplexed outputs. `scripts/fetch_srp009896_barcode_demo.py --use-public-example-barcodes` extracts the first-member barcode sheet from the public Google Drive example archive with a ranged request instead of downloading the full 7.4 GB ZIP, then filters rows to the requested accession when the run column is present.
 
-Important boundary: the SRP009896 barcode sheet contains variable-length barcodes (`4-8 bp`), while the current DotMatch `demux` benchmark is fixed-length. Treat any fixed-length subset result as a subset claim unless DotMatch adds variable-length inline demux semantics.
+Important boundary: the SRP009896 barcode sheet contains variable-length barcodes (`4-8 bp`) and reused barcode sequences across run blocks. SRP009896 reads include a leading `N`, so the public-example benchmark should use `--barcode-start 1`, `--barcode-length auto`, and the exact-prefix `k=0` lane unless a separate fixed-length sheet is supplied.

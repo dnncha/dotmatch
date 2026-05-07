@@ -326,11 +326,11 @@ synthetic barcode sets with known edit-distance spacing
 
 Current implementation:
 
-- `dotmatch demux` supports fixed-position single-end inline barcodes;
+- `dotmatch demux` supports fixed-position single-end inline barcodes with fixed-length and auto-length barcode sheet modes;
 - output is one FASTQ per uniquely assigned barcode plus optional ambiguous/unmatched FASTQs;
 - `scripts/bench_barcode_demux.py` can benchmark DotMatch, Cutadapt, and a transparent exact-prefix hash splitter on a supplied real barcode FASTQ/barcode file;
-- `scripts/fetch_srp009896_barcode_demo.py --require-barcodes` records ENA metadata, checksums, barcode sheet metadata, barcode count, barcode length, extraction position, and can extract the public SRP009896 example barcode sheet with a ranged ZIP request;
-- `scripts/check_barcode_sota_gate.py` fails unless rows use a real FASTQ plus real barcode sheet and comparator rows;
+- `scripts/fetch_srp009896_barcode_demo.py --require-barcodes` records ENA metadata, checksums, barcode sheet metadata, barcode count, barcode length, extraction position, can extract the public SRP009896 example barcode sheet with a ranged ZIP request, and filters run-scoped barcode rows to requested accessions when that column is present;
+- `scripts/check_barcode_sota_gate.py` fails unless rows use a real FASTQ plus real barcode sheet, successful assigned-read counts, and comparator rows;
 - the built-in benchmark fixture is only a smoke test and must not support a state-of-the-art claim.
 
 Report:
@@ -467,7 +467,7 @@ Still needed for the strongest paper:
 - CBCL/NovaSeq-style raw run-folder support;
 - real classic-BCL and CBCL run-folder benchmark rows against BCL Convert/bcl2fastq/CUDA-Demux with zero validation mismatches;
 - real public inline barcode dataset run, starting with SRP009896/SRR391079-SRR391082 or another recognized demux dataset;
-- strict barcode SOTA gate passing with a claim-grade fixed-length real barcode sheet and repeated Cutadapt plus second-comparator rows;
+- strict barcode SOTA gate passing with a claim-grade fixed-length or explicit auto-length real barcode sheet and repeated assigned-read Cutadapt plus second-comparator rows;
 - fair barcode-demux competitor rows for Ultraplex, Je, deML, sabre/fastx-style splitters, and Illumina demux tools where their input model matches;
 - paired-end/dual-index/index-read barcode modes if we want claims beyond fixed-position inline demux;
 - native Edlib validation on larger stratified subsets;

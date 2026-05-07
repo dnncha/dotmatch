@@ -5,7 +5,7 @@ The script can run on a user-supplied real barcode dataset:
 
     python3 scripts/bench_barcode_demux.py \
       --reads SRR391079.fastq.gz --barcodes barcodes.tsv \
-      --barcode-start 0 --barcode-length 8 --k 0 --run-cutadapt
+      --barcode-start 1 --barcode-length auto --k 0 --run-cutadapt
 
 If no reads/barcodes are supplied, it generates a small deterministic fixture.
 Those fixture rows are useful for CI and graph plumbing, not for state-of-the-art
@@ -145,7 +145,12 @@ def write_fastq_record(out, header: str, seq: str, plus: str, qual: str) -> None
     out.write(qual)
 
 
-def hash_splitter_exact(reads: Path, barcodes: list[tuple[str, str]], out_dir: Path) -> dict[str, str]:
+def hash_splitter_exact(
+    reads: Path,
+    barcodes: list[tuple[str, str]],
+    out_dir: Path,
+    barcode_start: int = 0,
+) -> dict[str, str]:
     out_dir.mkdir(parents=True, exist_ok=True)
     by_length: dict[int, dict[str, list[str]]] = {}
     for name, seq in barcodes:
@@ -170,8 +175,9 @@ def hash_splitter_exact(reads: Path, barcodes: list[tuple[str, str]], out_dir: P
                     raise RuntimeError("FASTQ ended mid-record")
                 sample = None
                 stripped = seq.rstrip("\n")
+                observed = stripped[barcode_start:]
                 for length in lengths:
-                    names = by_length[length].get(stripped[:length])
+                    names = by_length[length].get(observed[:length])
                     if names and len(names) == 1:
                         sample = names[0]
                         break
@@ -233,7 +239,7 @@ def count_demux_outputs(path: Path) -> int:
 
 
 def make_row(tool: str, version: str, workflow: str, semantics: str, reads: int, barcodes: int,
-             barcode_len: int, k: int, metric: str, seconds: float, rc: int, peak_rss_kb: int,
+             barcode_len: int | str, k: int, metric: str, seconds: float, rc: int, peak_rss_kb: int,
              command: list[str], repeat: int, stats: dict[str, str] | None = None) -> dict[str, str]:
     row = {
         "tool": tool,
@@ -268,7 +274,7 @@ def main() -> None:
     parser.add_argument("--reads")
     parser.add_argument("--barcodes")
     parser.add_argument("--barcode-start", type=int, default=0)
-    parser.add_argument("--barcode-length", type=int, default=8)
+    parser.add_argument("--barcode-length", default="8")
     parser.add_argument("--k", type=int, default=1, choices=[0, 1])
     parser.add_argument("--metric", choices=["hamming", "levenshtein"], default="hamming")
     parser.add_argument("--records", type=int, default=int(os.environ.get("DOTMATCH_BARCODE_RECORDS", "20000")))
@@ -280,6 +286,19 @@ def main() -> None:
     args = parser.parse_args()
     if args.repeats < 1:
         raise SystemExit("--repeats must be >= 1")
+    barcode_length_arg = str(args.barcode_length)
+    auto_barcode_length = barcode_length_arg == "auto"
+    if not auto_barcode_length:
+        try:
+            barcode_length_value = int(barcode_length_arg)
+        except ValueError as exc:
+            raise SystemExit("--barcode-length must be a positive integer or auto") from exc
+        if barcode_length_value <= 0:
+            raise SystemExit("--barcode-length must be a positive integer or auto")
+    else:
+        barcode_length_value = 0
+    if auto_barcode_length and args.run_cutadapt and args.k != 0:
+        raise SystemExit("--barcode-length auto with Cutadapt is only supported for --k 0 exact-prefix comparisons")
 
     subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True, stdout=subprocess.DEVNULL)
     WORK.mkdir(parents=True, exist_ok=True)
@@ -307,7 +326,7 @@ def main() -> None:
             "--barcodes", str(barcodes),
             "--reads", str(reads),
             "--barcode-start", str(args.barcode_start),
-            "--barcode-length", str(args.barcode_length),
+            "--barcode-length", barcode_length_arg,
             "--k", str(args.k),
             "--metric", args.metric,
             "--out-dir", str(dotmatch_out),
@@ -321,7 +340,7 @@ def main() -> None:
             "fixed_position_unique_ambiguous_nomatch",
             n_reads,
             n_barcodes,
-            args.barcode_length,
+            barcode_length_arg,
             args.k,
             args.metric,
             seconds,
@@ -338,11 +357,15 @@ def main() -> None:
             cutadapt_out.mkdir(parents=True, exist_ok=True)
             fasta = WORK / "cutadapt_barcodes.fasta"
             write_cutadapt_fasta(barcodes, fasta)
-            error_rate = "0" if args.k == 0 else f"{(args.k / args.barcode_length):.8f}"
+            error_rate = "0" if args.k == 0 else f"{(args.k / barcode_length_value):.8f}"
             cutadapt_cmd = [
                 "cutadapt",
                 "-e", error_rate,
                 "--no-indels",
+                *(
+                    ["-u", str(args.barcode_start)]
+                    if args.barcode_start > 0 else []
+                ),
                 "-g", f"file:{fasta}",
                 "--untrimmed-output", str(cutadapt_out / "unknown.fastq"),
                 "-o", str(cutadapt_out / "{name}.fastq"),
@@ -357,7 +380,7 @@ def main() -> None:
                 "anchored_cutadapt_demux_no_indels",
                 n_reads,
                 n_barcodes,
-                args.barcode_length,
+                barcode_length_arg,
                 args.k,
                 "hamming",
                 seconds,
@@ -375,11 +398,15 @@ def main() -> None:
                 "python3", "scripts/bench_barcode_demux.py",
                 "--reads", str(reads),
                 "--barcodes", str(barcodes),
+                "--barcode-start", str(args.barcode_start),
+                "--barcode-length", barcode_length_arg,
+                "--k", "0",
+                "--metric", "hamming",
                 "--run-hash-splitter",
                 "--repeats", "1",
             ]
             start = time.perf_counter()
-            hash_stats = hash_splitter_exact(reads, barcode_rows, hash_out)
+            hash_stats = hash_splitter_exact(reads, barcode_rows, hash_out, args.barcode_start)
             seconds = time.perf_counter() - start
             row = make_row(
                 "hash_splitter_exact",
@@ -388,7 +415,7 @@ def main() -> None:
                 "longest_unique_exact_prefix_no_mismatch",
                 n_reads,
                 n_barcodes,
-                args.barcode_length,
+                barcode_length_arg,
                 0,
                 "exact",
                 seconds,

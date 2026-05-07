@@ -22,19 +22,21 @@ if command -v lscpu >/dev/null 2>&1; then
 fi
 python3 --version | sed 's/^/python,/' >> benchmarks/raw/atlas/barcode_sota_environment.csv
 
-if [[ -z "${DOTMATCH_BARCODE_SOTA_BARCODES:-}" && -z "${DOTMATCH_BARCODE_SOTA_BARCODES_URL:-}" ]]; then
-  echo "Set DOTMATCH_BARCODE_SOTA_BARCODES or DOTMATCH_BARCODE_SOTA_BARCODES_URL to a real barcode sheet." >&2
+if [[ -z "${DOTMATCH_BARCODE_SOTA_BARCODES:-}" && -z "${DOTMATCH_BARCODE_SOTA_BARCODES_URL:-}" && -z "${DOTMATCH_BARCODE_SOTA_USE_PUBLIC_EXAMPLE:-}" ]]; then
+  echo "Set DOTMATCH_BARCODE_SOTA_BARCODES, DOTMATCH_BARCODE_SOTA_BARCODES_URL, or DOTMATCH_BARCODE_SOTA_USE_PUBLIC_EXAMPLE=1." >&2
   exit 2
 fi
 
-FETCH_ARGS=(--out examples/barcode_demux/data --require-barcodes --subsample "${DOTMATCH_BARCODE_SOTA_SUBSAMPLE:-0}" --barcode-start "${DOTMATCH_BARCODE_START:-0}")
+FETCH_ARGS=(--out examples/barcode_demux/data --require-barcodes --subsample "${DOTMATCH_BARCODE_SOTA_SUBSAMPLE:-0}" --barcode-start "${DOTMATCH_BARCODE_START:-1}")
 if [[ -n "${DOTMATCH_BARCODE_LENGTH:-}" ]]; then
   FETCH_ARGS+=(--barcode-length "$DOTMATCH_BARCODE_LENGTH")
 fi
 if [[ -n "${DOTMATCH_BARCODE_SOTA_BARCODES:-}" ]]; then
   FETCH_ARGS+=(--barcodes-file "$DOTMATCH_BARCODE_SOTA_BARCODES")
-else
+elif [[ -n "${DOTMATCH_BARCODE_SOTA_BARCODES_URL:-}" ]]; then
   FETCH_ARGS+=(--barcodes-url "$DOTMATCH_BARCODE_SOTA_BARCODES_URL")
+else
+  FETCH_ARGS+=(--use-public-example-barcodes)
 fi
 python3 scripts/fetch_srp009896_barcode_demo.py "${FETCH_ARGS[@]}"
 
@@ -56,7 +58,7 @@ BARCODE_LENGTH="$(python3 - <<'PY'
 import json
 from pathlib import Path
 meta=json.loads(Path("examples/barcode_demux/data/metadata.json").read_text())
-print(meta.get("barcode_length") or 8)
+print(meta.get("barcode_length") or ("auto" if meta.get("barcode_length_mode") == "auto" else 8))
 PY
 )"
 
@@ -69,15 +71,16 @@ PATH="$ROOT/build/barcode-competitors/bin:$PATH" \
   python3 scripts/bench_barcode_demux.py \
     --reads "$READS" \
     --barcodes "$BARCODES" \
-    --barcode-start "${DOTMATCH_BARCODE_START:-0}" \
+    --barcode-start "${DOTMATCH_BARCODE_START:-1}" \
     --barcode-length "$BARCODE_LENGTH" \
-    --k "${DOTMATCH_BARCODE_K:-1}" \
+    --k "${DOTMATCH_BARCODE_K:-0}" \
     --metric "${DOTMATCH_BARCODE_METRIC:-hamming}" \
     --workflow-name "real_srp009896_inline_barcode" \
     --run-cutadapt \
+    --run-hash-splitter \
     --repeats "${DOTMATCH_BARCODE_REPEATS:-5}"
 
 python3 scripts/generate_barcode_demux_report.py
-python3 scripts/check_barcode_sota_gate.py --no-second-comparator
+python3 scripts/check_barcode_sota_gate.py
 
 echo "Barcode SOTA atlas run complete: $LOG"

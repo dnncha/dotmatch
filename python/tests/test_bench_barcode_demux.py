@@ -40,3 +40,21 @@ def test_hash_splitter_exact_demuxes_longest_unique_prefix(tmp_path):
     assert (out_dir / "long.fastq").read_text(encoding="utf-8").startswith("@r0\nACGTAAAA\n")
     assert (out_dir / "short.fastq").read_text(encoding="utf-8").startswith("@r1\nACAAAAAA\n")
     assert "@r3" in (out_dir / "unknown.fastq").read_text(encoding="utf-8")
+
+
+def test_hash_splitter_exact_respects_barcode_start(tmp_path):
+    bench = _load_bench()
+    reads = tmp_path / "reads.fastq.gz"
+    barcodes = tmp_path / "barcodes.tsv"
+    out_dir = tmp_path / "split"
+    _write_fastq(reads, [
+        ("r0", "NACGTAAAA"),
+        ("r1", "NTTTTAAAA"),
+        ("r2", "NGGGGAAAA"),
+    ])
+    barcodes.write_text("a\tACGT\nb\tTTTT\n", encoding="utf-8")
+
+    stats = bench.hash_splitter_exact(reads, bench.read_barcodes(barcodes), out_dir, barcode_start=1)
+
+    assert stats == {"assigned_reads": "2", "unmatched_reads": "1"}
+    assert (out_dir / "a.fastq").read_text(encoding="utf-8").startswith("@r0\nNACGTAAAA\n")

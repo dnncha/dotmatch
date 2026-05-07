@@ -45,7 +45,7 @@ This checklist covers repository settings and external launch work that cannot b
 
 ## Blocked Before Broader Claims
 
-- Barcode SOTA: requires `make barcode-sota-gate` to pass with claim-grade fixed-length real barcode sheet metadata, repeated real-data rows, Cutadapt rows, and a second comparator. The exact hash splitter counts only for the `k=0` exact-prefix lane.
+- Barcode SOTA: requires `make barcode-sota-gate` to pass with claim-grade fixed-length or explicit auto-length real barcode sheet metadata, repeated real-data rows with assigned reads, Cutadapt rows, and a second comparator. The exact hash splitter counts only for the `k=0` exact-prefix lane.
 - Raw BCL SOTA: requires `make bcl-sota-gate` to pass with CBCL evidence and production demux comparator validation.
 - General alignment: blocked until DotMatch has reference indexing, mapping semantics, traceback/CIGAR, and appropriate aligner benchmarks.
 - Production Python package: release only for platforms whose wheels pass the clean-venv native import verifier.

@@ -1,5 +1,8 @@
 import importlib.util
+import gzip
+import http.client
 import io
+import json
 import sys
 import zipfile
 from pathlib import Path
@@ -86,7 +89,10 @@ def test_main_can_install_public_example_barcodes_without_fastq_download(tmp_pat
     monkeypatch.setattr(
         fetcher,
         "fetch_first_zip_member",
-        lambda url, member_name="BarcodesPerSample.csv": ("BarcodesPerSample.csv", b"sample_a\tACGT\tSRR391079\n"),
+        lambda url, member_name="BarcodesPerSample.csv": (
+            "BarcodesPerSample.csv",
+            b"sample_a\tACGT\tSRR391079\nsample_b\tACGT\tSRR391080\n",
+        ),
     )
     monkeypatch.setattr(
         sys,
@@ -104,4 +110,89 @@ def test_main_can_install_public_example_barcodes_without_fastq_download(tmp_pat
     fetcher.main()
 
     assert (tmp_path / "barcodes.tsv").read_text(encoding="utf-8") == "sample_a\tACGT\tSRR391079\n"
-    assert '"claim_grade_ready": true' in (tmp_path / "metadata.json").read_text(encoding="utf-8")
+    metadata = json.loads((tmp_path / "metadata.json").read_text(encoding="utf-8"))
+    assert metadata["claim_grade_ready"] is True
+    assert [run["accession"] for run in metadata["runs"]] == ["SRR391079"]
+
+
+def test_explicit_default_accession_does_not_duplicate_metadata_run(tmp_path, monkeypatch):
+    fetcher = _load_fetcher()
+
+    def fake_ena_metadata(accession):
+        return {
+            "run_accession": accession,
+            "fastq_ftp": f"ftp.sra.ebi.ac.uk/{accession}.fastq.gz",
+            "fastq_bytes": "1000",
+            "fastq_md5": "remote-md5",
+            "read_count": "100",
+            "base_count": "8000",
+            "sample_alias": "sample",
+            "experiment_title": "experiment",
+            "study_accession": "SRP009896",
+        }
+
+    monkeypatch.setattr(fetcher, "ena_metadata", fake_ena_metadata)
+    monkeypatch.setattr(
+        fetcher,
+        "fetch_first_zip_member",
+        lambda url, member_name="BarcodesPerSample.csv": (
+            "BarcodesPerSample.csv",
+            b"sample_a\tACGT\tSRR391079\nsample_b\tACGT\tSRR391080\n",
+        ),
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "fetch_srp009896",
+            "--out",
+            str(tmp_path),
+            "--metadata-only",
+            "--accession",
+            "SRR391079",
+            "--use-public-example-barcodes",
+        ],
+    )
+
+    fetcher.main()
+
+    metadata = json.loads((tmp_path / "metadata.json").read_text(encoding="utf-8"))
+    assert [run["accession"] for run in metadata["runs"]] == ["SRR391079"]
+    assert metadata["barcode_filter_applied"] is True
+    assert metadata["barcode_rows_before_filter"] == 2
+    assert metadata["barcode_rows_after_filter"] == 1
+    assert (tmp_path / "barcodes.tsv").read_text(encoding="utf-8") == "sample_a\tACGT\tSRR391079\n"
+
+
+def test_subsample_fastq_retries_transient_stream_open_failure(tmp_path, monkeypatch):
+    fetcher = _load_fetcher()
+    payload = io.BytesIO()
+    with gzip.GzipFile(fileobj=payload, mode="wb") as gz:
+        gz.write(
+            b"@r0\nACGT\n+\nIIII\n"
+            b"@r1\nTGCA\n+\nJJJJ\n"
+        )
+    attempts = {"count": 0}
+
+    class FakeResponse(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self.close()
+
+    def fake_urlopen(request, timeout=0):
+        attempts["count"] += 1
+        if attempts["count"] == 1:
+            raise http.client.RemoteDisconnected("closed")
+        return FakeResponse(payload.getvalue())
+
+    monkeypatch.setattr(fetcher.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(fetcher.time, "sleep", lambda seconds: None)
+
+    written = fetcher.copy_first_fastq_records("https://example.test/run.fastq.gz", tmp_path / "sub.fastq.gz", 2)
+
+    assert written == 2
+    assert attempts["count"] == 2
+    with gzip.open(tmp_path / "sub.fastq.gz", "rt") as fh:
+        assert fh.read().splitlines() == ["@r0", "ACGT", "+", "IIII", "@r1", "TGCA", "+", "JJJJ"]

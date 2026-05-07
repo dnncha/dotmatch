@@ -31,8 +31,8 @@ make barcode-competitor-env
 PATH="$PWD/build/barcode-competitors/bin:$PATH" python3 scripts/bench_barcode_demux.py \
   --reads examples/barcode_demux/data/SRR391079.subsample100000.fastq.gz \
   --barcodes examples/barcode_demux/data/barcodes.tsv \
-  --barcode-start 0 \
-  --barcode-length 8 \
+  --barcode-start 1 \
+  --barcode-length auto \
   --k 0 \
   --workflow-name srp009896_srr391079_real_subsample \
   --run-cutadapt \
@@ -41,6 +41,6 @@ PATH="$PWD/build/barcode-competitors/bin:$PATH" python3 scripts/bench_barcode_de
 python3 scripts/generate_barcode_demux_report.py
 ```
 
-The SRP009896 barcode sheet contains variable-length barcodes (`4-8 bp`). DotMatch's current `demux` surface is fixed-length, so a full-dataset SOTA claim should not be made from this sheet until the benchmark either uses a fixed-length real sheet, a clearly labeled fixed-length subset, or a DotMatch variable-length inline demux mode.
+The SRP009896 barcode sheet contains variable-length barcodes (`4-8 bp`) and separate run blocks with reused barcode sequences; the fetcher filters to the requested accession when that run column is present. The SRP009896 reads include a leading `N`, so use `--barcode-start 1` for this public example. DotMatch supports this with `--barcode-length auto` and conservative ambiguity handling for prefix-overlapping barcodes. A full SOTA claim still requires repeated real-data rows and comparator evidence that pass `make barcode-sota-gate`.
 
 The built-in benchmark fixture is only a smoke test. State-of-the-art barcode claims require real public FASTQ data, the matching sample/barcode sheet, repeated runs, and fair comparator rows.

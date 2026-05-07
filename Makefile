@@ -130,14 +130,13 @@ bench-barcode-demux-competitors: dotmatch barcode-competitor-env
 	python3 scripts/generate_barcode_demux_report.py
 
 fetch-barcode-demo:
-	python3 scripts/fetch_srp009896_barcode_demo.py --metadata-only
+	python3 scripts/fetch_srp009896_barcode_demo.py --metadata-only --use-public-example-barcodes
 
 fetch-barcode-demo-claim:
-	test -n "$$DOTMATCH_BARCODE_SOTA_BARCODES" || test -n "$$DOTMATCH_BARCODE_SOTA_BARCODES_URL"
-	python3 scripts/fetch_srp009896_barcode_demo.py --require-barcodes --subsample "$${DOTMATCH_BARCODE_SOTA_SUBSAMPLE:-100000}" $${DOTMATCH_BARCODE_SOTA_BARCODES:+--barcodes-file "$$DOTMATCH_BARCODE_SOTA_BARCODES"} $${DOTMATCH_BARCODE_SOTA_BARCODES_URL:+--barcodes-url "$$DOTMATCH_BARCODE_SOTA_BARCODES_URL"} --barcode-start "$${DOTMATCH_BARCODE_START:-0}" $${DOTMATCH_BARCODE_LENGTH:+--barcode-length "$$DOTMATCH_BARCODE_LENGTH"}
+	python3 scripts/fetch_srp009896_barcode_demo.py --require-barcodes --subsample "$${DOTMATCH_BARCODE_SOTA_SUBSAMPLE:-100000}" $${DOTMATCH_BARCODE_SOTA_BARCODES:+--barcodes-file "$$DOTMATCH_BARCODE_SOTA_BARCODES"} $${DOTMATCH_BARCODE_SOTA_BARCODES_URL:+--barcodes-url "$$DOTMATCH_BARCODE_SOTA_BARCODES_URL"} $${DOTMATCH_BARCODE_SOTA_USE_PUBLIC_EXAMPLE:+--use-public-example-barcodes} --barcode-start "$${DOTMATCH_BARCODE_START:-1}" $${DOTMATCH_BARCODE_LENGTH:+--barcode-length "$$DOTMATCH_BARCODE_LENGTH"}
 
 bench-barcode-sota: dotmatch barcode-competitor-env fetch-barcode-demo-claim
-	PATH="$(CURDIR)/build/barcode-competitors/bin:$$PATH" python3 scripts/bench_barcode_demux.py --reads "$$(python3 -c 'import json;print(json.load(open("examples/barcode_demux/data/metadata.json"))["runs"][0]["local_fastq"])')" --barcodes "$$(python3 -c 'import json;print(json.load(open("examples/barcode_demux/data/metadata.json"))["barcodes"])')" --barcode-start "$${DOTMATCH_BARCODE_START:-0}" --barcode-length "$$(python3 -c 'import json;print(json.load(open("examples/barcode_demux/data/metadata.json")).get("barcode_length") or 8)')" --k "$${DOTMATCH_BARCODE_K:-1}" --metric "$${DOTMATCH_BARCODE_METRIC:-hamming}" --workflow-name real_srp009896_inline_barcode --run-cutadapt --run-hash-splitter --repeats "$${DOTMATCH_BARCODE_REPEATS:-5}"
+	PATH="$(CURDIR)/build/barcode-competitors/bin:$$PATH" python3 scripts/bench_barcode_demux.py --reads "$$(python3 -c 'import json;print(json.load(open("examples/barcode_demux/data/metadata.json"))["runs"][0]["local_fastq"])')" --barcodes "$$(python3 -c 'import json;print(json.load(open("examples/barcode_demux/data/metadata.json"))["barcodes"])')" --barcode-start "$${DOTMATCH_BARCODE_START:-1}" --barcode-length "$$(python3 -c 'import json;m=json.load(open("examples/barcode_demux/data/metadata.json"));print(m.get("barcode_length") or ("auto" if m.get("barcode_length_mode") == "auto" else 8))')" --k "$${DOTMATCH_BARCODE_K:-0}" --metric "$${DOTMATCH_BARCODE_METRIC:-hamming}" --workflow-name real_srp009896_inline_barcode --run-cutadapt --run-hash-splitter --repeats "$${DOTMATCH_BARCODE_REPEATS:-5}"
 	python3 scripts/generate_barcode_demux_report.py
 
 barcode-sota-report:
