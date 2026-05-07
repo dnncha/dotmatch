@@ -1,0 +1,4 @@
+target_id	target_seq	gene	ambiguous_nearby	plasmid_count_exact	plasmid_count_corrected_substitution	plasmid_count_corrected_insertion	plasmid_count_corrected_deletion	plasmid_count_corrected_other	plasmid_count_total	ESC1_count_exact	ESC1_count_corrected_substitution	ESC1_count_corrected_insertion	ESC1_count_corrected_deletion	ESC1_count_corrected_other	ESC1_count_total
+guide_exact	ACGTACGTACGTACGTACG	GENE1	0	1	0	0	0	0	1	1	0	0	0	0	1
+guide_sub	TTTTCCCCAAAAGGGGTTT	GENE2	0	0	0	0	1	0	1	0	0	0	1	0	1
+guide_other	GGGGAAAACCCCTTTTGGG	GENE3	0	0	0	0	0	0	0	0	0	0	0	0	0

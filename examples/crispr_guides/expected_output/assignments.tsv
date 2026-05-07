@@ -1,0 +1,7 @@
+sample	read_id	observed_seq	target_index	target_id	target_seq	best_distance	second_best_distance	match_count	status	correction
+plasmid	exact	ACGTACGTACGTACGTACG	0	guide_exact	ACGTACGTACGTACGTACG	0	-1	1	unique	exact
+plasmid	one_sub	TTTTCCCCAAAAGGGGTT	1	guide_sub	TTTTCCCCAAAAGGGGTTT	1	-1	1	unique	deletion
+plasmid	no_match	CCCCCCCCCCCCCCCCCC	-1			-1	-1	0	none	none
+ESC1	exact	ACGTACGTACGTACGTACG	0	guide_exact	ACGTACGTACGTACGTACG	0	-1	1	unique	exact
+ESC1	one_sub	TTTTCCCCAAAAGGGGTT	1	guide_sub	TTTTCCCCAAAAGGGGTTT	1	-1	1	unique	deletion
+ESC1	no_match	CCCCCCCCCCCCCCCCCC	-1			-1	-1	0	none	none

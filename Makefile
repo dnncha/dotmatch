@@ -61,6 +61,7 @@ test: build/test_qdalign
 
 cli-test: dotmatch
 	sh tests/test_cli_fastq.sh
+	sh tests/test_crispr_example_expected.sh
 
 coverage:
 	test -n "$(LLVM_PROFDATA)"

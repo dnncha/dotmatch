@@ -1,0 +1,4 @@
+sgRNA	Gene	plasmid	ESC1
+guide_exact	GENE1	1	1
+guide_sub	GENE2	1	1
+guide_other	GENE3	0	0

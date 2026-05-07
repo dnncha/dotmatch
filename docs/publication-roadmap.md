@@ -418,14 +418,14 @@ Claim discipline:
 
 Before a serious public launch:
 
-- [ ] source release;
-- [ ] Python package;
-- [ ] wheels or documented local shared-library install;
+- [ ] GitHub source release tag and archive;
+- [x] local/GitHub Python package build verifier;
+- [x] documented local shared-library install and wheel verifier;
 - [x] Dockerfile;
-- [ ] Bioconda recipe plan;
+- [x] Bioconda recipe plan;
 - [x] `CITATION.cff`;
 - [ ] Zenodo DOI;
-- [ ] examples with expected outputs.
+- [x] compact examples with expected outputs.
 
 Target future methods sentence:
 
@@ -473,4 +473,4 @@ Still needed for the strongest paper:
 - native Edlib validation on larger stratified subsets;
 - trie baseline beyond the current neighbor-generation lookup;
 - benchmark rows for larger target panels up to 16k and 65k;
-- packaging beyond the Dockerfile and citation metadata.
+- external package-channel publication beyond GitHub artifact builds.

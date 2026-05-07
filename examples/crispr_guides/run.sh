@@ -3,8 +3,8 @@ set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname "$0")/../.." && pwd)
 HERE=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
-DATA="$HERE/data"
-OUT="$HERE/output"
+DATA="${DOTMATCH_EXAMPLE_DATA_DIR:-$HERE/data}"
+OUT="${DOTMATCH_EXAMPLE_OUT_DIR:-$HERE/output}"
 mkdir -p "$OUT"
 
 if [ ! -f "$DATA/yusa_library.csv" ]; then

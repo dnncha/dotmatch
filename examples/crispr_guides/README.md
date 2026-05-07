@@ -23,4 +23,6 @@ Outputs are written under `output/`:
 - `summary.json`: assignment summary;
 - `assignments.tsv`: per-read diagnostics for the fixture/full run.
 
+The tiny fixture outputs are tracked under `expected_output/`, and `make cli-test` checks them. Set `DOTMATCH_EXAMPLE_DATA_DIR` and `DOTMATCH_EXAMPLE_OUT_DIR` to run the example against alternate local paths.
+
 The full public workflow uses `ERR376998.fastq.gz`, `ERR376999.fastq.gz`, `yusa_library.csv`, `--target-start 23`, and `--target-length 19`.
