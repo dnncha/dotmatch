@@ -17,6 +17,7 @@ def _load_checker():
 def _write_minimal_repo(root: Path) -> None:
     files = {
         "README.md": "# DotMatch\n\n`v0.1.0` includes stable launch artifacts.\n\nSee [Scientific claim ledger](docs/scientific-claims.md).\n",
+        "CHANGELOG.md": "# Changelog\n\n## 0.1.0\n\n- Initial launch.\n",
         "LICENSE": "Apache-2.0\n",
         "CITATION.cff": "cff-version: 1.2.0\ntitle: DotMatch\nversion: \"0.1.0\"\n",
         "codemeta.json": (
@@ -88,6 +89,16 @@ def test_publication_ready_reports_missing_release_workflow(tmp_path):
     result = checker.audit(tmp_path)
 
     assert any(".github/workflows/release.yml" in failure for failure in result.failures)
+
+
+def test_publication_ready_reports_missing_changelog(tmp_path):
+    checker = _load_checker()
+    _write_minimal_repo(tmp_path)
+    (tmp_path / "CHANGELOG.md").unlink()
+
+    result = checker.audit(tmp_path)
+
+    assert any("CHANGELOG.md" in failure for failure in result.failures)
 
 
 def test_publication_ready_rejects_unignored_large_or_macos_files(tmp_path, monkeypatch):

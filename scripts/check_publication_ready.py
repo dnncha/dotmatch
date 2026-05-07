@@ -14,6 +14,7 @@ MAX_TOTAL_BYTES = 100 * 1024 * 1024
 
 REQUIRED_FILES = [
     "README.md",
+    "CHANGELOG.md",
     "LICENSE",
     "CITATION.cff",
     "codemeta.json",

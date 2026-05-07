@@ -457,6 +457,7 @@ Latest native report:
 - [Scientific claim ledger](docs/scientific-claims.md)
 - [Methods and citation template](docs/methods-and-citation.md)
 - [GitHub launch checklist](docs/github-launch-checklist.md)
+- [Changelog](CHANGELOG.md)
 - [Release process](docs/release-process.md)
 - [Native Edlib benchmark report](docs/benchmarks/native/README.md)
 - [Raw native Edlib assignment CSV](docs/benchmarks/native/native_edlib_assignment.csv)
