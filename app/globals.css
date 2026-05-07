@@ -233,13 +233,11 @@ h1 {
 }
 
 .sequence-rail {
-  position: absolute;
-  right: 1.4rem;
-  bottom: 1.4rem;
-  left: 1.4rem;
+  position: relative;
   display: grid;
   grid-template-columns: repeat(16, 1fr);
   gap: 0.45rem;
+  margin-top: 1.2rem;
 }
 
 .sequence-rail span {
@@ -814,8 +812,6 @@ h3 {
   }
 
   .sequence-rail {
-    position: relative;
-    inset: auto;
     margin-top: 1rem;
   }
 
