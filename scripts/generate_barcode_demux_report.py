@@ -24,7 +24,7 @@ def read_rows(path: Path) -> list[dict[str, str]]:
 
 def svg_bar(rows: list[dict[str, str]], value_key: str, title: str, subtitle: str,
             path: Path, suffix: str = "", color: str = "#2f7d68") -> None:
-    selected = [r for r in rows if r.get("exit_code") == "0"]
+    selected = [r for r in rows if r.get("exit_code") == "0" and r.get(value_key)]
     if not selected:
         return
     labels = [r["tool"] for r in selected]
@@ -62,7 +62,7 @@ def aggregate_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
         base = ok[0] if ok else group[0]
         values = [float(r.get("reads_per_sec") or 0.0) for r in ok]
         seconds = [float(r.get("seconds") or 0.0) for r in ok]
-        rss = [float(r.get("peak_rss_kb") or 0.0) for r in ok]
+        rss = [float(r["peak_rss_kb"]) for r in ok if r.get("peak_rss_kb")]
         mean = statistics.mean(values) if values else 0.0
         stdev = statistics.stdev(values) if len(values) > 1 else 0.0
         merged = dict(base)
@@ -73,7 +73,7 @@ def aggregate_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
             "repeat": str(len(group)),
             "seconds": f"{statistics.mean(seconds):.6f}" if seconds else "0.000000",
             "reads_per_sec": f"{mean:.1f}",
-            "peak_rss_kb": f"{max(rss):.0f}" if rss else "0",
+            "peak_rss_kb": f"{max(rss):.0f}" if rss else "",
             "cv": f"{(stdev / mean):.4f}" if mean else "0.0000",
             "exit_code": "0" if len(ok) == len(group) else "1",
         })
@@ -106,6 +106,8 @@ def write_report(rows: list[dict[str, str]]) -> None:
         "",
         "Current status: DotMatch now has a native `demux` command for fixed-position inline barcodes. A state-of-the-art barcode claim requires real public barcode datasets plus competitor rows, not only the built-in fixture.",
         "",
+        "The benchmark script can also emit a simple `hash_splitter_exact` row. This is a transparent exact-prefix baseline, not an edit-distance demultiplexer.",
+        "",
         "## Figures",
         "",
     ]
@@ -133,9 +135,11 @@ def write_report(rows: list[dict[str, str]]) -> None:
         "",
         "## Publication Gate",
         "",
-        "Do not describe DotMatch as barcode state of the art until this table includes real public barcode workloads and fair competitor rows, at minimum Cutadapt. Additional fair comparators should include Ultraplex, Je, deML, sabre/fastx-style splitters, and Illumina demux tools where their input model matches the benchmark.",
+        "Do not describe DotMatch as barcode state of the art until this table includes real public barcode workloads and fair competitor rows, at minimum Cutadapt plus a second comparator such as Ultraplex, Je, deML, sabre/fastx-style splitters, an exact hash splitter for the exact-prefix lane, and Illumina demux tools where their input model matches the benchmark.",
         "",
-        "Suggested real-data starting point: SRP009896 / SRR391079-SRR391082, a maize GBS dataset described in public Cutadapt demultiplexing examples as 5-prime inline barcode reads with 96 demultiplexed outputs.",
+        "Suggested real-data starting point: SRP009896 / SRR391079-SRR391082, a maize GBS dataset described in public Cutadapt demultiplexing examples as 5-prime inline barcode reads with 96 demultiplexed outputs. `scripts/fetch_srp009896_barcode_demo.py --use-public-example-barcodes` extracts the first-member barcode sheet from the public Google Drive example archive with a ranged request instead of downloading the full 7.4 GB ZIP.",
+        "",
+        "Important boundary: the SRP009896 barcode sheet contains variable-length barcodes (`4-8 bp`), while the current DotMatch `demux` benchmark is fixed-length. Treat any fixed-length subset result as a subset claim unless DotMatch adds variable-length inline demux semantics.",
         "",
     ])
     (OUT_DIR / "README.md").write_text("\n".join(lines), encoding="utf-8")

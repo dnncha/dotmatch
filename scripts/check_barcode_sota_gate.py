@@ -66,9 +66,10 @@ def row_gate(rows: list[dict[str, str]], min_repeats: int, require_cutadapt: boo
         require(len(by_tool.get("cutadapt_demux", [])) >= min_repeats,
                 f"cutadapt_demux needs >= {min_repeats} successful real-data repeats", failures)
     if require_second_comparator:
-        second = sum(len(by_tool.get(tool, [])) for tool in ["ultraplex_demux", "je_demux", "hash_splitter_exact"])
+        second = sum(len(by_tool.get(tool, [])) for tool in ["ultraplex_demux", "je_demux"])
+        second += sum(1 for row in by_tool.get("hash_splitter_exact", []) if as_int(row.get("k")) == 0)
         require(second >= min_repeats,
-                "barcode SOTA needs a second successful comparator row: Ultraplex, Je, or exact hash splitter",
+                "barcode SOTA needs a second successful comparator row: Ultraplex, Je, or exact hash splitter for k=0",
                 failures)
     for row in by_tool.get("dotmatch_demux", []):
         require(as_int(row.get("n_reads")) > 0, "DotMatch barcode row has zero reads", failures)

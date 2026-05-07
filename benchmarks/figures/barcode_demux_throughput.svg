@@ -1,11 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="980" height="148" viewBox="0 0 980 148">
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="184" viewBox="0 0 980 184">
 <style>text{font-family:Arial,sans-serif;font-size:13px}.title{font-size:18px;font-weight:700}.axis{fill:#444}.bar{fill:#2f7d68}</style>
 <text class="title" x="20" y="28">Barcode demultiplexing throughput</text>
 <text class="axis" x="20" y="50">Inline FASTQ barcode demux; higher is better</text>
 <text x="20" y="95">cutadapt_demux</text>
-<rect class="bar" x="280" y="80" width="42" height="21" rx="2"/>
-<text x="330" y="95">66850.90 reads/s</text>
+<rect class="bar" x="280" y="80" width="80" height="21" rx="2"/>
+<text x="368" y="95">121235.10 reads/s</text>
 <text x="20" y="131">dotmatch_demux</text>
 <rect class="bar" x="280" y="116" width="590" height="21" rx="2"/>
-<text x="878" y="131">918505.20 reads/s</text>
+<text x="878" y="131">889733.00 reads/s</text>
+<text x="20" y="167">hash_splitter_exact</text>
+<rect class="bar" x="280" y="152" width="335" height="21" rx="2"/>
+<text x="623" y="167">506509.30 reads/s</text>
 </svg>

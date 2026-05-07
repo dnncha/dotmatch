@@ -106,6 +106,11 @@ def write_cutadapt_fasta(barcodes: Path, out: Path) -> None:
             fh.write(f">{name}\n^{seq}\n")
 
 
+def safe_filename(name: str) -> str:
+    safe = "".join(c if c.isalnum() or c in "._-" else "_" for c in name)
+    return safe or "barcode"
+
+
 def make_fixture(work: Path, records: int) -> tuple[Path, Path, str]:
     work.mkdir(parents=True, exist_ok=True)
     barcodes = work / "fixture_barcodes.tsv"
@@ -131,6 +136,57 @@ def make_fixture(work: Path, records: int) -> tuple[Path, Path, str]:
             full = observed + payload
             fh.write(f"@fixture_{i}_{name}\n{full}\n+\n{'I' * len(full)}\n")
     return reads, barcodes, "synthetic_inline_barcode_fixture"
+
+
+def write_fastq_record(out, header: str, seq: str, plus: str, qual: str) -> None:
+    out.write(header)
+    out.write(seq)
+    out.write(plus)
+    out.write(qual)
+
+
+def hash_splitter_exact(reads: Path, barcodes: list[tuple[str, str]], out_dir: Path) -> dict[str, str]:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    by_length: dict[int, dict[str, list[str]]] = {}
+    for name, seq in barcodes:
+        by_length.setdefault(len(seq), {}).setdefault(seq, []).append(name)
+    lengths = sorted(by_length, reverse=True)
+    handles = {}
+    assigned = 0
+    unmatched = 0
+    opener = gzip.open if reads.suffix == ".gz" else open
+    try:
+        unknown = (out_dir / "unknown.fastq").open("w", encoding="utf-8")
+        handles["__unknown__"] = unknown
+        with opener(reads, "rt", encoding="utf-8") as fh:
+            while True:
+                header = fh.readline()
+                if not header:
+                    break
+                seq = fh.readline()
+                plus = fh.readline()
+                qual = fh.readline()
+                if not seq or not plus or not qual:
+                    raise RuntimeError("FASTQ ended mid-record")
+                sample = None
+                stripped = seq.rstrip("\n")
+                for length in lengths:
+                    names = by_length[length].get(stripped[:length])
+                    if names and len(names) == 1:
+                        sample = names[0]
+                        break
+                if sample is None:
+                    unmatched += 1
+                    write_fastq_record(unknown, header, seq, plus, qual)
+                    continue
+                assigned += 1
+                if sample not in handles:
+                    handles[sample] = (out_dir / f"{safe_filename(sample)}.fastq").open("w", encoding="utf-8")
+                write_fastq_record(handles[sample], header, seq, plus, qual)
+    finally:
+        for handle in handles.values():
+            handle.close()
+    return {"assigned_reads": str(assigned), "unmatched_reads": str(unmatched)}
 
 
 def command_text(cmd: list[str]) -> str:
@@ -218,6 +274,7 @@ def main() -> None:
     parser.add_argument("--records", type=int, default=int(os.environ.get("DOTMATCH_BARCODE_RECORDS", "20000")))
     parser.add_argument("--workflow-name", default="")
     parser.add_argument("--run-cutadapt", action="store_true")
+    parser.add_argument("--run-hash-splitter", action="store_true")
     parser.add_argument("--repeats", type=int, default=int(os.environ.get("DOTMATCH_BARCODE_REPEATS", "1")))
     parser.add_argument("--out", default=str(RAW))
     args = parser.parse_args()
@@ -310,6 +367,39 @@ def main() -> None:
                 repeat,
                 {"assigned_reads": str(assigned), "unmatched_reads": str(max(0, n_reads - assigned))},
             ))
+
+        if args.run_hash_splitter:
+            hash_out = WORK / f"hash_splitter_out_r{repeat}"
+            shutil.rmtree(hash_out, ignore_errors=True)
+            hash_cmd = [
+                "python3", "scripts/bench_barcode_demux.py",
+                "--reads", str(reads),
+                "--barcodes", str(barcodes),
+                "--run-hash-splitter",
+                "--repeats", "1",
+            ]
+            start = time.perf_counter()
+            hash_stats = hash_splitter_exact(reads, barcode_rows, hash_out)
+            seconds = time.perf_counter() - start
+            row = make_row(
+                "hash_splitter_exact",
+                "python_local",
+                workflow,
+                "longest_unique_exact_prefix_no_mismatch",
+                n_reads,
+                n_barcodes,
+                args.barcode_length,
+                0,
+                "exact",
+                seconds,
+                0,
+                0,
+                hash_cmd,
+                repeat,
+                hash_stats,
+            )
+            row["peak_rss_kb"] = ""
+            rows.append(row)
 
     fields = [
         "tool", "version", "workflow", "semantics", "repeat", "n_reads", "n_barcodes", "barcode_length", "k", "metric",

@@ -35,7 +35,8 @@ PATH="$PWD/build/barcode-competitors/bin:$PATH" python3 scripts/bench_barcode_de
   --barcode-length 8 \
   --k 0 \
   --workflow-name srp009896_srr391079_real_subsample \
-  --run-cutadapt
+  --run-cutadapt \
+  --run-hash-splitter
 
 python3 scripts/generate_barcode_demux_report.py
 ```

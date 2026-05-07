@@ -55,3 +55,42 @@ def test_barcode_metadata_accepts_declared_fixed_benchmark_length(tmp_path):
     gate.metadata_gate(metadata, failures)
 
     assert not any("fixed barcode length" in failure for failure in failures)
+
+
+def _row(tool: str, k: str = "0") -> dict[str, str]:
+    return {
+        "tool": tool,
+        "workflow": "real_public_inline_barcode",
+        "exit_code": "0",
+        "n_reads": "100",
+        "n_barcodes": "4",
+        "k": k,
+    }
+
+
+def test_hash_splitter_counts_as_second_comparator_for_exact_lane_only():
+    gate = _load_gate()
+    failures = []
+
+    gate.row_gate([
+        _row("dotmatch_demux", k="1"),
+        _row("cutadapt_demux", k="1"),
+        _row("hash_splitter_exact", k="1"),
+    ], min_repeats=1, require_cutadapt=True, require_second_comparator=True,
+        allow_fixture=False, failures=failures)
+
+    assert any("second successful comparator" in failure for failure in failures)
+
+
+def test_hash_splitter_counts_as_second_comparator_for_k0_exact_lane():
+    gate = _load_gate()
+    failures = []
+
+    gate.row_gate([
+        _row("dotmatch_demux", k="0"),
+        _row("cutadapt_demux", k="0"),
+        _row("hash_splitter_exact", k="0"),
+    ], min_repeats=1, require_cutadapt=True, require_second_comparator=True,
+        allow_fixture=False, failures=failures)
+
+    assert not any("second successful comparator" in failure for failure in failures)

@@ -17,7 +17,7 @@ This ledger maps public-facing claims to the evidence that currently supports or
 
 | Claim | Current Gate | Why Blocked |
 | --- | --- | --- |
-| Barcode demultiplexing state of the art. | `make barcode-sota-gate` currently fails. | The checked artifact lacks a real barcode sheet, real repeated rows, Cutadapt repeated rows, and a second comparator such as Ultraplex, Je, or exact hash splitter. |
+| Barcode demultiplexing state of the art. | `make barcode-sota-gate` currently fails. | The checked artifact lacks a claim-grade fixed-length real barcode sheet, real repeated rows, Cutadapt repeated rows, and a second comparator such as Ultraplex/Je or an exact hash splitter for `k=0`. |
 | Raw BCL demultiplexing state of the art. | `make bcl-sota-gate` currently fails. | The checked artifacts do not include a successful CBCL row and production comparator validation. |
 | General aligner replacement. | No gate should promote this. | DotMatch does not currently expose reference-index mapping, traceback/CIGAR, SAM/BAM, paired-end mapping, or genome-scale alignment semantics. |
 | Published package-channel availability. | Packaging verifier present, external channels not released. | `make python-package-test` verifies local Linux/macOS wheel and sdist installability, but PyPI, Bioconda, Docker registry, and Zenodo release artifacts are not published yet. |

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="980" height="148" viewBox="0 0 980 148">
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="184" viewBox="0 0 980 184">
 <style>text{font-family:Arial,sans-serif;font-size:13px}.title{font-size:18px;font-weight:700}.axis{fill:#444}.bar{fill:#476fb3}</style>
 <text class="title" x="20" y="28">Barcode demultiplexing assigned reads</text>
 <text class="axis" x="20" y="50">Reads assigned to a barcode-specific output FASTQ</text>
@@ -8,4 +8,7 @@
 <text x="20" y="131">dotmatch_demux</text>
 <rect class="bar" x="280" y="116" width="590" height="21" rx="2"/>
 <text x="878" y="131">19534.00 reads</text>
+<text x="20" y="167">hash_splitter_exact</text>
+<rect class="bar" x="280" y="152" width="555" height="21" rx="2"/>
+<text x="843" y="167">18385.00 reads</text>
 </svg>

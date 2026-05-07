@@ -373,11 +373,12 @@ python3 scripts/bench_barcode_demux.py \
   --barcode-start 0 \
   --barcode-length 8 \
   --k 0 \
-  --run-cutadapt
+  --run-cutadapt \
+  --run-hash-splitter
 python3 scripts/generate_barcode_demux_report.py
 ```
 
-The default `make bench-barcode-demux` fixture is for smoke testing the graph/report pipeline. Barcode state-of-the-art claims require real public barcode FASTQ inputs and fair competitor rows, at minimum Cutadapt for fixed-position inline demultiplexing.
+The default `make bench-barcode-demux` fixture is for smoke testing the graph/report pipeline and includes a simple exact prefix hash-splitter baseline. Barcode state-of-the-art claims require real public barcode FASTQ inputs and fair competitor rows, at minimum Cutadapt plus a second comparator such as Ultraplex, Je, or an exact hash splitter for the exact-prefix lane.
 
 Claim-grade inline barcode evidence is gated separately:
 

@@ -15,7 +15,7 @@ DOTMATCH_BARCODE_COMPETITOR_BIN=$PREFIX/bin
 
 Run barcode demux benchmark rows with:
 
-PATH="$PREFIX/bin:\$PATH" python3 scripts/bench_barcode_demux.py --run-cutadapt
+PATH="$PREFIX/bin:\$PATH" python3 scripts/bench_barcode_demux.py --run-cutadapt --run-hash-splitter
 
 For real SRP009896-style data:
 
@@ -27,5 +27,6 @@ PATH="$PREFIX/bin:\$PATH" python3 scripts/bench_barcode_demux.py \\
   --barcode-length 8 \\
   --k 0 \\
   --workflow-name srp009896_srr391079_real_subsample \\
-  --run-cutadapt
+  --run-cutadapt \\
+  --run-hash-splitter
 EOF

@@ -4,5 +4,5 @@
 <text class="axis" x="20" y="50">Candidate verification work; lower is better</text>
 <text x="20" y="95">dotmatch_demux</text>
 <rect class="bar" x="280" y="80" width="590" height="21" rx="2"/>
-<text x="878" y="95">0.09</text>
+<text x="878" y="95">0.98</text>
 </svg>
