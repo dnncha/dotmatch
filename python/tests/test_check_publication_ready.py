@@ -16,19 +16,19 @@ def _load_checker():
 
 def _write_minimal_repo(root: Path) -> None:
     files = {
-        "README.md": "# DotMatch\n\nSee [Scientific claim ledger](docs/scientific-claims.md).\n",
+        "README.md": "# DotMatch\n\n`v0.1.0` includes stable launch artifacts.\n\nSee [Scientific claim ledger](docs/scientific-claims.md).\n",
         "LICENSE": "Apache-2.0\n",
-        "CITATION.cff": "cff-version: 1.2.0\n",
+        "CITATION.cff": "cff-version: 1.2.0\ntitle: DotMatch\nversion: \"0.1.0\"\n",
         "codemeta.json": (
             '{"name": "DotMatch", "license": "https://spdx.org/licenses/Apache-2.0", '
-            '"keywords": ["bioinformatics"]}\n'
+            '"version": "0.1.0", "keywords": ["bioinformatics"]}\n'
         ),
         "CONTRIBUTING.md": "# Contributing\n",
         "CODE_OF_CONDUCT.md": "# Code of Conduct\n",
         "SECURITY.md": "# Security\n",
         "SUPPORT.md": "# Support\n",
-        "pyproject.toml": "name = \"dotmatch\"\nlicense = \"Apache-2.0\"\n",
-        "package.json": '{"license": "Apache-2.0"}\n',
+        "pyproject.toml": "[project]\nname = \"dotmatch\"\nversion = \"0.1.0\"\nlicense = \"Apache-2.0\"\n",
+        "package.json": '{"version": "0.1.0", "license": "Apache-2.0"}\n',
         "MANIFEST.in": "include src/qdalign.c\ninclude include/qdalign.h\n",
         "setup.py": "from setuptools import setup\nsetup()\n",
         ".gitignore": "build/\n.DS_Store\n*.tsbuildinfo\n",
@@ -114,3 +114,27 @@ def test_publication_ready_requires_blocked_sota_status(tmp_path):
 
     assert any("barcode-sota-gate" in failure for failure in result.failures)
     assert any("bcl-sota-gate" in failure for failure in result.failures)
+
+
+def test_publication_ready_rejects_mismatched_release_versions(tmp_path):
+    checker = _load_checker()
+    _write_minimal_repo(tmp_path)
+    (tmp_path / "CITATION.cff").write_text(
+        "cff-version: 1.2.0\ntitle: DotMatch\nversion: \"0.1.0-dev\"\n",
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("version mismatch" in failure for failure in result.failures)
+
+
+def test_publication_ready_rejects_dev_readme_status(tmp_path):
+    checker = _load_checker()
+    _write_minimal_repo(tmp_path)
+    readme = (tmp_path / "README.md").read_text(encoding="utf-8")
+    (tmp_path / "README.md").write_text(readme.replace("v0.1.0", "v0.1.0-dev"), encoding="utf-8")
+
+    result = checker.audit(tmp_path)
+
+    assert any("README.md must not describe the launch version as dev" in failure for failure in result.failures)

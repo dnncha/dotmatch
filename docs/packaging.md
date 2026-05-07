@@ -1,6 +1,6 @@
 # Packaging Notes
 
-DotMatch v0.2 should ship with three practical install paths:
+DotMatch should ship with three practical install paths:
 
 - source build with `make && make shared`;
 - Docker image for reproducible command-line use;

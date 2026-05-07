@@ -2,9 +2,11 @@
 
 import argparse
 import json
+import re
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Optional
 
 
 MAX_FILE_BYTES = 25 * 1024 * 1024
@@ -126,6 +128,67 @@ def check_metadata(root: Path, result: AuditResult) -> None:
         result.passed.append("metadata files parse")
 
 
+def _pyproject_version(path: Path) -> Optional[str]:
+    in_project = False
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("[") and line.endswith("]"):
+            in_project = line == "[project]"
+            continue
+        if not in_project or not line.startswith("version"):
+            continue
+        match = re.match(r'version\s*=\s*["\']([^"\']+)["\']', line)
+        if match:
+            return match.group(1)
+    return None
+
+
+def _cff_version(path: Path) -> Optional[str]:
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        match = re.match(r'\s*version\s*:\s*["\']?([^"\']+)["\']?\s*$', raw_line)
+        if match:
+            return match.group(1).strip()
+    return None
+
+
+def check_release_versions(root: Path, result: AuditResult) -> None:
+    versions: dict[str, Optional[str]] = {}
+    try:
+        versions["pyproject.toml"] = _pyproject_version(root / "pyproject.toml")
+    except Exception as exc:
+        result.failures.append(f"pyproject.toml version could not be read: {exc}")
+    try:
+        versions["package.json"] = json.loads((root / "package.json").read_text(encoding="utf-8")).get("version")
+    except Exception as exc:
+        result.failures.append(f"package.json version could not be read: {exc}")
+    try:
+        versions["codemeta.json"] = json.loads((root / "codemeta.json").read_text(encoding="utf-8")).get("version")
+    except Exception as exc:
+        result.failures.append(f"codemeta.json version could not be read: {exc}")
+    try:
+        versions["CITATION.cff"] = _cff_version(root / "CITATION.cff")
+    except Exception as exc:
+        result.failures.append(f"CITATION.cff version could not be read: {exc}")
+
+    missing = [name for name, version in versions.items() if not version]
+    result.failures.extend(f"{name} must declare release version" for name in missing)
+
+    declared = {name: version for name, version in versions.items() if version}
+    unique_versions = sorted(set(declared.values()))
+    if len(unique_versions) > 1:
+        detail = ", ".join(f"{name}={version}" for name, version in sorted(declared.items()))
+        result.failures.append(f"release version mismatch: {detail}")
+
+    readme = (root / "README.md").read_text(encoding="utf-8")
+    if "v0.1.0-dev" in readme or "0.1.0-dev" in readme:
+        result.failures.append("README.md must not describe the launch version as dev")
+
+    if not any("version" in failure or "README.md must not describe" in failure for failure in result.failures):
+        result.passed.append("release versions aligned")
+
+
 def check_claim_docs(root: Path, result: AuditResult) -> None:
     readme = (root / "README.md").read_text(encoding="utf-8")
     claims_path = root / "docs" / "scientific-claims.md"
@@ -176,6 +239,7 @@ def audit(root: Path) -> AuditResult:
     result = AuditResult()
     check_required_files(root, result)
     check_metadata(root, result)
+    check_release_versions(root, result)
     check_claim_docs(root, result)
     check_manifest(root, result)
     check_publishable_tree(root, result)

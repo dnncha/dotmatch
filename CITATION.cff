@@ -7,5 +7,5 @@ authors:
     family-names: "O'Toole"
 repository-code: "https://github.com/donncha/dotmatch"
 license: Apache-2.0
-version: "0.1.0-dev"
+version: "0.1.0"
 abstract: "DotMatch is a deterministic known-target short-DNA assignment engine for exact edit-distance barcode and guide counting workflows."

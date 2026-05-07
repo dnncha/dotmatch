@@ -26,7 +26,7 @@ DotMatch Core is Apache-2.0 open source. The core assignment engine, CLI, audit,
 
 ## Current Status
 
-`v0.1.0-dev` includes:
+`v0.1.0` includes:
 
 - exact global edit distance;
 - Myers 64-bit bit-vector kernel when one sequence is `<=64 bp`;
@@ -631,7 +631,8 @@ For v0.1, `N` is treated as a literal byte, not a wildcard.
 - [x] target-set audit command
 - [x] indexed-vs-exhaustive validation command
 - [x] optional native Edlib validation helper
-- [ ] Python wheels
+- [x] local/GitHub Python wheel builds with bundled native core
+- [ ] PyPI manylinux/musllinux Linux wheels
 
 ### Milestone 3: stronger performance story
 
