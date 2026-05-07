@@ -31,7 +31,7 @@ jobs:
           make public-crispr-claim-gate
           make crispr-sota-gate
           make publication-ready
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         if: runner.os == 'Linux'
         with:
           node-version: 22
