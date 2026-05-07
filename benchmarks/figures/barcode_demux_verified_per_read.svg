@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="112" viewBox="0 0 980 112">
+<style>text{font-family:Arial,sans-serif;font-size:13px}.title{font-size:18px;font-weight:700}.axis{fill:#444}.bar{fill:#7f5aa2}</style>
+<text class="title" x="20" y="28">DotMatch verified candidates per read</text>
+<text class="axis" x="20" y="50">Candidate verification work; lower is better</text>
+<text x="20" y="95">dotmatch_demux</text>
+<rect class="bar" x="280" y="80" width="590" height="21" rx="2"/>
+<text x="878" y="95">0.09</text>
+</svg>

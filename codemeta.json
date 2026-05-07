@@ -1,0 +1,44 @@
+{
+  "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+  "@type": "SoftwareSourceCode",
+  "name": "DotMatch",
+  "description": "Fast exact short-DNA known-target assignment for CRISPR guides, barcodes, primers, panels, and whitelists.",
+  "applicationCategory": "Bioinformatics",
+  "codeRepository": "https://github.com/donncha/dotmatch",
+  "issueTracker": "https://github.com/donncha/dotmatch/issues",
+  "license": "https://spdx.org/licenses/Apache-2.0",
+  "version": "0.1.0",
+  "programmingLanguage": [
+    "C",
+    "Python",
+    "TypeScript"
+  ],
+  "runtimePlatform": [
+    "Linux",
+    "macOS"
+  ],
+  "keywords": [
+    "bioinformatics",
+    "computational biology",
+    "CRISPR",
+    "FASTQ",
+    "barcode demultiplexing",
+    "edit distance",
+    "known-target assignment",
+    "sequence analysis"
+  ],
+  "author": [
+    {
+      "@type": "Person",
+      "givenName": "Donncha",
+      "familyName": "O'Toole"
+    }
+  ],
+  "softwareRequirements": [
+    "C compiler",
+    "Python >=3.9",
+    "zlib"
+  ],
+  "readme": "https://github.com/donncha/dotmatch#readme",
+  "referencePublication": "https://github.com/donncha/dotmatch/blob/main/CITATION.cff"
+}

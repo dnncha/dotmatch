@@ -1,0 +1,6 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security reports
+    url: https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing/privately-reporting-a-security-vulnerability
+    about: Please use private vulnerability reporting rather than a public issue for security-sensitive reports.
+

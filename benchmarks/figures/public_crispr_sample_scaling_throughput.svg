@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="264" viewBox="0 0 980 264">
+<style>text{font-family:Arial,sans-serif;font-size:13px}.title{font-size:18px;font-weight:700}.axis{fill:#444}</style>
+<text class="title" x="20" y="28">Multi-sample CRISPR scaling</text>
+<text class="axis" x="20" y="50">Real MAGeCK/Yusa FASTQs replicated as sample batches; DotMatch uses sample threads</text>
+<text x="20" y="105">2 samples</text>
+<rect x="120" y="82" width="499" height="18" rx="2" fill="#2f7d68"/>
+<text x="627" y="96">dotmatch_hamming_k1_threaded: 349131.1 reads/s</text>
+<rect x="120" y="106" width="283" height="18" rx="2" fill="#8f4f4f"/>
+<text x="411" y="120">guide_counter_one_mismatch: 198154.4 reads/s</text>
+<text x="120" y="70">higher is better unless noted</text>
+<text x="20" y="163">4 samples</text>
+<rect x="120" y="140" width="605" height="18" rx="2" fill="#2f7d68"/>
+<text x="733" y="154">dotmatch_hamming_k1_threaded: 423007.1 reads/s</text>
+<rect x="120" y="164" width="547" height="18" rx="2" fill="#8f4f4f"/>
+<text x="675" y="178">guide_counter_one_mismatch: 382617.6 reads/s</text>
+<text x="20" y="221">8 samples</text>
+<rect x="120" y="198" width="637" height="18" rx="2" fill="#2f7d68"/>
+<text x="765" y="212">dotmatch_hamming_k1_threaded: 445946.5 reads/s</text>
+<rect x="120" y="222" width="780" height="18" rx="2" fill="#8f4f4f"/>
+<text x="908" y="236">guide_counter_one_mismatch: 545361.1 reads/s</text>
+</svg>

@@ -1,0 +1,5 @@
+dataset,sample,oracle,checked_reads,mismatches,k,target_start,selected_target_start,selected_target_starts,target_length,indel_window,offset_mode,offset_min_fraction,records_available_for_validation,assignments_path,stratum_exact,stratum_corrected,stratum_ambiguous,stratum_unmatched,stratum_contains_n,stratum_offset_shift_candidate,stratum_indel_window_candidate
+sanson_brunello,plasmid,edlib_native,1,0,1,20,28,[28],20,1,multi,0.005,1,/tmp/dotmatch-sota-edlib-gzn3kpl8/sanson_brunello.plasmid.assignments.tsv,1,0,0,0,0,0,0
+sanson_brunello,RepA,edlib_native,1,0,1,20,20,[20],20,1,multi,0.005,1,/tmp/dotmatch-sota-edlib-gzn3kpl8/sanson_brunello.RepA.assignments.tsv,0,0,0,1,0,0,0
+sanson_brunello,RepB,edlib_native,1,0,1,20,20,[20],20,1,multi,0.005,1,/tmp/dotmatch-sota-edlib-gzn3kpl8/sanson_brunello.RepB.assignments.tsv,0,0,0,1,0,0,0
+sanson_brunello,RepC,edlib_native,1,0,1,20,25,[25],20,1,multi,0.005,1,/tmp/dotmatch-sota-edlib-gzn3kpl8/sanson_brunello.RepC.assignments.tsv,1,0,0,0,0,0,0

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="372" viewBox="0 0 1180 372">
+<style>text{font-family:Arial,sans-serif;font-size:12px}.title{font-size:18px;font-weight:700}.sub{fill:#444}.bar{fill:#7a4f9f}</style>
+<text class="title" x="20" y="28">Atlas CRISPR real-data runtime</text>
+<text class="sub" x="20" y="50">seconds; lower is better</text>
+<text x="20" y="90">mageck_yusa 100000 dotmatch_exact_k0</text>
+<rect class="bar" x="470" y="76" width="1" height="19" rx="2"/>
+<text x="479" y="90">0.43</text>
+<text x="20" y="120">mageck_yusa 100000 dotmatch_hamming_k1</text>
+<rect class="bar" x="470" y="106" width="1" height="19" rx="2"/>
+<text x="479" y="120">0.79</text>
+<text x="20" y="150">mageck_yusa 100000 guide_counter_one_mismatch</text>
+<rect class="bar" x="470" y="136" width="2" height="19" rx="2"/>
+<text x="480" y="150">5.73</text>
+<text x="20" y="180">sanson_brunello 100000 dotmatch_exact_k0</text>
+<rect class="bar" x="470" y="166" width="1" height="19" rx="2"/>
+<text x="479" y="180">2.73</text>
+<text x="20" y="210">sanson_brunello 100000 dotmatch_hamming_k1</text>
+<rect class="bar" x="470" y="196" width="1" height="19" rx="2"/>
+<text x="479" y="210">2.69</text>
+<text x="20" y="240">sanson_brunello 100000 guide_counter_one_mismatch</text>
+<rect class="bar" x="470" y="226" width="3" height="19" rx="2"/>
+<text x="481" y="240">6.08</text>
+<text x="20" y="270">sanson_brunello full dotmatch_exact_k0</text>
+<rect class="bar" x="470" y="256" width="237" height="19" rx="2"/>
+<text x="715" y="270">462.01</text>
+<text x="20" y="300">sanson_brunello full dotmatch_hamming_k1</text>
+<rect class="bar" x="470" y="286" width="249" height="19" rx="2"/>
+<text x="727" y="300">485.24</text>
+<text x="20" y="330">sanson_brunello full mageck_count_exact</text>
+<rect class="bar" x="470" y="316" width="570" height="19" rx="2"/>
+<text x="1048" y="330">1110.13</text>
+<text x="20" y="360">sanson_brunello full guide_counter_one_mismatch</text>
+<rect class="bar" x="470" y="346" width="318" height="19" rx="2"/>
+<text x="796" y="360">620.86</text>
+</svg>

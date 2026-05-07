@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+title: "DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning"
+message: "If you use DotMatch, please cite this software release and the associated manuscript when available."
+type: software
+authors:
+  - given-names: "Donncha"
+    family-names: "O'Toole"
+repository-code: "https://github.com/donncha/dotmatch"
+license: Apache-2.0
+version: "0.1.0-dev"
+abstract: "DotMatch is a deterministic known-target short-DNA assignment engine for exact edit-distance barcode and guide counting workflows."

@@ -1,0 +1,38 @@
+name: Benchmark or claim request
+description: Propose, question, or reproduce a performance/correctness claim.
+title: "[Benchmark]: "
+labels: ["benchmark", "claims", "needs-triage"]
+body:
+  - type: textarea
+    id: claim
+    attributes:
+      label: Claim
+      description: State the exact claim being proposed or questioned.
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Commands
+      description: Include exact DotMatch and comparator commands.
+      render: bash
+    validations:
+      required: true
+  - type: textarea
+    id: artifacts
+    attributes:
+      label: Artifacts
+      description: Point to raw CSVs, reports, figures, gate output, and validation evidence.
+    validations:
+      required: true
+  - type: dropdown
+    id: data_status
+    attributes:
+      label: Data Status
+      options:
+        - Synthetic fixture
+        - Public dataset
+        - Private dataset, not shareable
+    validations:
+      required: true
+

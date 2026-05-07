@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="264" viewBox="0 0 980 264">
+<style>text{font-family:Arial,sans-serif;font-size:13px}.title{font-size:18px;font-weight:700}.axis{fill:#444}</style>
+<text class="title" x="20" y="28">Multi-sample peak RSS</text>
+<text class="axis" x="20" y="50">Memory remains the lever that allows threaded sample batches</text>
+<text x="20" y="105">2 samples</text>
+<rect x="120" y="82" width="39" height="18" rx="2" fill="#7f5aa2"/>
+<text x="167" y="96">dotmatch_hamming_k1_threaded: 27296.0 KB</text>
+<rect x="120" y="106" width="780" height="18" rx="2" fill="#a45f3f"/>
+<text x="908" y="120">guide_counter_one_mismatch: 541376.0 KB</text>
+<text x="120" y="70">higher is better unless noted</text>
+<text x="20" y="163">4 samples</text>
+<rect x="120" y="140" width="49" height="18" rx="2" fill="#7f5aa2"/>
+<text x="177" y="154">dotmatch_hamming_k1_threaded: 34384.0 KB</text>
+<rect x="120" y="164" width="779" height="18" rx="2" fill="#a45f3f"/>
+<text x="907" y="178">guide_counter_one_mismatch: 541312.0 KB</text>
+<text x="20" y="221">8 samples</text>
+<rect x="120" y="198" width="69" height="18" rx="2" fill="#7f5aa2"/>
+<text x="197" y="212">dotmatch_hamming_k1_threaded: 48576.0 KB</text>
+<rect x="120" y="222" width="779" height="18" rx="2" fill="#a45f3f"/>
+<text x="907" y="236">guide_counter_one_mismatch: 541312.0 KB</text>
+</svg>

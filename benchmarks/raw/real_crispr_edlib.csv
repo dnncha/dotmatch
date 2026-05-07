@@ -1,0 +1,3 @@
+tool,workflow,n_reads,n_targets,len,k,seconds,reads_per_sec,candidates_per_read,verified_per_read,checksum,mismatches
+dotmatch_indexed,public_crispr_yusa,25,87437,19,1,0.001391,17972.7,0.84,0.84,14224824,0
+edlib_native_scan,public_crispr_yusa,25,87437,19,1,1.721345,14.5,87437.00,87437.00,14224824,0

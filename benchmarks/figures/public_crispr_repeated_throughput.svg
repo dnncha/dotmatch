@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="390" viewBox="0 0 1100 390">
+<style>text{font-family:Arial,sans-serif;font-size:13px}.title{font-size:18px;font-weight:700}.axis{fill:#444}.bar{fill:#476fb3}</style>
+<text class="title" x="20" y="28">Repeated public CRISPR throughput</text>
+<text class="axis" x="20" y="50">Mean reads/s across repeated MAGeCK/Yusa real FASTQ subsamples</text>
+<text x="20" y="90">dotmatch_exact_k0 (10000/sample)</text>
+<rect class="bar" x="430" y="75" width="580" height="19" rx="2"/>
+<text x="1018" y="89">1308776.5</text>
+<text x="20" y="122">dotmatch_exact_k0 (100000/sample)</text>
+<rect class="bar" x="430" y="107" width="506" height="19" rx="2"/>
+<text x="944" y="121">1143740.1</text>
+<text x="20" y="154">dotmatch_hamming_k1 (10000/sample)</text>
+<rect class="bar" x="430" y="139" width="140" height="19" rx="2"/>
+<text x="578" y="153">317832.9</text>
+<text x="20" y="186">dotmatch_hamming_k1 (100000/sample)</text>
+<rect class="bar" x="430" y="171" width="146" height="19" rx="2"/>
+<text x="584" y="185">331493.9</text>
+<text x="20" y="218">dotmatch_levenshtein_k1 (10000/sample)</text>
+<rect class="bar" x="430" y="203" width="4" height="19" rx="2"/>
+<text x="442" y="217">9923.1</text>
+<text x="20" y="250">dotmatch_levenshtein_k1 (100000/sample)</text>
+<rect class="bar" x="430" y="235" width="3" height="19" rx="2"/>
+<text x="441" y="249">8836.2</text>
+<text x="20" y="282">guide_counter_one_mismatch (10000/sample)</text>
+<rect class="bar" x="430" y="267" width="84" height="19" rx="2"/>
+<text x="522" y="281">189733.6</text>
+<text x="20" y="314">guide_counter_one_mismatch (100000/sample)</text>
+<rect class="bar" x="430" y="299" width="86" height="19" rx="2"/>
+<text x="524" y="313">194967.9</text>
+<text x="20" y="346">mageck_count_exact (10000/sample)</text>
+<rect class="bar" x="430" y="331" width="46" height="19" rx="2"/>
+<text x="484" y="345">104892.6</text>
+<text x="20" y="378">mageck_count_exact (100000/sample)</text>
+<rect class="bar" x="430" y="363" width="41" height="19" rx="2"/>
+<text x="479" y="377">92761.1</text>
+</svg>

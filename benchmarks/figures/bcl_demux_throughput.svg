@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="150" viewBox="0 0 980 150">
+<style>text{font-family:Arial,sans-serif;font-size:13px}.title{font-size:18px;font-weight:700}.axis{fill:#444}.bar{fill:#2f7d68}</style>
+<text class="title" x="20" y="28">BCL demultiplexing throughput</text>
+<text class="axis" x="20" y="50">Classic BCL clusters processed per second; higher is better</text>
+<text x="20" y="97">dotmatch_bcl_demux</text>
+<rect class="bar" x="300" y="82" width="560" height="21" rx="2"/>
+<text x="868" y="97">60989.20 clusters/s</text>
+<text x="20" y="133">bcl2fastq</text>
+<rect class="bar" x="300" y="118" width="190" height="21" rx="2"/>
+<text x="498" y="133">20764.80 clusters/s</text>
+</svg>

@@ -1,0 +1,34 @@
+name: Feature request
+description: Propose a workflow, API, packaging, or documentation improvement.
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Workflow
+      description: Which real bioinformatics workflow would this improve?
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Current Workaround
+      description: How do you handle this today?
+    validations:
+      required: false
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Interface
+      description: Sketch the command, API, file output, or report behavior you would want.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence or References
+      description: Link tools, papers, datasets, or standards this should match.
+    validations:
+      required: false
+

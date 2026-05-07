@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="392" viewBox="0 0 1120 392">
+<style>text{font-family:Arial,sans-serif;font-size:13px}.title{font-size:18px;font-weight:700}.axis{fill:#444}.bar{fill:#a45f3f}</style>
+<text class="title" x="20" y="28">Repeated public CRISPR runtime</text>
+<text class="axis" x="20" y="50">Mean end-to-end seconds across repeated real FASTQ subsamples; lower is better</text>
+<text x="20" y="91">dotmatch_exact_k0 (10000/sample)</text>
+<rect class="bar" x="430" y="76" width="3" height="19" rx="2"/>
+<text x="441" y="90">0.15 s</text>
+<text x="20" y="123">dotmatch_exact_k0 (100000/sample)</text>
+<rect class="bar" x="430" y="108" width="4" height="19" rx="2"/>
+<text x="442" y="122">0.19 s</text>
+<text x="20" y="155">dotmatch_hamming_k1 (10000/sample)</text>
+<rect class="bar" x="430" y="140" width="16" height="19" rx="2"/>
+<text x="454" y="154">0.67 s</text>
+<text x="20" y="187">dotmatch_hamming_k1 (100000/sample)</text>
+<rect class="bar" x="430" y="172" width="15" height="19" rx="2"/>
+<text x="453" y="186">0.62 s</text>
+<text x="20" y="219">dotmatch_levenshtein_k1 (10000/sample)</text>
+<rect class="bar" x="430" y="204" width="519" height="19" rx="2"/>
+<text x="957" y="218">20.71 s</text>
+<text x="20" y="251">dotmatch_levenshtein_k1 (100000/sample)</text>
+<rect class="bar" x="430" y="236" width="600" height="19" rx="2"/>
+<text x="1038" y="250">23.91 s</text>
+<text x="20" y="283">guide_counter_one_mismatch (10000/sample)</text>
+<rect class="bar" x="430" y="268" width="27" height="19" rx="2"/>
+<text x="465" y="282">1.10 s</text>
+<text x="20" y="315">guide_counter_one_mismatch (100000/sample)</text>
+<rect class="bar" x="430" y="300" width="26" height="19" rx="2"/>
+<text x="464" y="314">1.08 s</text>
+<text x="20" y="347">mageck_count_exact (10000/sample)</text>
+<rect class="bar" x="430" y="332" width="51" height="19" rx="2"/>
+<text x="489" y="346">2.03 s</text>
+<text x="20" y="379">mageck_count_exact (100000/sample)</text>
+<rect class="bar" x="430" y="364" width="57" height="19" rx="2"/>
+<text x="495" y="378">2.29 s</text>
+</svg>

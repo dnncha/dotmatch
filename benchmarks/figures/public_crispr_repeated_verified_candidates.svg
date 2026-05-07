@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="392" viewBox="0 0 1120 392">
+<style>text{font-family:Arial,sans-serif;font-size:13px}.title{font-size:18px;font-weight:700}.axis{fill:#444}.bar{fill:#5d7b3f}</style>
+<text class="title" x="20" y="28">Repeated verified candidates per read</text>
+<text class="axis" x="20" y="50">DotMatch mechanism: exact verification work per input read</text>
+<text x="20" y="91">dotmatch_exact_k0 (10000/sample)</text>
+<rect class="bar" x="430" y="76" width="190" height="19" rx="2"/>
+<text x="628" y="90">0.89 verified/read</text>
+<text x="20" y="123">dotmatch_exact_k0 (100000/sample)</text>
+<rect class="bar" x="430" y="108" width="190" height="19" rx="2"/>
+<text x="628" y="122">0.89 verified/read</text>
+<text x="20" y="155">dotmatch_hamming_k1 (10000/sample)</text>
+<rect class="bar" x="430" y="140" width="195" height="19" rx="2"/>
+<text x="633" y="154">0.92 verified/read</text>
+<text x="20" y="187">dotmatch_hamming_k1 (100000/sample)</text>
+<rect class="bar" x="430" y="172" width="195" height="19" rx="2"/>
+<text x="633" y="186">0.92 verified/read</text>
+<text x="20" y="219">dotmatch_levenshtein_k1 (10000/sample)</text>
+<rect class="bar" x="430" y="204" width="600" height="19" rx="2"/>
+<text x="1038" y="218">2.82 verified/read</text>
+<text x="20" y="251">dotmatch_levenshtein_k1 (100000/sample)</text>
+<rect class="bar" x="430" y="236" width="600" height="19" rx="2"/>
+<text x="1038" y="250">2.82 verified/read</text>
+<text x="20" y="283">guide_counter_one_mismatch (10000/sample)</text>
+<rect class="bar" x="430" y="268" width="0" height="19" rx="2"/>
+<text x="438" y="282">0.00 verified/read</text>
+<text x="20" y="315">guide_counter_one_mismatch (100000/sample)</text>
+<rect class="bar" x="430" y="300" width="0" height="19" rx="2"/>
+<text x="438" y="314">0.00 verified/read</text>
+<text x="20" y="347">mageck_count_exact (10000/sample)</text>
+<rect class="bar" x="430" y="332" width="0" height="19" rx="2"/>
+<text x="438" y="346">0.00 verified/read</text>
+<text x="20" y="379">mageck_count_exact (100000/sample)</text>
+<rect class="bar" x="430" y="364" width="0" height="19" rx="2"/>
+<text x="438" y="378">0.00 verified/read</text>
+</svg>

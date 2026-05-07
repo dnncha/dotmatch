@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="150" viewBox="0 0 980 150">
+<style>text{font-family:Arial,sans-serif;font-size:13px}.title{font-size:18px;font-weight:700}.axis{fill:#444}.bar{fill:#a45f3f}</style>
+<text class="title" x="20" y="28">BCL demultiplexing peak memory</text>
+<text class="axis" x="20" y="50">Peak resident memory; lower is better</text>
+<text x="20" y="97">dotmatch_bcl_demux</text>
+<rect class="bar" x="300" y="82" width="560" height="21" rx="2"/>
+<text x="868" y="97">295464.00 KB</text>
+<text x="20" y="133">bcl2fastq</text>
+<rect class="bar" x="300" y="118" width="50" height="21" rx="2"/>
+<text x="358" y="133">26624.00 KB</text>
+</svg>

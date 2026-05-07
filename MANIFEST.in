@@ -1,0 +1,6 @@
+include LICENSE
+include README.md
+include pyproject.toml
+include setup.py
+include include/qdalign.h
+include src/qdalign.c

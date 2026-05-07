@@ -1,0 +1,57 @@
+# Native build outputs
+/build/
+/qda
+/dotmatch
+/libdotmatch.a
+/libdotmatch.so
+/libdotmatch.dylib
+/libqdalign.a
+/libqdalign.so
+/libqdalign.dylib
+*.o
+*.dSYM/
+
+# Python caches and packaging outputs
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+
+# Node / Next.js outputs
+node_modules/
+.next/
+out/
+.vercel/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local environments and editor/OS files
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+.DS_Store
+._*
+__MACOSX/
+
+# Generated example inputs/outputs. Keep checked-in benchmark evidence under
+# benchmarks/raw, benchmarks/figures, and docs/benchmarks visible.
+# Large public datasets are fetched by scripts instead of committed.
+benchmarks/work/
+examples/crispr_guides/data/
+examples/crispr_guides/output/
+examples/crispr_sanson_brunello/data/
+examples/sanson_brunello/output/
+examples/barcode_demux/data/*
+!examples/barcode_demux/data/metadata.json
+examples/bcl_demux/data/
+examples/bcl_demux/output/

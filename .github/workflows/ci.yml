@@ -1,0 +1,58 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: make
+      - name: Test
+        run: make test
+      - name: CLI test
+        run: make cli-test
+      - name: Python test dependencies
+        run: python3 -m pip install pytest
+      - name: Python tests
+        run: make python-test
+      - name: Python package build
+        run: |
+          python3 -m pip install build
+          make python-package-test
+      - name: Claim gates
+        run: |
+          make public-crispr-claim-gate
+          make crispr-sota-gate
+          make publication-ready
+      - uses: actions/setup-node@v4
+        if: runner.os == 'Linux'
+        with:
+          node-version: 22
+          cache: npm
+      - name: Web install
+        if: runner.os == 'Linux'
+        run: npm ci
+      - name: Web lint
+        if: runner.os == 'Linux'
+        run: npm run lint
+      - name: Web audit
+        if: runner.os == 'Linux'
+        run: npm audit --audit-level=moderate
+      - name: Web build
+        if: runner.os == 'Linux'
+        run: npm run build
+      - name: Sanitizers
+        if: runner.os == 'Linux'
+        run: make asan
+      - name: Coverage
+        if: runner.os == 'Linux'
+        run: make coverage
+      - name: Shared library
+        run: make shared

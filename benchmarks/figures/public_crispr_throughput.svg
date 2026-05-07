@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="308" viewBox="0 0 900 308">
+<style>text{font-family:Arial,sans-serif;font-size:13px}.title{font-size:18px;font-weight:700}.axis{fill:#444}.bar{fill:#2f7d68}</style>
+<text class="title" x="20" y="28">Public CRISPR workflow throughput</text>
+<text class="axis" x="20" y="50">Small real MAGeCK/Yusa FASTQ subset; higher is better</text>
+<text x="20" y="90">dotmatch_exact_k0</text>
+<rect class="bar" x="260" y="75" width="560" height="20" rx="2"/>
+<text x="828" y="90">227474.7 reads/s</text>
+<text x="20" y="124">dotmatch_levenshtein_k1</text>
+<rect class="bar" x="260" y="109" width="13" height="20" rx="2"/>
+<text x="281" y="124">5547.9 reads/s</text>
+<text x="20" y="158">dotmatch_hamming_k1</text>
+<rect class="bar" x="260" y="143" width="205" height="20" rx="2"/>
+<text x="473" y="158">83451.0 reads/s</text>
+<text x="20" y="192">mageck_count_exact</text>
+<rect class="bar" x="260" y="177" width="7" height="20" rx="2"/>
+<text x="275" y="192">3193.0 reads/s</text>
+<text x="20" y="226">guide_counter_one_mismatch</text>
+<rect class="bar" x="260" y="211" width="45" height="20" rx="2"/>
+<text x="313" y="226">18644.3 reads/s</text>
+<text x="20" y="260">external_competitors_ERR376998.fastq.gz</text>
+<rect class="bar" x="260" y="245" width="1" height="20" rx="2"/>
+<text x="269" y="260">635.0 reads/s</text>
+<text x="20" y="294">external_competitors_ERR376999.fastq.gz</text>
+<rect class="bar" x="260" y="279" width="2" height="20" rx="2"/>
+<text x="270" y="294">921.7 reads/s</text>
+</svg>

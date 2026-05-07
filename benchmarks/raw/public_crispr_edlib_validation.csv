@@ -1,0 +1,3 @@
+dataset,sample,oracle,checked_reads,mismatches,k,target_start,target_length,indel_window,stratum_exact,stratum_corrected,stratum_ambiguous,stratum_unmatched,stratum_contains_n
+mageck_yusa,plasmid,edlib_native,1000,0,1,23,19,1,892,81,3,24,8
+mageck_yusa,ESC1,edlib_native,1000,0,1,23,19,1,895,77,3,25,5

@@ -1,0 +1,35 @@
+name: Bug report
+description: Report reproducible incorrect behavior or a crash.
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction
+      description: Include exact commands and a small synthetic input when possible.
+      render: bash
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: DotMatch commit/version, OS, CPU, compiler, install method.
+    validations:
+      required: true
+  - type: textarea
+    id: data_safety
+    attributes:
+      label: Data Safety
+      description: Confirm that attached examples contain no private, patient, unpublished, or proprietary data.
+    validations:
+      required: true
+

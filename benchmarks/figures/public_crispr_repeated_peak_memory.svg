@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="392" viewBox="0 0 1120 392">
+<style>text{font-family:Arial,sans-serif;font-size:13px}.title{font-size:18px;font-weight:700}.axis{fill:#444}.bar{fill:#7f5aa2}</style>
+<text class="title" x="20" y="28">Repeated public CRISPR peak RSS</text>
+<text class="axis" x="20" y="50">Maximum observed peak resident memory across repeated runs</text>
+<text x="20" y="91">dotmatch_exact_k0 (10000/sample)</text>
+<rect class="bar" x="430" y="76" width="32" height="19" rx="2"/>
+<text x="470" y="90">28.60 MB</text>
+<text x="20" y="123">dotmatch_exact_k0 (100000/sample)</text>
+<rect class="bar" x="430" y="108" width="32" height="19" rx="2"/>
+<text x="470" y="122">28.70 MB</text>
+<text x="20" y="155">dotmatch_hamming_k1 (10000/sample)</text>
+<rect class="bar" x="430" y="140" width="30" height="19" rx="2"/>
+<text x="468" y="154">26.70 MB</text>
+<text x="20" y="187">dotmatch_hamming_k1 (100000/sample)</text>
+<rect class="bar" x="430" y="172" width="32" height="19" rx="2"/>
+<text x="470" y="186">28.70 MB</text>
+<text x="20" y="219">dotmatch_levenshtein_k1 (10000/sample)</text>
+<rect class="bar" x="430" y="204" width="32" height="19" rx="2"/>
+<text x="470" y="218">28.90 MB</text>
+<text x="20" y="251">dotmatch_levenshtein_k1 (100000/sample)</text>
+<rect class="bar" x="430" y="236" width="31" height="19" rx="2"/>
+<text x="469" y="250">27.50 MB</text>
+<text x="20" y="283">guide_counter_one_mismatch (10000/sample)</text>
+<rect class="bar" x="430" y="268" width="600" height="19" rx="2"/>
+<text x="1038" y="282">528.70 MB</text>
+<text x="20" y="315">guide_counter_one_mismatch (100000/sample)</text>
+<rect class="bar" x="430" y="300" width="600" height="19" rx="2"/>
+<text x="1038" y="314">528.70 MB</text>
+<text x="20" y="347">mageck_count_exact (10000/sample)</text>
+<rect class="bar" x="430" y="332" width="176" height="19" rx="2"/>
+<text x="614" y="346">155.20 MB</text>
+<text x="20" y="379">mageck_count_exact (100000/sample)</text>
+<rect class="bar" x="430" y="364" width="180" height="19" rx="2"/>
+<text x="618" y="378">158.90 MB</text>
+</svg>

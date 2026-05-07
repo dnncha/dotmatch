@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="372" viewBox="0 0 1180 372">
+<style>text{font-family:Arial,sans-serif;font-size:12px}.title{font-size:18px;font-weight:700}.sub{fill:#444}.bar{fill:#2f7d68}</style>
+<text class="title" x="20" y="28">Atlas CRISPR real-data throughput</text>
+<text class="sub" x="20" y="50">reads_per_sec; higher is better</text>
+<text x="20" y="90">mageck_yusa 100000 dotmatch_exact_k0</text>
+<rect class="bar" x="470" y="76" width="493" height="19" rx="2"/>
+<text x="971" y="90">462723.80</text>
+<text x="20" y="120">mageck_yusa 100000 dotmatch_hamming_k1</text>
+<rect class="bar" x="470" y="106" width="269" height="19" rx="2"/>
+<text x="747" y="120">252855.40</text>
+<text x="20" y="150">mageck_yusa 100000 guide_counter_one_mismatch</text>
+<rect class="bar" x="470" y="136" width="37" height="19" rx="2"/>
+<text x="515" y="150">34905.00</text>
+<text x="20" y="180">sanson_brunello 100000 dotmatch_exact_k0</text>
+<rect class="bar" x="470" y="166" width="156" height="19" rx="2"/>
+<text x="634" y="180">146710.20</text>
+<text x="20" y="210">sanson_brunello 100000 dotmatch_hamming_k1</text>
+<rect class="bar" x="470" y="196" width="158" height="19" rx="2"/>
+<text x="636" y="210">148838.30</text>
+<text x="20" y="240">sanson_brunello 100000 guide_counter_one_mismatch</text>
+<rect class="bar" x="470" y="226" width="70" height="19" rx="2"/>
+<text x="548" y="240">65781.60</text>
+<text x="20" y="270">sanson_brunello full dotmatch_exact_k0</text>
+<rect class="bar" x="470" y="256" width="570" height="19" rx="2"/>
+<text x="1048" y="270">534510.40</text>
+<text x="20" y="300">sanson_brunello full dotmatch_hamming_k1</text>
+<rect class="bar" x="470" y="286" width="542" height="19" rx="2"/>
+<text x="1020" y="300">508922.20</text>
+<text x="20" y="330">sanson_brunello full mageck_count_exact</text>
+<rect class="bar" x="470" y="316" width="237" height="19" rx="2"/>
+<text x="715" y="330">222451.90</text>
+<text x="20" y="360">sanson_brunello full guide_counter_one_mismatch</text>
+<rect class="bar" x="470" y="346" width="424" height="19" rx="2"/>
+<text x="902" y="360">397754.20</text>
+</svg>

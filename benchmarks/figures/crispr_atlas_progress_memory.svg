@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="372" viewBox="0 0 1180 372">
+<style>text{font-family:Arial,sans-serif;font-size:12px}.title{font-size:18px;font-weight:700}.sub{fill:#444}.bar{fill:#7a4f9f}</style>
+<text class="title" x="20" y="28">Atlas CRISPR peak RSS</text>
+<text class="sub" x="20" y="50">peak_rss_kb; lower is better</text>
+<text x="20" y="90">mageck_yusa 100000 dotmatch_exact_k0</text>
+<rect class="bar" x="470" y="76" width="34" height="19" rx="2"/>
+<text x="512" y="90">32512.00</text>
+<text x="20" y="120">mageck_yusa 100000 dotmatch_hamming_k1</text>
+<rect class="bar" x="470" y="106" width="54" height="19" rx="2"/>
+<text x="532" y="120">52224.00</text>
+<text x="20" y="150">mageck_yusa 100000 guide_counter_one_mismatch</text>
+<rect class="bar" x="470" y="136" width="570" height="19" rx="2"/>
+<text x="1048" y="150">542220.00</text>
+<text x="20" y="180">sanson_brunello 100000 dotmatch_exact_k0</text>
+<rect class="bar" x="470" y="166" width="75" height="19" rx="2"/>
+<text x="553" y="180">71808.00</text>
+<text x="20" y="210">sanson_brunello 100000 dotmatch_hamming_k1</text>
+<rect class="bar" x="470" y="196" width="213" height="19" rx="2"/>
+<text x="691" y="210">202880.00</text>
+<text x="20" y="240">sanson_brunello 100000 guide_counter_one_mismatch</text>
+<rect class="bar" x="470" y="226" width="568" height="19" rx="2"/>
+<text x="1046" y="240">541120.00</text>
+<text x="20" y="270">sanson_brunello full dotmatch_exact_k0</text>
+<rect class="bar" x="470" y="256" width="174" height="19" rx="2"/>
+<text x="652" y="270">166400.00</text>
+<text x="20" y="300">sanson_brunello full dotmatch_hamming_k1</text>
+<rect class="bar" x="470" y="286" width="312" height="19" rx="2"/>
+<text x="790" y="300">297344.00</text>
+<text x="20" y="330">sanson_brunello full mageck_count_exact</text>
+<rect class="bar" x="470" y="316" width="110" height="19" rx="2"/>
+<text x="588" y="330">105540.00</text>
+<text x="20" y="360">sanson_brunello full guide_counter_one_mismatch</text>
+<rect class="bar" x="470" y="346" width="569" height="19" rx="2"/>
+<text x="1047" y="360">541352.00</text>
+</svg>
