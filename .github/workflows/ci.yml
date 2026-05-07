@@ -51,6 +51,11 @@ jobs:
       - name: Web build
         if: runner.os == 'Linux'
         run: npm run build
+      - name: Coverage tool dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang llvm
       - name: Sanitizers
         if: runner.os == 'Linux'
         run: make asan
