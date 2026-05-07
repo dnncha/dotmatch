@@ -24,6 +24,7 @@ This checklist covers repository settings and external launch work that cannot b
 
 - Tag `v0.1.0` only after `make test`, `make cli-test`, `make python-test`, `make python-package-test`, `make publication-ready`, `make coverage`, `make public-crispr-claim-gate`, and `make crispr-sota-gate` pass.
 - Release notes should lead with the narrow known-target assignment claim, not broad alignment language.
+- Use `docs/launch-kit.md` for the first release note, repository pitch, social post, registry metadata, and do-not-claim list.
 - Use the tag-driven release workflow described in `docs/release-process.md`.
 - Attach or link the raw benchmark CSVs, benchmark reports, and `CITATION.cff`.
 - Confirm `codemeta.json` and `docs/methods-and-citation.md` match the release version.
