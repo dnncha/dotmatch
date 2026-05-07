@@ -107,7 +107,7 @@ export default function Home() {
         </div>
         <div className="hero-panel" aria-label="DotMatch benchmark summary">
           <div className="panel-topline">
-            <span>v0.1.0-dev scope</span>
+            <span>v0.1.0 scope</span>
             <span>known short-DNA targets</span>
           </div>
           <div className="metric-grid">
