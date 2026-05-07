@@ -4,12 +4,26 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      site-dependencies:
+        patterns:
+          - "next"
+          - "react"
+          - "react-dom"
+          - "@types/*"
+          - "typescript"
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-
+    open-pull-requests-limit: 3
+    groups:
+      actions:
+        patterns:
+          - "*"
