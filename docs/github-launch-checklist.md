@@ -5,7 +5,7 @@ This checklist covers repository settings and external launch work that cannot b
 ## Repository Settings
 
 - Description: `Fast exact short-DNA known-target assignment for CRISPR guides, barcodes, primers, panels, and whitelists.`
-- Website: link to the hosted DotMatch site or the README until a site is deployed.
+- Website: after the first Pages workflow succeeds, set the repository website to the deployed URL, for example `https://dnncha.github.io/dotmatch`; use the README until then.
 - Topics:
   - `bioinformatics`
   - `computational-biology`
@@ -17,8 +17,8 @@ This checklist covers repository settings and external launch work that cannot b
   - `genomics`
   - `c`
   - `python`
-- Enable Issues, Discussions, Dependabot alerts, the committed CodeQL workflow, and private vulnerability reporting.
-- Add a social preview image before public launch.
+- Enable Issues, Discussions, Dependabot alerts, GitHub Pages from Actions, the committed CodeQL workflow, and private vulnerability reporting.
+- Add `public/dotmatch-og.png` as the GitHub repository social preview image before public launch.
 
 ## First Public Release
 

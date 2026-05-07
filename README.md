@@ -1,6 +1,6 @@
 # DotMatch
 
-[![CI](https://github.com/donncha/dotmatch/actions/workflows/ci.yml/badge.svg)](https://github.com/donncha/dotmatch/actions/workflows/ci.yml)
+[![CI](https://github.com/Dnncha/dotmatch/actions/workflows/ci.yml/badge.svg)](https://github.com/Dnncha/dotmatch/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Citation](https://img.shields.io/badge/cite-CITATION.cff-green.svg)](CITATION.cff)
 
@@ -57,7 +57,7 @@ It does **not** yet include:
 ## Quickstart
 
 ```bash
-git clone https://github.com/donncha/dotmatch.git
+git clone https://github.com/Dnncha/dotmatch.git
 cd dotmatch
 make
 

@@ -8,7 +8,7 @@ If you use DotMatch, cite the software release through `CITATION.cff`. Add the Z
 
 Suggested citation before DOI assignment:
 
-> O'Toole D. DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning. Software release v0.1.0. https://github.com/donncha/dotmatch
+> O'Toole D. DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning. Software release v0.1.0. https://github.com/Dnncha/dotmatch
 
 ## Methods Sentence
 

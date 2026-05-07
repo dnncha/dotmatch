@@ -7,7 +7,7 @@ Use this page when turning the local repository into the public GitHub project, 
 Repository:
 
 ```text
-donncha/dotmatch
+Dnncha/dotmatch
 ```
 
 Description:
@@ -36,9 +36,18 @@ Enable:
 - Issues;
 - Discussions;
 - Dependabot alerts;
+- GitHub Pages with GitHub Actions as the source;
 - Code scanning with the committed CodeQL workflow;
 - private vulnerability reporting;
 - branch protection after the first CI pass on `main`.
+
+Set the repository website to the Pages URL after the first `pages` workflow succeeds. For `Dnncha/dotmatch`, that should be:
+
+```text
+https://dnncha.github.io/dotmatch
+```
+
+Use `public/dotmatch-og.png` as the GitHub repository social preview image.
 
 Do not tag `v0.1.0` until the pre-tag checks in `docs/release-process.md` pass on the pushed repository.
 
@@ -96,7 +105,7 @@ I am open-sourcing DotMatch: a fast exact known-target short-DNA assignment engi
 
 It is not a genome aligner. The focus is deterministic `unique` / `ambiguous` / `no-match` assignment, real FASTQ workflows, public benchmarks, and claim gates that fail when evidence is missing.
 
-Repo: https://github.com/donncha/dotmatch
+Repo: https://github.com/Dnncha/dotmatch
 ```
 
 ## Scientific Registry Metadata
@@ -116,7 +125,7 @@ DotMatch performs exact known-target short-DNA assignment for FASTQ workflows, i
 Homepage and source:
 
 ```text
-https://github.com/donncha/dotmatch
+https://github.com/Dnncha/dotmatch
 ```
 
 License:
@@ -148,7 +157,7 @@ short sequence assignment; guide counting; barcode demultiplexing; edit-distance
 Before DOI:
 
 ```text
-O'Toole D. DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning. Software release v0.1.0. https://github.com/donncha/dotmatch
+O'Toole D. DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning. Software release v0.1.0. https://github.com/Dnncha/dotmatch
 ```
 
 After Zenodo creates the DOI:

@@ -36,10 +36,10 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/donncha/dotmatch"
-Repository = "https://github.com/donncha/dotmatch"
-Issues = "https://github.com/donncha/dotmatch/issues"
-Documentation = "https://github.com/donncha/dotmatch#readme"
+Homepage = "https://github.com/Dnncha/dotmatch"
+Repository = "https://github.com/Dnncha/dotmatch"
+Issues = "https://github.com/Dnncha/dotmatch/issues"
+Documentation = "https://github.com/Dnncha/dotmatch#readme"
 
 [tool.setuptools]
 package-dir = {"" = "python"}

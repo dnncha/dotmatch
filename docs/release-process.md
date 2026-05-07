@@ -18,6 +18,7 @@ make crispr-sota-gate
 npm run lint
 npm audit --audit-level=moderate
 npm run build
+NEXT_OUTPUT=export NEXT_PUBLIC_BASE_PATH=/dotmatch NEXT_PUBLIC_SITE_URL=https://dnncha.github.io/dotmatch npm run build
 ```
 
 `make barcode-sota-gate` and `make bcl-sota-gate` are expected to fail until their real-data and comparator requirements are met. Do not use release notes to promote those claims before the gates pass.
