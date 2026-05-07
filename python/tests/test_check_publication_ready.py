@@ -36,6 +36,7 @@ def _write_minimal_repo(root: Path) -> None:
         ".gitattributes": "* text=auto eol=lf\n",
         ".editorconfig": "root = true\n",
         ".github/workflows/ci.yml": "name: ci\n",
+        ".github/workflows/codeql.yml": "name: codeql\n",
         ".github/workflows/release.yml": "name: release\n",
         ".github/PULL_REQUEST_TEMPLATE.md": "## Evidence\n",
         ".github/ISSUE_TEMPLATE/bug_report.yml": "name: Bug report\n",
@@ -89,6 +90,16 @@ def test_publication_ready_reports_missing_release_workflow(tmp_path):
     result = checker.audit(tmp_path)
 
     assert any(".github/workflows/release.yml" in failure for failure in result.failures)
+
+
+def test_publication_ready_reports_missing_codeql_workflow(tmp_path):
+    checker = _load_checker()
+    _write_minimal_repo(tmp_path)
+    (tmp_path / ".github" / "workflows" / "codeql.yml").unlink()
+
+    result = checker.audit(tmp_path)
+
+    assert any(".github/workflows/codeql.yml" in failure for failure in result.failures)
 
 
 def test_publication_ready_reports_missing_changelog(tmp_path):

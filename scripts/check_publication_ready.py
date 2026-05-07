@@ -30,6 +30,7 @@ REQUIRED_FILES = [
     ".gitattributes",
     ".editorconfig",
     ".github/workflows/ci.yml",
+    ".github/workflows/codeql.yml",
     ".github/workflows/release.yml",
     ".github/PULL_REQUEST_TEMPLATE.md",
     ".github/ISSUE_TEMPLATE/bug_report.yml",

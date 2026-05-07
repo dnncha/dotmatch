@@ -17,7 +17,7 @@ This checklist covers repository settings and external launch work that cannot b
   - `genomics`
   - `c`
   - `python`
-- Enable Issues, Discussions, Dependabot alerts, code scanning if available, and private vulnerability reporting.
+- Enable Issues, Discussions, Dependabot alerts, the committed CodeQL workflow, and private vulnerability reporting.
 - Add a social preview image before public launch.
 
 ## First Public Release
