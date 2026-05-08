@@ -127,6 +127,9 @@ const scalingRows = [
   { label: "DotMatch, 8 samples", value: 0, tone: "green" }
 ] as const;
 
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const heroWorkflowImage = `${basePath}/dotmatch-hero-workflow.png`;
+
 export default function Home() {
   return (
     <main>
@@ -180,6 +183,17 @@ export default function Home() {
             <span>v0.1.0</span>
             <span>CRISPR-led evidence</span>
           </div>
+          <figure className="hero-visual">
+            <img
+              src={heroWorkflowImage}
+              alt="Short DNA reads flowing into known target assignments while ambiguous and unmatched reads stay visible"
+              decoding="async"
+              fetchPriority="high"
+            />
+            <figcaption>
+              Reads move into known targets; ambiguous and unmatched lanes stay visible.
+            </figcaption>
+          </figure>
           <div className="metric-grid">
             <div>
               <strong>87,437</strong>

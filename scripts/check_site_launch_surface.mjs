@@ -34,7 +34,9 @@ const requiredSnippets = [
   ["distribution maturity next", "Coming next: PyPI, Bioconda, Docker/Singularity, Zenodo DOI."],
   ["ambiguity example setup", "Some tools may pick or double-count."],
   ["ambiguity example result", "DotMatch reports: ambiguous"],
-  ["workflow status table", "Validated now"]
+  ["workflow status table", "Validated now"],
+  ["generated hero visual", "dotmatch-hero-workflow.png"],
+  ["human hero visual caption", "Reads move into known targets; ambiguous and unmatched lanes stay visible."]
 ];
 
 const missing = requiredSnippets.filter(([, snippet]) => !pageNormalized.includes(snippet));
@@ -93,6 +95,7 @@ if (!nextConfig.includes("devIndicators: false")) {
 }
 
 const requiredCss = [
+  [".hero-visual", "The generated workflow image should stay visible in the hero."],
   [".decision-grid", "The near-hero decision box should stay styled and visible."],
   [".translation-grid", "Jargon translations need a distinct scannable layout."],
   [".example-layout", "The biological example needs a stable two-column desktop layout."],
@@ -138,16 +141,31 @@ if (!renderSocialImages.includes("public\" / \"dotmatch-social-art.png\"")) {
   process.exit(1);
 }
 
-for (const imagePath of ["../public/dotmatch-og.png", "../public/dotmatch-twitter.png"]) {
+function readPngDimensions(imagePath) {
   const png = readFileSync(new URL(imagePath, import.meta.url));
   if (png.length < 24) {
     console.error(`${imagePath} is too small to be a valid PNG.`);
     process.exit(1);
   }
-  const width = png.readUInt32BE(16);
-  const height = png.readUInt32BE(20);
+  return {
+    width: png.readUInt32BE(16),
+    height: png.readUInt32BE(20)
+  };
+}
+
+for (const imagePath of ["../public/dotmatch-og.png", "../public/dotmatch-twitter.png"]) {
+  const { width, height } = readPngDimensions(imagePath);
   if (width !== 1200 || height !== 630) {
     console.error(`${imagePath} must be 1200x630 for Open Graph/Twitter previews; saw ${width}x${height}.`);
+    process.exit(1);
+  }
+}
+
+{
+  const imagePath = "../public/dotmatch-hero-workflow.png";
+  const { width, height } = readPngDimensions(imagePath);
+  if (width < 1200 || height < 650) {
+    console.error(`${imagePath} should be a substantial generated hero visual; saw ${width}x${height}.`);
     process.exit(1);
   }
 }
