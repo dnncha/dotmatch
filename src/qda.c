@@ -14,6 +14,10 @@
 #include <unistd.h>
 #include <zlib.h>
 
+#ifndef DOTMATCH_VERSION
+#define DOTMATCH_VERSION "0.1.0"
+#endif
+
 typedef struct seq_record {
     char *id;
     char *seq;
@@ -35,16 +39,18 @@ static double seconds_now(void) {
 
 static void usage(const char *argv0) {
     fprintf(stderr, "Usage:\n");
+    fprintf(stderr, "  %s --version\n", argv0);
     fprintf(stderr, "  %s dist SEQ1 SEQ2\n", argv0);
     fprintf(stderr, "  %s leq K SEQ1 SEQ2\n", argv0);
     fprintf(stderr, "  %s assign K barcodes.txt reads.txt\n", argv0);
     fprintf(stderr, "  %s match K targets.txt reads.txt\n", argv0);
     fprintf(stderr, "  %s fastq-assign --barcodes barcodes.tsv --reads reads.fastq[.gz] --barcode-start N --barcode-length L --k 0|1 --out assignments.tsv\n", argv0);
-    fprintf(stderr, "  %s demux --barcodes barcodes.tsv|barcodes.csv --reads reads.fastq[.gz] --barcode-start N --barcode-length L|auto --k 0|1 --metric hamming|levenshtein --out-dir demux_dir [--summary qc.json]\n", argv0);
+    fprintf(stderr, "  %s pair-count --left-targets left.tsv --right-targets right.tsv --reads reads.fastq[.gz] --left-start N --left-length L --right-start N --right-length L --k 0|1|2 --metric hamming|levenshtein --out pair_counts.tsv [--summary summary.json]\n", argv0);
+    fprintf(stderr, "  %s demux --barcodes barcodes.tsv|barcodes.csv --reads reads.fastq[.gz] --barcode-start N --barcode-length L|auto --k 0|1|2 --metric hamming|levenshtein [--max-correction-qual Q] --out-dir demux_dir [--summary qc.json]\n", argv0);
     fprintf(stderr, "  %s bcl-demux --run-folder RUN --sample-sheet SampleSheet.csv --out-dir demux_dir --barcode-mismatches 0|1|1,1 [--threads N] [--gzip-level 0..9] [--emit-index-fastqs] [--summary summary.json]\n", argv0);
     fprintf(stderr, "  %s bcl-validate --dotmatch-out DIR --truth-out DIR\n", argv0);
-    fprintf(stderr, "  %s count --targets targets.tsv|targets.csv --reads reads.fastq[.gz] [--reads more.fastq.gz] --sample-label labels --target-start N --target-length L --k 0|1 --metric hamming|levenshtein [--hamming-index auto|query|precompute] --ambiguity-policy best|radius --offset-mode best|multi --out counts.tsv [--format dotmatch|mageck]\n", argv0);
-    fprintf(stderr, "  %s crispr-count --library guides.tsv|guides.csv --samples samples.tsv --guide-start N --guide-length L --k 0|1 --out counts.tsv [--summary qc.json]\n", argv0);
+    fprintf(stderr, "  %s count --targets targets.tsv|targets.csv --reads reads.fastq[.gz] [--reads more.fastq.gz] --sample-label labels --target-start N --target-length L --k 0|1|2 --metric hamming|levenshtein [--hamming-index auto|query|precompute] [--max-correction-qual Q] --ambiguity-policy best|radius --offset-mode best|multi --out counts.tsv [--format dotmatch|mageck]\n", argv0);
+    fprintf(stderr, "  %s crispr-count --library guides.tsv|guides.csv --samples samples.tsv --guide-start N --guide-length L --k 0|1|2 --out counts.tsv [--summary qc.json]\n", argv0);
     fprintf(stderr, "  %s inspect-unmatched --targets targets.tsv|targets.csv --reads reads.fastq[.gz] --target-start N --target-length L --k 0|1 --top N --out top_unmatched.tsv [--low-quality-threshold Q]\n", argv0);
     fprintf(stderr, "  %s audit --targets targets.tsv|targets.csv --k 1 --out-dir audit_dir [--audit-mode auto|exact|fast]\n", argv0);
     fprintf(stderr, "  %s validate --targets targets.tsv|targets.csv --reads reads.fastq[.gz] --target-start N --target-length L --k 0|1 [--metric hamming|levenshtein] [--indel-window 0|1] [--offset-mode best|multi] [--threads N] --oracle scan|edlib\n", argv0);
@@ -1007,6 +1013,62 @@ static void copy_upper_ascii_window(char *dst, size_t dst_cap, const char *src, 
     dst[len] = '\0';
 }
 
+static char uppercase_ascii_char(char c) {
+    unsigned char uc = (unsigned char)c;
+    return (char)(uc >= 'a' && uc <= 'z' ? uc - 32 : uc);
+}
+
+static int phred33_quality(char c) {
+    unsigned char uc = (unsigned char)c;
+    return uc < 33 ? 0 : (int)uc - 33;
+}
+
+static int window_matches_observed_folded(const char *seq, size_t seq_len, size_t start,
+                                          const char *observed, size_t observed_len) {
+    if (start > seq_len || observed_len > seq_len - start) return 0;
+    for (size_t i = 0; i < observed_len; ++i) {
+        if (uppercase_ascii_char(seq[start + i]) != observed[i]) return 0;
+    }
+    return 1;
+}
+
+static int observed_base_qualities_within_edit(const char *observed, size_t observed_len,
+                                               const char *target, size_t target_len,
+                                               const char *qual, size_t qual_start,
+                                               int max_correction_qual) {
+    if (observed_len == target_len) {
+        int saw_mismatch = 0;
+        for (size_t i = 0; i < observed_len; ++i) {
+            if (observed[i] == target[i]) continue;
+            saw_mismatch = 1;
+            if (phred33_quality(qual[qual_start + i]) > max_correction_qual) return 0;
+        }
+        return saw_mismatch;
+    }
+
+    if (observed_len == target_len + 1) {
+        for (size_t drop = 0; drop < observed_len; ++drop) {
+            size_t ti = 0;
+            int matches = 1;
+            for (size_t oi = 0; oi < observed_len; ++oi) {
+                if (oi == drop) continue;
+                if (observed[oi] != target[ti++]) {
+                    matches = 0;
+                    break;
+                }
+            }
+            if (matches && phred33_quality(qual[qual_start + drop]) <= max_correction_qual) return 1;
+        }
+        return 0;
+    }
+
+    if (observed_len + 1 == target_len) {
+        return 1;
+    }
+
+    return 0;
+}
+
 static int hamming_lookup_insert(hamming_lookup_entry *table, size_t cap, uint64_t code, int target_index) {
     size_t slot = code_hash_local(code, 0, cap);
     for (;;) {
@@ -1436,6 +1498,7 @@ typedef struct count_sample_job {
     offset_mode offsets_mode;
     double offset_min_fraction;
     size_t read_threads;
+    int max_correction_qual;
     int rc;
 } count_sample_job;
 
@@ -1450,6 +1513,47 @@ static void write_assignment_like_row(FILE *out, const seq_table *targets, const
     fprintf(out, "%s\t%s\t%s\t%d\t%s\t%s\t%d\t%d\t%d\t%s\t%s\n",
             sample, read_id, observed, r.target_index, target_id, target_seq, r.best_distance,
             r.second_best_distance, r.match_count, status_name(r.status), correction);
+}
+
+static int find_observed_quality_window(const char *seq, size_t seq_len, const offset_list *offsets,
+                                        size_t fallback_offset, size_t target_len, count_metric metric,
+                                        size_t indel_window, int k, const char *observed,
+                                        size_t observed_len, size_t *start_out) {
+    size_t min_len = target_len;
+    size_t max_len = target_len;
+    if (metric == COUNT_METRIC_LEVENSHTEIN && indel_window != 0 && k == 1) {
+        min_len = target_len > indel_window ? target_len - indel_window : 0;
+        max_len = target_len + indel_window;
+    }
+    if (observed_len < min_len || observed_len > max_len) return 0;
+
+    size_t n_offsets = offsets == NULL || offsets->count == 0 ? 1 : offsets->count;
+    for (size_t i = 0; i < n_offsets; ++i) {
+        size_t offset = offsets == NULL || offsets->count == 0 ? fallback_offset : offsets->items[i];
+        if (window_matches_observed_folded(seq, seq_len, offset, observed, observed_len)) {
+            *start_out = offset;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static int quality_allows_unique_correction(const char *seq, size_t seq_len, const char *qual,
+                                            const offset_list *offsets, size_t fallback_offset,
+                                            size_t target_len, count_metric metric, size_t indel_window,
+                                            int k, const char *observed, const seq_record *target,
+                                            qdaln_match_result result, int max_correction_qual) {
+    if (max_correction_qual < 0 || qual == NULL) return 1;
+    if (result.status != QDALN_MATCH_UNIQUE || result.best_distance <= 0 || result.target_index < 0) return 1;
+
+    size_t observed_len = strlen(observed);
+    size_t qual_start = 0;
+    if (!find_observed_quality_window(seq, seq_len, offsets, fallback_offset, target_len, metric, indel_window,
+                                      k, observed, observed_len, &qual_start)) {
+        return 0;
+    }
+    return observed_base_qualities_within_edit(observed, observed_len, target->seq, target->len, qual,
+                                               qual_start, max_correction_qual);
 }
 
 static void html_escape(FILE *out, const char *s) {
@@ -2780,7 +2884,8 @@ static int count_sample_worker_direct_hamming(count_sample_job *job) {
     return 0;
 }
 
-static int count_sample_sequence(count_sample_job *job, const char *seq, size_t seq_len, const char *read_id) {
+static int count_sample_sequence(count_sample_job *job, const char *seq, size_t seq_len, const char *qual,
+                                 const char *read_id) {
     char observed[8192];
     qdaln_match_result result = {-1, -1, -1, 0, QDALN_MATCH_INVALID};
     qdaln_index_stats istats = {0, 0};
@@ -2813,6 +2918,16 @@ static int count_sample_sequence(count_sample_job *job, const char *seq, size_t 
     }
 
     const char *correction = "invalid";
+    int quality_rejected = 0;
+    if (result.status == QDALN_MATCH_UNIQUE && result.target_index >= 0 && result.best_distance > 0) {
+        seq_record *target = &job->targets->records[result.target_index];
+        if (!quality_allows_unique_correction(seq, seq_len, qual, job->selected_offsets, 0, job->target_len,
+                                              job->metric, job->indel_window, job->k, observed, target, result,
+                                              job->max_correction_qual)) {
+            result = (qdaln_match_result){-1, -1, -1, 0, QDALN_MATCH_NONE};
+            quality_rejected = 1;
+        }
+    }
     if (result.status == QDALN_MATCH_UNIQUE && result.target_index >= 0) {
         seq_record *target = &job->targets->records[result.target_index];
         int kind = correction_kind(observed, strlen(observed), target->seq, target->len, result.best_distance);
@@ -2827,7 +2942,7 @@ static int count_sample_sequence(count_sample_job *job, const char *seq, size_t 
         correction = "ambiguous";
     } else if (result.status == QDALN_MATCH_NONE) {
         ++job->stats->unmatched;
-        correction = "none";
+        correction = quality_rejected ? "quality_rejected" : "none";
     } else {
         ++job->stats->invalid;
     }
@@ -2871,7 +2986,7 @@ static void *count_batch_worker(void *arg) {
     batch->job.unmatched_out = NULL;
     batch->rc = 0;
     for (size_t i = batch->start; i < batch->end; ++i) {
-        if (count_sample_sequence(&batch->job, batch->items[i], batch->lens[i], NULL) != 0) {
+        if (count_sample_sequence(&batch->job, batch->items[i], batch->lens[i], NULL, NULL) != 0) {
             batch->rc = 1;
             break;
         }
@@ -2884,7 +2999,7 @@ static int process_count_buffer(count_sample_job *job, const seq_buffer *buffer)
     size_t read_threads = job->read_threads;
     if (read_threads <= 1 || buffer->count < 1024) {
         for (size_t i = 0; i < buffer->count; ++i) {
-            if (count_sample_sequence(job, buffer->items[i], buffer->lens[i], NULL) != 0) return 1;
+            if (count_sample_sequence(job, buffer->items[i], buffer->lens[i], NULL, NULL) != 0) return 1;
         }
         return 0;
     }
@@ -2961,8 +3076,10 @@ static void *count_sample_worker(void *arg) {
     char read_id[8192];
     int got = 0;
     int need_read_id = job->assignments != NULL || job->ambiguous_out != NULL || job->unmatched_out != NULL;
+    int need_quality = job->max_correction_qual >= 0;
+    int need_full_record = need_read_id || need_quality;
     size_t seq_len = 0;
-    if (job->read_threads > 1 && !need_read_id) {
+    if (job->read_threads > 1 && !need_full_record) {
         const size_t batch_reads = 262144;
         seq_buffer batch = {0};
         if (reserve_seq_buffer(&batch, batch_reads) != 0) {
@@ -3004,12 +3121,13 @@ static void *count_sample_worker(void *arg) {
         }
         free_seq_buffer(&batch);
     } else {
-        while ((got = need_read_id
+        while ((got = need_full_record
                 ? fastq_read_record_len(&reader, header, seq, plus, qual, sizeof(header), &seq_len)
                 : fastq_read_sequence_record_len(&reader, seq, sizeof(seq), &seq_len)) == 1) {
             read_id[0] = '\0';
             if (need_read_id) fastq_read_id(header, read_id, sizeof(read_id));
-            if (count_sample_sequence(job, seq, seq_len, read_id) != 0) {
+            if (count_sample_sequence(job, seq, seq_len, job->max_correction_qual >= 0 ? qual : NULL,
+                                      read_id) != 0) {
                 fastq_reader_close(&reader);
                 fprintf(stderr, "FASTQ assignment failed\n");
                 job->rc = 1;
@@ -3234,6 +3352,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
     offset_mode offsets_mode = OFFSET_MODE_BEST;
     double offset_min_fraction = 0.005;
     size_t threads = 1;
+    int max_correction_qual = -1;
     int k = -1;
     string_list reads = {0};
     string_list labels = {0};
@@ -3264,7 +3383,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
                 goto fail_args;
             }
         } else if (strcmp(argv[i], "--k") == 0 && i + 1 < argc) {
-            if (parse_int_value(argv[++i], &k) != 0 || (k != 0 && k != 1)) {
+            if (parse_int_value(argv[++i], &k) != 0 || k < 0 || k > 2) {
                 usage(argv0);
                 goto fail_args;
             }
@@ -3323,6 +3442,12 @@ static int run_count(const char *argv0, int argc, char **argv) {
             }
         } else if (strcmp(argv[i], "--threads") == 0 && i + 1 < argc) {
             if (parse_size_value(argv[++i], &threads) != 0 || threads == 0) {
+                usage(argv0);
+                goto fail_args;
+            }
+        } else if (strcmp(argv[i], "--max-correction-qual") == 0 && i + 1 < argc) {
+            if (parse_int_value(argv[++i], &max_correction_qual) != 0 ||
+                max_correction_qual < 0 || max_correction_qual > 93) {
                 usage(argv0);
                 goto fail_args;
             }
@@ -3388,6 +3513,10 @@ static int run_count(const char *argv0, int argc, char **argv) {
         fprintf(stderr, "--indel-window is only valid with --metric levenshtein\n");
         goto fail_args;
     }
+    if (metric == COUNT_METRIC_HAMMING && k > 1) {
+        fprintf(stderr, "--k 2 is only valid with --metric levenshtein\n");
+        goto fail_args;
+    }
     if (indel_window != 0 && k != 1) {
         fprintf(stderr, "--indel-window requires --k 1\n");
         goto fail_args;
@@ -3445,7 +3574,8 @@ static int run_count(const char *argv0, int argc, char **argv) {
     }
     target_index_seconds = seconds_now() - phase_start_seconds;
 
-    int direct_hamming_counts = count_only && metric == COUNT_METRIC_HAMMING && indel_window == 0 &&
+    int direct_hamming_counts = count_only && max_correction_qual < 0 &&
+            metric == COUNT_METRIC_HAMMING && indel_window == 0 &&
             assignment_policy == AMBIGUITY_POLICY_BEST && (k == 0 || k == 1) && target_len <= 32 &&
             (hamming_strategy == HAMMING_INDEX_PRECOMPUTE || hamming_strategy == HAMMING_INDEX_AUTO);
     if (direct_hamming_counts) {
@@ -3613,7 +3743,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
                 target_len, k, metric, indel_window, counts, &stats_by_sample[sample],
                 assignments, ambiguous_out, unmatched_out, ambiguous_policy, assignment_policy,
                 direct_hamming_counts, fused_offset_detection, target_start, auto_offset, auto_offset_sample,
-                offsets_mode, offset_min_fraction, effective_read_threads, 1
+                offsets_mode, offset_min_fraction, effective_read_threads, max_correction_qual, 1
             };
             count_sample_worker(&job);
             if (job.rc != 0) goto done;
@@ -3639,7 +3769,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
                     target_len, k, metric, indel_window, counts, &stats_by_sample[sample],
                     NULL, NULL, NULL, ambiguous_policy, assignment_policy,
                     direct_hamming_counts, fused_offset_detection, target_start, auto_offset, auto_offset_sample,
-                    offsets_mode, offset_min_fraction, 1, 1
+                    offsets_mode, offset_min_fraction, 1, max_correction_qual, 1
                 };
                 if (pthread_create(&thread_ids[i], NULL, count_sample_worker, &jobs[sample]) != 0) {
                     fprintf(stderr, "failed to create worker thread\n");
@@ -3780,9 +3910,16 @@ static int run_count(const char *argv0, int argc, char **argv) {
         }
         double total_before_summary_seconds = seconds_now() - run_start_seconds;
         fprintf(summary,
-                "{\n  \"k\": %d,\n  \"metric\": \"%s\",\n  \"ambiguity_policy\": \"%s\",\n  \"indel_window\": %zu,\n  \"target_start\": %zu,\n  \"auto_offset\": %zu,\n  \"offset_mode\": \"%s\",\n  \"offset_min_fraction\": %.8f,\n  \"offset_detection_strategy\": \"%s\",\n  \"count_engine\": \"%s\",\n  \"hamming_index\": \"%s\",\n  \"target_length\": %zu,\n  \"n_targets\": %zu,\n  \"read_threads\": %zu,\n  \"phase_seconds\": {\"target_index\": %.6f, \"offset_detection\": %.6f, \"hamming_precompute\": %.6f, \"counting\": %.6f, \"total_before_summary\": %.6f},\n  \"samples\": [\n",
-                k, metric_name(metric), ambiguity_policy_name(assignment_policy), indel_window, target_start,
-                auto_offset, offset_mode_name(offsets_mode), offset_min_fraction,
+                "{\n  \"k\": %d,\n  \"metric\": \"%s\",\n  \"ambiguity_policy\": \"%s\",\n  \"alphabet_policy\": \"%s\",\n  \"max_correction_qual\": ",
+                k, metric_name(metric), ambiguity_policy_name(assignment_policy), qdaln_alphabet_policy());
+        if (max_correction_qual >= 0) {
+            fprintf(summary, "%d", max_correction_qual);
+        } else {
+            fprintf(summary, "null");
+        }
+        fprintf(summary,
+                ",\n  \"indel_window\": %zu,\n  \"target_start\": %zu,\n  \"auto_offset\": %zu,\n  \"offset_mode\": \"%s\",\n  \"offset_min_fraction\": %.8f,\n  \"offset_detection_strategy\": \"%s\",\n  \"count_engine\": \"%s\",\n  \"hamming_index\": \"%s\",\n  \"target_length\": %zu,\n  \"n_targets\": %zu,\n  \"read_threads\": %zu,\n  \"phase_seconds\": {\"target_index\": %.6f, \"offset_detection\": %.6f, \"hamming_precompute\": %.6f, \"counting\": %.6f, \"total_before_summary\": %.6f},\n  \"samples\": [\n",
+                indel_window, target_start, auto_offset, offset_mode_name(offsets_mode), offset_min_fraction,
                 offset_detection_strategy, count_engine, hamming_lookup_kind(&hlookup), target_len, targets.count,
                 effective_read_threads,
                 target_index_seconds, offset_detection_seconds, hamming_precompute_seconds, counting_seconds,
@@ -5048,6 +5185,271 @@ done:
     return rc;
 }
 
+typedef struct pair_count_stats {
+    unsigned long long total_reads;
+    unsigned long long assigned_pairs;
+    unsigned long long pair_ambiguous;
+    unsigned long long left_unmatched;
+    unsigned long long right_unmatched;
+    unsigned long long invalid;
+    unsigned long long candidates_considered;
+    unsigned long long candidates_verified;
+} pair_count_stats;
+
+static const char *pair_status_name(qdaln_match_result left, qdaln_match_result right) {
+    if (left.status == QDALN_MATCH_INVALID || right.status == QDALN_MATCH_INVALID) return "invalid";
+    if (left.status == QDALN_MATCH_AMBIGUOUS || right.status == QDALN_MATCH_AMBIGUOUS) return "ambiguous";
+    if (left.status == QDALN_MATCH_NONE || right.status == QDALN_MATCH_NONE) return "none";
+    if (left.status == QDALN_MATCH_UNIQUE && right.status == QDALN_MATCH_UNIQUE) return "unique";
+    return "invalid";
+}
+
+static void print_pair_assignment_row(FILE *out, const char *read_id, const seq_table *left_targets,
+                                      const seq_table *right_targets, const char *left_observed,
+                                      qdaln_match_result left, const char *right_observed,
+                                      qdaln_match_result right) {
+    const char *left_id = left.target_index >= 0 ? left_targets->records[left.target_index].id : "";
+    const char *right_id = right.target_index >= 0 ? right_targets->records[right.target_index].id : "";
+    fprintf(out, "%s\t%s\t%d\t%s\t%s\t%d\t%s\t%d\t%s\t%s\t%d\t%s\n",
+            read_id, left_observed, left.target_index, left_id, status_name(left.status), left.best_distance,
+            right_observed, right.target_index, right_id, status_name(right.status), right.best_distance,
+            pair_status_name(left, right));
+}
+
+static int run_pair_count(const char *argv0, int argc, char **argv) {
+    const char *left_path = NULL;
+    const char *right_path = NULL;
+    const char *reads_path = NULL;
+    const char *out_path = NULL;
+    const char *summary_path = NULL;
+    const char *assignments_path = NULL;
+    size_t left_start = 0;
+    size_t right_start = 0;
+    size_t left_len = 0;
+    size_t right_len = 0;
+    int k = -1;
+    count_metric metric = COUNT_METRIC_LEVENSHTEIN;
+
+    for (int i = 2; i < argc; ++i) {
+        if (strcmp(argv[i], "--left-targets") == 0 && i + 1 < argc) {
+            left_path = argv[++i];
+        } else if (strcmp(argv[i], "--right-targets") == 0 && i + 1 < argc) {
+            right_path = argv[++i];
+        } else if (strcmp(argv[i], "--reads") == 0 && i + 1 < argc) {
+            reads_path = argv[++i];
+        } else if (strcmp(argv[i], "--left-start") == 0 && i + 1 < argc) {
+            if (parse_size_value(argv[++i], &left_start) != 0) {
+                usage(argv0);
+                return 2;
+            }
+        } else if (strcmp(argv[i], "--left-length") == 0 && i + 1 < argc) {
+            if (parse_size_value(argv[++i], &left_len) != 0 || left_len == 0) {
+                usage(argv0);
+                return 2;
+            }
+        } else if (strcmp(argv[i], "--right-start") == 0 && i + 1 < argc) {
+            if (parse_size_value(argv[++i], &right_start) != 0) {
+                usage(argv0);
+                return 2;
+            }
+        } else if (strcmp(argv[i], "--right-length") == 0 && i + 1 < argc) {
+            if (parse_size_value(argv[++i], &right_len) != 0 || right_len == 0) {
+                usage(argv0);
+                return 2;
+            }
+        } else if (strcmp(argv[i], "--k") == 0 && i + 1 < argc) {
+            if (parse_int_value(argv[++i], &k) != 0 || k < 0 || k > 2) {
+                usage(argv0);
+                return 2;
+            }
+        } else if (strcmp(argv[i], "--metric") == 0 && i + 1 < argc) {
+            const char *value = argv[++i];
+            if (strcmp(value, "hamming") == 0) {
+                metric = COUNT_METRIC_HAMMING;
+            } else if (strcmp(value, "levenshtein") == 0) {
+                metric = COUNT_METRIC_LEVENSHTEIN;
+            } else {
+                usage(argv0);
+                return 2;
+            }
+        } else if (strcmp(argv[i], "--out") == 0 && i + 1 < argc) {
+            out_path = argv[++i];
+        } else if (strcmp(argv[i], "--summary") == 0 && i + 1 < argc) {
+            summary_path = argv[++i];
+        } else if (strcmp(argv[i], "--assignments") == 0 && i + 1 < argc) {
+            assignments_path = argv[++i];
+        } else {
+            usage(argv0);
+            return 2;
+        }
+    }
+
+    if (left_path == NULL || right_path == NULL || reads_path == NULL || out_path == NULL ||
+        left_len == 0 || right_len == 0 || k < 0) {
+        usage(argv0);
+        return 2;
+    }
+    if (metric == COUNT_METRIC_HAMMING && k > 1) {
+        fprintf(stderr, "--k 2 is only valid with --metric levenshtein\n");
+        return 2;
+    }
+
+    seq_table left_targets = {0};
+    seq_table right_targets = {0};
+    const char **left_ptrs = NULL;
+    const char **right_ptrs = NULL;
+    size_t *left_lens = NULL;
+    size_t *right_lens = NULL;
+    qdaln_index *left_index = NULL;
+    qdaln_index *right_index = NULL;
+    fastq_reader reader = {0};
+    FILE *out = NULL;
+    FILE *summary = NULL;
+    FILE *assignments = NULL;
+    unsigned long long *pair_counts = NULL;
+    pair_count_stats stats = {0};
+    int rc = 1;
+
+    if (read_target_table(left_path, &left_targets) != 0 || read_target_table(right_path, &right_targets) != 0) {
+        fprintf(stderr, "failed to read pair target tables\n");
+        goto done;
+    }
+    if (metric == COUNT_METRIC_HAMMING &&
+        (!all_targets_have_length(&left_targets, left_len) || !all_targets_have_length(&right_targets, right_len))) {
+        fprintf(stderr, "--metric hamming requires targets to match their configured window lengths\n");
+        goto done;
+    }
+    if (build_target_arrays(&left_targets, &left_ptrs, &left_lens) != 0 ||
+        build_target_arrays(&right_targets, &right_ptrs, &right_lens) != 0) {
+        fprintf(stderr, "out of memory\n");
+        goto done;
+    }
+    left_index = qdaln_index_build(left_ptrs, left_lens, left_targets.count);
+    right_index = qdaln_index_build(right_ptrs, right_lens, right_targets.count);
+    if (left_index == NULL || right_index == NULL) {
+        fprintf(stderr, "failed to build pair target indexes\n");
+        goto done;
+    }
+    pair_counts = (unsigned long long *)calloc(left_targets.count * right_targets.count == 0 ? 1 :
+                                                      left_targets.count * right_targets.count,
+                                              sizeof(unsigned long long));
+    if (pair_counts == NULL) {
+        fprintf(stderr, "out of memory\n");
+        goto done;
+    }
+    if (fastq_reader_open(&reader, reads_path) != 0) {
+        fprintf(stderr, "failed to open FASTQ input\n");
+        goto done;
+    }
+    if (assignments_path != NULL) {
+        assignments = fopen(assignments_path, "w");
+        if (assignments == NULL) {
+            fprintf(stderr, "failed to open assignments output\n");
+            goto done;
+        }
+        fprintf(assignments, "read_id\tleft_observed\tleft_index\tleft_id\tleft_status\tleft_distance\tright_observed\tright_index\tright_id\tright_status\tright_distance\tpair_status\n");
+    }
+
+    char header[8192];
+    char seq[8192];
+    char plus[8192];
+    char qual[8192];
+    char read_id[8192];
+    char left_observed[8192];
+    char right_observed[8192];
+    size_t seq_len = 0;
+    int got = 0;
+    while ((got = fastq_read_record_len(&reader, header, seq, plus, qual, sizeof(header), &seq_len)) == 1) {
+        (void)plus;
+        (void)qual;
+        qdaln_match_result left = {-1, -1, -1, 0, QDALN_MATCH_INVALID};
+        qdaln_match_result right = {-1, -1, -1, 0, QDALN_MATCH_INVALID};
+        qdaln_index_stats left_stats = {0, 0};
+        qdaln_index_stats right_stats = {0, 0};
+        fastq_read_id(header, read_id, sizeof(read_id));
+        left_observed[0] = '\0';
+        right_observed[0] = '\0';
+        ++stats.total_reads;
+
+        if (assign_count_window(left_index, seq, seq_len, left_start, left_len, k, metric, 0,
+                                &left, &left_stats, left_observed, sizeof(left_observed), 0) != 0 ||
+            assign_count_window(right_index, seq, seq_len, right_start, right_len, k, metric, 0,
+                                &right, &right_stats, right_observed, sizeof(right_observed), 0) != 0) {
+            fprintf(stderr, "FASTQ pair assignment failed\n");
+            goto done;
+        }
+        stats.candidates_considered += left_stats.candidates_considered + right_stats.candidates_considered;
+        stats.candidates_verified += left_stats.candidates_verified + right_stats.candidates_verified;
+
+        const char *pair_status = pair_status_name(left, right);
+        if (strcmp(pair_status, "unique") == 0) {
+            size_t slot = (size_t)left.target_index * right_targets.count + (size_t)right.target_index;
+            ++pair_counts[slot];
+            ++stats.assigned_pairs;
+        } else if (strcmp(pair_status, "invalid") == 0) {
+            ++stats.invalid;
+        } else {
+            if (left.status == QDALN_MATCH_AMBIGUOUS || right.status == QDALN_MATCH_AMBIGUOUS) ++stats.pair_ambiguous;
+            if (left.status == QDALN_MATCH_NONE) ++stats.left_unmatched;
+            if (right.status == QDALN_MATCH_NONE) ++stats.right_unmatched;
+        }
+        if (assignments != NULL) {
+            print_pair_assignment_row(assignments, read_id, &left_targets, &right_targets,
+                                      left_observed, left, right_observed, right);
+        }
+    }
+    if (got < 0) {
+        fprintf(stderr, "malformed FASTQ input\n");
+        goto done;
+    }
+
+    out = fopen(out_path, "w");
+    if (out == NULL) {
+        fprintf(stderr, "failed to open pair-count output\n");
+        goto done;
+    }
+    fprintf(out, "left_id\tright_id\tcount\n");
+    for (size_t li = 0; li < left_targets.count; ++li) {
+        for (size_t ri = 0; ri < right_targets.count; ++ri) {
+            unsigned long long count = pair_counts[li * right_targets.count + ri];
+            if (count == 0) continue;
+            fprintf(out, "%s\t%s\t%llu\n", left_targets.records[li].id, right_targets.records[ri].id, count);
+        }
+    }
+
+    if (summary_path != NULL) {
+        summary = fopen(summary_path, "w");
+        if (summary == NULL) {
+            fprintf(stderr, "failed to open pair-count summary\n");
+            goto done;
+        }
+        fprintf(summary,
+                "{\n  \"workflow\": \"pair-count\",\n  \"k\": %d,\n  \"metric\": \"%s\",\n  \"alphabet_policy\": \"%s\",\n  \"left_start\": %zu,\n  \"left_length\": %zu,\n  \"right_start\": %zu,\n  \"right_length\": %zu,\n  \"n_left_targets\": %zu,\n  \"n_right_targets\": %zu,\n  \"total_reads\": %llu,\n  \"assigned_pairs\": %llu,\n  \"pair_ambiguous\": %llu,\n  \"left_unmatched\": %llu,\n  \"right_unmatched\": %llu,\n  \"invalid\": %llu,\n  \"candidates_considered\": %llu,\n  \"candidates_verified\": %llu\n}\n",
+                k, metric_name(metric), qdaln_alphabet_policy(), left_start, left_len, right_start, right_len,
+                left_targets.count, right_targets.count, stats.total_reads, stats.assigned_pairs,
+                stats.pair_ambiguous, stats.left_unmatched, stats.right_unmatched, stats.invalid,
+                stats.candidates_considered, stats.candidates_verified);
+    }
+
+    rc = 0;
+
+done:
+    if (out != NULL) fclose(out);
+    if (summary != NULL) fclose(summary);
+    if (assignments != NULL) fclose(assignments);
+    fastq_reader_close(&reader);
+    qdaln_index_free(left_index);
+    qdaln_index_free(right_index);
+    free(left_ptrs);
+    free(right_ptrs);
+    free(left_lens);
+    free(right_lens);
+    free(pair_counts);
+    free_table(&left_targets);
+    free_table(&right_targets);
+    return rc;
+}
+
 static FILE *open_demux_target_file(FILE **files, const seq_table *targets, size_t target_index, const char *out_dir) {
     if (files[target_index] != NULL) return files[target_index];
     char safe_id[512];
@@ -5072,6 +5474,7 @@ static int run_demux(const char *argv0, int argc, char **argv) {
     size_t barcode_len = 0;
     int auto_barcode_len = 0;
     size_t indel_window = 0;
+    int max_correction_qual = -1;
     int k = -1;
 
     for (int i = 2; i < argc; ++i) {
@@ -5094,7 +5497,7 @@ static int run_demux(const char *argv0, int argc, char **argv) {
                 return 2;
             }
         } else if (strcmp(argv[i], "--k") == 0 && i + 1 < argc) {
-            if (parse_int_value(argv[++i], &k) != 0 || (k != 0 && k != 1)) {
+            if (parse_int_value(argv[++i], &k) != 0 || k < 0 || k > 2) {
                 usage(argv0);
                 return 2;
             }
@@ -5110,6 +5513,12 @@ static int run_demux(const char *argv0, int argc, char **argv) {
             }
         } else if (strcmp(argv[i], "--indel-window") == 0 && i + 1 < argc) {
             if (parse_size_value(argv[++i], &indel_window) != 0 || indel_window > 1) {
+                usage(argv0);
+                return 2;
+            }
+        } else if (strcmp(argv[i], "--max-correction-qual") == 0 && i + 1 < argc) {
+            if (parse_int_value(argv[++i], &max_correction_qual) != 0 ||
+                max_correction_qual < 0 || max_correction_qual > 93) {
                 usage(argv0);
                 return 2;
             }
@@ -5137,6 +5546,10 @@ static int run_demux(const char *argv0, int argc, char **argv) {
     }
     if (metric == COUNT_METRIC_HAMMING && indel_window != 0) {
         fprintf(stderr, "--indel-window is only valid with --metric levenshtein\n");
+        return 2;
+    }
+    if (metric == COUNT_METRIC_HAMMING && k > 1) {
+        fprintf(stderr, "--k 2 is only valid with --metric levenshtein\n");
         return 2;
     }
     if (indel_window != 0 && k != 1) {
@@ -5248,6 +5661,21 @@ static int run_demux(const char *argv0, int argc, char **argv) {
             fprintf(stderr, "FASTQ assignment failed\n");
             goto done;
         }
+        if (result.status == QDALN_MATCH_UNIQUE && result.target_index >= 0 && result.best_distance > 0) {
+            seq_record *target = &targets.records[result.target_index];
+            offset_list barcode_offset = {0};
+            if (push_offset_unique(&barcode_offset, barcode_start) != 0) {
+                free_offset_list(&barcode_offset);
+                fprintf(stderr, "out of memory\n");
+                goto done;
+            }
+            if (!quality_allows_unique_correction(seq, seq_len, qual, &barcode_offset, barcode_start,
+                                                  target->len, metric, indel_window, k, observed, target, result,
+                                                  max_correction_qual)) {
+                result = (qdaln_match_result){-1, -1, -1, 0, QDALN_MATCH_NONE};
+            }
+            free_offset_list(&barcode_offset);
+        }
         if (result.status != QDALN_MATCH_INVALID) {
             stats.candidates_considered += (unsigned long long)istats.candidates_considered;
             stats.candidates_verified += (unsigned long long)istats.candidates_verified;
@@ -5299,9 +5727,16 @@ static int run_demux(const char *argv0, int argc, char **argv) {
             }
         }
         fprintf(summary,
-                "{\n  \"workflow\": \"demux\",\n  \"k\": %d,\n  \"metric\": \"%s\",\n  \"indel_window\": %zu,\n  \"barcode_start\": %zu,\n  \"barcode_length\": %zu,\n  \"barcode_length_mode\": \"%s\",\n  \"barcode_lengths\": [",
-                k, metric_name(metric), indel_window, barcode_start, barcode_len,
-                auto_barcode_len ? "auto" : "fixed");
+                "{\n  \"workflow\": \"demux\",\n  \"k\": %d,\n  \"metric\": \"%s\",\n  \"alphabet_policy\": \"%s\",\n  \"max_correction_qual\": ",
+                k, metric_name(metric), qdaln_alphabet_policy());
+        if (max_correction_qual >= 0) {
+            fprintf(summary, "%d", max_correction_qual);
+        } else {
+            fprintf(summary, "null");
+        }
+        fprintf(summary,
+                ",\n  \"indel_window\": %zu,\n  \"barcode_start\": %zu,\n  \"barcode_length\": %zu,\n  \"barcode_length_mode\": \"%s\",\n  \"barcode_lengths\": [",
+                indel_window, barcode_start, barcode_len, auto_barcode_len ? "auto" : "fixed");
         for (size_t i = 0; i < barcode_lens_count; ++i) {
             fprintf(summary, "%s%zu", i == 0 ? "" : ", ", barcode_lens[i]);
         }
@@ -6716,6 +7151,15 @@ int main(int argc, char **argv) {
         return 2;
     }
 
+    if (strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "version") == 0) {
+        if (argc != 2) {
+            usage(argv[0]);
+            return 2;
+        }
+        printf("dotmatch %s\n", DOTMATCH_VERSION);
+        return 0;
+    }
+
     if (strcmp(argv[1], "dist") == 0) {
         if (argc != 4) {
             usage(argv[0]);
@@ -6749,6 +7193,10 @@ int main(int argc, char **argv) {
 
     if (strcmp(argv[1], "fastq-assign") == 0) {
         return run_fastq_assign(argv[0], argc, argv);
+    }
+
+    if (strcmp(argv[1], "pair-count") == 0) {
+        return run_pair_count(argv[0], argc, argv);
     }
 
     if (strcmp(argv[1], "demux") == 0) {

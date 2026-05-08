@@ -4,11 +4,11 @@
 <text class="axis" x="20" y="50">Reads assigned to a barcode-specific output FASTQ</text>
 <text x="20" y="95">cutadapt_demux</text>
 <rect class="bar" x="280" y="80" width="590" height="21" rx="2"/>
-<text x="878" y="95">19534.00 reads</text>
+<text x="878" y="95">658.00 reads</text>
 <text x="20" y="131">dotmatch_demux</text>
 <rect class="bar" x="280" y="116" width="590" height="21" rx="2"/>
-<text x="878" y="131">19534.00 reads</text>
+<text x="878" y="131">658.00 reads</text>
 <text x="20" y="167">hash_splitter_exact</text>
-<rect class="bar" x="280" y="152" width="555" height="21" rx="2"/>
-<text x="843" y="167">18385.00 reads</text>
+<rect class="bar" x="280" y="152" width="590" height="21" rx="2"/>
+<text x="878" y="167">658.00 reads</text>
 </svg>

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "dotmatch"
 version = "0.1.0"
-description = "Fast exact short-DNA matching and barcode assignment"
+description = "Deterministic known-target short-DNA assignment for CRISPR guide counting, barcode demultiplexing, and FASTQ workflows"
 readme = "README.md"
 requires-python = ">=3.9"
 license = "Apache-2.0"
@@ -15,11 +15,12 @@ authors = [
 ]
 keywords = [
     "bioinformatics",
-    "computational-biology",
-    "crispr",
-    "barcode-demultiplexing",
-    "edit-distance",
-    "fastq",
+    "computational biology",
+    "CRISPR",
+    "FASTQ",
+    "known-target assignment",
+    "barcode demultiplexing",
+    "edit distance",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -51,3 +52,8 @@ include = ["dotmatch*", "quickdna*"]
 [project.scripts]
 dotmatch = "dotmatch.cli:main"
 quickdna = "dotmatch.cli:main"
+
+[tool.cibuildwheel]
+build = "cp39-manylinux_x86_64 cp310-manylinux_x86_64 cp311-manylinux_x86_64 cp312-manylinux_x86_64 cp39-musllinux_x86_64 cp310-musllinux_x86_64 cp311-musllinux_x86_64 cp312-musllinux_x86_64"
+skip = "pp*"
+test-command = "python -c \"import dotmatch, quickdna; assert dotmatch.distance('ACGT', 'AGGT') == 1; assert quickdna.distance_leq('ACGT', 'AGGT', 1)\" && dotmatch --version && dotmatch dist ACGT AGGT"

@@ -1,0 +1,13 @@
+{
+  "library": "examples/crispr_guides/data/yusa_library.csv",
+  "samples": {
+    "plasmid": "examples/crispr_guides/data/ERR376998.fastq.gz",
+    "ESC1": "examples/crispr_guides/data/ERR376999.fastq.gz"
+  },
+  "guide_start": 23,
+  "guide_length": 19,
+  "k": 1,
+  "metric": "levenshtein",
+  "indel_window": 1,
+  "outdir": "examples/workflows/snakemake/output"
+}

@@ -4,10 +4,12 @@
   "name": "DotMatch",
   "description": "Fast exact short-DNA known-target assignment for CRISPR guides, barcodes, primers, panels, and whitelists.",
   "applicationCategory": "Bioinformatics",
+  "url": "https://github.com/dnncha/dotmatch",
   "codeRepository": "https://github.com/dnncha/dotmatch",
   "issueTracker": "https://github.com/dnncha/dotmatch/issues",
   "license": "https://spdx.org/licenses/Apache-2.0",
   "version": "0.1.0",
+  "softwareVersion": "0.1.0",
   "programmingLanguage": [
     "C",
     "Python",

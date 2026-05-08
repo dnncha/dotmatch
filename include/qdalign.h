@@ -8,6 +8,7 @@ extern "C" {
 #endif
 
 #define QDALN_VERSION "0.1.0-dev"
+#define QDALN_ALPHABET_POLICY "literal-byte; A/C/G/T/N/IUPAC symbols are ordinary byte symbols; no wildcard expansion"
 
 enum qdaln_match_status {
     QDALN_MATCH_INVALID = -1,
@@ -58,9 +59,16 @@ typedef struct qdaln_index_stats {
 } qdaln_index_stats;
 
 /*
+ * Public alphabet contract for reproducible known-target assignment.
+ * DotMatch compares bytes exactly: A/C/G/T, N, and IUPAC ambiguity symbols
+ * are ordinary byte symbols. There is no wildcard expansion.
+ */
+const char *qdaln_alphabet_policy(void);
+
+/*
  * Exact Levenshtein edit distance between two byte strings.
  * Costs: substitution=1, insertion=1, deletion=1.
- * For DNA this treats A/C/G/T/N as ordinary byte symbols; N is not a wildcard.
+ * For DNA this follows qdaln_alphabet_policy().
  *
  * Returns -1 on invalid input.
  */

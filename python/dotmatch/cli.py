@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Iterator, Sequence, TextIO
 
+from . import __version__
 from .core import (
     MATCH_AMBIGUOUS,
     MATCH_INVALID,
@@ -434,6 +435,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="dotmatch",
         description="Exact known-target short-DNA assignment and counting.",
     )
+    parser.add_argument("--version", action="version", version=f"dotmatch {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
 
     count = sub.add_parser("count", help="stream FASTQ/FASTQ.gz and emit target count tables")

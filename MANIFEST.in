@@ -1,4 +1,6 @@
 include LICENSE
+include CITATION.cff
+include codemeta.json
 include README.md
 include pyproject.toml
 include setup.py

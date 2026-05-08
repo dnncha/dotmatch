@@ -1,0 +1,103 @@
+title: "DotMatch QC"
+subtitle: "Known-target short-DNA assignment summary"
+
+custom_data:
+  dotmatch_sample_qc:
+    file_format: "tsv"
+    section_name: "DotMatch Sample QC"
+    description: "Known-target assignment QC emitted by DotMatch sample_qc.tsv outputs."
+    plot_type: "table"
+    pconfig:
+      id: "dotmatch_sample_qc_table"
+      title: "DotMatch Sample QC"
+      col1_header: "Sample"
+    headers:
+      fastq:
+        title: "FASTQ"
+        description: "Input FASTQ path."
+      total_reads:
+        title: "Total Reads"
+        description: "FASTQ records processed."
+        format: "{:,.0f}"
+      valid_extracted_reads:
+        title: "Valid Extracted"
+        description: "Reads with a valid extracted target window."
+        format: "{:,.0f}"
+      assigned_reads:
+        title: "Assigned"
+        description: "Reads uniquely assigned to a target."
+        format: "{:,.0f}"
+      exact_reads:
+        title: "Exact"
+        description: "Uniquely assigned exact target matches."
+        format: "{:,.0f}"
+      k1_rescued_reads:
+        title: "K1 Rescued"
+        description: "Uniquely assigned non-exact one-edit reads."
+        format: "{:,.0f}"
+      ambiguous_reads:
+        title: "Ambiguous"
+        description: "Reads with non-unique assignment under the configured policy."
+        format: "{:,.0f}"
+      no_match_reads:
+        title: "No Match"
+        description: "Valid extracted reads with no target within the configured radius."
+        format: "{:,.0f}"
+      assignment_rate:
+        title: "Assignment Rate"
+        description: "Assigned reads divided by valid extracted reads."
+        min: 0
+        max: 1
+        scale: "RdYlGn"
+      exact_rate:
+        title: "Exact Rate"
+        description: "Exact assigned reads divided by valid extracted reads."
+        min: 0
+        max: 1
+      rescue_rate:
+        title: "Rescue Rate"
+        description: "Non-exact uniquely assigned reads divided by valid extracted reads."
+        min: 0
+        max: 1
+      ambiguous_rate:
+        title: "Ambiguous Rate"
+        description: "Ambiguous reads divided by valid extracted reads."
+        min: 0
+        max: 1
+        scale: "YlOrRd"
+      no_match_rate:
+        title: "No-Match Rate"
+        description: "No-match reads divided by valid extracted reads."
+        min: 0
+        max: 1
+        scale: "YlOrRd"
+      targets_observed:
+        title: "Targets Observed"
+        description: "Targets with at least one uniquely assigned read."
+        format: "{:,.0f}"
+      zero_count_targets:
+        title: "Zero Targets"
+        description: "Targets with zero uniquely assigned reads."
+        format: "{:,.0f}"
+      gini_index:
+        title: "Gini"
+        description: "Target-count inequality across the library."
+        min: 0
+        max: 1
+      top_1pct_read_fraction:
+        title: "Top 1% Fraction"
+        description: "Fraction of assigned reads in the top 1% of targets."
+        min: 0
+        max: 1
+      candidates_verified:
+        title: "Candidates Verified"
+        description: "Indexed assignment candidates verified exactly."
+        format: "{:,.0f}"
+
+sp:
+  dotmatch_sample_qc:
+    fn: "*sample_qc.tsv"
+
+custom_content:
+  order:
+    - dotmatch_sample_qc

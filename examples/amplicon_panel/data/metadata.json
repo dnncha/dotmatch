@@ -1,0 +1,90 @@
+{
+  "considered_groups": [
+    {
+      "exact_assigned_in_subsample": 6454,
+      "feature_count": 80,
+      "target_length": 22,
+      "total_reads_scanned": 20000,
+      "unique_target_sequences": 80
+    },
+    {
+      "exact_assigned_in_subsample": 2754,
+      "feature_count": 25,
+      "target_length": 23,
+      "total_reads_scanned": 20000,
+      "unique_target_sequences": 25
+    },
+    {
+      "exact_assigned_in_subsample": 2499,
+      "feature_count": 31,
+      "target_length": 25,
+      "total_reads_scanned": 20000,
+      "unique_target_sequences": 31
+    },
+    {
+      "exact_assigned_in_subsample": 2193,
+      "feature_count": 26,
+      "target_length": 24,
+      "total_reads_scanned": 20000,
+      "unique_target_sequences": 26
+    },
+    {
+      "exact_assigned_in_subsample": 929,
+      "feature_count": 13,
+      "target_length": 27,
+      "total_reads_scanned": 20000,
+      "unique_target_sequences": 13
+    },
+    {
+      "exact_assigned_in_subsample": 854,
+      "feature_count": 13,
+      "target_length": 28,
+      "total_reads_scanned": 20000,
+      "unique_target_sequences": 13
+    },
+    {
+      "exact_assigned_in_subsample": 732,
+      "feature_count": 12,
+      "target_length": 26,
+      "total_reads_scanned": 20000,
+      "unique_target_sequences": 12
+    },
+    {
+      "exact_assigned_in_subsample": 551,
+      "feature_count": 13,
+      "target_length": 29,
+      "total_reads_scanned": 20000,
+      "unique_target_sequences": 13
+    },
+    {
+      "exact_assigned_in_subsample": 320,
+      "feature_count": 5,
+      "target_length": 30,
+      "total_reads_scanned": 20000,
+      "unique_target_sequences": 5
+    }
+  ],
+  "dataset_id": "nfcore_viralrecon_artic_v3_amplicon_sample1",
+  "dataset_page": "https://github.com/nf-core/test-datasets/tree/viralrecon/illumina/amplicon",
+  "dropped_feature_count": 138,
+  "evidence_ready": true,
+  "exact_assigned_in_subsample": 6454,
+  "fastq_url": "https://raw.githubusercontent.com/nf-core/test-datasets/viralrecon/illumina/amplicon/sample1_R1.fastq.gz",
+  "feature_count": 80,
+  "feature_type": "ARTIC V3 primer start",
+  "license": "See nf-core/test-datasets repository license for fixture reuse terms.",
+  "local_fastq": "examples/amplicon_panel/data/nfcore_viralrecon_sample1_R1.subsample20000.fastq.gz",
+  "primer_fasta": "examples/amplicon_panel/data/nCoV-2019.artic.V3.primer.fasta",
+  "primer_fasta_url": "https://raw.githubusercontent.com/nf-core/test-datasets/viralrecon/genome/MN908947.3/amplicon/nCoV-2019.artic.V3.primer.fasta",
+  "requested_records": 20000,
+  "schema_version": 1,
+  "selected_target_length": 22,
+  "source": "nf-core/test-datasets viralrecon public test data",
+  "source_fastq": "examples/amplicon_panel/data/nfcore_viralrecon_sample1_R1.fastq.gz",
+  "target_length": 22,
+  "target_start": 0,
+  "targets": "examples/amplicon_panel/data/artic_v3_primers_len22.tsv",
+  "total_reads_scanned": 20000,
+  "unique_target_sequences": 80,
+  "written_records": 20000
+}

@@ -96,7 +96,7 @@ def main() -> None:
             "",
             f"DotMatch is {speedup:.2f}x faster than the fastest validated installed comparator in this CSV ({best_comp.get('tool', '')}) on the same host and workflow.",
             "",
-            "This is not a comparison result by itself: the comparison gate still requires repeated real runs, CBCL evidence, and stricter output validation where read names/paths are comparable.",
+            "This is not a comparison result by itself: the comparison gate still requires distinct repeated real runs, a successful DotMatch CBCL row, validated competitor rows, and stricter output validation where read names/paths are comparable.",
             "",
         ])
     lines.extend([
@@ -133,11 +133,13 @@ def main() -> None:
         lines.append("| {tool} | {workflow} | {format} | {clusters} | {cycles} | {samples} | {requested_threads} | {gzip_level} | {seconds} | {clusters_per_sec} | {peak_rss_kb} | {output_mb} | {assigned_reads} | {undetermined_reads} | {filtered_clusters} | {validation_mismatches} | {validation_mode} | {content_hash} | {exit_code} | {logs} |".format(output_mb=output_mb, content_hash=content_hash, logs=logs, **row))
     lines.extend([
         "",
-        "## Comparison Evidence Gate",
+        "## Evidence Gates",
         "",
-        "Do not describe DotMatch as raw-BCL barcode comparative until this report contains real classic-BCL and CBCL run-folder rows, competitor rows for BCL Convert/bcl2fastq/CUDA-Demux where installable, repeated timing, and `dotmatch bcl-validate` zero-mismatch evidence.",
+        "Run `make bcl-tiny-public-gate` to verify the narrow public 10x tiny-BCL classic per-cycle milestone. This gate checks the committed DotMatch row, output hashes, count totals, and available bcl2fastq count-total validation.",
         "",
-        "Run `make bcl-comparison-gate` before using comparative wording. The gate intentionally fails on synthetic rows, missing CBCL evidence, missing competitor rows, failed validation, or slower DotMatch throughput.",
+        "Do not describe DotMatch as raw-BCL barcode comparative until this report contains real classic-BCL and CBCL run-folder rows, a successful DotMatch CBCL row, competitor rows for BCL Convert/bcl2fastq/CUDA-Demux where installable, distinct repeated timing, and `dotmatch bcl-validate` zero-mismatch evidence.",
+        "",
+        "Run `make bcl-comparison-gate` before using comparative wording. The gate intentionally fails on synthetic or tiny rows, missing DotMatch CBCL evidence, missing distinct repeats, missing competitor rows, failed validation, or slower DotMatch throughput.",
         "",
     ])
     (OUT_DIR / "README.md").write_text("\n".join(lines), encoding="utf-8")

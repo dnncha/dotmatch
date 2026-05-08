@@ -36,11 +36,35 @@ REQUIRED_FILES = [
     ".github/ISSUE_TEMPLATE/bug_report.yml",
     ".github/ISSUE_TEMPLATE/feature_request.yml",
     ".github/ISSUE_TEMPLATE/benchmark_evidence.yml",
+    ".zenodo.json",
     "docs/scientific-claims.md",
+    "docs/assay-evidence.json",
+    "docs/distribution-release.json",
+    "docs/distribution-submission.md",
+    "docs/workflow-adoption.json",
     "docs/release-process.md",
     "docs/methods-and-citation.md",
+    "docs/native-comparator-scope.md",
     "docs/packaging.md",
     "docs/schemas.md",
+    "examples/workflows/galaxy/dotmatch_crispr_count.xml",
+    "examples/workflows/multiqc/multiqc_config.yaml",
+    "examples/workflows/nf-core/README.md",
+    "examples/workflows/nf-core/modules/local/dotmatch/crispr_count/main.nf",
+    "examples/workflows/nf-core/modules/local/dotmatch/crispr_count/meta.yml",
+    "examples/workflows/nextflow/main.nf",
+    "examples/workflows/snakemake/Snakefile",
+    "packaging/bioconda/meta.yaml",
+    "packaging/bioconda/build.sh",
+    "scripts/check_assay_evidence.py",
+    "scripts/check_alphabet_policy.py",
+    "scripts/check_citation_metadata.py",
+    "scripts/check_distribution_channels.py",
+    "scripts/check_distribution_record.py",
+    "scripts/check_distribution_submission.py",
+    "scripts/check_bioconda_recipe.py",
+    "scripts/check_native_comparator_scope.py",
+    "scripts/check_workflow_adoption.py",
     "src/qdalign.c",
     "include/qdalign.h",
 ]
@@ -134,6 +158,8 @@ def check_metadata(root: Path, result: AuditResult) -> None:
         result.failures.append("codemeta.json name must be DotMatch")
     if "Apache-2.0" not in str(codemeta.get("license", "")):
         result.failures.append("codemeta.json must reference Apache-2.0")
+    if not codemeta.get("softwareVersion"):
+        result.failures.append("codemeta.json must declare softwareVersion")
     if not codemeta.get("keywords"):
         result.failures.append("codemeta.json must include discovery keywords")
     if not result.failures:
@@ -205,15 +231,31 @@ def check_evidence_docs(root: Path, result: AuditResult) -> None:
     readme = (root / "README.md").read_text(encoding="utf-8")
     evidence_path = root / "docs" / "scientific-claims.md"
     evidence = evidence_path.read_text(encoding="utf-8") if evidence_path.exists() else ""
+    native_scope_path = root / "docs" / "native-comparator-scope.md"
+    native_scope = native_scope_path.read_text(encoding="utf-8") if native_scope_path.exists() else ""
 
     if "docs/scientific-claims.md" not in readme:
         result.failures.append("README.md must link to docs/scientific-claims.md")
+    if "make pretag-ready" not in readme:
+        result.failures.append("README.md must document the consolidated local pre-tag release gate")
+    if "make distribution-channels" not in readme or "make workflow-adoption-status" not in readme:
+        result.failures.append("README.md must keep post-release and workflow-adoption gates separate from pretag-ready")
     if "barcode-comparison-gate" not in evidence or "requires real-data rows" not in evidence:
         result.failures.append("docs/scientific-claims.md must document the barcode-comparison-gate evidence boundary")
     if "bcl-comparison-gate" not in evidence or "requires real run folders" not in evidence:
         result.failures.append("docs/scientific-claims.md must document the bcl-comparison-gate evidence boundary")
     if "not a genome aligner" not in evidence and "General aligner replacement" not in evidence:
         result.failures.append("docs/scientific-claims.md must document the general-aligner evidence boundary")
+    native_scope_fragments = [
+        "SeqAn and Parasail comparisons are not claimed as completed release evidence yet",
+        "equivalent global edit-distance or documented semi-global scoring semantics",
+        "fixed threshold `k`",
+        "zero assignment mismatches",
+        "limited to Edlib exhaustive global edit-distance assignment scans",
+    ]
+    for fragment in native_scope_fragments:
+        if fragment not in native_scope:
+            result.failures.append(f"docs/native-comparator-scope.md must document native comparator scope: {fragment}")
     if not any("evidence boundary" in failure for failure in result.failures):
         result.passed.append("evidence boundaries documented")
 
@@ -225,6 +267,22 @@ def check_manifest(root: Path, result: AuditResult) -> None:
             result.failures.append(f"MANIFEST.in must include {required}")
     if "include/qdalign.h" in manifest and "src/qdalign.c" in manifest:
         result.passed.append("sdist native sources listed")
+
+
+def check_pull_request_template(root: Path, result: AuditResult) -> None:
+    template = (root / ".github" / "PULL_REQUEST_TEMPLATE.md").read_text(encoding="utf-8")
+    if "make test" not in template:
+        result.failures.append("pull request template must require make test evidence")
+    if "make cli-test" not in template:
+        result.failures.append("pull request template must require make cli-test evidence")
+    if "make python-test" not in template:
+        result.failures.append("pull request template must require make python-test evidence")
+    if "make pretag-ready" not in template:
+        result.failures.append("pull request template must mention make pretag-ready for release-surface changes")
+    if "does not broaden README/docs claims beyond checked evidence" not in template:
+        result.failures.append("pull request template must preserve claim-boundary checklist")
+    if not any("pull request template" in failure for failure in result.failures):
+        result.passed.append("pull request template evidence checklist present")
 
 
 def check_repository_tree(root: Path, result: AuditResult) -> None:
@@ -276,6 +334,7 @@ def audit(root: Path) -> AuditResult:
     check_release_versions(root, result)
     check_evidence_docs(root, result)
     check_manifest(root, result)
+    check_pull_request_template(root, result)
     check_repository_tree(root, result)
     check_no_local_absolute_paths(root, result)
     return result

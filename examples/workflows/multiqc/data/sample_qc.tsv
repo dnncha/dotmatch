@@ -1,0 +1,3 @@
+sample_id	fastq	total_reads	valid_extracted_reads	assigned_reads	exact_reads	k1_rescued_reads	k1_sub_reads	k1_ins_reads	k1_del_reads	ambiguous_reads	no_match_reads	invalid_reads	assignment_rate	exact_rate	rescue_rate	ambiguous_rate	no_match_rate	targets_observed	zero_count_targets	gini_index	top_1pct_read_fraction	candidates_verified
+plasmid	examples/crispr_guides/data/ERR376998.fastq.gz	10000	9992	9720	8910	810	722	46	42	18	254	8	0.972779	0.891713	0.081065	0.001801	0.025420	73112	14325	0.184200	0.031400	28220
+ESC1	examples/crispr_guides/data/ERR376999.fastq.gz	10000	9995	9754	8944	810	733	39	38	20	221	5	0.975888	0.894847	0.081041	0.002001	0.022111	73380	14057	0.181800	0.030900	28205

@@ -7,6 +7,21 @@ TMPDIR="${TMPDIR:-/tmp}/dotmatch-cli-$$"
 mkdir -p "$TMPDIR"
 trap 'rm -rf "$TMPDIR"' EXIT
 
+EXPECTED_VERSION=$(python3 - <<'PY'
+import re
+from pathlib import Path
+text = Path("pyproject.toml").read_text(encoding="utf-8")
+match = re.search(r'^version\s*=\s*"([^"]+)"', text, flags=re.MULTILINE)
+if match is None:
+    raise SystemExit("pyproject.toml version not found")
+print(match.group(1))
+PY
+)
+if [ "$("$DOTMATCH_BIN" --version)" != "dotmatch $EXPECTED_VERSION" ]; then
+  echo "dotmatch --version must report pyproject version" >&2
+  exit 1
+fi
+
 cat > "$TMPDIR/barcodes.tsv" <<'BARCODES'
 bc0	ACGT
 bc1	AGGT
@@ -71,6 +86,72 @@ gzip -c "$TMPDIR/reads.fastq" > "$TMPDIR/reads.fastq.gz"
   --out "$TMPDIR/gz.tsv"
 
 grep '^r0	ACGT	0	bc0	ACGT	0	-1	1	unique$' "$TMPDIR/gz.tsv" >/dev/null
+
+cat > "$TMPDIR/pair_left.tsv" <<'PAIRLEFT'
+L0	ACGT
+L1	TTTT
+L2	AGGA
+PAIRLEFT
+
+cat > "$TMPDIR/pair_right.tsv" <<'PAIRRIGHT'
+R0	GGAA
+R1	CCCC
+PAIRRIGHT
+
+cat > "$TMPDIR/pair_reads.fastq" <<'PAIRFASTQ'
+@p0
+ACGTGGAA
++
+IIIIIIII
+@p1
+TTTTCCCC
++
+IIIIIIII
+@p2
+ACGCGGAA
++
+IIIIIIII
+@p3
+GGGGGGAA
++
+IIIIIIII
+@p4
+ACGTAAAA
++
+IIIIIIII
+@p5
+AGGTGGAA
++
+IIIIIIII
+@p6
+AC
++
+II
+PAIRFASTQ
+
+"$DOTMATCH_BIN" pair-count \
+  --left-targets "$TMPDIR/pair_left.tsv" \
+  --right-targets "$TMPDIR/pair_right.tsv" \
+  --reads "$TMPDIR/pair_reads.fastq" \
+  --left-start 0 \
+  --left-length 4 \
+  --right-start 4 \
+  --right-length 4 \
+  --k 1 \
+  --metric hamming \
+  --out "$TMPDIR/pair_counts.tsv" \
+  --summary "$TMPDIR/pair_summary.json" \
+  --assignments "$TMPDIR/pair_assignments.tsv"
+
+grep '^L0	R0	2$' "$TMPDIR/pair_counts.tsv" >/dev/null
+grep '^L1	R1	1$' "$TMPDIR/pair_counts.tsv" >/dev/null
+grep '"assigned_pairs": 3' "$TMPDIR/pair_summary.json" >/dev/null
+grep '"pair_ambiguous": 1' "$TMPDIR/pair_summary.json" >/dev/null
+grep '"left_unmatched": 1' "$TMPDIR/pair_summary.json" >/dev/null
+grep '"right_unmatched": 1' "$TMPDIR/pair_summary.json" >/dev/null
+grep '"invalid": 1' "$TMPDIR/pair_summary.json" >/dev/null
+grep '^p5	AGGT	0	L0	ambiguous	1	GGAA	0	R0	unique	0	ambiguous$' "$TMPDIR/pair_assignments.tsv" >/dev/null
+grep '^p6		-1		invalid	-1		-1		invalid	-1	invalid$' "$TMPDIR/pair_assignments.tsv" >/dev/null
 
 cat > "$TMPDIR/mageck_seq_header.tsv" <<'TARGETS'
 sgRNAID	Seq	gene
@@ -165,10 +246,86 @@ grep '^@d2$' "$TMPDIR/demux_ambiguous.fastq" >/dev/null
 grep '^@d3$' "$TMPDIR/demux_unmatched.fastq" >/dev/null
 grep '^@d4$' "$TMPDIR/demux_unmatched.fastq" >/dev/null
 grep '"assigned_unique": 2' "$TMPDIR/demux_summary.json" >/dev/null
+grep '"alphabet_policy": "literal-byte; A/C/G/T/N/IUPAC symbols are ordinary byte symbols; no wildcard expansion"' "$TMPDIR/demux_summary.json" >/dev/null
 grep '"ambiguous": 1' "$TMPDIR/demux_summary.json" >/dev/null
 grep '"unmatched": 1' "$TMPDIR/demux_summary.json" >/dev/null
 grep '"invalid": 1' "$TMPDIR/demux_summary.json" >/dev/null
 grep '^d2	AGGA	1	bc1	AGGT	1	-1	2	ambiguous$' "$TMPDIR/demux_assignments.tsv" >/dev/null
+
+cat > "$TMPDIR/demux_quality.fastq" <<'DEMUXQUAL'
+@dq_exact
+ACGTAAAA
++
+IIIIIIII
+@dq_low
+ACGCAAAA
++
+III!IIII
+@dq_high
+ACGCAAAA
++
+IIIIIIII
+DEMUXQUAL
+
+cat > "$TMPDIR/demux_quality_barcodes.tsv" <<'DEMUXQUALBC'
+bc0	ACGT
+DEMUXQUALBC
+
+mkdir "$TMPDIR/demux_quality"
+"$DOTMATCH_BIN" demux \
+  --barcodes "$TMPDIR/demux_quality_barcodes.tsv" \
+  --reads "$TMPDIR/demux_quality.fastq" \
+  --barcode-start 0 \
+  --barcode-length 4 \
+  --k 1 \
+  --metric hamming \
+  --max-correction-qual 20 \
+  --out-dir "$TMPDIR/demux_quality" \
+  --summary "$TMPDIR/demux_quality_summary.json" \
+  --assignments "$TMPDIR/demux_quality_assignments.tsv" \
+  --unmatched-out "$TMPDIR/demux_quality_unmatched.fastq"
+
+grep '^@dq_exact$' "$TMPDIR/demux_quality/bc0.fastq" >/dev/null
+grep '^@dq_low$' "$TMPDIR/demux_quality/bc0.fastq" >/dev/null
+grep '^@dq_high$' "$TMPDIR/demux_quality_unmatched.fastq" >/dev/null
+grep '"max_correction_qual": 20' "$TMPDIR/demux_quality_summary.json" >/dev/null
+grep '"unmatched": 1' "$TMPDIR/demux_quality_summary.json" >/dev/null
+grep '^dq_high	ACGC	-1			-1	-1	0	none$' "$TMPDIR/demux_quality_assignments.tsv" >/dev/null
+
+cat > "$TMPDIR/demux_k2.fastq" <<'DEMUXK2'
+@dk_exact
+ACGTAAAA
++
+IIIIIIII
+@dk_two_sub
+AATTAAAA
++
+IIIIIIII
+@dk_none
+TTTTAAAA
++
+IIIIIIII
+DEMUXK2
+
+mkdir "$TMPDIR/demux_k2"
+"$DOTMATCH_BIN" demux \
+  --barcodes "$TMPDIR/demux_quality_barcodes.tsv" \
+  --reads "$TMPDIR/demux_k2.fastq" \
+  --barcode-start 0 \
+  --barcode-length 4 \
+  --k 2 \
+  --metric levenshtein \
+  --out-dir "$TMPDIR/demux_k2" \
+  --summary "$TMPDIR/demux_k2_summary.json" \
+  --assignments "$TMPDIR/demux_k2_assignments.tsv" \
+  --unmatched-out "$TMPDIR/demux_k2_unmatched.fastq"
+
+grep '^@dk_exact$' "$TMPDIR/demux_k2/bc0.fastq" >/dev/null
+grep '^@dk_two_sub$' "$TMPDIR/demux_k2/bc0.fastq" >/dev/null
+grep '^@dk_none$' "$TMPDIR/demux_k2_unmatched.fastq" >/dev/null
+grep '"k": 2' "$TMPDIR/demux_k2_summary.json" >/dev/null
+grep '"assigned_corrected": 1' "$TMPDIR/demux_k2_summary.json" >/dev/null
+grep '^dk_two_sub	AATT	0	bc0	ACGT	2	-1	1	unique$' "$TMPDIR/demux_k2_assignments.tsv" >/dev/null
 
 cat > "$TMPDIR/variable_barcodes.tsv" <<'VARBC'
 long	ACGA
@@ -425,6 +582,7 @@ TARGETS
 grep '^bc0	ACGT	G0	1	1	0	0	0	0	1$' "$TMPDIR/counts.tsv" >/dev/null
 grep '^bc3	TTTT	G3	0	0	1	0	0	0	1$' "$TMPDIR/counts.tsv" >/dev/null
 grep '"assigned_unique": 2' "$TMPDIR/summary.json" >/dev/null
+grep '"alphabet_policy": "literal-byte; A/C/G/T/N/IUPAC symbols are ordinary byte symbols; no wildcard expansion"' "$TMPDIR/summary.json" >/dev/null
 grep '"metric": "levenshtein"' "$TMPDIR/summary.json" >/dev/null
 grep '"library_covered_targets": 2' "$TMPDIR/summary.json" >/dev/null
 grep '^sample1	r2	GGGG	-1			-1	-1	0	none	none$' "$TMPDIR/unmatched.tsv" >/dev/null
@@ -434,6 +592,75 @@ grep '<title>DotMatch Report</title>' "$TMPDIR/report.html" >/dev/null
 grep 'sample1' "$TMPDIR/report.html" >/dev/null
 grep 'Assignment rate' "$TMPDIR/report.html" >/dev/null
 grep 'Library coverage' "$TMPDIR/report.html" >/dev/null
+
+cat > "$TMPDIR/quality_reads.fastq" <<'QUALFASTQ'
+@q_exact
+ACGTAAAA
++
+IIIIIIII
+@q_low
+ACGCAAAA
++
+III!IIII
+@q_high
+ACGCAAAA
++
+IIIIIIII
+QUALFASTQ
+
+cat > "$TMPDIR/quality_targets.tsv" <<'QUALTARGETS'
+bc0	ACGT	G0
+QUALTARGETS
+
+"$DOTMATCH_BIN" count \
+  --targets "$TMPDIR/quality_targets.tsv" \
+  --reads "$TMPDIR/quality_reads.fastq" \
+  --sample-label quality \
+  --target-start 0 \
+  --target-length 4 \
+  --k 1 \
+  --metric hamming \
+  --max-correction-qual 20 \
+  --out "$TMPDIR/quality_counts.tsv" \
+  --summary "$TMPDIR/quality_summary.json" \
+  --unmatched-out "$TMPDIR/quality_unmatched.tsv"
+
+grep '^bc0	ACGT	G0	0	1	1	0	0	0	2$' "$TMPDIR/quality_counts.tsv" >/dev/null
+grep '"max_correction_qual": 20' "$TMPDIR/quality_summary.json" >/dev/null
+grep '"unmatched": 1' "$TMPDIR/quality_summary.json" >/dev/null
+grep '^quality	q_high	ACGC	-1			-1	-1	0	none	quality_rejected$' "$TMPDIR/quality_unmatched.tsv" >/dev/null
+
+cat > "$TMPDIR/k2_reads.fastq" <<'K2FASTQ'
+@k2_exact
+ACGTAAAA
++
+IIIIIIII
+@k2_two_sub
+AATTAAAA
++
+IIIIIIII
+@k2_none
+TTTTAAAA
++
+IIIIIIII
+K2FASTQ
+
+"$DOTMATCH_BIN" count \
+  --targets "$TMPDIR/quality_targets.tsv" \
+  --reads "$TMPDIR/k2_reads.fastq" \
+  --sample-label k2 \
+  --target-start 0 \
+  --target-length 4 \
+  --k 2 \
+  --metric levenshtein \
+  --out "$TMPDIR/k2_counts.tsv" \
+  --summary "$TMPDIR/k2_summary.json" \
+  --unmatched-out "$TMPDIR/k2_unmatched.tsv"
+
+grep '^bc0	ACGT	G0	0	1	0	0	0	1	2$' "$TMPDIR/k2_counts.tsv" >/dev/null
+grep '"k": 2' "$TMPDIR/k2_summary.json" >/dev/null
+grep '"assigned_corrected": 1' "$TMPDIR/k2_summary.json" >/dev/null
+grep '^k2	k2_none	TTTT	-1			-1	-1	0	none	none$' "$TMPDIR/k2_unmatched.tsv" >/dev/null
 
 "$DOTMATCH_BIN" count \
   --targets "$TMPDIR/targets.csv" \

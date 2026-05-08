@@ -78,6 +78,10 @@ static size_t code_hash(uint64_t code, size_t len, size_t cap) {
     return (size_t)x & (cap - 1);
 }
 
+const char *qdaln_alphabet_policy(void) {
+    return QDALN_ALPHABET_POLICY;
+}
+
 static uint64_t code_delete_base(uint64_t code, size_t len, size_t drop_pos) {
     if (drop_pos + 1 >= len) {
         uint64_t keep_bits = (uint64_t)2 * drop_pos;
@@ -180,6 +184,25 @@ int qdaln_edit_distance(const char *a, size_t a_len, const char *b, size_t b_len
     return qdaln_edit_distance_dp(a, a_len, b, b_len);
 }
 
+static int one_delete_matches_qd(const char *longer, size_t longer_len,
+                                 const char *shorter, size_t shorter_len) {
+    if (longer_len != shorter_len + 1) return 0;
+    size_t i = 0;
+    size_t j = 0;
+    int edits = 0;
+    while (i < longer_len && j < shorter_len) {
+        if (longer[i] == shorter[j]) {
+            ++i;
+            ++j;
+        } else {
+            ++edits;
+            if (edits > 1) return 0;
+            ++i;
+        }
+    }
+    return 1;
+}
+
 int qdaln_edit_distance_leq(const char *a, size_t a_len, const char *b, size_t b_len, int k) {
     if ((a == NULL && a_len != 0) || (b == NULL && b_len != 0)) return -1;
     if (a_len > (size_t)INT32_MAX || b_len > (size_t)INT32_MAX) return -1;
@@ -193,6 +216,19 @@ int qdaln_edit_distance_leq(const char *a, size_t a_len, const char *b, size_t b
     if (a_len == 0) return b_len <= (size_t)k ? 1 : 0;
     if (b_len == 0) return a_len <= (size_t)k ? 1 : 0;
     if ((size_t)k >= (a_len > b_len ? a_len : b_len)) return 1;
+
+    if (k == 1) {
+        if (a_len == b_len) {
+            int mismatches = 0;
+            for (size_t i = 0; i < a_len; ++i) {
+                if (a[i] != b[i] && ++mismatches > 1) return 0;
+            }
+            return 1;
+        }
+        if (a_len == b_len + 1) return one_delete_matches_qd(a, a_len, b, b_len);
+        if (b_len == a_len + 1) return one_delete_matches_qd(b, b_len, a, a_len);
+        return 0;
+    }
 
     size_t min_len = a_len < b_len ? a_len : b_len;
     if (k >= 2 && min_len <= 64) {
@@ -267,25 +303,6 @@ static qdaln_assignment_result empty_assignment_result(int status) {
     r.status = status;
     r.edit_class = status == QDALN_MATCH_NONE ? QDALN_EDIT_NONE : QDALN_EDIT_INVALID;
     return r;
-}
-
-static int one_delete_matches_qd(const char *longer, size_t longer_len,
-                                 const char *shorter, size_t shorter_len) {
-    if (longer_len != shorter_len + 1) return 0;
-    size_t i = 0;
-    size_t j = 0;
-    int edits = 0;
-    while (i < longer_len && j < shorter_len) {
-        if (longer[i] == shorter[j]) {
-            ++i;
-            ++j;
-        } else {
-            ++edits;
-            if (edits > 1) return 0;
-            ++i;
-        }
-    }
-    return 1;
 }
 
 static int assignment_edit_class(const char *read, size_t read_len,

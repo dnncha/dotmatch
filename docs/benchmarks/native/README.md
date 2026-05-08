@@ -72,4 +72,4 @@
 
 ## Evidence Boundary
 
-These are native Edlib scan comparisons for exact short-DNA assignment workloads, plus simple exact-hash and BK-tree baselines. Exact `k=0` lookup should be judged against hash-table baselines. For `k=1`, the indexed path is reported only when it has zero correctness disagreements against the exhaustive comparator.
+These are native Edlib scan comparisons for exact short-DNA assignment workloads, plus simple exact-hash and BK-tree baselines. Exact `k=0` lookup should be judged against hash-table baselines. For `k=1`, the indexed path is reported only when it has zero correctness disagreements against the exhaustive comparator. The direct Levenshtein `k=1` threshold helper is separately covered by `make test` through `tests/test_qdalign_threshold_alloc.c`, which asserts exact/substitution/insertion/deletion threshold cases do not allocate heap memory.

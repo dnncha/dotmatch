@@ -8,4 +8,12 @@ authors:
 repository-code: "https://github.com/dnncha/dotmatch"
 license: Apache-2.0
 version: "0.1.0"
-abstract: "DotMatch is a deterministic known-target short-DNA assignment engine for exact edit-distance barcode and guide counting workflows."
+abstract: "DotMatch is a deterministic known-target short-DNA assignment engine for CRISPR guide counting, barcode demultiplexing, and fixed-target FASTQ workflows."
+keywords:
+  - bioinformatics
+  - computational biology
+  - CRISPR
+  - FASTQ
+  - known-target assignment
+  - barcode demultiplexing
+  - edit distance

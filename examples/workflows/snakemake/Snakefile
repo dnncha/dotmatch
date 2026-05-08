@@ -1,0 +1,58 @@
+configfile: "examples/workflows/snakemake/config.json"
+
+outdir = config.get("outdir", "examples/workflows/snakemake/output")
+samples = config["samples"]
+metric = config.get("metric", "levenshtein")
+indel_window = int(config.get("indel_window", 0))
+indel_window_arg = f"--indel-window {indel_window}" if metric == "levenshtein" and indel_window > 0 else ""
+
+
+rule all:
+    input:
+        f"{outdir}/counts.mageck.tsv",
+        f"{outdir}/summary.json",
+        f"{outdir}/sample_qc.tsv",
+
+
+rule sample_sheet:
+    output:
+        f"{outdir}/samples.tsv"
+    run:
+        import os
+
+        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
+        with open(output[0], "w", encoding="utf-8") as handle:
+            handle.write("sample_id\tfastq\n")
+            for sample_id, fastq in samples.items():
+                handle.write(f"{sample_id}\t{fastq}\n")
+
+
+rule dotmatch_crispr_count:
+    input:
+        library=config["library"],
+        samples=f"{outdir}/samples.tsv",
+    output:
+        counts=f"{outdir}/counts.mageck.tsv",
+        summary=f"{outdir}/summary.json",
+        sample_qc=f"{outdir}/sample_qc.tsv",
+    params:
+        guide_start=config["guide_start"],
+        guide_length=config["guide_length"],
+        k=config.get("k", 1),
+        metric=metric,
+        indel_window_arg=indel_window_arg,
+    shell:
+        """
+        dotmatch crispr-count \
+          --library {input.library} \
+          --samples {input.samples} \
+          --guide-start {params.guide_start} \
+          --guide-length {params.guide_length} \
+          --k {params.k} \
+          --metric {params.metric} \
+          {params.indel_window_arg} \
+          --out {output.counts} \
+          --summary {output.summary} \
+          --sample-qc {output.sample_qc} \
+          --ambiguous discard
+        """

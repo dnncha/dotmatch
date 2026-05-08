@@ -33,7 +33,12 @@ jobs:
         run: |
           make public-crispr-evidence-gate
           make crispr-comparison-gate
+          make perturb-seq-smoke-gate
+          make feature-barcode-smoke-gate
+          make amplicon-panel-smoke-gate
           make repository-ready
+          make release-ready
+          make assay-evidence-ready
       - uses: actions/setup-node@v6
         if: runner.os == 'Linux'
         with:

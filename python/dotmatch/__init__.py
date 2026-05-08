@@ -1,3 +1,5 @@
+from importlib.metadata import PackageNotFoundError, version as _metadata_version
+
 from .core import (
     MATCH_AMBIGUOUS,
     MATCH_INVALID,
@@ -6,12 +8,19 @@ from .core import (
     AssignmentStats,
     Matcher,
     MatchResult,
+    alphabet_policy,
     assign,
     distance,
     distance_leq,
 )
 
+try:
+    __version__ = _metadata_version("dotmatch")
+except PackageNotFoundError:
+    __version__ = "0.1.0"
+
 __all__ = [
+    "__version__",
     "MATCH_AMBIGUOUS",
     "MATCH_INVALID",
     "MATCH_NONE",
@@ -19,6 +28,7 @@ __all__ = [
     "AssignmentStats",
     "Matcher",
     "MatchResult",
+    "alphabet_policy",
     "assign",
     "distance",
     "distance_leq",

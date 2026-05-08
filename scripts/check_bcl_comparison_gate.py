@@ -23,6 +23,13 @@ def fail(reason: str) -> None:
     raise SystemExit(f"BCL comparison gate failed: {reason}")
 
 
+def repeat_count(rows: list[dict[str, str]]) -> int:
+    repeats = {r.get("repeat", "").strip() for r in rows if r.get("repeat", "").strip()}
+    if repeats:
+        return len(repeats)
+    return len(rows)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--csv", default=str(RAW))
@@ -42,18 +49,23 @@ def main() -> None:
     dotmatch = [r for r in rows if r.get("tool") == "dotmatch_bcl_demux" and r.get("exit_code") == "0"]
     if not dotmatch:
         fail("no successful DotMatch BCL row")
-    if len(dotmatch) < args.min_repeats:
-        fail(f"repeated DotMatch BCL evidence required: {len(dotmatch)} < {args.min_repeats} successful rows")
-    if args.require_cbcl and not any("cbcl" in r.get("format", "").lower() and r.get("exit_code") == "0" for r in rows):
-        fail("no successful CBCL row")
+    dotmatch_repeats = repeat_count(dotmatch)
+    if dotmatch_repeats < args.min_repeats:
+        fail(f"repeated DotMatch BCL evidence required: {dotmatch_repeats} < {args.min_repeats} distinct successful repeats")
+    if args.require_cbcl and not any(
+        r.get("tool") == "dotmatch_bcl_demux" and "cbcl" in r.get("format", "").lower() and r.get("exit_code") == "0"
+        for r in rows
+    ):
+        fail("no successful DotMatch CBCL row")
     competitors = [r for r in rows if r.get("tool") in {"bcl-convert", "bcl2fastq", "cuda-demux"} and r.get("exit_code") == "0"]
     if not competitors:
         fail("no successful competitor rows")
     validated = [r for r in competitors if r.get("validation_mismatches") == "0" and r.get("validation_exit_code") == "0"]
     if not validated:
         fail("no competitor row has zero-mismatch validation against DotMatch output")
-    if len(validated) < args.min_repeats:
-        fail(f"repeated validated competitor evidence required: {len(validated)} < {args.min_repeats} successful rows")
+    validated_repeats = repeat_count(validated)
+    if validated_repeats < args.min_repeats:
+        fail(f"repeated validated competitor evidence required: {validated_repeats} < {args.min_repeats} distinct successful repeats")
     dot_speed = max(float(r.get("clusters_per_sec") or 0.0) for r in dotmatch)
     comp_speed = max(float(r.get("clusters_per_sec") or 0.0) for r in validated)
     required = comp_speed * args.min_speedup

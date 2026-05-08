@@ -43,6 +43,20 @@ venv/
 ._*
 __MACOSX/
 
+# Local planning and non-public strategic notes
+.codex-goals/
+docs/software-paper-*.md
+docs/software-paper-*.json
+scripts/check_paper_readiness.py
+python/tests/test_check_paper_readiness.py
+
+# Workflow manager local state and example outputs
+.snakemake/
+work/
+examples/workflows/multiqc/output/
+examples/workflows/nextflow/output/
+examples/workflows/snakemake/output/
+
 # Generated example inputs/outputs. Keep checked-in benchmark evidence under
 # benchmarks/raw, benchmarks/figures, and docs/benchmarks visible.
 # Large public datasets are fetched by scripts instead of committed.
@@ -53,5 +67,13 @@ examples/crispr_sanson_brunello/data/
 examples/sanson_brunello/output/
 examples/barcode_demux/data/*
 !examples/barcode_demux/data/metadata.json
+examples/feature_barcode/data/*
+!examples/feature_barcode/data/metadata.json
+examples/perturb_seq/data/*
+!examples/perturb_seq/data/metadata.json
+examples/amplicon_panel/data/*
+!examples/amplicon_panel/data/metadata.json
+examples/oligo_adapter/data/*
+!examples/oligo_adapter/data/metadata.json
 examples/bcl_demux/data/
 examples/bcl_demux/output/

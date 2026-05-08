@@ -70,6 +70,8 @@ def _load_lib() -> ctypes.CDLL:
     for path in _candidate_paths():
         if path.exists():
             lib = ctypes.CDLL(str(path))
+            lib.qdaln_alphabet_policy.argtypes = []
+            lib.qdaln_alphabet_policy.restype = ctypes.c_char_p
             lib.qdaln_edit_distance.argtypes = [
                 ctypes.c_char_p,
                 ctypes.c_size_t,
@@ -120,6 +122,13 @@ def _load_lib() -> ctypes.CDLL:
 
 
 _LIB = _load_lib()
+
+
+def alphabet_policy() -> str:
+    policy = _LIB.qdaln_alphabet_policy()
+    if policy is None:
+        raise RuntimeError("DotMatch native library returned no alphabet policy")
+    return policy.decode("ascii")
 
 
 def _as_bytes(seq: str | bytes) -> bytes:

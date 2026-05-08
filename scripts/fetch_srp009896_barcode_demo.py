@@ -39,6 +39,7 @@ ENA_FIELDS = "run_accession,fastq_ftp,fastq_bytes,fastq_md5,read_count,base_coun
 PUBLIC_EXAMPLE_ZIP_URL = "https://drive.google.com/file/d/1sxiF4ijqp9jHvFrPa3LWsnxtIHmA0rHJ/view?usp=sharing"
 PUBLIC_EXAMPLE_BARCODE_MEMBER = "BarcodesPerSample.csv"
 USER_AGENT = "DotMatch benchmark fetcher/0.2 (+https://github.com/donncha/dotmatch)"
+FASTQ_RANGE_CHUNK_BYTES = 8 * 1024 * 1024
 TRANSIENT_NETWORK_ERRORS = (
     ConnectionError,
     EOFError,
@@ -47,6 +48,13 @@ TRANSIENT_NETWORK_ERRORS = (
     http.client.RemoteDisconnected,
     urllib.error.URLError,
 )
+
+
+def repo_path(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(ROOT.resolve()).as_posix()
+    except ValueError:
+        return str(path)
 
 
 class DriveDownloadFormParser(html.parser.HTMLParser):
@@ -134,7 +142,12 @@ def urlopen_with_retries(
 def fetch_range(url: str, start: int, end: int, timeout: int = 60) -> bytes:
     request = urllib.request.Request(url, headers={"Range": f"bytes={start}-{end}"})
     with urlopen_with_retries(request, timeout=timeout) as resp:
-        return resp.read()
+        try:
+            return resp.read()
+        except http.client.IncompleteRead as exc:
+            if exc.partial:
+                return exc.partial
+            raise
 
 
 def confirm_google_drive_download_url(url: str, warning_html: bytes) -> str:
@@ -196,23 +209,32 @@ def copy_first_fastq_records(remote_url: str, out: Path, records: int) -> int:
         try:
             if tmp.exists():
                 tmp.unlink()
-            with urlopen_with_retries(remote_url, timeout=60, attempts=1) as resp:
-                with gzip.GzipFile(fileobj=resp, mode="rb") as gz_in:
-                    with gzip.open(tmp, "wt") as gz_out:
-                        while written < records:
-                            header = gz_in.readline()
-                            if not header:
-                                break
-                            seq = gz_in.readline()
-                            plus = gz_in.readline()
-                            qual = gz_in.readline()
-                            if not seq or not plus or not qual:
-                                raise RuntimeError("remote FASTQ ended mid-record")
-                            gz_out.write(header.decode("utf-8", errors="replace"))
-                            gz_out.write(seq.decode("utf-8", errors="replace"))
-                            gz_out.write(plus.decode("utf-8", errors="replace"))
-                            gz_out.write(qual.decode("utf-8", errors="replace"))
-                            written += 1
+            decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
+            offset = 0
+            text_buffer = ""
+            pending_lines: list[str] = []
+            with gzip.open(tmp, "wt") as gz_out:
+                while written < records:
+                    chunk = fetch_range(remote_url, offset, offset + FASTQ_RANGE_CHUNK_BYTES - 1)
+                    if not chunk:
+                        break
+                    offset += len(chunk)
+                    text_buffer += decompressor.decompress(chunk).decode("utf-8", errors="replace")
+                    lines = text_buffer.splitlines(keepends=True)
+                    if lines and not (lines[-1].endswith("\n") or lines[-1].endswith("\r")):
+                        text_buffer = lines.pop()
+                    else:
+                        text_buffer = ""
+                    pending_lines.extend(lines)
+                    while len(pending_lines) >= 4 and written < records:
+                        record = pending_lines[:4]
+                        del pending_lines[:4]
+                        if not record[0].startswith("@") or not record[2].startswith("+"):
+                            raise RuntimeError("remote FASTQ yielded an invalid record")
+                        gz_out.writelines(record)
+                        written += 1
+                    if len(chunk) < FASTQ_RANGE_CHUNK_BYTES and decompressor.eof:
+                        break
             tmp.replace(out)
             return written
         except TRANSIENT_NETWORK_ERRORS as exc:
@@ -304,7 +326,7 @@ def install_barcodes(
         src = Path(barcodes_file)
         dest = out_dir / "barcodes.tsv"
         shutil.copyfile(src, dest)
-        return str(dest), str(src)
+        return str(dest), repo_path(src)
     if barcodes_url:
         dest = out_dir / "barcodes.tsv"
         with urlopen_with_retries(barcodes_url, timeout=30) as resp:
@@ -357,7 +379,7 @@ def main() -> None:
         runs.append({
             "accession": accession,
             "remote_fastq": remote_url,
-            "local_fastq": str(out_path),
+            "local_fastq": repo_path(out_path),
             "subsample_records": args.subsample,
             "written_records": written,
             "local_md5": local_md5,
@@ -404,7 +426,7 @@ def main() -> None:
             "https://www.ebi.ac.uk/ena/browser/view/SRP009896",
         ],
         "runs": runs,
-        "barcodes": barcode_path,
+        "barcodes": repo_path(Path(barcode_path)) if barcode_path else None,
         "barcode_source": barcode_source,
         "barcode_md5": md5_file(Path(barcode_path)) if barcode_path else "",
         "barcodes_required_for_benchmark": barcode_path is None,

@@ -7,6 +7,7 @@
 - [ ] `make test`
 - [ ] `make cli-test`
 - [ ] `make python-test`
+- [ ] `make pretag-ready` if release, packaging, benchmark evidence, workflow examples, or public docs changed.
 - [ ] Relevant benchmark/report gate, if claims or artifacts changed:
 
 ## Claim Boundary
@@ -18,4 +19,3 @@
 ## Notes
 
 - 
-

@@ -1,0 +1,31 @@
+{
+  "title": "DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning",
+  "upload_type": "software",
+  "version": "0.1.0",
+  "creators": [
+    {
+      "name": "O'Toole, Donncha"
+    }
+  ],
+  "description": "DotMatch is a deterministic known-target short-DNA assignment engine for CRISPR guides, barcodes, primers, panels, and whitelist-style target sets.",
+  "license": "Apache-2.0",
+  "access_right": "open",
+  "keywords": [
+    "bioinformatics",
+    "computational biology",
+    "CRISPR",
+    "FASTQ",
+    "barcode demultiplexing",
+    "edit distance",
+    "known-target assignment",
+    "sequence analysis"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/dnncha/dotmatch",
+      "relation": "isSupplementTo",
+      "scheme": "url",
+      "resource_type": "software"
+    }
+  ]
+}

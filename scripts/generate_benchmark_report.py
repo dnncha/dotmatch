@@ -221,7 +221,7 @@ def write_report(edlib_df: pd.DataFrame, batch_df: pd.DataFrame) -> None:
         "## Evidence Boundary",
         "",
         "These results cover short-DNA global edit-distance and threshold matching against Edlib's Python binding.",
-        "Comparative performance wording should use native C Edlib, SeqAn, and Parasail comparisons where the scoring model is equivalent.",
+        "Comparative performance wording should use the native Edlib assignment report for checked native-library claims. SeqAn/Parasail comparisons are not claimed until docs/native-comparator-scope.md requirements are met.",
         "",
     ]
     (OUT_DIR / "README.md").write_text("\n".join(lines), encoding="utf-8")

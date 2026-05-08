@@ -69,8 +69,29 @@ def test_fetches_public_example_barcodes_through_google_drive_warning(monkeypatc
     assert any("confirm=t" in url and "uuid=UUID" in url for url in calls)
 
 
+def test_fetch_range_returns_nonempty_incomplete_read_partial(monkeypatch):
+    fetcher = _load_fetcher()
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self):
+            raise http.client.IncompleteRead(b"ACGT", 100)
+
+    monkeypatch.setattr(fetcher, "urlopen_with_retries", lambda request, timeout=60: FakeResponse())
+
+    assert fetcher.fetch_range("https://example.test/r.fastq.gz", 0, 100) == b"ACGT"
+
+
 def test_main_can_install_public_example_barcodes_without_fastq_download(tmp_path, monkeypatch):
     fetcher = _load_fetcher()
+    fake_root = tmp_path / "repo"
+    out_dir = fake_root / "examples" / "barcode_demux" / "data"
+    monkeypatch.setattr(fetcher, "ROOT", fake_root)
 
     def fake_ena_metadata(accession):
         return {
@@ -100,7 +121,7 @@ def test_main_can_install_public_example_barcodes_without_fastq_download(tmp_pat
         [
             "fetch_srp009896",
             "--out",
-            str(tmp_path),
+            str(out_dir),
             "--metadata-only",
             "--use-public-example-barcodes",
             "--require-barcodes",
@@ -109,10 +130,14 @@ def test_main_can_install_public_example_barcodes_without_fastq_download(tmp_pat
 
     fetcher.main()
 
-    assert (tmp_path / "barcodes.tsv").read_text(encoding="utf-8") == "sample_a\tACGT\tSRR391079\n"
-    metadata = json.loads((tmp_path / "metadata.json").read_text(encoding="utf-8"))
+    assert (out_dir / "barcodes.tsv").read_text(encoding="utf-8") == "sample_a\tACGT\tSRR391079\n"
+    metadata = json.loads((out_dir / "metadata.json").read_text(encoding="utf-8"))
     assert metadata["evidence_ready"] is True
     assert [run["accession"] for run in metadata["runs"]] == ["SRR391079"]
+    assert metadata["barcodes"] == "examples/barcode_demux/data/barcodes.tsv"
+    assert metadata["runs"][0]["local_fastq"] == "examples/barcode_demux/data/SRR391079.subsample100000.fastq.gz"
+    assert not Path(metadata["barcodes"]).is_absolute()
+    assert not Path(metadata["runs"][0]["local_fastq"]).is_absolute()
 
 
 def test_explicit_default_accession_does_not_duplicate_metadata_run(tmp_path, monkeypatch):
@@ -174,25 +199,44 @@ def test_subsample_fastq_retries_transient_stream_open_failure(tmp_path, monkeyp
         )
     attempts = {"count": 0}
 
-    class FakeResponse(io.BytesIO):
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            self.close()
-
-    def fake_urlopen(request, timeout=0):
+    def fake_fetch_range(url, start, end, timeout=60):
         attempts["count"] += 1
         if attempts["count"] == 1:
             raise http.client.RemoteDisconnected("closed")
-        return FakeResponse(payload.getvalue())
+        return payload.getvalue()
 
-    monkeypatch.setattr(fetcher.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(fetcher, "fetch_range", fake_fetch_range)
     monkeypatch.setattr(fetcher.time, "sleep", lambda seconds: None)
 
     written = fetcher.copy_first_fastq_records("https://example.test/run.fastq.gz", tmp_path / "sub.fastq.gz", 2)
 
     assert written == 2
     assert attempts["count"] == 2
+    with gzip.open(tmp_path / "sub.fastq.gz", "rt") as fh:
+        assert fh.read().splitlines() == ["@r0", "ACGT", "+", "IIII", "@r1", "TGCA", "+", "JJJJ"]
+
+
+def test_subsample_fastq_uses_gzip_prefix_without_remote_trailer(tmp_path, monkeypatch):
+    fetcher = _load_fetcher()
+    payload = io.BytesIO()
+    with gzip.GzipFile(fileobj=payload, mode="wb") as gz:
+        gz.write(
+            b"@r0\nACGT\n+\nIIII\n"
+            b"@r1\nTGCA\n+\nJJJJ\n"
+            b"@r2\nGGGG\n+\nHHHH\n"
+        )
+    truncated = payload.getvalue()[:-8]
+    calls = []
+
+    def fake_fetch_range(url, start, end, timeout=60):
+        calls.append((start, end))
+        return truncated if start == 0 else b""
+
+    monkeypatch.setattr(fetcher, "fetch_range", fake_fetch_range)
+
+    written = fetcher.copy_first_fastq_records("https://example.test/run.fastq.gz", tmp_path / "sub.fastq.gz", 2)
+
+    assert written == 2
+    assert calls == [(0, fetcher.FASTQ_RANGE_CHUNK_BYTES - 1)]
     with gzip.open(tmp_path / "sub.fastq.gz", "rt") as fh:
         assert fh.read().splitlines() == ["@r0", "ACGT", "+", "IIII", "@r1", "TGCA", "+", "JJJJ"]

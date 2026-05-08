@@ -1,6 +1,23 @@
 {
   "dataset": "SRP009896 maize GBS inline barcode demultiplexing",
   "barcode_position": "5-prime / read start",
+  "barcode_start": 1,
+  "barcode_length": 0,
+  "barcode_length_mode": "auto",
+  "barcode_count": 48,
+  "barcode_lengths": [
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "barcode_filter_accessions": [
+    "SRR391079"
+  ],
+  "barcode_rows_before_filter": 192,
+  "barcode_rows_after_filter": 48,
+  "barcode_filter_applied": true,
   "sources": [
     "https://biobam.atlassian.net/wiki/spaces/OED0324/pages/3525084904/Reads%2BDemultiplexing%2Bwith%2BCutadapt",
     "https://drive.google.com/file/d/1sxiF4ijqp9jHvFrPa3LWsnxtIHmA0rHJ/view?usp=sharing",
@@ -12,7 +29,9 @@
       "remote_fastq": "https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR391/SRR391079/SRR391079.fastq.gz",
       "local_fastq": "examples/barcode_demux/data/SRR391079.subsample100000.fastq.gz",
       "subsample_records": 100000,
-      "written_records": 0,
+      "written_records": 100000,
+      "local_md5": "fa00536806d8d2c43d6838bd895337a8",
+      "local_bytes": 3581416,
       "ena": {
         "run_accession": "SRR391079",
         "fastq_ftp": "ftp.sra.ebi.ac.uk/vol1/fastq/SRR391/SRR391079/SRR391079.fastq.gz",
@@ -26,8 +45,10 @@
       }
     }
   ],
-  "barcodes": null,
-  "barcodes_required_for_benchmark": true,
-  "evidence_ready": false,
-  "note": "ENA exposes FASTQ files for the SRP009896 runs. Provide --barcodes-file or --barcodes-url to install the matching sample/barcode sheet before running comparative demux benchmarks. The public Cutadapt example links a Google Drive ExampleDataset.zip that includes the FASTQ files and barcode file; this script avoids downloading that full archive by default."
+  "barcodes": "examples/barcode_demux/data/barcodes.tsv",
+  "barcode_source": "https://drive.google.com/file/d/1sxiF4ijqp9jHvFrPa3LWsnxtIHmA0rHJ/view?usp=sharing#BarcodesPerSample.csv",
+  "barcode_md5": "63096194de13986381332b0dec3945f4",
+  "barcodes_required_for_benchmark": false,
+  "evidence_ready": true,
+  "note": "ENA exposes FASTQ files for the SRP009896 runs. Provide --barcodes-file, --barcodes-url, or --use-public-example-barcodes to install the matching sample/barcode sheet before running comparative demux benchmarks. The public Cutadapt example links a Google Drive ExampleDataset.zip that includes the FASTQ files and barcode file; --use-public-example-barcodes extracts the first ZIP member barcode sheet with a ranged request instead of downloading the full archive. When a run-accession column is present, this script keeps only rows for the requested accession(s). SRP009896 reads include a leading N before the inline barcode."
 }

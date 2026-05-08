@@ -60,7 +60,77 @@ Rules:
 
 - rates are fractions from `0.0` to `1.0`;
 - `valid_extracted_reads = total_reads - invalid_reads`;
-- `k1_rescued_reads` includes all uniquely assigned non-exact reads.
+- `assigned_corrected` is the preferred total for uniquely assigned non-exact reads;
+- `k1_rescued_reads` is retained for compatibility and equals `assigned_corrected`,
+  including in Levenshtein `k=2` runs.
+
+## `pair_counts.tsv`
+
+Nonzero paired/combinatorial target counts from `dotmatch pair-count`.
+
+```text
+left_id
+right_id
+count
+```
+
+Only reads with uniquely assigned left and right windows contribute to `count`.
+
+## `pair_assignments.tsv`
+
+Optional row-level diagnostics from `dotmatch pair-count --assignments`.
+
+```text
+read_id
+left_observed
+left_index
+left_id
+left_status
+left_distance
+right_observed
+right_index
+right_id
+right_status
+right_distance
+pair_status
+```
+
+`pair_status` is `unique` only when both windows are uniquely assigned. If
+either side is ambiguous, unmatched, or invalid, the read is excluded from
+`pair_counts.tsv`.
+
+## `pair_summary.json`
+
+Top-level fields:
+
+```text
+workflow
+k
+metric
+alphabet_policy
+left_start
+left_length
+right_start
+right_length
+n_left_targets
+n_right_targets
+total_reads
+assigned_pairs
+pair_ambiguous
+left_unmatched
+right_unmatched
+invalid
+candidates_considered
+candidates_verified
+```
+
+Rules:
+
+- rates are fractions from `0.0` to `1.0`;
+- `valid_extracted_reads = total_reads - invalid_reads`;
+- `assigned_corrected` is the preferred total for uniquely assigned non-exact reads;
+- `k1_rescued_reads` is retained for compatibility and equals `assigned_corrected`,
+  including in Levenshtein `k=2` runs.
 
 ## `audit_summary.tsv`
 
@@ -206,6 +276,8 @@ Run-level machine-readable summary. Top-level fields:
 k
 metric
 ambiguity_policy
+alphabet_policy
+max_correction_qual
 indel_window
 target_start
 auto_offset
@@ -213,6 +285,20 @@ target_length
 n_targets
 samples
 ```
+
+For count and demux summaries, `k=2` is currently a Levenshtein-only fixed-window
+mode. Hamming summaries remain limited to `k=0` and `k=1`.
+
+`alphabet_policy` records the assignment alphabet contract reported by
+`qdaln_alphabet_policy()`: `N` and IUPAC ambiguity symbols are literal byte
+symbols, not wildcard expansions. Demultiplexing summaries include the same
+field.
+
+`max_correction_qual` is either `null` or the Sanger Phred threshold supplied
+with `--max-correction-qual`. When set, one-edit substitution and read-insertion
+rescues require the observed edited base to have quality at or below this
+threshold; exact matches and read-deletion rescues are not rejected by this
+gate. Demultiplexing summaries include the same field.
 
 Each sample object includes:
 

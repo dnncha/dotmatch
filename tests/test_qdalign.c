@@ -59,6 +59,18 @@ static void fixed_tests(void) {
     assert(qdaln_edit_distance_leq("A", 1, "ACGT", 4, 3) == 1);
 }
 
+static void alphabet_policy_tests(void) {
+    const char *policy = qdaln_alphabet_policy();
+
+    assert(policy != NULL);
+    assert(strcmp(policy, QDALN_ALPHABET_POLICY) == 0);
+    assert(strstr(policy, "literal-byte") != NULL);
+    assert(strstr(policy, "no wildcard expansion") != NULL);
+    assert(qdaln_edit_distance("N", 1, "A", 1) == 1);
+    assert(qdaln_edit_distance("R", 1, "A", 1) == 1);
+    assert(qdaln_edit_distance("R", 1, "R", 1) == 0);
+}
+
 static qdaln_match_result oracle_one(const char *read, size_t read_len,
                                      const char *const *targets, const size_t *target_lens,
                                      size_t n_targets, int k) {
@@ -594,6 +606,7 @@ static void index_fuzz_tests(void) {
 
 int main(void) {
     fixed_tests();
+    alphabet_policy_tests();
     batch_fixed_tests();
     assignment_contract_tests();
     index_fixed_tests();

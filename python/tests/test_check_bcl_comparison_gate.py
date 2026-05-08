@@ -70,3 +70,36 @@ def test_bcl_gate_requires_repeated_dotmatch_and_validated_competitor_rows(tmp_p
         gate.main()
 
     assert "repeated" in str(exc.value)
+
+
+def test_bcl_gate_requires_distinct_repeats_not_duplicated_rows(tmp_path, monkeypatch):
+    gate = _load_gate()
+    csv_path = tmp_path / "bcl.csv"
+    rows = []
+    for _ in range(5):
+        rows.append(_passing_row("dotmatch_bcl_demux", "real_cbcl_and_classic_run", "classic_bcl", "1000", 1))
+        rows.append(_passing_row("dotmatch_bcl_demux", "real_cbcl_and_classic_run", "cbcl", "1000", 1))
+        rows.append(_passing_row("bcl2fastq", "real_cbcl_and_classic_run", "classic_bcl", "50", 1))
+    _write_rows(csv_path, rows)
+    monkeypatch.setattr(sys, "argv", ["check_bcl_comparison_gate.py", "--csv", str(csv_path)])
+
+    with pytest.raises(SystemExit) as exc:
+        gate.main()
+
+    assert "distinct successful repeats" in str(exc.value)
+
+
+def test_bcl_gate_requires_dotmatch_cbcl_not_competitor_only_cbcl(tmp_path, monkeypatch):
+    gate = _load_gate()
+    csv_path = tmp_path / "bcl.csv"
+    rows = []
+    for repeat in range(1, 6):
+        rows.append(_passing_row("dotmatch_bcl_demux", "real_cbcl_and_classic_run", "classic_bcl", "1000", repeat))
+        rows.append(_passing_row("bcl2fastq", "real_cbcl_and_classic_run", "cbcl", "50", repeat))
+    _write_rows(csv_path, rows)
+    monkeypatch.setattr(sys, "argv", ["check_bcl_comparison_gate.py", "--csv", str(csv_path)])
+
+    with pytest.raises(SystemExit) as exc:
+        gate.main()
+
+    assert "DotMatch CBCL" in str(exc.value)

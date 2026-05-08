@@ -24,7 +24,8 @@ DotMatch is Apache-2.0 open source.
 - The C tests compare the optimized paths with a dynamic-programming oracle.
 - FASTQ assignment has deterministic outcomes; ties are reported, not hidden.
 - CRISPR examples have committed benchmark rows and validation gates.
-- Barcode and raw-BCL examples are included, but are treated as workflow demos unless their real-data checks pass.
+- CRISPR, exact-prefix public inline-barcode, narrow 10x feature-barcode, narrow 10x CRISPR Guide Capture, narrow nf-core ARTIC amplicon/panel assignment, narrow public tiny-BCL, and narrow public fast-adapter-trimming TruSeq adapter-prefix rows have committed benchmark evidence and validation gates.
+- Broader raw-BCL and non-CRISPR assay examples are included, but are treated as workflow demos unless their real-data checks pass.
 - Output schemas and evidence boundaries are documented in [Evidence Notes](docs/scientific-claims.md).
 
 ## Included In `v0.1.0`
@@ -32,6 +33,7 @@ DotMatch is Apache-2.0 open source.
 - exact global edit distance
 - Myers 64-bit bit-vector kernel when one sequence is `<=64 bp`
 - thresholded `distance <= k` queries with early rejection
+- heap-free Levenshtein `k=1` threshold checks for exact, one-substitution, one-insertion, and one-deletion cases
 - batch many-read vs many-target assignment
 - unique/ambiguous/no-match result semantics
 - CLI for pairwise and file-based batch workflows
@@ -50,10 +52,23 @@ Not included:
 
 - semi-global/infix alignment
 - traceback/CIGAR
-- wildcard `N` semantics
+- wildcard `N` or IUPAC expansion semantics
 - native SeqAn/Parasail benchmark harnesses
 - SIMD/NEON-specific implementation
 - PyPI/Bioconda packages
+
+## Alphabet Policy
+
+DotMatch uses literal-byte matching for target assignment. `A`, `C`, `G`, `T`,
+`N`, and IUPAC ambiguity symbols are ordinary symbols; `N` and IUPAC codes are
+not expanded as wildcards. The public C/Python policy string is:
+
+```text
+literal-byte; A/C/G/T/N/IUPAC symbols are ordinary byte symbols; no wildcard expansion
+```
+
+`make alphabet-policy-ready` checks that this contract is documented and that
+DotMatch-generated benchmark rows record the same `alphabet_policy` value.
 
 ## Quickstart
 
@@ -81,6 +96,18 @@ python3 -m pip install build
 make python-package-test
 make repository-ready
 ```
+
+Local pre-tag release gate:
+
+```bash
+make pretag-ready
+```
+
+`make pretag-ready` runs the local test, package, evidence, coverage, and web
+build checks. Post-release public channel checks (`make distribution-channels`),
+external workflow adoption (`make workflow-adoption-status`), and broader BCL
+comparison evidence (`make bcl-comparison-gate`) remain separate gates because
+they require external publication or larger real-run evidence.
 
 ## Build
 
@@ -140,6 +167,26 @@ FASTQ barcode assignment:
 
 `fastq-assign` streams the FASTQ input, supports `.gz` reads via zlib, uses the reusable target index for `k=0` and `k=1`, and writes deterministic `unique`/`ambiguous`/`none`/`invalid` assignment rows.
 
+Paired/combinatorial target counting:
+
+```bash
+./dotmatch pair-count \
+  --left-targets guides_a.tsv \
+  --right-targets guides_b.tsv \
+  --reads paired_barcodes.fastq.gz \
+  --left-start 0 \
+  --left-length 20 \
+  --right-start 24 \
+  --right-length 20 \
+  --k 1 \
+  --metric hamming \
+  --out pair_counts.tsv \
+  --summary pair_summary.json \
+  --assignments pair_assignments.tsv
+```
+
+`pair-count` assigns two fixed windows independently against two known target lists and counts only reads where both sides are uniquely assigned. Ambiguous, unmatched, and invalid sides are explicit in the optional assignments table and summary JSON. This is a first paired/combinatorial primitive for dual-guide, barcode-pair, and perturbation-pair assays, not a full perturb-seq expression-processing pipeline.
+
 FASTQ barcode demultiplexing:
 
 ```bash
@@ -150,6 +197,7 @@ FASTQ barcode demultiplexing:
   --barcode-length 8 \
   --k 1 \
   --metric hamming \
+  --max-correction-qual 20 \
   --out-dir demuxed \
   --summary demux.qc.json \
   --assignments demux.assignments.tsv \
@@ -157,7 +205,7 @@ FASTQ barcode demultiplexing:
   --unmatched-out unmatched.fastq
 ```
 
-`demux` writes one FASTQ per uniquely assigned barcode under `--out-dir`. Ambiguous reads are never assigned silently; use `--ambiguous-out` and `--unmatched-out` to inspect rejected reads. This demux surface targets fixed-position inline barcodes in single-end FASTQ/FASTQ.gz. Use `--barcode-length auto` when the barcode sheet contains multiple barcode lengths; prefix-overlapping exact matches are reported as ambiguous rather than silently assigned to the longest prefix.
+`demux` writes one FASTQ per uniquely assigned barcode under `--out-dir`. Ambiguous reads are never assigned silently; use `--ambiguous-out` and `--unmatched-out` to inspect rejected reads. This demux surface targets fixed-position inline barcodes in single-end FASTQ/FASTQ.gz. Use `--barcode-length auto` when the barcode sheet contains multiple barcode lengths; prefix-overlapping exact matches are reported as ambiguous rather than silently assigned to the longest prefix. `--max-correction-qual Q` is an optional Sanger Phred gate for one-edit correction: substitutions and read-insertion rescues are accepted only when the observed edited base has quality `<= Q`; exact matches are unaffected. Levenshtein `--k 2` is available for fixed-window two-edit rescue through the exhaustive assignment fallback; Hamming remains limited to `k=0` and `k=1`.
 
 Classic Illumina BCL demultiplexing:
 
@@ -188,6 +236,7 @@ Native count-table workflow:
   --metric levenshtein \
   --ambiguity-policy best \
   --indel-window 1 \
+  --max-correction-qual 20 \
   --out counts.tsv \
   --target-counts-long target_counts.long.tsv \
   --sample-qc sample_qc.tsv \
@@ -202,7 +251,7 @@ Targets may be tab-separated `target_id<TAB>target_seq<TAB>gene` or MAGeCK-style
 
 `--report report.html` writes a native HTML run summary with assignment rates, exact/rescued/ambiguous/no-match breakdowns, library coverage, candidate-verification totals, and warnings for high ambiguous or no-match rates. If `--report-audit-dir` or `--report-unmatched` are supplied, the report also embeds a library-audit summary and top-unmatched preview. It is intentionally deterministic and self-contained so it can be archived with the count matrix.
 
-Use `--metric hamming` for a guide-counter-style one-mismatch/no-indel comparison. Use `--metric levenshtein --indel-window 1` when the workflow should recover one-base insertions/deletions around the extracted target window. `--auto-offset N` samples each FASTQ and chooses the best target start within `N` bases of `--target-start` using exact matches.
+Use `--metric hamming` for a guide-counter-style one-mismatch/no-indel comparison. Use `--metric levenshtein --indel-window 1` when the workflow should recover one-base insertions/deletions around the extracted target window. The core Levenshtein `k=1` threshold predicate uses direct exact/substitution/insertion/deletion checks without heap allocation; `make test` covers this with `tests/test_qdalign_threshold_alloc.c`. Levenshtein `--k 2` is available for fixed-window two-edit rescue through the exhaustive assignment fallback; `--indel-window` remains a `k=1` option. `--max-correction-qual Q` makes one-edit correction quality-aware: substitutions and read-insertion rescues require the observed edited base to have Sanger Phred quality `<= Q`; exact matches and read-deletion rescues are unchanged. `--auto-offset N` samples each FASTQ and chooses the best target start within `N` bases of `--target-start` using exact matches.
 
 Assignment ambiguity is explicit. `--ambiguity-policy best` assigns a read when exactly one target has the best distance within `k`; `--ambiguity-policy radius` assigns only when exactly one target is within the whole radius. Ambiguous reads are discarded from counts by default. Use `--ambiguous report` to include ambiguous rows in `assignments.tsv` for diagnostics; they are still not silently counted for a target.
 
@@ -326,6 +375,9 @@ dotmatch.distance("ACGT", "AGGT")
 dotmatch.distance_leq("ACGT", "AGGT", 1)
 # True
 
+dotmatch.alphabet_policy()
+# 'literal-byte; A/C/G/T/N/IUPAC symbols are ordinary byte symbols; no wildcard expansion'
+
 dotmatch.assign(["ACGT", "ACGC"], ["ACGT", "AGGT", "ACGA"], k=1)
 ```
 
@@ -400,7 +452,47 @@ make bench-barcode-comparison
 make barcode-comparison-gate
 ```
 
-`make barcode-comparison-gate` fails when required real-data rows or comparator rows are missing. The public SRP009896 example barcode sheet is variable-length (`4-8 bp`) and contains separate run blocks with reused barcode sequences. SRP009896 reads include a leading `N`, so use `DOTMATCH_BARCODE_START=1` with the public example sheet, and use the `k=0` exact-prefix lane with `--barcode-length auto` unless you provide a separate fixed-length sheet.
+`make barcode-comparison-gate` now passes for the checked SRP009896/SRR391079 exact-prefix lane when the public metadata, five real-data repeats, Cutadapt rows, and exact hash-splitter rows are present. The public SRP009896 example barcode sheet is variable-length (`4-8 bp`) and contains separate run blocks with reused barcode sequences. SRP009896 reads include a leading `N`, so use `DOTMATCH_BARCODE_START=1` with the public example sheet, and use the `k=0` exact-prefix lane with `--barcode-length auto` unless you provide a separate fixed-length sheet.
+
+Public 10x feature-barcode assignment benchmark/report:
+
+```bash
+make fetch-feature-barcode-demo
+make bench-feature-barcode-public
+make feature-barcode-public-gate
+```
+
+The checked feature-barcode lane uses a 10x Genomics TotalSeq-B antibody Feature Barcode R2 subsample, the 10x feature reference pattern `^NNNNNNNNNN(BC)NNNNNNNNN`, and an exact-slice hash baseline. It supports per-read fixed-window assignment wording only; it is not Cell Ranger UMI/cell-level quantification evidence.
+
+Public 10x CRISPR guide-capture assignment benchmark/report:
+
+```bash
+make fetch-perturb-seq-demo
+make bench-perturb-seq-public
+make perturb-seq-public-gate
+```
+
+The checked perturb-seq-adjacent lane uses a 10x Genomics GEM-X A375 CRISPR Guide Capture R2 subsample, selects the observed fixed guide window from the public feature reference and FASTQ prefix, and validates DotMatch k=0 against an exact-slice hash baseline. It supports per-read fixed-window guide-capture assignment wording only; it is not Cell Ranger guide-per-cell, UMI/cell quantification, expression, or perturbation-effect evidence.
+
+Public nf-core ARTIC amplicon/panel assignment benchmark/report:
+
+```bash
+make fetch-amplicon-panel-demo
+make bench-amplicon-panel-public
+make amplicon-panel-public-gate
+```
+
+The checked amplicon/panel lane uses an nf-core/test-datasets viralrecon Illumina ARTIC V3 R1 subsample, selects the observed full-primer fixed prefix group, and validates DotMatch k=0 against an exact-prefix hash baseline. It supports per-read fixed-window primer-start assignment wording only; it is not amplicon consensus, primer trimming, variant calling, clinical-panel, or diagnostic evidence.
+
+Public oligo/adapter fixed-window prefix assignment benchmark/report:
+
+```bash
+make fetch-oligo-adapter-demo
+make bench-oligo-adapter-public
+make oligo-adapter-public-gate
+```
+
+The checked oligo/adapter lane uses the public fast-adapter-trimming TruSeq R1 fixture, deduplicates 20 bp adapter-prefix targets, and validates DotMatch k=0 against an exact-slice hash baseline at the fixed R1 window. It supports adapter-prefix assignment wording only; it is not adapter trimming, primer removal, UMI grouping, read merging, or production adapter workflow evidence.
 
 Raw BCL demultiplexing benchmark/report:
 
@@ -419,7 +511,7 @@ DOTMATCH_BCL_REPEATS=5 make bench-bcl-real-repeated
 make bcl-comparison-gate
 ```
 
-`bench-bcl-small` uses a generated classic-BCL run folder and is only a smoke benchmark. Use real run folders, comparator rows where available, repeated timing, and `bcl-validate` output before treating BCL rows as benchmark evidence.
+`bench-bcl-small` uses a generated classic-BCL run folder and is only a smoke benchmark. `bcl-tiny-public-gate` checks the narrow public 10x tiny-BCL classic per-cycle milestone and count-total validation where available. Use real run folders, comparator rows, repeated timing, CBCL evidence where relevant, and `bcl-validate` output before treating BCL rows as broad comparison evidence.
 
 For the public 10x tiny-BCL demo row:
 
@@ -432,6 +524,7 @@ python3 scripts/bench_bcl_demux.py \
   --detect-competitors \
   --run-installed-competitors
 python3 scripts/generate_bcl_demux_report.py
+make bcl-tiny-public-gate
 ```
 
 Native Edlib assignment comparison:
@@ -515,7 +608,18 @@ Benchmark output is plain CSV. When sharing numbers, record the hardware, compil
 
 ## Reproducibility
 
-See [Public Schemas](docs/schemas.md) for the stable TSV/JSON contracts emitted by DotMatch, and [Evidence Notes](docs/scientific-claims.md) for the current evidence boundaries.
+See [Public Schemas](docs/schemas.md) for the stable TSV/JSON contracts emitted by DotMatch, [Evidence Notes](docs/scientific-claims.md) for the current evidence boundaries, and `docs/assay-evidence.json` for assay-lane coverage status.
+
+Workflow manager examples:
+
+- [Galaxy CRISPR counting wrapper example](examples/workflows/galaxy/README.md)
+- [MultiQC custom-content example](examples/workflows/multiqc/README.md)
+- [nf-core-style module candidate](examples/workflows/nf-core/README.md)
+- [Nextflow CRISPR counting example](examples/workflows/nextflow/README.md)
+- [Snakemake CRISPR counting example](examples/workflows/snakemake/README.md)
+- [Workflow adoption submission dossier](docs/workflow-adoption-submission.md)
+
+The local workflow examples are checked by `make workflow-examples-ready`. This gate verifies wrapper completeness, shared workflow submission fixtures, nf-test/Planemo-style smoke-test scaffolding, shared `sample_qc.tsv`/`*.sample_qc.tsv` output for MultiQC custom content, and explicit scope boundaries; it is not an upstream nf-core, Galaxy ToolShed, MultiQC plugin, or independent workflow adoption claim.
 
 Real CRISPR guide-counting example:
 
@@ -554,6 +658,7 @@ For the checked MAGeCK/Yusa rows, `make public-crispr-evidence-gate` passes on f
 
 Core pairwise functions:
 
+- `qdaln_alphabet_policy`
 - `qdaln_edit_distance`
 - `qdaln_edit_distance_leq`
 - `qdaln_edit_distance_myers64`
@@ -567,7 +672,7 @@ Batch assignment:
 - ambiguity policy: `QDALN_POLICY_BEST` or `QDALN_POLICY_RADIUS`
 - edit provenance: `QDALN_EDIT_EXACT`, `QDALN_EDIT_K1_SUB`, `QDALN_EDIT_K1_INS`, `QDALN_EDIT_K1_DEL`, `QDALN_EDIT_K2`, `QDALN_EDIT_OTHER`
 
-For v0.1, `N` is treated as a literal byte, not a wildcard.
+For v0.1, `qdaln_alphabet_policy()` reports literal-byte semantics: `N` and IUPAC ambiguity symbols are ordinary byte symbols, not wildcard expansions.
 
 ## Scope
 
@@ -597,7 +702,9 @@ For v0.1, `N` is treated as a literal byte, not a wildcard.
 - [x] indexed-vs-exhaustive validation command
 - [x] optional native Edlib validation helper
 - [x] local/GitHub Python wheel builds with bundled native core
-- [ ] PyPI manylinux/musllinux Linux wheels
+- [x] GitHub release manylinux/musllinux x86_64 wheel artifact build
+- [x] PyPI trusted-publishing path for repaired manylinux/musllinux Linux wheels
+- [ ] Public PyPI availability of repaired manylinux/musllinux Linux wheels
 
 ### Additional validation and packaging work
 
@@ -608,7 +715,9 @@ For v0.1, `N` is treated as a literal byte, not a wildcard.
 - [x] public CRISPR FASTQ workflow benchmark driver
 - [x] Cutadapt/Bowtie2 external workflow comparator hooks
 - [x] public CRISPR validation gate passing on repeated 10k and 100k-record/sample MAGeCK/Yusa rows
-- [ ] native comparisons against SeqAn and Parasail where applicable
+- [x] local Nextflow, nf-core-style, Snakemake, Galaxy, and MultiQC workflow examples with a release gate
+- [x] native SeqAn/Parasail applicability and evidence boundary documented
+- [ ] native SeqAn/Parasail benchmark rows where scoring semantics are equivalent
 
 ## Notes On Scope
 
@@ -618,6 +727,6 @@ The current scope is:
 
 > Fast exact short-DNA global edit-distance and threshold assignment for barcode/primer-style workloads, with correctness verified against dynamic programming and native Edlib assignment scans.
 
-The current native Edlib benchmark supports workload-level assignment speedups, not generic pairwise-alignment wording. Cutadapt/Bowtie/Bowtie2 FASTQ demultiplexing comparisons and native SeqAn/Parasail comparisons require matching evidence before broader ecosystem wording is used.
+The current native Edlib benchmark supports workload-level assignment speedups, not generic pairwise-alignment wording. Cutadapt/Bowtie/Bowtie2 FASTQ demultiplexing comparisons and native SeqAn/Parasail comparisons require matching evidence before broader ecosystem wording is used; see `docs/native-comparator-scope.md` for the required SeqAn/Parasail evidence boundary.
 
 Exact `k=0` lookup should be compared against hash-table baselines. For `k=1` known-target short-DNA assignment, the index reduces exhaustive alignment work while preserving exact assignment semantics.

@@ -19,6 +19,12 @@
 - [Public CRISPR guide-counting report](public_crispr/README.md)
 - [Barcode demultiplexing report](barcode_demux/README.md)
 - [Raw BCL demultiplexing report](bcl_demux/README.md)
+- [Oligo/adapter public prefix-assignment report](oligo_adapter/README.md)
+- [Perturb-seq/CRISPR guide-capture public assignment report](perturb_seq/README.md)
+- [Feature-barcode public assignment report](feature_barcode/README.md)
+- [Amplicon/panel public primer-start assignment report](amplicon_panel/README.md)
+
+Assay-lane coverage and public-evidence gaps are tracked in `docs/assay-evidence.json` and checked by `make assay-evidence-ready`. The gate inspects the listed raw CSV artifacts for data rows, command and exit-code provenance where present, and zero validation mismatch fields where recorded.
 
 ## Exact Distance Mean Speedup
 
@@ -62,4 +68,4 @@
 ## Evidence Boundary
 
 These results cover short-DNA global edit-distance and threshold matching against Edlib's Python binding.
-Comparative performance wording should use native C Edlib, SeqAn, and Parasail comparisons where the scoring model is equivalent.
+Comparative performance wording should use the native Edlib assignment report for checked native-library claims. SeqAn/Parasail comparisons are not claimed until docs/native-comparator-scope.md requirements are met.

@@ -1,0 +1,34 @@
+{
+  "adapter_count": 11,
+  "adapter_fasta": "examples/oligo_adapter/data/truseq.fa",
+  "adapter_fasta_md5": "776091973d27b4e034eeeb27a1e19b25",
+  "adapter_fasta_sha256": "51adf1f000a8da8f444a6cd84207f5afb5c0de3c5db2f0905b3cb947f7c72f46",
+  "adapter_fasta_url": "https://raw.githubusercontent.com/linsalrob/fast-adapter-trimming/main/adapters/truseq.fa",
+  "dataset_id": "fast_adapter_trimming_truseq_r1",
+  "duplicate_prefixes": {
+    "AATGATACGGCGACCACCGA": [
+      "IDT-8nt-NXT_i5",
+      "TruSeq_Index2"
+    ],
+    "AGATCGGAAGAGCACACGTC": [
+      "TruSeq_I7_full_length",
+      "TruSeq_I7_Recommended"
+    ]
+  },
+  "evidence_ready": true,
+  "fastq_url": "https://media.githubusercontent.com/media/linsalrob/fast-adapter-trimming/main/fastq/788707_20180313_S_R1.small.fastq.gz",
+  "license": "MIT",
+  "local_fastq": "examples/oligo_adapter/data/788707_20180313_S_R1.small.subsample10000.fastq.gz",
+  "requested_records": 10000,
+  "schema_version": 1,
+  "source": "linsalrob/fast-adapter-trimming public GitHub repository",
+  "source_fastq": "examples/oligo_adapter/data/788707_20180313_S_R1.small.fastq.gz",
+  "source_fastq_md5": "b082631be62cfca395eeed1122676141",
+  "source_fastq_sha256": "cea6189e342a0563ae3e9016ba638d49ba6b2e96935e8ec081a5763c38c1f147",
+  "source_repo": "https://github.com/linsalrob/fast-adapter-trimming",
+  "target_count": 9,
+  "target_length": 20,
+  "target_start": 229,
+  "targets": "examples/oligo_adapter/data/adapter_oligos.tsv",
+  "written_records": 10000
+}

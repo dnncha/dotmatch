@@ -1,0 +1,71 @@
+{
+  "anchor": "TTCCAGCTTAGCTCTTAAAC",
+  "anchor_observed_reads": 18598,
+  "compressed_prefix_bytes": 1048576,
+  "considered_groups": [
+    {
+      "anchor_observed_reads": 18598,
+      "exact_assigned_in_subsample": 15979,
+      "feature_count": 1,
+      "pattern": "TTCCAGCTTAGCTCTTAAAC(BC)",
+      "target_length": 19,
+      "target_start": 63,
+      "total_reads_scanned": 20000
+    },
+    {
+      "anchor_observed_reads": 18598,
+      "exact_assigned_in_subsample": 2358,
+      "feature_count": 5,
+      "pattern": "TTCCAGCTTAGCTCTTAAAC(BC)",
+      "target_length": 20,
+      "target_start": 63,
+      "total_reads_scanned": 20000
+    },
+    {
+      "anchor_observed_reads": 95,
+      "exact_assigned_in_subsample": 0,
+      "feature_count": 2,
+      "pattern": "TTCTAGCTCTAAAAC(BC)",
+      "target_length": 20,
+      "target_start": 53,
+      "total_reads_scanned": 20000
+    },
+    {
+      "anchor_observed_reads": 3,
+      "exact_assigned_in_subsample": 0,
+      "feature_count": 2,
+      "pattern": "TTCCAGCATAGCTCTTAAAC(BC)",
+      "target_length": 20,
+      "target_start": 63,
+      "total_reads_scanned": 20000
+    }
+  ],
+  "dataset_id": "10x_1k_a375_gemx_5p_crispr",
+  "dataset_page": "https://www.10xgenomics.com/datasets/1k-CRISPR-5p-gemx",
+  "dropped_feature_count": 10,
+  "evidence_ready": true,
+  "exact_assigned_in_subsample": 15979,
+  "fastq_tar_bytes": 4961945600,
+  "fastq_tar_url": "https://cf.10xgenomics.com/samples/cell-vdj/8.0.0/1k_CRISPR_5p_gemx_Multiplex/1k_CRISPR_5p_gemx_Multiplex_fastqs.tar",
+  "feature_count": 1,
+  "feature_ref": "examples/perturb_seq/data/1k_CRISPR_5p_gemx_count_feature_reference.csv",
+  "feature_ref_md5": "89088af5191f421a3a21d59fa60d39ed",
+  "feature_ref_url": "https://cf.10xgenomics.com/samples/cell-vdj/8.0.0/1k_CRISPR_5p_gemx_Multiplex/1k_CRISPR_5p_gemx_Multiplex_count_feature_reference.csv",
+  "feature_type": "CRISPR Guide Capture",
+  "license": "CC BY 4.0",
+  "local_fastq": "examples/perturb_seq/data/1k_CRISPR_5p_gemx_crispr_S1_L001_R2.subsample20000.fastq.gz",
+  "pattern": "TTCCAGCTTAGCTCTTAAAC(BC)",
+  "r2_entry": "./1k_CRISPR_5p_gemx_fastqs/crispr/1k_CRISPR_5p_gemx_crispr_S1_L001_R2_001.fastq.gz",
+  "r2_entry_compressed_bytes": 93753074,
+  "r2_entry_data_offset": 188459520,
+  "read": "R2",
+  "requested_records": 20000,
+  "schema_version": 1,
+  "selected_pattern": "TTCCAGCTTAGCTCTTAAAC(BC)",
+  "source": "10x Genomics public datasets",
+  "target_length": 19,
+  "target_start": 63,
+  "targets": "examples/perturb_seq/data/crispr_guides.tsv",
+  "total_reads_scanned": 20000,
+  "written_records": 20000
+}

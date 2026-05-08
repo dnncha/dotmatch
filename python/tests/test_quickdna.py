@@ -7,6 +7,12 @@ def test_distance_and_threshold():
     assert not quickdna.distance_leq("ACGT", "AGGT", 0)
 
 
+def test_alphabet_policy_alias():
+    assert quickdna.alphabet_policy() == (
+        "literal-byte; A/C/G/T/N/IUPAC symbols are ordinary byte symbols; no wildcard expansion"
+    )
+
+
 def test_assign_unique_ambiguous_none():
     results = quickdna.assign(["ACGT", "ACGC", "TTTT"], ["ACGT", "AGGT", "ACGA"], k=1)
 

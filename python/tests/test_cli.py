@@ -3,6 +3,31 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+import re
+
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def _pyproject_version() -> str:
+    text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    match = re.search(r'^version\s*=\s*"([^"]+)"', text, flags=re.MULTILINE)
+    assert match is not None
+    return match.group(1)
+
+
+def test_cli_reports_package_version():
+    rc = subprocess.run(
+        [sys.executable, "-m", "dotmatch.cli", "--version"],
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    assert rc.returncode == 0, rc.stderr
+    assert rc.stdout.strip() == f"dotmatch {_pyproject_version()}"
+    assert rc.stderr == ""
 
 
 def _write_fixture_files(tmp_path: Path):
