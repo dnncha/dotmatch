@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <stdint.h>
 #include <limits.h>
+#include <fcntl.h>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -1381,8 +1382,13 @@ static int write_count_html_report(const char *path, const seq_table *targets, c
                                    const count_stats *stats_by_sample, const offset_list *selected_offsets,
                                    int k, count_metric metric, ambiguity_policy policy, size_t target_len,
                                    const char *audit_dir, const char *unmatched_report_path) {
-    FILE *out = fopen(path, "w");
-    if (out == NULL) return -1;
+    int out_fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    if (out_fd < 0) return -1;
+    FILE *out = fdopen(out_fd, "w");
+    if (out == NULL) {
+        close(out_fd);
+        return -1;
+    }
 
     fprintf(out,
             "<!doctype html>\n<html><head><meta charset=\"utf-8\"><title>DotMatch Report</title>"

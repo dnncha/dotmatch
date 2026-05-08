@@ -592,6 +592,17 @@ grep '<title>DotMatch Report</title>' "$TMPDIR/report.html" >/dev/null
 grep 'sample1' "$TMPDIR/report.html" >/dev/null
 grep 'Assignment rate' "$TMPDIR/report.html" >/dev/null
 grep 'Library coverage' "$TMPDIR/report.html" >/dev/null
+REPORT_MODE=$(python3 - "$TMPDIR/report.html" <<'PY'
+import os
+import stat
+import sys
+print(oct(stat.S_IMODE(os.stat(sys.argv[1]).st_mode)))
+PY
+)
+if [ "$REPORT_MODE" != "0o600" ]; then
+  echo "HTML report mode should be 0600, got $REPORT_MODE" >&2
+  exit 1
+fi
 
 cat > "$TMPDIR/quality_reads.fastq" <<'QUALFASTQ'
 @q_exact
