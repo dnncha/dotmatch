@@ -89,6 +89,15 @@ python3 -m pip install .
 python3 -c "import dotmatch; print(dotmatch.distance('ACGT', 'AGGT'))"
 ```
 
+## Installation And Distribution Status
+
+The source-tree install above is the checked install path before the first
+public release. Public package channels for PyPI, Bioconda, GHCR/BioContainers,
+and Zenodo DOI are tracked separately in [Packaging Notes](docs/packaging.md)
+and the [distribution release record](docs/distribution-release.json). After
+publication, `make distribution-channels` verifies one-command installs and
+public citation/distribution links.
+
 Repository verifier:
 
 ```bash

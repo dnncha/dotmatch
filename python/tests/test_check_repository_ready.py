@@ -20,6 +20,10 @@ def _write_minimal_repo(root: Path) -> None:
             "# DotMatch\n\n"
             "`v0.1.0` includes stable release artifacts.\n\n"
             "See [Evidence Notes](docs/scientific-claims.md).\n\n"
+            "Installation and distribution status is tracked in "
+            "[Packaging Notes](docs/packaging.md) and "
+            "[distribution release record](docs/distribution-release.json). "
+            "Public package channels are tracked separately until publication.\n\n"
             "Run `make pretag-ready` before tagging. Keep `make distribution-channels` "
             "and `make workflow-adoption-status` separate until public/external evidence exists.\n"
         ),
@@ -156,6 +160,25 @@ def test_repository_ready_reports_missing_post_release_gate_boundary(tmp_path):
     result = checker.audit(tmp_path)
 
     assert any("post-release and workflow-adoption gates" in failure for failure in result.failures)
+
+
+def test_repository_ready_requires_distribution_status_in_readme(tmp_path):
+    checker = _load_checker()
+    _write_minimal_repo(tmp_path)
+    (tmp_path / "README.md").write_text(
+        "# DotMatch\n\n"
+        "`v0.1.0` includes stable release artifacts.\n\n"
+        "See [Evidence Notes](docs/scientific-claims.md).\n\n"
+        "Run `make pretag-ready` before tagging. Keep `make distribution-channels` "
+        "and `make workflow-adoption-status` separate until public/external evidence exists.\n",
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("docs/packaging.md" in failure for failure in result.failures)
+    assert any("docs/distribution-release.json" in failure for failure in result.failures)
+    assert any("public package channels" in failure for failure in result.failures)
 
 
 def test_repository_ready_reports_missing_release_workflow(tmp_path):

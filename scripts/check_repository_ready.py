@@ -260,6 +260,26 @@ def check_evidence_docs(root: Path, result: AuditResult) -> None:
         result.passed.append("evidence boundaries documented")
 
 
+def check_readme_distribution_status(root: Path, result: AuditResult) -> None:
+    readme = (root / "README.md").read_text(encoding="utf-8")
+    lower_readme = readme.lower()
+    failures_before = len(result.failures)
+
+    if "docs/packaging.md" not in readme:
+        result.failures.append("README.md must link to docs/packaging.md")
+    if "docs/distribution-release.json" not in readme:
+        result.failures.append("README.md must link to docs/distribution-release.json")
+    if "make distribution-channels" not in readme:
+        result.failures.append("README.md must mention make distribution-channels")
+    if "public package channels" not in lower_readme or (
+        "tracked separately" not in lower_readme and "pending" not in lower_readme
+    ):
+        result.failures.append("README.md must state public package channels are pending or tracked separately")
+
+    if len(result.failures) == failures_before:
+        result.passed.append("README distribution status documented")
+
+
 def check_manifest(root: Path, result: AuditResult) -> None:
     manifest = (root / "MANIFEST.in").read_text(encoding="utf-8")
     for required in ["include/qdalign.h", "src/qdalign.c"]:
@@ -333,6 +353,7 @@ def audit(root: Path) -> AuditResult:
     check_metadata(root, result)
     check_release_versions(root, result)
     check_evidence_docs(root, result)
+    check_readme_distribution_status(root, result)
     check_manifest(root, result)
     check_pull_request_template(root, result)
     check_repository_tree(root, result)

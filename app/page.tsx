@@ -4,10 +4,10 @@ const methodsUrl = `${repoUrl}/blob/main/docs/methods-and-citation.md`;
 const publicCrisprUrl = `${repoUrl}/blob/main/docs/benchmarks/public_crispr/README.md`;
 
 const proof = [
-  ["Best fit", "fixed target lists", "Guides, barcodes, primers, adapters, panels, and whitelist-style sequences where the candidates are already known."],
-  ["Correctness rule", "index matches scan", "The fast path is tested against the native exhaustive scan for the same targets, error allowance, and ambiguity policy."],
-  ["Public CRISPR data", "5 repeated rows", "The checked-in Yusa/MAGeCK rows cover 10k and 100k reads per sample, with count agreement and independent edit-distance checks."],
-  ["Repository contents", "C, CLI, Python", "Core code, bindings, tests, scripts, reports, schemas, and raw benchmark tables live in the repo."]
+  ["331k reads/s", "Hamming k=1", "Mean throughput on repeated public MAGeCK/Yusa CRISPR rows."],
+  ["28.7 MB", "peak RSS", "Peak memory for the repeated DotMatch Hamming and exact lanes."],
+  ["0 mismatches", "Edlib check", "Independent edit-distance validation over 2,000 checked reads."],
+  ["87,437 guides", "public fixture", "The current MAGeCK/Yusa guide library in the checked benchmark."]
 ];
 
 const decisionCards = [
@@ -84,6 +84,12 @@ const workflowChoiceRows = [
   ["Known short target assignment with exact one-edit semantics", "DotMatch"]
 ];
 
+const evidenceNotes = [
+  ["Correctness rule", "index matches scan", "The fast path is tested against the native exhaustive scan for the same targets, error allowance, and ambiguity policy."],
+  ["Best fit", "fixed target lists", "Guides, barcodes, primers, adapters, panels, and whitelist-style sequences where the candidates are already known."],
+  ["Repository contents", "C, CLI, Python", "Core code, bindings, tests, scripts, reports, schemas, and raw benchmark tables live in the repo."]
+];
+
 const commands = [
   "dotmatch crispr-count --library guides.csv --samples samples.tsv --guide-start 23 --guide-length 19 --k 1 --metric levenshtein --indel-window 1 --out counts.mageck.tsv --summary qc.json",
   "dotmatch count --targets guides.csv --reads sample.fastq.gz --target-start 23 --target-length 19 --k 1 --metric levenshtein --indel-window 1 --report report.html --sample-qc sample_qc.tsv",
@@ -120,13 +126,6 @@ const agreementRows = [
   { label: "DotMatch Hamming vs guide-counter", value: 0.942, tone: "blue" }
 ] as const;
 
-const scalingRows = [
-  { label: "guide-counter, 8 samples", value: 34800, tone: "blue" },
-  { label: "guide-counter, 4 samples", value: 17400, tone: "blue" },
-  { label: "guide-counter, 2 samples", value: 8700, tone: "blue" },
-  { label: "DotMatch, 8 samples", value: 0, tone: "green" }
-] as const;
-
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const heroWorkflowImage = `${basePath}/dotmatch-hero-workflow.png`;
 
@@ -140,8 +139,8 @@ export default function Home() {
         </a>
         <nav aria-label="Primary navigation">
           <a href="#benchmarks">Benchmarks</a>
-          <a href="#install">Install</a>
           <a href="#use-cases">Use cases</a>
+          <a href="#install">Install</a>
           <a href="#cite">Cite</a>
           <a href={repoUrl}>GitHub</a>
         </nav>
@@ -155,16 +154,14 @@ export default function Home() {
             Auditable assignment of short sequencing reads to known DNA targets.
           </p>
           <p className="hero-text">
-            DotMatch counts CRISPR guides, assigns inline barcodes, and matches
-            short primer, panel, or whitelist reads against a known target list.
-            It supports exact matching, one-mismatch rescue, and one-base
-            insertion or deletion rescue while reporting ambiguous reads instead
-            of silently guessing.
+            Count CRISPR guides, split inline barcodes, and match short DNA
+            reads to fixed target lists with exact, one-mismatch, and one-base
+            indel rescue. Ambiguous reads are reported, not guessed.
           </p>
           <p className="hero-note">
             <strong>Best-supported today: CRISPR guide counting</strong> from
-            public MAGeCK/Yusa FASTQs, with MAGeCK-compatible count matrices, QC
-            summaries, raw benchmark artifacts, and validation checks.
+            public MAGeCK/Yusa FASTQs, with MAGeCK-compatible count matrices
+            and checked benchmark artifacts.
           </p>
           <div className="hero-actions">
             <a href="#benchmarks" className="button primary">
@@ -220,9 +217,104 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="evidence-strip" aria-label="DotMatch public CRISPR evidence summary">
+        {proof.map(([label, value, detail]) => (
+          <article key={label}>
+            <strong>{label}</strong>
+            <span>{value}</span>
+            <p>{detail}</p>
+          </article>
+        ))}
+      </section>
+
+      <section id="benchmarks" className="section proof-section">
+        <div className="section-heading">
+          <h2>The public CRISPR evidence in plain English.</h2>
+          <p>
+            We are keeping the claims narrow for v0.1.0. On repeated public
+            MAGeCK/Yusa CRISPR guide-counting rows, DotMatch Hamming k=1
+            processed about 331k reads/s using about 28.7 MB peak memory;
+            guide-counter processed about 195k reads/s using about 529 MB, and
+            MAGeCK exact count processed about 93k reads/s using about 159 MB.
+          </p>
+        </div>
+        <div className="benchmark-grid">
+          <article className="benchmark-card">
+            <div className="chart-copy">
+              <span className="card-label">Public CRISPR benchmark</span>
+              <h3>The Yusa rows are in the repo.</h3>
+              <p>
+                These rows are not a leaderboard. They are the first public case
+                we can rerun and inspect: five 100k-record/sample repeats for
+                DotMatch, MAGeCK, and guide-counter, with exact, Hamming, and
+                Levenshtein kept separate. Edlib validation checks 2,000 reads
+                with zero mismatches against an independent edit-distance
+                implementation.
+              </p>
+            </div>
+            <HorizontalBarChart
+              rows={throughputRows}
+              unit="reads/s"
+              axisLabel="Mean throughput, 100k records/sample, log scale"
+              scale="log"
+            />
+          </article>
+
+          <article className="benchmark-card">
+            <div className="chart-copy">
+              <span className="card-label">Candidate verification</span>
+              <h3>k=1 Levenshtein usually checks only a few candidates.</h3>
+              <p>
+                On the public Yusa rows, the index sends about 2.822 candidate
+                targets per read to exact verification, out of an 87,437-guide
+                library. In biology terms, that lane allows one substitution,
+                insertion, or deletion.
+              </p>
+            </div>
+            <HorizontalBarChart
+              rows={candidateRows}
+              unit="checks/read"
+              axisLabel="Work per read, log scale"
+              scale="log"
+            />
+          </article>
+
+          <article className="benchmark-card">
+            <div className="chart-copy">
+              <span className="card-label">Memory profile</span>
+              <h3>The CRISPR counter stays small.</h3>
+              <p>
+                The repeated Yusa runs put DotMatch Hamming and exact lanes
+                around 28.7 MB peak memory use. guide-counter is around 528.7
+                MB on the same fixture.
+              </p>
+            </div>
+            <HorizontalBarChart
+              rows={memoryRows}
+              unit="MB"
+              axisLabel="Max peak RSS, lower is better"
+              scale="linear"
+            />
+          </article>
+
+          <article className="benchmark-card">
+            <div className="chart-copy">
+              <span className="card-label">Count agreement</span>
+              <h3>Comparator counts are useful, but not oracles.</h3>
+              <p>
+                MAGeCK and guide-counter help us compare familiar workflows.
+                Correctness is checked against exhaustive assignment and Edlib,
+                not whichever external tool happens to agree.
+              </p>
+            </div>
+            <AgreementChart rows={agreementRows} />
+          </article>
+        </div>
+      </section>
+
       <section className="section decision-section" aria-label="DotMatch adoption guide">
         <div className="section-heading">
-          <h2>Use it when hidden assignment choices matter.</h2>
+          <h2>Use it when assignment choices matter.</h2>
           <p>
             Most DotMatch jobs start as FASTQ reads and a target table. The
             point is not only speed; it is making corrected, ambiguous, and
@@ -351,118 +443,6 @@ make repository-ready`}</code></pre>
         </div>
       </section>
 
-      <section id="benchmarks" className="section proof-section">
-        <div className="section-heading">
-          <h2>The public CRISPR evidence in plain English.</h2>
-          <p>
-            We are keeping the claims narrow for v0.1.0. On repeated public
-            MAGeCK/Yusa CRISPR guide-counting rows, DotMatch Hamming k=1
-            processed about 331k reads/s using about 28.7 MB peak memory;
-            guide-counter processed about 195k reads/s using about 529 MB, and
-            MAGeCK exact count processed about 93k reads/s using about 159 MB.
-          </p>
-        </div>
-        <div className="proof-grid">
-          {proof.map(([label, value, detail]) => (
-            <article className="proof-card" key={label}>
-              <span>{label}</span>
-              <strong>{value}</strong>
-              <p>{detail}</p>
-            </article>
-          ))}
-        </div>
-        <div className="benchmark-grid">
-          <article className="benchmark-card">
-            <div className="chart-copy">
-              <span className="card-label">Public CRISPR benchmark</span>
-              <h3>The Yusa rows are in the repo.</h3>
-              <p>
-                These rows are not a leaderboard. They are the first public case
-                we can rerun and inspect: five 100k-record/sample repeats for
-                DotMatch, MAGeCK, and guide-counter, with exact, Hamming, and
-                Levenshtein kept separate. Edlib validation checks 2,000 reads
-                with zero mismatches against an independent edit-distance
-                implementation.
-              </p>
-            </div>
-            <HorizontalBarChart
-              rows={throughputRows}
-              unit="reads/s"
-              axisLabel="Mean throughput, 100k records/sample, log scale"
-              scale="log"
-            />
-          </article>
-
-          <article className="benchmark-card">
-            <div className="chart-copy">
-              <span className="card-label">Candidate verification</span>
-              <h3>k=1 Levenshtein usually checks only a few candidates.</h3>
-              <p>
-                On the public Yusa rows, the index sends about 2.822 candidate
-                targets per read to exact verification, out of an 87,437-guide
-                library. In biology terms, that lane allows one substitution,
-                insertion, or deletion.
-              </p>
-            </div>
-            <HorizontalBarChart
-              rows={candidateRows}
-              unit="checks/read"
-              axisLabel="Work per read, log scale"
-              scale="log"
-            />
-          </article>
-
-          <article className="benchmark-card">
-            <div className="chart-copy">
-              <span className="card-label">Memory profile</span>
-              <h3>The CRISPR counter stays small.</h3>
-              <p>
-                The repeated Yusa runs put DotMatch Hamming and exact lanes
-                around 28.7 MB peak memory use. guide-counter is around 528.7
-                MB on the same fixture.
-              </p>
-            </div>
-            <HorizontalBarChart
-              rows={memoryRows}
-              unit="MB"
-              axisLabel="Max peak RSS, lower is better"
-              scale="linear"
-            />
-          </article>
-
-          <article className="benchmark-card">
-            <div className="chart-copy">
-              <span className="card-label">Count agreement</span>
-              <h3>Comparator counts are useful, but not oracles.</h3>
-              <p>
-                MAGeCK and guide-counter help us compare familiar workflows.
-                Correctness is checked against exhaustive assignment and Edlib,
-                not whichever external tool happens to agree.
-              </p>
-            </div>
-            <AgreementChart rows={agreementRows} />
-          </article>
-
-          <article className="benchmark-card">
-            <div className="chart-copy">
-              <span className="card-label">Multi-sample CRISPR</span>
-              <h3>One read, one counted assignment.</h3>
-              <p>
-                In the 2/4/8-sample scaling run, DotMatch records zero
-                overcount reads. The guide-counter multi-offset lane can count
-                more assignments than reads.
-              </p>
-            </div>
-            <HorizontalBarChart
-              rows={scalingRows}
-              unit="reads"
-              axisLabel="Overcount reads, lower is better"
-              scale="linear"
-            />
-          </article>
-        </div>
-      </section>
-
       <section id="use-cases" className="section use-cases">
         <div className="section-heading">
           <h2>Who this is for.</h2>
@@ -483,71 +463,53 @@ make repository-ready`}</code></pre>
         </div>
       </section>
 
-      <section className="section status-section">
+      <section className="section scope-section">
         <div className="section-heading">
-          <h2>Validated now, available but early, or out of scope.</h2>
+          <h2>What is validated, early, or out of scope.</h2>
           <p>
-            The project has several surfaces. This table keeps the strongest
-            public claim separate from smoke tests and future distribution work.
+            CRISPR guide counting is the strongest public evidence today. Other
+            surfaces are useful, but the site keeps smoke tests and future
+            distribution work separate from the primary evidence.
           </p>
         </div>
-        <div className="status-table" role="table" aria-label="DotMatch workflow maturity">
-          <div role="row" className="table-head">
-            <span>Workflow</span>
-            <span>Status</span>
-            <span>Evidence level</span>
-          </div>
-          {workflowStatusRows.map(([workflow, status, evidence]) => (
-            <div role="row" key={workflow}>
-              <span data-label="Workflow">{workflow}</span>
-              <span data-label="Status">{status}</span>
-              <span data-label="Evidence level">{evidence}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section id="comparison" className="section comparison">
-        <div className="section-heading">
-          <h2>How to place it beside familiar tools.</h2>
-          <p>
-            DotMatch is not trying to replace every CRISPR, trimming, or mapping
-            tool. It is the assignment and QC step when a read should map to one
-            known short DNA target.
-          </p>
-        </div>
-        <div className="comparison-layout">
-          <div className="comparison-table" role="table" aria-label="DotMatch current CLI support">
+        <div className="scope-layout">
+          <div className="status-table" role="table" aria-label="DotMatch workflow maturity">
             <div role="row" className="table-head">
-              <span>Need</span>
-              <span>Use</span>
+              <span>Workflow</span>
+              <span>Status</span>
+              <span>Evidence level</span>
             </div>
-            {workflowChoiceRows.map(([need, tool]) => (
-              <div role="row" key={need}>
-                <span data-label="Need">{need}</span>
-                <span data-label="Use">{tool}</span>
+            {workflowStatusRows.map(([workflow, status, evidence]) => (
+              <div role="row" key={workflow}>
+                <span data-label="Workflow">{workflow}</span>
+                <span data-label="Status">{status}</span>
+                <span data-label="Evidence level">{evidence}</span>
               </div>
             ))}
           </div>
-          <div className="evidence-notes">
-            <article>
-              <span>One read policy</span>
-              <strong>0</strong>
-              <p>
-                DotMatch records zero overcount reads in the 2/4/8-sample CRISPR
-                scaling run. Ambiguity is reported instead of being hidden in a
-                count total.
-              </p>
-            </article>
-            <article>
-              <span>Bounded demux evidence</span>
-              <strong>918k</strong>
-              <p>
-                The inline demux row is a 20k-read smoke fixture with four
-                barcodes and Hamming k=1. It is useful pipeline evidence, not a
-                broad barcode benchmark.
-              </p>
-            </article>
+
+          <div className="scope-side">
+            <div className="comparison-table" role="table" aria-label="DotMatch current CLI support">
+              <div role="row" className="table-head">
+                <span>Need</span>
+                <span>Use</span>
+              </div>
+              {workflowChoiceRows.map(([need, tool]) => (
+                <div role="row" key={need}>
+                  <span data-label="Need">{need}</span>
+                  <span data-label="Use">{tool}</span>
+                </div>
+              ))}
+            </div>
+            <div className="scope-notes">
+              {evidenceNotes.map(([label, value, detail]) => (
+                <article key={label}>
+                  <span>{label}</span>
+                  <strong>{value}</strong>
+                  <p>{detail}</p>
+                </article>
+              ))}
+            </div>
           </div>
         </div>
       </section>
