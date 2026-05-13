@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Audit the Bioconda pre-submission recipe template."""
+"""Audit the Bioconda release recipe template."""
 
 from __future__ import annotations
 
@@ -94,7 +94,7 @@ def _check_meta(meta: str, result: AuditResult) -> None:
         _require(meta, fragment, message, result)
 
     if SHA_PLACEHOLDER not in meta:
-        result.failures.append("Bioconda recipe must retain SHA256 placeholder before submission")
+        result.failures.append("Bioconda recipe must retain SHA256 placeholder until the release tarball exists")
 
     for command in [
         "dotmatch --version",
@@ -108,7 +108,7 @@ def _check_meta(meta: str, result: AuditResult) -> None:
     if "not a genome aligner" not in lower_meta:
         result.failures.append("Bioconda recipe description must state DotMatch is not a genome aligner")
     if re.search(r"\b(accepted|published|released|available)\s+(on|in|from)\s+bioconda\b", meta, flags=re.I):
-        result.failures.append("Bioconda recipe must not claim public Bioconda availability before submission")
+        result.failures.append("Bioconda recipe must not claim public Bioconda availability before the package is accepted")
 
 
 def _check_build(build: str, result: AuditResult) -> None:
@@ -146,7 +146,7 @@ def audit(root: Path) -> AuditResult:
     _check_build(build, result)
 
     if not result.failures:
-        result.passed.append("Bioconda recipe pre-submission template is ready")
+        result.passed.append("Bioconda recipe template is ready")
     return result
 
 

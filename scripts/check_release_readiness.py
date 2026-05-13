@@ -149,7 +149,6 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
     dockerfile = _read(root / "Dockerfile")
     bioconda = _read(root / "packaging" / "bioconda" / "meta.yaml")
     packaging = _read(root / "docs" / "packaging.md")
-    submission = _read(root / "docs" / "distribution-submission.md")
     release_process = _read(root / "docs" / "release-process.md")
     makefile = _read(root / "Makefile")
 
@@ -218,7 +217,7 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
             result.failures.append(f"Dockerfile missing OCI label {label}")
 
     if "REPLACE_WITH_RELEASE_TARBALL_SHA256" not in bioconda:
-        result.failures.append("Bioconda template must retain release SHA256 placeholder before submission")
+        result.failures.append("Bioconda template must retain release SHA256 placeholder until the release tarball exists")
     if "dotmatch dist ACGT AGGT" not in bioconda:
         result.failures.append("Bioconda template must include native CLI smoke test")
 
@@ -234,12 +233,6 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
         result.failures.append("docs/packaging.md must document make bioconda-recipe-ready")
     if "docs/distribution-release.json" not in packaging:
         result.failures.append("docs/packaging.md must document docs/distribution-release.json")
-    if "docs/distribution-submission.md" not in packaging:
-        result.failures.append("docs/packaging.md must document docs/distribution-submission.md")
-    if "Distribution Submission Dossier" not in submission or "not a public distribution claim" not in submission:
-        result.failures.append("docs/distribution-submission.md must be a pre-release distribution handoff")
-    if "make bioconda-recipe-ready" not in submission:
-        result.failures.append("docs/distribution-submission.md must include make bioconda-recipe-ready")
     if "make release-ready" not in release_process:
         result.failures.append("docs/release-process.md must include make release-ready")
     if "make pretag-ready" not in release_process:
@@ -274,8 +267,6 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
         result.failures.append("docs/release-process.md must include make assay-evidence-ready")
     if "make distribution-record-ready" not in release_process:
         result.failures.append("docs/release-process.md must include make distribution-record-ready")
-    if "make distribution-submission-ready" not in release_process:
-        result.failures.append("docs/release-process.md must include make distribution-submission-ready")
     if "repaired manylinux/musllinux wheels" not in release_process:
         result.failures.append("docs/release-process.md must document repaired manylinux/musllinux PyPI wheel publishing")
     if "make bioconda-recipe-ready" not in release_process:
@@ -308,7 +299,6 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
             "Dockerfile",
             "Bioconda",
             "docs/packaging.md",
-            "docs/distribution-submission.md",
             "release-process",
         ]
     ):

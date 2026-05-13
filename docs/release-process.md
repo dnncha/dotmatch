@@ -29,7 +29,6 @@ make alphabet-policy-ready
 make citation-metadata-ready
 make native-comparator-scope-ready
 make distribution-record-ready
-make distribution-submission-ready
 make bioconda-recipe-ready
 make coverage
 make public-crispr-evidence-gate
@@ -98,5 +97,4 @@ Avoid:
 - Confirm the GHCR image labels and tag after the source tag is immutable.
 - Run `make distribution-channels` after PyPI, Bioconda, GHCR, and Zenodo are public.
 - Update `docs/distribution-release.json` with verified public and evidence links after public channels are live.
-- Use `docs/distribution-submission.md` as the public-channel handoff and keep it checked by `make distribution-submission-ready`.
 - Update `docs/scientific-claims.md` only when new evidence is committed and a corresponding gate passes.

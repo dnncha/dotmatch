@@ -101,7 +101,7 @@ def test_bioconda_recipe_checker_exists() -> None:
     assert CHECKER.is_file()
 
 
-def test_bioconda_recipe_accepts_valid_pre_submission_template(tmp_path):
+def test_bioconda_recipe_accepts_valid_release_template(tmp_path):
     checker = _load_checker()
     _write_repo(tmp_path)
 
@@ -120,7 +120,7 @@ def test_bioconda_recipe_rejects_version_mismatch(tmp_path):
     assert any("version mismatch" in failure for failure in result.failures)
 
 
-def test_bioconda_recipe_rejects_resolved_sha_before_submission(tmp_path):
+def test_bioconda_recipe_rejects_resolved_sha_before_release_tarball(tmp_path):
     checker = _load_checker()
     _write_repo(
         tmp_path,

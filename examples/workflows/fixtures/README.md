@@ -1,8 +1,8 @@
 # Workflow Test Fixtures
 
 These tiny CRISPR guide-counting fixtures are shared by local workflow examples
-and upstream-submission test stubs. They are intentionally small enough for
-Planemo, nf-test, and CI smoke checks.
+and wrapper tests. They are intentionally small enough for Planemo, nf-test, and
+CI smoke checks.
 
 `sample_a.fastq` covers the core DotMatch outcomes:
 

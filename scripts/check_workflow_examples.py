@@ -258,7 +258,7 @@ def check_galaxy(root: Path, result: WorkflowAudit) -> None:
         result.passed.append("Galaxy wrapper example present without ToolShed claim")
 
 
-def check_submission_fixtures(root: Path, result: WorkflowAudit) -> None:
+def check_workflow_fixtures(root: Path, result: WorkflowAudit) -> None:
     fixtures = root / "examples" / "workflows" / "fixtures"
     for filename in WORKFLOW_FIXTURES:
         if not (fixtures / filename).is_file():
@@ -277,45 +277,18 @@ def check_submission_fixtures(root: Path, result: WorkflowAudit) -> None:
     _require(counts, "sgRNA\tGene\tsample_a\tsample_b", "workflow expected_counts.mageck.tsv must be MAGeCK-compatible", result)
 
     if not any("workflow test fixture" in failure or "workflow fixture" in failure or "expected_sample_qc" in failure for failure in result.failures):
-        result.passed.append("shared workflow submission fixtures present")
-
-
-def check_adoption_submission_dossier(root: Path, result: WorkflowAudit) -> None:
-    dossier = _read(root / "docs" / "workflow-adoption-submission.md", result)
-    required = [
-        ("Workflow Adoption Submission Dossier", "workflow adoption submission dossier missing title"),
-        ("not external adoption", "workflow adoption submission dossier must avoid external adoption claims"),
-        ("make workflow-examples-ready", "workflow adoption submission dossier must require workflow-examples-ready"),
-        ("make workflow-adoption-status", "workflow adoption submission dossier must mention post-adoption status gate"),
-        ("docs/workflow-adoption.json", "workflow adoption submission dossier must name workflow-adoption.json"),
-        ("nf-core/modules", "workflow adoption submission dossier must include nf-core/modules target"),
-        ("Galaxy ToolShed", "workflow adoption submission dossier must include Galaxy ToolShed target"),
-        ("MultiQC", "workflow adoption submission dossier must include MultiQC target"),
-        ("Snakemake", "workflow adoption submission dossier must include Snakemake target"),
-        ("Nextflow", "workflow adoption submission dossier must include Nextflow target"),
-        ("adoption_url", "workflow adoption submission dossier must include adoption_url manifest field"),
-        ("evidence_url", "workflow adoption submission dossier must include evidence_url manifest field"),
-        ("validation_notes", "workflow adoption submission dossier must include validation_notes manifest field"),
-        ("recorded_date", "workflow adoption submission dossier must include recorded_date manifest field"),
-        ("stable external HTTPS adoption and evidence URLs", "workflow adoption submission dossier must require stable external HTTPS URLs before ready status"),
-    ]
-    for needle, message in required:
-        _require(dossier, needle, message, result)
-
-    if not any("workflow adoption submission dossier" in failure for failure in result.failures):
-        result.passed.append("workflow adoption submission dossier present")
+        result.passed.append("shared workflow test fixtures present")
 
 
 def audit(root: Path) -> WorkflowAudit:
     root = root.resolve()
     result = WorkflowAudit()
-    check_submission_fixtures(root, result)
+    check_workflow_fixtures(root, result)
     check_snakemake(root, result)
     check_nextflow(root, result)
     check_nfcore(root, result)
     check_multiqc(root, result)
     check_galaxy(root, result)
-    check_adoption_submission_dossier(root, result)
     return result
 
 

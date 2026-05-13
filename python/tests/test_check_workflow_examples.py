@@ -190,26 +190,6 @@ def _write_workflow_repo(root: Path) -> None:
             "guide_b\tGENEB\t0\t0\n"
             "guide_c\tGENEC\t0\t1\n"
         ),
-        "docs/workflow-adoption-submission.md": (
-            "# Workflow Adoption Submission Dossier\n\n"
-            "This is not external adoption.\n\n"
-            "## Required Checks\n\n"
-            "```bash\n"
-            "make workflow-examples-ready\n"
-            "make workflow-adoption-status\n"
-            "```\n\n"
-            "## Submission Targets\n\n"
-            "- nf-core/modules\n"
-            "- Galaxy ToolShed\n"
-            "- MultiQC plugin or documented custom-content recipe\n"
-            "- Snakemake or Nextflow workflow repository\n\n"
-            "## Manifest Record Template\n\n"
-            "`docs/workflow-adoption.json` entries must include `id`, `type`, `name`, "
-            "`status`, `adoption_url`, `evidence_url`, `validation_notes`, and "
-            "`recorded_date`.\n\n"
-            "Do not set workflow adoption status to `ready` until stable external "
-            "HTTPS adoption and evidence URLs exist.\n"
-        ),
     }
     for path, text in files.items():
         full = root / path
@@ -347,17 +327,7 @@ def test_workflow_examples_ready_requires_galaxy_sample_qc_output(tmp_path):
     assert any("Galaxy" in failure and "sample_qc" in failure for failure in result.failures)
 
 
-def test_workflow_examples_ready_rejects_missing_adoption_submission_dossier(tmp_path):
-    checker = _load_checker()
-    _write_workflow_repo(tmp_path)
-    (tmp_path / "docs" / "workflow-adoption-submission.md").unlink()
-
-    result = checker.audit(tmp_path)
-
-    assert any("workflow adoption submission dossier" in failure for failure in result.failures)
-
-
-def test_workflow_examples_ready_requires_shared_submission_fixtures(tmp_path):
+def test_workflow_examples_ready_requires_shared_workflow_fixtures(tmp_path):
     checker = _load_checker()
     _write_workflow_repo(tmp_path)
     (tmp_path / "examples" / "workflows" / "fixtures" / "sample_a.fastq").unlink()

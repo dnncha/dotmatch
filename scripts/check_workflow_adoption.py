@@ -9,11 +9,15 @@ docs/workflow-adoption.json.
 from __future__ import annotations
 
 import argparse
-import json
 import re
+import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from check_common import AuditResult, is_https_url, read_json, uses_placeholder_host
 
 
 MANIFEST = Path("docs") / "workflow-adoption.json"
@@ -28,18 +32,6 @@ VALID_INTEGRATION_TYPES = {
     "independent_workflow",
     "bioconda_recipe",
 }
-PLACEHOLDER_HOSTS = {"example.org", "example.com", "example.net"}
-
-
-class AuditResult:
-    def __init__(self) -> None:
-        self.passed: list[str] = []
-        self.failures: list[str] = []
-
-    @property
-    def ok(self) -> bool:
-        return not self.failures
-
 
 def url_ok(url: str) -> bool:
     request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "DotMatch workflow adoption verifier"})
@@ -60,16 +52,7 @@ def url_ok(url: str) -> bool:
 
 
 def _load_manifest(root: Path) -> dict:
-    return json.loads((root / MANIFEST).read_text(encoding="utf-8"))
-
-
-def _is_https_url(value: str) -> bool:
-    return re.match(r"^https://[^ \t\r\n]+$", value) is not None
-
-
-def _uses_placeholder_host(value: str) -> bool:
-    match = re.match(r"^https://([^/]+)", value)
-    return bool(match and match.group(1).lower() in PLACEHOLDER_HOSTS)
+    return read_json(root / MANIFEST)
 
 
 def _check_required_text(item: dict, field: str, result: AuditResult) -> str:
@@ -83,10 +66,10 @@ def _check_external_url(item: dict, field: str, result: AuditResult) -> None:
     value = _check_required_text(item, field, result)
     if not value:
         return
-    if not _is_https_url(value):
+    if not is_https_url(value):
         result.failures.append(f"{item.get('id', '<missing id>')} {field} must be an https URL")
         return
-    if _uses_placeholder_host(value):
+    if uses_placeholder_host(value):
         result.failures.append(f"{item.get('id', '<missing id>')} {field} must not use placeholder domains")
         return
     if not url_ok(value):

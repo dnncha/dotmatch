@@ -89,6 +89,43 @@ python3 -m pip install .
 python3 -c "import dotmatch; print(dotmatch.distance('ACGT', 'AGGT'))"
 ```
 
+## First 10 Minutes
+
+This tiny example shows the core assignment contract without downloading any
+public data. It creates three known targets and three reads, then reports
+unique, ambiguous, and unmatched outcomes.
+
+```bash
+cat > barcodes.tsv <<'EOF'
+bc0	ACGT
+bc1	AGGT
+bc2	ACGA
+EOF
+
+cat > reads.tsv <<'EOF'
+r0	ACGT
+r1	ACGC
+r2	TTTT
+EOF
+
+./dotmatch assign 1 barcodes.tsv reads.tsv
+```
+
+Expected outcome:
+
+```text
+mode	read_id	read_seq	target_index	target_seq	distance	status	match_count	second_best_distance
+assign	r0	ACGT	0	ACGT	0	unique	3	1
+assign	r1	ACGC	0	ACGT	1	ambiguous	2	-1
+assign	r2	TTTT	-1		-1	none	0	-1
+```
+
+Read `r1` is intentionally ambiguous: at one edit it matches multiple known
+targets, so DotMatch reports the tie instead of choosing one silently.
+
+For a CRISPR-facing first run with a MAGeCK-compatible count matrix and sample
+QC table, see [CRISPR Count First Run](docs/tutorials/crispr-count-first-run.md).
+
 ## Installation And Distribution Status
 
 The source-tree install above is the checked install path before the first
@@ -398,7 +435,12 @@ results, stats = matcher.assign_with_stats(["ACGT", "ACGC"], k=1)
 stats.candidates_verified
 ```
 
-The old `quickdna` Python package and `qda` CLI target are kept as transition aliases while the project moves to the DotMatch name.
+### Compatibility Aliases
+
+The public project name is DotMatch. The old `quickdna` Python package,
+`quickdna` console script, and `qda` native CLI target are kept as transition
+aliases for early users and local scripts. New documentation, examples, release
+artifacts, and workflow integrations should use `dotmatch`.
 
 ## Benchmarks
 
@@ -643,9 +685,8 @@ Workflow manager examples:
 - [nf-core-style module candidate](examples/workflows/nf-core/README.md)
 - [Nextflow CRISPR counting example](examples/workflows/nextflow/README.md)
 - [Snakemake CRISPR counting example](examples/workflows/snakemake/README.md)
-- [Workflow adoption submission dossier](docs/workflow-adoption-submission.md)
 
-The local workflow examples are checked by `make workflow-examples-ready`. This gate verifies wrapper completeness, shared workflow submission fixtures, nf-test/Planemo-style smoke-test scaffolding, shared `sample_qc.tsv`/`*.sample_qc.tsv` output for MultiQC custom content, and explicit scope boundaries; it is not an upstream nf-core, Galaxy ToolShed, MultiQC plugin, or independent workflow adoption claim.
+The local workflow examples are checked by `make workflow-examples-ready`. This gate verifies wrapper completeness, shared workflow test fixtures, nf-test/Planemo-style smoke-test scaffolding, shared `sample_qc.tsv`/`*.sample_qc.tsv` output for MultiQC custom content, and explicit scope boundaries; it is not an upstream nf-core, Galaxy ToolShed, MultiQC plugin, or independent workflow adoption claim.
 
 Real CRISPR guide-counting example:
 

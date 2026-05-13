@@ -73,7 +73,6 @@ def _write_minimal_repo(root: Path) -> None:
         ),
         "docs/assay-evidence.json": '{"schema_version": 1, "assays": []}\n',
         "docs/distribution-release.json": '{"schema_version": 1, "status": "not_released", "channels": []}\n',
-        "docs/distribution-submission.md": "# Distribution Submission Dossier\n",
         "docs/workflow-adoption.json": '{"schema_version": 1, "status": "not_ready", "integrations": []}\n',
         "docs/release-process.md": "# Release Process\n",
         "docs/methods-and-citation.md": "# Methods\n",
@@ -101,7 +100,6 @@ def _write_minimal_repo(root: Path) -> None:
         "scripts/check_citation_metadata.py": "#!/usr/bin/env python3\n",
         "scripts/check_distribution_channels.py": "#!/usr/bin/env python3\n",
         "scripts/check_distribution_record.py": "#!/usr/bin/env python3\n",
-        "scripts/check_distribution_submission.py": "#!/usr/bin/env python3\n",
         "scripts/check_bioconda_recipe.py": "#!/usr/bin/env python3\n",
         "scripts/check_native_comparator_scope.py": "#!/usr/bin/env python3\n",
         "scripts/check_workflow_adoption.py": "#!/usr/bin/env python3\n",
@@ -304,18 +302,6 @@ def test_repository_ready_reports_missing_distribution_release_record(tmp_path):
 
     assert any("docs/distribution-release.json" in failure for failure in result.failures)
     assert any("scripts/check_distribution_record.py" in failure for failure in result.failures)
-
-
-def test_repository_ready_reports_missing_distribution_submission_dossier(tmp_path):
-    checker = _load_checker()
-    _write_minimal_repo(tmp_path)
-    (tmp_path / "docs" / "distribution-submission.md").unlink()
-    (tmp_path / "scripts" / "check_distribution_submission.py").unlink()
-
-    result = checker.audit(tmp_path)
-
-    assert any("docs/distribution-submission.md" in failure for failure in result.failures)
-    assert any("scripts/check_distribution_submission.py" in failure for failure in result.failures)
 
 
 def test_repository_ready_reports_missing_bioconda_recipe_verifier(tmp_path):

@@ -199,7 +199,7 @@ def test_galaxy_readme_is_example_not_release_claim() -> None:
     assert "planemo" in text
 
 
-def test_workflow_submission_fixtures_cover_core_outcomes() -> None:
+def test_workflow_fixtures_cover_core_outcomes() -> None:
     fixtures = ROOT / "examples" / "workflows" / "fixtures"
     readme = (fixtures / "README.md").read_text(encoding="utf-8")
     library = (fixtures / "crispr_library.csv").read_text(encoding="utf-8")

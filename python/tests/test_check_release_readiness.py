@@ -126,19 +126,12 @@ def _write_release_repo(root: Path) -> None:
             "BioContainers images are checked at quay.io/biocontainers/dotmatch after Bioconda publication.\n"
             "Run make bioconda-recipe-ready before copying the recipe to bioconda-recipes.\n"
             "docs/distribution-release.json records the prepared public package channels before publication.\n"
-            "docs/distribution-submission.md records the public distribution submission handoff.\n"
-        ),
-        "docs/distribution-submission.md": (
-            "# Distribution Submission Dossier\n\n"
-            "This is a pre-release checklist, not a public distribution claim.\n"
-            "make bioconda-recipe-ready\n"
-            "make distribution-submission-ready\n"
         ),
         "docs/release-process.md": (
             "# Release Process\n\n"
             "Run `make pretag-ready`, `make release-ready`, `make assay-evidence-ready`, "
             "`make distribution-record-ready`, `make alphabet-policy-ready`, "
-            "`make distribution-submission-ready`, `make bioconda-recipe-ready`, "
+            "`make bioconda-recipe-ready`, "
             "`make citation-metadata-ready`, `make native-comparator-scope-ready`, "
             "`make public-crispr-evidence-gate`, `make crispr-comparison-gate`, and "
             "`make barcode-comparison-gate`, `make feature-barcode-public-gate`, and "
@@ -308,20 +301,6 @@ def test_release_readiness_requires_distribution_record_gate_in_release_process(
     assert any("distribution-record-ready" in failure for failure in result.failures)
 
 
-def test_release_readiness_requires_distribution_submission_gate_in_release_process(tmp_path):
-    checker = _load_checker()
-    _write_release_repo(tmp_path)
-    release_process = (tmp_path / "docs" / "release-process.md").read_text(encoding="utf-8")
-    (tmp_path / "docs" / "release-process.md").write_text(
-        release_process.replace("`make distribution-submission-ready`, ", ""),
-        encoding="utf-8",
-    )
-
-    result = checker.audit(tmp_path)
-
-    assert any("distribution-submission-ready" in failure for failure in result.failures)
-
-
 def test_release_readiness_requires_repaired_linux_wheel_release_process_note(tmp_path):
     checker = _load_checker()
     _write_release_repo(tmp_path)
@@ -484,20 +463,6 @@ def test_release_readiness_requires_bioconda_recipe_packaging_docs(tmp_path):
     result = checker.audit(tmp_path)
 
     assert any("bioconda-recipe-ready" in failure for failure in result.failures)
-
-
-def test_release_readiness_requires_bioconda_recipe_submission_handoff(tmp_path):
-    checker = _load_checker()
-    _write_release_repo(tmp_path)
-    submission = (tmp_path / "docs" / "distribution-submission.md").read_text(encoding="utf-8")
-    (tmp_path / "docs" / "distribution-submission.md").write_text(
-        submission.replace("make bioconda-recipe-ready\n", ""),
-        encoding="utf-8",
-    )
-
-    result = checker.audit(tmp_path)
-
-    assert any("distribution-submission.md" in failure and "bioconda-recipe-ready" in failure for failure in result.failures)
 
 
 def test_release_readiness_requires_preflight_before_publish_jobs(tmp_path):

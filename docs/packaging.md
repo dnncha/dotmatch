@@ -33,8 +33,8 @@ assignment searches.
 
 ## Bioconda
 
-Bioconda should package the native CLI first. A pre-submission recipe template is
-kept under `packaging/bioconda/`. Before copying it to `bioconda-recipes`,
+Bioconda should package the native CLI first. A release recipe template is kept
+under `packaging/bioconda/`. Before copying it to `bioconda-recipes`,
 replace `REPLACE_WITH_RELEASE_TARBALL_SHA256` with the SHA256 for the tagged
 GitHub release tarball. Run `make bioconda-recipe-ready` before that copy so the
 checked-in template stays aligned with the release version, native install
@@ -63,13 +63,11 @@ images to `ghcr.io/dnncha/dotmatch`.
 
 ## Post-Release Channel Verification
 
-The prepared channel state is recorded in `docs/distribution-release.json` and
-the release handoff is recorded in `docs/distribution-submission.md`. Both are
-checked before tagging with:
+The prepared channel state is recorded in `docs/distribution-release.json`.
+Check the package-channel record and recipe before tagging with:
 
 ```bash
 make distribution-record-ready
-make distribution-submission-ready
 make bioconda-recipe-ready
 ```
 

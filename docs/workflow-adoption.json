@@ -5,5 +5,5 @@
   "blockers": [
     "No external nf-core, Galaxy ToolShed, MultiQC plugin, Snakemake, Nextflow, Bioconda recipe, or independent workflow adoption link has been recorded yet."
   ],
-  "next_action": "Use docs/workflow-adoption-submission.md to land an external workflow integration, add an integration entry with stable adoption and evidence URLs, then run make workflow-adoption-status."
+  "next_action": "After an external workflow integration is accepted, add an integration entry with stable adoption and evidence URLs, then run make workflow-adoption-status."
 }

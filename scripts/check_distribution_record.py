@@ -4,30 +4,19 @@
 from __future__ import annotations
 
 import argparse
-import json
 import re
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from check_common import AuditResult, check_https_url, check_simple_make_target, read_json
 
 
 MANIFEST = Path("docs") / "distribution-release.json"
 REQUIRED_CHANNELS = ["pypi", "bioconda", "ghcr", "biocontainers", "zenodo"]
 VALID_OVERALL_STATUSES = {"not_released", "released"}
 VALID_CHANNEL_STATUSES = {"prepared", "blocked", "verified"}
-PLACEHOLDER_HOSTS = {"example.org", "example.com", "example.net"}
-
-
-class AuditResult:
-    def __init__(self) -> None:
-        self.passed: list[str] = []
-        self.failures: list[str] = []
-
-    @property
-    def ok(self) -> bool:
-        return not self.failures
-
-
-def _read_json(path: Path) -> dict:
-    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def _project_version(root: Path) -> str:
@@ -36,44 +25,8 @@ def _project_version(root: Path) -> str:
     return match.group(1) if match else ""
 
 
-def _make_targets(root: Path) -> set[str]:
-    makefile = root / "Makefile"
-    if not makefile.exists():
-        return set()
-    targets: set[str] = set()
-    for line in makefile.read_text(encoding="utf-8").splitlines():
-        match = re.match(r"^([A-Za-z0-9_.-]+):(?:\s|$)", line)
-        if match:
-            targets.add(match.group(1))
-    return targets
-
-
-def _is_https(value: str) -> bool:
-    return re.match(r"^https://[^ \t\r\n]+$", value) is not None
-
-
-def _uses_placeholder_host(value: str) -> bool:
-    match = re.match(r"^https://([^/]+)", value)
-    return bool(match and match.group(1).lower() in PLACEHOLDER_HOSTS)
-
-
 def _check_https_url(channel_id: str, field: str, value: str, result: AuditResult) -> bool:
-    if not value or not _is_https(value):
-        result.failures.append(f"{channel_id} must declare {field} as an https URL")
-        return False
-    if _uses_placeholder_host(value):
-        result.failures.append(f"{channel_id} {field} must not use placeholder domains")
-        return False
-    return True
-
-
-def _check_make_command(root: Path, command: str, result: AuditResult) -> None:
-    parts = command.split()
-    if len(parts) != 2 or parts[0] != "make":
-        result.failures.append(f"distribution release post_release_gate must be a simple make target: {command}")
-        return
-    if parts[1] not in _make_targets(root):
-        result.failures.append(f"distribution release post_release_gate target is missing: {command}")
+    return check_https_url(channel_id, field, value, result)
 
 
 def _check_channel(item: object, overall_status: str, result: AuditResult) -> str:
@@ -127,7 +80,7 @@ def audit(root: Path) -> AuditResult:
     root = root.resolve()
     result = AuditResult()
     try:
-        manifest = _read_json(root / MANIFEST)
+        manifest = read_json(root / MANIFEST)
     except Exception as exc:
         result.failures.append(f"{MANIFEST.as_posix()} could not be read: {exc}")
         return result
@@ -149,7 +102,7 @@ def audit(root: Path) -> AuditResult:
     if gate != "make distribution-channels":
         result.failures.append("distribution release record must use make distribution-channels as post_release_gate")
     elif root.joinpath("Makefile").exists():
-        _check_make_command(root, gate, result)
+        check_simple_make_target(root, gate, "distribution release post_release_gate", result)
 
     channels = manifest.get("channels")
     if not isinstance(channels, list):
