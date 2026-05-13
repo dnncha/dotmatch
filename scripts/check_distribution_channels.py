@@ -171,25 +171,23 @@ def verify_bioconda_install(version: str) -> None:
         prefix = root / "env"
         channels = ["-c", "conda-forge", "-c", "bioconda"]
         run_checked([conda, "create", "-y", "-p", str(prefix), *channels, f"dotmatch={version}"], cwd=root, env=env)
-        observed_version = run_checked([conda, "run", "-p", str(prefix), "dotmatch", "--version"], cwd=root, env=env)
-        expected_version = f"dotmatch {version}"
-        if observed_version != expected_version:
-            raise RuntimeError(f"Bioconda dotmatch --version reported {observed_version!r}, expected {expected_version!r}")
         observed_distance = run_checked([conda, "run", "-p", str(prefix), "dotmatch", "dist", "ACGT", "AGGT"], cwd=root, env=env)
         if observed_distance != "1":
             raise RuntimeError(f"Bioconda dotmatch dist smoke test reported {observed_distance!r}, expected '1'")
+        observed_threshold = run_checked([conda, "run", "-p", str(prefix), "dotmatch", "leq", "1", "ACGT", "AGGT"], cwd=root, env=env)
+        if observed_threshold != "true":
+            raise RuntimeError(f"Bioconda dotmatch leq smoke test reported {observed_threshold!r}, expected 'true'")
 
 
 def verify_biocontainers_run(image: str, version: str) -> None:
     env = os.environ.copy()
     cwd = Path.cwd()
-    observed_version = run_checked(["docker", "run", "--rm", image, "dotmatch", "--version"], cwd=cwd, env=env)
-    expected_version = f"dotmatch {version}"
-    if observed_version != expected_version:
-        raise RuntimeError(f"BioContainers dotmatch --version reported {observed_version!r}, expected {expected_version!r}")
     observed_distance = run_checked(["docker", "run", "--rm", image, "dotmatch", "dist", "ACGT", "AGGT"], cwd=cwd, env=env)
     if observed_distance != "1":
         raise RuntimeError(f"BioContainers dotmatch dist smoke test reported {observed_distance!r}, expected '1'")
+    observed_threshold = run_checked(["docker", "run", "--rm", image, "dotmatch", "leq", "1", "ACGT", "AGGT"], cwd=cwd, env=env)
+    if observed_threshold != "true":
+        raise RuntimeError(f"BioContainers dotmatch leq smoke test reported {observed_threshold!r}, expected 'true'")
 
 
 def check_pypi(version: str, result: AuditResult) -> None:

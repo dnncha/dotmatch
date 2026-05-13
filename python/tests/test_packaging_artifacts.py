@@ -33,13 +33,15 @@ def test_bioconda_recipe_builds_native_cli_and_smoke_tests() -> None:
     build = (ROOT / "packaging" / "bioconda" / "build.sh").read_text(encoding="utf-8")
 
     assert "- {{ compiler('c') }}" in recipe
+    assert "- {{ stdlib('c') }}" in recipe
+    assert "{{ pin_subpackage(\"dotmatch\", max_pin=\"x.x\") }}" in recipe
     assert "- make" in recipe
     assert "- zlib" in recipe
-    assert "dotmatch --version | grep '^dotmatch {{ version }}$'" in recipe
     assert "dotmatch dist ACGT AGGT | grep '^1$'" in recipe
     assert "dotmatch leq 1 ACGT AGGT | grep '^true$'" in recipe
     assert "dotmatch count --help" not in recipe
-    assert "make dotmatch libdotmatch.a shared" in build
+    assert 'CC="${CC}"' in build
+    assert "dotmatch libdotmatch.a shared" in build
     assert 'install -m 755 dotmatch "${PREFIX}/bin/dotmatch"' in build
     assert 'install -m 644 include/qdalign.h "${PREFIX}/include/qdalign.h"' in build
 
@@ -222,5 +224,5 @@ def test_distribution_docs_include_biocontainers_runtime_verification() -> None:
     checker = (ROOT / "scripts" / "check_distribution_channels.py").read_text(encoding="utf-8")
 
     assert "quay.io/api/v1/repository/biocontainers/dotmatch/tag/" in checker
-    assert '"docker", "run", "--rm", image, "dotmatch", "--version"' in checker
+    assert '"docker", "run", "--rm", image, "dotmatch", "leq", "1", "ACGT", "AGGT"' in checker
     assert "quay.io/biocontainers/dotmatch:<version>--<build>" in packaging

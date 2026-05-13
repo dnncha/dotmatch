@@ -55,7 +55,8 @@ Not included:
 - wildcard `N` or IUPAC expansion semantics
 - native SeqAn/Parasail benchmark harnesses
 - SIMD/NEON-specific implementation
-- PyPI/Bioconda packages
+- completed public package-channel publication across PyPI, Bioconda,
+  GHCR/BioContainers, and Zenodo
 
 ## Alphabet Policy
 
@@ -128,12 +129,16 @@ QC table, see [CRISPR Count First Run](docs/tutorials/crispr-count-first-run.md)
 
 ## Installation And Distribution Status
 
-The source-tree install above is the checked install path before the first
-public release. Public package channels for PyPI, Bioconda, GHCR/BioContainers,
-and Zenodo DOI are tracked separately in [Packaging Notes](docs/packaging.md)
-and the [distribution release record](docs/distribution-release.json). After
-publication, `make distribution-channels` verifies one-command installs and
-public citation/distribution links.
+The source-tree install above is the checked install path until the public
+package channels finish publication. Public package channels for PyPI,
+Bioconda, GHCR/BioContainers, and Zenodo DOI are tracked separately in
+[Packaging Notes](docs/packaging.md) and the
+[distribution release record](docs/distribution-release.json). The DotMatch
+Bioconda recipe is submitted at
+[bioconda/bioconda-recipes#65367](https://github.com/bioconda/bioconda-recipes/pull/65367)
+with CI passing and is waiting for Bioconda review/merge. After publication,
+`make distribution-channels` verifies one-command installs and public
+citation/distribution links.
 
 Repository verifier:
 

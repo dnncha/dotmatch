@@ -3,7 +3,7 @@
   "status": "not_ready",
   "integrations": [],
   "blockers": [
-    "No external nf-core, Galaxy ToolShed, MultiQC plugin, Snakemake, Nextflow, Bioconda recipe, or independent workflow adoption link has been recorded yet."
+    "No accepted external nf-core, Galaxy ToolShed, MultiQC plugin, Snakemake, Nextflow, Bioconda package, or independent workflow adoption link has been recorded yet. The DotMatch Bioconda recipe PR is submitted and passing CI, but it is not merged or released yet."
   ],
-  "next_action": "After an external workflow integration is accepted, add an integration entry with stable adoption and evidence URLs, then run make workflow-adoption-status."
+  "next_action": "After an external workflow integration or the Bioconda package is accepted and public, add an integration entry with stable adoption and evidence URLs, then run make workflow-adoption-status."
 }

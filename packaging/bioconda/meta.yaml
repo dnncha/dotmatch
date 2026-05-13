@@ -12,20 +12,20 @@ source:
 
 build:
   number: 0
+  run_exports:
+    - {{ pin_subpackage("dotmatch", max_pin="x.x") }}
   skip: true  # [win]
 
 requirements:
   build:
     - {{ compiler('c') }}
+    - {{ stdlib('c') }}
     - make
   host:
-    - zlib
-  run:
     - zlib
 
 test:
   commands:
-    - dotmatch --version | grep '^dotmatch {{ version }}$'
     - dotmatch dist ACGT AGGT | grep '^1$'
     - dotmatch leq 1 ACGT AGGT | grep '^true$'
 

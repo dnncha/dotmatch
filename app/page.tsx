@@ -2,6 +2,7 @@ const repoUrl = "https://github.com/dnncha/dotmatch";
 const citationUrl = `${repoUrl}/blob/main/CITATION.cff`;
 const methodsUrl = `${repoUrl}/blob/main/docs/methods-and-citation.md`;
 const publicCrisprUrl = `${repoUrl}/blob/main/docs/benchmarks/public_crispr/README.md`;
+const biocondaPrUrl = "https://github.com/bioconda/bioconda-recipes/pull/65367";
 
 const proof = [
   ["331k reads/s", "Hamming k=1", "Mean throughput on repeated public MAGeCK/Yusa CRISPR rows."],
@@ -395,10 +396,10 @@ DotMatch reports: ambiguous`}</code></pre>
         <div className="section-heading">
           <h2>Start from the repo. Cite the exact release.</h2>
           <p>
-            DotMatch is not on every package channel yet, so the honest first
-            install is from source. Current distribution: source install and
-            release artifacts. Coming next: PyPI, Bioconda, Docker/Singularity,
-            Zenodo DOI.
+            Use the source install until the public package channels finish
+            publication. Current distribution: source install, release
+            artifacts, and a Bioconda recipe PR with CI green. Coming next:
+            PyPI, Bioconda merge, Docker/Singularity, Zenodo DOI.
           </p>
         </div>
         <div className="launch-grid">
@@ -410,7 +411,10 @@ cd dotmatch
 make
 python3 -m pip install .
 make repository-ready`}</code></pre>
-            <a href={repoUrl}>Open GitHub</a>
+            <div className="link-stack">
+              <a href={repoUrl}>Open GitHub</a>
+              <a href={biocondaPrUrl}>Bioconda recipe PR</a>
+            </div>
           </article>
 
           <article id="cite" className="launch-card">

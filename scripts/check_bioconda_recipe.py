@@ -81,10 +81,12 @@ def _check_meta(meta: str, result: AuditResult) -> None:
             "Bioconda recipe must use the immutable GitHub release tarball URL",
         ),
         ("sha256: {{ sha256 }}", "Bioconda recipe must wire source sha256 through the Jinja sha256 variable"),
+        ('{{ pin_subpackage("dotmatch", max_pin="x.x") }}', "Bioconda recipe must export a compatible shared-library runtime pin"),
         ("skip: true  # [win]", "Bioconda recipe must skip unsupported Windows builds"),
         ("{{ compiler('c') }}", "Bioconda recipe must request the C compiler"),
+        ("{{ stdlib('c') }}", "Bioconda recipe must request the C standard library"),
         ("- make", "Bioconda recipe must include make in build requirements"),
-        ("- zlib", "Bioconda recipe must include zlib requirements"),
+        ("- zlib", "Bioconda recipe must include host zlib"),
         ("license: Apache-2.0", "Bioconda recipe must declare Apache-2.0 license"),
         ("license_file: LICENSE", "Bioconda recipe must install and declare LICENSE"),
         ("recipe-maintainers:", "Bioconda recipe must declare recipe maintainers"),
@@ -94,13 +96,9 @@ def _check_meta(meta: str, result: AuditResult) -> None:
         _require(meta, fragment, message, result)
 
     if SHA_PLACEHOLDER not in meta:
-        result.failures.append("Bioconda recipe must retain SHA256 placeholder until the release tarball exists")
+        result.failures.append("Bioconda recipe must retain SHA256 placeholder until copying into bioconda-recipes")
 
-    for command in [
-        "dotmatch --version",
-        "dotmatch dist ACGT AGGT",
-        "dotmatch leq 1 ACGT AGGT",
-    ]:
+    for command in ["dotmatch dist ACGT AGGT", "dotmatch leq 1 ACGT AGGT"]:
         if command not in meta:
             result.failures.append(f"Bioconda recipe test commands must include {command}")
 
@@ -114,7 +112,10 @@ def _check_meta(meta: str, result: AuditResult) -> None:
 def _check_build(build: str, result: AuditResult) -> None:
     required_fragments = [
         ("set -euo pipefail", "Bioconda build.sh must fail fast with set -euo pipefail"),
-        ("make dotmatch libdotmatch.a shared", "Bioconda build.sh must build CLI, static library, and shared library"),
+        ('CC="${CC}"', "Bioconda build.sh must use Conda's C compiler"),
+        ("CPPFLAGS", "Bioconda build.sh must include Conda preprocessor flags"),
+        ("LDFLAGS", "Bioconda build.sh must include Conda linker flags"),
+        ("dotmatch libdotmatch.a shared", "Bioconda build.sh must build CLI, static library, and shared library"),
         ('"${PREFIX}/bin"', "Bioconda build.sh must create the bin install directory"),
         ('"${PREFIX}/include"', "Bioconda build.sh must create the include install directory"),
         ('"${PREFIX}/lib"', "Bioconda build.sh must create the lib install directory"),

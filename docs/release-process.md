@@ -93,7 +93,9 @@ Avoid:
 
 - Create a Zenodo archive and add the DOI to `CITATION.cff` when available.
 - Publish the PyPI source distribution and repaired manylinux/musllinux wheels through trusted publishing; do not upload raw `linux_x86_64` wheels.
-- Run `make bioconda-recipe-ready`, then open a Bioconda recipe once the CLI package smoke test is stable.
+- Track the Bioconda recipe PR after `make bioconda-recipe-ready`; for v0.1.0,
+  [bioconda/bioconda-recipes#65367](https://github.com/bioconda/bioconda-recipes/pull/65367)
+  has passed CI and is waiting for review/merge.
 - Confirm the GHCR image labels and tag after the source tag is immutable.
 - Run `make distribution-channels` after PyPI, Bioconda, GHCR, and Zenodo are public.
 - Update `docs/distribution-release.json` with verified public and evidence links after public channels are live.

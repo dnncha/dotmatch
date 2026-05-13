@@ -33,19 +33,31 @@ assignment searches.
 
 ## Bioconda
 
-Bioconda should package the native CLI first. A release recipe template is kept
-under `packaging/bioconda/`. Before copying it to `bioconda-recipes`,
-replace `REPLACE_WITH_RELEASE_TARBALL_SHA256` with the SHA256 for the tagged
-GitHub release tarball. Run `make bioconda-recipe-ready` before that copy so the
-checked-in template stays aligned with the release version, native install
-steps, CLI smoke tests, and no-genome-aligner scope wording.
+Bioconda packages DotMatch from a recipe in `bioconda-recipes`; DotMatch does
+not upload a Conda package directly. The v0.1.0 recipe is submitted at
+[bioconda/bioconda-recipes#65367](https://github.com/bioconda/bioconda-recipes/pull/65367),
+has passed Bioconda CI, and is waiting for Bioconda review/merge. Until that PR
+is merged and `https://anaconda.org/bioconda/dotmatch` shows version 0.1.0, do
+not claim that `conda install dotmatch` is available.
+
+A release recipe template is kept under `packaging/bioconda/`. Before copying it
+to `bioconda-recipes`, replace `REPLACE_WITH_RELEASE_TARBALL_SHA256` with the
+SHA256 for the tagged GitHub release tarball. Run `make bioconda-recipe-ready`
+before that copy so the checked-in template stays aligned with the release
+version, native install steps, CLI smoke tests, and no-genome-aligner scope
+wording.
 
 The recipe needs:
 
-- `make`
-- C compiler and C++ compiler for optional benchmark tools;
-- zlib;
-- runtime test: `dotmatch dist ACGT AGGT`.
+- `make`;
+- `{{ compiler('c') }}` and `{{ stdlib('c') }}`;
+- host `zlib`, with runtime library dependencies inferred by Conda;
+- `run_exports` because the package installs a header and shared library;
+- runtime tests for `dotmatch dist ACGT AGGT` and `dotmatch leq 1 ACGT AGGT`.
+
+The v0.1.0 release tarball does not include the native CLI `--version` command,
+so the Bioconda recipe and post-release Bioconda install verifier use functional
+CLI smoke tests instead of `dotmatch --version`.
 
 ## Docker
 
@@ -73,8 +85,10 @@ make bioconda-recipe-ready
 
 While the first public release is still pending, this record must stay in
 `not_released` status with blockers and next actions for every public channel.
-After publication, replace the expected links with verified public and evidence
-URLs, set channels to `verified`, and run the post-release gate.
+For Bioconda, the blocker is now review/merge of PR #65367 and package
+propagation, not recipe submission. After publication, replace the expected
+links with verified public and evidence URLs, set channels to `verified`, and
+run the post-release gate.
 
 After publishing a tag, run:
 
@@ -87,8 +101,8 @@ This checks that the release version is visible on PyPI as a source distribution
 `dotmatch` CLI, is available in Bioconda metadata, installs with
 `conda create -p <env> -c conda-forge -c bioconda dotmatch=<version>` or
 `micromamba`, runs the Bioconda CLI smoke tests, has a matching BioContainers
-tag such as `quay.io/biocontainers/dotmatch:<version>--<build>` that runs
-`dotmatch --version` and a CLI distance smoke test, is published as
+tag such as `quay.io/biocontainers/dotmatch:<version>--<build>` that runs CLI
+distance and threshold smoke tests, is published as
 `ghcr.io/dnncha/dotmatch:vX.Y.Z`, runs with
 `docker run --rm ghcr.io/dnncha/dotmatch:v<version> --version` and a CLI distance
 smoke test, and is backed by a DOI in `CITATION.cff` that resolves through

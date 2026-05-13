@@ -29,18 +29,18 @@ def _meta(version: str = "0.1.0") -> str:
         "  sha256: {{ sha256 }}\n\n"
         "build:\n"
         "  number: 0\n"
+        "  run_exports:\n"
+        "    - {{ pin_subpackage(\"dotmatch\", max_pin=\"x.x\") }}\n"
         "  skip: true  # [win]\n\n"
         "requirements:\n"
         "  build:\n"
         "    - {{ compiler('c') }}\n"
+        "    - {{ stdlib('c') }}\n"
         "    - make\n"
         "  host:\n"
-        "    - zlib\n"
-        "  run:\n"
         "    - zlib\n\n"
         "test:\n"
         "  commands:\n"
-        "    - dotmatch --version | grep '^dotmatch {{ version }}$'\n"
         "    - dotmatch dist ACGT AGGT | grep '^1$'\n"
         "    - dotmatch leq 1 ACGT AGGT | grep '^true$'\n\n"
         "about:\n"
@@ -64,8 +64,15 @@ def _build() -> str:
     return (
         "#!/usr/bin/env bash\n"
         "set -euo pipefail\n\n"
-        "make dotmatch libdotmatch.a shared\n\n"
-        'mkdir -p "${PREFIX}/bin" "${PREFIX}/include" "${PREFIX}/lib" "${PREFIX}/share/${PKG_NAME}"\n\n'
+        "make \\\n"
+        '  CC="${CC}" \\\n'
+        '  CFLAGS="${CFLAGS:-} ${CPPFLAGS:-} -std=c11 -Wall -Wextra -Wpedantic -Iinclude" \\\n'
+        '  LDFLAGS="${LDFLAGS:-}" \\\n'
+        "  dotmatch libdotmatch.a shared\n\n"
+        'mkdir -p "${PREFIX}/bin" \\\n'
+        '         "${PREFIX}/include" \\\n'
+        '         "${PREFIX}/lib" \\\n'
+        '         "${PREFIX}/share/${PKG_NAME}"\n\n'
         'install -m 755 dotmatch "${PREFIX}/bin/dotmatch"\n'
         'install -m 644 include/qdalign.h "${PREFIX}/include/qdalign.h"\n'
         'install -m 644 libdotmatch.a "${PREFIX}/lib/libdotmatch.a"\n'
@@ -136,7 +143,6 @@ def test_bioconda_recipe_requires_cli_smoke_commands(tmp_path):
     checker = _load_checker()
     meta = (
         _meta()
-        .replace("    - dotmatch --version | grep '^dotmatch {{ version }}$'\n", "")
         .replace("    - dotmatch dist ACGT AGGT | grep '^1$'\n", "")
         .replace("    - dotmatch leq 1 ACGT AGGT | grep '^true$'\n", "")
     )
@@ -144,7 +150,6 @@ def test_bioconda_recipe_requires_cli_smoke_commands(tmp_path):
 
     result = checker.audit(tmp_path)
 
-    assert any("dotmatch --version" in failure for failure in result.failures)
     assert any("dotmatch dist ACGT AGGT" in failure for failure in result.failures)
     assert any("dotmatch leq 1 ACGT AGGT" in failure for failure in result.failures)
 

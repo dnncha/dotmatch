@@ -217,7 +217,7 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
             result.failures.append(f"Dockerfile missing OCI label {label}")
 
     if "REPLACE_WITH_RELEASE_TARBALL_SHA256" not in bioconda:
-        result.failures.append("Bioconda template must retain release SHA256 placeholder until the release tarball exists")
+        result.failures.append("Bioconda template must retain release SHA256 placeholder until copying into bioconda-recipes")
     if "dotmatch dist ACGT AGGT" not in bioconda:
         result.failures.append("Bioconda template must include native CLI smoke test")
 

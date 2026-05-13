@@ -16,9 +16,10 @@
       "id": "bioconda",
       "status": "prepared",
       "expected_url": "https://anaconda.org/bioconda/dotmatch",
+      "recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/65367",
       "verification_command": "make distribution-channels",
-      "blocker": "The Bioconda recipe has not been submitted and accepted yet.",
-      "next_action": "Submit packaging/bioconda/meta.yaml to bioconda-recipes after the immutable source tarball exists, then rerun make distribution-channels."
+      "blocker": "The Bioconda recipe PR has passed CI and has the review/merge label, but it has not been accepted, merged, and propagated to the public Bioconda channel yet.",
+      "next_action": "Track bioconda/bioconda-recipes#65367. After merge and channel propagation, rerun make distribution-channels and set the Bioconda channel to verified only after the metadata and install smoke tests pass."
     },
     {
       "id": "ghcr",
