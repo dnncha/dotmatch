@@ -13,6 +13,7 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <zlib.h>
 
 #ifndef DOTMATCH_VERSION
