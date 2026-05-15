@@ -869,6 +869,20 @@ NNACGT
 IIIIII
 SHIFTED
 
+if "$DOTMATCH_BIN" count \
+  --targets "$TMPDIR/one_target.tsv" \
+  --reads "$TMPDIR/shifted.fastq" \
+  --sample-label shifted \
+  --target-start 0 \
+  --target-length 4 \
+  --k 1 \
+  --auto-offset 1025 \
+  --out "$TMPDIR/counts_offset_too_large.tsv" 2> "$TMPDIR/counts_offset_too_large.err"; then
+  echo "oversized --auto-offset must fail" >&2
+  exit 1
+fi
+grep -- '^--auto-offset must be <= 1024$' "$TMPDIR/counts_offset_too_large.err" >/dev/null
+
 "$DOTMATCH_BIN" count \
   --targets "$TMPDIR/one_target.tsv" \
   --reads "$TMPDIR/shifted.fastq" \

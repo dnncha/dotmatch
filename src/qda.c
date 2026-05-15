@@ -19,6 +19,8 @@
 #define DOTMATCH_VERSION "0.1.0"
 #endif
 
+#define MAX_AUTO_OFFSET 1024
+
 typedef struct seq_record {
     char *id;
     char *seq;
@@ -79,6 +81,17 @@ static size_t trim_line_len(char *line, size_t n) {
     return n;
 }
 
+static FILE *open_output_file(const char *path) {
+    int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    if (fd < 0) return NULL;
+    FILE *out = fdopen(fd, "w");
+    if (out == NULL) {
+        close(fd);
+        return NULL;
+    }
+    return out;
+}
+
 static void uppercase_ascii(char *s) {
     for (; *s != '\0'; ++s) {
         if (*s >= 'a' && *s <= 'z') *s = (char)(*s - 'a' + 'A');
@@ -119,6 +132,12 @@ static int parse_double_value(const char *s, double *out) {
     double v = strtod(s, &end);
     if (end == s || *end != '\0') return -1;
     *out = v;
+    return 0;
+}
+
+static int offset_count_for_range(size_t range, size_t *out) {
+    if (range > MAX_AUTO_OFFSET || range > (SIZE_MAX - 1) / 2) return -1;
+    *out = range * 2 + 1;
     return 0;
 }
 
@@ -1382,13 +1401,8 @@ static int write_count_html_report(const char *path, const seq_table *targets, c
                                    const count_stats *stats_by_sample, const offset_list *selected_offsets,
                                    int k, count_metric metric, ambiguity_policy policy, size_t target_len,
                                    const char *audit_dir, const char *unmatched_report_path) {
-    int out_fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-    if (out_fd < 0) return -1;
-    FILE *out = fdopen(out_fd, "w");
-    if (out == NULL) {
-        close(out_fd);
-        return -1;
-    }
+    FILE *out = open_output_file(path);
+    if (out == NULL) return -1;
 
     fprintf(out,
             "<!doctype html>\n<html><head><meta charset=\"utf-8\"><title>DotMatch Report</title>"
@@ -2766,7 +2780,8 @@ static void score_offsets_for_seq(const hamming_lookup *lookup, const char *seq,
                                   size_t target_start, size_t target_len, size_t range,
                                   unsigned long long *scores) {
     if (lookup == NULL || !lookup->ready || lookup->target_len != target_len) return;
-    size_t n_offsets = range * 2 + 1;
+    size_t n_offsets = 0;
+    if (offset_count_for_range(range, &n_offsets) != 0) return;
     for (size_t oi = 0; oi < n_offsets; ++oi) {
         long delta = (long)oi - (long)range;
         if (delta < 0 && target_start < (size_t)(-delta)) continue;
@@ -2794,9 +2809,12 @@ static int count_sample_worker_direct_hamming(count_sample_job *job) {
     int got = 0;
 
     if (job->fused_offset_detection) {
-        size_t n_offsets = job->auto_offset * 2 + 1;
-        unsigned long long *scores = (unsigned long long *)calloc(n_offsets == 0 ? 1 : n_offsets,
-                                                                  sizeof(unsigned long long));
+        size_t n_offsets = 0;
+        if (offset_count_for_range(job->auto_offset, &n_offsets) != 0) {
+            fastq_reader_close(&reader);
+            return 1;
+        }
+        unsigned long long *scores = (unsigned long long *)calloc(n_offsets, sizeof(unsigned long long));
         if (scores == NULL) {
             fastq_reader_close(&reader);
             return 1;
@@ -3157,7 +3175,8 @@ static int select_offsets_from_scores(size_t target_start, size_t range, const u
     free_offset_list(selected_offsets);
     if (range == 0) return push_offset_unique(selected_offsets, target_start);
 
-    size_t n_offsets = range * 2 + 1;
+    size_t n_offsets = 0;
+    if (offset_count_for_range(range, &n_offsets) != 0) return -1;
 
     size_t best_i = range;
     for (size_t oi = 0; oi < n_offsets; ++oi) {
@@ -3201,7 +3220,8 @@ static int detect_offsets(const qdaln_index *index, const hamming_lookup *exact_
         return push_offset_unique(selected_offsets, target_start);
     }
 
-    size_t n_offsets = range * 2 + 1;
+    size_t n_offsets = 0;
+    if (offset_count_for_range(range, &n_offsets) != 0) return -1;
     unsigned long long *scores = (unsigned long long *)calloc(n_offsets, sizeof(unsigned long long));
     if (scores == NULL) return -1;
 
@@ -3515,6 +3535,10 @@ static int run_count(const char *argv0, int argc, char **argv) {
         usage(argv0);
         goto fail_args;
     }
+    if (auto_offset > MAX_AUTO_OFFSET) {
+        fprintf(stderr, "--auto-offset must be <= %d\n", MAX_AUTO_OFFSET);
+        goto fail_args;
+    }
     if (metric == COUNT_METRIC_HAMMING && indel_window != 0) {
         fprintf(stderr, "--indel-window is only valid with --metric levenshtein\n");
         goto fail_args;
@@ -3659,7 +3683,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
     }
 
     if (assignments_path != NULL) {
-        assignments = fopen(assignments_path, "w");
+        assignments = open_output_file(assignments_path);
         if (assignments == NULL) {
             fprintf(stderr, "failed to open assignments output\n");
             goto done;
@@ -3667,7 +3691,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
         fprintf(assignments, "sample\tread_id\tobserved_seq\ttarget_index\ttarget_id\ttarget_seq\tbest_distance\tsecond_best_distance\tmatch_count\tstatus\tcorrection\n");
     }
     if (ambiguous_path != NULL) {
-        ambiguous_out = fopen(ambiguous_path, "w");
+        ambiguous_out = open_output_file(ambiguous_path);
         if (ambiguous_out == NULL) {
             fprintf(stderr, "failed to open ambiguous output\n");
             goto done;
@@ -3675,7 +3699,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
         fprintf(ambiguous_out, "sample\tread_id\tobserved_seq\ttarget_index\ttarget_id\ttarget_seq\tbest_distance\tsecond_best_distance\tmatch_count\tstatus\tcorrection\n");
     }
     if (unmatched_path != NULL) {
-        unmatched_out = fopen(unmatched_path, "w");
+        unmatched_out = open_output_file(unmatched_path);
         if (unmatched_out == NULL) {
             fprintf(stderr, "failed to open unmatched output\n");
             goto done;
@@ -3801,7 +3825,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
     }
     counting_seconds = seconds_now() - phase_start_seconds;
 
-    out = fopen(out_path, "w");
+    out = open_output_file(out_path);
     if (out == NULL) {
         fprintf(stderr, "failed to open count output\n");
         goto done;
@@ -3841,7 +3865,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
     }
 
     if (target_counts_long_path != NULL) {
-        FILE *long_out = fopen(target_counts_long_path, "w");
+        FILE *long_out = open_output_file(target_counts_long_path);
         if (long_out == NULL) {
             fprintf(stderr, "failed to open long target-count output\n");
             goto done;
@@ -3863,7 +3887,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
     }
 
     if (sample_qc_path != NULL) {
-        FILE *qc = fopen(sample_qc_path, "w");
+        FILE *qc = open_output_file(sample_qc_path);
         if (qc == NULL) {
             fprintf(stderr, "failed to open sample QC output\n");
             goto done;
@@ -3909,7 +3933,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
     }
 
     if (summary_path != NULL) {
-        FILE *summary = fopen(summary_path, "w");
+        FILE *summary = open_output_file(summary_path);
         if (summary == NULL) {
             fprintf(stderr, "failed to open summary output\n");
             goto done;
@@ -4078,7 +4102,7 @@ static int run_fastq_assign(const char *argv0, int argc, char **argv) {
         fprintf(stderr, "failed to open FASTQ input\n");
         goto done;
     }
-    out = fopen(out_path, "w");
+    out = open_output_file(out_path);
     if (out == NULL) {
         fprintf(stderr, "failed to open output file\n");
         goto done;
@@ -4347,7 +4371,7 @@ static int write_audit_summary_json(const char *out_dir, const char *audit_mode,
                                     unsigned long long ambiguous_query_variants_k1, int recommended_k) {
     char path[4096];
     if (path_join(path, sizeof(path), out_dir, "audit_summary.json") != 0) return -1;
-    FILE *out = fopen(path, "w");
+    FILE *out = open_output_file(path);
     if (out == NULL) return -1;
     fprintf(out,
             "{\n"
@@ -4428,7 +4452,7 @@ static int audit_fast_outputs(const seq_table *targets, const char *out_dir, int
     qsort(variants.items, variants.count, sizeof(variant_record), cmp_variant_record);
 
     if (path_join(path, sizeof(path), out_dir, "ambiguous_variants.tsv") != 0) goto done;
-    variants_out = fopen(path, "w");
+    variants_out = open_output_file(path);
     if (variants_out == NULL) goto done;
     fprintf(variants_out, "query_variant\ttargets_within_k1\n");
 
@@ -4471,7 +4495,7 @@ static int audit_fast_outputs(const seq_table *targets, const char *out_dir, int
     }
 
     if (path_join(path, sizeof(path), out_dir, "collision_pairs.tsv") != 0) goto done;
-    pairs = fopen(path, "w");
+    pairs = open_output_file(path);
     if (pairs == NULL) goto done;
     fprintf(pairs, "target_a\ttarget_b\tsequence_a\tsequence_b\tdistance\trisk_at_k1\trisk_at_k2\texample_ambiguous_query\n");
 
@@ -4508,7 +4532,7 @@ static int audit_fast_outputs(const seq_table *targets, const char *out_dir, int
     pairs = NULL;
 
     if (path_join(path, sizeof(path), out_dir, "target_safety.tsv") != 0) goto done;
-    safety = fopen(path, "w");
+    safety = open_output_file(path);
     if (safety == NULL) goto done;
     fprintf(safety, "target_id\tsequence\tnearest_target\tnearest_distance\tsafe_at_k1\tsafe_at_k2\tnum_nearby_k1_risk_targets\n");
     for (size_t i = 0; i < targets->count; ++i) {
@@ -4522,7 +4546,7 @@ static int audit_fast_outputs(const seq_table *targets, const char *out_dir, int
     safety = NULL;
 
     if (path_join(path, sizeof(path), out_dir, "collision_clusters.tsv") != 0) goto done;
-    clusters = fopen(path, "w");
+    clusters = open_output_file(path);
     if (clusters == NULL) goto done;
     fprintf(clusters, "cluster_id\ttarget_id\tsequence\n");
     for (size_t i = 0; i < targets->count; ++i) {
@@ -4534,7 +4558,7 @@ static int audit_fast_outputs(const seq_table *targets, const char *out_dir, int
 
     size_t unique_sequences = count_unique_target_sequences(targets);
     if (path_join(path, sizeof(path), out_dir, "audit_summary.tsv") != 0) goto done;
-    summary = fopen(path, "w");
+    summary = open_output_file(path);
     if (summary == NULL) goto done;
     fprintf(summary, "metric\tvalue\n");
     fprintf(summary, "audit_mode\tfast\n");
@@ -4664,7 +4688,7 @@ static int run_audit(const char *argv0, int argc, char **argv) {
     }
 
     if (path_join(path, sizeof(path), out_dir, "collision_pairs.tsv") != 0) goto done;
-    pairs = fopen(path, "w");
+    pairs = open_output_file(path);
     if (pairs == NULL) goto done;
     fprintf(pairs, "target_a\ttarget_b\tsequence_a\tsequence_b\tdistance\trisk_at_k1\trisk_at_k2\texample_ambiguous_query\n");
 
@@ -4705,7 +4729,7 @@ static int run_audit(const char *argv0, int argc, char **argv) {
     pairs = NULL;
 
     if (path_join(path, sizeof(path), out_dir, "target_safety.tsv") != 0) goto done;
-    safety = fopen(path, "w");
+    safety = open_output_file(path);
     if (safety == NULL) goto done;
     fprintf(safety, "target_id\tsequence\tnearest_target\tnearest_distance\tsafe_at_k1\tsafe_at_k2\tnum_nearby_k1_risk_targets\n");
     for (size_t i = 0; i < targets.count; ++i) {
@@ -4721,7 +4745,7 @@ static int run_audit(const char *argv0, int argc, char **argv) {
     safety = NULL;
 
     if (path_join(path, sizeof(path), out_dir, "collision_clusters.tsv") != 0) goto done;
-    clusters = fopen(path, "w");
+    clusters = open_output_file(path);
     if (clusters == NULL) goto done;
     fprintf(clusters, "cluster_id\ttarget_id\tsequence\n");
     for (size_t i = 0; i < targets.count; ++i) {
@@ -4745,7 +4769,7 @@ static int run_audit(const char *argv0, int argc, char **argv) {
     }
 
     if (path_join(path, sizeof(path), out_dir, "ambiguous_variants.tsv") != 0) goto done;
-    variants_out = fopen(path, "w");
+    variants_out = open_output_file(path);
     if (variants_out == NULL) goto done;
     fprintf(variants_out, "query_variant\ttargets_within_k1\n");
     for (size_t i = 0; i < targets.count; ++i) {
@@ -4772,7 +4796,7 @@ static int run_audit(const char *argv0, int argc, char **argv) {
     variants_out = NULL;
 
     if (path_join(path, sizeof(path), out_dir, "audit_summary.tsv") != 0) goto done;
-    summary = fopen(path, "w");
+    summary = open_output_file(path);
     if (summary == NULL) goto done;
     fprintf(summary, "metric\tvalue\n");
     fprintf(summary, "audit_mode\texact\n");
@@ -5128,7 +5152,7 @@ static int run_inspect_unmatched(const char *argv0, int argc, char **argv) {
     }
 
     qsort(unmatched.entries, unmatched.count, sizeof(unmatched_entry), cmp_unmatched_entry_desc);
-    out = fopen(out_path, "w");
+    out = open_output_file(out_path);
     if (out == NULL) {
         fprintf(stderr, "failed to open unmatched inspection output\n");
         goto done;
@@ -5348,7 +5372,7 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
         goto done;
     }
     if (assignments_path != NULL) {
-        assignments = fopen(assignments_path, "w");
+        assignments = open_output_file(assignments_path);
         if (assignments == NULL) {
             fprintf(stderr, "failed to open assignments output\n");
             goto done;
@@ -5409,7 +5433,7 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
         goto done;
     }
 
-    out = fopen(out_path, "w");
+    out = open_output_file(out_path);
     if (out == NULL) {
         fprintf(stderr, "failed to open pair-count output\n");
         goto done;
@@ -5424,7 +5448,7 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
     }
 
     if (summary_path != NULL) {
-        summary = fopen(summary_path, "w");
+        summary = open_output_file(summary_path);
         if (summary == NULL) {
             fprintf(stderr, "failed to open pair-count summary\n");
             goto done;
@@ -5463,7 +5487,7 @@ static FILE *open_demux_target_file(FILE **files, const seq_table *targets, size
     char path[4096];
     int n = snprintf(path, sizeof(path), "%s/%s.fastq", out_dir, safe_id);
     if (n < 0 || (size_t)n >= sizeof(path)) return NULL;
-    files[target_index] = fopen(path, "w");
+    files[target_index] = open_output_file(path);
     return files[target_index];
 }
 
@@ -5625,7 +5649,7 @@ static int run_demux(const char *argv0, int argc, char **argv) {
         goto done;
     }
     if (assignments_path != NULL) {
-        assignments = fopen(assignments_path, "w");
+        assignments = open_output_file(assignments_path);
         if (assignments == NULL) {
             fprintf(stderr, "failed to open assignments output\n");
             goto done;
@@ -5633,14 +5657,14 @@ static int run_demux(const char *argv0, int argc, char **argv) {
         fprintf(assignments, "read_id\tobserved_barcode\ttarget_index\ttarget_id\ttarget_seq\tbest_distance\tsecond_best_distance\tmatch_count\tstatus\n");
     }
     if (ambiguous_path != NULL) {
-        ambiguous_out = fopen(ambiguous_path, "w");
+        ambiguous_out = open_output_file(ambiguous_path);
         if (ambiguous_out == NULL) {
             fprintf(stderr, "failed to open ambiguous FASTQ output\n");
             goto done;
         }
     }
     if (unmatched_path != NULL) {
-        unmatched_out = fopen(unmatched_path, "w");
+        unmatched_out = open_output_file(unmatched_path);
         if (unmatched_out == NULL) {
             fprintf(stderr, "failed to open unmatched FASTQ output\n");
             goto done;
@@ -5717,7 +5741,7 @@ static int run_demux(const char *argv0, int argc, char **argv) {
     }
 
     if (summary_path != NULL) {
-        FILE *summary = fopen(summary_path, "w");
+        FILE *summary = open_output_file(summary_path);
         if (summary == NULL) {
             fprintf(stderr, "failed to open summary output\n");
             goto done;
@@ -6638,7 +6662,6 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
         total_clusters += cluster_count;
         size_t threads = requested_threads;
         if (threads > cluster_count) threads = cluster_count == 0 ? 1 : cluster_count;
-        if (threads == 0) threads = 1;
         if (threads > effective_threads) effective_threads = threads;
         const size_t block_size = 8192;
         for (size_t block_start = 0; block_start < cluster_count;) {
@@ -6723,7 +6746,7 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
 
     char stats_path[4096];
     snprintf(stats_path, sizeof(stats_path), "%s/Demultiplex_Stats.csv", out_dir);
-    FILE *stats = fopen(stats_path, "w");
+    FILE *stats = open_output_file(stats_path);
     if (stats == NULL) goto done;
     fprintf(stats, "sample_id,assigned_reads");
     int non_index_read_count = 0;
@@ -6748,7 +6771,7 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
         qsort(unknowns.items, unknowns.count, sizeof(unknowns.items[0]), cmp_bcl_unknown_desc);
         char unknown_path[4096];
         snprintf(unknown_path, sizeof(unknown_path), "%s/Top_Unknown_Barcodes.csv", out_dir);
-        FILE *unknown = fopen(unknown_path, "w");
+        FILE *unknown = open_output_file(unknown_path);
         if (unknown == NULL) goto done;
         fprintf(unknown, "index,count\n");
         size_t n = unknowns.count < 100 ? unknowns.count : 100;
@@ -6758,7 +6781,7 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
 
     char normalized_path[4096];
     snprintf(normalized_path, sizeof(normalized_path), "%s/SampleSheet.normalized.csv", out_dir);
-    FILE *normalized = fopen(normalized_path, "w");
+    FILE *normalized = open_output_file(normalized_path);
     if (normalized != NULL) {
         fprintf(normalized, "sample_id,sample_name,lane,index,index2\n");
         for (size_t i = 0; i < samples.count; ++i) {
@@ -6769,7 +6792,7 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
     }
 
     if (summary_path != NULL) {
-        FILE *summary = fopen(summary_path, "w");
+        FILE *summary = open_output_file(summary_path);
         if (summary == NULL) goto done;
         fprintf(summary,
                 "{\n  \"workflow\": \"bcl-demux\",\n  \"format\": \"classic_bcl\",\n  \"lanes\": 1,\n  \"tiles\": %zu,\n  \"total_clusters\": %llu,\n  \"passed_filter_clusters\": %llu,\n  \"filtered_clusters\": %llu,\n  \"assigned_reads\": %llu,\n  \"undetermined_reads\": %llu,\n  \"barcode_mismatches_index1\": %d,\n  \"barcode_mismatches_index2\": %d,\n  \"requested_threads\": %zu,\n  \"effective_threads\": %zu,\n  \"gzip_level\": %d,\n  \"emit_index_fastqs\": %s\n}\n",
@@ -7044,6 +7067,10 @@ static int run_validate(const char *argv0, int argc, char **argv) {
 
     if (targets_path == NULL || reads_path == NULL || target_len == 0 || k < 0) {
         usage(argv0);
+        return 2;
+    }
+    if (auto_offset > MAX_AUTO_OFFSET) {
+        fprintf(stderr, "--auto-offset must be <= %d\n", MAX_AUTO_OFFSET);
         return 2;
     }
     if (metric == COUNT_METRIC_HAMMING && indel_window != 0) {
