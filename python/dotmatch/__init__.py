@@ -17,7 +17,7 @@ from .core import (
 try:
     __version__ = _metadata_version("dotmatch")
 except PackageNotFoundError:
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
 
 __all__ = [
     "__version__",
