@@ -171,6 +171,10 @@ def verify_bioconda_install(version: str) -> None:
         prefix = root / "env"
         channels = ["-c", "conda-forge", "-c", "bioconda"]
         run_checked([conda, "create", "-y", "-p", str(prefix), *channels, f"dotmatch={version}"], cwd=root, env=env)
+        observed_version = run_checked([conda, "run", "-p", str(prefix), "dotmatch", "--version"], cwd=root, env=env)
+        expected_version = f"dotmatch {version}"
+        if observed_version != expected_version:
+            raise RuntimeError(f"Bioconda dotmatch --version reported {observed_version!r}, expected {expected_version!r}")
         observed_distance = run_checked([conda, "run", "-p", str(prefix), "dotmatch", "dist", "ACGT", "AGGT"], cwd=root, env=env)
         if observed_distance != "1":
             raise RuntimeError(f"Bioconda dotmatch dist smoke test reported {observed_distance!r}, expected '1'")
@@ -200,6 +204,7 @@ def check_pypi(version: str, result: AuditResult) -> None:
     urls = data.get("urls") or []
     has_sdist = any(item.get("packagetype") == "sdist" for item in urls if isinstance(item, dict))
     wheels = [item for item in urls if isinstance(item, dict) and item.get("packagetype") == "bdist_wheel"]
+    has_macos_wheel = any("macosx_" in str(item.get("filename") or "") for item in wheels)
     has_manylinux_wheel = any("manylinux" in str(item.get("filename") or "") for item in wheels)
     has_musllinux_wheel = any("musllinux" in str(item.get("filename") or "") for item in wheels)
     has_raw_linux_wheel = any(
@@ -211,6 +216,9 @@ def check_pypi(version: str, result: AuditResult) -> None:
     if data.get("info", {}).get("version") != version or not has_sdist:
         result.failures.append(ChannelMessage(channel, f"PyPI version {version} is not available as an sdist"))
         return
+    if not has_macos_wheel:
+        result.failures.append(ChannelMessage(channel, f"PyPI version {version} must include a macOS wheel"))
+        return
     if not has_manylinux_wheel or not has_musllinux_wheel:
         result.failures.append(
             ChannelMessage(channel, f"PyPI version {version} must include repaired manylinux and musllinux wheels")
@@ -219,7 +227,9 @@ def check_pypi(version: str, result: AuditResult) -> None:
     if has_raw_linux_wheel:
         result.failures.append(ChannelMessage(channel, f"PyPI version {version} must not include raw linux_x86_64 wheels"))
         return
-    result.passed.append(ChannelMessage(channel, f"PyPI sdist and repaired Linux wheels are available for {version}"))
+    result.passed.append(
+        ChannelMessage(channel, f"PyPI sdist, macOS wheel, and repaired Linux wheels are available for {version}")
+    )
     try:
         verify_pypi_install(version)
     except Exception as exc:
