@@ -1,5 +1,6 @@
 import gzip
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -7,6 +8,7 @@ import re
 
 
 ROOT = Path(__file__).resolve().parents[2]
+LEGACY_ENV = {**os.environ, "DOTMATCH_PYTHON_NO_DELEGATE": "1"}
 
 
 def _pyproject_version() -> str:
@@ -20,6 +22,7 @@ def test_cli_reports_package_version():
     rc = subprocess.run(
         [sys.executable, "-m", "dotmatch.cli", "--version"],
         check=False,
+        env=LEGACY_ENV,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -88,6 +91,7 @@ def test_count_writes_counts_assignments_and_summary(tmp_path):
             str(summary),
         ],
         check=False,
+        env=LEGACY_ENV,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -131,6 +135,7 @@ def test_count_reads_gzipped_fastq(tmp_path):
             str(counts),
         ],
         check=False,
+        env=LEGACY_ENV,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -159,6 +164,7 @@ def test_audit_targets_reports_k1_unsafe_pairs(tmp_path):
             str(pairs),
         ],
         check=False,
+        env=LEGACY_ENV,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -189,6 +195,7 @@ def test_validate_compares_indexed_to_scan(tmp_path):
             "1",
         ],
         check=False,
+        env=LEGACY_ENV,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

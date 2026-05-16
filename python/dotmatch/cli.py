@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import gzip
 import json
+import os
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
@@ -10,6 +11,7 @@ from pathlib import Path
 from typing import Iterable, Iterator, Sequence, TextIO
 
 from . import __version__
+from .assayspec import command_assay
 from .core import (
     MATCH_AMBIGUOUS,
     MATCH_INVALID,
@@ -20,6 +22,7 @@ from .core import (
     assign,
     distance,
 )
+from .native import run_native_cli
 
 
 DNA = "ACGT"
@@ -471,8 +474,17 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    raw_args = list(sys.argv[1:] if argv is None else argv)
+    if raw_args and raw_args[0] == "assay":
+        return command_assay(raw_args[1:])
+    if not os.environ.get("DOTMATCH_PYTHON_NO_DELEGATE"):
+        try:
+            return run_native_cli(raw_args)
+        except FileNotFoundError:
+            pass
+
     parser = build_parser()
-    args = parser.parse_args(argv)
+    args = parser.parse_args(raw_args)
     if getattr(args, "k", 0) < 0:
         parser.error("--k must be non-negative")
     try:

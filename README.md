@@ -126,6 +126,8 @@ targets, so DotMatch reports the tie instead of choosing one silently.
 
 For a CRISPR-facing first run with a MAGeCK-compatible count matrix and sample
 QC table, see [CRISPR Count First Run](docs/tutorials/crispr-count-first-run.md).
+For declarative fixed-window assay workflows, see
+[DotMatch AssaySpec v1](docs/assayspec.md).
 
 ## Installation And Distribution Status
 
@@ -380,6 +382,24 @@ Top unmatched diagnosis:
 ```
 
 This reports the most frequent unassigned extracted sequences, nearest known target, nearest edit distance, edit class, reverse-complement nearest-target hint, optional offset-shift hint, adapter/primer hint when `--adapter` is supplied, low-quality hint when `--low-quality-threshold` is supplied, and a coarse reason such as `near_known_target_above_k`, `reverse_complement_candidate`, `offset_shift_candidate`, `adapter_or_primer_candidate`, `low_quality_candidate`, `contains_N`, or `wrong_length`.
+
+AssaySpec workflow wrapper:
+
+```bash
+dotmatch assay init --template crispr --out assay.toml
+dotmatch assay infer --mode count --assay-type crispr --targets guides.csv --reads sample.fastq.gz --out assay.toml --report inference_report.json
+dotmatch assay check assay.toml
+dotmatch assay plan assay.toml
+dotmatch assay run assay.toml
+dotmatch assay autopsy assay.toml --out-dir autopsy/
+```
+
+AssaySpec is a TOML-only layer for fixed-window `count`, `demux`, and
+`pair-count` workflows. It validates the spec, prints the exact native commands,
+runs target audit before assignment, can infer candidate fixed-window specs from
+FASTQ inputs, writes generated sample/provenance files, and records command exit
+codes plus audit/autopsy warnings in `assay_manifest.json`.
+See [DotMatch AssaySpec v1](docs/assayspec.md) for the schema and templates.
 
 Validation against the native exhaustive scan path:
 

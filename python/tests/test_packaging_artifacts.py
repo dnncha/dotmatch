@@ -106,6 +106,20 @@ def test_python_package_verifier_checks_installed_cli_version() -> None:
     assert '"dotmatch.cli", "--version"' in verifier
     assert 'venv_script(env_dir, "dotmatch")' in verifier
     assert '"--version"' in verifier
+    assert "dotmatch-native" in verifier
+    assert '"assay", "check"' in verifier
+    assert '"infer"' in verifier
+    assert '"autopsy"' in verifier
+
+
+def test_python_package_build_bundles_native_cli() -> None:
+    setup = (ROOT / "setup.py").read_text(encoding="utf-8")
+    pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+
+    assert "dotmatch-native" in setup
+    assert "src/qda.c" in setup
+    assert "DOTMATCH_VERSION" in setup
+    assert 'tomli; python_version < \\"3.11\\"' in pyproject
 
 
 def test_release_workflow_builds_and_smoke_tests_container() -> None:
