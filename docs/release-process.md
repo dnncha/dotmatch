@@ -60,15 +60,16 @@ git push origin v0.1.0
 Pushing `v*` tags runs `.github/workflows/release.yml`. The workflow starts
 with a preflight job that runs `make test`, `make cli-test`,
 `make python-test`, `make repository-ready`, `make release-ready`, and
-`make python-package-test`; PyPI publication, GHCR image publishing, and GitHub
-release artifact creation depend on that preflight. The workflow builds:
+`make python-package-test`; artifact publication jobs depend on that preflight.
+The workflow builds:
 
-- Linux wheel;
+- raw Linux wheel release artifact;
 - macOS wheel;
 - source distribution;
+- repaired manylinux/musllinux Linux wheels for PyPI;
 - GHCR container image;
 - `SHA256SUMS.txt`;
-- PyPI source-distribution publication through trusted publishing;
+- PyPI publication through trusted publishing for the sdist, macOS wheel, and repaired Linux wheels;
 - a draft GitHub release with generated notes.
 
 Keep the GitHub release as a draft until the release notes, artifacts, checksums, `CITATION.cff`, and `codemeta.json` have been checked.
@@ -92,7 +93,7 @@ Avoid:
 ## Distribution Follow-Up
 
 - Create a Zenodo archive and add the DOI to `CITATION.cff` when available.
-- Publish the PyPI source distribution and repaired manylinux/musllinux wheels through trusted publishing; do not upload raw `linux_x86_64` wheels.
+- Publish the PyPI source distribution, native macOS wheel, and repaired manylinux/musllinux wheels through trusted publishing; do not upload raw `linux_x86_64` wheels.
 - Track the Bioconda recipe PR after `make bioconda-recipe-ready`; for v0.1.0,
   [bioconda/bioconda-recipes#65367](https://github.com/bioconda/bioconda-recipes/pull/65367)
   has passed CI and is waiting for review/merge.
