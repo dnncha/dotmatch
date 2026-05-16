@@ -16,16 +16,10 @@ Initial local/GitHub packaging builds the native C core into the wheel as `dotma
 Use `make python-package-test` to build the wheel, inspect that it contains the native library, install it into a clean virtual environment, and verify `import dotmatch` without `DOTMATCH_LIB` or `PYTHONPATH`.
 The same verifier also builds the sdist, confirms it contains `src/qdalign.c` and `include/qdalign.h`, and installs that sdist into a clean virtual environment.
 
-For PyPI, upload the sdist first. Linux binary wheels should go to PyPI only
-after they are built or repaired as manylinux/musllinux wheels. The release
-workflow builds repaired Linux wheel artifacts with cibuildwheel for
-`manylinux_x86_64` and `musllinux_x86_64`, smoke-tests `import dotmatch`, the
-installed console script, and `dotmatch dist ACGT AGGT`, and uploads them as
-GitHub release artifacts. Do not upload a raw `linux_x86_64` wheel to PyPI.
+For PyPI, upload the sdist plus the native macOS wheel built on GitHub Actions. Linux binary wheels should go to PyPI only after they are built or repaired as manylinux/musllinux wheels. The release workflow builds repaired Linux wheel artifacts with cibuildwheel for `manylinux_x86_64` and `musllinux_x86_64`, smoke-tests `import dotmatch`, the installed console script, and `dotmatch dist ACGT AGGT`, and uploads them as GitHub release artifacts. Do not upload a raw `linux_x86_64` wheel to PyPI.
 
-The release workflow is prepared for PyPI trusted publishing and publishes the source distribution and repaired manylinux/musllinux wheels on tagged releases.
-Raw `linux_x86_64` wheels remain GitHub release artifacts only and are not
-uploaded to PyPI.
+The release workflow is prepared for PyPI trusted publishing and publishes the source distribution, the native macOS wheel, and repaired manylinux/musllinux Linux wheels on tagged releases.
+Raw `linux_x86_64` wheels remain GitHub release artifacts only and are not uploaded to PyPI.
 `make citation-metadata-ready` also checks PyPI-facing `pyproject.toml`
 description, keywords, classifiers, and project URLs so the package page stays
 discoverable for bioinformatics, CRISPR, FASTQ, barcode, and known-target
@@ -53,11 +47,11 @@ The recipe needs:
 - `{{ compiler('c') }}` and `{{ stdlib('c') }}`;
 - host `zlib`, with runtime library dependencies inferred by Conda;
 - `run_exports` because the package installs a header and shared library;
-- runtime tests for `dotmatch dist ACGT AGGT` and `dotmatch leq 1 ACGT AGGT`.
+- runtime tests for `dotmatch --version`, `dotmatch dist ACGT AGGT`, and `dotmatch leq 1 ACGT AGGT`.
 
-The v0.1.0 release tarball does not include the native CLI `--version` command,
-so the Bioconda recipe and post-release Bioconda install verifier use functional
-CLI smoke tests instead of `dotmatch --version`.
+The native CLI exposes `dotmatch --version`, so the Bioconda recipe and
+post-release Bioconda install verifier should check version output as well as
+functional CLI smoke tests.
 
 ## Docker
 
@@ -96,11 +90,11 @@ After publishing a tag, run:
 make distribution-channels
 ```
 
-This checks that the release version is visible on PyPI as a source distribution plus repaired manylinux/musllinux wheels, rejects raw
+This checks that the release version is visible on PyPI as a source distribution plus a macOS wheel and repaired manylinux/musllinux wheels, rejects raw
 `linux_x86_64` PyPI wheels, installs with `pip install dotmatch==<version>` in a clean virtual environment, imports the Python package, runs the installed
 `dotmatch` CLI, is available in Bioconda metadata, installs with
 `conda create -p <env> -c conda-forge -c bioconda dotmatch=<version>` or
-`micromamba`, runs the Bioconda CLI smoke tests, has a matching BioContainers
+`micromamba`, runs the Bioconda `--version`/CLI smoke tests, has a matching BioContainers
 tag such as `quay.io/biocontainers/dotmatch:<version>--<build>` that runs CLI
 distance and threshold smoke tests, is published as
 `ghcr.io/dnncha/dotmatch:vX.Y.Z`, runs with
