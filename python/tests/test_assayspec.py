@@ -267,6 +267,30 @@ def test_assay_run_count_reproduces_existing_crispr_fixture(tmp_path: Path) -> N
     assert manifest["mode"] == "count"
     assert manifest["commands"][0]["name"] == "audit"
     assert manifest["commands"][-1]["name"] == "validate"
+    assert (out_dir / "assay_report.html").exists()
+    summary_lines = (out_dir / "assay_manifest.summary.tsv").read_text(encoding="utf-8").splitlines()
+    assert summary_lines[0].split("\t") == [
+        "schema_version",
+        "mode",
+        "assay_type",
+        "status",
+        "native_version",
+        "autopsy_triggered",
+        "warning_count",
+        "production_warning_count",
+        "sample_count",
+        "primary_report",
+        "manifest",
+    ]
+    assert summary_lines[1].split("\t")[1:4] == ["count", "crispr", "ready"]
+    report = (out_dir / "assay_report.html").read_text(encoding="utf-8")
+    assert "<title>DotMatch Assay Report</title>" in report
+    assert "Run Status" in report
+    assert "Sample QC" in report
+    assert "Library Audit" in report
+    assert "Native Commands" in report
+    assert "assay_manifest.json" in report
+    assert "report.html" in report
 
 
 def test_assay_run_demux_and_pair_count_specs(tmp_path: Path) -> None:
@@ -418,6 +442,27 @@ def test_assay_run_auto_triggers_autopsy_on_bad_qc(tmp_path: Path) -> None:
     assert manifest["autopsy_triggered"] is True
     assert "autopsy" in manifest["autopsy_artifacts"]
     assert (tmp_path / "wrong_offset_out" / "autopsy" / "findings.tsv").exists()
+    report = (tmp_path / "wrong_offset_out" / "assay_report.html").read_text(encoding="utf-8")
+    assert "Autopsy" in report
+    assert "wrong_offset" in report
+    summary = (tmp_path / "wrong_offset_out" / "assay_manifest.summary.tsv").read_text(encoding="utf-8")
+    assert "\ttrue\t" in summary
+
+
+def test_assay_report_escapes_spec_values(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_count_spec(tmp_path)
+    spec.write_text(
+        spec.read_text(encoding="utf-8").replace('id = "sample_a"', 'id = "sample_<script>alert(1)</script>"'),
+        encoding="utf-8",
+    )
+
+    rc = _run_cli(["assay", "run", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+
+    assert rc.returncode == 0, rc.stderr
+    report = (tmp_path / "assay_out" / "assay_report.html").read_text(encoding="utf-8")
+    assert "sample_<script>alert(1)</script>" not in report
+    assert "sample_&lt;script&gt;alert(1)&lt;/script&gt;" in report
 
 
 def test_assay_infer_demux_and_pair_reports_are_deterministic(tmp_path: Path) -> None:

@@ -64,6 +64,32 @@ Rules:
 - `k1_rescued_reads` is retained for compatibility and equals `assigned_corrected`,
   including in Levenshtein `k=2` runs.
 
+## `assay_manifest.summary.tsv`
+
+One row per `dotmatch assay run` execution, intended for workflow systems and
+MultiQC custom content.
+
+```text
+schema_version
+mode
+assay_type
+status
+native_version
+autopsy_triggered
+warning_count
+production_warning_count
+sample_count
+primary_report
+manifest
+```
+
+Rules:
+
+- `primary_report` points to the `assay_report.html` artifact;
+- `manifest` points to the full `assay_manifest.json` provenance record;
+- warning counts are decimal integers;
+- `autopsy_triggered` is `true` or `false`.
+
 ## `pair_counts.tsv`
 
 Nonzero paired/combinatorial target counts from `dotmatch pair-count`.

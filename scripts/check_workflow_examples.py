@@ -16,6 +16,7 @@ from pathlib import Path
 
 WORKFLOW_FIXTURES = [
     "README.md",
+    "crispr_assay.toml",
     "crispr_library.csv",
     "sample_a.fastq",
     "sample_b.fastq",
@@ -74,6 +75,11 @@ def check_snakemake(root: Path, result: WorkflowAudit) -> None:
     snakefile = _read(snakefile_path, result)
     _require(snakefile, "rule dotmatch_crispr_count", "Snakemake Snakefile missing rule dotmatch_crispr_count", result)
     _require(snakefile, "dotmatch crispr-count", "Snakemake Snakefile must run dotmatch crispr-count", result)
+    _require(snakefile, "rule dotmatch_assay_run", "Snakemake Snakefile missing rule dotmatch_assay_run", result)
+    _require(snakefile, "dotmatch assay run", "Snakemake AssaySpec rule must run dotmatch assay run", result)
+    _require(snakefile, "assay_report.html", "Snakemake AssaySpec rule must expose assay_report.html", result)
+    _require(snakefile, "assay_manifest.json", "Snakemake AssaySpec rule must expose assay_manifest.json", result)
+    _require(snakefile, "assay_manifest.summary.tsv", "Snakemake AssaySpec rule must expose assay_manifest.summary.tsv", result)
     _require(snakefile, "--ambiguous discard", "Snakemake Snakefile must keep ambiguity policy explicit", result)
     _require(snakefile, "--sample-qc", "Snakemake Snakefile must emit sample_qc.tsv for MultiQC", result)
     _require(snakefile, "sample_qc", "Snakemake Snakefile must declare sample_qc output", result)
@@ -99,6 +105,11 @@ def check_nextflow(root: Path, result: WorkflowAudit) -> None:
         ("nextflow.enable.dsl=2", "Nextflow workflow must enable DSL2"),
         ("process DOTMATCH_CRISPR_COUNT", "Nextflow workflow missing DOTMATCH_CRISPR_COUNT process"),
         ("dotmatch crispr-count", "Nextflow workflow must run dotmatch crispr-count"),
+        ("process DOTMATCH_ASSAY_RUN", "Nextflow workflow missing DOTMATCH_ASSAY_RUN process"),
+        ("dotmatch assay run", "Nextflow AssaySpec workflow must run dotmatch assay run"),
+        ("path \"assay_report.html\", emit: assay_report", "Nextflow AssaySpec workflow must emit assay_report.html"),
+        ("path \"assay_manifest.json\", emit: assay_manifest", "Nextflow AssaySpec workflow must emit assay_manifest.json"),
+        ("path \"assay_manifest.summary.tsv\", emit: assay_manifest_summary", "Nextflow AssaySpec workflow must emit assay_manifest.summary.tsv"),
         ("--ambiguous discard", "Nextflow workflow must keep ambiguity policy explicit"),
         ("--sample-qc", "Nextflow workflow must emit sample_qc.tsv for MultiQC"),
         ("path \"sample_qc.tsv\", emit: sample_qc", "Nextflow workflow must declare sample_qc output"),
@@ -119,9 +130,10 @@ def check_nfcore(root: Path, result: WorkflowAudit) -> None:
     nf_test = _read(test_path, result) if test_path.is_file() else ""
 
     _require(readme, "nf-core-style module candidate", "nf-core README must describe a module candidate", result)
-    _require(readme, "not an upstream nf-core module", "nf-core README must avoid upstream adoption claims", result)
-    if "external adoption" in readme and "not external adoption" not in readme:
-        result.failures.append("nf-core README must not claim external adoption")
+    _require(readme, "not been submitted to or", "nf-core README must avoid upstream adoption claims", result)
+    _require(readme, "dotmatch_assay_run", "nf-core README must describe the AssaySpec module candidate", result)
+    if "external adoption" in readme:
+        result.failures.append("nf-core README must not use external-adoption maintainer language")
 
     for needle, message in [
         ("process DOTMATCH_CRISPR_COUNT", "nf-core module missing DOTMATCH_CRISPR_COUNT process"),
@@ -160,6 +172,50 @@ def check_nfcore(root: Path, result: WorkflowAudit) -> None:
         ]:
             _require(nf_test, needle, message, result)
 
+    assay_base = base / "modules" / "local" / "dotmatch" / "assay_run"
+    assay_module = _read(assay_base / "main.nf", result)
+    assay_meta = _read(assay_base / "meta.yml", result)
+    assay_test_path = assay_base / "tests" / "main.nf.test"
+    assay_nf_test = _read(assay_test_path, result) if assay_test_path.is_file() else ""
+    for needle, message in [
+        ("process DOTMATCH_ASSAY_RUN", "nf-core AssaySpec module missing DOTMATCH_ASSAY_RUN process"),
+        ("tuple val(meta), path(assay_spec), path(assay_inputs)", "nf-core AssaySpec module missing expected input tuple"),
+        ("basename", "nf-core AssaySpec module must stage assay input files by basename"),
+        ("dotmatch assay run", "nf-core AssaySpec module must run dotmatch assay run"),
+        ("emit: assay_report", "nf-core AssaySpec module must emit assay_report"),
+        ("emit: assay_manifest", "nf-core AssaySpec module must emit assay_manifest"),
+        ("emit: assay_manifest_summary", "nf-core AssaySpec module must emit assay_manifest_summary"),
+        ("emit: sample_qc", "nf-core AssaySpec module must emit sample_qc"),
+        ("versions.yml", "nf-core AssaySpec module must emit versions.yml"),
+    ]:
+        _require(assay_module, needle, message, result)
+    for needle in [
+        "name: dotmatch_assay_run",
+        "Run a DotMatch AssaySpec",
+        "- assayspec",
+        "assay_report:",
+        "assay_manifest:",
+        "assay_manifest_summary:",
+        "sample_qc:",
+        "versions:",
+    ]:
+        _require(assay_meta, needle, f"nf-core AssaySpec module metadata missing {needle}", result)
+    if not assay_nf_test:
+        result.failures.append("nf-core AssaySpec module must include an nf-test candidate at tests/main.nf.test")
+    else:
+        for needle, message in [
+            ("nextflow_process", "nf-core AssaySpec nf-test candidate must define a nextflow_process"),
+            ('script "../main.nf"', "nf-core AssaySpec nf-test candidate must reference ../main.nf"),
+            ('process "DOTMATCH_ASSAY_RUN"', "nf-core AssaySpec nf-test candidate must test DOTMATCH_ASSAY_RUN"),
+            ("examples/workflows/fixtures/crispr_assay.toml", "nf-core AssaySpec nf-test candidate must use shared AssaySpec fixture"),
+            ("examples/workflows/fixtures/crispr_library.csv", "nf-core AssaySpec nf-test candidate must stage target table"),
+            ("examples/workflows/fixtures/sample_a.fastq", "nf-core AssaySpec nf-test candidate must stage FASTQ inputs"),
+            ("assay_report", "nf-core AssaySpec nf-test candidate must assert assay_report output"),
+            ("assay_manifest_summary", "nf-core AssaySpec nf-test candidate must assert assay_manifest_summary output"),
+            ("sample_qc", "nf-core AssaySpec nf-test candidate must assert sample_qc output"),
+        ]:
+            _require(assay_nf_test, needle, message, result)
+
     if not any("nf-core" in failure for failure in result.failures):
         result.passed.append("nf-core-style module candidate present without adoption claim")
 
@@ -172,11 +228,16 @@ def check_multiqc(root: Path, result: WorkflowAudit) -> None:
     for needle in [
         "custom_data:",
         "dotmatch_sample_qc:",
+        "dotmatch_assay_manifest:",
         'plot_type: "table"',
         'fn: "*sample_qc.tsv"',
+        'fn: "*assay_manifest.summary.tsv"',
         "assignment_rate:",
         "ambiguous_rate:",
         "no_match_rate:",
+        "primary_report:",
+        "autopsy_triggered:",
+        "warning_count:",
     ]:
         _require(config, needle, f"MultiQC config missing {needle}", result)
 
@@ -196,6 +257,24 @@ def check_multiqc(root: Path, result: WorkflowAudit) -> None:
     for column in required_columns:
         if column not in header:
             result.failures.append(f"MultiQC sample_qc.tsv missing {column}")
+
+    manifest_summary_path = root / "examples" / "workflows" / "multiqc" / "data" / "assay_manifest.summary.tsv"
+    manifest_summary = _read(manifest_summary_path, result)
+    manifest_header = manifest_summary.splitlines()[0].split("\t") if manifest_summary.splitlines() else []
+    for column in [
+        "schema_version",
+        "mode",
+        "assay_type",
+        "status",
+        "autopsy_triggered",
+        "warning_count",
+        "production_warning_count",
+        "sample_count",
+        "primary_report",
+        "manifest",
+    ]:
+        if column not in manifest_header:
+            result.failures.append(f"MultiQC assay_manifest.summary.tsv missing {column}")
 
     if not any("MultiQC" in failure for failure in result.failures):
         result.passed.append("MultiQC custom-content example present")
@@ -251,8 +330,51 @@ def check_galaxy(root: Path, result: WorkflowAudit) -> None:
         if not (test_data / filename).is_file():
             result.failures.append(f"Galaxy Planemo test-data file is missing: {filename}")
     _require(readme, "example wrapper", "Galaxy README must describe an example wrapper", result)
-    _require(readme, "not a ToolShed release", "Galaxy README must avoid ToolShed release claims", result)
+    _require(readme, "not been published to a Galaxy ToolShed", "Galaxy README must avoid ToolShed release claims", result)
+    _require(readme, "AssaySpec", "Galaxy README must describe the AssaySpec example wrapper", result)
     _require(readme, "planemo", "Galaxy README must mention planemo linting", result)
+
+    assay_wrapper_path = root / "examples" / "workflows" / "galaxy" / "dotmatch_assay_run.xml"
+    try:
+        assay_wrapper = ET.parse(assay_wrapper_path).getroot()
+    except Exception as exc:
+        result.failures.append(f"Galaxy AssaySpec wrapper XML could not be parsed: {exc}")
+        assay_wrapper = None
+    if assay_wrapper is not None:
+        if assay_wrapper.tag != "tool" or assay_wrapper.attrib.get("id") != "dotmatch_assay_run":
+            result.failures.append("Galaxy AssaySpec wrapper must be tool id dotmatch_assay_run")
+        assay_command = assay_wrapper.findtext("command") or ""
+        _require(assay_command, "cat > assay.toml", "Galaxy AssaySpec wrapper command must generate an AssaySpec from staged inputs", result)
+        _require(assay_command, "dotmatch assay run assay.toml", "Galaxy AssaySpec wrapper command must run dotmatch assay run", result)
+        assay_input_names = {node.attrib.get("name", "") for node in assay_wrapper.findall("./inputs/param")}
+        required_inputs = {"library", "sample1_fastq", "sample1_label", "sample2_fastq", "sample2_label", "guide_start", "guide_length", "k", "metric", "ambiguous"}
+        if not required_inputs <= assay_input_names:
+            result.failures.append("Galaxy AssaySpec wrapper inputs must stage library, FASTQs, labels, window, metric, k, and ambiguity policy")
+        assay_output_names = {node.attrib.get("name", "") for node in assay_wrapper.findall("./outputs/data")}
+        required_outputs = {"assay_report", "assay_manifest", "assay_manifest_summary", "sample_qc", "counts", "summary"}
+        if not required_outputs <= assay_output_names:
+            result.failures.append("Galaxy AssaySpec wrapper outputs must include report, manifest, manifest summary, sample QC, counts, and summary")
+        assay_test = assay_wrapper.find("./tests/test")
+        if assay_test is None:
+            result.failures.append("Galaxy AssaySpec wrapper must include a Planemo test with tiny AssaySpec fixtures")
+        else:
+            params = {node.attrib.get("name", ""): node.attrib.get("value", "") for node in assay_test.findall("param")}
+            for name, value in [
+                ("library", "crispr_library.csv"),
+                ("sample1_fastq", "sample_a.fastq"),
+                ("sample1_label", "sample_a"),
+                ("sample2_fastq", "sample_b.fastq"),
+                ("sample2_label", "sample_b"),
+            ]:
+                if params.get(name) != value:
+                    result.failures.append(f"Galaxy AssaySpec Planemo test must set {name}={value}")
+            test_outputs = {node.attrib.get("name", ""): node for node in assay_test.findall("output")}
+            report = test_outputs.get("assay_report")
+            if report is None or report.find("./assert_contents/has_text[@text='DotMatch Assay Report']") is None:
+                result.failures.append("Galaxy AssaySpec Planemo test must assert DotMatch Assay Report content")
+            manifest_summary = test_outputs.get("assay_manifest_summary")
+            if manifest_summary is None or manifest_summary.find("./assert_contents/has_text[@text='primary_report']") is None:
+                result.failures.append("Galaxy AssaySpec Planemo test must assert manifest summary content")
 
     if not any("Galaxy" in failure for failure in result.failures):
         result.passed.append("Galaxy wrapper example present without ToolShed claim")

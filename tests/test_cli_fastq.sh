@@ -590,6 +590,9 @@ grep '^sample1	' "$TMPDIR/sample_qc.tsv" | grep '	4	3	2	1	1	1	0	0	' >/dev/null
 grep '^sample1	bc0	G0	ACGT	1	0	0	0	0	1	1$' "$TMPDIR/target_counts.long.tsv" >/dev/null
 grep '<title>DotMatch Report</title>' "$TMPDIR/report.html" >/dev/null
 grep 'sample1' "$TMPDIR/report.html" >/dev/null
+grep 'Run Status' "$TMPDIR/report.html" >/dev/null
+grep 'Target Assignment QC' "$TMPDIR/report.html" >/dev/null
+grep 'Inputs and Configuration' "$TMPDIR/report.html" >/dev/null
 grep 'Assignment rate' "$TMPDIR/report.html" >/dev/null
 grep 'Library coverage' "$TMPDIR/report.html" >/dev/null
 REPORT_MODE=$(python3 - "$TMPDIR/report.html" <<'PY'

@@ -117,8 +117,8 @@ def test_nfcore_readme_is_candidate_not_external_adoption_claim() -> None:
     text = readme_path.read_text(encoding="utf-8")
 
     assert "nf-core-style module candidate" in text
-    assert "not an upstream nf-core module" in text
-    assert "external adoption" in text
+    assert "not been submitted to or" in text
+    assert "accepted by nf-core" in text
 
 
 def test_multiqc_config_targets_dotmatch_sample_qc() -> None:
@@ -195,7 +195,7 @@ def test_galaxy_readme_is_example_not_release_claim() -> None:
     text = readme_path.read_text(encoding="utf-8")
 
     assert "example wrapper" in text
-    assert "not a ToolShed release" in text
+    assert "not been published to a Galaxy ToolShed" in text
     assert "planemo" in text
 
 

@@ -93,11 +93,51 @@ custom_data:
         title: "Candidates Verified"
         description: "Indexed assignment candidates verified exactly."
         format: "{:,.0f}"
+  dotmatch_assay_manifest:
+    file_format: "tsv"
+    section_name: "DotMatch Assay Manifest"
+    description: "Workflow-facing summary emitted as assay_manifest.summary.tsv by dotmatch assay run."
+    plot_type: "table"
+    pconfig:
+      id: "dotmatch_assay_manifest_table"
+      title: "DotMatch Assay Manifest"
+      col1_header: "Mode"
+    headers:
+      assay_type:
+        title: "Assay"
+        description: "Assay type declared in the AssaySpec."
+      status:
+        title: "Spec Status"
+        description: "AssaySpec status used for the run."
+      autopsy_triggered:
+        title: "Autopsy"
+        description: "Whether automatic autopsy was triggered by QC thresholds."
+      warning_count:
+        title: "Warnings"
+        description: "Number of audit or run warnings recorded in the manifest."
+        format: "{:,.0f}"
+      production_warning_count:
+        title: "Production Warnings"
+        description: "Number of production QC warnings recorded in the manifest."
+        format: "{:,.0f}"
+      sample_count:
+        title: "Samples"
+        description: "Number of samples represented by the AssaySpec run."
+        format: "{:,.0f}"
+      primary_report:
+        title: "Primary Report"
+        description: "Path to assay_report.html."
+      manifest:
+        title: "Manifest"
+        description: "Path to assay_manifest.json."
 
 sp:
   dotmatch_sample_qc:
     fn: "*sample_qc.tsv"
+  dotmatch_assay_manifest:
+    fn: "*assay_manifest.summary.tsv"
 
 custom_content:
   order:
+    - dotmatch_assay_manifest
     - dotmatch_sample_qc

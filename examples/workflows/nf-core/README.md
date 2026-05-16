@@ -1,21 +1,26 @@
 # nf-core-style Module Candidate
 
-This directory contains an nf-core-style module candidate for running
-`dotmatch crispr-count` from a Nextflow DSL2 workflow. It is a local integration
-starting point, not an upstream nf-core module and not external adoption.
+This directory contains local nf-core-style module candidates for running
+DotMatch from a Nextflow DSL2 workflow. `dotmatch_crispr_count` keeps the native
+command path, while `dotmatch_assay_run` runs an AssaySpec and emits the assay
+report and manifest summary. These examples have not been submitted to or
+accepted by nf-core.
 
-The candidate follows the same evidence boundary as the other workflow examples:
-it demonstrates how to wrap DotMatch in a workflow manager, but it is not a
-benchmark result, package-channel release, or publication claim.
+These examples demonstrate workflow integration. They are not benchmark results,
+package-channel releases, or publication evidence.
 
-The module emits a MAGeCK-compatible count matrix, JSON summary, `sample_qc`
-table for MultiQC custom content, and `versions.yml`. A local nf-test candidate
-in `modules/local/dotmatch/crispr_count/tests/main.nf.test` uses the shared
-fixtures in `examples/workflows/fixtures/`.
+The native module emits a MAGeCK-compatible count matrix, JSON summary,
+`sample_qc` table for MultiQC custom content, and `versions.yml`. The AssaySpec
+module emits `assay_report.html`, `assay_manifest.json`,
+`assay_manifest.summary.tsv`, `sample_qc.tsv`, counts, summary, and
+`versions.yml`. Its input tuple includes the AssaySpec plus the target/FASTQ
+files referenced by that spec so workflow engines stage the required files into
+the task work directory. Local nf-test candidates use the shared fixtures in
+`examples/workflows/fixtures/`.
 
-Before proposing this to nf-core or another external workflow repository:
+Before adapting this for nf-core or another workflow repository:
 
 - pin a released DotMatch package or container;
 - run and adapt the nf-test candidate against the target repository conventions;
 - add CI linting against the target workflow repository conventions;
-- keep module help text aligned with `docs/scientific-claims.md`.
+- keep module help text aligned with the documented evidence boundaries.

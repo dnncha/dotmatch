@@ -197,7 +197,7 @@ dotmatch assay plan assay.toml
 dotmatch assay run assay.toml
 ```
 
-AssaySpec is a TOML layer for fixed-window `count`, `demux`, and `pair-count` workflows. It validates the spec, prints the native commands, runs target audit before assignment, writes workflow-facing reports, and records provenance in `assay_manifest.json`. See [DotMatch AssaySpec v1](docs/assayspec.md).
+AssaySpec is a TOML layer for fixed-window `count`, `demux`, and `pair-count` workflows. It validates the spec, prints the native commands, runs target audit before assignment, writes assay reports, and records provenance in `assay_manifest.json`. See [DotMatch AssaySpec v1](docs/assayspec.md).
 
 ## Output Semantics
 
@@ -228,19 +228,22 @@ Today, the checked install path is from source.
 python3 -m pip install .
 ```
 
-Public package channels for PyPI, Bioconda, GHCR/BioContainers, and Zenodo DOI are pending or tracked separately. Treat them as available only after the corresponding release checks pass.
+PyPI, Bioconda, GHCR/BioContainers, and Zenodo release artifacts are not yet published. Until those channels are listed here as available, install from source.
 
 For the current state, see:
 
 - [Packaging notes](docs/packaging.md)
 - [Distribution release record](docs/distribution-release.json)
 
-Post-release public channel checks stay separate from local release checks:
+Release channel status:
 
-```bash
-make distribution-channels
-make workflow-adoption-status
-```
+- [x] GitHub release manylinux/musllinux x86_64 wheel artifact build
+- [x] PyPI trusted-publishing path for repaired manylinux/musllinux Linux wheels
+- [ ] Public PyPI availability of repaired manylinux/musllinux Linux wheels
+- [ ] Public Bioconda package availability
+- [ ] Public BioContainers image availability
+
+Release verification commands are documented in [Release process](docs/release-process.md).
 
 ## Accuracy, Validation, And Scope
 
@@ -251,18 +254,13 @@ DotMatch has repository checks for:
 - indexed-versus-exhaustive validation
 - benchmark and workflow evidence for specific supported lanes
 
-DotMatch has intentionally narrow evidence boundaries. It is well supported as a known-target assignment tool for short-DNA workflows. Broader claims should stay out of the README.
+DotMatch is intended for known-target short-DNA assignment workflows. It is not a genome aligner, variant caller, or expression-analysis framework. Evidence boundaries for supported assay lanes are documented separately.
 
-Before tagging a release, run the consolidated local pre-tag gate:
-
-```bash
-make pretag-ready
-```
-
-If you are writing documentation, a methods section, or release notes, read:
+For evidence boundaries, citation details, and methods wording, see:
 
 - [Evidence notes](docs/scientific-claims.md)
 - [Methods and citation](docs/methods-and-citation.md)
+- [Release process](docs/release-process.md)
 
 ## Python API
 

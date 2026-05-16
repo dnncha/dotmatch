@@ -29,7 +29,9 @@ Templates are:
 `plan` is a dry run: it prints deterministic native commands and does not create
 the output directory. `run` creates the output directory, writes generated files,
 runs target audit first, runs the compiled native workflow, and records command
-exit codes and warnings in `assay_manifest.json`.
+exit codes and warnings in `assay_manifest.json`. It also writes
+`assay_report.html` as the primary workflow report and
+`assay_manifest.summary.tsv` for workflow systems and MultiQC custom content.
 
 `infer` samples FASTQ reads, scores fixed-window candidates against the supplied
 target table, writes a candidate AssaySpec, and writes `inference_report.json`
@@ -81,7 +83,9 @@ unmatched = true
 
 Count mode writes `counts.mageck.tsv` for CRISPR/MAGeCK output or `counts.tsv`
 for DotMatch output, plus `target_counts.long.tsv`, `sample_qc.tsv`,
-`summary.json`, `report.html`, `audit/`, and optional row-level diagnostics.
+`summary.json`, native `report.html`, `assay_report.html`,
+`assay_manifest.json`, `assay_manifest.summary.tsv`, `audit/`, and optional
+row-level diagnostics.
 
 ## Demux And Pair Modes
 

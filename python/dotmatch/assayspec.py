@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import html
 import json
 import shlex
 import subprocess
@@ -148,6 +149,8 @@ def compile_assay_plan(assay: AssaySpec) -> AssayPlan:
     generated: dict[str, Path] = {}
     artifacts: dict[str, Path] = {
         "manifest": out_dir / "assay_manifest.json",
+        "manifest_summary": out_dir / "assay_manifest.summary.tsv",
+        "assay_report": out_dir / "assay_report.html",
         "normalized_spec": out_dir / "assay.normalized.json",
     }
     steps: list[PlanStep] = []
@@ -191,6 +194,7 @@ def run_assay_plan(plan: AssayPlan) -> int:
         "schema_version": 1,
         "mode": plan.spec.mode,
         "assay_type": plan.spec.assay_type,
+        "status": plan.spec.status,
         "spec_path": str(plan.spec.path),
         "native_cli": str(native),
         "commands": [],
@@ -1079,6 +1083,216 @@ def _write_manifest(plan: AssayPlan, manifest: Mapping[str, Any]) -> None:
     with path.open("w", encoding="utf-8") as fh:
         json.dump(manifest, fh, indent=2, sort_keys=True)
         fh.write("\n")
+    _write_manifest_summary(plan, manifest)
+    _write_assay_report(plan, manifest)
+
+
+def _write_manifest_summary(plan: AssayPlan, manifest: Mapping[str, Any]) -> None:
+    path = plan.artifacts["manifest_summary"]
+    header = [
+        "schema_version",
+        "mode",
+        "assay_type",
+        "status",
+        "native_version",
+        "autopsy_triggered",
+        "warning_count",
+        "production_warning_count",
+        "sample_count",
+        "primary_report",
+        "manifest",
+    ]
+    row = [
+        str(manifest.get("schema_version", "")),
+        str(manifest.get("mode", "")),
+        str(manifest.get("assay_type", "")),
+        str(manifest.get("status", plan.spec.status)),
+        str(manifest.get("native_version", "")),
+        "true" if manifest.get("autopsy_triggered") else "false",
+        str(len(manifest.get("warnings", []) or [])),
+        str(len(manifest.get("production_warnings", []) or [])),
+        str(_sample_count(plan.spec)),
+        str(plan.artifacts["assay_report"]),
+        str(plan.artifacts["manifest"]),
+    ]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.writer(fh, delimiter="\t", lineterminator="\n")
+        writer.writerow(header)
+        writer.writerow(row)
+
+
+def _write_assay_report(plan: AssayPlan, manifest: Mapping[str, Any]) -> None:
+    path = plan.artifacts["assay_report"]
+    artifacts = manifest.get("artifacts", {})
+    warnings = list(manifest.get("warnings", []) or [])
+    production_warnings = list(manifest.get("production_warnings", []) or [])
+    autopsy_artifacts = manifest.get("autopsy_artifacts", {}) or {}
+    failed_commands = [cmd for cmd in manifest.get("commands", []) if cmd.get("exit_code") not in (0, None)]
+    status = "Needs Review" if failed_commands or warnings or production_warnings else "Ready"
+    status_class = "warn" if status == "Needs Review" else "ok"
+
+    sections: list[str] = [
+        "<!doctype html>",
+        "<html><head><meta charset=\"utf-8\"><title>DotMatch Assay Report</title>",
+        "<style>",
+        "body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;margin:0;color:#18212f;background:#f7f9fb;line-height:1.45}",
+        "main{max-width:1180px;margin:0 auto;padding:32px}",
+        "h1{font-size:32px;margin:0 0 8px}h2{margin-top:28px;border-bottom:1px solid #d8dee4;padding-bottom:6px}",
+        ".lede{color:#4b5563;margin:0 0 20px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}",
+        ".card{background:#fff;border:1px solid #d8dee4;border-radius:8px;padding:14px}.label{font-size:12px;color:#57606a;text-transform:uppercase;letter-spacing:.04em}",
+        ".value{font-size:20px;font-weight:650;margin-top:4px}.ok{color:#1a7f37}.warn{color:#9a6700}.bad{color:#cf222e}",
+        "table{border-collapse:collapse;width:100%;background:#fff;margin:12px 0}th,td{border:1px solid #d8dee4;padding:7px 9px;text-align:left;vertical-align:top}th{background:#eef2f7}",
+        "code{background:#eef2f7;padding:2px 4px;border-radius:4px}a{color:#0969da}.empty{color:#6e7781}",
+        "</style></head><body><main>",
+        "<h1>DotMatch Assay Report</h1>",
+        "<p class=\"lede\">Workflow-facing summary for a fixed-window known-target assay. Ambiguous reads are not silently counted.</p>",
+        "<h2>Run Status</h2>",
+        "<div class=\"grid\">",
+        _metric_card("Status", status, status_class),
+        _metric_card("Mode", str(manifest.get("mode", ""))),
+        _metric_card("Assay", str(manifest.get("assay_type", ""))),
+        _metric_card("Spec Status", str(manifest.get("status", plan.spec.status))),
+        _metric_card("Samples", str(_sample_count(plan.spec))),
+        _metric_card("Autopsy", "Triggered" if manifest.get("autopsy_triggered") else "Not triggered", "warn" if manifest.get("autopsy_triggered") else "ok"),
+        "</div>",
+        "<h2>Inputs</h2>",
+        _samples_table(plan.spec),
+        "<h2>Sample QC</h2>",
+        _sample_qc_table(plan.artifacts.get("sample_qc")),
+        "<h2>Warnings</h2>",
+        _warnings_html(warnings + production_warnings),
+        "<h2>Library Audit</h2>",
+        _audit_html(plan),
+        "<h2>Autopsy</h2>",
+        _autopsy_html(autopsy_artifacts),
+        "<h2>Artifacts</h2>",
+        _mapping_table(artifacts),
+        "<h2>Native Commands</h2>",
+        _commands_table(manifest.get("commands", []) or []),
+        "</main></body></html>\n",
+    ]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(sections), encoding="utf-8")
+
+
+def _metric_card(label: str, value: str, css_class: str = "") -> str:
+    cls = f" {css_class}" if css_class else ""
+    return f"<div class=\"card\"><div class=\"label\">{html.escape(label)}</div><div class=\"value{cls}\">{html.escape(value)}</div></div>"
+
+
+def _sample_count(assay: AssaySpec) -> int:
+    if assay.mode == "count":
+        return len(_samples(assay.data))
+    return 1
+
+
+def _samples_table(assay: AssaySpec) -> str:
+    rows = ["<table><tr><th>Sample</th><th>FASTQ</th></tr>"]
+    if assay.mode == "count":
+        for sample in _samples(assay.data):
+            rows.append(
+                "<tr><td>{}</td><td>{}</td></tr>".format(
+                    html.escape(str(sample.get("id", ""))),
+                    html.escape(str(_path_from_spec(assay.path, str(sample.get("fastq", ""))))),
+                )
+            )
+    else:
+        reads_key = "reads"
+        rows.append(
+            "<tr><td>{}</td><td>{}</td></tr>".format(
+                html.escape(assay.mode),
+                html.escape(str(_path_from_spec(assay.path, str(assay.data.get(reads_key, ""))))),
+            )
+        )
+    rows.append("</table>")
+    return "".join(rows)
+
+
+def _sample_qc_table(path: Path | None) -> str:
+    if path is None or not path.exists():
+        return "<p class=\"empty\">No sample QC table was produced for this mode.</p>"
+    return _tsv_preview_table(path, 12)
+
+
+def _audit_html(plan: AssayPlan) -> str:
+    paths = []
+    for key in ["audit", "left_audit", "right_audit"]:
+        artifact = plan.artifacts.get(key)
+        if artifact is not None:
+            paths.append(Path(artifact) / "audit_summary.tsv")
+    blocks = []
+    for path in paths:
+        if path.exists():
+            blocks.append(f"<h3>{html.escape(path.parent.name)}</h3>{_tsv_preview_table(path, 40)}")
+    return "".join(blocks) if blocks else "<p class=\"empty\">No audit summary was available.</p>"
+
+
+def _autopsy_html(artifacts: Mapping[str, str]) -> str:
+    if not artifacts:
+        return "<p class=\"empty\">Autopsy was not triggered for this run.</p>"
+    findings = artifacts.get("findings")
+    parts = [_mapping_table(artifacts)]
+    if findings and Path(findings).exists():
+        parts.append(_tsv_preview_table(Path(findings), 40))
+    return "".join(parts)
+
+
+def _warnings_html(warnings: Sequence[str]) -> str:
+    if not warnings:
+        return "<p class=\"ok\">No AssaySpec production warnings were recorded.</p>"
+    items = "".join(f"<li>{html.escape(str(warning))}</li>" for warning in warnings)
+    return f"<ul class=\"warn\">{items}</ul>"
+
+
+def _mapping_table(mapping: Mapping[str, Any]) -> str:
+    if not mapping:
+        return "<p class=\"empty\">No artifacts recorded.</p>"
+    rows = ["<table><tr><th>Name</th><th>Path</th></tr>"]
+    for key in sorted(mapping):
+        value = str(mapping[key])
+        rows.append(f"<tr><td>{html.escape(str(key))}</td><td>{_artifact_link(value)}</td></tr>")
+    rows.append("</table>")
+    return "".join(rows)
+
+
+def _commands_table(commands: Sequence[Mapping[str, Any]]) -> str:
+    if not commands:
+        return "<p class=\"empty\">No native commands were recorded.</p>"
+    rows = ["<table><tr><th>Step</th><th>Exit</th><th>Command</th></tr>"]
+    for command in commands:
+        argv = " ".join(shlex.quote(str(part)) for part in command.get("argv", []))
+        rows.append(
+            "<tr><td>{}</td><td>{}</td><td><code>{}</code></td></tr>".format(
+                html.escape(str(command.get("name", ""))),
+                html.escape(str(command.get("exit_code", ""))),
+                html.escape(argv),
+            )
+        )
+    rows.append("</table>")
+    return "".join(rows)
+
+
+def _tsv_preview_table(path: Path, max_rows: int) -> str:
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return "<p class=\"empty\">Preview unavailable.</p>"
+    if not lines:
+        return "<p class=\"empty\">File is empty.</p>"
+    rows = ["<table>"]
+    for row_index, line in enumerate(lines[:max_rows]):
+        tag = "th" if row_index == 0 else "td"
+        cells = "".join(f"<{tag}>{html.escape(cell)}</{tag}>" for cell in line.split("\t"))
+        rows.append(f"<tr>{cells}</tr>")
+    rows.append("</table>")
+    return "".join(rows)
+
+
+def _artifact_link(value: str) -> str:
+    escaped = html.escape(value)
+    name = html.escape(Path(value).name or value)
+    return f"<a href=\"{escaped}\">{name}</a><br><code>{escaped}</code>"
 
 
 def _append_audit_warnings(plan: AssayPlan, step: PlanStep, manifest: dict[str, Any]) -> None:

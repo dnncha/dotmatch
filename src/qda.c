@@ -1404,20 +1404,39 @@ static int write_count_html_report(const char *path, const seq_table *targets, c
     FILE *out = open_output_file(path);
     if (out == NULL) return -1;
 
+    int needs_review = 0;
+    for (size_t sample = 0; sample < reads->count; ++sample) {
+        const count_stats *s = &stats_by_sample[sample];
+        double denom = s->total == 0 ? 1.0 : (double)s->total;
+        if ((double)s->ambiguous / denom > 0.01 || (double)s->unmatched / denom > 0.10) needs_review = 1;
+    }
+
     fprintf(out,
             "<!doctype html>\n<html><head><meta charset=\"utf-8\"><title>DotMatch Report</title>"
-            "<style>body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;margin:32px;line-height:1.4;color:#17202a}"
-            "table{border-collapse:collapse;width:100%%;margin:16px 0}th,td{border:1px solid #d8dee4;padding:6px 8px;text-align:right}"
-            "th:first-child,td:first-child{text-align:left}th{background:#f6f8fa}.metric{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}"
-            ".metric div{border:1px solid #d8dee4;padding:12px;border-radius:6px}.warn{color:#9a6700}.ok{color:#1a7f37}</style></head><body>\n");
+            "<style>body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;margin:0;line-height:1.45;color:#17202a;background:#f7f9fb}"
+            "main{max-width:1160px;margin:0 auto;padding:32px}h1{font-size:32px;margin:0 0 8px}h2{margin-top:28px;border-bottom:1px solid #d8dee4;padding-bottom:6px}"
+            ".lede{color:#57606a;margin:0 0 20px}.metric{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}"
+            ".metric div,.note{background:#fff;border:1px solid #d8dee4;padding:12px;border-radius:8px}.label{font-size:12px;color:#57606a;text-transform:uppercase;letter-spacing:.04em}"
+            ".value{font-size:20px;font-weight:650;margin-top:4px}table{border-collapse:collapse;width:100%%;margin:16px 0;background:#fff}"
+            "th,td{border:1px solid #d8dee4;padding:7px 9px;text-align:right;vertical-align:top}th:first-child,td:first-child{text-align:left}th{background:#eef2f7}"
+            ".warn{color:#9a6700}.ok{color:#1a7f37}.bad{color:#cf222e}</style></head><body><main>\n");
     fprintf(out, "<h1>DotMatch Report</h1>\n");
-    fprintf(out, "<p>Known-target assignment report for %zu target%s and %zu sample%s.</p>\n",
+    fprintf(out, "<p class=\"lede\">Known-target assignment report for %zu target%s and %zu sample%s. Ambiguous reads are not silently counted.</p>\n",
             targets->count, targets->count == 1 ? "" : "s", reads->count, reads->count == 1 ? "" : "s");
-    fprintf(out, "<div class=\"metric\"><div><strong>k</strong><br>%d</div><div><strong>Metric</strong><br>%s</div>"
-                 "<div><strong>Ambiguity policy</strong><br>%s</div><div><strong>Target length</strong><br>%zu</div></div>\n",
-            k, metric_name(metric), ambiguity_policy_name(policy), target_len);
+    fprintf(out, "<h2>Run Status</h2><div class=\"metric\">"
+                 "<div><span class=\"label\">Status</span><div class=\"value %s\">%s</div></div>"
+                 "<div><span class=\"label\">Targets</span><div class=\"value\">%zu</div></div>"
+                 "<div><span class=\"label\">Samples</span><div class=\"value\">%zu</div></div>"
+                 "<div><span class=\"label\">Target length</span><div class=\"value\">%zu</div></div></div>\n",
+            needs_review ? "warn" : "ok", needs_review ? "Needs Review" : "Ready",
+            targets->count, reads->count, target_len);
+    fprintf(out, "<h2>Inputs and Configuration</h2><div class=\"metric\"><div><span class=\"label\">k</span><div class=\"value\">%d</div></div>"
+                 "<div><span class=\"label\">Metric</span><div class=\"value\">%s</div></div>"
+                 "<div><span class=\"label\">Ambiguity policy</span><div class=\"value\">%s</div></div>"
+                 "<div><span class=\"label\">Assignment</span><div class=\"value\">Known target</div></div></div>\n",
+            k, metric_name(metric), ambiguity_policy_name(policy));
 
-    fprintf(out, "<h2>Sample QC</h2><table><tr><th>Sample</th><th>Total reads</th><th>Assignment rate</th>"
+    fprintf(out, "<h2>Target Assignment QC</h2><table><tr><th>Sample</th><th>Total reads</th><th>Assignment rate</th>"
                  "<th>Exact rate</th><th>Rescue rate</th><th>Ambiguous rate</th><th>No-match rate</th>"
                  "<th>Library coverage</th><th>Candidates verified</th></tr>\n");
     for (size_t sample = 0; sample < reads->count; ++sample) {
@@ -1442,6 +1461,9 @@ static int write_count_html_report(const char *path, const seq_table *targets, c
     fprintf(out, "</table>\n");
 
     fprintf(out, "<h2>Warnings</h2><ul>\n");
+    if (!needs_review) {
+        fprintf(out, "<li class=\"ok\">No high ambiguous or no-match warning thresholds were crossed.</li>\n");
+    }
     for (size_t sample = 0; sample < reads->count; ++sample) {
         const count_stats *s = &stats_by_sample[sample];
         double denom = s->total == 0 ? 1.0 : (double)s->total;
@@ -1458,7 +1480,7 @@ static int write_count_html_report(const char *path, const seq_table *targets, c
     }
     fprintf(out, "<li class=\"ok\">Ambiguous reads are not silently counted.</li></ul>\n");
 
-    fprintf(out, "<h2>Inputs</h2><table><tr><th>Sample</th><th>FASTQ</th><th>Selected start(s)</th></tr>\n");
+    fprintf(out, "<h2>Input Files</h2><table><tr><th>Sample</th><th>FASTQ</th><th>Selected start(s)</th></tr>\n");
     for (size_t sample = 0; sample < reads->count; ++sample) {
         fprintf(out, "<tr><td>");
         html_escape(out, labels->items[sample]);
@@ -1484,7 +1506,7 @@ static int write_count_html_report(const char *path, const seq_table *targets, c
         write_tsv_preview_table(out, "Top Unmatched", unmatched_report_path, 25);
     }
 
-    fprintf(out, "</body></html>\n");
+    fprintf(out, "</main></body></html>\n");
     fclose(out);
     return 0;
 }
