@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import gzip
 import os
 import subprocess
 import sys
@@ -221,9 +222,10 @@ def test_load_count_spec_and_compile_deterministic_plan(tmp_path: Path) -> None:
     assay = load_assay_spec(_write_count_spec(tmp_path))
     plan = compile_assay_plan(assay)
 
-    assert [step.name for step in plan.steps] == ["audit", "run", "validate"]
+    assert [step.name for step in plan.steps] == ["audit", "run", "crispr-qc", "validate"]
     assert plan.steps[0].argv[:3] == ["dotmatch-native", "audit", "--targets"]
     assert plan.steps[1].argv[:2] == ["dotmatch-native", "crispr-count"]
+    assert plan.steps[2].argv[:2] == ["dotmatch", "crispr-qc"]
     assert "--sample-qc" in plan.steps[1].argv
     assert "--target-counts-long" in plan.steps[1].argv
     assert "--format" not in plan.steps[1].argv
@@ -267,6 +269,13 @@ def test_assay_run_count_reproduces_existing_crispr_fixture(tmp_path: Path) -> N
     assert manifest["mode"] == "count"
     assert manifest["commands"][0]["name"] == "audit"
     assert manifest["commands"][-1]["name"] == "validate"
+    assert manifest["commands"][-2]["name"] == "crispr-qc"
+    assert (out_dir / "crispr_qc.json").exists()
+    assert (out_dir / "crispr_qc.summary.tsv").exists()
+    assert (out_dir / "crispr_qc.html").exists()
+    crispr_qc = json.loads((out_dir / "crispr_qc.json").read_text(encoding="utf-8"))
+    assert crispr_qc["assay"] == "crispr_count_qc"
+    assert "low_assignment_rate" in {warning["code"] for warning in crispr_qc["warnings"]}
     assert (out_dir / "assay_report.html").exists()
     summary_lines = (out_dir / "assay_manifest.summary.tsv").read_text(encoding="utf-8").splitlines()
     assert summary_lines[0].split("\t") == [
@@ -370,6 +379,34 @@ def test_assay_infer_writes_ready_crispr_count_spec_and_report(tmp_path: Path) -
     assert data["chosen"]["length"] == 4
     assert data["chosen"]["assignment_rate"] == 1.0
     assert (tmp_path / "inference_candidates.tsv").exists()
+
+
+def test_assay_infer_accepts_gzipped_fastq(tmp_path: Path) -> None:
+    from dotmatch.assayspec import infer_assay_spec
+
+    targets = _write_inference_targets(tmp_path)
+    reads = _write_inference_reads(tmp_path)
+    gz_reads = tmp_path / "infer.fastq.gz"
+    with reads.open("rt", encoding="utf-8") as src, gzip.open(gz_reads, "wt", encoding="utf-8") as dst:
+        dst.write(src.read())
+    spec = tmp_path / "inferred_gz.toml"
+    report = tmp_path / "inference_gz_report.json"
+
+    result = infer_assay_spec(
+        mode="count",
+        assay_type="crispr",
+        targets=targets,
+        reads=gz_reads,
+        sample_id="sample",
+        out=spec,
+        report=report,
+    )
+
+    assert result["spec"] == spec
+    assert 'fastq = "{}"'.format(gz_reads) in spec.read_text(encoding="utf-8")
+    data = json.loads(report.read_text(encoding="utf-8"))
+    assert data["chosen"]["start"] == 2
+    assert data["chosen"]["assignment_rate"] == 1.0
 
 
 def test_assay_infer_low_confidence_writes_draft_spec(tmp_path: Path) -> None:

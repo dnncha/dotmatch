@@ -5,14 +5,14 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://dnncha.github.io/do
 const socialImageUrl = `${siteUrl}/dotmatch-og.png`;
 const twitterImageUrl = `${siteUrl}/dotmatch-twitter.png`;
 const socialImageAlt =
-  "DotMatch social preview showing CRISPR guide-count assignment into known DNA target rows";
+  "DotMatch social preview showing fixed-window barcode and guide assignment with auditable outcomes";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: "DotMatch",
-  title: "DotMatch - Auditable CRISPR Guide Counting",
+  title: "DotMatch - Barcode Autopsy for Fixed-Window FASTQs",
   description:
-    "DotMatch turns known short-DNA FASTQs into CRISPR guide counts, barcode splits, and QC reports with explicit ambiguity handling.",
+    "DotMatch turns known short-DNA FASTQs into barcode splits, CRISPR guide counts, and QC reports with explicit ambiguity and autopsy artifacts.",
   authors: [{ name: "DotMatch maintainers", url: "https://github.com/dnncha/dotmatch" }],
   creator: "DotMatch maintainers",
   publisher: "DotMatch",
@@ -26,13 +26,14 @@ export const metadata: Metadata = {
     "CRISPR",
     "FASTQ",
     "barcode demultiplexing",
+    "barcode autopsy",
     "edit distance",
     "known-target assignment"
   ],
   openGraph: {
-    title: "DotMatch - Auditable CRISPR Guide Counting",
+    title: "DotMatch - Barcode Autopsy for Fixed-Window FASTQs",
     description:
-      "CRISPR guide counts, barcode splits, and QC reports for known short-DNA targets, with ambiguous reads reported instead of guessed.",
+      "Barcode splits, CRISPR guide counts, and QC reports for known short-DNA targets, with ambiguous reads reported instead of guessed.",
     type: "website",
     siteName: "DotMatch",
     locale: "en_US",
@@ -50,9 +51,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "DotMatch - Auditable CRISPR Guide Counting",
+    title: "DotMatch - Barcode Autopsy for Fixed-Window FASTQs",
     description:
-      "CRISPR guide counts, barcode splits, and QC reports for known short-DNA targets, with ambiguous reads reported instead of guessed.",
+      "Barcode splits, CRISPR guide counts, and QC reports for known short-DNA targets, with ambiguous reads reported instead of guessed.",
     images: [
       {
         url: twitterImageUrl,

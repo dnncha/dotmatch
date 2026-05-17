@@ -1,0 +1,3 @@
+sample_id	qc_status	total_count	coverage_fraction	zero_count_fraction	gini_index	top_1pct_fraction	assignment_rate	ambiguous_rate	no_match_rate	invalid_rate
+sample_a	review	1	0.3333333333333333	0.6666666666666666	0.6666666666666666	1.0	0.33333333	0.33333333	0.33333333	0.25
+sample_b	review	1	0.3333333333333333	0.6666666666666666	0.6666666666666666	1.0	0.5	0.0	0.5	0.0

@@ -2,7 +2,7 @@
 """Gate the narrow public 10x tiny-BCL milestone evidence.
 
 This verifier is intentionally narrower than `check_bcl_comparison_gate.py`.
-It proves that the public classic-BCL demo row, DotMatch output counts, and
+It checks that the public classic-BCL demo row, DotMatch output counts, and
 available bcl2fastq validation are present. It does not authorize broad BCL
 Convert, CBCL, NovaSeq, or production demultiplexing comparison wording.
 """

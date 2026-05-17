@@ -1,0 +1,22 @@
+schema_version = 1
+status = "ready"
+mode = "demux"
+assay_type = "inline_barcode"
+barcodes = "../barcode_demux/data/barcodes.tsv"
+reads = "../barcode_demux/data/SRR391079.subsample100000.fastq.gz"
+
+[run]
+out_dir = "results"
+
+[extract]
+start = 1
+length = "auto"
+
+[assignment]
+k = 1
+metric = "hamming"
+
+[outputs]
+assignments = true
+ambiguous = true
+unmatched = true

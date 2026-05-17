@@ -130,14 +130,76 @@ custom_data:
       manifest:
         title: "Manifest"
         description: "Path to assay_manifest.json."
+  dotmatch_crispr_qc:
+    file_format: "tsv"
+    section_name: "DotMatch CRISPR QC"
+    description: "CRISPR guide-count QC emitted by DotMatch crispr_qc.summary.tsv outputs."
+    plot_type: "table"
+    pconfig:
+      id: "dotmatch_crispr_qc_table"
+      title: "DotMatch CRISPR QC"
+      col1_header: "Sample"
+    headers:
+      qc_status:
+        title: "QC Status"
+        description: "Pass or review status from the CRISPR QC thresholds."
+      total_count:
+        title: "Total Count"
+        description: "Total uniquely assigned guide counts for the sample."
+        format: "{:,.0f}"
+      coverage_fraction:
+        title: "Coverage"
+        description: "Fraction of library guides observed with at least one count."
+        min: 0
+        max: 1
+        scale: "RdYlGn"
+      zero_count_fraction:
+        title: "Zero Fraction"
+        description: "Fraction of library guides with zero counts."
+        min: 0
+        max: 1
+        scale: "YlOrRd"
+      gini_index:
+        title: "Gini"
+        description: "Guide-count inequality across the library."
+        min: 0
+        max: 1
+      top_1pct_fraction:
+        title: "Top 1% Fraction"
+        description: "Fraction of assigned guide counts in the top 1% of guides."
+        min: 0
+        max: 1
+      assignment_rate:
+        title: "Assignment Rate"
+        description: "Assigned reads divided by valid extracted reads."
+        min: 0
+        max: 1
+      ambiguous_rate:
+        title: "Ambiguous Rate"
+        description: "Ambiguous reads divided by valid extracted reads."
+        min: 0
+        max: 1
+      no_match_rate:
+        title: "No-Match Rate"
+        description: "No-match reads divided by valid extracted reads."
+        min: 0
+        max: 1
+      invalid_rate:
+        title: "Invalid Rate"
+        description: "Invalid extracted reads divided by total reads."
+        min: 0
+        max: 1
 
 sp:
   dotmatch_sample_qc:
     fn: "*sample_qc.tsv"
   dotmatch_assay_manifest:
     fn: "*assay_manifest.summary.tsv"
+  dotmatch_crispr_qc:
+    fn: "*crispr_qc.summary.tsv"
 
 custom_content:
   order:
     - dotmatch_assay_manifest
+    - dotmatch_crispr_qc
     - dotmatch_sample_qc

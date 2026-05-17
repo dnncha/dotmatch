@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "DotMatch Workbench",
+  "version": "0.1.0",
+  "identifier": "io.github.dnncha.dotmatch.workbench",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://127.0.0.1:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "DotMatch Workbench",
+        "width": 1280,
+        "height": 860,
+        "minWidth": 960,
+        "minHeight": 700
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' asset: data:; style-src 'self' 'unsafe-inline'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["app", "dmg", "deb", "appimage"],
+    "category": "Science",
+    "shortDescription": "Local DotMatch AssaySpec workbench",
+    "longDescription": "A local desktop workbench for DotMatch AssaySpec design, execution, QC review, and artifact export."
+  }
+}

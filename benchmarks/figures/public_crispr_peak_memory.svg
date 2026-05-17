@@ -3,24 +3,24 @@
 <text class="title" x="20" y="28">Public CRISPR peak RSS</text>
 <text class="axis" x="20" y="50">Measured per command with /usr/bin/time</text>
 <text x="20" y="93">dotmatch_exact_k0</text>
-<rect class="bar" x="310" y="78" width="15" height="20" rx="2"/>
-<text x="333" y="93">27056.00 KB</text>
+<rect class="bar" x="310" y="78" width="14" height="20" rx="2"/>
+<text x="332" y="93">26752.00 KB</text>
 <text x="20" y="127">dotmatch_levenshtein_k1</text>
-<rect class="bar" x="310" y="112" width="15" height="20" rx="2"/>
-<text x="333" y="127">27344.00 KB</text>
+<rect class="bar" x="310" y="112" width="64" height="20" rx="2"/>
+<text x="382" y="127">117072.00 KB</text>
 <text x="20" y="161">dotmatch_hamming_k1</text>
-<rect class="bar" x="310" y="146" width="15" height="20" rx="2"/>
-<text x="333" y="161">27232.00 KB</text>
+<rect class="bar" x="310" y="146" width="18" height="20" rx="2"/>
+<text x="336" y="161">32720.00 KB</text>
 <text x="20" y="195">mageck_count_exact</text>
-<rect class="bar" x="310" y="180" width="76" height="20" rx="2"/>
-<text x="394" y="195">131664.00 KB</text>
+<rect class="bar" x="310" y="180" width="73" height="20" rx="2"/>
+<text x="391" y="195">133408.00 KB</text>
 <text x="20" y="229">guide_counter_one_mismatch</text>
-<rect class="bar" x="310" y="214" width="313" height="20" rx="2"/>
-<text x="631" y="229">541360.00 KB</text>
+<rect class="bar" x="310" y="214" width="297" height="20" rx="2"/>
+<text x="615" y="229">541360.00 KB</text>
 <text x="20" y="263">external_competitors_ERR376998.fastq.gz</text>
-<rect class="bar" x="310" y="248" width="645" height="20" rx="2"/>
-<text x="963" y="263">1113888.00 KB</text>
+<rect class="bar" x="310" y="248" width="600" height="20" rx="2"/>
+<text x="918" y="263">1090896.00 KB</text>
 <text x="20" y="297">external_competitors_ERR376999.fastq.gz</text>
-<rect class="bar" x="310" y="282" width="600" height="20" rx="2"/>
-<text x="918" y="297">1036944.00 KB</text>
+<rect class="bar" x="310" y="282" width="645" height="20" rx="2"/>
+<text x="963" y="297">1171920.00 KB</text>
 </svg>

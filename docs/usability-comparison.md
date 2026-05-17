@@ -43,7 +43,7 @@ This should produce:
 
 ## Scope Boundary
 
-DotMatch should not describe itself as universally superior to guide-counter. A conservative scope statement is:
+DotMatch is not a universal replacement for guide-counter. Its current CRISPR positioning is:
 
 > Compared with mismatch-only guide counters, DotMatch provides a general exact Levenshtein assignment primitive with indel support, ambiguity semantics, target audit, native validation, and multi-domain known-target workflows.
 

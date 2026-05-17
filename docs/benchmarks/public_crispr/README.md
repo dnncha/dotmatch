@@ -1,18 +1,20 @@
 # Public CRISPR Workflow Comparator
 
-This report tracks the real MAGeCK/Yusa public CRISPR benchmark. Smoke rows are useful for installation checks; repeated rows are the only rows intended to support user-facing performance statements.
+This report tracks the MAGeCK/Yusa public CRISPR benchmark. The single-run table below is a smoke/latest wiring check only; repeated rows and comparison-gated rows are the only rows intended to support user-facing performance statements.
 
-## Smoke/Latest Table
+## Smoke/Latest Wiring Table
+
+**Reduced evidence.** These rows are secondary benchmark context. Use the repeated-run statistics below, and use `docs/benchmarks/crispr_comparison/README.md` once `make crispr-comparison-gate` passes for two real CRISPR datasets.
 
 | tool | version | semantics | n_reads | n_targets | seconds | reads_per_sec | peak_rss_kb | assigned_reads | corrected_reads | ambiguous_reads | rejected_reads | overcount_reads | verified_per_read | exit_code |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| dotmatch_exact_k0 | local | exact_k0_no_errors | 20000 | 87437 | 0.087922 | 227474.7 | 27056 | 17894 | 0 | 0 | 2106 | 0 | 0.8947 | 0 |
-| dotmatch_levenshtein_k1 | local | levenshtein_k1_substitution_insertion_deletion | 20000 | 87437 | 3.604998 | 5547.9 | 27344 | 19510 | 1616 | 38 | 452 | 0 | 2.8277 | 0 |
-| dotmatch_hamming_k1 | local | hamming_k1_no_indels | 20000 | 87437 | 0.239661 | 83451.0 | 27232 | 18416 | 522 | 1 | 1583 | 0 | 202.0318 | 0 |
-| mageck_count_exact | 0.5.9.5 | exact_fastq_count_trim5_23 | 20000 | 87437 | 6.263658 | 3193.0 | 131664 | 17894 | 0 |  | 2106 | 0 |  | 0 |
-| guide_counter_one_mismatch | 0.1.3 | hamming_k1_no_indels_auto_offset | 20000 | 87437 | 1.072715 | 18644.3 | 541360 | 20956 |  |  | 0 | 956 |  | 0 |
-| external_competitors_ERR376998.fastq.gz | see_competitor_csv | cutadapt_bowtie2_extracted_workflow | 10000 | 87437 | 15.749150 | 635.0 | 1113888 |  |  |  |  | 0 |  | 0 |
-| external_competitors_ERR376999.fastq.gz | see_competitor_csv | cutadapt_bowtie2_extracted_workflow | 10000 | 87437 | 10.850010 | 921.7 | 1036944 |  |  |  |  | 0 |  | 0 |
+| dotmatch_exact_k0 | local | exact_k0_no_errors | 20000 | 87437 | 0.359338 | 55657.8 | 26752 | 17894 | 0 | 0 | 2106 | 0 | 0.8947 | 0 |
+| dotmatch_levenshtein_k1 | local | levenshtein_k1_substitution_insertion_deletion | 20000 | 87437 | 0.442764 | 45170.8 | 117072 | 19510 | 1616 | 38 | 452 | 0 | 0.9862 | 0 |
+| dotmatch_hamming_k1 | local | hamming_k1_no_indels | 20000 | 87437 | 0.131451 | 152147.7 | 32720 | 18416 | 522 | 1 | 1583 | 0 | 0.9974 | 0 |
+| mageck_count_exact | 0.5.9.5 | exact_fastq_count_trim5_23 | 20000 | 87437 | 1.051008 | 19029.3 | 133408 | 17894 | 0 |  | 2106 | 0 |  | 0 |
+| guide_counter_one_mismatch | 0.1.3 | hamming_k1_no_indels_auto_offset | 20000 | 87437 | 0.951435 | 21020.9 | 541360 | 20956 |  |  | 0 | 956 |  | 0 |
+| external_competitors_ERR376998.fastq.gz | see_competitor_csv | cutadapt_bowtie2_extracted_workflow | 10000 | 87437 | 10.070090 | 993.0 | 1090896 |  |  |  |  | 0 |  | 0 |
+| external_competitors_ERR376999.fastq.gz | see_competitor_csv | cutadapt_bowtie2_extracted_workflow | 10000 | 87437 | 9.587204 | 1043.1 | 1171920 |  |  |  |  | 0 |  | 0 |
 
 ![Public CRISPR throughput](../../../benchmarks/figures/public_crispr_throughput.svg)
 
@@ -62,8 +64,8 @@ This table keeps the fair CRISPR speed lane separate: DotMatch Hamming `k=1` ver
 
 | comparison | status | n_guides | total_left | total_right | total_delta | differing_guides | max_abs_delta | pearson | spearman |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| dotmatch_hamming_vs_guide_counter | ok | 87437 | 184167 | 208700 | -24533 | 13537 | 26 | 0.94176266 | 0.95124146 |
-| dotmatch_exact_vs_mageck_exact | ok | 87437 | 178715 | 178715 | 0 | 0 | 0 | 1.00000000 | 1.00000000 |
+| dotmatch_hamming_vs_guide_counter | ok | 87437 | 18416 | 20956 | -2540 | 2296 | 6 | 0.93580124 | 0.93709769 |
+| dotmatch_exact_vs_mageck_exact | ok | 87437 | 17894 | 17894 | 0 | 0 | 0 | 1.00000000 | 1.00000000 |
 
 ![Public CRISPR count agreement](../../../benchmarks/figures/public_crispr_count_agreement.svg)
 

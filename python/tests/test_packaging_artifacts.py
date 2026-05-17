@@ -108,6 +108,9 @@ def test_python_package_verifier_checks_installed_cli_version() -> None:
     assert '"--version"' in verifier
     assert "dotmatch-native" in verifier
     assert '"assay", "check"' in verifier
+    assert '"crispr"' in verifier
+    assert '"qc"' in verifier
+    assert '"crispr-qc"' in verifier
     assert '"infer"' in verifier
     assert '"autopsy"' in verifier
 
@@ -182,9 +185,10 @@ def test_cibuildwheel_linux_repaired_wheel_path_is_configured() -> None:
     assert "dist-linux/*.whl" in workflow
     assert "manylinux/musllinux" in packaging
     assert "repaired Linux wheel artifacts" in packaging
-    assert "[x] GitHub release manylinux/musllinux x86_64 wheel artifact build" in readme
-    assert "[x] PyPI trusted-publishing path for repaired manylinux/musllinux Linux wheels" in readme
-    assert "[ ] Public PyPI availability of repaired manylinux/musllinux Linux wheels" in readme
+    assert "GitHub release workflow builds and smoke-tests repaired manylinux/musllinux" in readme
+    assert "PyPI trusted publishing is configured" in readme
+    assert "Public PyPI wheel availability" in readme
+    assert "visible on PyPI" in readme
 
 
 def test_release_workflow_publishing_jobs_depend_on_preflight() -> None:

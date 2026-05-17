@@ -174,6 +174,25 @@ TARGETS
 grep '^guide0	GENE0	1$' "$TMPDIR/mageck_seq_counts.tsv" >/dev/null
 grep '"n_targets": 2' "$TMPDIR/mageck_seq_summary.json" >/dev/null
 
+cat > "$TMPDIR/barcode_header.tsv" <<'BARCODEHEADER'
+barcode_id	barcode_seq
+s1	ACGT
+s2	TTTT
+BARCODEHEADER
+
+"$DOTMATCH_BIN" count \
+  --targets "$TMPDIR/barcode_header.tsv" \
+  --reads "$TMPDIR/reads.fastq" \
+  --target-start 0 \
+  --target-length 4 \
+  --k 0 \
+  --metric hamming \
+  --out "$TMPDIR/barcode_header_counts.tsv" \
+  --summary "$TMPDIR/barcode_header_summary.json"
+
+grep '^s1	ACGT		0	1	0	0	0	0	1$' "$TMPDIR/barcode_header_counts.tsv" >/dev/null
+grep '"n_targets": 2' "$TMPDIR/barcode_header_summary.json" >/dev/null
+
 if "$DOTMATCH_BIN" fastq-assign \
   --barcodes "$TMPDIR/barcodes.tsv" \
   --reads "$TMPDIR/reads.fastq" \
@@ -447,6 +466,16 @@ grep '"assigned_reads": 1' "$TMPDIR/bcl_summary.json" >/dev/null
 grep '"undetermined_reads": 2' "$TMPDIR/bcl_summary.json" >/dev/null
 grep '"filtered_clusters": 1' "$TMPDIR/bcl_summary.json" >/dev/null
 
+if "$DOTMATCH_BIN" bcl-demux \
+  --run-folder "$TMPDIR/bcl_run" \
+  --sample-sheet "$TMPDIR/bcl_run/SampleSheet.csv" \
+  --out-dir "$TMPDIR/bcl_bad_lane_out" \
+  --lanes 2 \
+  --summary "$TMPDIR/bcl_bad_lane_summary.json" 2>/dev/null; then
+  echo "bcl-demux should reject unsupported non-lane-1 requests" >&2
+  exit 1
+fi
+
 "$DOTMATCH_BIN" bcl-validate \
   --dotmatch-out "$TMPDIR/bcl_out" \
   --truth-out "$TMPDIR/bcl_out" | grep '"mismatched_fastq_files": 0' >/dev/null
@@ -587,6 +616,8 @@ grep '"metric": "levenshtein"' "$TMPDIR/summary.json" >/dev/null
 grep '"library_covered_targets": 2' "$TMPDIR/summary.json" >/dev/null
 grep '^sample1	r2	GGGG	-1			-1	-1	0	none	none$' "$TMPDIR/unmatched.tsv" >/dev/null
 grep '^sample1	' "$TMPDIR/sample_qc.tsv" | grep '	4	3	2	1	1	1	0	0	' >/dev/null
+awk -F '\t' 'NR == 2 && ($14 != "0.66666667" || $15 != "0.33333333" || $16 != "0.33333333" || $18 != "0.33333333") { exit 1 }' "$TMPDIR/sample_qc.tsv"
+awk -F '\t' 'NR == 2 && ($21 < 0 || $21 > 1) { exit 1 }' "$TMPDIR/sample_qc.tsv"
 grep '^sample1	bc0	G0	ACGT	1	0	0	0	0	1	1$' "$TMPDIR/target_counts.long.tsv" >/dev/null
 grep '<title>DotMatch Report</title>' "$TMPDIR/report.html" >/dev/null
 grep 'sample1' "$TMPDIR/report.html" >/dev/null
@@ -594,6 +625,8 @@ grep 'Run Status' "$TMPDIR/report.html" >/dev/null
 grep 'Target Assignment QC' "$TMPDIR/report.html" >/dev/null
 grep 'Inputs and Configuration' "$TMPDIR/report.html" >/dev/null
 grep 'Assignment rate' "$TMPDIR/report.html" >/dev/null
+grep 'Valid windows' "$TMPDIR/report.html" >/dev/null
+grep '66.67%' "$TMPDIR/report.html" >/dev/null
 grep 'Library coverage' "$TMPDIR/report.html" >/dev/null
 REPORT_MODE=$(python3 - "$TMPDIR/report.html" <<'PY'
 import os

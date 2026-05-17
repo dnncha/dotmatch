@@ -80,7 +80,7 @@ def _write_minimal_repo(root: Path) -> None:
         "docs/native-comparator-scope.md": (
             "# Native Comparator Scope\n\n"
             "Current native comparator: Edlib exhaustive global edit-distance assignment with zero mismatches.\n\n"
-            "Do not use SeqAn or Parasail in README, website, or release-note performance wording yet. "
+            "SeqAn and Parasail are not part of the checked README, website, or release-note performance comparison set yet. "
             "They require equivalent global edit-distance or documented semi-global scoring semantics, fixed threshold k, "
             "fixed threshold `k`, native dependency/version capture, raw CSV rows, and zero assignment mismatches before claims change.\n"
             "Supported wording is limited to Edlib exhaustive global edit-distance assignment scans.\n"

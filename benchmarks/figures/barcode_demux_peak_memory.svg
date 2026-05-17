@@ -4,8 +4,8 @@
 <text class="axis" x="20" y="50">Peak resident memory; lower is better</text>
 <text x="20" y="95">cutadapt_demux</text>
 <rect class="bar" x="280" y="80" width="590" height="21" rx="2"/>
-<text x="878" y="95">19296.00 KB</text>
+<text x="878" y="95">23408.00 KB</text>
 <text x="20" y="131">dotmatch_demux</text>
-<rect class="bar" x="280" y="116" width="175" height="21" rx="2"/>
-<text x="463" y="131">5744.00 KB</text>
+<rect class="bar" x="280" y="116" width="143" height="21" rx="2"/>
+<text x="431" y="131">5712.00 KB</text>
 </svg>

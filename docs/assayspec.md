@@ -39,7 +39,7 @@ plus `inference_candidates.tsv`. Low-confidence inference writes
 `status = "draft"`. `run` refuses draft specs until a user reviews the report
 and changes the status to `ready`.
 
-`autopsy` diagnoses suspicious runs by wrapping native target audit and
+`autopsy` helps diagnose suspicious runs by wrapping native target audit and
 `inspect-unmatched`. It writes `autopsy_summary.json`, `findings.tsv`, and
 `top_unmatched.*.tsv` files. `run` also triggers autopsy automatically when
 sample QC crosses conservative thresholds.
@@ -85,7 +85,8 @@ Count mode writes `counts.mageck.tsv` for CRISPR/MAGeCK output or `counts.tsv`
 for DotMatch output, plus `target_counts.long.tsv`, `sample_qc.tsv`,
 `summary.json`, native `report.html`, `assay_report.html`,
 `assay_manifest.json`, `assay_manifest.summary.tsv`, `audit/`, and optional
-row-level diagnostics.
+row-level diagnostics. CRISPR count runs also write `crispr_qc.json`,
+`crispr_qc.summary.tsv`, and `crispr_qc.html`.
 
 ## Demux And Pair Modes
 

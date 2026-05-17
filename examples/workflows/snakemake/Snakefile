@@ -106,6 +106,9 @@ rule dotmatch_assay_run:
         manifest=f"{outdir}/assay/assay_manifest.json",
         manifest_summary=f"{outdir}/assay/assay_manifest.summary.tsv",
         sample_qc=f"{outdir}/assay/sample_qc.tsv",
+        crispr_qc_report=f"{outdir}/assay/crispr_qc.html",
+        crispr_qc_json=f"{outdir}/assay/crispr_qc.json",
+        crispr_qc_summary=f"{outdir}/assay/crispr_qc.summary.tsv",
         counts=f"{outdir}/assay/counts.mageck.tsv",
         summary=f"{outdir}/assay/summary.json",
     shell:

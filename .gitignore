@@ -32,6 +32,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+apps/workbench/.test-build/
 
 # Local environments and editor/OS files
 .venv/
@@ -67,6 +68,10 @@ examples/crispr_sanson_brunello/data/
 examples/sanson_brunello/output/
 examples/barcode_demux/data/*
 !examples/barcode_demux/data/metadata.json
+examples/barcode_autopsy/barcodes.tsv
+examples/barcode_autopsy/report.html
+examples/barcode_autopsy/report.md
+examples/barcode_autopsy/results/
 examples/feature_barcode/data/*
 !examples/feature_barcode/data/metadata.json
 examples/perturb_seq/data/*

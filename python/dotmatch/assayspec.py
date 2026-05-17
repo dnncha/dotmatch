@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gzip
 import html
 import json
 import shlex
@@ -479,7 +480,8 @@ def _read_target_sequences(path: Path) -> TargetSet:
 
 def _read_fastq_sequences(path: Path, *, max_reads: int) -> list[str]:
     seqs: list[str] = []
-    with path.open("r", encoding="utf-8") as fh:
+    opener = gzip.open if str(path).endswith(".gz") else Path.open
+    with opener(path, "rt", encoding="utf-8") as fh:
         while len(seqs) < max_reads:
             header = fh.readline()
             if not header:
@@ -939,6 +941,34 @@ def _compile_count(assay: AssaySpec, steps: list[PlanStep], artifacts: dict[str,
         cmd.extend(["--unmatched-out", str(artifacts["unmatched"])])
     steps.append(PlanStep("run", cmd))
 
+    if assay.assay_type == "crispr":
+        artifacts["crispr_qc"] = out_dir / "crispr_qc.json"
+        artifacts["crispr_qc_summary"] = out_dir / "crispr_qc.summary.tsv"
+        artifacts["crispr_qc_report"] = out_dir / "crispr_qc.html"
+        steps.append(
+            PlanStep(
+                "crispr-qc",
+                [
+                    "dotmatch",
+                    "crispr-qc",
+                    "--counts",
+                    str(artifacts["counts"]),
+                    "--sample-qc",
+                    str(artifacts["sample_qc"]),
+                    "--library",
+                    str(_spec_path(assay, "targets")),
+                    "--k",
+                    str(assignment.get("k", 1)),
+                    "--out",
+                    str(artifacts["crispr_qc"]),
+                    "--summary-tsv",
+                    str(artifacts["crispr_qc_summary"]),
+                    "--report",
+                    str(artifacts["crispr_qc_report"]),
+                ],
+            )
+        )
+
     first_sample = _samples(data)[0]
     validate = [
         "dotmatch-native",
@@ -1316,6 +1346,8 @@ def _resolve_native(argv: Sequence[str], native: Path) -> list[str]:
         return []
     if argv[0] == "dotmatch-native":
         return [str(native), *argv[1:]]
+    if argv[0] == "dotmatch":
+        return [sys.executable, "-m", "dotmatch.cli", *argv[1:]]
     return list(argv)
 
 

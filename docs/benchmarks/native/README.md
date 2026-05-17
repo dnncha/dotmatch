@@ -15,7 +15,7 @@
 
 ![Native assignment throughput](native_assignment_throughput.svg)
 
-## Best Native Speedups
+## Highest Observed Microbenchmark Speedups
 
 | n_targets | len | k | error_mode | err | reads_per_sec_dotmatch | reads_per_sec_edlib | verified_per_read | peak_rss_kb | speedup_vs_edlib_native |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -72,4 +72,4 @@
 
 ## Evidence Boundary
 
-These are native Edlib scan comparisons for exact short-DNA assignment workloads, plus simple exact-hash and BK-tree baselines. Exact `k=0` lookup should be judged against hash-table baselines. For `k=1`, the indexed path is reported only when it has zero correctness disagreements against the exhaustive comparator. The direct Levenshtein `k=1` threshold helper is separately covered by `make test` through `tests/test_qdalign_threshold_alloc.c`, which asserts exact/substitution/insertion/deletion threshold cases do not allocate heap memory.
+These are native Edlib scan microbenchmarks for exact short-DNA assignment workloads, plus simple exact-hash and BK-tree baselines. The largest rows are useful for understanding algorithmic scaling against exhaustive scan, but they are not end-to-end workflow speed claims. Exact `k=0` lookup should be judged against hash-table baselines. For `k=1`, the indexed path is reported only when it has zero correctness disagreements against the exhaustive comparator. Levenshtein `k=2` uses the exhaustive assignment path. The direct Levenshtein `k=1` threshold helper is separately covered by `make test` through `tests/test_qdalign_threshold_alloc.c`, which asserts exact/substitution/insertion/deletion threshold cases do not allocate heap memory.

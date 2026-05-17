@@ -12,11 +12,11 @@ package-channel releases, or publication evidence.
 The native module emits a MAGeCK-compatible count matrix, JSON summary,
 `sample_qc` table for MultiQC custom content, and `versions.yml`. The AssaySpec
 module emits `assay_report.html`, `assay_manifest.json`,
-`assay_manifest.summary.tsv`, `sample_qc.tsv`, counts, summary, and
-`versions.yml`. Its input tuple includes the AssaySpec plus the target/FASTQ
-files referenced by that spec so workflow engines stage the required files into
-the task work directory. Local nf-test candidates use the shared fixtures in
-`examples/workflows/fixtures/`.
+`assay_manifest.summary.tsv`, `sample_qc.tsv`, CRISPR QC report files, counts,
+summary, and `versions.yml`. Its input tuple includes the AssaySpec plus the
+target/FASTQ files referenced by that spec so workflow engines stage the
+required files into the task work directory. Local nf-test candidates use the
+shared fixtures in `examples/workflows/fixtures/`.
 
 Before adapting this for nf-core or another workflow repository:
 

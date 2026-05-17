@@ -24,13 +24,13 @@ def _write_workflow_repo(root: Path) -> None:
         ),
         "examples/workflows/snakemake/Snakefile": (
             "rule all:\n"
-            "    input: 'counts.tsv', 'assay_out/assay_report.html', 'assay_out/assay_manifest.summary.tsv'\n"
+            "    input: 'counts.tsv', 'assay_out/assay_report.html', 'assay_out/assay_manifest.summary.tsv', 'assay_out/crispr_qc.summary.tsv'\n"
             "rule dotmatch_assay_spec:\n"
             "    output: 'assay.toml'\n"
             "    shell: 'dotmatch assay init --template crispr --out {output}'\n"
             "rule dotmatch_assay_run:\n"
             "    input: spec='assay.toml'\n"
-            "    output: report='assay_out/assay_report.html', manifest='assay_out/assay_manifest.json', manifest_summary='assay_out/assay_manifest.summary.tsv', sample_qc='assay_out/sample_qc.tsv'\n"
+            "    output: report='assay_out/assay_report.html', manifest='assay_out/assay_manifest.json', manifest_summary='assay_out/assay_manifest.summary.tsv', sample_qc='assay_out/sample_qc.tsv', crispr_qc_report='assay_out/crispr_qc.html', crispr_qc_json='assay_out/crispr_qc.json', crispr_qc_summary='assay_out/crispr_qc.summary.tsv'\n"
             "    shell: 'dotmatch assay run {input.spec}'\n"
             "rule dotmatch_crispr_count:\n"
             "    output: counts='counts.mageck.tsv', summary='summary.json', sample_qc='sample_qc.tsv'\n"
@@ -64,6 +64,9 @@ def _write_workflow_repo(root: Path) -> None:
             "  path \"assay_manifest.json\", emit: assay_manifest\n"
             "  path \"assay_manifest.summary.tsv\", emit: assay_manifest_summary\n"
             "  path \"sample_qc.tsv\", emit: sample_qc\n"
+            "  path \"crispr_qc.html\", emit: assay_crispr_qc_report\n"
+            "  path \"crispr_qc.json\", emit: assay_crispr_qc_json\n"
+            "  path \"crispr_qc.summary.tsv\", emit: assay_crispr_qc_summary\n"
             "  script:\n"
             "  \"\"\"\n"
             "  dotmatch assay run assay.toml\n"
@@ -71,6 +74,9 @@ def _write_workflow_repo(root: Path) -> None:
             "  cp assay_out/assay_manifest.json assay_manifest.json\n"
             "  cp assay_out/assay_manifest.summary.tsv assay_manifest.summary.tsv\n"
             "  cp assay_out/sample_qc.tsv sample_qc.tsv\n"
+            "  cp assay_out/crispr_qc.html crispr_qc.html\n"
+            "  cp assay_out/crispr_qc.json crispr_qc.json\n"
+            "  cp assay_out/crispr_qc.summary.tsv crispr_qc.summary.tsv\n"
             "  \"\"\"\n"
             "}\n"
         ),
@@ -142,6 +148,9 @@ def _write_workflow_repo(root: Path) -> None:
             "  tuple val(meta), path('assay_manifest.json'), emit: assay_manifest\n"
             "  tuple val(meta), path('assay_manifest.summary.tsv'), emit: assay_manifest_summary\n"
             "  tuple val(meta), path('sample_qc.tsv'), emit: sample_qc\n"
+            "  tuple val(meta), path('crispr_qc.html'), emit: crispr_qc_report\n"
+            "  tuple val(meta), path('crispr_qc.json'), emit: crispr_qc_json\n"
+            "  tuple val(meta), path('crispr_qc.summary.tsv'), emit: crispr_qc_summary\n"
             "  path 'versions.yml', emit: versions\n"
             "  script:\n"
             "  \"\"\"\n"
@@ -151,6 +160,9 @@ def _write_workflow_repo(root: Path) -> None:
             "  cp assay_out/assay_manifest.json assay_manifest.json\n"
             "  cp assay_out/assay_manifest.summary.tsv assay_manifest.summary.tsv\n"
             "  cp assay_out/sample_qc.tsv sample_qc.tsv\n"
+            "  cp assay_out/crispr_qc.html crispr_qc.html\n"
+            "  cp assay_out/crispr_qc.json crispr_qc.json\n"
+            "  cp assay_out/crispr_qc.summary.tsv crispr_qc.summary.tsv\n"
             "  dotmatch --version > versions.yml\n"
             "  \"\"\"\n"
             "}\n"
@@ -166,6 +178,9 @@ def _write_workflow_repo(root: Path) -> None:
             "  - assay_manifest:\n"
             "  - assay_manifest_summary:\n"
             "  - sample_qc:\n"
+            "  - crispr_qc_report:\n"
+            "  - crispr_qc_json:\n"
+            "  - crispr_qc_summary:\n"
             "  - versions:\n"
         ),
         "examples/workflows/nf-core/modules/local/dotmatch/assay_run/tests/main.nf.test": (
@@ -180,6 +195,8 @@ def _write_workflow_repo(root: Path) -> None:
             "      assert path(process.out.assay_report[0][1]).text.contains('DotMatch Assay Report')\n"
             "      assert path(process.out.assay_manifest_summary[0][1]).text.contains('primary_report')\n"
             "      assert path(process.out.sample_qc[0][1]).text.contains('assignment_rate')\n"
+            "      assert path(process.out.crispr_qc_summary[0][1]).text.contains('qc_status')\n"
+            "      assert path(process.out.crispr_qc_report[0][1]).text.contains('DotMatch CRISPR QC')\n"
             "    }\n"
             "  }\n"
             "}\n"
@@ -202,6 +219,14 @@ def _write_workflow_repo(root: Path) -> None:
             "      primary_report:\n"
             "      autopsy_triggered:\n"
             "      warning_count:\n"
+            "  dotmatch_crispr_qc:\n"
+            "    file_format: tsv\n"
+            "    plot_type: \"table\"\n"
+            "    fn: \"*crispr_qc.summary.tsv\"\n"
+            "    headers:\n"
+            "      qc_status:\n"
+            "      coverage_fraction:\n"
+            "      gini_index:\n"
         ),
         "examples/workflows/multiqc/data/sample_qc.tsv": (
             "sample_id\tfastq\ttotal_reads\tvalid_extracted_reads\tassigned_reads\texact_reads\t"
@@ -212,6 +237,11 @@ def _write_workflow_repo(root: Path) -> None:
             "schema_version\tmode\tassay_type\tstatus\tnative_version\tautopsy_triggered\twarning_count\t"
             "production_warning_count\tsample_count\tprimary_report\tmanifest\n"
             "1\tcount\tcrispr\tready\tdotmatch 0.1.0\tfalse\t0\t0\t1\tassay_report.html\tassay_manifest.json\n"
+        ),
+        "examples/workflows/multiqc/data/crispr_qc.summary.tsv": (
+            "sample_id\tqc_status\ttotal_count\tcoverage_fraction\tzero_count_fraction\tgini_index\t"
+            "top_1pct_fraction\tassignment_rate\tambiguous_rate\tno_match_rate\tinvalid_rate\n"
+            "plasmid\tpass\t9\t0.9\t0.1\t0.2\t0.05\t0.9\t0.0\t0.1\t0.0\n"
         ),
         "examples/workflows/galaxy/README.md": (
             "# Galaxy Wrapper\n\nThese are example wrappers, including an AssaySpec example wrapper, not been published to a Galaxy ToolShed. Use planemo lint.\n"
@@ -229,8 +259,8 @@ def _write_workflow_repo(root: Path) -> None:
             "  <requirements><requirement type=\"package\">dotmatch</requirement></requirements>\n"
             "  <command>cat > assay.toml\n dotmatch assay run assay.toml</command>\n"
             "  <inputs><param name=\"library\"/><param name=\"sample1_fastq\"/><param name=\"sample1_label\"/><param name=\"sample2_fastq\"/><param name=\"sample2_label\"/><param name=\"guide_start\"/><param name=\"guide_length\"/><param name=\"k\"/><param name=\"metric\"/><param name=\"ambiguous\"/></inputs>\n"
-            "  <outputs><data name=\"assay_report\" from_work_dir=\"assay_out/assay_report.html\"/><data name=\"assay_manifest\" from_work_dir=\"assay_out/assay_manifest.json\"/><data name=\"assay_manifest_summary\" from_work_dir=\"assay_out/assay_manifest.summary.tsv\"/><data name=\"sample_qc\" from_work_dir=\"assay_out/sample_qc.tsv\"/><data name=\"counts\" from_work_dir=\"assay_out/counts.mageck.tsv\"/><data name=\"summary\" from_work_dir=\"assay_out/summary.json\"/></outputs>\n"
-            "  <tests><test><param name=\"library\" value=\"crispr_library.csv\"/><param name=\"sample1_fastq\" value=\"sample_a.fastq\"/><param name=\"sample1_label\" value=\"sample_a\"/><param name=\"sample2_fastq\" value=\"sample_b.fastq\"/><param name=\"sample2_label\" value=\"sample_b\"/><output name=\"assay_report\"><assert_contents><has_text text=\"DotMatch Assay Report\"/></assert_contents></output><output name=\"assay_manifest_summary\"><assert_contents><has_text text=\"primary_report\"/></assert_contents></output></test></tests>\n"
+            "  <outputs><data name=\"assay_report\" from_work_dir=\"assay_out/assay_report.html\"/><data name=\"assay_manifest\" from_work_dir=\"assay_out/assay_manifest.json\"/><data name=\"assay_manifest_summary\" from_work_dir=\"assay_out/assay_manifest.summary.tsv\"/><data name=\"sample_qc\" from_work_dir=\"assay_out/sample_qc.tsv\"/><data name=\"crispr_qc_report\" from_work_dir=\"assay_out/crispr_qc.html\"/><data name=\"crispr_qc_json\" from_work_dir=\"assay_out/crispr_qc.json\"/><data name=\"crispr_qc_summary\" from_work_dir=\"assay_out/crispr_qc.summary.tsv\"/><data name=\"counts\" from_work_dir=\"assay_out/counts.mageck.tsv\"/><data name=\"summary\" from_work_dir=\"assay_out/summary.json\"/></outputs>\n"
+            "  <tests><test><param name=\"library\" value=\"crispr_library.csv\"/><param name=\"sample1_fastq\" value=\"sample_a.fastq\"/><param name=\"sample1_label\" value=\"sample_a\"/><param name=\"sample2_fastq\" value=\"sample_b.fastq\"/><param name=\"sample2_label\" value=\"sample_b\"/><output name=\"assay_report\"><assert_contents><has_text text=\"DotMatch Assay Report\"/></assert_contents></output><output name=\"assay_manifest_summary\"><assert_contents><has_text text=\"primary_report\"/></assert_contents></output><output name=\"crispr_qc_summary\"><assert_contents><has_text text=\"qc_status\"/></assert_contents></output><output name=\"crispr_qc_report\"><assert_contents><has_text text=\"DotMatch CRISPR QC\"/></assert_contents></output></test></tests>\n"
             "</tool>\n"
         ),
         "examples/workflows/fixtures/README.md": (
@@ -261,11 +291,11 @@ def _write_workflow_repo(root: Path) -> None:
             "no_match_reads\tinvalid_reads\tassignment_rate\texact_rate\trescue_rate\tambiguous_rate\t"
             "no_match_rate\ttargets_observed\tzero_count_targets\tgini_index\ttop_1pct_read_fraction\t"
             "candidates_verified\n"
-            "sample_a\tsample_a.fastq\t4\t3\t1\t1\t0\t0\t0\t0\t1\t1\t1\t0.25000000\t"
-            "0.25000000\t0.00000000\t0.25000000\t0.25000000\t1\t2\t-0.66666667\t"
+            "sample_a\tsample_a.fastq\t4\t3\t1\t1\t0\t0\t0\t0\t1\t1\t1\t0.33333333\t"
+            "0.33333333\t0.00000000\t0.33333333\t0.33333333\t1\t2\t0.66666667\t"
             "1.00000000\t3\n"
             "sample_b\tsample_b.fastq\t2\t2\t1\t1\t0\t0\t0\t0\t0\t1\t0\t0.50000000\t"
-            "0.50000000\t0.00000000\t0.00000000\t0.50000000\t1\t2\t-0.66666667\t"
+            "0.50000000\t0.00000000\t0.00000000\t0.50000000\t1\t2\t0.66666667\t"
             "1.00000000\t1\n"
         ),
         "examples/workflows/fixtures/crispr_assay.toml": (

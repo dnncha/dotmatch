@@ -22,7 +22,7 @@ DOTMATCH_SHARED_FLAGS := -shared
 QDALIGN_SHARED_FLAGS := -shared
 endif
 
-.PHONY: all clean test cli-test coverage bench bench-batch bench-small bench-native-matrix figures bench-real-report bench-barcode-demux bench-barcode-demux-competitors bench-barcode-comparison barcode-comparison-report barcode-comparison-gate barcode-demux-report barcode-competitor-env fetch-barcode-demo fetch-barcode-demo-claim fetch-sanson-crispr fetch-10x-bcl-demo bench-bcl-small bench-bcl-10x bench-bcl-real bench-bcl-real-repeated bcl-figures bcl-competitor-env bcl-linux-env bcl-tiny-public-gate bcl-comparison-gate fetch-oligo-adapter-demo bench-oligo-adapter bench-oligo-adapter-public oligo-adapter-smoke-gate oligo-adapter-public-gate fetch-amplicon-panel-demo bench-amplicon-panel bench-amplicon-panel-public amplicon-panel-smoke-gate amplicon-panel-public-gate fetch-feature-barcode-demo bench-feature-barcode bench-feature-barcode-public feature-barcode-smoke-gate feature-barcode-public-gate fetch-perturb-seq-demo bench-perturb-seq bench-perturb-seq-public perturb-seq-smoke-gate perturb-seq-public-gate bench-public-crispr-small bench-public-crispr bench-public-crispr-competitors bench-public-crispr-repeated bench-public-crispr-scaling bench-crispr-comparison crispr-comparison-report crispr-comparison-gate count-agreement count-agreement-comparison validate-public-crispr-edlib validate-crispr-comparison-edlib public-crispr-report public-crispr-evidence-gate public-crispr-smoke-gate competitor-env edlib edlib-tools bench-edlib-native benchmark-report benchmark-report-native asan shared python-test python-package-test repository-ready release-ready pretag-ready assay-evidence-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready workflow-adoption-status distribution-record-ready bioconda-recipe-ready distribution-channels
+.PHONY: all clean test cli-test coverage bench bench-batch bench-small bench-native-matrix figures bench-real-report bench-barcode-demux bench-barcode-demux-competitors bench-barcode-comparison barcode-autopsy-demo barcode-science-ready barcode-comparison-report barcode-comparison-gate barcode-demux-report barcode-competitor-env fetch-barcode-demo fetch-barcode-demo-claim fetch-sanson-crispr fetch-10x-bcl-demo bench-bcl-small bench-bcl-10x bench-bcl-real bench-bcl-real-repeated bcl-figures bcl-competitor-env bcl-linux-env bcl-tiny-public-gate bcl-comparison-gate fetch-oligo-adapter-demo bench-oligo-adapter bench-oligo-adapter-public oligo-adapter-smoke-gate oligo-adapter-public-gate fetch-amplicon-panel-demo bench-amplicon-panel bench-amplicon-panel-public amplicon-panel-smoke-gate amplicon-panel-public-gate fetch-feature-barcode-demo bench-feature-barcode bench-feature-barcode-public feature-barcode-smoke-gate feature-barcode-public-gate fetch-perturb-seq-demo bench-perturb-seq bench-perturb-seq-public perturb-seq-smoke-gate perturb-seq-public-gate bench-public-crispr-small bench-public-crispr bench-public-crispr-competitors bench-public-crispr-repeated bench-public-crispr-scaling bench-real-competitors bench-crispr-comparison crispr-comparison-report crispr-comparison-gate count-agreement count-agreement-comparison validate-public-crispr-edlib validate-crispr-comparison-edlib public-crispr-report public-crispr-evidence-gate public-crispr-smoke-gate competitor-env edlib edlib-tools bench-edlib-native benchmark-report benchmark-report-native asan shared python-test python-package-test repository-ready release-ready pretag-ready assay-evidence-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready workflow-adoption-status distribution-record-ready bioconda-recipe-ready distribution-channels
 
 all: dotmatch libdotmatch.a qda libqdalign.a
 
@@ -145,6 +145,18 @@ fetch-barcode-demo-claim:
 bench-barcode-comparison: dotmatch barcode-competitor-env fetch-barcode-demo-claim
 	PATH="$(CURDIR)/build/barcode-competitors/bin:$$PATH" python3 scripts/bench_barcode_demux.py --reads "$$(python3 -c 'import json;print(json.load(open("examples/barcode_demux/data/metadata.json"))["runs"][0]["local_fastq"])')" --barcodes "$$(python3 -c 'import json;print(json.load(open("examples/barcode_demux/data/metadata.json"))["barcodes"])')" --barcode-start "$${DOTMATCH_BARCODE_START:-1}" --barcode-length "$$(python3 -c 'import json;m=json.load(open("examples/barcode_demux/data/metadata.json"));print(m.get("barcode_length") or ("auto" if m.get("barcode_length_mode") == "auto" else 8))')" --k "$${DOTMATCH_BARCODE_K:-0}" --metric "$${DOTMATCH_BARCODE_METRIC:-hamming}" --workflow-name real_srp009896_inline_barcode --run-cutadapt --run-hash-splitter --repeats "$${DOTMATCH_BARCODE_REPEATS:-5}"
 	python3 scripts/generate_barcode_demux_report.py
+
+barcode-autopsy-demo: dotmatch
+	mkdir -p examples/barcode_autopsy
+	cp examples/barcode_demux/data/barcodes.tsv examples/barcode_autopsy/barcodes.tsv
+	PYTHONPATH=python DOTMATCH_NATIVE_CLI="$(CURDIR)/dotmatch" python3 -m dotmatch.cli barcode autopsy --barcodes examples/barcode_demux/data/barcodes.tsv --reads examples/barcode_demux/data/SRR391079.subsample100000.fastq.gz --scan-starts 0:12 --barcode-length auto --sample-reads 100000 --k-values 0,1 --out-dir examples/barcode_autopsy/results
+	cp examples/barcode_autopsy/results/report.html examples/barcode_autopsy/report.html
+	cp examples/barcode_autopsy/results/report.md examples/barcode_autopsy/report.md
+
+barcode-science-ready:
+	python3 scripts/check_barcode_science_readiness.py
+	python3 scripts/check_barcode_failure_fixtures.py
+	python3 scripts/check_barcode_public_surface.py
 
 barcode-comparison-report:
 	python3 scripts/generate_barcode_demux_report.py
@@ -273,6 +285,15 @@ bench-public-crispr-repeated: dotmatch competitor-env
 bench-public-crispr-scaling: dotmatch competitor-env
 	PATH="$(CURDIR)/build/guide-counter/bin:$(CURDIR)/build/competitor-env/bin:$$PATH" python3 scripts/bench_public_crispr_sample_scaling.py --run-guide-counter
 
+bench-real-competitors: dotmatch competitor-env
+	PATH="$(CURDIR)/build/guide-counter/bin:$(CURDIR)/build/competitor-env/bin:$$PATH" DOTMATCH_PUBLIC_SUBSAMPLE=$${DOTMATCH_PUBLIC_SUBSAMPLE:-10000} python3 scripts/run_public_crispr_benchmark.py --small --run-mageck --run-cutadapt --run-bowtie2 --run-guide-counter
+	PATH="$(CURDIR)/build/guide-counter/bin:$(CURDIR)/build/competitor-env/bin:$$PATH" python3 scripts/compare_count_tables.py
+	python3 scripts/generate_public_crispr_report.py
+	python3 scripts/check_public_crispr_claim_gate.py
+	PATH="$(CURDIR)/build/competitor-env/bin:$$PATH" python3 scripts/bench_barcode_demux.py --reads examples/barcode_demux/data/SRR391079.subsample100000.fastq.gz --barcodes examples/barcode_demux/data/barcodes.tsv --barcode-start 1 --barcode-length auto --k 0 --metric hamming --workflow-name real_srp009896_inline_barcode --run-cutadapt --run-hash-splitter --repeats "$${DOTMATCH_BARCODE_REPEATS:-5}"
+	python3 scripts/generate_barcode_demux_report.py
+	python3 scripts/check_barcode_comparison_gate.py
+
 count-agreement:
 	python3 scripts/compare_count_tables.py
 
@@ -315,8 +336,24 @@ python-test: shared
 python-package-test:
 	python3 scripts/check_python_wheel.py
 
+workbench-ready:
+	python3 scripts/check_workbench_surface.py
+	npm --prefix apps/workbench run lint
+	npm --prefix apps/workbench run test
+	npm --prefix apps/workbench run build
+	@if command -v cargo >/dev/null 2>&1; then \
+		cargo test --manifest-path apps/workbench/src-tauri/Cargo.toml; \
+	else \
+		echo "cargo is required for Workbench Rust/Tauri tests" >&2; \
+		exit 127; \
+	fi
+
 repository-ready:
 	python3 scripts/check_repository_ready.py
+	python3 scripts/check_workbench_surface.py
+	python3 scripts/check_barcode_science_readiness.py
+	python3 scripts/check_barcode_failure_fixtures.py
+	python3 scripts/check_barcode_public_surface.py
 
 release-ready: assay-evidence-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready distribution-record-ready bioconda-recipe-ready public-crispr-evidence-gate crispr-comparison-gate barcode-comparison-gate feature-barcode-public-gate perturb-seq-public-gate amplicon-panel-public-gate bcl-tiny-public-gate oligo-adapter-public-gate
 	python3 scripts/check_release_readiness.py

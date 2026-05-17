@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "scope": "public fixed-window known-target evidence used by the barcode-autopsy product story",
+  "datasets": [
+    {
+      "id": "inline_barcode_srp009896",
+      "label": "SRP009896 / SRR391079 maize GBS inline barcode lane",
+      "raw_artifact": "benchmarks/raw/barcode_demux.csv",
+      "metadata": "examples/barcode_demux/data/metadata.json",
+      "gate": "make barcode-comparison-gate",
+      "comparator_semantics": "DotMatch k=0 auto-length fixed-window demux is compared against Cutadapt anchored no-indel demux and a transparent exact-prefix hash splitter under documented SRP009896/SRR391079 semantics.",
+      "claim_boundary": "Evidence supports the checked SRP009896/SRR391079 exact-prefix public inline-barcode lane only; broader demultiplexing claims require more datasets and comparator semantics."
+    },
+    {
+      "id": "feature_barcode_totalseq_b",
+      "label": "10x TotalSeq-B antibody Feature Barcode R2",
+      "raw_artifact": "benchmarks/raw/feature_barcode.csv",
+      "metadata": "examples/feature_barcode/data/metadata.json",
+      "gate": "make feature-barcode-public-gate",
+      "comparator_semantics": "DotMatch fixed-window feature assignment is checked against a transparent exact-slice baseline over the 10x feature-barcode window.",
+      "claim_boundary": "Evidence supports per-read fixed-window feature-barcode assignment only; it is not cell-level CITE-seq quantification or Cell Ranger feature-count replacement evidence."
+    },
+    {
+      "id": "crispr_guide_capture_10x_gemx",
+      "label": "10x GEM-X CRISPR guide-capture R2",
+      "raw_artifact": "benchmarks/raw/perturb_seq.csv",
+      "metadata": "examples/perturb_seq/data/metadata.json",
+      "gate": "make perturb-seq-public-gate",
+      "comparator_semantics": "DotMatch fixed-window guide assignment is checked against a transparent exact-slice baseline over the observed 10x guide-capture window.",
+      "claim_boundary": "Evidence supports per-read fixed-window guide assignment only; it is not guide-per-cell, UMI aggregation, or perturbation-effect analysis evidence."
+    },
+    {
+      "id": "amplicon_artic_v3_primer_start",
+      "label": "nf-core viralrecon ARTIC V3 amplicon primer-start R1",
+      "raw_artifact": "benchmarks/raw/amplicon_panel.csv",
+      "metadata": "examples/amplicon_panel/data/metadata.json",
+      "gate": "make amplicon-panel-public-gate",
+      "comparator_semantics": "DotMatch fixed-window primer-start assignment is checked against a transparent exact-prefix baseline over the selected ARTIC V3 primer window.",
+      "claim_boundary": "Evidence supports fixed-window primer-start assignment only; it is not consensus, variant-calling, primer-trimming, clinical, or diagnostic evidence."
+    },
+    {
+      "id": "oligo_adapter_truseq_r1",
+      "label": "Public TruSeq adapter-prefix R1 window",
+      "raw_artifact": "benchmarks/raw/oligo_adapter.csv",
+      "metadata": "examples/oligo_adapter/data/metadata.json",
+      "gate": "make oligo-adapter-public-gate",
+      "comparator_semantics": "DotMatch fixed-window oligo/adapter assignment is checked against a transparent exact-slice baseline over the selected adapter-prefix window.",
+      "claim_boundary": "Evidence supports fixed-window oligo/adapter target assignment only; it is not adapter trimming, primer removal, or general preprocessing evidence."
+    }
+  ]
+}

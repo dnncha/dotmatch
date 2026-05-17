@@ -3,8 +3,8 @@
 <text class="title" x="20" y="28">Count-table agreement</text>
 <text class="axis" x="20" y="50">Pearson correlation by guide count table; 1.0 is exact linear agreement</text>
 <text x="20" y="90">dotmatch_hamming_vs_guide_counter</text>
-<rect class="bar" x="360" y="75" width="433" height="20" rx="2"/>
-<text x="801" y="90">0.941763</text>
+<rect class="bar" x="360" y="75" width="430" height="20" rx="2"/>
+<text x="798" y="90">0.935801</text>
 <text x="20" y="124">dotmatch_exact_vs_mageck_exact</text>
 <rect class="bar" x="360" y="109" width="460" height="20" rx="2"/>
 <text x="828" y="124">1.000000</text>

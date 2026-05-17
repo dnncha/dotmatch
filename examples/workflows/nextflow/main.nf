@@ -67,6 +67,9 @@ process DOTMATCH_ASSAY_RUN {
     path "assay_manifest.json", emit: assay_manifest
     path "assay_manifest.summary.tsv", emit: assay_manifest_summary
     path "sample_qc.tsv", emit: assay_sample_qc
+    path "crispr_qc.html", emit: assay_crispr_qc_report
+    path "crispr_qc.json", emit: assay_crispr_qc_json
+    path "crispr_qc.summary.tsv", emit: assay_crispr_qc_summary
     path "counts.mageck.tsv", emit: assay_counts
     path "summary.json", emit: assay_summary
 
@@ -110,6 +113,9 @@ fastq = "${fastqs[i].name}"
     cp assay_out/assay_manifest.json assay_manifest.json
     cp assay_out/assay_manifest.summary.tsv assay_manifest.summary.tsv
     cp assay_out/sample_qc.tsv sample_qc.tsv
+    cp assay_out/crispr_qc.html crispr_qc.html
+    cp assay_out/crispr_qc.json crispr_qc.json
+    cp assay_out/crispr_qc.summary.tsv crispr_qc.summary.tsv
     cp assay_out/counts.mageck.tsv counts.mageck.tsv
     cp assay_out/summary.json summary.json
     """

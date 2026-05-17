@@ -80,6 +80,9 @@ def check_snakemake(root: Path, result: WorkflowAudit) -> None:
     _require(snakefile, "assay_report.html", "Snakemake AssaySpec rule must expose assay_report.html", result)
     _require(snakefile, "assay_manifest.json", "Snakemake AssaySpec rule must expose assay_manifest.json", result)
     _require(snakefile, "assay_manifest.summary.tsv", "Snakemake AssaySpec rule must expose assay_manifest.summary.tsv", result)
+    _require(snakefile, "crispr_qc.html", "Snakemake AssaySpec rule must expose crispr_qc.html", result)
+    _require(snakefile, "crispr_qc.json", "Snakemake AssaySpec rule must expose crispr_qc.json", result)
+    _require(snakefile, "crispr_qc.summary.tsv", "Snakemake AssaySpec rule must expose crispr_qc.summary.tsv", result)
     _require(snakefile, "--ambiguous discard", "Snakemake Snakefile must keep ambiguity policy explicit", result)
     _require(snakefile, "--sample-qc", "Snakemake Snakefile must emit sample_qc.tsv for MultiQC", result)
     _require(snakefile, "sample_qc", "Snakemake Snakefile must declare sample_qc output", result)
@@ -110,6 +113,9 @@ def check_nextflow(root: Path, result: WorkflowAudit) -> None:
         ("path \"assay_report.html\", emit: assay_report", "Nextflow AssaySpec workflow must emit assay_report.html"),
         ("path \"assay_manifest.json\", emit: assay_manifest", "Nextflow AssaySpec workflow must emit assay_manifest.json"),
         ("path \"assay_manifest.summary.tsv\", emit: assay_manifest_summary", "Nextflow AssaySpec workflow must emit assay_manifest.summary.tsv"),
+        ("path \"crispr_qc.html\", emit: assay_crispr_qc_report", "Nextflow AssaySpec workflow must emit crispr_qc.html"),
+        ("path \"crispr_qc.json\", emit: assay_crispr_qc_json", "Nextflow AssaySpec workflow must emit crispr_qc.json"),
+        ("path \"crispr_qc.summary.tsv\", emit: assay_crispr_qc_summary", "Nextflow AssaySpec workflow must emit crispr_qc.summary.tsv"),
         ("--ambiguous discard", "Nextflow workflow must keep ambiguity policy explicit"),
         ("--sample-qc", "Nextflow workflow must emit sample_qc.tsv for MultiQC"),
         ("path \"sample_qc.tsv\", emit: sample_qc", "Nextflow workflow must declare sample_qc output"),
@@ -186,6 +192,9 @@ def check_nfcore(root: Path, result: WorkflowAudit) -> None:
         ("emit: assay_manifest", "nf-core AssaySpec module must emit assay_manifest"),
         ("emit: assay_manifest_summary", "nf-core AssaySpec module must emit assay_manifest_summary"),
         ("emit: sample_qc", "nf-core AssaySpec module must emit sample_qc"),
+        ("emit: crispr_qc_report", "nf-core AssaySpec module must emit crispr_qc_report"),
+        ("emit: crispr_qc_json", "nf-core AssaySpec module must emit crispr_qc_json"),
+        ("emit: crispr_qc_summary", "nf-core AssaySpec module must emit crispr_qc_summary"),
         ("versions.yml", "nf-core AssaySpec module must emit versions.yml"),
     ]:
         _require(assay_module, needle, message, result)
@@ -197,6 +206,9 @@ def check_nfcore(root: Path, result: WorkflowAudit) -> None:
         "assay_manifest:",
         "assay_manifest_summary:",
         "sample_qc:",
+        "crispr_qc_report:",
+        "crispr_qc_json:",
+        "crispr_qc_summary:",
         "versions:",
     ]:
         _require(assay_meta, needle, f"nf-core AssaySpec module metadata missing {needle}", result)
@@ -213,6 +225,8 @@ def check_nfcore(root: Path, result: WorkflowAudit) -> None:
             ("assay_report", "nf-core AssaySpec nf-test candidate must assert assay_report output"),
             ("assay_manifest_summary", "nf-core AssaySpec nf-test candidate must assert assay_manifest_summary output"),
             ("sample_qc", "nf-core AssaySpec nf-test candidate must assert sample_qc output"),
+            ("crispr_qc_summary", "nf-core AssaySpec nf-test candidate must assert crispr_qc_summary output"),
+            ("crispr_qc_report", "nf-core AssaySpec nf-test candidate must assert crispr_qc_report output"),
         ]:
             _require(assay_nf_test, needle, message, result)
 
@@ -229,9 +243,11 @@ def check_multiqc(root: Path, result: WorkflowAudit) -> None:
         "custom_data:",
         "dotmatch_sample_qc:",
         "dotmatch_assay_manifest:",
+        "dotmatch_crispr_qc:",
         'plot_type: "table"',
         'fn: "*sample_qc.tsv"',
         'fn: "*assay_manifest.summary.tsv"',
+        'fn: "*crispr_qc.summary.tsv"',
         "assignment_rate:",
         "ambiguous_rate:",
         "no_match_rate:",
@@ -275,6 +291,25 @@ def check_multiqc(root: Path, result: WorkflowAudit) -> None:
     ]:
         if column not in manifest_header:
             result.failures.append(f"MultiQC assay_manifest.summary.tsv missing {column}")
+
+    crispr_qc_path = root / "examples" / "workflows" / "multiqc" / "data" / "crispr_qc.summary.tsv"
+    crispr_qc = _read(crispr_qc_path, result)
+    crispr_qc_header = crispr_qc.splitlines()[0].split("\t") if crispr_qc.splitlines() else []
+    for column in [
+        "sample_id",
+        "qc_status",
+        "total_count",
+        "coverage_fraction",
+        "zero_count_fraction",
+        "gini_index",
+        "top_1pct_fraction",
+        "assignment_rate",
+        "ambiguous_rate",
+        "no_match_rate",
+        "invalid_rate",
+    ]:
+        if column not in crispr_qc_header:
+            result.failures.append(f"MultiQC crispr_qc.summary.tsv missing {column}")
 
     if not any("MultiQC" in failure for failure in result.failures):
         result.passed.append("MultiQC custom-content example present")
@@ -351,9 +386,19 @@ def check_galaxy(root: Path, result: WorkflowAudit) -> None:
         if not required_inputs <= assay_input_names:
             result.failures.append("Galaxy AssaySpec wrapper inputs must stage library, FASTQs, labels, window, metric, k, and ambiguity policy")
         assay_output_names = {node.attrib.get("name", "") for node in assay_wrapper.findall("./outputs/data")}
-        required_outputs = {"assay_report", "assay_manifest", "assay_manifest_summary", "sample_qc", "counts", "summary"}
+        required_outputs = {
+            "assay_report",
+            "assay_manifest",
+            "assay_manifest_summary",
+            "sample_qc",
+            "crispr_qc_report",
+            "crispr_qc_json",
+            "crispr_qc_summary",
+            "counts",
+            "summary",
+        }
         if not required_outputs <= assay_output_names:
-            result.failures.append("Galaxy AssaySpec wrapper outputs must include report, manifest, manifest summary, sample QC, counts, and summary")
+            result.failures.append("Galaxy AssaySpec wrapper outputs must include report, manifest, manifest summary, sample QC, CRISPR QC, counts, and summary")
         assay_test = assay_wrapper.find("./tests/test")
         if assay_test is None:
             result.failures.append("Galaxy AssaySpec wrapper must include a Planemo test with tiny AssaySpec fixtures")
@@ -375,6 +420,12 @@ def check_galaxy(root: Path, result: WorkflowAudit) -> None:
             manifest_summary = test_outputs.get("assay_manifest_summary")
             if manifest_summary is None or manifest_summary.find("./assert_contents/has_text[@text='primary_report']") is None:
                 result.failures.append("Galaxy AssaySpec Planemo test must assert manifest summary content")
+            crispr_qc_summary = test_outputs.get("crispr_qc_summary")
+            if crispr_qc_summary is None or crispr_qc_summary.find("./assert_contents/has_text[@text='qc_status']") is None:
+                result.failures.append("Galaxy AssaySpec Planemo test must assert CRISPR QC summary content")
+            crispr_qc_report = test_outputs.get("crispr_qc_report")
+            if crispr_qc_report is None or crispr_qc_report.find("./assert_contents/has_text[@text='DotMatch CRISPR QC']") is None:
+                result.failures.append("Galaxy AssaySpec Planemo test must assert CRISPR QC report content")
 
     if not any("Galaxy" in failure for failure in result.failures):
         result.passed.append("Galaxy wrapper example present without ToolShed claim")

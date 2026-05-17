@@ -27,6 +27,9 @@ Outputs are written under `examples/workflows/snakemake/output/`:
 - `summary.json`: DotMatch assignment and QC summary;
 - `sample_qc.tsv`: sample-level QC table that can be consumed by the
   MultiQC custom-content example;
+- `assay/crispr_qc.html`, `assay/crispr_qc.json`,
+  `assay/crispr_qc.summary.tsv`: CRISPR guide-count QC report, structured
+  report, and workflow summary;
 - `assay/assay_report.html`: primary human-readable AssaySpec report;
 - `assay/assay_manifest.json`: full run provenance and command manifest;
 - `assay/assay_manifest.summary.tsv`: manifest summary for MultiQC custom

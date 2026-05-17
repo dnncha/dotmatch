@@ -24,6 +24,8 @@ Outputs are published under `examples/workflows/nextflow/output/`:
 - `summary.json`: DotMatch assignment and QC summary;
 - `sample_qc.tsv`: sample-level QC table that can be consumed by the
   MultiQC custom-content example;
+- `crispr_qc.html`, `crispr_qc.json`, `crispr_qc.summary.tsv`: CRISPR
+  guide-count QC report, structured report, and workflow summary;
 - `assay_report.html`: primary human-readable AssaySpec report;
 - `assay_manifest.json`: full run provenance and command manifest;
 - `assay_manifest.summary.tsv`: manifest summary for MultiQC custom content.

@@ -56,6 +56,23 @@ jobs:
       - name: Web build
         if: runner.os == 'Linux'
         run: npm run build
+      - name: Workbench install
+        if: runner.os == 'Linux'
+        run: npm --prefix apps/workbench ci
+      - name: Workbench lint
+        if: runner.os == 'Linux'
+        run: npm --prefix apps/workbench run lint
+      - name: Workbench tests
+        if: runner.os == 'Linux'
+        run: npm --prefix apps/workbench run test
+      - name: Workbench web build
+        if: runner.os == 'Linux'
+        run: npm --prefix apps/workbench run build
+      - uses: dtolnay/rust-toolchain@stable
+        if: runner.os == 'Linux'
+      - name: Workbench Rust tests
+        if: runner.os == 'Linux'
+        run: cargo test --manifest-path apps/workbench/src-tauri/Cargo.toml
       - name: Coverage tool dependencies
         if: runner.os == 'Linux'
         run: |

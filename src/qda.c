@@ -289,7 +289,7 @@ static int read_target_table(const char *path, seq_table *table) {
         char *fields[16];
         size_t nf = split_fields(buf, delim, fields, 16);
         if (first_data) {
-            int maybe_id = find_column(fields, nf, "id", "target_id", "sgRNA");
+            int maybe_id = find_column(fields, nf, "id", "target_id", "barcode_id");
             if (maybe_id < 0) maybe_id = find_column(fields, nf, "sgRNAID", "sgrnaid", "guide_id");
             int maybe_seq = find_column(fields, nf, "gRNA.sequence", "target_seq", "sequence");
             if (maybe_seq < 0) maybe_seq = find_column(fields, nf, "Seq", "seq", "barcode_seq");
@@ -1327,7 +1327,11 @@ static double gini_from_counts(const unsigned long long *values, size_t n) {
     long double weighted = 0.0;
     for (size_t i = 0; i < n; ++i) weighted += (long double)(i + 1) * (long double)tmp[i];
     free(tmp);
-    return (double)(((long double)n + 1.0L - 2.0L * weighted / (long double)sum) / (long double)n);
+    long double gini = (2.0L * weighted / ((long double)n * (long double)sum)) -
+                       (((long double)n + 1.0L) / (long double)n);
+    if (gini < 0.0L) return 0.0;
+    if (gini > 1.0L) return 1.0;
+    return (double)gini;
 }
 
 static double top_fraction_from_counts(const unsigned long long *values, size_t n, double fraction) {
@@ -1407,7 +1411,8 @@ static int write_count_html_report(const char *path, const seq_table *targets, c
     int needs_review = 0;
     for (size_t sample = 0; sample < reads->count; ++sample) {
         const count_stats *s = &stats_by_sample[sample];
-        double denom = s->total == 0 ? 1.0 : (double)s->total;
+        unsigned long long valid = s->total >= s->invalid ? s->total - s->invalid : 0;
+        double denom = valid == 0 ? 1.0 : (double)valid;
         if ((double)s->ambiguous / denom > 0.01 || (double)s->unmatched / denom > 0.10) needs_review = 1;
     }
 
@@ -1436,7 +1441,7 @@ static int write_count_html_report(const char *path, const seq_table *targets, c
                  "<div><span class=\"label\">Assignment</span><div class=\"value\">Known target</div></div></div>\n",
             k, metric_name(metric), ambiguity_policy_name(policy));
 
-    fprintf(out, "<h2>Target Assignment QC</h2><table><tr><th>Sample</th><th>Total reads</th><th>Assignment rate</th>"
+    fprintf(out, "<h2>Target Assignment QC</h2><table><tr><th>Sample</th><th>Total reads</th><th>Valid windows</th><th>Assignment rate</th>"
                  "<th>Exact rate</th><th>Rescue rate</th><th>Ambiguous rate</th><th>No-match rate</th>"
                  "<th>Library coverage</th><th>Candidates verified</th></tr>\n");
     for (size_t sample = 0; sample < reads->count; ++sample) {
@@ -1447,12 +1452,13 @@ static int write_count_html_report(const char *path, const seq_table *targets, c
             for (size_t kind = 0; kind < 5; ++kind) total += counts[((sample * targets->count + t) * 5) + kind];
             if (total != 0) ++covered;
         }
-        double denom = s->total == 0 ? 1.0 : (double)s->total;
+        unsigned long long valid = s->total >= s->invalid ? s->total - s->invalid : 0;
+        double denom = valid == 0 ? 1.0 : (double)valid;
         fprintf(out, "<tr><td>");
         html_escape(out, labels->items[sample]);
-        fprintf(out, "</td><td>%llu</td><td>%.2f%%</td><td>%.2f%%</td><td>%.2f%%</td><td>%.2f%%</td>"
+        fprintf(out, "</td><td>%llu</td><td>%llu</td><td>%.2f%%</td><td>%.2f%%</td><td>%.2f%%</td><td>%.2f%%</td>"
                      "<td>%.2f%%</td><td>%.2f%%</td><td>%llu</td></tr>\n",
-                s->total, 100.0 * (double)s->unique / denom, 100.0 * (double)s->exact / denom,
+                s->total, valid, 100.0 * (double)s->unique / denom, 100.0 * (double)s->exact / denom,
                 100.0 * (double)s->corrected / denom, 100.0 * (double)s->ambiguous / denom,
                 100.0 * (double)s->unmatched / denom,
                 targets->count == 0 ? 0.0 : 100.0 * (double)covered / (double)targets->count,
@@ -1466,16 +1472,17 @@ static int write_count_html_report(const char *path, const seq_table *targets, c
     }
     for (size_t sample = 0; sample < reads->count; ++sample) {
         const count_stats *s = &stats_by_sample[sample];
-        double denom = s->total == 0 ? 1.0 : (double)s->total;
+        unsigned long long valid = s->total >= s->invalid ? s->total - s->invalid : 0;
+        double denom = valid == 0 ? 1.0 : (double)valid;
         if ((double)s->ambiguous / denom > 0.01) {
             fprintf(out, "<li class=\"warn\">Sample ");
             html_escape(out, labels->items[sample]);
-            fprintf(out, " has ambiguous assignments above 1%%.</li>\n");
+            fprintf(out, " has ambiguous assignments above 1%% of valid extracted windows.</li>\n");
         }
         if ((double)s->unmatched / denom > 0.10) {
             fprintf(out, "<li class=\"warn\">Sample ");
             html_escape(out, labels->items[sample]);
-            fprintf(out, " has no-match reads above 10%%.</li>\n");
+            fprintf(out, " has no-match reads above 10%% of valid extracted windows.</li>\n");
         }
     }
     fprintf(out, "<li class=\"ok\">Ambiguous reads are not silently counted.</li></ul>\n");
@@ -3939,12 +3946,12 @@ static int run_count(const char *argv0, int argc, char **argv) {
             }
             count_stats *s = &stats_by_sample[sample];
             unsigned long long valid = s->total >= s->invalid ? s->total - s->invalid : 0;
-            double denom = s->total == 0 ? 1.0 : (double)s->total;
+            double valid_denom = valid == 0 ? 1.0 : (double)valid;
             fprintf(qc, "%s\t%s\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%llu\t%llu\t%.8f\t%.8f\t%llu\n",
                     labels.items[sample], reads.items[sample], s->total, valid, s->unique, s->exact, s->corrected,
                     sub, ins, del, s->ambiguous, s->unmatched, s->invalid,
-                    (double)s->unique / denom, (double)s->exact / denom, (double)s->corrected / denom,
-                    (double)s->ambiguous / denom, (double)s->unmatched / denom,
+                    (double)s->unique / valid_denom, (double)s->exact / valid_denom, (double)s->corrected / valid_denom,
+                    (double)s->ambiguous / valid_denom, (double)s->unmatched / valid_denom,
                     observed_targets, (unsigned long long)(targets.count - observed_targets),
                     gini_from_counts(target_totals, targets.count),
                     top_fraction_from_counts(target_totals, targets.count, 0.01),
@@ -6528,6 +6535,7 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
     const char *out_dir = NULL;
     const char *summary_path = NULL;
     const char *mismatches = "1";
+    const char *lanes = "1";
     int k1 = 1;
     int k2 = 1;
     int emit_index_fastqs = 0;
@@ -6558,7 +6566,7 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
                 return 2;
             }
         } else if (strcmp(argv[i], "--lanes") == 0 && i + 1 < argc) {
-            ++i;
+            lanes = argv[++i];
         } else if (strcmp(argv[i], "--interop-dir") == 0 && i + 1 < argc) {
             ++i;
         } else {
@@ -6568,6 +6576,10 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
     }
     if (run_folder == NULL || sample_sheet == NULL || out_dir == NULL || parse_mismatches(mismatches, &k1, &k2) != 0) {
         usage(argv0);
+        return 2;
+    }
+    if (strcmp(lanes, "1") != 0 && strcmp(lanes, "001") != 0) {
+        fprintf(stderr, "classic BCL demux currently supports lane 1 only; rerun with --lanes 1 or split the run externally\n");
         return 2;
     }
 

@@ -39,6 +39,18 @@ output:
       type: file
       description: DotMatch sample-level QC table.
       pattern: "sample_qc.tsv"
+  - crispr_qc_report:
+      type: file
+      description: Human-readable CRISPR guide-count QC report for CRISPR AssaySpecs.
+      pattern: "crispr_qc.html"
+  - crispr_qc_json:
+      type: file
+      description: Structured CRISPR guide-count QC report for CRISPR AssaySpecs.
+      pattern: "crispr_qc.json"
+  - crispr_qc_summary:
+      type: file
+      description: Workflow-facing CRISPR guide-count QC summary TSV.
+      pattern: "crispr_qc.summary.tsv"
   - counts:
       type: file
       description: MAGeCK-compatible guide-count matrix for CRISPR AssaySpecs.

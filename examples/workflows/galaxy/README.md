@@ -23,10 +23,11 @@ test uses `test-data/` fixtures copied from `examples/workflows/fixtures/`.
 
 The AssaySpec wrapper builds a reviewed `status = "ready"` TOML spec from
 Galaxy-staged library and FASTQ inputs, then writes `assay_report.html`,
-`assay_manifest.json`, `assay_manifest.summary.tsv`, `sample_qc.tsv`, counts,
-and native summary JSON. The report is the primary human-readable artifact;
-`sample_qc.tsv` and `assay_manifest.summary.tsv` remain plain workflow-friendly
-tables.
+`assay_manifest.json`, `assay_manifest.summary.tsv`, `sample_qc.tsv`,
+`crispr_qc.html`, `crispr_qc.json`, `crispr_qc.summary.tsv`, counts, and native
+summary JSON. The assay report is the primary human-readable artifact;
+`sample_qc.tsv`, `crispr_qc.summary.tsv`, and `assay_manifest.summary.tsv`
+remain plain workflow-friendly tables.
 
 Before adapting this for a Galaxy ToolShed, pin an available DotMatch package or
 container release, run Planemo lint/test against the target Galaxy environment,

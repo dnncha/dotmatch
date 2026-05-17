@@ -253,6 +253,65 @@ metric = "hamming"
         encoding="utf-8",
     )
     run([str(venv_script(env_dir, "dotmatch")), "assay", "check", str(spec)], cwd=probe_dir, env=env)
+    counts = probe_dir / "counts.mageck.tsv"
+    sample_qc = probe_dir / "sample_qc.tsv"
+    crispr_qc = probe_dir / "crispr_qc.json"
+    counts.write_text("sgRNA\tGene\tsample\nguide_a\tGENEA\t1\n", encoding="utf-8")
+    sample_qc.write_text(
+        "sample_id\tassignment_rate\tambiguous_rate\tno_match_rate\tinvalid_rate\n"
+        "sample\t1\t0\t0\t0\n",
+        encoding="utf-8",
+    )
+    run(
+        [
+            str(venv_script(env_dir, "dotmatch")),
+            "crispr",
+            "qc",
+            "--counts",
+            str(counts),
+            "--sample-qc",
+            str(sample_qc),
+            "--library",
+            str(targets),
+            "--out",
+            str(crispr_qc),
+        ],
+        cwd=probe_dir,
+        env=env,
+    )
+    run(
+        [
+            str(venv_script(env_dir, "dotmatch")),
+            "crispr-qc",
+            "--counts",
+            str(counts),
+            "--sample-qc",
+            str(sample_qc),
+            "--library",
+            str(targets),
+            "--out",
+            str(probe_dir / "crispr_qc_legacy.json"),
+        ],
+        cwd=probe_dir,
+        env=env,
+    )
+    run(
+        [
+            str(venv_script(env_dir, "dotmatch")),
+            "crispr",
+            "infer",
+            "--library",
+            str(targets),
+            "--reads",
+            str(reads),
+            "--out",
+            str(probe_dir / "crispr_inferred.toml"),
+            "--report",
+            str(probe_dir / "crispr_inference_report.json"),
+        ],
+        cwd=probe_dir,
+        env=env,
+    )
     inferred = probe_dir / "inferred.toml"
     inferred_report = probe_dir / "inference_report.json"
     run(

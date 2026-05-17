@@ -65,11 +65,14 @@ dotmatch assay run assay.toml
         <data name="assay_manifest" format="json" from_work_dir="assay_out/assay_manifest.json" label="${tool.name} on ${on_string}: manifest"/>
         <data name="assay_manifest_summary" format="tabular" from_work_dir="assay_out/assay_manifest.summary.tsv" label="${tool.name} on ${on_string}: manifest summary"/>
         <data name="sample_qc" format="tabular" from_work_dir="assay_out/sample_qc.tsv" label="${tool.name} on ${on_string}: sample QC"/>
+        <data name="crispr_qc_report" format="html" from_work_dir="assay_out/crispr_qc.html" label="${tool.name} on ${on_string}: CRISPR QC report"/>
+        <data name="crispr_qc_json" format="json" from_work_dir="assay_out/crispr_qc.json" label="${tool.name} on ${on_string}: CRISPR QC JSON"/>
+        <data name="crispr_qc_summary" format="tabular" from_work_dir="assay_out/crispr_qc.summary.tsv" label="${tool.name} on ${on_string}: CRISPR QC summary"/>
         <data name="counts" format="tabular" from_work_dir="assay_out/counts.mageck.tsv" label="${tool.name} on ${on_string}: counts"/>
         <data name="summary" format="json" from_work_dir="assay_out/summary.json" label="${tool.name} on ${on_string}: summary"/>
     </outputs>
     <tests>
-        <test expect_num_outputs="6">
+        <test expect_num_outputs="9">
             <param name="library" value="crispr_library.csv"/>
             <param name="sample1_fastq" value="sample_a.fastq"/>
             <param name="sample1_label" value="sample_a"/>
@@ -98,14 +101,24 @@ dotmatch assay run assay.toml
                     <has_text text="sample_a"/>
                 </assert_contents>
             </output>
+            <output name="crispr_qc_summary">
+                <assert_contents>
+                    <has_text text="qc_status"/>
+                </assert_contents>
+            </output>
+            <output name="crispr_qc_report">
+                <assert_contents>
+                    <has_text text="DotMatch CRISPR QC"/>
+                </assert_contents>
+            </output>
         </test>
     </tests>
     <help><![CDATA[
 DotMatch AssaySpec is the declarative workflow layer for fixed-window
 known-target assays. This example wrapper builds a reviewed `status = "ready"`
 count AssaySpec from Galaxy-staged inputs, then exposes the human-readable assay
-report, provenance manifest, manifest summary, sample QC, counts, and native
-summary.
+report, provenance manifest, manifest summary, sample QC, CRISPR QC, counts,
+and native summary.
 
 This is a local example wrapper, not a Galaxy ToolShed release.
     ]]></help>

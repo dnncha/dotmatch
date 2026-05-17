@@ -365,6 +365,110 @@ h3 {
   line-height: 1.2;
 }
 
+.autopsy-section {
+  background: #fff;
+}
+
+.autopsy-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.94fr) minmax(0, 1.06fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.autopsy-command {
+  min-width: 0;
+  padding: 1.35rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(226, 247, 239, 0.58), rgba(255, 255, 255, 0.96)),
+    #fff;
+}
+
+.autopsy-command pre {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid #1d2a24;
+  border-radius: 8px;
+  background: #08110d;
+}
+
+.autopsy-command code {
+  color: #d9f9eb;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.autopsy-command p {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.58;
+}
+
+.artifact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  border: 1px solid var(--line);
+  background: var(--line);
+}
+
+.artifact-grid article {
+  min-width: 0;
+  min-height: 145px;
+  padding: 1rem;
+  background: #f7fbf9;
+}
+
+.artifact-grid code {
+  display: block;
+  margin-bottom: 0.85rem;
+  color: var(--green);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.artifact-grid p {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.52;
+}
+
+.finding-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 1rem;
+  border: 1px solid var(--line);
+  background: var(--line);
+}
+
+.finding-list article {
+  min-height: 165px;
+  padding: 1.1rem;
+  background: #fff;
+}
+
+.finding-list span {
+  display: block;
+  margin-bottom: 0.75rem;
+  color: var(--ink);
+  font-weight: 850;
+}
+
+.finding-list p {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.52;
+}
+
 .decision-section {
   background: #fff;
 }
@@ -955,6 +1059,7 @@ h3 {
   }
 
   .hero,
+  .autopsy-layout,
   .scope-layout,
   .example-layout,
   .workflow {
@@ -980,6 +1085,7 @@ h3 {
   .decision-grid,
   .benchmark-grid,
   .benchmark-card.split,
+  .finding-list,
   .scope-notes {
     grid-template-columns: 1fr;
   }
@@ -1048,6 +1154,7 @@ h3 {
   .metric-grid,
   .evidence-strip,
   .translation-grid,
+  .artifact-grid,
   .usecase-grid {
     grid-template-columns: 1fr;
   }

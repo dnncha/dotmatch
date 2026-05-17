@@ -1,0 +1,6 @@
+barcode_id	barcode_seq
+sample_a	ACGT
+sample_b	ACGA
+sample_c	TTTT
+sample_dup	ACGT
+sample_rc	GGCC

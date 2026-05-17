@@ -10,6 +10,9 @@ process DOTMATCH_ASSAY_RUN {
     tuple val(meta), path("assay_manifest.json"), emit: assay_manifest
     tuple val(meta), path("assay_manifest.summary.tsv"), emit: assay_manifest_summary
     tuple val(meta), path("sample_qc.tsv"), emit: sample_qc
+    tuple val(meta), path("crispr_qc.html"), emit: crispr_qc_report
+    tuple val(meta), path("crispr_qc.json"), emit: crispr_qc_json
+    tuple val(meta), path("crispr_qc.summary.tsv"), emit: crispr_qc_summary
     tuple val(meta), path("counts.mageck.tsv"), emit: counts
     tuple val(meta), path("summary.json"), emit: summary
     path "versions.yml", emit: versions
@@ -27,6 +30,9 @@ process DOTMATCH_ASSAY_RUN {
     cp assay_out/assay_manifest.json assay_manifest.json
     cp assay_out/assay_manifest.summary.tsv assay_manifest.summary.tsv
     cp assay_out/sample_qc.tsv sample_qc.tsv
+    cp assay_out/crispr_qc.html crispr_qc.html
+    cp assay_out/crispr_qc.json crispr_qc.json
+    cp assay_out/crispr_qc.summary.tsv crispr_qc.summary.tsv
     cp assay_out/counts.mageck.tsv counts.mageck.tsv
     cp assay_out/summary.json summary.json
 

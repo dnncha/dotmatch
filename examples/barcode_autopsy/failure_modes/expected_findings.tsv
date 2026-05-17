@@ -1,0 +1,9 @@
+failure_mode	read_id	observed	diagnosis	next_action
+wrong_offset	wrong_offset	NACG	Barcode window starts before the inline barcode.	Scan offsets and rerun with the best-supported start.
+duplicate_barcode	duplicate_barcode	ACGT	The same barcode sequence is assigned to more than one sample.	Fix the barcode sheet before interpreting sample-level counts.
+unsafe_one_edit_collision	ambiguous_read	ACGG	The observed sequence is within one edit of multiple barcode targets.	Do not enable one-edit rescue until the barcode library is collision-safe.
+ambiguous_read	ambiguous_read	ACGG	The read is compatible with multiple targets under the configured radius.	Do not rescue ambiguous reads into either sample without changing the barcode design or assignment policy.
+unmatched_low_complexity	unmatched_low_complexity	NNNN	The extracted barcode window is low complexity or dominated by N calls.	Review base quality and upstream sequencing/run quality before assigning.
+low_quality_correction_rejected	low_quality_correction_rejected	ACGC	The nearest one-edit correction is supported only by high-confidence bases.	Keep the read unmatched unless the quality policy is deliberately changed.
+invalid_window	invalid_window	<invalid>	The configured window cannot be extracted from this read.	Check read length, read side, trimming, and fixed-window coordinates.
+reverse_complement_candidate	reverse_complement_candidate	GGCC	The read matches a reverse-complement candidate under a different orientation assumption.	Normalize barcode orientation in the sheet or assay specification, then rerun.
