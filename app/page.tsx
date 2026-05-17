@@ -1,6 +1,7 @@
 const repoUrl = "https://github.com/dnncha/dotmatch";
 const citationUrl = `${repoUrl}/blob/main/CITATION.cff`;
 const methodsUrl = `${repoUrl}/blob/main/docs/methods-and-citation.md`;
+const packagingUrl = `${repoUrl}/blob/main/docs/packaging.md`;
 const publicCrisprUrl = `${repoUrl}/blob/main/docs/benchmarks/public_crispr/README.md`;
 const barcodeScienceUrl = `${repoUrl}/blob/main/docs/barcode-science-readiness.md`;
 const barcodeBenchmarkUrl = `${repoUrl}/blob/main/docs/benchmarks/barcode_demux/README.md`;
@@ -488,6 +489,7 @@ python3 -m pip install .
 make repository-ready`}</code></pre>
             <div className="link-stack">
               <a href={repoUrl}>Open GitHub</a>
+              <a href={packagingUrl}>Packaging notes</a>
               <a href={biocondaPrUrl}>Bioconda recipe PR</a>
             </div>
           </article>

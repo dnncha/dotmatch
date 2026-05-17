@@ -16,6 +16,7 @@ const requiredSnippets = [
   ["autopsy section anchor", "id=\"autopsy\""],
   ["install section anchor", "id=\"install\""],
   ["citation section anchor", "id=\"cite\""],
+  ["packaging docs link", "docs/packaging.md"],
   ["methods docs link", "docs/methods-and-citation.md"],
   ["barcode science link", "docs/barcode-science-readiness.md"],
   ["barcode benchmark link", "docs/benchmarks/barcode_demux/README.md"],

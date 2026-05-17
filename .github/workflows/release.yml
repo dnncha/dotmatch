@@ -32,12 +32,19 @@ jobs:
           make python-package-test
 
   wheel:
-    name: Build ${{ matrix.os }} wheel
+    name: Build ${{ matrix.label }} wheel
+    needs: [preflight]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            label: Linux raw
+            artifact_name: dotmatch-wheel-linux-raw
+          - os: macos-latest
+            label: macOS
+            artifact_name: dotmatch-wheel-macos
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -49,7 +56,7 @@ jobs:
         run: python scripts/check_python_wheel.py --out-dir dist
       - uses: actions/upload-artifact@v7
         with:
-          name: dotmatch-wheel-${{ runner.os }}
+          name: ${{ matrix.artifact_name }}
           path: dist/*.whl
 
   linux-repaired-wheels:
@@ -74,6 +81,7 @@ jobs:
 
   sdist:
     name: Build source distribution
+    needs: [preflight]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -100,10 +108,10 @@ jobs:
         run: docker build -t dotmatch:ci .
       - name: Smoke test container
         run: |
-          docker run --rm dotmatch:ci --version | grep '^dotmatch 0.1.0$'
+          docker run --rm dotmatch:ci --version | grep '^dotmatch 0.1.1$'
           docker run --rm dotmatch:ci dist ACGT AGGT | grep '^1$'
           docker run --rm dotmatch:ci leq 1 ACGT AGGT | grep '^true$'
-          docker image inspect dotmatch:ci --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' | grep '^0.1.0$'
+          docker image inspect dotmatch:ci --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' | grep '^0.1.1$'
       - uses: docker/metadata-action@v6
         id: meta
         with:
@@ -119,9 +127,9 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   pypi-sdist:
-    name: Publish PyPI sdist and repaired Linux wheels
+    name: Publish PyPI sdist, macOS wheel, and repaired Linux wheels
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [preflight, sdist, linux-repaired-wheels]
+    needs: [preflight, sdist, wheel, linux-repaired-wheels]
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -130,6 +138,10 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: dotmatch-sdist
+          path: dist-pypi
+      - uses: actions/download-artifact@v8
+        with:
+          name: dotmatch-wheel-macos
           path: dist-pypi
       - uses: actions/download-artifact@v8
         with:

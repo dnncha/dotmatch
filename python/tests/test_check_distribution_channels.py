@@ -39,6 +39,10 @@ def test_distribution_channels_accepts_mocked_public_release(tmp_path, monkeypat
                     {"packagetype": "sdist", "filename": "dotmatch-0.1.0.tar.gz"},
                     {
                         "packagetype": "bdist_wheel",
+                        "filename": "dotmatch-0.1.0-py3-none-macosx_11_0_universal2.whl",
+                    },
+                    {
+                        "packagetype": "bdist_wheel",
                         "filename": "dotmatch-0.1.0-py3-none-manylinux_2_28_x86_64.whl",
                     },
                     {
@@ -88,6 +92,10 @@ def test_distribution_channels_reports_failed_pypi_install(tmp_path, monkeypatch
                 "info": {"version": "0.1.0"},
                 "urls": [
                     {"packagetype": "sdist", "filename": "dotmatch-0.1.0.tar.gz"},
+                    {
+                        "packagetype": "bdist_wheel",
+                        "filename": "dotmatch-0.1.0-py3-none-macosx_11_0_universal2.whl",
+                    },
                     {
                         "packagetype": "bdist_wheel",
                         "filename": "dotmatch-0.1.0-py3-none-manylinux_2_28_x86_64.whl",
@@ -149,7 +157,16 @@ def test_distribution_channels_reports_pypi_missing_repaired_wheels(tmp_path, mo
 
     def fake_fetch_json(url: str):
         if "pypi.org" in url:
-            return {"info": {"version": "0.1.0"}, "urls": [{"packagetype": "sdist", "filename": "dotmatch-0.1.0.tar.gz"}]}
+            return {
+                "info": {"version": "0.1.0"},
+                "urls": [
+                    {"packagetype": "sdist", "filename": "dotmatch-0.1.0.tar.gz"},
+                    {
+                        "packagetype": "bdist_wheel",
+                        "filename": "dotmatch-0.1.0-py3-none-macosx_11_0_universal2.whl",
+                    },
+                ],
+            }
         return {"files": [{"version": "0.1.0"}]}
 
     monkeypatch.setattr(checker, "fetch_json", fake_fetch_json)
@@ -173,6 +190,10 @@ def test_distribution_channels_rejects_raw_pypi_linux_wheel(tmp_path, monkeypatc
                 "info": {"version": "0.1.0"},
                 "urls": [
                     {"packagetype": "sdist", "filename": "dotmatch-0.1.0.tar.gz"},
+                    {
+                        "packagetype": "bdist_wheel",
+                        "filename": "dotmatch-0.1.0-py3-none-macosx_11_0_universal2.whl",
+                    },
                     {
                         "packagetype": "bdist_wheel",
                         "filename": "dotmatch-0.1.0-py3-none-manylinux_2_28_x86_64.whl",

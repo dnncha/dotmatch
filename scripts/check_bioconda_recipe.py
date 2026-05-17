@@ -98,7 +98,11 @@ def _check_meta(meta: str, result: AuditResult) -> None:
     if SHA_PLACEHOLDER not in meta:
         result.failures.append("Bioconda recipe must retain SHA256 placeholder until copying into bioconda-recipes")
 
-    for command in ["dotmatch dist ACGT AGGT", "dotmatch leq 1 ACGT AGGT"]:
+    for command in [
+        "dotmatch --version",
+        "dotmatch dist ACGT AGGT",
+        "dotmatch leq 1 ACGT AGGT",
+    ]:
         if command not in meta:
             result.failures.append(f"Bioconda recipe test commands must include {command}")
 

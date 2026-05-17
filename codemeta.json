@@ -8,8 +8,8 @@
   "codeRepository": "https://github.com/dnncha/dotmatch",
   "issueTracker": "https://github.com/dnncha/dotmatch/issues",
   "license": "https://spdx.org/licenses/Apache-2.0",
-  "version": "0.1.0",
-  "softwareVersion": "0.1.0",
+  "version": "0.1.1",
+  "softwareVersion": "0.1.1",
   "programmingLanguage": [
     "C",
     "Python",

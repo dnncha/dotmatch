@@ -196,12 +196,16 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
         result.failures.append("container publish job must depend on preflight")
     if "python scripts/check_python_wheel.py --sdist-only --out-dir dist" not in sdist_job:
         result.failures.append("release workflow sdist job must verify the PyPI source distribution artifact")
-    if "Publish PyPI sdist and repaired Linux wheels" not in pypi_job:
-        result.failures.append("PyPI publish job must publish sdist and repaired Linux wheels")
-    if "needs: [preflight, sdist, linux-repaired-wheels]" not in pypi_job:
-        result.failures.append("PyPI publish job must depend on preflight, sdist, and repaired Linux wheels")
-    if "name: dotmatch-sdist" not in pypi_job or "name: dotmatch-linux-repaired-wheels" not in pypi_job:
-        result.failures.append("PyPI publish job must download sdist and repaired Linux wheel artifacts")
+    if "Publish PyPI sdist, macOS wheel, and repaired Linux wheels" not in pypi_job:
+        result.failures.append("PyPI publish job must publish sdist, macOS wheel, and repaired Linux wheels")
+    if "needs: [preflight, sdist, wheel, linux-repaired-wheels]" not in pypi_job:
+        result.failures.append("PyPI publish job must depend on preflight, sdist, macOS wheel, and repaired Linux wheels")
+    if (
+        "name: dotmatch-sdist" not in pypi_job
+        or "name: dotmatch-wheel-macos" not in pypi_job
+        or "name: dotmatch-linux-repaired-wheels" not in pypi_job
+    ):
+        result.failures.append("PyPI publish job must download sdist, macOS wheel, and repaired Linux wheel artifacts")
     if "needs: [preflight, wheel, sdist, linux-repaired-wheels]" not in github_release_job:
         result.failures.append("GitHub release job must depend on preflight, wheels, sdist, and repaired Linux wheels")
 
@@ -221,8 +225,11 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
     if "dotmatch dist ACGT AGGT" not in bioconda:
         result.failures.append("Bioconda template must include native CLI smoke test")
 
-    if "publishes the" not in packaging or "source distribution and repaired manylinux/musllinux wheels" not in packaging:
-        result.failures.append("docs/packaging.md must document PyPI sdist plus repaired Linux wheel policy")
+    if (
+        "publishes the source distribution, the native macOS wheel, and repaired manylinux/musllinux Linux wheels"
+        not in packaging
+    ):
+        result.failures.append("docs/packaging.md must document PyPI sdist, macOS wheel, and repaired Linux wheel policy")
     if "Raw `linux_x86_64` wheels" not in packaging:
         result.failures.append("docs/packaging.md must document raw Linux wheels are not uploaded to PyPI")
     if "ghcr.io/dnncha/dotmatch" not in packaging or "OCI labels" not in packaging:

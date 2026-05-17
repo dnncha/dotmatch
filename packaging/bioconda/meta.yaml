@@ -1,5 +1,5 @@
 {% set name = "dotmatch" %}
-{% set version = "0.1.0" %}
+{% set version = "0.1.1" %}
 {% set sha256 = "REPLACE_WITH_RELEASE_TARBALL_SHA256" %}
 
 package:
@@ -26,6 +26,7 @@ requirements:
 
 test:
   commands:
+    - dotmatch --version | grep '^dotmatch {{ version }}$'
     - dotmatch dist ACGT AGGT | grep '^1$'
     - dotmatch leq 1 ACGT AGGT | grep '^true$'
 

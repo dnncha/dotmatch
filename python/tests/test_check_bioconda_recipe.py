@@ -41,6 +41,7 @@ def _meta(version: str = "0.1.0") -> str:
         "    - zlib\n\n"
         "test:\n"
         "  commands:\n"
+        "    - dotmatch --version | grep '^dotmatch {{ version }}$'\n"
         "    - dotmatch dist ACGT AGGT | grep '^1$'\n"
         "    - dotmatch leq 1 ACGT AGGT | grep '^true$'\n\n"
         "about:\n"
