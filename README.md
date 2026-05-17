@@ -4,10 +4,11 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Citation](https://img.shields.io/badge/cite-CITATION.cff-green.svg)](CITATION.cff)
 
-DotMatch assigns short sequencing reads to a known set of short DNA targets.
-It is intended for CRISPR guide counting, inline barcode demultiplexing,
-fixed-window feature/barcode assignment, primer or adapter-prefix checks, and
-similar workflows where the reference is a target library rather than a genome.
+DotMatch assigns short sequencing reads to a known set of short DNA targets and
+keeps the assignment decision auditable. It is built for CRISPR guide counting,
+inline barcode demultiplexing, fixed-window feature/barcode assignment, primer
+or adapter-prefix checks, and similar assays where the reference is a target
+library rather than a genome.
 
 For each read, DotMatch reports one of four outcomes:
 
@@ -19,6 +20,14 @@ For each read, DotMatch reports one of four outcomes:
 Ambiguous reads are exposed explicitly instead of being assigned silently. That
 is the main design choice: DotMatch is for deterministic known-target
 assignment, not probabilistic read mapping.
+
+What you get from a run:
+
+- count matrices or demultiplexed FASTQs;
+- per-sample QC with exact, rescued, ambiguous, unmatched, and invalid reads;
+- target-library safety audits before one-edit correction;
+- top-unmatched and offset diagnostics for failed barcode lanes;
+- machine-readable TSV/JSON provenance plus self-contained HTML reports.
 
 ## Barcode Autopsy, Not Just Barcode Splitting
 
@@ -115,10 +124,12 @@ tracked in [Packaging Notes](docs/packaging.md), the
 yet published on public package channels; install from source until the tagged
 release appears on the relevant channel.
 
-The GitHub release workflow builds and smoke-tests repaired manylinux/musllinux
-x86_64 wheel artifacts. PyPI trusted publishing is configured for the source
-distribution and repaired Linux wheels. Public PyPI wheel availability is only
-claimed after the tagged release is visible on PyPI.
+The GitHub release workflow builds and smoke-tests the source distribution, the
+native macOS wheel, and repaired Linux wheels. PyPI trusted publishing is configured for
+those artifacts. Public PyPI wheel availability is only claimed after the tagged
+release is visible on PyPI. For Linux wheels, the GitHub release workflow builds and smoke-tests repaired manylinux/musllinux
+wheel artifacts before any wheel is
+considered for PyPI.
 
 Optional local Workbench: DotMatch also includes a desktop Workbench under
 `apps/workbench` for local AssaySpec design, inference, planning, running,

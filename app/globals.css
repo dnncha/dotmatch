@@ -468,6 +468,82 @@ h3 {
   line-height: 1.52;
 }
 
+.report-section {
+  background:
+    linear-gradient(180deg, #f7fbf9, #fff 62%),
+    #fff;
+}
+
+.report-preview {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.report-copy {
+  min-width: 0;
+  padding: 1.35rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.report-copy h3 {
+  margin-bottom: 1rem;
+  font-size: 1.75rem;
+  line-height: 1.08;
+}
+
+.report-copy p {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.report-table {
+  min-width: 0;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+.report-table > div {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.34fr) minmax(0, 1fr) minmax(170px, 0.52fr);
+  gap: 1rem;
+  align-items: center;
+  min-height: 72px;
+  padding: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.report-table > div:last-child {
+  border-bottom: 0;
+}
+
+.report-table code {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 0.55rem;
+  border: 1px solid rgba(14, 124, 90, 0.22);
+  border-radius: 6px;
+  color: var(--green);
+  background: var(--mint);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 850;
+}
+
+.report-table span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.report-table span:not(:first-child) {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
 .decision-section {
   background: #fff;
 }
@@ -1059,6 +1135,7 @@ h3 {
 
   .hero,
   .autopsy-layout,
+  .report-preview,
   .scope-layout,
   .example-layout,
   .workflow {
@@ -1186,23 +1263,27 @@ h3 {
   }
 
   .status-table > div,
-  .comparison-table > div {
+  .comparison-table > div,
+  .report-table > div {
     grid-template-columns: 1fr;
     gap: 0.45rem;
   }
 
   .status-table .table-head,
-  .comparison-table .table-head {
+  .comparison-table .table-head,
+  .report-table .table-head {
     display: none;
   }
 
   .status-table div span:first-child,
-  .comparison-table div span:first-child {
+  .comparison-table div span:first-child,
+  .report-table div span:first-child {
     margin-bottom: 0.35rem;
   }
 
   .status-table div span:not(:first-child)::before,
-  .comparison-table div span:not(:first-child)::before {
+  .comparison-table div span:not(:first-child)::before,
+  .report-table div span:not(:first-child)::before {
     content: attr(data-label);
     display: block;
     margin-bottom: 0.2rem;

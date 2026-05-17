@@ -3416,38 +3416,40 @@ static int run_count(const char *argv0, int argc, char **argv) {
     string_list reads = {0};
     string_list labels = {0};
 
-    for (int i = 2; i < argc; ++i) {
-        if ((strcmp(argv[i], "--targets") == 0 || strcmp(argv[i], "--library") == 0) && i + 1 < argc) {
-            targets_path = argv[++i];
-        } else if (strcmp(argv[i], "--samples") == 0 && i + 1 < argc) {
-            samples_path = argv[++i];
-        } else if (strcmp(argv[i], "--reads") == 0 && i + 1 < argc) {
-            if (push_string(&reads, argv[++i]) != 0) {
+    int i = 2;
+    while (i < argc) {
+        const char *arg = argv[i++];
+        if ((strcmp(arg, "--targets") == 0 || strcmp(arg, "--library") == 0) && i < argc) {
+            targets_path = argv[i++];
+        } else if (strcmp(arg, "--samples") == 0 && i < argc) {
+            samples_path = argv[i++];
+        } else if (strcmp(arg, "--reads") == 0 && i < argc) {
+            if (push_string(&reads, argv[i++]) != 0) {
                 fprintf(stderr, "out of memory\n");
                 goto fail_args;
             }
-        } else if (strcmp(argv[i], "--sample-label") == 0 && i + 1 < argc) {
-            if (split_string_list(&labels, argv[++i], ',') != 0) {
+        } else if (strcmp(arg, "--sample-label") == 0 && i < argc) {
+            if (split_string_list(&labels, argv[i++], ',') != 0) {
                 fprintf(stderr, "out of memory\n");
                 goto fail_args;
             }
-        } else if ((strcmp(argv[i], "--target-start") == 0 || strcmp(argv[i], "--guide-start") == 0) && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &target_start) != 0) {
+        } else if ((strcmp(arg, "--target-start") == 0 || strcmp(arg, "--guide-start") == 0) && i < argc) {
+            if (parse_size_value(argv[i++], &target_start) != 0) {
                 usage(argv0);
                 goto fail_args;
             }
-        } else if ((strcmp(argv[i], "--target-length") == 0 || strcmp(argv[i], "--guide-length") == 0) && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &target_len) != 0 || target_len == 0) {
+        } else if ((strcmp(arg, "--target-length") == 0 || strcmp(arg, "--guide-length") == 0) && i < argc) {
+            if (parse_size_value(argv[i++], &target_len) != 0 || target_len == 0) {
                 usage(argv0);
                 goto fail_args;
             }
-        } else if (strcmp(argv[i], "--k") == 0 && i + 1 < argc) {
-            if (parse_int_value(argv[++i], &k) != 0 || k < 0 || k > 2) {
+        } else if (strcmp(arg, "--k") == 0 && i < argc) {
+            if (parse_int_value(argv[i++], &k) != 0 || k < 0 || k > 2) {
                 usage(argv0);
                 goto fail_args;
             }
-        } else if (strcmp(argv[i], "--metric") == 0 && i + 1 < argc) {
-            const char *value = argv[++i];
+        } else if (strcmp(arg, "--metric") == 0 && i < argc) {
+            const char *value = argv[i++];
             if (strcmp(value, "hamming") == 0) {
                 metric = COUNT_METRIC_HAMMING;
             } else if (strcmp(value, "levenshtein") == 0) {
@@ -3456,8 +3458,8 @@ static int run_count(const char *argv0, int argc, char **argv) {
                 usage(argv0);
                 goto fail_args;
             }
-        } else if (strcmp(argv[i], "--hamming-index") == 0 && i + 1 < argc) {
-            const char *value = argv[++i];
+        } else if (strcmp(arg, "--hamming-index") == 0 && i < argc) {
+            const char *value = argv[i++];
             if (strcmp(value, "auto") == 0) {
                 hamming_strategy = HAMMING_INDEX_AUTO;
             } else if (strcmp(value, "query") == 0) {
@@ -3468,23 +3470,23 @@ static int run_count(const char *argv0, int argc, char **argv) {
                 usage(argv0);
                 goto fail_args;
             }
-        } else if (strcmp(argv[i], "--indel-window") == 0 && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &indel_window) != 0 || indel_window > 1) {
+        } else if (strcmp(arg, "--indel-window") == 0 && i < argc) {
+            if (parse_size_value(argv[i++], &indel_window) != 0 || indel_window > 1) {
                 usage(argv0);
                 goto fail_args;
             }
-        } else if (strcmp(argv[i], "--auto-offset") == 0 && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &auto_offset) != 0) {
+        } else if (strcmp(arg, "--auto-offset") == 0 && i < argc) {
+            if (parse_size_value(argv[i++], &auto_offset) != 0) {
                 usage(argv0);
                 goto fail_args;
             }
-        } else if (strcmp(argv[i], "--auto-offset-sample") == 0 && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &auto_offset_sample) != 0 || auto_offset_sample == 0) {
+        } else if (strcmp(arg, "--auto-offset-sample") == 0 && i < argc) {
+            if (parse_size_value(argv[i++], &auto_offset_sample) != 0 || auto_offset_sample == 0) {
                 usage(argv0);
                 goto fail_args;
             }
-        } else if (strcmp(argv[i], "--offset-mode") == 0 && i + 1 < argc) {
-            const char *value = argv[++i];
+        } else if (strcmp(arg, "--offset-mode") == 0 && i < argc) {
+            const char *value = argv[i++];
             if (strcmp(value, "best") == 0) {
                 offsets_mode = OFFSET_MODE_BEST;
             } else if (strcmp(value, "multi") == 0) {
@@ -3493,53 +3495,53 @@ static int run_count(const char *argv0, int argc, char **argv) {
                 usage(argv0);
                 goto fail_args;
             }
-        } else if (strcmp(argv[i], "--offset-min-fraction") == 0 && i + 1 < argc) {
-            if (parse_double_value(argv[++i], &offset_min_fraction) != 0 ||
+        } else if (strcmp(arg, "--offset-min-fraction") == 0 && i < argc) {
+            if (parse_double_value(argv[i++], &offset_min_fraction) != 0 ||
                 offset_min_fraction < 0.0 || offset_min_fraction > 1.0) {
                 usage(argv0);
                 goto fail_args;
             }
-        } else if (strcmp(argv[i], "--threads") == 0 && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &threads) != 0 || threads == 0) {
+        } else if (strcmp(arg, "--threads") == 0 && i < argc) {
+            if (parse_size_value(argv[i++], &threads) != 0 || threads == 0) {
                 usage(argv0);
                 goto fail_args;
             }
-        } else if (strcmp(argv[i], "--max-correction-qual") == 0 && i + 1 < argc) {
-            if (parse_int_value(argv[++i], &max_correction_qual) != 0 ||
+        } else if (strcmp(arg, "--max-correction-qual") == 0 && i < argc) {
+            if (parse_int_value(argv[i++], &max_correction_qual) != 0 ||
                 max_correction_qual < 0 || max_correction_qual > 93) {
                 usage(argv0);
                 goto fail_args;
             }
-        } else if (strcmp(argv[i], "--out") == 0 && i + 1 < argc) {
-            out_path = argv[++i];
-        } else if (strcmp(argv[i], "--assignments") == 0 && i + 1 < argc) {
-            assignments_path = argv[++i];
-        } else if (strcmp(argv[i], "--summary") == 0 && i + 1 < argc) {
-            summary_path = argv[++i];
-        } else if (strcmp(argv[i], "--report") == 0 && i + 1 < argc) {
-            report_path = argv[++i];
-        } else if (strcmp(argv[i], "--report-audit-dir") == 0 && i + 1 < argc) {
-            report_audit_dir = argv[++i];
-        } else if (strcmp(argv[i], "--report-unmatched") == 0 && i + 1 < argc) {
-            report_unmatched_path = argv[++i];
-        } else if (strcmp(argv[i], "--qc") == 0 && i + 1 < argc) {
-            sample_qc_path = argv[++i];
-        } else if (strcmp(argv[i], "--sample-qc") == 0 && i + 1 < argc) {
-            sample_qc_path = argv[++i];
-        } else if (strcmp(argv[i], "--target-counts-long") == 0 && i + 1 < argc) {
-            target_counts_long_path = argv[++i];
-        } else if (strcmp(argv[i], "--ambiguous-out") == 0 && i + 1 < argc) {
-            ambiguous_path = argv[++i];
-        } else if (strcmp(argv[i], "--unmatched-out") == 0 && i + 1 < argc) {
-            unmatched_path = argv[++i];
-        } else if (strcmp(argv[i], "--ambiguous") == 0 && i + 1 < argc) {
-            ambiguous_policy = argv[++i];
+        } else if (strcmp(arg, "--out") == 0 && i < argc) {
+            out_path = argv[i++];
+        } else if (strcmp(arg, "--assignments") == 0 && i < argc) {
+            assignments_path = argv[i++];
+        } else if (strcmp(arg, "--summary") == 0 && i < argc) {
+            summary_path = argv[i++];
+        } else if (strcmp(arg, "--report") == 0 && i < argc) {
+            report_path = argv[i++];
+        } else if (strcmp(arg, "--report-audit-dir") == 0 && i < argc) {
+            report_audit_dir = argv[i++];
+        } else if (strcmp(arg, "--report-unmatched") == 0 && i < argc) {
+            report_unmatched_path = argv[i++];
+        } else if (strcmp(arg, "--qc") == 0 && i < argc) {
+            sample_qc_path = argv[i++];
+        } else if (strcmp(arg, "--sample-qc") == 0 && i < argc) {
+            sample_qc_path = argv[i++];
+        } else if (strcmp(arg, "--target-counts-long") == 0 && i < argc) {
+            target_counts_long_path = argv[i++];
+        } else if (strcmp(arg, "--ambiguous-out") == 0 && i < argc) {
+            ambiguous_path = argv[i++];
+        } else if (strcmp(arg, "--unmatched-out") == 0 && i < argc) {
+            unmatched_path = argv[i++];
+        } else if (strcmp(arg, "--ambiguous") == 0 && i < argc) {
+            ambiguous_policy = argv[i++];
             if (strcmp(ambiguous_policy, "discard") != 0 && strcmp(ambiguous_policy, "report") != 0) {
                 usage(argv0);
                 goto fail_args;
             }
-        } else if (strcmp(argv[i], "--ambiguity-policy") == 0 && i + 1 < argc) {
-            const char *value = argv[++i];
+        } else if (strcmp(arg, "--ambiguity-policy") == 0 && i < argc) {
+            const char *value = argv[i++];
             if (strcmp(value, "best") == 0) {
                 assignment_policy = AMBIGUITY_POLICY_BEST;
             } else if (strcmp(value, "radius") == 0) {
@@ -3548,8 +3550,8 @@ static int run_count(const char *argv0, int argc, char **argv) {
                 usage(argv0);
                 goto fail_args;
             }
-        } else if (strcmp(argv[i], "--format") == 0 && i + 1 < argc) {
-            format = argv[++i];
+        } else if (strcmp(arg, "--format") == 0 && i < argc) {
+            format = argv[i++];
             if (strcmp(format, "dotmatch") != 0 && strcmp(format, "mageck") != 0) {
                 usage(argv0);
                 goto fail_args;
@@ -4069,28 +4071,30 @@ static int run_fastq_assign(const char *argv0, int argc, char **argv) {
     size_t barcode_len = 0;
     int k = -1;
 
-    for (int i = 2; i < argc; ++i) {
-        if (strcmp(argv[i], "--barcodes") == 0 && i + 1 < argc) {
-            barcodes_path = argv[++i];
-        } else if (strcmp(argv[i], "--reads") == 0 && i + 1 < argc) {
-            reads_path = argv[++i];
-        } else if (strcmp(argv[i], "--barcode-start") == 0 && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &barcode_start) != 0) {
+    int i = 2;
+    while (i < argc) {
+        const char *arg = argv[i++];
+        if (strcmp(arg, "--barcodes") == 0 && i < argc) {
+            barcodes_path = argv[i++];
+        } else if (strcmp(arg, "--reads") == 0 && i < argc) {
+            reads_path = argv[i++];
+        } else if (strcmp(arg, "--barcode-start") == 0 && i < argc) {
+            if (parse_size_value(argv[i++], &barcode_start) != 0) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--barcode-length") == 0 && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &barcode_len) != 0 || barcode_len == 0) {
+        } else if (strcmp(arg, "--barcode-length") == 0 && i < argc) {
+            if (parse_size_value(argv[i++], &barcode_len) != 0 || barcode_len == 0) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--k") == 0 && i + 1 < argc) {
-            if (parse_int_value(argv[++i], &k) != 0 || (k != 0 && k != 1)) {
+        } else if (strcmp(arg, "--k") == 0 && i < argc) {
+            if (parse_int_value(argv[i++], &k) != 0 || (k != 0 && k != 1)) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--out") == 0 && i + 1 < argc) {
-            out_path = argv[++i];
+        } else if (strcmp(arg, "--out") == 0 && i < argc) {
+            out_path = argv[i++];
         } else {
             usage(argv0);
             return 2;
@@ -4644,18 +4648,20 @@ static int run_audit(const char *argv0, int argc, char **argv) {
     const char *audit_mode = "auto";
     int k = 1;
 
-    for (int i = 2; i < argc; ++i) {
-        if ((strcmp(argv[i], "--targets") == 0 || strcmp(argv[i], "--library") == 0) && i + 1 < argc) {
-            targets_path = argv[++i];
-        } else if (strcmp(argv[i], "--k") == 0 && i + 1 < argc) {
-            if (parse_int_value(argv[++i], &k) != 0 || k < 0 || k > 2) {
+    int i = 2;
+    while (i < argc) {
+        const char *arg = argv[i++];
+        if ((strcmp(arg, "--targets") == 0 || strcmp(arg, "--library") == 0) && i < argc) {
+            targets_path = argv[i++];
+        } else if (strcmp(arg, "--k") == 0 && i < argc) {
+            if (parse_int_value(argv[i++], &k) != 0 || k < 0 || k > 2) {
                 usage(argv0);
                 return 2;
             }
-        } else if ((strcmp(argv[i], "--out-dir") == 0 || strcmp(argv[i], "--out") == 0) && i + 1 < argc) {
-            out_dir = argv[++i];
-        } else if (strcmp(argv[i], "--audit-mode") == 0 && i + 1 < argc) {
-            audit_mode = argv[++i];
+        } else if ((strcmp(arg, "--out-dir") == 0 || strcmp(arg, "--out") == 0) && i < argc) {
+            out_dir = argv[i++];
+        } else if (strcmp(arg, "--audit-mode") == 0 && i < argc) {
+            audit_mode = argv[i++];
             if (strcmp(audit_mode, "auto") != 0 && strcmp(audit_mode, "exact") != 0 && strcmp(audit_mode, "fast") != 0) {
                 usage(argv0);
                 return 2;
@@ -5050,38 +5056,40 @@ static int run_inspect_unmatched(const char *argv0, int argc, char **argv) {
     int low_quality_threshold = -1;
     int k = -1;
 
-    for (int i = 2; i < argc; ++i) {
-        if ((strcmp(argv[i], "--targets") == 0 || strcmp(argv[i], "--library") == 0) && i + 1 < argc) {
-            targets_path = argv[++i];
-        } else if (strcmp(argv[i], "--reads") == 0 && i + 1 < argc) {
-            reads_path = argv[++i];
-        } else if ((strcmp(argv[i], "--target-start") == 0 || strcmp(argv[i], "--guide-start") == 0) && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &target_start) != 0) {
+    int i = 2;
+    while (i < argc) {
+        const char *arg = argv[i++];
+        if ((strcmp(arg, "--targets") == 0 || strcmp(arg, "--library") == 0) && i < argc) {
+            targets_path = argv[i++];
+        } else if (strcmp(arg, "--reads") == 0 && i < argc) {
+            reads_path = argv[i++];
+        } else if ((strcmp(arg, "--target-start") == 0 || strcmp(arg, "--guide-start") == 0) && i < argc) {
+            if (parse_size_value(argv[i++], &target_start) != 0) {
                 usage(argv0);
                 return 2;
             }
-        } else if ((strcmp(argv[i], "--target-length") == 0 || strcmp(argv[i], "--guide-length") == 0) && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &target_len) != 0 || target_len == 0) {
+        } else if ((strcmp(arg, "--target-length") == 0 || strcmp(arg, "--guide-length") == 0) && i < argc) {
+            if (parse_size_value(argv[i++], &target_len) != 0 || target_len == 0) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--k") == 0 && i + 1 < argc) {
-            if (parse_int_value(argv[++i], &k) != 0 || (k != 0 && k != 1)) {
+        } else if (strcmp(arg, "--k") == 0 && i < argc) {
+            if (parse_int_value(argv[i++], &k) != 0 || (k != 0 && k != 1)) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--top") == 0 && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &top_n) != 0 || top_n == 0) {
+        } else if (strcmp(arg, "--top") == 0 && i < argc) {
+            if (parse_size_value(argv[i++], &top_n) != 0 || top_n == 0) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--offset-window") == 0 && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &offset_window) != 0) {
+        } else if (strcmp(arg, "--offset-window") == 0 && i < argc) {
+            if (parse_size_value(argv[i++], &offset_window) != 0) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--adapter") == 0 && i + 1 < argc) {
-            const char *value = argv[++i];
+        } else if (strcmp(arg, "--adapter") == 0 && i < argc) {
+            const char *value = argv[i++];
             size_t n = strlen(value);
             if (n == 0 || n >= sizeof(adapter)) {
                 usage(argv0);
@@ -5089,14 +5097,14 @@ static int run_inspect_unmatched(const char *argv0, int argc, char **argv) {
             }
             memcpy(adapter, value, n + 1);
             uppercase_ascii(adapter);
-        } else if (strcmp(argv[i], "--low-quality-threshold") == 0 && i + 1 < argc) {
-            if (parse_int_value(argv[++i], &low_quality_threshold) != 0 ||
+        } else if (strcmp(arg, "--low-quality-threshold") == 0 && i < argc) {
+            if (parse_int_value(argv[i++], &low_quality_threshold) != 0 ||
                 low_quality_threshold < 0 || low_quality_threshold > 93) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--out") == 0 && i + 1 < argc) {
-            out_path = argv[++i];
+        } else if (strcmp(arg, "--out") == 0 && i < argc) {
+            out_path = argv[i++];
         } else {
             usage(argv0);
             return 2;
@@ -5293,40 +5301,42 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
     int k = -1;
     count_metric metric = COUNT_METRIC_LEVENSHTEIN;
 
-    for (int i = 2; i < argc; ++i) {
-        if (strcmp(argv[i], "--left-targets") == 0 && i + 1 < argc) {
-            left_path = argv[++i];
-        } else if (strcmp(argv[i], "--right-targets") == 0 && i + 1 < argc) {
-            right_path = argv[++i];
-        } else if (strcmp(argv[i], "--reads") == 0 && i + 1 < argc) {
-            reads_path = argv[++i];
-        } else if (strcmp(argv[i], "--left-start") == 0 && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &left_start) != 0) {
+    int i = 2;
+    while (i < argc) {
+        const char *arg = argv[i++];
+        if (strcmp(arg, "--left-targets") == 0 && i < argc) {
+            left_path = argv[i++];
+        } else if (strcmp(arg, "--right-targets") == 0 && i < argc) {
+            right_path = argv[i++];
+        } else if (strcmp(arg, "--reads") == 0 && i < argc) {
+            reads_path = argv[i++];
+        } else if (strcmp(arg, "--left-start") == 0 && i < argc) {
+            if (parse_size_value(argv[i++], &left_start) != 0) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--left-length") == 0 && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &left_len) != 0 || left_len == 0) {
+        } else if (strcmp(arg, "--left-length") == 0 && i < argc) {
+            if (parse_size_value(argv[i++], &left_len) != 0 || left_len == 0) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--right-start") == 0 && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &right_start) != 0) {
+        } else if (strcmp(arg, "--right-start") == 0 && i < argc) {
+            if (parse_size_value(argv[i++], &right_start) != 0) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--right-length") == 0 && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &right_len) != 0 || right_len == 0) {
+        } else if (strcmp(arg, "--right-length") == 0 && i < argc) {
+            if (parse_size_value(argv[i++], &right_len) != 0 || right_len == 0) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--k") == 0 && i + 1 < argc) {
-            if (parse_int_value(argv[++i], &k) != 0 || k < 0 || k > 2) {
+        } else if (strcmp(arg, "--k") == 0 && i < argc) {
+            if (parse_int_value(argv[i++], &k) != 0 || k < 0 || k > 2) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--metric") == 0 && i + 1 < argc) {
-            const char *value = argv[++i];
+        } else if (strcmp(arg, "--metric") == 0 && i < argc) {
+            const char *value = argv[i++];
             if (strcmp(value, "hamming") == 0) {
                 metric = COUNT_METRIC_HAMMING;
             } else if (strcmp(value, "levenshtein") == 0) {
@@ -5335,12 +5345,12 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--out") == 0 && i + 1 < argc) {
-            out_path = argv[++i];
-        } else if (strcmp(argv[i], "--summary") == 0 && i + 1 < argc) {
-            summary_path = argv[++i];
-        } else if (strcmp(argv[i], "--assignments") == 0 && i + 1 < argc) {
-            assignments_path = argv[++i];
+        } else if (strcmp(arg, "--out") == 0 && i < argc) {
+            out_path = argv[i++];
+        } else if (strcmp(arg, "--summary") == 0 && i < argc) {
+            summary_path = argv[i++];
+        } else if (strcmp(arg, "--assignments") == 0 && i < argc) {
+            assignments_path = argv[i++];
         } else {
             usage(argv0);
             return 2;
@@ -5540,18 +5550,20 @@ static int run_demux(const char *argv0, int argc, char **argv) {
     int max_correction_qual = -1;
     int k = -1;
 
-    for (int i = 2; i < argc; ++i) {
-        if ((strcmp(argv[i], "--barcodes") == 0 || strcmp(argv[i], "--targets") == 0) && i + 1 < argc) {
-            barcodes_path = argv[++i];
-        } else if (strcmp(argv[i], "--reads") == 0 && i + 1 < argc) {
-            reads_path = argv[++i];
-        } else if ((strcmp(argv[i], "--barcode-start") == 0 || strcmp(argv[i], "--target-start") == 0) && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &barcode_start) != 0) {
+    int i = 2;
+    while (i < argc) {
+        const char *arg = argv[i++];
+        if ((strcmp(arg, "--barcodes") == 0 || strcmp(arg, "--targets") == 0) && i < argc) {
+            barcodes_path = argv[i++];
+        } else if (strcmp(arg, "--reads") == 0 && i < argc) {
+            reads_path = argv[i++];
+        } else if ((strcmp(arg, "--barcode-start") == 0 || strcmp(arg, "--target-start") == 0) && i < argc) {
+            if (parse_size_value(argv[i++], &barcode_start) != 0) {
                 usage(argv0);
                 return 2;
             }
-        } else if ((strcmp(argv[i], "--barcode-length") == 0 || strcmp(argv[i], "--target-length") == 0) && i + 1 < argc) {
-            const char *value = argv[++i];
+        } else if ((strcmp(arg, "--barcode-length") == 0 || strcmp(arg, "--target-length") == 0) && i < argc) {
+            const char *value = argv[i++];
             if (strcmp(value, "auto") == 0) {
                 auto_barcode_len = 1;
                 barcode_len = 0;
@@ -5559,13 +5571,13 @@ static int run_demux(const char *argv0, int argc, char **argv) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--k") == 0 && i + 1 < argc) {
-            if (parse_int_value(argv[++i], &k) != 0 || k < 0 || k > 2) {
+        } else if (strcmp(arg, "--k") == 0 && i < argc) {
+            if (parse_int_value(argv[i++], &k) != 0 || k < 0 || k > 2) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--metric") == 0 && i + 1 < argc) {
-            const char *value = argv[++i];
+        } else if (strcmp(arg, "--metric") == 0 && i < argc) {
+            const char *value = argv[i++];
             if (strcmp(value, "hamming") == 0) {
                 metric = COUNT_METRIC_HAMMING;
             } else if (strcmp(value, "levenshtein") == 0) {
@@ -5574,29 +5586,29 @@ static int run_demux(const char *argv0, int argc, char **argv) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--indel-window") == 0 && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &indel_window) != 0 || indel_window > 1) {
+        } else if (strcmp(arg, "--indel-window") == 0 && i < argc) {
+            if (parse_size_value(argv[i++], &indel_window) != 0 || indel_window > 1) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--max-correction-qual") == 0 && i + 1 < argc) {
-            if (parse_int_value(argv[++i], &max_correction_qual) != 0 ||
+        } else if (strcmp(arg, "--max-correction-qual") == 0 && i < argc) {
+            if (parse_int_value(argv[i++], &max_correction_qual) != 0 ||
                 max_correction_qual < 0 || max_correction_qual > 93) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--out-dir") == 0 && i + 1 < argc) {
-            out_dir = argv[++i];
-        } else if (strcmp(argv[i], "--summary") == 0 && i + 1 < argc) {
-            summary_path = argv[++i];
-        } else if (strcmp(argv[i], "--qc") == 0 && i + 1 < argc) {
-            summary_path = argv[++i];
-        } else if (strcmp(argv[i], "--assignments") == 0 && i + 1 < argc) {
-            assignments_path = argv[++i];
-        } else if (strcmp(argv[i], "--ambiguous-out") == 0 && i + 1 < argc) {
-            ambiguous_path = argv[++i];
-        } else if (strcmp(argv[i], "--unmatched-out") == 0 && i + 1 < argc) {
-            unmatched_path = argv[++i];
+        } else if (strcmp(arg, "--out-dir") == 0 && i < argc) {
+            out_dir = argv[i++];
+        } else if (strcmp(arg, "--summary") == 0 && i < argc) {
+            summary_path = argv[i++];
+        } else if (strcmp(arg, "--qc") == 0 && i < argc) {
+            summary_path = argv[i++];
+        } else if (strcmp(arg, "--assignments") == 0 && i < argc) {
+            assignments_path = argv[i++];
+        } else if (strcmp(arg, "--ambiguous-out") == 0 && i < argc) {
+            ambiguous_path = argv[i++];
+        } else if (strcmp(arg, "--unmatched-out") == 0 && i < argc) {
+            unmatched_path = argv[i++];
         } else {
             usage(argv0);
             return 2;
@@ -6554,33 +6566,35 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
     size_t requested_threads = 1;
     int gzip_level = 1;
 
-    for (int i = 2; i < argc; ++i) {
-        if (strcmp(argv[i], "--run-folder") == 0 && i + 1 < argc) {
-            run_folder = argv[++i];
-        } else if (strcmp(argv[i], "--sample-sheet") == 0 && i + 1 < argc) {
-            sample_sheet = argv[++i];
-        } else if (strcmp(argv[i], "--out-dir") == 0 && i + 1 < argc) {
-            out_dir = argv[++i];
-        } else if (strcmp(argv[i], "--summary") == 0 && i + 1 < argc) {
-            summary_path = argv[++i];
-        } else if (strcmp(argv[i], "--barcode-mismatches") == 0 && i + 1 < argc) {
-            mismatches = argv[++i];
-        } else if (strcmp(argv[i], "--emit-index-fastqs") == 0) {
+    int i = 2;
+    while (i < argc) {
+        const char *arg = argv[i++];
+        if (strcmp(arg, "--run-folder") == 0 && i < argc) {
+            run_folder = argv[i++];
+        } else if (strcmp(arg, "--sample-sheet") == 0 && i < argc) {
+            sample_sheet = argv[i++];
+        } else if (strcmp(arg, "--out-dir") == 0 && i < argc) {
+            out_dir = argv[i++];
+        } else if (strcmp(arg, "--summary") == 0 && i < argc) {
+            summary_path = argv[i++];
+        } else if (strcmp(arg, "--barcode-mismatches") == 0 && i < argc) {
+            mismatches = argv[i++];
+        } else if (strcmp(arg, "--emit-index-fastqs") == 0) {
             emit_index_fastqs = 1;
-        } else if (strcmp(argv[i], "--threads") == 0 && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &requested_threads) != 0 || requested_threads == 0) {
+        } else if (strcmp(arg, "--threads") == 0 && i < argc) {
+            if (parse_size_value(argv[i++], &requested_threads) != 0 || requested_threads == 0) {
                 fprintf(stderr, "invalid --threads value\n");
                 return 2;
             }
-        } else if (strcmp(argv[i], "--gzip-level") == 0 && i + 1 < argc) {
-            if (parse_int_value(argv[++i], &gzip_level) != 0 || gzip_level < 0 || gzip_level > 9) {
+        } else if (strcmp(arg, "--gzip-level") == 0 && i < argc) {
+            if (parse_int_value(argv[i++], &gzip_level) != 0 || gzip_level < 0 || gzip_level > 9) {
                 fprintf(stderr, "invalid --gzip-level value\n");
                 return 2;
             }
-        } else if (strcmp(argv[i], "--lanes") == 0 && i + 1 < argc) {
-            lanes = argv[++i];
-        } else if (strcmp(argv[i], "--interop-dir") == 0 && i + 1 < argc) {
-            ++i;
+        } else if (strcmp(arg, "--lanes") == 0 && i < argc) {
+            lanes = argv[i++];
+        } else if (strcmp(arg, "--interop-dir") == 0 && i < argc) {
+            i++;
         } else {
             usage(argv0);
             return 2;
@@ -6910,11 +6924,13 @@ static int compare_gzip_fastq_files(const char *a_path, const char *b_path, unsi
 static int run_bcl_validate(const char *argv0, int argc, char **argv) {
     const char *dotmatch_out = NULL;
     const char *truth_out = NULL;
-    for (int i = 2; i < argc; ++i) {
-        if (strcmp(argv[i], "--dotmatch-out") == 0 && i + 1 < argc) {
-            dotmatch_out = argv[++i];
-        } else if (strcmp(argv[i], "--truth-out") == 0 && i + 1 < argc) {
-            truth_out = argv[++i];
+    int i = 2;
+    while (i < argc) {
+        const char *arg = argv[i++];
+        if (strcmp(arg, "--dotmatch-out") == 0 && i < argc) {
+            dotmatch_out = argv[i++];
+        } else if (strcmp(arg, "--truth-out") == 0 && i < argc) {
+            truth_out = argv[i++];
         } else {
             usage(argv0);
             return 2;
@@ -7036,33 +7052,35 @@ static int run_validate(const char *argv0, int argc, char **argv) {
     count_metric metric = COUNT_METRIC_LEVENSHTEIN;
     int k = -1;
 
-    for (int i = 2; i < argc; ++i) {
-        if (strcmp(argv[i], "--targets") == 0 && i + 1 < argc) {
-            targets_path = argv[++i];
-        } else if (strcmp(argv[i], "--reads") == 0 && i + 1 < argc) {
-            reads_path = argv[++i];
-        } else if (strcmp(argv[i], "--target-start") == 0 && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &target_start) != 0) {
+    int i = 2;
+    while (i < argc) {
+        const char *arg = argv[i++];
+        if (strcmp(arg, "--targets") == 0 && i < argc) {
+            targets_path = argv[i++];
+        } else if (strcmp(arg, "--reads") == 0 && i < argc) {
+            reads_path = argv[i++];
+        } else if (strcmp(arg, "--target-start") == 0 && i < argc) {
+            if (parse_size_value(argv[i++], &target_start) != 0) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--target-length") == 0 && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &target_len) != 0 || target_len == 0) {
+        } else if (strcmp(arg, "--target-length") == 0 && i < argc) {
+            if (parse_size_value(argv[i++], &target_len) != 0 || target_len == 0) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--k") == 0 && i + 1 < argc) {
-            if (parse_int_value(argv[++i], &k) != 0 || (k != 0 && k != 1)) {
+        } else if (strcmp(arg, "--k") == 0 && i < argc) {
+            if (parse_int_value(argv[i++], &k) != 0 || (k != 0 && k != 1)) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--indel-window") == 0 && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &indel_window) != 0 || indel_window > 1) {
+        } else if (strcmp(arg, "--indel-window") == 0 && i < argc) {
+            if (parse_size_value(argv[i++], &indel_window) != 0 || indel_window > 1) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--metric") == 0 && i + 1 < argc) {
-            const char *value = argv[++i];
+        } else if (strcmp(arg, "--metric") == 0 && i < argc) {
+            const char *value = argv[i++];
             if (strcmp(value, "hamming") == 0) {
                 metric = COUNT_METRIC_HAMMING;
             } else if (strcmp(value, "levenshtein") == 0) {
@@ -7071,18 +7089,18 @@ static int run_validate(const char *argv0, int argc, char **argv) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--auto-offset") == 0 && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &auto_offset) != 0) {
+        } else if (strcmp(arg, "--auto-offset") == 0 && i < argc) {
+            if (parse_size_value(argv[i++], &auto_offset) != 0) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--auto-offset-sample") == 0 && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &auto_offset_sample) != 0 || auto_offset_sample == 0) {
+        } else if (strcmp(arg, "--auto-offset-sample") == 0 && i < argc) {
+            if (parse_size_value(argv[i++], &auto_offset_sample) != 0 || auto_offset_sample == 0) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--offset-mode") == 0 && i + 1 < argc) {
-            const char *value = argv[++i];
+        } else if (strcmp(arg, "--offset-mode") == 0 && i < argc) {
+            const char *value = argv[i++];
             if (strcmp(value, "best") == 0) {
                 offsets_mode = OFFSET_MODE_BEST;
             } else if (strcmp(value, "multi") == 0) {
@@ -7091,21 +7109,21 @@ static int run_validate(const char *argv0, int argc, char **argv) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--offset-min-fraction") == 0 && i + 1 < argc) {
-            if (parse_double_value(argv[++i], &offset_min_fraction) != 0 ||
+        } else if (strcmp(arg, "--offset-min-fraction") == 0 && i < argc) {
+            if (parse_double_value(argv[i++], &offset_min_fraction) != 0 ||
                 offset_min_fraction < 0.0 || offset_min_fraction > 1.0) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--oracle") == 0 && i + 1 < argc) {
-            oracle = argv[++i];
-        } else if (strcmp(argv[i], "--sample") == 0 && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &sample_limit) != 0) {
+        } else if (strcmp(arg, "--oracle") == 0 && i < argc) {
+            oracle = argv[i++];
+        } else if (strcmp(arg, "--sample") == 0 && i < argc) {
+            if (parse_size_value(argv[i++], &sample_limit) != 0) {
                 usage(argv0);
                 return 2;
             }
-        } else if (strcmp(argv[i], "--threads") == 0 && i + 1 < argc) {
-            if (parse_size_value(argv[++i], &threads) != 0 || threads == 0) {
+        } else if (strcmp(arg, "--threads") == 0 && i < argc) {
+            if (parse_size_value(argv[i++], &threads) != 0 || threads == 0) {
                 usage(argv0);
                 return 2;
             }
