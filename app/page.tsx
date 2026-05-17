@@ -73,7 +73,7 @@ const audienceCards = [
 ];
 
 const workflowStatusRows = [
-  ["Barcode autopsy", "Repo-ready", "Offset scans, safety audit, unmatched summaries, provenance, and conservative public-surface checks."],
+  ["Barcode autopsy", "Supported in the repository", "Offset scans, safety audit, unmatched summaries, provenance, and conservative public-surface checks."],
   ["Inline barcode demux", "Comparator-backed, bounded", "Fixed-position exact-prefix public lane with documented Cutadapt/hash-splitter semantics."],
   ["CRISPR guide counting", "Validated now", "Public MAGeCK/Yusa repeated rows, count agreement, Edlib validation, and raw command tables."],
   ["Target-library audit", "Supported", "CLI tests, schemas, and validation commands for unsafe one-edit libraries."],
@@ -118,6 +118,13 @@ const autopsyFindings = [
   ["unsafe correction", "Shows barcode pairs or clusters that make k=1 rescue scientifically risky."],
   ["ambiguous collision", "Keeps reads that match multiple barcodes out of forced assignments."],
   ["unmatched classes", "Separates low-complexity, distant, reverse-complement, and quality-gated failures."]
+];
+
+const reportPreviewRows = [
+  ["unique", "assigned to exactly one barcode or guide", "counted or split"],
+  ["ambiguous", "compatible with multiple targets", "reported, not forced"],
+  ["none", "outside the configured edit radius", "sent to unmatched diagnostics"],
+  ["invalid", "window could not be extracted", "kept visible in QC"]
 ];
 
 const throughputRows = [
@@ -202,7 +209,7 @@ export default function Home() {
         </div>
         <div className="hero-panel" aria-label="DotMatch benchmark summary">
           <div className="panel-topline">
-            <span>v0.1.0</span>
+            <span>v0.1.1</span>
             <span>fixed-window evidence</span>
           </div>
           <figure className="hero-visual">
@@ -297,11 +304,48 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="section report-section">
+        <div className="section-heading">
+          <h2>Readable for the bench. Exact for the workflow.</h2>
+          <p>
+            The primary artifact is an HTML report that explains the run in
+            plain language, backed by TSV and JSON files that a pipeline can
+            archive, compare, and summarize.
+          </p>
+        </div>
+        <div className="report-preview" aria-label="DotMatch report outcome preview">
+          <div className="report-copy">
+            <h3>Every read keeps its assignment reason.</h3>
+            <p>
+              DotMatch does not turn a failed demultiplexing run into one
+              undifferentiated “undetermined” bucket. It separates ambiguous
+              rescue, wrong windows, invalid slices, and true no-match reads so
+              a scientist can decide whether to change the assay spec or rerun
+              the sample.
+            </p>
+          </div>
+          <div className="report-table" role="table" aria-label="Assignment outcome meanings">
+            <div role="row" className="table-head">
+              <span>Outcome</span>
+              <span>Meaning</span>
+              <span>Action</span>
+            </div>
+            {reportPreviewRows.map(([outcome, meaning, action]) => (
+              <div role="row" key={outcome}>
+                <span data-label="Outcome"><code>{outcome}</code></span>
+                <span data-label="Meaning">{meaning}</span>
+                <span data-label="Action">{action}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section id="benchmarks" className="section proof-section">
         <div className="section-heading">
           <h2>The public evidence in plain English.</h2>
           <p>
-            We are keeping the claims narrow for v0.1.0. The barcode lane
+            We are keeping the claims narrow for v0.1.1. The barcode lane
             documents fixed-position exact-prefix semantics against Cutadapt and
             a hash splitter, while the CRISPR rows document guide-counting
             behavior. On repeated public
@@ -473,9 +517,10 @@ DotMatch reports: ambiguous`}</code></pre>
           <h2>Start from the repo. Cite the exact release.</h2>
           <p>
             Use the source install until the public package channels finish
-            publication. Current distribution: source install, release
-            artifacts, and a Bioconda recipe PR with CI green. Coming next:
-            PyPI, Bioconda merge, Docker/Singularity, Zenodo DOI.
+            publication. Current distribution: source install and repository
+            release artifacts, with Bioconda review tracked in PR #65367.
+            Channel availability is claimed only after the package appears on
+            that channel.
           </p>
         </div>
         <div className="launch-grid">
