@@ -1,0 +1,398 @@
+{
+  "schema_version": 1,
+  "title": "DotMatch Evidence Gallery",
+  "summary": "A curated map of committed DotMatch benchmark reports, public-data examples, and diagnostic report patterns.",
+  "scenarios": [
+    {
+      "id": "public_crispr_yusa",
+      "title": "Public CRISPR guide counting: Yusa/MAGeCK lane",
+      "category": "Public data",
+      "assay_type": "crispr",
+      "status": "supported",
+      "dataset": "MAGeCK/Yusa public CRISPR guide-counting FASTQs",
+      "condition": "Known-good guide-counting lane with count agreement and Edlib validation.",
+      "gallery_roles": ["known_good"],
+      "primary_report": "docs/benchmarks/public_crispr/README.md",
+      "raw_artifacts": [
+        "benchmarks/raw/public_crispr_repeated.csv",
+        "benchmarks/raw/public_crispr_edlib_validation.csv",
+        "benchmarks/raw/count_agreement_summary.csv"
+      ],
+      "commands": [
+        "make bench-public-crispr-repeated",
+        "make public-crispr-evidence-gate"
+      ],
+      "comparator_semantics": "DotMatch guide counts are checked against public CRISPR workflow rows, count-agreement artifacts, and native Edlib assignment validation as documented in the benchmark report.",
+      "validation": "The public CRISPR gate requires repeated rows, positive throughput records, count agreement artifacts, and zero Edlib assignment mismatches for checked reads.",
+      "proves": [
+        "DotMatch can run the documented fixed-window CRISPR guide-counting workflow on a public guide-counting lane.",
+        "The report shows exact, Hamming, and Levenshtein lanes separately instead of mixing their semantics.",
+        "Count-agreement and Edlib-validation artifacts are available for inspection."
+      ],
+      "limits": [
+        "This is not a universal CRISPR-screen analysis claim.",
+        "Downstream essentiality, differential abundance, and screen interpretation remain outside DotMatch."
+      ],
+      "report_examples": [
+        {
+          "label": "Public CRISPR benchmark report",
+          "path": "docs/benchmarks/public_crispr/README.md",
+          "kind": "markdown"
+        },
+        {
+          "label": "Count agreement summary",
+          "path": "benchmarks/raw/count_agreement_summary.csv",
+          "kind": "csv"
+        }
+      ]
+    },
+    {
+      "id": "barcode_srp009896_comparator",
+      "title": "Public barcode demux: SRP009896 exact-prefix lane",
+      "category": "Public data",
+      "assay_type": "inline_barcode",
+      "status": "supported",
+      "dataset": "SRP009896/SRR391079 inline-barcode FASTQ subsample",
+      "condition": "Exact fixed-position barcode demultiplexing with documented Cutadapt and hash baselines.",
+      "gallery_roles": ["known_good"],
+      "primary_report": "docs/benchmarks/barcode_demux/README.md",
+      "raw_artifacts": [
+        "benchmarks/raw/barcode_demux.csv",
+        "examples/barcode_demux/data/metadata.json"
+      ],
+      "commands": [
+        "make bench-barcode-comparison",
+        "make barcode-comparison-gate"
+      ],
+      "comparator_semantics": "The checked public lane uses fixed-position k=0 DotMatch demux, Cutadapt anchored no-indel demux, and a transparent exact-prefix hash splitter baseline.",
+      "validation": "The barcode comparison gate requires evidence-ready metadata, five successful real-data repeats, assigned reads, Cutadapt rows, and the exact-prefix baseline row.",
+      "proves": [
+        "DotMatch can reproduce a narrow exact-prefix inline-barcode demux comparison under documented semantics.",
+        "Speed numbers are attached to comparator settings rather than reported in isolation."
+      ],
+      "limits": [
+        "This does not replace general adapter trimming.",
+        "This does not cover BCL/CBCL demultiplexing or arbitrary barcode placement."
+      ],
+      "report_examples": [
+        {
+          "label": "Barcode demux benchmark report",
+          "path": "docs/benchmarks/barcode_demux/README.md",
+          "kind": "markdown"
+        },
+        {
+          "label": "Barcode raw comparison rows",
+          "path": "benchmarks/raw/barcode_demux.csv",
+          "kind": "csv"
+        }
+      ]
+    },
+    {
+      "id": "barcode_autopsy_review",
+      "title": "Barcode autopsy: weak signal and unsafe rescue",
+      "category": "Report zoo",
+      "assay_type": "inline_barcode",
+      "status": "supported",
+      "dataset": "SRP009896/SRR391079 barcode autopsy fixture",
+      "condition": "A review-status run with low-confidence offset evidence, low assignment rate, high ambiguity, and unsafe one-edit correction.",
+      "gallery_roles": ["low_confidence", "unsafe_correction", "many_unmatched"],
+      "primary_report": "docs/evidence-gallery/snapshots/barcode_autopsy/report.html",
+      "raw_artifacts": [
+        "docs/evidence-gallery/snapshots/barcode_autopsy/findings.tsv",
+        "docs/evidence-gallery/snapshots/barcode_autopsy/offset_scan.tsv",
+        "docs/evidence-gallery/snapshots/barcode_autopsy/collision_graph.tsv",
+        "docs/evidence-gallery/snapshots/barcode_autopsy/correction_safety.tsv",
+        "docs/evidence-gallery/snapshots/barcode_autopsy/top_unmatched.tsv",
+        "docs/evidence-gallery/snapshots/barcode_autopsy/provenance.json"
+      ],
+      "commands": [
+        "make barcode-autopsy-demo",
+        "make barcode-validation-ready"
+      ],
+      "comparator_semantics": "This is a diagnostic barcode autopsy run, not a broad comparator benchmark. It records the configured fixed-window barcode semantics and native audit/inspect-unmatched commands.",
+      "validation": "The report is generated from committed autopsy outputs and checked by barcode validation fixtures.",
+      "proves": [
+        "DotMatch can turn a suspicious barcode run into a readable report with findings, next actions, and command provenance.",
+        "The report keeps ambiguous and unmatched evidence instead of silently assigning it.",
+        "Unsafe one-edit correction is surfaced as a report finding."
+      ],
+      "limits": [
+        "The review status is intentional and should not be interpreted as a production-ready barcode assignment.",
+        "Users must correct the assay specification or barcode design before trusting rescued reads."
+      ],
+      "report_examples": [
+        {
+          "label": "Barcode autopsy HTML report",
+          "path": "docs/evidence-gallery/snapshots/barcode_autopsy/report.html",
+          "kind": "html"
+        },
+        {
+          "label": "Barcode autopsy Markdown report",
+          "path": "docs/evidence-gallery/snapshots/barcode_autopsy/report.md",
+          "kind": "markdown"
+        },
+        {
+          "label": "Findings table",
+          "path": "docs/evidence-gallery/snapshots/barcode_autopsy/findings.tsv",
+          "kind": "tsv"
+        }
+      ]
+    },
+    {
+      "id": "barcode_wrong_offset_fixture",
+      "title": "Barcode failure fixture: wrong offset and invalid windows",
+      "category": "Report zoo",
+      "assay_type": "inline_barcode",
+      "status": "smoke",
+      "dataset": "Committed barcode failure-mode FASTQ fixture",
+      "condition": "Deliberately constructed reads show wrong offset, invalid window, reverse-complement candidate, and low-complexity failure modes.",
+      "gallery_roles": ["wrong_offset", "many_unmatched"],
+      "primary_report": "examples/barcode_autopsy/failure_modes/README.md",
+      "raw_artifacts": [
+        "examples/barcode_autopsy/failure_modes/expected_findings.tsv",
+        "examples/barcode_autopsy/failure_modes/barcodes.tsv",
+        "examples/barcode_autopsy/failure_modes/reads.fastq"
+      ],
+      "commands": [
+        "make barcode-validation-ready"
+      ],
+      "comparator_semantics": "The fixture is a deterministic diagnostic fixture for barcode failure classifications, not a public dataset comparator.",
+      "validation": "The barcode failure fixture checker requires the expected failure-mode table and matching fixture files.",
+      "proves": [
+        "DotMatch documents what wrong fixed-window coordinates and invalid extraction windows look like.",
+        "The fixture gives developers and users concrete examples of failure classifications."
+      ],
+      "limits": [
+        "This fixture is synthetic and should not be used for performance claims.",
+        "Reverse-complement findings are advisory; users must normalize assay inputs themselves."
+      ],
+      "report_examples": [
+        {
+          "label": "Failure-mode README",
+          "path": "examples/barcode_autopsy/failure_modes/README.md",
+          "kind": "markdown"
+        },
+        {
+          "label": "Expected findings",
+          "path": "examples/barcode_autopsy/failure_modes/expected_findings.tsv",
+          "kind": "tsv"
+        }
+      ]
+    },
+    {
+      "id": "barcode_unsafe_correction",
+      "title": "Barcode failure fixture: unsafe one-edit correction",
+      "category": "Report zoo",
+      "assay_type": "inline_barcode",
+      "status": "smoke",
+      "dataset": "Committed barcode failure-mode FASTQ fixture",
+      "condition": "Observed barcode sequences are within one edit of multiple targets, so k=1 rescue is unsafe.",
+      "gallery_roles": ["unsafe_correction"],
+      "primary_report": "examples/barcode_autopsy/failure_modes/README.md",
+      "raw_artifacts": [
+        "examples/barcode_autopsy/failure_modes/expected_findings.tsv",
+        "examples/barcode_autopsy/failure_modes/barcodes.tsv",
+        "examples/barcode_autopsy/failure_modes/reads.fastq"
+      ],
+      "commands": [
+        "make barcode-validation-ready"
+      ],
+      "comparator_semantics": "The fixture checks deterministic barcode collision and ambiguity classifications under fixed-window assignment semantics.",
+      "validation": "The expected findings table includes duplicate barcode, unsafe one-edit collision, and ambiguous-read rows.",
+      "proves": [
+        "DotMatch can show why one-edit barcode rescue can corrupt sample assignment.",
+        "The same observed barcode can be retained as ambiguous instead of assigned to the first compatible sample."
+      ],
+      "limits": [
+        "This is a diagnostic fixture, not a public demultiplexing benchmark.",
+        "Collision-safe barcode design remains the user's responsibility."
+      ],
+      "report_examples": [
+        {
+          "label": "Expected unsafe-correction findings",
+          "path": "examples/barcode_autopsy/failure_modes/expected_findings.tsv",
+          "kind": "tsv"
+        }
+      ]
+    },
+    {
+      "id": "feature_barcode_10x",
+      "title": "Feature barcode assignment: 10x TotalSeq-B public lane",
+      "category": "Public data",
+      "assay_type": "feature_barcode",
+      "status": "supported",
+      "dataset": "10x Genomics TotalSeq-B antibody Feature Barcode R2 sample",
+      "condition": "Per-read fixed-window feature-barcode assignment with exact-slice baseline agreement.",
+      "gallery_roles": ["known_good"],
+      "primary_report": "docs/benchmarks/feature_barcode/README.md",
+      "raw_artifacts": [
+        "benchmarks/raw/feature_barcode.csv",
+        "examples/feature_barcode/data/metadata.json"
+      ],
+      "commands": [
+        "make bench-feature-barcode-public",
+        "make feature-barcode-public-gate"
+      ],
+      "comparator_semantics": "The public lane uses the 10x feature reference fixed R2 pattern and a transparent exact-slice hash baseline for per-read fixed-window assignment.",
+      "validation": "The public gate requires synthetic diagnostics, public DotMatch k=0 and k=1 rows, zero validation mismatches, and exact agreement between DotMatch k=0 and the exact-slice baseline.",
+      "proves": [
+        "DotMatch can perform fixed-window per-read feature-barcode assignment on a public 10x-style lane.",
+        "The report keeps per-read assignment semantics separate from cell/UMI quantification."
+      ],
+      "limits": [
+        "This is not Cell Ranger feature-count replacement evidence.",
+        "Cell barcode, UMI aggregation, and cell-level feature quantification are outside this lane."
+      ],
+      "report_examples": [
+        {
+          "label": "Feature-barcode benchmark report",
+          "path": "docs/benchmarks/feature_barcode/README.md",
+          "kind": "markdown"
+        }
+      ]
+    },
+    {
+      "id": "perturb_seq_10x_guide_capture",
+      "title": "CRISPR guide capture assignment: 10x GEM-X public lane",
+      "category": "Public data",
+      "assay_type": "crispr",
+      "status": "supported",
+      "dataset": "10x GEM-X A375 CRISPR Guide Capture R2 sample",
+      "condition": "Per-read fixed-window guide-capture assignment with exact-slice baseline agreement.",
+      "gallery_roles": ["known_good"],
+      "primary_report": "docs/benchmarks/perturb_seq/README.md",
+      "raw_artifacts": [
+        "benchmarks/raw/perturb_seq.csv",
+        "examples/perturb_seq/data/metadata.json"
+      ],
+      "commands": [
+        "make bench-perturb-seq-public",
+        "make perturb-seq-public-gate"
+      ],
+      "comparator_semantics": "The checked public lane uses a 10x CRISPR Guide Capture R2 subsample, an observed fixed guide window, and a transparent exact-slice hash baseline.",
+      "validation": "The public gate requires synthetic pair-count diagnostics, public DotMatch k=0 and k=1 rows, zero validation mismatches, exact agreement with the k=0 baseline, and k=1 assignment count no lower than k=0.",
+      "proves": [
+        "DotMatch can assign fixed-window guide-capture reads against known guide targets.",
+        "The paired diagnostic fixture still checks side-level ambiguity handling."
+      ],
+      "limits": [
+        "This is not guide-per-cell calling.",
+        "Expression processing and perturbation-effect analysis remain outside DotMatch."
+      ],
+      "report_examples": [
+        {
+          "label": "Perturb-seq/guide-capture benchmark report",
+          "path": "docs/benchmarks/perturb_seq/README.md",
+          "kind": "markdown"
+        }
+      ]
+    },
+    {
+      "id": "amplicon_artic_primer_start",
+      "title": "Amplicon primer-start assignment: ARTIC V3 public lane",
+      "category": "Public data",
+      "assay_type": "amplicon_panel",
+      "status": "supported",
+      "dataset": "nf-core viralrecon ARTIC V3 Illumina R1 sample",
+      "condition": "Fixed-window primer-start assignment with exact-prefix baseline agreement.",
+      "gallery_roles": ["known_good"],
+      "primary_report": "docs/benchmarks/amplicon_panel/README.md",
+      "raw_artifacts": [
+        "benchmarks/raw/amplicon_panel.csv",
+        "examples/amplicon_panel/data/metadata.json"
+      ],
+      "commands": [
+        "make bench-amplicon-panel-public",
+        "make amplicon-panel-public-gate"
+      ],
+      "comparator_semantics": "The public lane uses nf-core/test-datasets viralrecon Illumina ARTIC V3 R1, ARTIC V3 primer targets, and a transparent exact-prefix baseline.",
+      "validation": "The public gate requires synthetic diagnostics, public DotMatch k=0 and k=1 rows, zero validation mismatches, exact agreement with the k=0 baseline, and k=1 assignment count no lower than k=0.",
+      "proves": [
+        "DotMatch can report fixed-window known-primer assignment on a public amplicon-style read lane.",
+        "Ambiguity handling is checked separately from downstream consensus or variant calling."
+      ],
+      "limits": [
+        "This is not primer trimming.",
+        "Consensus generation, variant calling, clinical panels, and diagnostic interpretation are outside this evidence lane."
+      ],
+      "report_examples": [
+        {
+          "label": "Amplicon/panel benchmark report",
+          "path": "docs/benchmarks/amplicon_panel/README.md",
+          "kind": "markdown"
+        }
+      ]
+    },
+    {
+      "id": "oligo_adapter_truseq_prefix",
+      "title": "Oligo/adapter prefix assignment: TruSeq R1 public lane",
+      "category": "Public data",
+      "assay_type": "oligo_adapter",
+      "status": "supported",
+      "dataset": "fast-adapter-trimming TruSeq R1 fixed-window sample",
+      "condition": "Fixed-window adapter-prefix assignment with exact-slice baseline agreement.",
+      "gallery_roles": ["known_good"],
+      "primary_report": "docs/benchmarks/oligo_adapter/README.md",
+      "raw_artifacts": [
+        "benchmarks/raw/oligo_adapter.csv",
+        "examples/oligo_adapter/data/metadata.json"
+      ],
+      "commands": [
+        "make bench-oligo-adapter-public",
+        "make oligo-adapter-public-gate"
+      ],
+      "comparator_semantics": "The public lane uses a fixed R1 window and deduplicated TruSeq adapter-prefix targets, with a transparent exact-slice baseline for fixed-window assignment.",
+      "validation": "The public gate requires DotMatch k=0 and k=1 rows, an exact-slice baseline, zero validation mismatches, k=0 agreement with the baseline, and k=1 assignment count no lower than k=0.",
+      "proves": [
+        "DotMatch can assign known oligo/adapter prefixes in a fixed read window.",
+        "The report distinguishes assignment from trimming."
+      ],
+      "limits": [
+        "This is not adapter trimming evidence.",
+        "Primer removal, UMI grouping, and read merging are outside this lane."
+      ],
+      "report_examples": [
+        {
+          "label": "Oligo/adapter benchmark report",
+          "path": "docs/benchmarks/oligo_adapter/README.md",
+          "kind": "markdown"
+        }
+      ]
+    },
+    {
+      "id": "bcl_tiny_classic",
+      "title": "Classic BCL parser milestone: 10x tiny-BCL lane",
+      "category": "Gated parser milestone",
+      "assay_type": "inline_barcode",
+      "status": "gated",
+      "dataset": "10x Genomics Cell Ranger tiny-BCL demo run folder",
+      "condition": "Classic per-cycle BCL output count-total validation against an available bcl2fastq row.",
+      "gallery_roles": ["gated_parser_milestone"],
+      "primary_report": "docs/benchmarks/bcl_demux/README.md",
+      "raw_artifacts": [
+        "benchmarks/raw/bcl_demux.csv"
+      ],
+      "commands": [
+        "make bench-bcl-10x",
+        "make bcl-tiny-public-gate"
+      ],
+      "comparator_semantics": "The checked public row validates classic per-cycle output counts by count totals only; it is a parser/workflow milestone, not production demultiplexing comparator evidence.",
+      "validation": "The tiny public gate requires a successful DotMatch public_10x_tiny_bcl row, output hashes, positive assigned reads, count totals that sum to clusters, and zero-mismatch bcl2fastq count-total validation where available.",
+      "proves": [
+        "DotMatch has a checked classic-BCL parser milestone on a public tiny run folder.",
+        "The report shows installed competitor availability and count-total validation."
+      ],
+      "limits": [
+        "This does not establish production Illumina demultiplexing replacement.",
+        "CBCL/NovaSeq support and broader multi-lane BCL operation need separate evidence."
+      ],
+      "report_examples": [
+        {
+          "label": "BCL demultiplexing benchmark report",
+          "path": "docs/benchmarks/bcl_demux/README.md",
+          "kind": "markdown"
+        }
+      ]
+    }
+  ]
+}

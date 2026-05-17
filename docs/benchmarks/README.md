@@ -15,6 +15,7 @@
 
 ## Workflow Reports
 
+- [Evidence gallery and report examples](../evidence-gallery/README.md)
 - [Native Edlib assignment report](native/README.md)
 - [Public CRISPR guide-counting report](public_crispr/README.md)
 - [Barcode demultiplexing report](barcode_demux/README.md)

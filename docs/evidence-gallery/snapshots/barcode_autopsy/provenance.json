@@ -1,0 +1,118 @@
+{
+  "artifacts": [
+    "offset_scan.tsv",
+    "audit/",
+    "collision_graph.tsv",
+    "correction_safety.tsv",
+    "demuxed/",
+    "summary.json",
+    "assignments.tsv",
+    "ambiguous.fastq",
+    "unmatched.fastq",
+    "top_unmatched.tsv",
+    "sample_qc.tsv",
+    "barcode_counts.tsv",
+    "findings.tsv",
+    "provenance.json",
+    "multiqc_dotmatch_barcode_mqc.yaml"
+  ],
+  "barcodes": "examples/barcode_demux/data/barcodes.tsv",
+  "commands": [
+    {
+      "argv": [
+        "dotmatch",
+        "audit",
+        "--targets",
+        "examples/barcode_demux/data/barcodes.tsv",
+        "--k",
+        "1",
+        "--audit-mode",
+        "auto",
+        "--out-dir",
+        "examples/barcode_autopsy/results/audit"
+      ],
+      "exit_code": 0,
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "dotmatch",
+        "demux",
+        "--barcodes",
+        "examples/barcode_demux/data/barcodes.tsv",
+        "--reads",
+        "examples/barcode_demux/data/SRR391079.subsample100000.fastq.gz",
+        "--barcode-start",
+        "0",
+        "--barcode-length",
+        "auto",
+        "--k",
+        "1",
+        "--metric",
+        "hamming",
+        "--out-dir",
+        "examples/barcode_autopsy/results/demuxed",
+        "--summary",
+        "examples/barcode_autopsy/results/summary.json",
+        "--assignments",
+        "examples/barcode_autopsy/results/assignments.tsv",
+        "--ambiguous-out",
+        "examples/barcode_autopsy/results/ambiguous.fastq",
+        "--unmatched-out",
+        "examples/barcode_autopsy/results/unmatched.fastq"
+      ],
+      "exit_code": 0,
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "dotmatch",
+        "inspect-unmatched",
+        "--targets",
+        "examples/barcode_demux/data/barcodes.tsv",
+        "--reads",
+        "examples/barcode_demux/data/SRR391079.subsample100000.fastq.gz",
+        "--target-start",
+        "0",
+        "--target-length",
+        "4",
+        "--k",
+        "1",
+        "--top",
+        "100",
+        "--out",
+        "examples/barcode_autopsy/results/top_unmatched.tsv"
+      ],
+      "exit_code": 0,
+      "stderr": ""
+    }
+  ],
+  "inference": {
+    "ambiguous_rate": 0.0,
+    "assignment_rate": 0.11283,
+    "candidate_count": 65,
+    "command": "barcode infer",
+    "invalid_rate": 0.0,
+    "k": 0,
+    "metric": "hamming",
+    "no_match_rate": 0.88717,
+    "recommended_length": 4,
+    "recommended_start": 0,
+    "schema_version": 1,
+    "score": 0.11283,
+    "separation_from_second_best": 0.05402,
+    "status": "review",
+    "warnings": [
+      "best scanned window has a low exact assignment rate; review the barcode sheet, read orientation, and window before treating the offset as ready"
+    ]
+  },
+  "k_values": [
+    0,
+    1
+  ],
+  "reads": "examples/barcode_demux/data/SRR391079.subsample100000.fastq.gz",
+  "recommended_length": 4,
+  "recommended_start": 0,
+  "schema_version": 1,
+  "workflow": "barcode_autopsy"
+}

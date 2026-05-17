@@ -343,6 +343,7 @@ make python-package-test
 
 Reports with data sources, commands, comparator settings, and checked outputs:
 
+- [Evidence gallery](docs/evidence-gallery/README.md)
 - [Benchmark overview](docs/benchmarks/README.md)
 - [Native Edlib assignment report](docs/benchmarks/native/README.md)
 - [Public CRISPR guide-counting report](docs/benchmarks/public_crispr/README.md)

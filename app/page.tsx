@@ -3,6 +3,7 @@ const citationUrl = `${repoUrl}/blob/main/CITATION.cff`;
 const methodsUrl = `${repoUrl}/blob/main/docs/methods-and-citation.md`;
 const packagingUrl = `${repoUrl}/blob/main/docs/packaging.md`;
 const benchmarksUrl = `${repoUrl}/blob/main/docs/benchmarks/README.md`;
+const evidenceGalleryUrl = `${repoUrl}/blob/main/docs/evidence-gallery/README.md`;
 const publicCrisprUrl = `${repoUrl}/blob/main/docs/benchmarks/public_crispr/README.md`;
 const barcodeBenchmarkUrl = `${repoUrl}/blob/main/docs/benchmarks/barcode_demux/README.md`;
 const biocondaPrUrl = "https://github.com/bioconda/bioconda-recipes/pull/65367";
@@ -350,6 +351,22 @@ export default function Home() {
           </p>
         </div>
         <div className="benchmark-grid">
+          <article className="benchmark-card">
+            <div className="chart-copy">
+              <span className="card-label">Evidence gallery</span>
+              <h3>See what clean and suspicious runs look like.</h3>
+              <p>
+                The gallery links public benchmark reports, barcode autopsy
+                HTML, findings tables, raw artifacts, and exact commands for
+                known-good lanes and diagnostic failure patterns.
+              </p>
+            </div>
+            <div className="link-stack compact">
+              <a href={evidenceGalleryUrl}>Open evidence gallery</a>
+              <a href={`${repoUrl}/blob/main/docs/evidence-gallery/report-zoo/README.md`}>Open report examples</a>
+            </div>
+          </article>
+
           <article className="benchmark-card">
             <div className="chart-copy">
               <span className="card-label">Public CRISPR example</span>
