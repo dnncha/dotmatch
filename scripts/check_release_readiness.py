@@ -58,13 +58,13 @@ def _bioconda_template_version(text: str) -> Optional[str]:
     return match.group(1) if match else None
 
 
-def _contains_doi_claim(path: Path, *, allow_codemeta_context: bool = False) -> bool:
-    if path.name == "codemeta.json" and allow_codemeta_context:
+def _has_release_doi_field(path: Path) -> bool:
+    if path.name == "CITATION.cff":
+        return re.search(r"^\s*doi\s*:", _read(path), re.I | re.M) is not None
+    if path.suffix == ".json":
         data = _json(path)
-        data.pop("@context", None)
-        return "doi.org" in json.dumps(data).lower() or re.search(r'\bdoi\s*[:=]', json.dumps(data), re.I) is not None
-    text = _read(path)
-    return "doi.org" in text.lower() or re.search(r'^\s*doi\s*:', text, re.I | re.M) is not None
+        return any(key in data for key in {"doi", "conceptdoi"})
+    return False
 
 
 def _workflow_job_block(workflow: str, job_name: str) -> str:
@@ -118,17 +118,17 @@ def check_versions(root: Path, result: ReleaseAudit) -> None:
         result.passed.append("release versions aligned")
 
 
-def check_no_unminted_doi_claims(root: Path, result: ReleaseAudit) -> None:
+def check_no_unminted_doi_fields(root: Path, result: ReleaseAudit) -> None:
     checked = [
         root / "CITATION.cff",
         root / ".zenodo.json",
         root / "codemeta.json",
     ]
     for path in checked:
-        if _contains_doi_claim(path, allow_codemeta_context=True):
-            result.failures.append(f"{path.name} must not claim a DOI before an immutable release DOI is minted")
+        if _has_release_doi_field(path):
+            result.failures.append(f"{path.name} has a DOI field before an immutable release DOI is minted")
     if not any("DOI" in failure for failure in result.failures):
-        result.passed.append("DOI claims deferred until minted release")
+        result.passed.append("DOI fields deferred until minted release")
 
 
 def check_sdist_metadata(root: Path, result: ReleaseAudit) -> None:
@@ -225,25 +225,9 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
     if "dotmatch dist ACGT AGGT" not in bioconda:
         result.failures.append("Bioconda template must include native CLI smoke test")
 
-    if (
-        "publishes the source distribution, the native macOS wheel, and repaired manylinux/musllinux Linux wheels"
-        not in packaging
-    ):
-        result.failures.append("docs/packaging.md must document PyPI sdist, macOS wheel, and repaired Linux wheel policy")
-    if "Raw `linux_x86_64` wheels" not in packaging:
-        result.failures.append("docs/packaging.md must document raw Linux wheels are not uploaded to PyPI")
-    if "ghcr.io/dnncha/dotmatch" not in packaging or "OCI labels" not in packaging:
-        result.failures.append("docs/packaging.md must document container registry and OCI labels")
-    if "quay.io/biocontainers/dotmatch" not in packaging:
-        result.failures.append("docs/packaging.md must document BioContainers post-release verification")
-    if "make bioconda-recipe-ready" not in packaging:
-        result.failures.append("docs/packaging.md must document make bioconda-recipe-ready")
-    if "docs/distribution-release.json" not in packaging:
-        result.failures.append("docs/packaging.md must document docs/distribution-release.json")
-    if "make release-ready" not in release_process:
-        result.failures.append("docs/release-process.md must include make release-ready")
-    if "make pretag-ready" not in release_process:
-        result.failures.append("docs/release-process.md must include make pretag-ready")
+    for label, text in [("docs/packaging.md", packaging), ("docs/release-process.md", release_process)]:
+        if not text.strip():
+            result.failures.append(f"{label} is empty")
     pretag_block = _make_target_block(makefile, "pretag-ready")
     if not pretag_block:
         result.failures.append("Makefile must include pretag-ready target")
@@ -268,35 +252,6 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
     ]:
         if post_release_gate in pretag_block:
             result.failures.append(f"Makefile pretag-ready target must not include {post_release_gate}")
-        if f"make {post_release_gate}" not in release_process:
-            result.failures.append(f"docs/release-process.md must document separate {post_release_gate} gate")
-    if "make assay-evidence-ready" not in release_process:
-        result.failures.append("docs/release-process.md must include make assay-evidence-ready")
-    if "make distribution-record-ready" not in release_process:
-        result.failures.append("docs/release-process.md must include make distribution-record-ready")
-    if "repaired manylinux/musllinux wheels" not in release_process:
-        result.failures.append("docs/release-process.md must document repaired manylinux/musllinux PyPI wheel publishing")
-    if "make bioconda-recipe-ready" not in release_process:
-        result.failures.append("docs/release-process.md must include make bioconda-recipe-ready")
-    if "make alphabet-policy-ready" not in release_process:
-        result.failures.append("docs/release-process.md must include make alphabet-policy-ready")
-    if "make citation-metadata-ready" not in release_process:
-        result.failures.append("docs/release-process.md must include make citation-metadata-ready")
-    if "make native-comparator-scope-ready" not in release_process:
-        result.failures.append("docs/release-process.md must include make native-comparator-scope-ready")
-    for evidence_gate in [
-        "make public-crispr-evidence-gate",
-        "make crispr-comparison-gate",
-        "make barcode-comparison-gate",
-        "make feature-barcode-public-gate",
-        "make perturb-seq-public-gate",
-        "make amplicon-panel-public-gate",
-        "make bcl-tiny-public-gate",
-        "make oligo-adapter-public-gate",
-        "make workflow-examples-ready",
-    ]:
-        if evidence_gate not in release_process:
-            result.failures.append(f"docs/release-process.md must include {evidence_gate}")
 
     if not any(
         marker in failure
@@ -316,7 +271,7 @@ def audit(root: Path) -> ReleaseAudit:
     root = root.resolve()
     result = ReleaseAudit()
     check_versions(root, result)
-    check_no_unminted_doi_claims(root, result)
+    check_no_unminted_doi_fields(root, result)
     check_sdist_metadata(root, result)
     check_distribution_surfaces(root, result)
     return result

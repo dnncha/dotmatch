@@ -317,10 +317,10 @@ def test_barcode_autopsy_writes_report_and_provenance(tmp_path):
     assert {"finding", "severity", "evidence", "meaning", "next_action"} <= set(finding_rows[0])
     assert {row["finding"] for row in finding_rows} >= {"high_no_match_rate", "unsafe_one_edit_correction"}
     report = (out_dir / "report.md").read_text(encoding="utf-8")
-    assert "Barcode Autopsy Demo" in report
-    assert "Speed is reported only after the comparator-parity gate passes." in report
+    assert "Barcode Troubleshooting Report" in report
+    assert "Speed is reported only after the comparator settings are documented." in report
     assert "Decision Summary" in report
-    assert "Trust Checklist" in report
+    assert "QC Checklist" in report
     assert "Exact command provenance is recorded in `provenance.json`." in report
     assert "Findings" in report
     assert "What this means" in report

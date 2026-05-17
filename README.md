@@ -4,39 +4,46 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Citation](https://img.shields.io/badge/cite-CITATION.cff-green.svg)](CITATION.cff)
 
-DotMatch assigns short sequencing reads to a known set of short DNA targets and
-keeps the assignment decision auditable. It is built for CRISPR guide counting,
-inline barcode demultiplexing, fixed-window feature/barcode assignment, primer
-or adapter-prefix checks, and similar assays where the reference is a target
-library rather than a genome.
+DotMatch is a command-line tool for a common sequencing job: you already know
+the short DNA sequences you expect, and you need to count or split reads by
+those sequences without hiding ambiguous cases.
 
-For each read, DotMatch reports one of four outcomes:
+It is built for CRISPR guide counting, inline barcode demultiplexing,
+fixed-window feature/barcode assignment, primer or adapter-prefix checks,
+amplicon-panel starts, and whitelist-style assays. It is not a genome aligner
+or a replacement for downstream screen statistics.
 
-- `unique`: exactly one target is the best match under the configured edit radius;
-- `ambiguous`: more than one target is compatible with the read;
-- `none`: no target is within the configured radius;
-- `invalid`: the configured sequence window cannot be extracted.
+![DotMatch workflow: FASTQ reads and a known target table are sliced at the same read position, assigned to known short DNA targets, and written to counts, split FASTQs, QC tables, and reports.](public/dotmatch-read-assignment.svg)
 
-Ambiguous reads are exposed explicitly instead of being assigned silently. That
-is the main design choice: DotMatch is for deterministic known-target
-assignment, not probabilistic read mapping.
+## The Basic Idea
 
-What you get from a run:
+A fixed window means DotMatch looks at the same position in every read. For
+example, bases 24-43 might contain a CRISPR guide, or bases 1-8 might contain an
+inline barcode. DotMatch extracts that slice, compares it with your target
+table, and records the assignment result.
 
-- count matrices or demultiplexed FASTQs;
-- per-sample QC with exact, rescued, ambiguous, unmatched, and invalid reads;
-- target-library safety audits before one-edit correction;
-- top-unmatched and offset diagnostics for failed barcode lanes;
-- machine-readable TSV/JSON provenance plus self-contained HTML reports.
+For each read, DotMatch reports one outcome:
 
-## Barcode Autopsy, Not Just Barcode Splitting
+| Outcome | Meaning | Why it matters |
+| --- | --- | --- |
+| `unique` | exactly one target is compatible | counted or written to the matching FASTQ |
+| `ambiguous` | more than one target is compatible | kept out of forced assignments |
+| `none` | no target is close enough | available for unmatched-read review |
+| `invalid` | the requested read window cannot be extracted | visible in QC instead of disappearing |
 
-DotMatch is a fixed-window barcode assignment and demultiplexing tool for
-assays where the expected barcode, guide, primer, feature tag, or whitelist
-sequence is known. That makes one-edit correction auditable: before enabling
-rescue, DotMatch can audit the barcode library for collisions, infer likely
-barcode offsets, report top unmatched sequences, and write machine-readable QC
-for workflow systems.
+This is the main design choice. If a read could belong to more than one guide or
+barcode, DotMatch reports the ambiguity instead of silently choosing a target.
+
+Typical outputs include count matrices or demultiplexed FASTQs, `sample_qc.tsv`,
+top-unmatched tables, target-library audit files, `summary.json`, and
+self-contained HTML reports.
+
+## Barcode Troubleshooting
+
+For barcode runs, DotMatch can inspect the common reasons reads fail assignment:
+wrong barcode position, wrong barcode length, duplicate barcodes, unsafe
+one-mismatch correction, ambiguous rescue, low-quality correction candidates,
+invalid read windows, and high-count unmatched sequences.
 
 ```bash
 dotmatch barcode autopsy \
@@ -47,31 +54,19 @@ dotmatch barcode autopsy \
   --out-dir autopsy
 ```
 
-This is the one-command diagnostic path. Open `autopsy/report.html` first, then
-use `autopsy/findings.tsv`, `autopsy/offset_scan.tsv`,
-`autopsy/correction_safety.tsv`, `autopsy/top_unmatched.tsv`, and
-`autopsy/provenance.json` when you need machine-readable evidence for a
-workflow, methods section, or lab handoff.
+Open `autopsy/report.html` first. The TSV and JSON files beside it are there for
+pipelines and lab handoff: `findings.tsv`, `offset_scan.tsv`,
+`correction_safety.tsv`, `top_unmatched.tsv`, and `provenance.json`.
 
-The autopsy report is designed to answer why reads were not assigned: wrong
-offset, exact no-match, one-edit collision, ambiguous rescue, low-quality
-correction candidate, invalid window, or barcode-sheet issue. Speed claims are
-reported only after comparator semantics and assignment parity have been
-checked for the dataset being discussed.
-
-The broader fixed-window evidence matrix is checked by:
-
-```bash
-make barcode-science-ready
-```
-
-See [Barcode Science Readiness](docs/barcode-science-readiness.md) for the
-public datasets, comparator semantics, and claim boundaries.
+Speed is useful only after the assignment rules are clear. The checked barcode
+example documents the exact comparator settings in
+[docs/benchmarks/barcode_demux](docs/benchmarks/barcode_demux/README.md).
 
 ## When To Use DotMatch
 
-DotMatch is a good fit when you have a table of expected short sequences and
-want reproducible per-read assignment or count tables.
+DotMatch is a good fit when you have a table of expected short sequences and the
+biological question is "which known guide, barcode, primer, feature tag, or
+panel target did this read contain?"
 
 Common uses include:
 
@@ -117,25 +112,25 @@ docker build -t dotmatch:dev .
 docker run --rm -v "$PWD:/work" dotmatch:dev dist ACGT AGGT
 ```
 
-Package-channel status for PyPI, Bioconda, containers, and release archives is
-tracked in [Packaging Notes](docs/packaging.md), the
+Package status for PyPI, Bioconda, containers, and release archives is tracked
+in [Packaging Notes](docs/packaging.md), the
 [Release Process](docs/release-process.md), and the machine-readable
 [Distribution Status](docs/distribution-release.json). Release artifacts are not
 yet published on public package channels; install from source until the tagged
-release appears on the relevant channel.
+release appears on the channel you want to use.
 
-The GitHub release workflow builds and smoke-tests the source distribution, the
-native macOS wheel, and repaired Linux wheels. PyPI trusted publishing is configured for
-those artifacts. Public PyPI wheel availability is only claimed after the tagged
-release is visible on PyPI. For Linux wheels, the GitHub release workflow builds and smoke-tests repaired manylinux/musllinux
-wheel artifacts before any wheel is
-considered for PyPI.
+The release workflow builds and smoke-tests the source distribution, the native
+macOS wheel, and repaired Linux wheels. PyPI trusted publishing is configured
+for those artifacts. We will only describe PyPI wheel availability after the
+tagged release is visible on PyPI. For Linux wheels, the GitHub release workflow
+builds and smoke-tests repaired manylinux/musllinux wheel artifacts before any
+wheel is considered for PyPI.
 
 Optional local Workbench: DotMatch also includes a desktop Workbench under
-`apps/workbench` for local AssaySpec design, inference, planning, running,
-autopsy, and report review. It is separate from the Bioconda recipe and keeps
-FASTQ, target, barcode, spec, and output paths inside a user-selected local
-workspace. See [Workbench](docs/workbench.md).
+`apps/workbench` for local AssaySpec design, inference, planning, running, and
+report review. It is separate from the Bioconda recipe and keeps FASTQ, target,
+barcode, spec, and output paths inside a user-selected local workspace. See
+[Workbench](docs/workbench.md).
 
 ## Quick Example
 
@@ -331,7 +326,7 @@ The public policy string reported by the C and Python APIs is:
 literal-byte; A/C/G/T/N/IUPAC symbols are ordinary byte symbols; no wildcard expansion
 ```
 
-## Validation And Benchmarks
+## Checked Examples And Benchmarks
 
 The repository includes native C tests, CLI fixture tests, Python tests,
 deterministic fuzz checks against a dynamic-programming oracle, and optional
@@ -346,7 +341,7 @@ make python-test
 make python-package-test
 ```
 
-Benchmark and evidence reports:
+Reports with data sources, commands, comparator settings, and checked outputs:
 
 - [Benchmark overview](docs/benchmarks/README.md)
 - [Native Edlib assignment report](docs/benchmarks/native/README.md)
@@ -357,7 +352,7 @@ Benchmark and evidence reports:
 - [Amplicon/panel primer-start report](docs/benchmarks/amplicon_panel/README.md)
 - [Oligo/adapter prefix-assignment report](docs/benchmarks/oligo_adapter/README.md)
 
-For the current limits of public claims, see
+For a compact list of what has and has not been checked, see
 [Evidence Notes](docs/scientific-claims.md). For methods text and citation
 language, see [Methods and Citation](docs/methods-and-citation.md).
 
@@ -381,7 +376,7 @@ or pull requests.
 ## Citation
 
 If DotMatch is useful in your work, cite the software release using
-[CITATION.cff](CITATION.cff). Suggested methods wording is provided in
+[CITATION.cff](CITATION.cff). Suggested methods text is provided in
 [docs/methods-and-citation.md](docs/methods-and-citation.md).
 
 ## License

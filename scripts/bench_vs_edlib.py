@@ -225,7 +225,7 @@ def print_interpretation(results: list[SpeedupResult]) -> None:
     else:
         print("# Edlib did not beat DotMatch in any threshold regime measured here")
 
-    print("# broad comparative wording requires broader benchmarks beyond these short global-distance regimes")
+    print("# broader benchmark rows are needed beyond these short global-distance regimes")
 
 
 def main() -> None:

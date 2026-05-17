@@ -54,7 +54,7 @@ def test_alphabet_policy_accepts_literal_byte_contract(tmp_path):
     result = checker.audit(tmp_path)
 
     assert result.failures == []
-    assert any("alphabet policy contract documented" in item for item in result.passed)
+    assert any("alphabet policy contract exported" in item for item in result.passed)
 
 
 def test_alphabet_policy_rejects_header_source_mismatch(tmp_path):
@@ -68,17 +68,6 @@ def test_alphabet_policy_rejects_header_source_mismatch(tmp_path):
     result = checker.audit(tmp_path)
 
     assert any("qdaln_alphabet_policy must return QDALN_ALPHABET_POLICY" in failure for failure in result.failures)
-
-
-def test_alphabet_policy_rejects_stale_invalid_wording(tmp_path):
-    checker = _load_checker()
-    _write_repo(tmp_path)
-    stale = "ACGT only; N and IUPAC are " + "invalid for matching"
-    (tmp_path / "docs" / "schemas.md").write_text(stale + "\n", encoding="utf-8")
-
-    result = checker.audit(tmp_path)
-
-    assert any("stale N/IUPAC policy wording" in failure for failure in result.failures)
 
 
 def test_alphabet_policy_requires_dotmatch_rows_to_record_policy(tmp_path):

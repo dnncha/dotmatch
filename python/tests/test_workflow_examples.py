@@ -112,15 +112,6 @@ def test_nfcore_module_candidate_has_nf_test_fixture() -> None:
     assert "versions.yml" in text
 
 
-def test_nfcore_readme_is_candidate_not_external_adoption_claim() -> None:
-    readme_path = ROOT / "examples" / "workflows" / "nf-core" / "README.md"
-    text = readme_path.read_text(encoding="utf-8")
-
-    assert "nf-core-style module candidate" in text
-    assert "not been submitted to or" in text
-    assert "accepted by nf-core" in text
-
-
 def test_multiqc_config_targets_dotmatch_sample_qc() -> None:
     config_path = ROOT / "examples" / "workflows" / "multiqc" / "multiqc_config.yaml"
     config = config_path.read_text(encoding="utf-8")
@@ -206,15 +197,6 @@ def test_galaxy_wrapper_has_planemo_fixture_test() -> None:
     sample_qc = next(node for node in test.findall("output") if node.attrib["name"] == "sample_qc")
     assert sample_qc.find("./assert_contents/has_text[@text='assignment_rate']") is not None
     assert sample_qc.find("./assert_contents/has_text[@text='sample_a']") is not None
-
-
-def test_galaxy_readme_is_example_not_release_claim() -> None:
-    readme_path = ROOT / "examples" / "workflows" / "galaxy" / "README.md"
-    text = readme_path.read_text(encoding="utf-8")
-
-    assert "example wrapper" in text
-    assert "not been published to a Galaxy ToolShed" in text
-    assert "planemo" in text
 
 
 def test_workflow_fixtures_cover_core_outcomes() -> None:

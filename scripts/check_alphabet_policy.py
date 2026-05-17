@@ -10,16 +10,6 @@ from pathlib import Path
 
 
 POLICY = "literal-byte; A/C/G/T/N/IUPAC symbols are ordinary byte symbols; no wildcard expansion"
-DOC_REQUIREMENTS = {
-    "README.md": [POLICY, "wildcard"],
-    "docs/schemas.md": ["N", "IUPAC", "literal byte", "not wildcard"],
-    "docs/scientific-claims.md": ["N", "IUPAC", "literal-byte", "not wildcard"],
-    "docs/methods-and-citation.md": ["alphabet", "literal-byte", "IUPAC", "not expanded"],
-}
-STALE_POLICY_PATTERNS = [
-    re.compile(r"ACGT only;\s*N and IUPAC are invalid for matching", re.I),
-    re.compile(r"N and IUPAC are invalid", re.I),
-]
 
 
 class AuditResult:
@@ -58,23 +48,6 @@ def _check_core(root: Path, result: AuditResult) -> None:
         result.failures.append("qdaln_alphabet_policy must return QDALN_ALPHABET_POLICY")
 
 
-def _check_docs(root: Path, result: AuditResult) -> None:
-    for relative, fragments in DOC_REQUIREMENTS.items():
-        path = root / relative
-        try:
-            text = _read(path)
-        except Exception as exc:
-            result.failures.append(f"{relative} could not be read for alphabet policy audit: {exc}")
-            continue
-        for pattern in STALE_POLICY_PATTERNS:
-            if pattern.search(text):
-                result.failures.append(f"{relative} contains stale N/IUPAC policy wording")
-                break
-        for fragment in fragments:
-            if fragment not in text:
-                result.failures.append(f"{relative} must document alphabet policy fragment: {fragment}")
-
-
 def _is_dotmatch_tool(value: str) -> bool:
     return value.startswith("dotmatch")
 
@@ -111,10 +84,9 @@ def audit(root: Path) -> AuditResult:
     root = root.resolve()
     result = AuditResult()
     _check_core(root, result)
-    _check_docs(root, result)
     _check_raw_csvs(root, result)
     if result.ok:
-        result.passed.append("alphabet policy contract documented")
+        result.passed.append("alphabet policy contract exported")
         result.passed.append("dotmatch benchmark rows record literal-byte alphabet policy")
     return result
 

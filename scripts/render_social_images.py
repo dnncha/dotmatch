@@ -111,13 +111,13 @@ def render_card() -> Image.Image:
     draw.line((103, 72, 103, 128), fill=(14, 124, 90, 88), width=5)
     draw.line((78, 102, 134, 102), fill=(29, 102, 209, 66), width=5)
     draw.text((162, 72), "DotMatch", font=font(34, weight="bold"), fill=INK)
-    draw.text((164, 114), "known-target FASTQ assignment", font=font(24), fill=MUTED)
+    draw.text((164, 114), "guide counts and barcode QC", font=font(24), fill=MUTED)
 
     draw.text((72, 178), "DotMatch", font=title_font, fill=INK)
     lede_bottom = text_block(
         draw,
         (75, 300),
-        "CRISPR guide counts without hidden ambiguity.",
+        "Count guides. Split barcodes. See what failed.",
         font_obj=lede_font,
         fill=INK,
         width=700,
@@ -126,7 +126,7 @@ def render_card() -> Image.Image:
     text_block(
         draw,
         (75, lede_bottom + 20),
-        "Exact, one-mismatch, and one-base indel rescue for known short-DNA targets.",
+        "FASTQ assignment for known short-DNA targets, with ambiguous reads kept visible.",
         font_obj=body_font,
         fill=MUTED,
         width=690,
@@ -135,9 +135,9 @@ def render_card() -> Image.Image:
 
     chips = [
         ("87,437 guides", GREEN),
-        ("0 / 2,000 mismatches", BLUE),
+        ("ambiguous reads visible", BLUE),
         ("331k reads/s", GREEN_2),
-        ("ambiguity reported", AMBER),
+        ("HTML + TSV QC", AMBER),
     ]
     chip_positions = [(75, 494), (306, 494), (75, 552), (306, 552)]
     for (label, color), (x, y) in zip(chips, chip_positions):

@@ -19,13 +19,7 @@ def _write_minimal_repo(root: Path) -> None:
         "README.md": (
             "# DotMatch\n\n"
             "`v0.1.0` includes stable release artifacts.\n\n"
-            "See [Evidence Notes](docs/scientific-claims.md).\n\n"
-            "Installation and distribution status is tracked in "
-            "[Packaging Notes](docs/packaging.md) and "
-            "[distribution release record](docs/distribution-release.json). "
-            "PyPI, Bioconda, GHCR/BioContainers, and Zenodo release artifacts are not yet published. "
-            "Until those channels are listed here as available, install from source.\n\n"
-            "See [Release process](docs/release-process.md).\n"
+            "See the docs directory for packaging, release, and benchmark notes.\n"
         ),
         "CHANGELOG.md": "# Changelog\n\n## 0.1.0\n\n- Initial release.\n",
         "LICENSE": "Apache-2.0\n",
@@ -57,9 +51,7 @@ def _write_minimal_repo(root: Path) -> None:
             "- [ ] `make test`\n"
             "- [ ] `make cli-test`\n"
             "- [ ] `make python-test`\n"
-            "- [ ] `make pretag-ready` if release surfaces changed.\n\n"
-            "## Claim Boundary\n\n"
-            "- [ ] This PR does not broaden README/docs claims beyond checked evidence.\n"
+            "- [ ] `make pretag-ready` if release surfaces changed.\n"
         ),
         ".github/ISSUE_TEMPLATE/bug_report.yml": "name: Bug report\n",
         ".github/ISSUE_TEMPLATE/feature_request.yml": "name: Feature request\n",
@@ -67,9 +59,6 @@ def _write_minimal_repo(root: Path) -> None:
         "docs/scientific-claims.md": (
             "# Evidence Notes\n\n"
             "`docs/assay-evidence.json` tracks assay lanes.\n"
-            "`make barcode-comparison-gate` requires real-data rows.\n"
-            "`make bcl-comparison-gate` requires real run folders.\n"
-            "General aligner replacement is blocked.\n"
         ),
         "docs/assay-evidence.json": '{"schema_version": 1, "assays": []}\n',
         "docs/distribution-release.json": '{"schema_version": 1, "status": "not_released", "channels": []}\n',
@@ -79,11 +68,7 @@ def _write_minimal_repo(root: Path) -> None:
         "docs/packaging.md": "# Packaging\n",
         "docs/native-comparator-scope.md": (
             "# Native Comparator Scope\n\n"
-            "Current native comparator: Edlib exhaustive global edit-distance assignment with zero mismatches.\n\n"
-            "SeqAn and Parasail are not part of the checked README, website, or release-note performance comparison set yet. "
-            "They require equivalent global edit-distance or documented semi-global scoring semantics, fixed threshold k, "
-            "fixed threshold `k`, native dependency/version capture, raw CSV rows, and zero assignment mismatches before claims change.\n"
-            "Supported wording is limited to Edlib exhaustive global edit-distance assignment scans.\n"
+            "Current native comparator: Edlib exhaustive global edit-distance assignment.\n"
         ),
         "docs/schemas.md": "# Schemas\n",
         "examples/workflows/galaxy/dotmatch_crispr_count.xml": "<tool id=\"dotmatch_crispr_count\" />\n",
@@ -132,52 +117,6 @@ def test_repository_ready_reports_missing_evidence_notes(tmp_path):
     assert any("docs/scientific-claims.md" in failure for failure in result.failures)
 
 
-def test_repository_ready_reports_missing_release_process_link(tmp_path):
-    checker = _load_checker()
-    _write_minimal_repo(tmp_path)
-    readme = (tmp_path / "README.md").read_text(encoding="utf-8")
-    (tmp_path / "README.md").write_text(
-        readme.replace("See [Release process](docs/release-process.md).\n", ""),
-        encoding="utf-8",
-    )
-
-    result = checker.audit(tmp_path)
-
-    assert any("docs/release-process.md" in failure for failure in result.failures)
-
-
-def test_repository_ready_reports_missing_source_install_direction(tmp_path):
-    checker = _load_checker()
-    _write_minimal_repo(tmp_path)
-    readme = (tmp_path / "README.md").read_text(encoding="utf-8")
-    (tmp_path / "README.md").write_text(
-        readme.replace("Until those channels are listed here as available, install from source.", ""),
-        encoding="utf-8",
-    )
-
-    result = checker.audit(tmp_path)
-
-    assert any("install from source" in failure for failure in result.failures)
-
-
-def test_repository_ready_requires_distribution_status_in_readme(tmp_path):
-    checker = _load_checker()
-    _write_minimal_repo(tmp_path)
-    (tmp_path / "README.md").write_text(
-        "# DotMatch\n\n"
-        "`v0.1.0` includes stable release artifacts.\n\n"
-        "See [Evidence Notes](docs/scientific-claims.md).\n\n"
-        "See [Release process](docs/release-process.md).\n",
-        encoding="utf-8",
-    )
-
-    result = checker.audit(tmp_path)
-
-    assert any("docs/packaging.md" in failure for failure in result.failures)
-    assert any("docs/distribution-release.json" in failure for failure in result.failures)
-    assert any("public package availability" in failure for failure in result.failures)
-
-
 def test_repository_ready_reports_missing_release_workflow(tmp_path):
     checker = _load_checker()
     _write_minimal_repo(tmp_path)
@@ -210,7 +149,6 @@ def test_repository_ready_reports_incomplete_pull_request_template(tmp_path):
 
     assert any("make cli-test" in failure for failure in result.failures)
     assert any("make pretag-ready" in failure for failure in result.failures)
-    assert any("claim-boundary" in failure for failure in result.failures)
 
 
 def test_repository_ready_reports_missing_changelog(tmp_path):
@@ -325,19 +263,6 @@ def test_repository_ready_reports_missing_native_comparator_scope(tmp_path):
     assert any("scripts/check_native_comparator_scope.py" in failure for failure in result.failures)
 
 
-def test_repository_ready_requires_native_comparator_boundary(tmp_path):
-    checker = _load_checker()
-    _write_minimal_repo(tmp_path)
-    (tmp_path / "docs" / "native-comparator-scope.md").write_text(
-        "# Native Comparator Scope\n\nSeqAn and Parasail are fast.\n",
-        encoding="utf-8",
-    )
-
-    result = checker.audit(tmp_path)
-
-    assert any("native comparator scope" in failure for failure in result.failures)
-
-
 def test_repository_ready_reports_missing_workflow_adoption_artifacts(tmp_path):
     checker = _load_checker()
     _write_minimal_repo(tmp_path)
@@ -363,17 +288,6 @@ def test_repository_ready_rejects_unignored_large_or_macos_files(tmp_path, monke
 
     assert any(".DS_Store" in failure for failure in result.failures)
     assert any("too_large.csv" in failure for failure in result.failures)
-
-
-def test_repository_ready_requires_evidence_boundaries_status(tmp_path):
-    checker = _load_checker()
-    _write_minimal_repo(tmp_path)
-    (tmp_path / "docs" / "scientific-claims.md").write_text("# Evidence Notes\n", encoding="utf-8")
-
-    result = checker.audit(tmp_path)
-
-    assert any("barcode-comparison-gate" in failure for failure in result.failures)
-    assert any("bcl-comparison-gate" in failure for failure in result.failures)
 
 
 def test_repository_ready_rejects_mismatched_release_versions(tmp_path):

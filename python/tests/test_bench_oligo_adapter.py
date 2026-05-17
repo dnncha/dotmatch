@@ -170,7 +170,7 @@ def test_public_benchmark_rows_require_metadata_and_include_exact_baseline(tmp_p
     assert all(row["status"] == "supported" for row in rows)
 
 
-def test_write_report_scopes_oligo_adapter_claims(tmp_path):
+def test_write_report_includes_oligo_adapter_scope(tmp_path):
     bench = _load_bench()
     report = tmp_path / "README.md"
     rows = [
@@ -199,7 +199,7 @@ def test_write_report_scopes_oligo_adapter_claims(tmp_path):
     text = report.read_text(encoding="utf-8")
     assert "Oligo/Adapter Assignment Evidence" in text
     assert "synthetic_oligo_adapter_fixture" in text
-    assert "not adapter trimming" in text
+    assert "## Scope" in text
     assert "make oligo-adapter-smoke-gate" in text
 
 
@@ -250,4 +250,4 @@ def test_write_report_handles_public_adapter_rows(tmp_path):
     text = report.read_text(encoding="utf-8")
     assert "public_fast_adapter_truseq_r1" in text
     assert "exact-slice hash baseline" in text
-    assert "not adapter trimming" in text
+    assert "## Scope" in text

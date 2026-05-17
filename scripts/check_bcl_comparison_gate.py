@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail unless the raw-BCL benchmark evidence is strong enough for comparison wording."""
+"""Fail unless the raw-BCL benchmark evidence is strong enough for broad comparison."""
 
 from __future__ import annotations
 
@@ -43,9 +43,9 @@ def main() -> None:
     if not rows:
         fail("no benchmark rows found")
     if not args.allow_tiny_demo and any("tiny" in r.get("workflow", "").lower() for r in rows):
-        fail("tiny demo rows are present; run larger real BCL/CBCL benchmarks before using comparison wording")
+        fail("tiny demo rows are present; run larger real BCL/CBCL benchmarks before broad comparison")
     if any("synthetic" in r.get("workflow", "") for r in rows):
-        fail("synthetic rows are present; run real BCL/CBCL benchmarks before using comparison wording")
+        fail("synthetic rows are present; run real BCL/CBCL benchmarks before broad comparison")
     dotmatch = [r for r in rows if r.get("tool") == "dotmatch_bcl_demux" and r.get("exit_code") == "0"]
     if not dotmatch:
         fail("no successful DotMatch BCL row")

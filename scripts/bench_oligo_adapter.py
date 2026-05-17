@@ -482,9 +482,9 @@ def write_report(rows: list[dict[str, str]], report: Path) -> None:
     lines.extend(
         [
             "",
-            "## Evidence Boundary",
+            "## Scope",
             "",
-            "Use these lanes only to verify fixed-window known-oligo/adapter assignment, one-substitution rescue, and explicit ambiguous/unmatched diagnostics. Run `make oligo-adapter-smoke-gate` for smoke evidence and `make oligo-adapter-public-gate` for the public lane. The public lane supports adapter-prefix assignment wording for the checked R1 window only; it is not adapter trimming evidence. Primer removal, UMI grouping, read merging, or production workflow claims require separate comparator semantics, raw artifacts, validation, and a passing gate.",
+            "These lanes verify fixed-window known-oligo/adapter assignment, one-substitution rescue, and explicit ambiguous/unmatched diagnostics. Run `make oligo-adapter-smoke-gate` for smoke evidence and `make oligo-adapter-public-gate` for the public lane. The public lane checks adapter-prefix assignment for the recorded R1 window. Primer removal, UMI grouping, read merging, and adapter-trimming workflows need separate comparator records.",
             "",
         ]
     )

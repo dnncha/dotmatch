@@ -1,13 +1,13 @@
 # CRISPR Comparison Evidence
 
-This report is generated from raw CSV artifacts. It is intentionally stricter than the public smoke report: comparison wording requires both MAGeCK/Yusa and Sanson/Brunello real-data rows, competitor rows, count agreement, and Edlib validation.
+This report is generated from raw CSV artifacts. It is intentionally stricter than the public smoke report: comparison rows require both MAGeCK/Yusa and Sanson/Brunello real-data rows, competitor rows, count agreement, and Edlib validation.
 
 ## Evidence Boundary
 
 - Hamming `k=1` rows are the fair guide-counter lane: one mismatch, no indels.
 - Levenshtein `k=1` rows are the DotMatch differentiator lane: substitutions plus single-base insertions/deletions, with Edlib validation.
 - Full FASTQ rows are reported separately from repeated subsamples.
-- Broad comparison wording is blocked unless `make crispr-comparison-gate` passes.
+- Broad comparisons require `make crispr-comparison-gate` to pass.
 
 ## Throughput Figure
 

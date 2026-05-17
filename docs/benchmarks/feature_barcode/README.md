@@ -43,4 +43,4 @@ python3 scripts/bench_feature_barcode.py --include-public --metadata examples/fe
 
 ## Evidence Boundary
 
-Use these lanes to verify fixed-window feature-barcode whitelist counting and explicit ambiguity handling. The public 10x lane supports only per-read assignment against the documented Feature Barcode reference window. Broader CITE-seq, cell-hashing, or cell-level quantification wording requires public comparator output, UMI/cell aggregation validation, exact commands, and a passing gate.
+Use these lanes to verify fixed-window feature-barcode whitelist counting and explicit ambiguity handling. The public 10x lane supports only per-read assignment against the documented Feature Barcode reference window. Broader CITE-seq, cell-hashing, or cell-level quantification comparisons require public comparator output, UMI/cell aggregation validation, exact commands, and a passing gate.

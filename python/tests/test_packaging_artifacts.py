@@ -15,6 +15,10 @@ def _pyproject_version() -> str:
     return match.group(1)
 
 
+def _squash_ws(text: str) -> str:
+    return " ".join(text.split())
+
+
 def test_bioconda_recipe_tracks_release_metadata() -> None:
     recipe = ROOT / "packaging" / "bioconda" / "meta.yaml"
     text = recipe.read_text(encoding="utf-8")
@@ -185,10 +189,11 @@ def test_cibuildwheel_linux_repaired_wheel_path_is_configured() -> None:
     assert "dist-linux/*.whl" in workflow
     assert "manylinux/musllinux" in packaging
     assert "repaired Linux wheel artifacts" in packaging
-    assert "GitHub release workflow builds and smoke-tests repaired manylinux/musllinux" in readme
-    assert "PyPI trusted publishing is configured" in readme
-    assert "Public PyPI wheel availability" in readme
-    assert "visible on PyPI" in readme
+    readme_normalized = _squash_ws(readme)
+    assert "GitHub release workflow builds and smoke-tests repaired manylinux/musllinux" in readme_normalized
+    assert "PyPI trusted publishing is configured" in readme_normalized
+    assert "PyPI wheel availability" in readme_normalized
+    assert "visible on PyPI" in readme_normalized
 
 
 def test_release_workflow_publishing_jobs_depend_on_preflight() -> None:

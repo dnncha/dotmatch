@@ -3,7 +3,7 @@
 This directory contains local example wrappers for running DotMatch from Galaxy.
 `dotmatch_crispr_count.xml` keeps the native command interface, and
 `dotmatch_assay_run.xml` runs an AssaySpec and exposes the assay report and
-manifest summary. These examples have not been published to a Galaxy ToolShed.
+manifest summary.
 
 Validate the XML with Planemo from the repository root:
 
@@ -29,6 +29,5 @@ summary JSON. The assay report is the primary human-readable artifact;
 `sample_qc.tsv`, `crispr_qc.summary.tsv`, and `assay_manifest.summary.tsv`
 remain plain workflow-friendly tables.
 
-Before adapting this for a Galaxy ToolShed, pin an available DotMatch package or
-container release, run Planemo lint/test against the target Galaxy environment,
-and keep the help text aligned with the documented evidence boundaries.
+Before adapting this for another Galaxy environment, pin an available DotMatch
+package or container release and run Planemo lint/test against that environment.

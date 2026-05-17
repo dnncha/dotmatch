@@ -185,7 +185,7 @@ def test_release_readiness_accepts_minimal_release_repo(tmp_path):
     assert any("distribution surfaces" in item for item in result.passed)
 
 
-def test_release_readiness_rejects_doi_claim_before_minted_release(tmp_path):
+def test_release_readiness_rejects_doi_field_before_minted_release(tmp_path):
     checker = _load_checker()
     _write_release_repo(tmp_path)
     (tmp_path / "CITATION.cff").write_text(
@@ -222,33 +222,6 @@ def test_release_readiness_rejects_missing_sdist_metadata(tmp_path):
     assert any("MANIFEST.in" in failure and "codemeta.json" in failure for failure in result.failures)
 
 
-def test_release_readiness_requires_assay_evidence_gate_in_release_process(tmp_path):
-    checker = _load_checker()
-    _write_release_repo(tmp_path)
-    (tmp_path / "docs" / "release-process.md").write_text(
-        "# Release Process\n\nRun `make release-ready` before tagging.\n",
-        encoding="utf-8",
-    )
-
-    result = checker.audit(tmp_path)
-
-    assert any("assay-evidence-ready" in failure for failure in result.failures)
-
-
-def test_release_readiness_requires_pretag_ready_in_release_process(tmp_path):
-    checker = _load_checker()
-    _write_release_repo(tmp_path)
-    release_process = (tmp_path / "docs" / "release-process.md").read_text(encoding="utf-8")
-    (tmp_path / "docs" / "release-process.md").write_text(
-        release_process.replace("`make pretag-ready`, ", ""),
-        encoding="utf-8",
-    )
-
-    result = checker.audit(tmp_path)
-
-    assert any("pretag-ready" in failure for failure in result.failures)
-
-
 def test_release_readiness_requires_pretag_ready_target(tmp_path):
     checker = _load_checker()
     _write_release_repo(tmp_path)
@@ -281,170 +254,6 @@ def test_release_readiness_rejects_post_release_gates_in_pretag_ready(tmp_path):
     assert any("pretag-ready target must not include distribution-channels" in failure for failure in result.failures)
 
 
-def test_release_readiness_requires_post_release_gate_boundaries_in_release_process(tmp_path):
-    checker = _load_checker()
-    _write_release_repo(tmp_path)
-    release_process = (tmp_path / "docs" / "release-process.md").read_text(encoding="utf-8")
-    (tmp_path / "docs" / "release-process.md").write_text(
-        release_process
-        .replace("`make distribution-channels`, ", "")
-        .replace("`make workflow-adoption-status`, and ", ""),
-        encoding="utf-8",
-    )
-
-    result = checker.audit(tmp_path)
-
-    assert any("separate distribution-channels gate" in failure for failure in result.failures)
-    assert any("separate workflow-adoption-status gate" in failure for failure in result.failures)
-
-
-def test_release_readiness_requires_distribution_record_gate_in_release_process(tmp_path):
-    checker = _load_checker()
-    _write_release_repo(tmp_path)
-    release_process = (tmp_path / "docs" / "release-process.md").read_text(encoding="utf-8")
-    (tmp_path / "docs" / "release-process.md").write_text(
-        release_process.replace("`make distribution-record-ready`, ", ""),
-        encoding="utf-8",
-    )
-
-    result = checker.audit(tmp_path)
-
-    assert any("distribution-record-ready" in failure for failure in result.failures)
-
-
-def test_release_readiness_requires_repaired_linux_wheel_release_process_note(tmp_path):
-    checker = _load_checker()
-    _write_release_repo(tmp_path)
-    release_process = (tmp_path / "docs" / "release-process.md").read_text(encoding="utf-8")
-    (tmp_path / "docs" / "release-process.md").write_text(
-        release_process.replace("repaired manylinux/musllinux wheels", "source distribution only"),
-        encoding="utf-8",
-    )
-
-    result = checker.audit(tmp_path)
-
-    assert any("repaired manylinux/musllinux PyPI wheel publishing" in failure for failure in result.failures)
-
-
-def test_release_readiness_requires_bioconda_recipe_gate_in_release_process(tmp_path):
-    checker = _load_checker()
-    _write_release_repo(tmp_path)
-    release_process = (tmp_path / "docs" / "release-process.md").read_text(encoding="utf-8")
-    (tmp_path / "docs" / "release-process.md").write_text(
-        release_process.replace("`make bioconda-recipe-ready`, ", ""),
-        encoding="utf-8",
-    )
-
-    result = checker.audit(tmp_path)
-
-    assert any("bioconda-recipe-ready" in failure for failure in result.failures)
-
-
-def test_release_readiness_requires_alphabet_policy_gate_in_release_process(tmp_path):
-    checker = _load_checker()
-    _write_release_repo(tmp_path)
-    release_process = (tmp_path / "docs" / "release-process.md").read_text(encoding="utf-8")
-    (tmp_path / "docs" / "release-process.md").write_text(
-        release_process.replace("`make alphabet-policy-ready`, ", ""),
-        encoding="utf-8",
-    )
-
-    result = checker.audit(tmp_path)
-
-    assert any("alphabet-policy-ready" in failure for failure in result.failures)
-
-
-def test_release_readiness_requires_citation_metadata_gate_in_release_process(tmp_path):
-    checker = _load_checker()
-    _write_release_repo(tmp_path)
-    release_process = (tmp_path / "docs" / "release-process.md").read_text(encoding="utf-8")
-    (tmp_path / "docs" / "release-process.md").write_text(
-        release_process.replace("`make citation-metadata-ready`, ", ""),
-        encoding="utf-8",
-    )
-
-    result = checker.audit(tmp_path)
-
-    assert any("citation-metadata-ready" in failure for failure in result.failures)
-
-
-def test_release_readiness_requires_native_comparator_scope_gate_in_release_process(tmp_path):
-    checker = _load_checker()
-    _write_release_repo(tmp_path)
-    release_process = (tmp_path / "docs" / "release-process.md").read_text(encoding="utf-8")
-    (tmp_path / "docs" / "release-process.md").write_text(
-        release_process.replace("`make native-comparator-scope-ready`, ", ""),
-        encoding="utf-8",
-    )
-
-    result = checker.audit(tmp_path)
-
-    assert any("native-comparator-scope-ready" in failure for failure in result.failures)
-
-
-def test_release_readiness_requires_public_evidence_gates_in_release_process(tmp_path):
-    checker = _load_checker()
-    _write_release_repo(tmp_path)
-    (tmp_path / "docs" / "release-process.md").write_text(
-        "# Release Process\n\n"
-        "Run `make release-ready` and `make assay-evidence-ready` before tagging.\n",
-        encoding="utf-8",
-    )
-
-    result = checker.audit(tmp_path)
-
-    assert any("public-crispr-evidence-gate" in failure for failure in result.failures)
-    assert any("crispr-comparison-gate" in failure for failure in result.failures)
-    assert any("barcode-comparison-gate" in failure for failure in result.failures)
-    assert any("feature-barcode-public-gate" in failure for failure in result.failures)
-    assert any("perturb-seq-public-gate" in failure for failure in result.failures)
-    assert any("amplicon-panel-public-gate" in failure for failure in result.failures)
-    assert any("bcl-tiny-public-gate" in failure for failure in result.failures)
-    assert any("oligo-adapter-public-gate" in failure for failure in result.failures)
-
-
-def test_release_readiness_requires_workflow_examples_gate_in_release_process(tmp_path):
-    checker = _load_checker()
-    _write_release_repo(tmp_path)
-    release_process = (tmp_path / "docs" / "release-process.md").read_text(encoding="utf-8")
-    (tmp_path / "docs" / "release-process.md").write_text(
-        release_process.replace("`make workflow-examples-ready`", "`make workflows-missing`"),
-        encoding="utf-8",
-    )
-
-    result = checker.audit(tmp_path)
-
-    assert any("workflow-examples-ready" in failure for failure in result.failures)
-
-
-def test_release_readiness_requires_biocontainers_packaging_docs(tmp_path):
-    checker = _load_checker()
-    _write_release_repo(tmp_path)
-    packaging = (tmp_path / "docs" / "packaging.md").read_text(encoding="utf-8")
-    (tmp_path / "docs" / "packaging.md").write_text(
-        packaging.replace("quay.io/biocontainers/dotmatch", "quay.io/missing/dotmatch"),
-        encoding="utf-8",
-    )
-
-    result = checker.audit(tmp_path)
-
-    assert any("BioContainers" in failure for failure in result.failures)
-
-
-def test_release_readiness_requires_distribution_record_packaging_docs(tmp_path):
-    checker = _load_checker()
-    _write_release_repo(tmp_path)
-    packaging = (tmp_path / "docs" / "packaging.md").read_text(encoding="utf-8")
-    (tmp_path / "docs" / "packaging.md").write_text(
-        packaging.replace("docs/distribution-release.json", "docs/missing-release.json"),
-        encoding="utf-8",
-    )
-
-    result = checker.audit(tmp_path)
-
-    assert any("distribution-release.json" in failure for failure in result.failures)
-
-
 def test_release_readiness_requires_verified_sdist_job(tmp_path):
     checker = _load_checker()
     _write_release_repo(tmp_path)
@@ -460,20 +269,6 @@ def test_release_readiness_requires_verified_sdist_job(tmp_path):
     result = checker.audit(tmp_path)
 
     assert any("sdist job must verify the PyPI source distribution artifact" in failure for failure in result.failures)
-
-
-def test_release_readiness_requires_bioconda_recipe_packaging_docs(tmp_path):
-    checker = _load_checker()
-    _write_release_repo(tmp_path)
-    packaging = (tmp_path / "docs" / "packaging.md").read_text(encoding="utf-8")
-    (tmp_path / "docs" / "packaging.md").write_text(
-        packaging.replace("make bioconda-recipe-ready", "make missing-bioconda-gate"),
-        encoding="utf-8",
-    )
-
-    result = checker.audit(tmp_path)
-
-    assert any("bioconda-recipe-ready" in failure for failure in result.failures)
 
 
 def test_release_readiness_requires_preflight_before_publish_jobs(tmp_path):

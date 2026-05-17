@@ -50,4 +50,4 @@ python3 scripts/bench_perturb_seq.py --include-public --metadata examples/pertur
 
 ## Evidence Boundary
 
-Use these lanes to verify fixed-window guide/feature pair assignment, side-level diagnostics, and narrow public CRISPR guide-capture per-read assignment. Broader Perturb-seq wording requires public cell barcode and UMI handling, guide-per-cell calls, expression or perturbation-effect comparator output, exact commands, validation artifacts, and a passing gate.
+Use these lanes to verify fixed-window guide/feature pair assignment, side-level diagnostics, and narrow public CRISPR guide-capture per-read assignment. Broader Perturb-seq comparisons require public cell barcode and UMI handling, guide-per-cell calls, expression or perturbation-effect comparator output, exact commands, validation artifacts, and a passing gate.

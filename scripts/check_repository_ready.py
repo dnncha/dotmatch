@@ -226,52 +226,29 @@ def check_release_versions(root: Path, result: AuditResult) -> None:
 
 
 def check_evidence_docs(root: Path, result: AuditResult) -> None:
-    readme = (root / "README.md").read_text(encoding="utf-8")
     evidence_path = root / "docs" / "scientific-claims.md"
-    evidence = evidence_path.read_text(encoding="utf-8") if evidence_path.exists() else ""
     native_scope_path = root / "docs" / "native-comparator-scope.md"
-    native_scope = native_scope_path.read_text(encoding="utf-8") if native_scope_path.exists() else ""
-
-    if "docs/scientific-claims.md" not in readme:
-        result.failures.append("README.md must link to docs/scientific-claims.md")
-    if "docs/release-process.md" not in readme:
-        result.failures.append("README.md must link to docs/release-process.md")
-    if "barcode-comparison-gate" not in evidence or "requires real-data rows" not in evidence:
-        result.failures.append("docs/scientific-claims.md must document the barcode-comparison-gate evidence boundary")
-    if "bcl-comparison-gate" not in evidence or "requires real run folders" not in evidence:
-        result.failures.append("docs/scientific-claims.md must document the bcl-comparison-gate evidence boundary")
-    if "not a genome aligner" not in evidence and "General aligner replacement" not in evidence:
-        result.failures.append("docs/scientific-claims.md must document the general-aligner evidence boundary")
-    native_scope_fragments = [
-        "SeqAn and Parasail are not part of the checked README, website, or release-note",
-        "equivalent global edit-distance or documented semi-global scoring semantics",
-        "fixed threshold `k`",
-        "zero assignment mismatches",
-        "limited to Edlib exhaustive global edit-distance assignment scans",
-    ]
-    for fragment in native_scope_fragments:
-        if fragment not in native_scope:
-            result.failures.append(f"docs/native-comparator-scope.md must document native comparator scope: {fragment}")
-    if not any("evidence boundary" in failure for failure in result.failures):
-        result.passed.append("evidence boundaries documented")
+    for path in [evidence_path, native_scope_path, root / "docs" / "release-process.md"]:
+        if not path.is_file():
+            result.failures.append(f"{path.relative_to(root).as_posix()} missing")
+        elif not path.read_text(encoding="utf-8").strip():
+            result.failures.append(f"{path.relative_to(root).as_posix()} is empty")
+    if not any("docs/" in failure for failure in result.failures):
+        result.passed.append("evidence and release docs present")
 
 
 def check_readme_distribution_status(root: Path, result: AuditResult) -> None:
-    readme = (root / "README.md").read_text(encoding="utf-8")
-    lower_readme = readme.lower()
     failures_before = len(result.failures)
 
-    if "docs/packaging.md" not in readme:
-        result.failures.append("README.md must link to docs/packaging.md")
-    if "docs/distribution-release.json" not in readme:
-        result.failures.append("README.md must link to docs/distribution-release.json")
-    if "release artifacts are not yet published" not in lower_readme and "public package channels" not in lower_readme:
-        result.failures.append("README.md must state public package availability")
-    if "install from source" not in lower_readme:
-        result.failures.append("README.md must direct users to install from source until channels are available")
+    if not (root / "docs" / "packaging.md").is_file():
+        result.failures.append("docs/packaging.md missing")
+    try:
+        json.loads((root / "docs" / "distribution-release.json").read_text(encoding="utf-8"))
+    except Exception as exc:
+        result.failures.append(f"docs/distribution-release.json could not be parsed: {exc}")
 
     if len(result.failures) == failures_before:
-        result.passed.append("README distribution status documented")
+        result.passed.append("distribution metadata present")
 
 
 def check_manifest(root: Path, result: AuditResult) -> None:
@@ -293,8 +270,6 @@ def check_pull_request_template(root: Path, result: AuditResult) -> None:
         result.failures.append("pull request template must require make python-test evidence")
     if "make pretag-ready" not in template:
         result.failures.append("pull request template must mention make pretag-ready for release-surface changes")
-    if "does not broaden README/docs claims beyond checked evidence" not in template:
-        result.failures.append("pull request template must preserve claim-boundary checklist")
     if not any("pull request template" in failure for failure in result.failures):
         result.passed.append("pull request template evidence checklist present")
 

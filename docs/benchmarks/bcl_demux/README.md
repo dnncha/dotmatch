@@ -2,7 +2,7 @@
 
 This is the raw Illumina run-folder barcode demultiplexing evidence track.
 
-Current status: DotMatch supports a first lane-1 classic per-cycle BCL milestone. CBCL/NovaSeq-style input and broader multi-lane BCL operation are still gated as future work. Comparative wording requires real run folders and zero-mismatch validation against BCL Convert or bcl2fastq where available.
+Current status: DotMatch supports a first lane-1 classic per-cycle BCL milestone. CBCL/NovaSeq-style input and broader multi-lane BCL operation are still gated as future work. Broader comparisons need real run folders and zero-mismatch validation against BCL Convert or bcl2fastq where available.
 
 The public `public_10x_tiny_bcl` row uses the 10x Genomics Cell Ranger `tiny-bcl` mkfastq demo run folder. The bundled fetch script downloads the 10x sample sheet, the public run-folder archive, and the official Chromium i7 index CSV used to normalize the legacy `SI-P03-C9` index-set alias into concrete index sequences.
 
@@ -31,10 +31,10 @@ This is not a comparison result by itself: the comparison gate still requires di
 | bcl2fastq | public_10x_tiny_bcl | classic_bcl | 2136539 | 132 | 1 |  | 1 | 102.892265 | 20764.8 | 26624 | 220.48 | 2079501 | 57038 |  | 0 | count_totals | 19db924c3892 | 0 | ../../../../../../../../root/dotmatch/benchmarks/work/bcl_demux/logs/bcl2fastq.stderr.log |
 | cuda-demux | public_10x_tiny_bcl | classic_bcl_or_cbcl | 2136539 | 132 | 1 |  |  | 0.000000 | 0.0 | 0 |  |  |  |  |  |  |  | 127 |  |
 
-## Evidence Gates
+## Scope
 
 Run `make bcl-tiny-public-gate` to verify the narrow public 10x tiny-BCL classic per-cycle milestone. This gate checks the committed DotMatch row, output hashes, count totals, and available bcl2fastq count-total validation.
 
-Broader raw-BCL comparative wording requires real classic-BCL and CBCL run-folder rows, a successful DotMatch CBCL row, competitor rows for BCL Convert/bcl2fastq/CUDA-Demux where installable, distinct repeated timing, and `dotmatch bcl-validate` zero-mismatch evidence.
+Broader raw-BCL evaluation needs real classic-BCL and CBCL run-folder rows, a successful DotMatch CBCL row, competitor rows for BCL Convert/bcl2fastq/CUDA-Demux where installable, distinct repeated timing, and `dotmatch bcl-validate` zero-mismatch evidence.
 
-Run `make bcl-comparison-gate` before using comparative wording. The gate intentionally fails on synthetic or tiny rows, missing DotMatch CBCL evidence, missing distinct repeats, missing competitor rows, failed validation, or slower DotMatch throughput.
+Use `make bcl-comparison-gate` to check those rows when they are available.
