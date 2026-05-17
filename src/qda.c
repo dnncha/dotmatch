@@ -20,6 +20,8 @@
 #endif
 
 #define MAX_AUTO_OFFSET 1024
+#define MAX_BCL_CYCLE_CLUSTERS 100000000
+#define MAX_BCL_SAMPLE_ROWS 100000
 
 typedef struct seq_record {
     char *id;
@@ -6211,7 +6213,7 @@ static int read_bcl_cycle(const char *path, unsigned char **bytes_out, size_t *c
         return -1;
     }
     int n = read_u32_le(header);
-    if (n < 0) {
+    if (n < 0 || n > MAX_BCL_CYCLE_CLUSTERS) {
         gzclose(gz);
         return -1;
     }
@@ -6609,6 +6611,10 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
     }
     if (read_bcl_sample_sheet(sample_sheet, &samples) != 0) {
         fprintf(stderr, "failed to parse sample sheet\n");
+        goto done;
+    }
+    if (samples.count > MAX_BCL_SAMPLE_ROWS) {
+        fprintf(stderr, "sample sheet exceeds supported BCL sample count\n");
         goto done;
     }
     if (ensure_dir(out_dir) != 0) {
