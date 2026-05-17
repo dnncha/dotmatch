@@ -21,6 +21,8 @@
 
 #define MAX_AUTO_OFFSET 1024
 #define MAX_BCL_CYCLE_CLUSTERS 100000000
+#define MAX_BCL_READ_CYCLES 1024
+#define MAX_BCL_TOTAL_CYCLES 1024
 #define MAX_BCL_SAMPLE_ROWS 100000
 
 typedef struct seq_record {
@@ -6080,9 +6082,17 @@ static int parse_run_info(const char *run_folder, bcl_run_info *info) {
                 free(xml);
                 return -1;
             }
+            char *cycles_end = NULL;
+            unsigned long parsed_cycles = strtoul(cycles, &cycles_end, 10);
+            if (cycles_end == cycles || *cycles_end != '\0' || parsed_cycles == 0 ||
+                parsed_cycles > MAX_BCL_READ_CYCLES ||
+                info->total_cycles > MAX_BCL_TOTAL_CYCLES - (size_t)parsed_cycles) {
+                free(xml);
+                return -1;
+            }
             bcl_read_info *r = &info->reads[info->read_count++];
             r->number = atoi(number);
-            r->cycles = (size_t)strtoul(cycles, NULL, 10);
+            r->cycles = (size_t)parsed_cycles;
             r->indexed = indexed[0] == 'Y' || indexed[0] == 'y';
             r->start_cycle = info->total_cycles + 1;
             info->total_cycles += r->cycles;
@@ -6250,7 +6260,7 @@ static int read_filter_file(const char *basecalls, int lane, const char *tile, u
         return -1;
     }
     int count = read_u32_le(header + 4);
-    if (count < 0) {
+    if (count < 0 || count > MAX_BCL_CYCLE_CLUSTERS) {
         fclose(fp);
         return -1;
     }
