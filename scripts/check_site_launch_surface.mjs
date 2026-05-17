@@ -15,27 +15,27 @@ const requiredSnippets = [
   ["GitHub source link", "https://github.com/dnncha/dotmatch"],
   ["install section anchor", "id=\"install\""],
   ["citation section anchor", "id=\"cite\""],
+  ["packaging docs link", "docs/packaging.md"],
   ["methods docs link", "docs/methods-and-citation.md"],
   ["benchmark evidence link", "docs/benchmarks/public_crispr/README.md"],
   ["citation file link", "CITATION.cff"],
   ["plain maintainer voice", "DotMatch is a small C/Python tool"],
   ["auditable benchmark framing", "These rows are not a leaderboard."],
-  ["honest install framing", "Use the source install until the public package channels finish publication."],
-  ["human caveat framing", "We are keeping the claims narrow"],
-  ["biology-first hero", "Auditable assignment of short sequencing reads to known DNA targets."],
-  ["validated use-case lead", "Best-supported today: CRISPR guide counting"],
-  ["decision box inclusion", "Use DotMatch when you have"],
-  ["decision box exclusion", "Do not use DotMatch for"],
+  ["honest install framing", "The documented install path is a source build or local Python package install from the repository."],
+  ["human benchmark framing", "Benchmarks you can inspect, not just quote."],
+  ["biology-first hero", "Known-target DNA assignment for guide counts and barcode reads."],
+  ["validated use-case lead", "Current public benchmark: CRISPR guide counting"],
+  ["decision box inclusion", "Use DotMatch for"],
+  ["decision box exclusion", "Use other tools for"],
   ["hamming translation", "allow one mismatch, no indels"],
   ["levenshtein translation", "allow one substitution, insertion, or deletion"],
   ["plain benchmark sentence", "DotMatch Hamming k=1 processed about 331k reads/s"],
   ["validation sample size", "2,000 checked reads"],
-  ["distribution maturity now", "Current distribution: source install, release artifacts, and a Bioconda recipe PR with CI green."],
-  ["distribution maturity next", "Coming next: PyPI, Bioconda merge, Docker/Singularity, Zenodo DOI."],
+  ["distribution status", "package-channel availability is documented without presenting unpublished channels as install paths"],
   ["Bioconda PR link", "https://github.com/bioconda/bioconda-recipes/pull/65367"],
   ["ambiguity example setup", "Some tools may pick or double-count."],
   ["ambiguity example result", "DotMatch reports: ambiguous"],
-  ["workflow status table", "Validated now"],
+  ["workflow status table", "Public benchmark"],
   ["generated hero visual", "dotmatch-hero-workflow.png"],
   ["human hero visual caption", "Reads move into known targets; ambiguous and unmatched lanes stay visible."]
 ];
@@ -49,7 +49,13 @@ const bannedPhrases = [
   "workflow-ready",
   "strongest public claim",
   "checked artifacts",
-  "current support"
+  "current support",
+  "claim gates",
+  "coming next",
+  "ci green",
+  "validated now",
+  "supported, bounded",
+  "best-supported workflow"
 ];
 const checkedCopyLower = `${page}\n${layout}`.toLowerCase();
 const banned = bannedPhrases.filter((phrase) => checkedCopyLower.includes(phrase));
@@ -113,13 +119,13 @@ if (missingCss.length > 0) {
   process.exit(1);
 }
 
-if (!layoutNormalized.includes("CRISPR guide counts, barcode splits, and QC reports")) {
+if (!layoutNormalized.includes("CRISPR guide counts, barcode splits, and QC tables")) {
   console.error("Metadata should describe practical user outcomes, not just implementation mechanics.");
   process.exit(1);
 }
 
 const requiredMetadataSnippets = [
-  "DotMatch - Auditable CRISPR Guide Counting",
+  "DotMatch - Known-Target DNA Assignment",
   "openGraph: {",
   "siteName: \"DotMatch\"",
   "locale: \"en_US\"",

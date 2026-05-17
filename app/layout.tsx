@@ -10,9 +10,9 @@ const socialImageAlt =
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: "DotMatch",
-  title: "DotMatch - Auditable CRISPR Guide Counting",
+  title: "DotMatch - Known-Target DNA Assignment",
   description:
-    "DotMatch turns known short-DNA FASTQs into CRISPR guide counts, barcode splits, and QC reports with explicit ambiguity handling.",
+    "DotMatch turns fixed FASTQ windows into CRISPR guide counts, barcode splits, and QC tables with explicit ambiguity handling.",
   authors: [{ name: "DotMatch maintainers", url: "https://github.com/dnncha/dotmatch" }],
   creator: "DotMatch maintainers",
   publisher: "DotMatch",
@@ -30,9 +30,9 @@ export const metadata: Metadata = {
     "known-target assignment"
   ],
   openGraph: {
-    title: "DotMatch - Auditable CRISPR Guide Counting",
+    title: "DotMatch - Known-Target DNA Assignment",
     description:
-      "CRISPR guide counts, barcode splits, and QC reports for known short-DNA targets, with ambiguous reads reported instead of guessed.",
+      "CRISPR guide counts, barcode splits, and QC tables for known short-DNA targets, with ambiguous reads reported instead of guessed.",
     type: "website",
     siteName: "DotMatch",
     locale: "en_US",
@@ -50,9 +50,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "DotMatch - Auditable CRISPR Guide Counting",
+    title: "DotMatch - Known-Target DNA Assignment",
     description:
-      "CRISPR guide counts, barcode splits, and QC reports for known short-DNA targets, with ambiguous reads reported instead of guessed.",
+      "CRISPR guide counts, barcode splits, and QC tables for known short-DNA targets, with ambiguous reads reported instead of guessed.",
     images: [
       {
         url: twitterImageUrl,
