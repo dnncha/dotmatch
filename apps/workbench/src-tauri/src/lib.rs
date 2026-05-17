@@ -139,7 +139,7 @@ pub fn build_dotmatch_command(
 }
 
 #[tauri::command]
-pub fn doctor(dotmatch_path: Option<String>) -> Result<DoctorReport, String> {
+fn doctor(dotmatch_path: Option<String>) -> Result<DoctorReport, String> {
     let dotmatch = find_dotmatch(dotmatch_path)?;
     let checks = vec![
         execute_argv(
@@ -160,7 +160,7 @@ pub fn doctor(dotmatch_path: Option<String>) -> Result<DoctorReport, String> {
 }
 
 #[tauri::command]
-pub fn run_workbench_command(request: WorkbenchCommandRequest) -> Result<CommandResult, String> {
+fn run_workbench_command(request: WorkbenchCommandRequest) -> Result<CommandResult, String> {
     let workspace = canonical_workspace(&request.workspace)?;
     validate_workspace_args(&workspace, &request.action, &request.args)?;
     let dotmatch = find_dotmatch(request.dotmatch_path)?;
@@ -170,14 +170,14 @@ pub fn run_workbench_command(request: WorkbenchCommandRequest) -> Result<Command
 }
 
 #[tauri::command]
-pub fn read_text_artifact(workspace: String, relative_path: String) -> Result<String, String> {
+fn read_text_artifact(workspace: String, relative_path: String) -> Result<String, String> {
     let workspace = canonical_workspace(workspace)?;
     let path = resolve_workspace_path(&workspace, &relative_path)?;
     fs::read_to_string(path).map_err(|err| format!("could not read artifact: {err}"))
 }
 
 #[tauri::command]
-pub fn write_text_artifact(workspace: String, relative_path: String, contents: String) -> Result<String, String> {
+fn write_text_artifact(workspace: String, relative_path: String, contents: String) -> Result<String, String> {
     let workspace = canonical_workspace(workspace)?;
     let path = resolve_workspace_path(&workspace, &relative_path)?;
     if let Some(parent) = path.parent() {
