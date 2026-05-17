@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>DotMatch Barcode Troubleshooting Report</title>
+  <style>
+    body { margin: 2rem; color: #111816; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .panel { border-top: 1px solid #dfe7e2; padding: 1rem 0; }
+    code { background: #eef6f2; padding: 0.1rem 0.25rem; }
+  </style>
+</head>
+<body>
+  <h1>Barcode Troubleshooting Report</h1>
+  <p>DotMatch reports how fixed-window barcode reads were assigned, rejected, or flagged for review.</p>
+  <p><strong>Speed is reported only after the comparator settings are documented.</strong></p>
+  <section class="panel"><h2>Decision Summary</h2><p>Inference status: <strong>review</strong>; assignment rate: <strong>0.72492000</strong>; top finding: <strong>low_confidence_offset</strong>.</p></section>
+  <section class="panel"><h2>Comparator check</h2><p>Use recorded comparator settings for the same barcode window, length, and correction policy before interpreting speed.</p></section>
+  <section class="panel"><h2>Offset check</h2><p>Highest-scoring sampled window: start=0, length=4; exact assignment rate=0.11283; status=review.</p></section>
+  <section class="panel"><h2>Barcode safety audit</h2><p>Audit outputs identify duplicate and nearby barcode pairs before one-edit correction is enabled.</p></section>
+  <section class="panel"><h2>Assignment summary</h2><p>Run assignment rate=0.72492000; ambiguous=13911 (0.13911000); unmatched=13597 (0.13597000); invalid=0. Top failure reason: ambiguous_collision.</p><h3>What this means</h3><p>The sampled fixed-window scan found a best window, but the evidence is weak enough that the assay specification should be reviewed before production use.</p><h3>Next action</h3><p>Check the barcode sheet, read side, offset, barcode length, and expected orientation; rerun inference after correcting the assay specification.</p><p>Do not rescue ambiguous reads into either sample without changing the barcode design or assignment policy.</p></section>
+  <section class="panel"><h2>Findings</h2><ul><li>review: low_confidence_offset - The sampled scan has a weak best window; the assay specification may be wrong or incomplete. Next action: Review read side, barcode start, barcode length, target sheet, and orientation before production use.</li>
+<li>review: low_assignment_rate - Fewer than 80% of reads were uniquely assigned under the selected fixed-window semantics. Next action: Inspect offset_scan.tsv, top_unmatched.tsv, and the barcode sheet before trusting rescued reads.</li>
+<li>review: high_ambiguity_rate - A material fraction of reads is compatible with more than one barcode. Next action: Do not rescue ambiguous reads into either sample without changing the barcode design or assignment policy.</li>
+<li>review: unsafe_one_edit_correction - At least one barcode is not safe for one-edit correction. Next action: Use k=0 or redesign/fix colliding barcodes before enabling one-edit rescue.</li></ul></section>
+  <section class="panel"><h2>Workflow handoff</h2><p>Stable TSV, JSON, FASTQ, HTML, and MultiQC custom-content artifacts are emitted for workflow systems.</p></section>
+  <h2>QC Checklist</h2><ul><li>Exact command provenance is recorded in <code>provenance.json</code>.</li><li>Offset evidence is recorded in <code>offset_scan.tsv</code>.</li><li>Barcode collision safety is recorded under <code>audit/</code> and summarized in <code>correction_safety.tsv</code>.</li><li>Ambiguous and unmatched reads are retained when requested instead of being silently assigned.</li><li>Benchmark notes stay tied to documented comparator settings.</li></ul>
+  <h2>Commands</h2><ul><li><code>dotmatch audit --targets examples/barcode_demux/data/barcodes.tsv --k 1 --audit-mode auto --out-dir examples/barcode_autopsy/results/audit</code></li>
+<li><code>dotmatch demux --barcodes examples/barcode_demux/data/barcodes.tsv --reads examples/barcode_demux/data/SRR391079.subsample100000.fastq.gz --barcode-start 0 --barcode-length auto --k 1 --metric hamming --out-dir examples/barcode_autopsy/results/demuxed --summary examples/barcode_autopsy/results/summary.json --assignments examples/barcode_autopsy/results/assignments.tsv --ambiguous-out examples/barcode_autopsy/results/ambiguous.fastq --unmatched-out examples/barcode_autopsy/results/unmatched.fastq</code></li>
+<li><code>dotmatch inspect-unmatched --targets examples/barcode_demux/data/barcodes.tsv --reads examples/barcode_demux/data/SRR391079.subsample100000.fastq.gz --target-start 0 --target-length 4 --k 1 --top 100 --out examples/barcode_autopsy/results/top_unmatched.tsv</code></li></ul>
+  <h2>Artifacts</h2><ul><li><code>offset_scan.tsv</code></li>
+<li><code>audit/</code></li>
+<li><code>collision_graph.tsv</code></li>
+<li><code>correction_safety.tsv</code></li>
+<li><code>demuxed/</code></li>
+<li><code>summary.json</code></li>
+<li><code>assignments.tsv</code></li>
+<li><code>ambiguous.fastq</code></li>
+<li><code>unmatched.fastq</code></li>
+<li><code>top_unmatched.tsv</code></li>
+<li><code>sample_qc.tsv</code></li>
+<li><code>barcode_counts.tsv</code></li>
+<li><code>findings.tsv</code></li>
+<li><code>provenance.json</code></li>
+<li><code>multiqc_dotmatch_barcode_mqc.yaml</code></li></ul>
+</body>
+</html>
