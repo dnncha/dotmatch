@@ -13,4 +13,4 @@ the repository needs all of the following:
 - zero assignment mismatches against DotMatch and the selected comparator;
 - a gate script that fails when only scaffold, smoke, or unmatched-scoring rows are present.
 
-Until that evidence exists, the supported native comparison wording is limited to Edlib exhaustive global edit-distance assignment scans plus the exact-hash and BK-tree baselines recorded in `docs/benchmarks/native/README.md`.
+Until that evidence exists, native comparator evidence is limited to Edlib exhaustive global edit-distance assignment scans plus the exact-hash and BK-tree baselines recorded in `docs/benchmarks/native/README.md`.

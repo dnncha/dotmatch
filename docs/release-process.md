@@ -88,7 +88,7 @@ Avoid:
 
 - genome-aligner language;
 - universal guide-counter replacement language;
-- broad barcode, feature quantification, amplicon consensus/variant-calling, or BCL comparative wording without matching evidence.
+- broad barcode, feature quantification, amplicon consensus/variant-calling, or BCL comparisons without matching evidence.
 
 ## Distribution Follow-Up
 

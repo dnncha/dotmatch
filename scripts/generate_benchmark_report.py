@@ -196,7 +196,7 @@ def write_report(edlib_df: pd.DataFrame, batch_df: pd.DataFrame) -> None:
         f"- Platform: `{platform.platform()}`",
         f"- Python: `{platform.python_version()}`",
         "- External exact edit-distance baseline: Edlib Python binding with `mode=\"NW\"`, `task=\"distance\"`.",
-        "- These graphs compare short global edit-distance workloads. They are not broad aligner benchmarks.",
+        "- These graphs cover short global edit-distance workloads.",
         "",
         "## Graphs",
         "",
@@ -218,10 +218,10 @@ def write_report(edlib_df: pd.DataFrame, batch_df: pd.DataFrame) -> None:
         "",
         markdown_table(batch_summary, ".1f"),
         "",
-        "## Evidence Boundary",
+        "## Scope",
         "",
         "These results cover short-DNA global edit-distance and threshold matching against Edlib's Python binding.",
-        "Checked native-library performance claims are scoped to the native Edlib assignment report. SeqAn/Parasail comparisons are not claimed until docs/native-comparator-scope.md requirements are met.",
+        "Native-library comparator records are tracked in `docs/benchmarks/native/README.md` and `docs/native-comparator-scope.md`.",
         "",
     ]
     (OUT_DIR / "README.md").write_text("\n".join(lines), encoding="utf-8")

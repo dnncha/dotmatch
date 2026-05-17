@@ -8,8 +8,8 @@ The script can run on a user-supplied real barcode dataset:
       --barcode-start 1 --barcode-length auto --k 0 --run-cutadapt
 
 If no reads/barcodes are supplied, it generates a small deterministic fixture.
-Those fixture rows are useful for CI and graph plumbing, not for comparative
-wording.
+Those fixture rows are useful for CI and graph plumbing, not for comparator
+records.
 """
 
 from __future__ import annotations

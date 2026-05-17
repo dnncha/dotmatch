@@ -277,7 +277,7 @@ def main() -> None:
     parser.add_argument("--require-guide-counter", action="store_true", default=True)
     parser.add_argument("--no-guide-counter", action="store_false", dest="require_guide_counter")
     parser.add_argument("--min-guide-counter-speedup", type=float, default=1.0,
-                        help="minimum mean DotMatch Hamming speedup over guide-counter for strict speed wording")
+                        help="minimum mean DotMatch Hamming speedup over guide-counter for strict speed comparison")
     parser.add_argument("--skip-count-agreement", action="store_true")
     parser.add_argument("--smoke", action="store_true", help="lower thresholds for local graph plumbing only")
     args = parser.parse_args()

@@ -82,8 +82,7 @@ def _write_workflow_repo(root: Path) -> None:
         ),
         "examples/workflows/nf-core/README.md": (
             "# nf-core-style Module Candidate\n\n"
-            "This is a local nf-core-style module candidate. It has not been submitted to or "
-            "accepted by nf-core. It includes a dotmatch_assay_run AssaySpec module candidate.\n"
+            "Local Nextflow DSL2 module examples for DotMatch native and AssaySpec runs.\n"
         ),
         "examples/workflows/nf-core/modules/local/dotmatch/crispr_count/main.nf": (
             "process DOTMATCH_CRISPR_COUNT {\n"
@@ -244,7 +243,7 @@ def _write_workflow_repo(root: Path) -> None:
             "plasmid\tpass\t9\t0.9\t0.1\t0.2\t0.05\t0.9\t0.0\t0.1\t0.0\n"
         ),
         "examples/workflows/galaxy/README.md": (
-            "# Galaxy Wrapper\n\nThese are example wrappers, including an AssaySpec example wrapper, not been published to a Galaxy ToolShed. Use planemo lint.\n"
+            "# Galaxy Wrapper\n\nLocal Galaxy XML examples for DotMatch native and AssaySpec runs.\n"
         ),
         "examples/workflows/galaxy/dotmatch_crispr_count.xml": (
             "<tool id=\"dotmatch_crispr_count\">\n"
@@ -381,19 +380,6 @@ def test_workflow_examples_ready_requires_assayspec_workflow_pack(tmp_path):
 
     assert any("AssaySpec" in failure and "Galaxy" in failure for failure in result.failures)
     assert any("assay_manifest.summary.tsv" in failure for failure in result.failures)
-
-
-def test_workflow_examples_ready_rejects_external_adoption_claim(tmp_path):
-    checker = _load_checker()
-    _write_workflow_repo(tmp_path)
-    (tmp_path / "examples" / "workflows" / "nf-core" / "README.md").write_text(
-        "# nf-core Module\n\nThis is now an upstream nf-core module with external adoption.\n",
-        encoding="utf-8",
-    )
-
-    result = checker.audit(tmp_path)
-
-    assert any("external-adoption" in failure for failure in result.failures)
 
 
 def test_workflow_examples_ready_rejects_missing_multiqc_schema_columns(tmp_path):

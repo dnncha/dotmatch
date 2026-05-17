@@ -1,18 +1,18 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://dnncha.github.io/dotmatch";
 const socialImageUrl = `${siteUrl}/dotmatch-og.png`;
 const twitterImageUrl = `${siteUrl}/dotmatch-twitter.png`;
 const socialImageAlt =
-  "DotMatch social preview showing fixed-window barcode and guide assignment with auditable outcomes";
+  "DotMatch social preview showing CRISPR guide counts, barcode splits, and visible QC outcomes";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: "DotMatch",
-  title: "DotMatch - Barcode Autopsy for Fixed-Window FASTQs",
+  title: "DotMatch - Guide Counts and Barcode QC",
   description:
-    "DotMatch turns known short-DNA FASTQs into barcode splits, CRISPR guide counts, and QC reports with explicit ambiguity and autopsy artifacts.",
+    "DotMatch counts CRISPR guides and splits fixed-position barcodes from FASTQ reads, with ambiguous and unmatched reads kept visible.",
   authors: [{ name: "DotMatch maintainers", url: "https://github.com/dnncha/dotmatch" }],
   creator: "DotMatch maintainers",
   publisher: "DotMatch",
@@ -26,14 +26,14 @@ export const metadata: Metadata = {
     "CRISPR",
     "FASTQ",
     "barcode demultiplexing",
-    "barcode autopsy",
+    "barcode troubleshooting",
     "edit distance",
     "known-target assignment"
   ],
   openGraph: {
-    title: "DotMatch - Barcode Autopsy for Fixed-Window FASTQs",
+    title: "DotMatch - Guide Counts and Barcode QC",
     description:
-      "Barcode splits, CRISPR guide counts, and QC reports for known short-DNA targets, with ambiguous reads reported instead of guessed.",
+      "CRISPR guide counts, barcode splits, and QC reports for known short-DNA targets, with ambiguous reads reported instead of guessed.",
     type: "website",
     siteName: "DotMatch",
     locale: "en_US",
@@ -51,9 +51,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "DotMatch - Barcode Autopsy for Fixed-Window FASTQs",
+    title: "DotMatch - Guide Counts and Barcode QC",
     description:
-      "Barcode splits, CRISPR guide counts, and QC reports for known short-DNA targets, with ambiguous reads reported instead of guessed.",
+      "CRISPR guide counts, barcode splits, and QC reports for known short-DNA targets, with ambiguous reads reported instead of guessed.",
     images: [
       {
         url: twitterImageUrl,
@@ -63,6 +63,11 @@ export const metadata: Metadata = {
       }
     ]
   }
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1
 };
 
 export default function RootLayout({

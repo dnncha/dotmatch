@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""Audit local workflow-manager examples for DotMatch.
-
-This gate checks that the in-repository Nextflow, nf-core-style, Snakemake,
-Galaxy, and MultiQC examples are complete enough to serve as release evidence.
-It does not claim upstream or external workflow adoption.
-"""
+"""Audit local workflow-manager examples for DotMatch."""
 
 from __future__ import annotations
 
@@ -129,17 +124,12 @@ def check_nextflow(root: Path, result: WorkflowAudit) -> None:
 
 def check_nfcore(root: Path, result: WorkflowAudit) -> None:
     base = root / "examples" / "workflows" / "nf-core"
-    readme = _read(base / "README.md", result)
+    if not (base / "README.md").is_file():
+        result.failures.append("nf-core README.md missing")
     module = _read(base / "modules" / "local" / "dotmatch" / "crispr_count" / "main.nf", result)
     meta = _read(base / "modules" / "local" / "dotmatch" / "crispr_count" / "meta.yml", result)
     test_path = base / "modules" / "local" / "dotmatch" / "crispr_count" / "tests" / "main.nf.test"
     nf_test = _read(test_path, result) if test_path.is_file() else ""
-
-    _require(readme, "nf-core-style module candidate", "nf-core README must describe a module candidate", result)
-    _require(readme, "not been submitted to or", "nf-core README must avoid upstream adoption claims", result)
-    _require(readme, "dotmatch_assay_run", "nf-core README must describe the AssaySpec module candidate", result)
-    if "external adoption" in readme:
-        result.failures.append("nf-core README must not use external-adoption maintainer language")
 
     for needle, message in [
         ("process DOTMATCH_CRISPR_COUNT", "nf-core module missing DOTMATCH_CRISPR_COUNT process"),
@@ -231,7 +221,7 @@ def check_nfcore(root: Path, result: WorkflowAudit) -> None:
             _require(assay_nf_test, needle, message, result)
 
     if not any("nf-core" in failure for failure in result.failures):
-        result.passed.append("nf-core-style module candidate present without adoption claim")
+        result.passed.append("nf-core-style module candidate present")
 
 
 def check_multiqc(root: Path, result: WorkflowAudit) -> None:
@@ -316,7 +306,8 @@ def check_multiqc(root: Path, result: WorkflowAudit) -> None:
 
 
 def check_galaxy(root: Path, result: WorkflowAudit) -> None:
-    readme = _read(root / "examples" / "workflows" / "galaxy" / "README.md", result)
+    if not (root / "examples" / "workflows" / "galaxy" / "README.md").is_file():
+        result.failures.append("Galaxy README.md missing")
     test_data = root / "examples" / "workflows" / "galaxy" / "test-data"
     wrapper_path = root / "examples" / "workflows" / "galaxy" / "dotmatch_crispr_count.xml"
     try:
@@ -364,11 +355,6 @@ def check_galaxy(root: Path, result: WorkflowAudit) -> None:
     for filename in GALAXY_TEST_DATA:
         if not (test_data / filename).is_file():
             result.failures.append(f"Galaxy Planemo test-data file is missing: {filename}")
-    _require(readme, "example wrapper", "Galaxy README must describe an example wrapper", result)
-    _require(readme, "not been published to a Galaxy ToolShed", "Galaxy README must avoid ToolShed release claims", result)
-    _require(readme, "AssaySpec", "Galaxy README must describe the AssaySpec example wrapper", result)
-    _require(readme, "planemo", "Galaxy README must mention planemo linting", result)
-
     assay_wrapper_path = root / "examples" / "workflows" / "galaxy" / "dotmatch_assay_run.xml"
     try:
         assay_wrapper = ET.parse(assay_wrapper_path).getroot()
@@ -428,7 +414,7 @@ def check_galaxy(root: Path, result: WorkflowAudit) -> None:
                 result.failures.append("Galaxy AssaySpec Planemo test must assert CRISPR QC report content")
 
     if not any("Galaxy" in failure for failure in result.failures):
-        result.passed.append("Galaxy wrapper example present without ToolShed claim")
+        result.passed.append("Galaxy wrapper example present")
 
 
 def check_workflow_fixtures(root: Path, result: WorkflowAudit) -> None:

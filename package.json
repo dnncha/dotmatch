@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "tsc --noEmit",
-    "check:site": "node scripts/check_site_launch_surface.mjs"
+    "check:site": "node scripts/check_site_assets.mjs"
   },
   "repository": {
     "type": "git",

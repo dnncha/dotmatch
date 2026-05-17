@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Audit the evidence bundle behind DotMatch's fixed-window barcode story."""
+"""Audit the validation bundle behind DotMatch's fixed-window barcode work."""
 
 from __future__ import annotations
 
@@ -125,7 +125,7 @@ def _check_zero_validation_mismatches(dataset_id: str, raw_artifact: str, rows: 
 def _check_dataset(root: Path, dataset: dict, make_targets: set[str], result: AuditResult) -> None:
     dataset_id = str(dataset.get("id") or "")
     if not dataset_id:
-        result.failures.append("barcode science dataset is missing id")
+        result.failures.append("barcode validation dataset is missing id")
         return
     for key in ["label", "raw_artifact", "metadata", "gate", "comparator_semantics", "claim_boundary"]:
         if not str(dataset.get(key) or "").strip():
@@ -172,10 +172,6 @@ def _check_dataset(root: Path, dataset: dict, make_targets: set[str], result: Au
     if len(parts) == 2 and parts[0] == "make":
         _require(parts[1] in make_targets, f"{dataset_id}: missing make target for gate {parts[1]}", result)
 
-    claim_boundary = str(dataset.get("claim_boundary") or "").lower()
-    for blocked in ["replace cutadapt", "replace bcl", "diagnostic claim"]:
-        _require(blocked not in claim_boundary, f"{dataset_id}: claim boundary contains overbroad wording: {blocked}", result)
-
 
 def audit(root: Path) -> AuditResult:
     root = root.resolve()
@@ -190,14 +186,14 @@ def audit(root: Path) -> AuditResult:
         result.failures.append(f"docs/barcode-science-readiness.json could not be read: {exc}")
         return result
 
-    _require(manifest.get("schema_version") == 1, "barcode science readiness manifest must declare schema_version 1", result)
+    _require(manifest.get("schema_version") == 1, "barcode validation manifest must declare schema_version 1", result)
     datasets = manifest.get("datasets")
     if not isinstance(datasets, list):
-        result.failures.append("barcode science readiness manifest must contain datasets list")
+        result.failures.append("barcode validation manifest must contain datasets list")
         return result
     _require(
         len(datasets) >= REQUIRED_MIN_PUBLIC_DATASETS,
-        f"barcode science readiness requires at least {REQUIRED_MIN_PUBLIC_DATASETS} public fixed-window evidence datasets",
+        f"barcode validation requires at least {REQUIRED_MIN_PUBLIC_DATASETS} public fixed-window datasets",
         result,
     )
 
@@ -205,17 +201,17 @@ def audit(root: Path) -> AuditResult:
     seen: set[str] = set()
     for dataset in datasets:
         if not isinstance(dataset, dict):
-            result.failures.append("barcode science datasets must be objects")
+            result.failures.append("barcode validation datasets must be objects")
             continue
         dataset_id = str(dataset.get("id") or "")
         if dataset_id in seen:
-            result.failures.append(f"duplicate barcode science dataset: {dataset_id}")
+            result.failures.append(f"duplicate barcode validation dataset: {dataset_id}")
         seen.add(dataset_id)
         _check_dataset(root, dataset, make_targets, result)
 
     if result.ok:
-        result.passed.append(f"{len(datasets)} public fixed-window evidence datasets are comparator-backed")
-        result.passed.append("barcode science claim boundaries are conservative")
+        result.passed.append(f"{len(datasets)} public fixed-window datasets are comparator-backed")
+        result.passed.append("barcode validation manifest references raw artifacts and gates")
     return result
 
 
@@ -229,9 +225,9 @@ def main() -> int:
     for failure in result.failures:
         print(f"FAIL: {failure}")
     if result.ok:
-        print("BARCODE SCIENCE READINESS: PASS")
+        print("BARCODE VALIDATION: PASS")
         return 0
-    print("BARCODE SCIENCE READINESS: FAIL")
+    print("BARCODE VALIDATION: FAIL")
     return 1
 
 

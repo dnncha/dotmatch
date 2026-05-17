@@ -1,32 +1,32 @@
-# Barcode Science Readiness
+# Barcode Validation Notes
 
-DotMatch's barcode story is intentionally narrower than general demultiplexing:
-fixed-window known-target assignment after FASTQ generation. The readiness gate
-therefore checks evidence for fixed-window biology, not BCL conversion, adapter
-trimming, UMI/cell aggregation, or downstream biological effect analysis.
+This page describes what has been checked for DotMatch barcode work. The scope
+is fixed-window known-target assignment after FASTQ generation. It does not
+cover BCL conversion, adapter trimming, UMI/cell aggregation, or downstream
+biological effect analysis.
 
-Run:
+Developer check:
 
 ```bash
-make barcode-science-ready
+make barcode-validation-ready
 ```
 
-For users, the shortest useful path is `dotmatch barcode autopsy`: it produces a
-single `report.html` for review plus `findings.tsv`, `offset_scan.tsv`,
+For users, the shortest useful path is `dotmatch barcode autopsy`: it produces
+one `report.html` for review plus `findings.tsv`, `offset_scan.tsv`,
 `correction_safety.tsv`, `top_unmatched.tsv`, and `provenance.json` for
-workflow and methods evidence.
+pipeline records and methods review.
 
-The gate requires:
+The check requires:
 
-- at least five public fixed-window evidence datasets;
+- at least five public fixed-window datasets;
 - successful DotMatch rows with positive assignments;
-- comparator or oracle rows with documented semantics;
+- comparator or oracle rows with documented settings;
 - zero recorded validation mismatches where validation is part of the row;
-- evidence-ready metadata for each public dataset;
-- conservative claim boundaries for every dataset;
-- explicit failure-mode fixtures for the barcode-autopsy report vocabulary.
+- metadata for each public dataset;
+- plain notes on what each dataset does and does not support;
+- explicit failure-mode fixtures for the barcode diagnostic report vocabulary.
 
-Current public fixed-window evidence lanes are listed in
+Current public fixed-window examples are listed in
 `docs/barcode-science-readiness.json`:
 
 - SRP009896/SRR391079 inline barcode demultiplexing with Cutadapt and exact
@@ -36,8 +36,8 @@ Current public fixed-window evidence lanes are listed in
 - nf-core viralrecon ARTIC V3 primer-start fixed-window assignment;
 - public TruSeq adapter-prefix fixed-window assignment.
 
-These datasets are not interchangeable biological claims. They are deliberately
-used as separate fixed-window evidence lanes. The wet-lab-facing autopsy report
-should explain whether a run is clean, weakly specified, offset-shifted,
-collision-prone, low-quality, ambiguous, invalid, or unmatched, then point the
-user to the exact artifact that supports that conclusion.
+These datasets answer different questions and should not be combined into one
+broad biological claim. The wet-lab-facing report should explain whether a run
+is clean, weakly specified, offset-shifted, collision-prone, low-quality,
+ambiguous, invalid, or unmatched, then point the user to the file that supports
+that conclusion.

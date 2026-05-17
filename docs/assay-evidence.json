@@ -74,7 +74,7 @@
       ],
       "comparator_semantics": "The checked public 10x tiny-BCL row validates DotMatch classic per-cycle output counts against an available bcl2fastq row by count totals only; it is a parser/workflow milestone, not production demultiplexing comparator evidence.",
       "validation": "The tiny public gate requires a successful DotMatch public_10x_tiny_bcl row, output hashes, positive assigned reads, count totals that sum to clusters, and zero-mismatch bcl2fastq count-total validation. The comparison gate still blocks broader BCL claims until repeated real run-folder rows, CBCL evidence, and production comparator validation are present.",
-      "claim_boundary": "Supported only for the checked public 10x tiny-BCL classic per-cycle milestone with count-total validation. Production Illumina replacement, CBCL/NovaSeq, and broader BCL comparison wording remain blocked.",
+      "claim_boundary": "Supported only for the checked public 10x tiny-BCL classic per-cycle milestone with count-total validation. Production Illumina replacement, CBCL/NovaSeq, and broader BCL comparison evidence are not covered.",
       "next_public_evidence": "Add real run-folder rows with production comparator validation and CBCL evidence where relevant."
     },
     {

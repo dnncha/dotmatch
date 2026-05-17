@@ -22,7 +22,7 @@ def test_current_repo_barcode_science_readiness_passes():
     result = checker.audit(ROOT)
 
     assert result.ok, result.failures
-    assert any("public fixed-window evidence datasets" in item for item in result.passed)
+    assert any("public fixed-window datasets" in item for item in result.passed)
 
 
 def _write_rows(path: Path, rows: list[dict[str, object]]) -> None:

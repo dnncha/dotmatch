@@ -120,6 +120,6 @@ count AssaySpec from Galaxy-staged inputs, then exposes the human-readable assay
 report, provenance manifest, manifest summary, sample QC, CRISPR QC, counts,
 and native summary.
 
-This is a local example wrapper, not a Galaxy ToolShed release.
+This wrapper is intended for local Galaxy installations and workflow testing.
     ]]></help>
 </tool>

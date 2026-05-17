@@ -3,7 +3,7 @@
 - Platform: `macOS-26.2-arm64-arm-64bit`
 - Python: `3.9.6`
 - External exact edit-distance baseline: Edlib Python binding with `mode="NW"`, `task="distance"`.
-- These graphs compare short global edit-distance workloads. They are not broad aligner benchmarks.
+- These graphs cover short global edit-distance workloads.
 
 ## Graphs
 
@@ -65,7 +65,7 @@ Assay-lane coverage and public-evidence gaps are tracked in `docs/assay-evidence
 | dotmatch_scan | 32 | 0 | 384 | 1123595.5 |
 | dotmatch_naive | 32 | 0 | 384 | 1117318.4 |
 
-## Evidence Boundary
+## Scope
 
 These results cover short-DNA global edit-distance and threshold matching against Edlib's Python binding.
-Checked native-library performance claims are scoped to the native Edlib assignment report. SeqAn/Parasail comparisons are not claimed until docs/native-comparator-scope.md requirements are met.
+Native-library comparator records are tracked in `docs/benchmarks/native/README.md` and `docs/native-comparator-scope.md`.

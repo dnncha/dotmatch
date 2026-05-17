@@ -44,10 +44,10 @@ def _valid_manifest() -> dict:
                 "raw_artifacts": ["benchmarks/raw/barcode_demux.csv"],
                 "reports": ["docs/benchmarks/barcode_demux/README.md"],
                 "gates": ["make barcode-comparison-gate"],
-                "claim_boundary": "Comparison wording waits for public real-data comparator rows.",
+                "claim_boundary": "Fixture rows cover workflow smoke evidence only.",
                 "next_public_evidence": "Add public barcode-sheet rows with comparator agreement.",
                 "commands": ["make bench-barcode-demux"],
-                "comparator_semantics": "Fixture rows are workflow smoke evidence; comparator wording is gated.",
+                "comparator_semantics": "Fixture rows record deterministic demux execution.",
                 "validation": "Smoke gate checks deterministic demux execution.",
             },
             {

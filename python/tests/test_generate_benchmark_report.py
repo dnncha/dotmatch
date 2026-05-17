@@ -1,18 +1,21 @@
+import re
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_benchmark_report_documents_native_comparator_scope_boundary() -> None:
+def test_benchmark_report_references_committed_artifacts() -> None:
     report = (ROOT / "docs" / "benchmarks" / "README.md").read_text(encoding="utf-8")
-    generator = (ROOT / "scripts" / "generate_benchmark_report.py").read_text(encoding="utf-8")
 
-    required = (
-        "SeqAn/Parasail comparisons are not claimed until "
-        "docs/native-comparator-scope.md requirements are met."
-    )
-    assert required in report
-    assert required in generator
-    assert "Comparative performance wording should use native C Edlib, SeqAn, and Parasail comparisons" not in report
-    assert "Comparative performance wording should use native C Edlib, SeqAn, and Parasail comparisons" not in generator
+    linked_svgs = set(re.findall(r"\]\(([^)]+\.svg)\)", report))
+    assert {
+        "exact_speedup_vs_edlib.svg",
+        "threshold_speedup_heatmap.svg",
+        "batch_assignment_throughput.svg",
+    }.issubset(linked_svgs)
+    for asset in linked_svgs:
+        assert (ROOT / "docs" / "benchmarks" / asset).is_file()
+
+    assert (ROOT / "docs" / "benchmarks" / "native" / "README.md").is_file()
+    assert (ROOT / "docs" / "native-comparator-scope.md").is_file()

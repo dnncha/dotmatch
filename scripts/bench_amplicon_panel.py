@@ -241,7 +241,7 @@ def write_report(rows, report: Path) -> None:
             "",
             "## Evidence Boundary",
             "",
-            "Use these lanes to verify fixed-window known-target panel assignment plumbing, explicit ambiguity handling, and narrow public ARTIC primer-start per-read assignment. Broader amplicon/panel benchmark wording requires public full-assay comparator semantics, consensus or variant-call validation where relevant, exact commands, validation artifacts, and a passing gate.",
+            "Use these lanes to verify fixed-window known-target panel assignment plumbing, explicit ambiguity handling, and narrow public ARTIC primer-start per-read assignment. Broader amplicon/panel benchmarks require public full-assay comparator semantics, consensus or variant-call validation where relevant, exact commands, validation artifacts, and a passing gate.",
             "",
         ]
     )

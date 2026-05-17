@@ -1313,8 +1313,8 @@ def _count_fastq_records(path: Path) -> int:
 
 def _write_barcode_multiqc(path: Path, summary: dict[str, object], inference: dict[str, object]) -> None:
     text = (
-        "id: dotmatch_barcode_autopsy\n"
-        "section_name: DotMatch Barcode Autopsy\n"
+        "id: dotmatch_barcode_qc\n"
+        "section_name: DotMatch Barcode QC\n"
         "plot_type: table\n"
         "data:\n"
         "  pooled:\n"
@@ -1362,11 +1362,11 @@ def _write_barcode_autopsy_reports(out_dir: Path, provenance: dict[str, object])
     ]
     md = "\n".join(
         [
-            "# Barcode Autopsy Demo",
+            "# Barcode Troubleshooting Report",
             "",
-            "DotMatch turns FASTQ barcode demultiplexing from assigned/unassigned output into an auditable fixed-window report.",
+            "DotMatch reports how fixed-window barcode reads were assigned, rejected, or flagged for review.",
             "",
-            "Speed is reported only after the comparator-parity gate passes.",
+            "Speed is reported only after the comparator settings are documented.",
             "",
             "## Decision Summary",
             "",
@@ -1375,23 +1375,23 @@ def _write_barcode_autopsy_reports(out_dir: Path, provenance: dict[str, object])
             f"- Top finding: `{findings[0]['finding'] if findings else diagnosis}`",
             f"- Primary report: `report.html`",
             "",
-            "## Panel 1 - Comparator parity",
+            "## Comparator check",
             "",
-            "Use this panel with recorded comparator evidence for the same semantics. The demo report is conservative until that gate is present.",
+            "Use this section with recorded comparator settings for the same barcode window, length, and correction policy.",
             "",
-            "## Panel 2 - Offset autopsy",
+            "## Offset check",
             "",
             f"Highest-scoring sampled barcode window: start={start}, length={length}.",
             f"Exact assignment rate at that window: {assignment_rate}. Inference status: {inference_status}.",
             *(f"Warning: {warning}." for warning in inference_warnings),
             "",
-            "## Panel 3 - Barcode safety audit",
+            "## Barcode safety audit",
             "",
             "The audit output reports duplicate and nearby barcode pairs before one-edit correction is trusted.",
             "",
-            "## Panel 4 - Assignment autopsy",
+            "## Assignment summary",
             "",
-            f"Autopsy run assignment rate: {run_assignment_rate}.",
+            f"Run assignment rate: {run_assignment_rate}.",
             f"Exact assignments: {assigned_exact}. Corrected assignments: {assigned_corrected}.",
             f"Ambiguous reads: {ambiguous} ({run_ambiguous_rate}). Unmatched reads: {unmatched} ({run_no_match_rate}). Invalid windows: {invalid}.",
             f"Top failure reason: {diagnosis}. Top unmatched sequences are written to `top_unmatched.tsv`.",
@@ -1410,17 +1410,17 @@ def _write_barcode_autopsy_reports(out_dir: Path, provenance: dict[str, object])
             "",
             *(f"- {line}" for line in finding_lines),
             "",
-            "## Panel 5 - Workflow handoff",
+            "## Workflow handoff",
             "",
             "Artifacts are written as stable TSV, JSON, FASTQ, HTML, and MultiQC custom-content inputs.",
             "",
-            "## Trust Checklist",
+            "## QC Checklist",
             "",
             "- Exact command provenance is recorded in `provenance.json`.",
             "- Offset evidence is recorded in `offset_scan.tsv`.",
             "- Barcode collision safety is recorded under `audit/` and summarized in `correction_safety.tsv`.",
             "- Ambiguous and unmatched reads are retained when requested instead of being silently assigned.",
-            "- Public benchmark claims remain scoped to documented comparator semantics.",
+            "- Benchmark notes stay tied to documented comparator settings.",
             "",
             "## Commands",
             "",
@@ -1440,7 +1440,7 @@ def _write_barcode_autopsy_reports(out_dir: Path, provenance: dict[str, object])
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>DotMatch Barcode Autopsy Report</title>
+  <title>DotMatch Barcode Troubleshooting Report</title>
   <style>
     body {{ margin: 2rem; color: #111816; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }}
     .panel {{ border-top: 1px solid #dfe7e2; padding: 1rem 0; }}
@@ -1448,17 +1448,17 @@ def _write_barcode_autopsy_reports(out_dir: Path, provenance: dict[str, object])
   </style>
 </head>
 <body>
-  <h1>Barcode Autopsy Demo</h1>
-  <p>DotMatch turns FASTQ barcode demultiplexing from assigned/unassigned output into an auditable fixed-window report.</p>
-  <p><strong>Speed is reported only after the comparator-parity gate passes.</strong></p>
+  <h1>Barcode Troubleshooting Report</h1>
+  <p>DotMatch reports how fixed-window barcode reads were assigned, rejected, or flagged for review.</p>
+  <p><strong>Speed is reported only after the comparator settings are documented.</strong></p>
   <section class="panel"><h2>Decision Summary</h2><p>Inference status: <strong>{html.escape(str(inference_status))}</strong>; assignment rate: <strong>{html.escape(run_assignment_rate)}</strong>; top finding: <strong>{html.escape(findings[0]['finding'] if findings else diagnosis)}</strong>.</p></section>
-  <section class="panel"><h2>Comparator parity</h2><p>Use recorded comparator evidence for identical semantics before interpreting speed.</p></section>
-  <section class="panel"><h2>Offset autopsy</h2><p>Highest-scoring sampled window: start={html.escape(str(start))}, length={html.escape(str(length))}; exact assignment rate={html.escape(str(assignment_rate))}; status={html.escape(str(inference_status))}.</p></section>
+  <section class="panel"><h2>Comparator check</h2><p>Use recorded comparator settings for the same barcode window, length, and correction policy before interpreting speed.</p></section>
+  <section class="panel"><h2>Offset check</h2><p>Highest-scoring sampled window: start={html.escape(str(start))}, length={html.escape(str(length))}; exact assignment rate={html.escape(str(assignment_rate))}; status={html.escape(str(inference_status))}.</p></section>
   <section class="panel"><h2>Barcode safety audit</h2><p>Audit outputs identify duplicate and nearby barcode pairs before one-edit correction is enabled.</p></section>
-  <section class="panel"><h2>Assignment autopsy</h2><p>Run assignment rate={html.escape(run_assignment_rate)}; ambiguous={html.escape(str(ambiguous))} ({html.escape(run_ambiguous_rate)}); unmatched={html.escape(str(unmatched))} ({html.escape(run_no_match_rate)}); invalid={html.escape(str(invalid))}. Top failure reason: {html.escape(diagnosis)}.</p><h3>What this means</h3><p>{html.escape(interpretation["meaning"])}</p><h3>Next action</h3><p>{html.escape(interpretation["next_action"])}</p><p>Do not rescue ambiguous reads into either sample without changing the barcode design or assignment policy.</p></section>
+  <section class="panel"><h2>Assignment summary</h2><p>Run assignment rate={html.escape(run_assignment_rate)}; ambiguous={html.escape(str(ambiguous))} ({html.escape(run_ambiguous_rate)}); unmatched={html.escape(str(unmatched))} ({html.escape(run_no_match_rate)}); invalid={html.escape(str(invalid))}. Top failure reason: {html.escape(diagnosis)}.</p><h3>What this means</h3><p>{html.escape(interpretation["meaning"])}</p><h3>Next action</h3><p>{html.escape(interpretation["next_action"])}</p><p>Do not rescue ambiguous reads into either sample without changing the barcode design or assignment policy.</p></section>
   <section class="panel"><h2>Findings</h2><ul>{html_findings}</ul></section>
   <section class="panel"><h2>Workflow handoff</h2><p>Stable TSV, JSON, FASTQ, HTML, and MultiQC custom-content artifacts are emitted for workflow systems.</p></section>
-  <h2>Trust Checklist</h2><ul><li>Exact command provenance is recorded in <code>provenance.json</code>.</li><li>Offset evidence is recorded in <code>offset_scan.tsv</code>.</li><li>Barcode collision safety is recorded under <code>audit/</code> and summarized in <code>correction_safety.tsv</code>.</li><li>Ambiguous and unmatched reads are retained when requested instead of being silently assigned.</li><li>Public benchmark claims remain scoped to documented comparator semantics.</li></ul>
+  <h2>QC Checklist</h2><ul><li>Exact command provenance is recorded in <code>provenance.json</code>.</li><li>Offset evidence is recorded in <code>offset_scan.tsv</code>.</li><li>Barcode collision safety is recorded under <code>audit/</code> and summarized in <code>correction_safety.tsv</code>.</li><li>Ambiguous and unmatched reads are retained when requested instead of being silently assigned.</li><li>Benchmark notes stay tied to documented comparator settings.</li></ul>
   <h2>Commands</h2><ul>{html_commands}</ul>
   <h2>Artifacts</h2><ul>{html_artifacts}</ul>
 </body>

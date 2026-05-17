@@ -3,11 +3,9 @@
 This directory contains local nf-core-style module candidates for running
 DotMatch from a Nextflow DSL2 workflow. `dotmatch_crispr_count` keeps the native
 command path, while `dotmatch_assay_run` runs an AssaySpec and emits the assay
-report and manifest summary. These examples have not been submitted to or
-accepted by nf-core.
+report and manifest summary.
 
-These examples demonstrate workflow integration. They are not benchmark results,
-package-channel releases, or publication evidence.
+These examples demonstrate workflow integration. They are not benchmark results.
 
 The native module emits a MAGeCK-compatible count matrix, JSON summary,
 `sample_qc` table for MultiQC custom content, and `versions.yml`. The AssaySpec

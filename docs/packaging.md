@@ -38,8 +38,7 @@ A release recipe template is kept under `packaging/bioconda/`. Before copying it
 to `bioconda-recipes`, replace `REPLACE_WITH_RELEASE_TARBALL_SHA256` with the
 SHA256 for the tagged GitHub release tarball. Run `make bioconda-recipe-ready`
 before that copy so the checked-in template stays aligned with the release
-version, native install steps, CLI smoke tests, and no-genome-aligner scope
-wording.
+version, native install steps, CLI smoke tests, and scope notes.
 
 The recipe needs:
 

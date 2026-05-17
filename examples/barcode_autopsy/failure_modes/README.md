@@ -1,6 +1,6 @@
-# Barcode Autopsy Failure Fixtures
+# Barcode Troubleshooting Failure Fixtures
 
-These tiny fixtures document the failure classes the barcode-autopsy report is
+These tiny fixtures document the failure classes the barcode troubleshooting report is
 expected to explain. They are intentionally synthetic, because the purpose is
 diagnostic coverage rather than public-data performance evidence.
 

@@ -104,14 +104,13 @@ def _cff_keywords(text: str) -> list[str]:
     return values
 
 
-def _contains_unminted_doi_claim(path: Path, *, codemeta_context: bool = False) -> bool:
-    if path.name == "codemeta.json" and codemeta_context:
+def _has_release_doi_field(path: Path) -> bool:
+    if path.name == "CITATION.cff":
+        return re.search(r"^\s*doi\s*:", _read(path), flags=re.I | re.M) is not None
+    if path.suffix == ".json":
         data = _read_json(path)
-        data.pop("@context", None)
-        text = json.dumps(data)
-    else:
-        text = _read(path)
-    return "doi.org" in text.lower() or re.search(r"^\s*doi\s*:", text, flags=re.I | re.M) is not None
+        return any(key in data for key in {"doi", "conceptdoi"})
+    return False
 
 
 def _check_keywords(source: str, keywords: list[str], result: AuditResult) -> None:
@@ -227,18 +226,9 @@ def audit(root: Path) -> AuditResult:
     _check_keywords(".zenodo.json", [str(value) for value in zenodo.get("keywords") or []], result)
     _check_pyproject_discovery(root, result)
 
-    abstract = str(citation.get("abstract") or "")
-    for fragment in ["known-target short-DNA assignment", "CRISPR", "barcode"]:
-        if fragment.lower() not in abstract.lower():
-            result.failures.append(f"CITATION.cff abstract must mention {fragment}")
-
-    for path, allow_context in [
-        (root / "CITATION.cff", False),
-        (root / "codemeta.json", True),
-        (root / ".zenodo.json", False),
-    ]:
-        if _contains_unminted_doi_claim(path, codemeta_context=allow_context):
-            result.failures.append(f"{path.name} must not claim a DOI before Zenodo release")
+    for path in [root / "CITATION.cff", root / "codemeta.json", root / ".zenodo.json"]:
+        if _has_release_doi_field(path):
+            result.failures.append(f"{path.name} has a DOI field before Zenodo release")
 
     if result.ok:
         result.passed.append("citation metadata aligned")

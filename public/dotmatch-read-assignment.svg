@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" role="img" aria-labelledby="title desc">
+  <title id="title">DotMatch fixed-window assignment workflow</title>
+  <desc id="desc">FASTQ reads and a known target table are sliced at the same read position, assigned to known short DNA targets, and written to counts, FASTQ splits, QC tables, and an HTML report.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f7fbf9; }
+      .panel { fill: #ffffff; stroke: #c9d8d1; stroke-width: 2; }
+      .header { fill: #0f6b57; }
+      .header-blue { fill: #134f8c; }
+      .header-warm { fill: #805a14; }
+      .title { font: 700 24px Arial, Helvetica, sans-serif; fill: #ffffff; }
+      .label { font: 700 22px Arial, Helvetica, sans-serif; fill: #16352f; }
+      .small { font: 16px Arial, Helvetica, sans-serif; fill: #4b625c; }
+      .mono { font: 17px "SFMono-Regular", Consolas, monospace; fill: #0b4d3c; }
+      .muted { fill: #6c807a; }
+      .arrow { fill: none; stroke: #174f86; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrowhead); }
+      .slice { fill: #dff3e9; stroke: #17865f; stroke-width: 2; }
+      .outcome-unique { fill: #e9f7ef; stroke: #249156; stroke-width: 2; }
+      .outcome-ambiguous { fill: #fff6df; stroke: #d79216; stroke-width: 2; }
+      .outcome-none { fill: #f1edfb; stroke: #7051a8; stroke-width: 2; }
+      .outcome-invalid { fill: #fff0ef; stroke: #c9473f; stroke-width: 2; }
+    </style>
+    <marker id="arrowhead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#174f86" />
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1200" height="560" rx="0" />
+  <text x="52" y="58" class="label">DotMatch assigns reads to a known short-DNA target list</text>
+  <text x="52" y="88" class="small">Use it when the guide, barcode, primer, feature tag, panel target, or whitelist sequence is already known.</text>
+
+  <g transform="translate(52 130)">
+    <rect class="panel" x="0" y="0" width="205" height="286" rx="8" />
+    <rect class="header-blue" x="0" y="0" width="205" height="54" rx="8" />
+    <path d="M0 46 H205 V54 H0 Z" fill="#134f8c" />
+    <text x="24" y="36" class="title">FASTQ reads</text>
+    <text x="24" y="92" class="mono">@read_001</text>
+    <text x="24" y="120" class="mono">NNACGTTAGCC...</text>
+    <text x="24" y="148" class="muted small">+</text>
+    <text x="24" y="176" class="mono">IIIIIIIIIIII...</text>
+    <text x="24" y="224" class="mono">@read_002</text>
+    <text x="24" y="252" class="mono">NNTAGTGGAT...</text>
+  </g>
+
+  <g transform="translate(292 130)">
+    <rect class="panel" x="0" y="0" width="220" height="286" rx="8" />
+    <rect class="header" x="0" y="0" width="220" height="54" rx="8" />
+    <path d="M0 46 H220 V54 H0 Z" fill="#0f6b57" />
+    <text x="24" y="36" class="title">Known targets</text>
+    <text x="24" y="92" class="small">barcodes.tsv or guides.csv</text>
+    <rect class="slice" x="24" y="122" width="172" height="34" rx="5" />
+    <text x="40" y="145" class="mono">sample_A ACGTTAGC</text>
+    <rect class="slice" x="24" y="174" width="172" height="34" rx="5" />
+    <text x="40" y="197" class="mono">sample_B TAGTGGAT</text>
+    <rect class="slice" x="24" y="226" width="172" height="34" rx="5" />
+    <text x="40" y="249" class="mono">sample_C TGGATCCT</text>
+  </g>
+
+  <path class="arrow" d="M535 272 H617" />
+
+  <g transform="translate(645 130)">
+    <rect class="panel" x="0" y="0" width="230" height="286" rx="8" />
+    <rect class="header-warm" x="0" y="0" width="230" height="54" rx="8" />
+    <path d="M0 46 H230 V54 H0 Z" fill="#805a14" />
+    <text x="24" y="36" class="title">Read slice</text>
+    <text x="24" y="88" class="small">Same position in every read</text>
+    <text x="24" y="122" class="small">example: bases 3 to 10</text>
+    <rect x="24" y="154" width="182" height="52" rx="6" fill="#eef4f1" stroke="#c9d8d1" stroke-width="2" />
+    <text x="42" y="186" class="mono">NN<tspan fill="#0f6b57" font-weight="700">ACGTTAGC</tspan>...</text>
+    <rect x="24" y="220" width="182" height="38" rx="6" fill="#ffffff" stroke="#c9d8d1" stroke-width="2" />
+    <text x="42" y="245" class="mono">k=0 or k=1</text>
+  </g>
+
+  <path class="arrow" d="M898 272 H965" />
+
+  <g transform="translate(988 118)">
+    <rect class="outcome-unique" x="0" y="0" width="160" height="50" rx="8" />
+    <text x="20" y="33" class="small" font-weight="700">unique</text>
+    <rect class="outcome-ambiguous" x="0" y="66" width="160" height="50" rx="8" />
+    <text x="20" y="99" class="small" font-weight="700">ambiguous</text>
+    <rect class="outcome-none" x="0" y="132" width="160" height="50" rx="8" />
+    <text x="20" y="165" class="small" font-weight="700">none</text>
+    <rect class="outcome-invalid" x="0" y="198" width="160" height="50" rx="8" />
+    <text x="20" y="231" class="small" font-weight="700">invalid</text>
+  </g>
+
+  <g transform="translate(988 398)">
+    <text x="0" y="0" class="small" font-weight="700">Outputs</text>
+    <text x="0" y="28" class="small">counts / split FASTQ</text>
+    <text x="0" y="52" class="small">sample_qc.tsv</text>
+    <text x="0" y="76" class="small">HTML + JSON report</text>
+  </g>
+
+  <path class="arrow" d="M257 272 H292" />
+  <text x="52" y="520" class="small">The important behavior: ambiguous reads are reported as ambiguous. DotMatch does not silently choose one target.</text>
+</svg>

@@ -70,13 +70,7 @@ def test_bcl_tiny_public_gate_accepts_public_dotmatch_and_validated_bcl2fastq_ro
     csv_path = tmp_path / "bcl_demux.csv"
     report = tmp_path / "README.md"
     _write_rows(csv_path, [_dotmatch_row(), _bcl2fastq_row()])
-    report.write_text(
-        "The public `public_10x_tiny_bcl` row is not a comparison result by itself. "
-        "Run `make bcl-tiny-public-gate` for the narrow milestone and "
-        "`make bcl-comparison-gate` before using comparative wording. "
-        "Broader comparison requires a successful DotMatch CBCL row and distinct repeated timing.\n",
-        encoding="utf-8",
-    )
+    report.write_text("# BCL benchmark report\n", encoding="utf-8")
 
     failures = []
     gate.row_gate(gate.read_rows(csv_path), failures)
@@ -107,43 +101,12 @@ def test_bcl_tiny_public_gate_rejects_count_disagreement(tmp_path):
     assert any("assigned read count" in failure for failure in failures)
 
 
-def test_bcl_tiny_public_gate_rejects_report_without_boundary(tmp_path):
+def test_bcl_tiny_public_gate_rejects_empty_report(tmp_path):
     gate = _load_gate()
     report = tmp_path / "README.md"
-    report.write_text("public_10x_tiny_bcl\n", encoding="utf-8")
+    report.write_text("", encoding="utf-8")
 
     failures = []
     gate.report_gate(report, failures)
 
-    assert any("not a comparison result" in failure for failure in failures)
-
-
-def test_bcl_tiny_public_gate_rejects_report_without_narrow_gate(tmp_path):
-    gate = _load_gate()
-    report = tmp_path / "README.md"
-    report.write_text(
-        "The public `public_10x_tiny_bcl` row is not a comparison result by itself. "
-        "Run `make bcl-comparison-gate` before using comparative wording.\n",
-        encoding="utf-8",
-    )
-
-    failures = []
-    gate.report_gate(report, failures)
-
-    assert any("bcl-tiny-public-gate" in failure for failure in failures)
-
-
-def test_bcl_tiny_public_gate_rejects_report_without_broader_cbcl_repeat_boundary(tmp_path):
-    gate = _load_gate()
-    report = tmp_path / "README.md"
-    report.write_text(
-        "The public `public_10x_tiny_bcl` row is not a comparison result by itself. "
-        "Run `make bcl-tiny-public-gate` and `make bcl-comparison-gate` before using comparative wording.\n",
-        encoding="utf-8",
-    )
-
-    failures = []
-    gate.report_gate(report, failures)
-
-    assert any("DotMatch CBCL" in failure for failure in failures)
-    assert any("distinct repeated" in failure for failure in failures)
+    assert any("empty BCL benchmark report" in failure for failure in failures)

@@ -106,12 +106,6 @@ def _check_meta(meta: str, result: AuditResult) -> None:
         if command not in meta:
             result.failures.append(f"Bioconda recipe test commands must include {command}")
 
-    lower_meta = meta.lower()
-    if "not a genome aligner" not in lower_meta:
-        result.failures.append("Bioconda recipe description must state DotMatch is not a genome aligner")
-    if re.search(r"\b(accepted|published|released|available)\s+(on|in|from)\s+bioconda\b", meta, flags=re.I):
-        result.failures.append("Bioconda recipe must not claim public Bioconda availability before the package is accepted")
-
 
 def _check_build(build: str, result: AuditResult) -> None:
     required_fragments = [

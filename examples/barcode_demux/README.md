@@ -49,17 +49,16 @@ make barcode-autopsy-demo
 
 This writes `examples/barcode_autopsy/results/report.html` plus offset-scan,
 collision-audit, assignment, unmatched-read, provenance, and MultiQC custom
-content artifacts. The autopsy report is diagnostic; comparator throughput
+content artifacts. The report is diagnostic; comparator throughput
 claims still come from the checked comparison gate above.
 
-For the broader fixed-window biology evidence bundle behind the barcode story,
-run:
+For the broader fixed-window barcode validation checks, run:
 
 ```bash
-make barcode-science-ready
+make barcode-validation-ready
 ```
 
-That gate checks the public fixed-window evidence matrix in
+That command checks the public fixed-window matrix in
 `docs/barcode-science-readiness.json` and the failure-mode fixtures under
 `examples/barcode_autopsy/failure_modes/`.
 

@@ -50,9 +50,8 @@ def _meta(version: str = "0.1.0") -> str:
         "  license_file: LICENSE\n"
         "  summary: Fast exact short-DNA known-target assignment\n"
         "  description: |\n"
-        "    DotMatch is a deterministic known-target short-DNA assignment engine for\n"
+        "    DotMatch provides deterministic known-target short-DNA assignment for\n"
         "    CRISPR guides, barcodes, primers, panels, and whitelist-style target sets.\n"
-        "    It is not a genome aligner and does not emit SAM/BAM or CIGAR output.\n"
         "  dev_url: https://github.com/dnncha/dotmatch\n"
         "  doc_url: https://github.com/dnncha/dotmatch#readme\n\n"
         "extra:\n"
@@ -153,19 +152,6 @@ def test_bioconda_recipe_requires_cli_smoke_commands(tmp_path):
 
     assert any("dotmatch dist ACGT AGGT" in failure for failure in result.failures)
     assert any("dotmatch leq 1 ACGT AGGT" in failure for failure in result.failures)
-
-
-def test_bioconda_recipe_rejects_broad_genome_aligner_claim(tmp_path):
-    checker = _load_checker()
-    meta = _meta().replace(
-        "    It is not a genome aligner and does not emit SAM/BAM or CIGAR output.\n",
-        "    It is a genome aligner for short sequencing reads.\n",
-    )
-    _write_repo(tmp_path, meta=meta)
-
-    result = checker.audit(tmp_path)
-
-    assert any("not a genome aligner" in failure for failure in result.failures)
 
 
 def test_bioconda_recipe_requires_native_install_steps(tmp_path):

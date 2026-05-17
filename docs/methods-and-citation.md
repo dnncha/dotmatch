@@ -103,11 +103,11 @@ public gate is for the nf-core ARTIC V3 R1 fixed-window primer-start assignment
 lane, not consensus generation, primer trimming, variant calling, clinical
 panels, or diagnostic interpretation. The tiny-BCL public gate is for the
 public 10x tiny-BCL classic per-cycle milestone, not production demultiplexing,
-CBCL/NovaSeq support, or broad BCL comparison wording. The oligo/adapter public
+CBCL/NovaSeq support, or broad BCL comparison evidence. The oligo/adapter public
 gate is for the fast-adapter-trimming TruSeq R1 fixed-window adapter-prefix
 assignment lane, not adapter trimming, primer removal, UMI grouping, read
 merging, or production adapter workflow evidence. Leave broader BCL comparison
-wording out until real-data comparator evidence is in the repository.
+statements out until real-data comparator evidence is in the repository.
 
 ## Evidence Boundary
 
