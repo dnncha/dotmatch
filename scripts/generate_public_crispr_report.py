@@ -375,7 +375,7 @@ def main() -> None:
         "",
         "## Smoke/Latest Wiring Table",
         "",
-        "**Reduced evidence.** These rows may be stale or reduced and should not be used as primary benchmark evidence. Use the repeated-run statistics below, and use `docs/benchmarks/crispr_comparison/README.md` once `make crispr-comparison-gate` passes for two real CRISPR datasets.",
+        "**Reduced evidence.** These rows are secondary benchmark context. Use the repeated-run statistics below, and use `docs/benchmarks/crispr_comparison/README.md` once `make crispr-comparison-gate` passes for two real CRISPR datasets.",
         "",
         *md_table(
             rows,

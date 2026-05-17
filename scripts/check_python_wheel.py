@@ -55,9 +55,15 @@ def wheel_native_members(wheel: Path) -> list[str]:
         ]
 
 
+def wheel_native_cli_members(wheel: Path) -> list[str]:
+    with zipfile.ZipFile(wheel) as archive:
+        return [name for name in archive.namelist() if name == "dotmatch/dotmatch-native"]
+
+
 def check_sdist_members(sdist: Path) -> None:
     required_suffixes = [
         "/src/qdalign.c",
+        "/src/qda.c",
         "/include/qdalign.h",
         "/setup.py",
         "/pyproject.toml",
@@ -213,6 +219,138 @@ def verify_clean_install(artifact: Path, install_root: Path, expected_version: s
         if observed != expected:
             raise SystemExit(f"{artifact.name} {label} reported {observed!r}, expected {expected!r}")
 
+    dist_observed = run_text([str(venv_script(env_dir, "dotmatch")), "dist", "ACGT", "AGGT"], cwd=probe_dir, env=env)
+    if dist_observed != "1":
+        raise SystemExit(f"{artifact.name} console CLI distance smoke test returned {dist_observed!r}")
+
+    targets = probe_dir / "targets.tsv"
+    reads = probe_dir / "reads.fastq"
+    spec = probe_dir / "assay.toml"
+    targets.write_text("guide_a\tACGT\tGENEA\n", encoding="utf-8")
+    reads.write_text("@r0\nACGT\n+\nIIII\n", encoding="utf-8")
+    spec.write_text(
+        f"""
+schema_version = 1
+mode = "count"
+assay_type = "crispr"
+targets = "{targets}"
+
+[[samples]]
+id = "sample"
+fastq = "{reads}"
+
+[run]
+out_dir = "{probe_dir / 'assay_out'}"
+
+[extract]
+start = 0
+length = 4
+
+[assignment]
+k = 1
+metric = "hamming"
+""".lstrip(),
+        encoding="utf-8",
+    )
+    run([str(venv_script(env_dir, "dotmatch")), "assay", "check", str(spec)], cwd=probe_dir, env=env)
+    counts = probe_dir / "counts.mageck.tsv"
+    sample_qc = probe_dir / "sample_qc.tsv"
+    crispr_qc = probe_dir / "crispr_qc.json"
+    counts.write_text("sgRNA\tGene\tsample\nguide_a\tGENEA\t1\n", encoding="utf-8")
+    sample_qc.write_text(
+        "sample_id\tassignment_rate\tambiguous_rate\tno_match_rate\tinvalid_rate\n"
+        "sample\t1\t0\t0\t0\n",
+        encoding="utf-8",
+    )
+    run(
+        [
+            str(venv_script(env_dir, "dotmatch")),
+            "crispr",
+            "qc",
+            "--counts",
+            str(counts),
+            "--sample-qc",
+            str(sample_qc),
+            "--library",
+            str(targets),
+            "--out",
+            str(crispr_qc),
+        ],
+        cwd=probe_dir,
+        env=env,
+    )
+    run(
+        [
+            str(venv_script(env_dir, "dotmatch")),
+            "crispr-qc",
+            "--counts",
+            str(counts),
+            "--sample-qc",
+            str(sample_qc),
+            "--library",
+            str(targets),
+            "--out",
+            str(probe_dir / "crispr_qc_legacy.json"),
+        ],
+        cwd=probe_dir,
+        env=env,
+    )
+    run(
+        [
+            str(venv_script(env_dir, "dotmatch")),
+            "crispr",
+            "infer",
+            "--library",
+            str(targets),
+            "--reads",
+            str(reads),
+            "--out",
+            str(probe_dir / "crispr_inferred.toml"),
+            "--report",
+            str(probe_dir / "crispr_inference_report.json"),
+        ],
+        cwd=probe_dir,
+        env=env,
+    )
+    inferred = probe_dir / "inferred.toml"
+    inferred_report = probe_dir / "inference_report.json"
+    run(
+        [
+            str(venv_script(env_dir, "dotmatch")),
+            "assay",
+            "infer",
+            "--mode",
+            "count",
+            "--assay-type",
+            "crispr",
+            "--targets",
+            str(targets),
+            "--reads",
+            str(reads),
+            "--sample-id",
+            "sample",
+            "--out",
+            str(inferred),
+            "--report",
+            str(inferred_report),
+        ],
+        cwd=probe_dir,
+        env=env,
+    )
+    run([str(venv_script(env_dir, "dotmatch")), "assay", "check", str(inferred)], cwd=probe_dir, env=env)
+    run(
+        [
+            str(venv_script(env_dir, "dotmatch")),
+            "assay",
+            "autopsy",
+            str(spec),
+            "--out-dir",
+            str(probe_dir / "autopsy"),
+        ],
+        cwd=probe_dir,
+        env=env,
+    )
+
 
 def check_macos_tag(wheel: Path) -> None:
     if platform.system() != "Darwin":
@@ -279,11 +417,14 @@ def build_and_verify_wheel(out_dir: Path, install_root: Path, expected_version: 
     native_members = wheel_native_members(wheel)
     if not native_members:
         raise SystemExit(f"{wheel.name} does not contain dotmatch/libdotmatch.*")
+    native_cli_members = wheel_native_cli_members(wheel)
+    if not native_cli_members:
+        raise SystemExit(f"{wheel.name} does not contain dotmatch-native")
     check_distribution_metadata(wheel, expected_version)
     check_macos_tag(wheel)
     check_macos_architecture(wheel, native_members[0])
     verify_clean_install(wheel, install_root, expected_version)
-    return wheel, native_members
+    return wheel, native_members + native_cli_members
 
 
 def main() -> int:

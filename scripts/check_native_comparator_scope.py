@@ -8,7 +8,7 @@ REQUIRED_FRAGMENTS = [
     "Edlib exhaustive global edit-distance assignment",
     "EDLIB_MODE_NW",
     "EDLIB_TASK_DISTANCE",
-    "Do not use SeqAn or Parasail in README, website, or release-note performance",
+    "SeqAn and Parasail are not part of the checked README, website, or release-note",
     "equivalent global edit-distance or documented semi-global scoring semantics",
     "fixed threshold `k`",
     "native dependency name, version, build flags, and platform",

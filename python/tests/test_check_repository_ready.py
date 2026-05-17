@@ -23,9 +23,9 @@ def _write_minimal_repo(root: Path) -> None:
             "Installation and distribution status is tracked in "
             "[Packaging Notes](docs/packaging.md) and "
             "[distribution release record](docs/distribution-release.json). "
-            "Public package channels are tracked separately until publication.\n\n"
-            "Run `make pretag-ready` before tagging. Keep `make distribution-channels` "
-            "and `make workflow-adoption-status` separate until public/external evidence exists.\n"
+            "PyPI, Bioconda, GHCR/BioContainers, and Zenodo release artifacts are not yet published. "
+            "Until those channels are listed here as available, install from source.\n\n"
+            "See [Release process](docs/release-process.md).\n"
         ),
         "CHANGELOG.md": "# Changelog\n\n## 0.1.0\n\n- Initial release.\n",
         "LICENSE": "Apache-2.0\n",
@@ -80,7 +80,7 @@ def _write_minimal_repo(root: Path) -> None:
         "docs/native-comparator-scope.md": (
             "# Native Comparator Scope\n\n"
             "Current native comparator: Edlib exhaustive global edit-distance assignment with zero mismatches.\n\n"
-            "Do not use SeqAn or Parasail in README, website, or release-note performance wording yet. "
+            "SeqAn and Parasail are not part of the checked README, website, or release-note performance comparison set yet. "
             "They require equivalent global edit-distance or documented semi-global scoring semantics, fixed threshold k, "
             "fixed threshold `k`, native dependency/version capture, raw CSV rows, and zero assignment mismatches before claims change.\n"
             "Supported wording is limited to Edlib exhaustive global edit-distance assignment scans.\n"
@@ -132,32 +132,32 @@ def test_repository_ready_reports_missing_evidence_notes(tmp_path):
     assert any("docs/scientific-claims.md" in failure for failure in result.failures)
 
 
-def test_repository_ready_reports_missing_pretag_gate_readme_pointer(tmp_path):
+def test_repository_ready_reports_missing_release_process_link(tmp_path):
     checker = _load_checker()
     _write_minimal_repo(tmp_path)
     readme = (tmp_path / "README.md").read_text(encoding="utf-8")
     (tmp_path / "README.md").write_text(
-        readme.replace("Run `make pretag-ready` before tagging. ", ""),
+        readme.replace("See [Release process](docs/release-process.md).\n", ""),
         encoding="utf-8",
     )
 
     result = checker.audit(tmp_path)
 
-    assert any("pre-tag release gate" in failure for failure in result.failures)
+    assert any("docs/release-process.md" in failure for failure in result.failures)
 
 
-def test_repository_ready_reports_missing_post_release_gate_boundary(tmp_path):
+def test_repository_ready_reports_missing_source_install_direction(tmp_path):
     checker = _load_checker()
     _write_minimal_repo(tmp_path)
     readme = (tmp_path / "README.md").read_text(encoding="utf-8")
     (tmp_path / "README.md").write_text(
-        readme.replace("`make distribution-channels` and `make workflow-adoption-status`", "`make release-ready`"),
+        readme.replace("Until those channels are listed here as available, install from source.", ""),
         encoding="utf-8",
     )
 
     result = checker.audit(tmp_path)
 
-    assert any("post-release and workflow-adoption gates" in failure for failure in result.failures)
+    assert any("install from source" in failure for failure in result.failures)
 
 
 def test_repository_ready_requires_distribution_status_in_readme(tmp_path):
@@ -167,8 +167,7 @@ def test_repository_ready_requires_distribution_status_in_readme(tmp_path):
         "# DotMatch\n\n"
         "`v0.1.0` includes stable release artifacts.\n\n"
         "See [Evidence Notes](docs/scientific-claims.md).\n\n"
-        "Run `make pretag-ready` before tagging. Keep `make distribution-channels` "
-        "and `make workflow-adoption-status` separate until public/external evidence exists.\n",
+        "See [Release process](docs/release-process.md).\n",
         encoding="utf-8",
     )
 
@@ -176,7 +175,7 @@ def test_repository_ready_requires_distribution_status_in_readme(tmp_path):
 
     assert any("docs/packaging.md" in failure for failure in result.failures)
     assert any("docs/distribution-release.json" in failure for failure in result.failures)
-    assert any("public package channels" in failure for failure in result.failures)
+    assert any("public package availability" in failure for failure in result.failures)
 
 
 def test_repository_ready_reports_missing_release_workflow(tmp_path):

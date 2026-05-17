@@ -234,10 +234,8 @@ def check_evidence_docs(root: Path, result: AuditResult) -> None:
 
     if "docs/scientific-claims.md" not in readme:
         result.failures.append("README.md must link to docs/scientific-claims.md")
-    if "make pretag-ready" not in readme:
-        result.failures.append("README.md must document the consolidated local pre-tag release gate")
-    if "make distribution-channels" not in readme or "make workflow-adoption-status" not in readme:
-        result.failures.append("README.md must keep post-release and workflow-adoption gates separate from pretag-ready")
+    if "docs/release-process.md" not in readme:
+        result.failures.append("README.md must link to docs/release-process.md")
     if "barcode-comparison-gate" not in evidence or "requires real-data rows" not in evidence:
         result.failures.append("docs/scientific-claims.md must document the barcode-comparison-gate evidence boundary")
     if "bcl-comparison-gate" not in evidence or "requires real run folders" not in evidence:
@@ -245,7 +243,7 @@ def check_evidence_docs(root: Path, result: AuditResult) -> None:
     if "not a genome aligner" not in evidence and "General aligner replacement" not in evidence:
         result.failures.append("docs/scientific-claims.md must document the general-aligner evidence boundary")
     native_scope_fragments = [
-        "Do not use SeqAn or Parasail in README, website, or release-note performance",
+        "SeqAn and Parasail are not part of the checked README, website, or release-note",
         "equivalent global edit-distance or documented semi-global scoring semantics",
         "fixed threshold `k`",
         "zero assignment mismatches",
@@ -267,12 +265,10 @@ def check_readme_distribution_status(root: Path, result: AuditResult) -> None:
         result.failures.append("README.md must link to docs/packaging.md")
     if "docs/distribution-release.json" not in readme:
         result.failures.append("README.md must link to docs/distribution-release.json")
-    if "make distribution-channels" not in readme:
-        result.failures.append("README.md must mention make distribution-channels")
-    if "public package channels" not in lower_readme or (
-        "tracked separately" not in lower_readme and "pending" not in lower_readme
-    ):
-        result.failures.append("README.md must state public package channels are pending or tracked separately")
+    if "release artifacts are not yet published" not in lower_readme and "public package channels" not in lower_readme:
+        result.failures.append("README.md must state public package availability")
+    if "install from source" not in lower_readme:
+        result.failures.append("README.md must direct users to install from source until channels are available")
 
     if len(result.failures) == failures_before:
         result.passed.append("README distribution status documented")

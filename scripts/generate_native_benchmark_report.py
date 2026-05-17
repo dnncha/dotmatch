@@ -188,7 +188,7 @@ def write_report(df: pd.DataFrame, speedups: pd.DataFrame) -> None:
         "",
         "![Native assignment throughput](native_assignment_throughput.svg)",
         "",
-        "## Best Native Speedups",
+        "## Highest Observed Microbenchmark Speedups",
         "",
         markdown_table(best[["n_targets", "len", "k", "error_mode", "err", "reads_per_sec_dotmatch", "reads_per_sec_edlib", "verified_per_read", "peak_rss_kb", "speedup_vs_edlib_native"]], ".2f"),
         "",
@@ -202,7 +202,7 @@ def write_report(df: pd.DataFrame, speedups: pd.DataFrame) -> None:
         "",
         "## Evidence Boundary",
         "",
-        "These are native Edlib scan comparisons for exact short-DNA assignment workloads, plus simple exact-hash and BK-tree baselines. Exact `k=0` lookup should be judged against hash-table baselines. For `k=1`, the indexed path is reported only when it has zero correctness disagreements against the exhaustive comparator.",
+        "These are native Edlib scan microbenchmarks for exact short-DNA assignment workloads, plus simple exact-hash and BK-tree baselines. The largest rows are useful for understanding algorithmic scaling against exhaustive scan, but they are not end-to-end workflow speed claims. Exact `k=0` lookup should be judged against hash-table baselines. For `k=1`, the indexed path is reported only when it has zero correctness disagreements against the exhaustive comparator. Levenshtein `k=2` uses the exhaustive assignment path.",
         "",
     ]
     (OUT_DIR / "README.md").write_text("\n".join(lines), encoding="utf-8")

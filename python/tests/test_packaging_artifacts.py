@@ -81,7 +81,7 @@ def test_codemeta_tracks_package_citation_and_no_doi_claim() -> None:
     assert codemeta["license"] == "https://spdx.org/licenses/Apache-2.0"
     assert codemeta["citation"].endswith("/CITATION.cff")
     assert codemeta["author"] == [{"@type": "Person", "givenName": "Donncha", "familyName": "O'Toole"}]
-    assert "version: \"0.1.0\"" in citation
+    assert f"version: \"{_pyproject_version()}\"" in citation
     assert codemeta["softwareVersion"] == zenodo["version"]
     assert "known-target assignment" in codemeta["keywords"]
     assert "CRISPR" in codemeta["keywords"]
@@ -106,6 +106,23 @@ def test_python_package_verifier_checks_installed_cli_version() -> None:
     assert '"dotmatch.cli", "--version"' in verifier
     assert 'venv_script(env_dir, "dotmatch")' in verifier
     assert '"--version"' in verifier
+    assert "dotmatch-native" in verifier
+    assert '"assay", "check"' in verifier
+    assert '"crispr"' in verifier
+    assert '"qc"' in verifier
+    assert '"crispr-qc"' in verifier
+    assert '"infer"' in verifier
+    assert '"autopsy"' in verifier
+
+
+def test_python_package_build_bundles_native_cli() -> None:
+    setup = (ROOT / "setup.py").read_text(encoding="utf-8")
+    pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+
+    assert "dotmatch-native" in setup
+    assert "src/qda.c" in setup
+    assert "DOTMATCH_VERSION" in setup
+    assert 'tomli; python_version < \\"3.11\\"' in pyproject
 
 
 def test_release_workflow_builds_and_smoke_tests_container() -> None:
@@ -141,16 +158,16 @@ def test_release_workflow_publishes_pypi_sdist_and_repaired_linux_wheels() -> No
 
     assert "id-token: write" in workflow
     assert "python scripts/check_python_wheel.py --sdist-only --out-dir dist" in workflow
-    assert "Publish PyPI sdist and repaired Linux wheels" in workflow
+    assert "Publish PyPI sdist, macOS wheel, and repaired Linux wheels" in workflow
     assert "pypa/gh-action-pypi-publish@release/v1" in workflow
     assert "name: dotmatch-sdist" in workflow
     assert "name: dotmatch-linux-repaired-wheels" in workflow
-    assert "needs: [preflight, sdist, linux-repaired-wheels]" in workflow
+    assert "needs: [preflight, sdist, wheel, linux-repaired-wheels]" in workflow
     assert "path: dist-pypi" in workflow
     assert "packages-dir: dist-pypi" in workflow
     assert "dotmatch-wheel-Linux" not in workflow
     assert "trusted publishing" in packaging
-    assert "publishes the source distribution and repaired manylinux/musllinux wheels" in packaging
+    assert "publishes the source distribution, the native macOS wheel, and repaired manylinux/musllinux Linux wheels" in packaging
 
 
 def test_cibuildwheel_linux_repaired_wheel_path_is_configured() -> None:
@@ -168,9 +185,10 @@ def test_cibuildwheel_linux_repaired_wheel_path_is_configured() -> None:
     assert "dist-linux/*.whl" in workflow
     assert "manylinux/musllinux" in packaging
     assert "repaired Linux wheel artifacts" in packaging
-    assert "[x] GitHub release manylinux/musllinux x86_64 wheel artifact build" in readme
-    assert "[x] PyPI trusted-publishing path for repaired manylinux/musllinux Linux wheels" in readme
-    assert "[ ] Public PyPI availability of repaired manylinux/musllinux Linux wheels" in readme
+    assert "GitHub release workflow builds and smoke-tests repaired manylinux/musllinux" in readme
+    assert "PyPI trusted publishing is configured" in readme
+    assert "Public PyPI wheel availability" in readme
+    assert "visible on PyPI" in readme
 
 
 def test_release_workflow_publishing_jobs_depend_on_preflight() -> None:
@@ -186,7 +204,7 @@ def test_release_workflow_publishing_jobs_depend_on_preflight() -> None:
     assert "make release-ready" in workflow
     assert "make python-package-test" in workflow
     assert "needs: [preflight]" in workflow
-    assert "needs: [preflight, sdist, linux-repaired-wheels]" in workflow
+    assert "needs: [preflight, sdist, wheel, linux-repaired-wheels]" in workflow
     assert "needs: [preflight, wheel, sdist, linux-repaired-wheels]" in workflow
 
 
@@ -197,7 +215,7 @@ def test_distribution_docs_include_clean_pypi_install_verification() -> None:
     assert "pip install dotmatch==" in checker
     assert "must include repaired manylinux and musllinux wheels" in checker
     assert "must not include raw linux_x86_64 wheels" in checker
-    assert "source distribution plus repaired manylinux/musllinux wheels" in packaging
+    assert "source distribution plus a macOS wheel and repaired manylinux/musllinux wheels" in packaging
     assert "rejects raw" in packaging and "linux_x86_64" in packaging
     assert "clean virtual environment" in packaging
     assert "pip install dotmatch==<version>" in packaging

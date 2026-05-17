@@ -117,8 +117,8 @@ def test_nfcore_readme_is_candidate_not_external_adoption_claim() -> None:
     text = readme_path.read_text(encoding="utf-8")
 
     assert "nf-core-style module candidate" in text
-    assert "not an upstream nf-core module" in text
-    assert "external adoption" in text
+    assert "not been submitted to or" in text
+    assert "accepted by nf-core" in text
 
 
 def test_multiqc_config_targets_dotmatch_sample_qc() -> None:
@@ -127,8 +127,10 @@ def test_multiqc_config_targets_dotmatch_sample_qc() -> None:
 
     assert "custom_data:" in config
     assert "dotmatch_sample_qc:" in config
+    assert "dotmatch_crispr_qc:" in config
     assert 'plot_type: "table"' in config
     assert 'fn: "*sample_qc.tsv"' in config
+    assert 'fn: "*crispr_qc.summary.tsv"' in config
     assert "assignment_rate:" in config
     assert "ambiguous_rate:" in config
     assert "no_match_rate:" in config
@@ -151,6 +153,22 @@ def test_multiqc_example_fixture_matches_dotmatch_schema() -> None:
     assert "ambiguous_rate" in header
     assert "candidates_verified" in header
     assert len(lines) == 3
+
+    crispr_qc = ROOT / "examples" / "workflows" / "multiqc" / "data" / "crispr_qc.summary.tsv"
+    crispr_header = crispr_qc.read_text(encoding="utf-8").splitlines()[0].split("\t")
+    assert crispr_header == [
+        "sample_id",
+        "qc_status",
+        "total_count",
+        "coverage_fraction",
+        "zero_count_fraction",
+        "gini_index",
+        "top_1pct_fraction",
+        "assignment_rate",
+        "ambiguous_rate",
+        "no_match_rate",
+        "invalid_rate",
+    ]
 
 
 def test_galaxy_wrapper_has_dotmatch_crispr_count_surface() -> None:
@@ -195,7 +213,7 @@ def test_galaxy_readme_is_example_not_release_claim() -> None:
     text = readme_path.read_text(encoding="utf-8")
 
     assert "example wrapper" in text
-    assert "not a ToolShed release" in text
+    assert "not been published to a Galaxy ToolShed" in text
     assert "planemo" in text
 
 

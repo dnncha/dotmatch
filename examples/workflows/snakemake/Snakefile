@@ -12,6 +12,9 @@ rule all:
         f"{outdir}/counts.mageck.tsv",
         f"{outdir}/summary.json",
         f"{outdir}/sample_qc.tsv",
+        f"{outdir}/assay/assay_report.html",
+        f"{outdir}/assay/assay_manifest.json",
+        f"{outdir}/assay/assay_manifest.summary.tsv",
 
 
 rule sample_sheet:
@@ -55,4 +58,60 @@ rule dotmatch_crispr_count:
           --summary {output.summary} \
           --sample-qc {output.sample_qc} \
           --ambiguous discard
+        """
+
+
+rule dotmatch_assay_spec:
+    output:
+        f"{outdir}/assay.toml"
+    run:
+        import json
+        import os
+
+        def toml_string(value):
+            return json.dumps(str(value))
+
+        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
+        with open(output[0], "w", encoding="utf-8") as handle:
+            handle.write("schema_version = 1\n")
+            handle.write('status = "ready"\n')
+            handle.write('mode = "count"\n')
+            handle.write('assay_type = "crispr"\n')
+            handle.write(f"targets = {toml_string(config['library'])}\n\n")
+            for sample_id, fastq in samples.items():
+                handle.write("[[samples]]\n")
+                handle.write(f"id = {toml_string(sample_id)}\n")
+                handle.write(f"fastq = {toml_string(fastq)}\n\n")
+            handle.write("[run]\n")
+            handle.write(f"out_dir = {toml_string(f'{outdir}/assay')}\n")
+            handle.write("threads = 1\n\n")
+            handle.write("[extract]\n")
+            handle.write(f"start = {config['guide_start']}\n")
+            handle.write(f"length = {config['guide_length']}\n\n")
+            handle.write("[assignment]\n")
+            handle.write(f"k = {config.get('k', 1)}\n")
+            handle.write(f'metric = "{metric}"\n')
+            handle.write('ambiguous = "discard"\n')
+            if metric == "levenshtein" and indel_window > 0:
+                handle.write(f"indel_window = {indel_window}\n")
+            handle.write("\n[outputs]\n")
+            handle.write('format = "mageck"\n')
+
+
+rule dotmatch_assay_run:
+    input:
+        spec=f"{outdir}/assay.toml"
+    output:
+        report=f"{outdir}/assay/assay_report.html",
+        manifest=f"{outdir}/assay/assay_manifest.json",
+        manifest_summary=f"{outdir}/assay/assay_manifest.summary.tsv",
+        sample_qc=f"{outdir}/assay/sample_qc.tsv",
+        crispr_qc_report=f"{outdir}/assay/crispr_qc.html",
+        crispr_qc_json=f"{outdir}/assay/crispr_qc.json",
+        crispr_qc_summary=f"{outdir}/assay/crispr_qc.summary.tsv",
+        counts=f"{outdir}/assay/counts.mageck.tsv",
+        summary=f"{outdir}/assay/summary.json",
+    shell:
+        """
+        dotmatch assay run {input.spec}
         """

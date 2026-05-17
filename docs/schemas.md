@@ -60,9 +60,44 @@ Rules:
 
 - rates are fractions from `0.0` to `1.0`;
 - `valid_extracted_reads = total_reads - invalid_reads`;
+- `assignment_rate`, `exact_rate`, `rescue_rate`, `ambiguous_rate`, and
+  `no_match_rate` use `valid_extracted_reads` as the denominator;
+- `gini_index` is computed from per-target unique counts, ranges from `0.0`
+  for uniform representation to near `1.0` for highly skewed representation
+  in large libraries. For a finite library with all counts in one of `n`
+  targets, the value is `(n - 1) / n`;
+- `top_1pct_read_fraction` is the fraction of uniquely assigned target counts
+  contained in the most abundant 1% of targets, rounded up to at least one
+  target;
 - `assigned_corrected` is the preferred total for uniquely assigned non-exact reads;
 - `k1_rescued_reads` is retained for compatibility and equals `assigned_corrected`,
   including in Levenshtein `k=2` runs.
+
+## `assay_manifest.summary.tsv`
+
+One row per `dotmatch assay run` execution, intended for workflow systems and
+MultiQC custom content.
+
+```text
+schema_version
+mode
+assay_type
+status
+native_version
+autopsy_triggered
+warning_count
+production_warning_count
+sample_count
+primary_report
+manifest
+```
+
+Rules:
+
+- `primary_report` points to the `assay_report.html` artifact;
+- `manifest` points to the full `assay_manifest.json` provenance record;
+- warning counts are decimal integers;
+- `autopsy_triggered` is `true` or `false`.
 
 ## `pair_counts.tsv`
 
@@ -126,11 +161,11 @@ candidates_verified
 
 Rules:
 
-- rates are fractions from `0.0` to `1.0`;
-- `valid_extracted_reads = total_reads - invalid_reads`;
-- `assigned_corrected` is the preferred total for uniquely assigned non-exact reads;
-- `k1_rescued_reads` is retained for compatibility and equals `assigned_corrected`,
-  including in Levenshtein `k=2` runs.
+- `assigned_pairs` counts reads where both fixed windows are uniquely assigned;
+- `pair_ambiguous` counts reads where either side is ambiguous and the read is
+  excluded from pair counts;
+- `left_unmatched` and `right_unmatched` count side-specific no-match outcomes;
+- `invalid` counts reads where either fixed window cannot be extracted.
 
 ## `audit_summary.tsv`
 
@@ -323,3 +358,7 @@ top_target_count
 candidates_considered
 candidates_verified
 ```
+
+The `percent_rescued_by_k1`, `percent_ambiguous`, and `percent_unmatched`
+fields are percentages of total FASTQ records for that sample. Use
+`sample_qc.tsv` when a valid-window denominator is required.

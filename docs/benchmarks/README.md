@@ -68,4 +68,4 @@ Assay-lane coverage and public-evidence gaps are tracked in `docs/assay-evidence
 ## Evidence Boundary
 
 These results cover short-DNA global edit-distance and threshold matching against Edlib's Python binding.
-Comparative performance wording should use the native Edlib assignment report for checked native-library claims. SeqAn/Parasail comparisons are not claimed until docs/native-comparator-scope.md requirements are met.
+Checked native-library performance claims are scoped to the native Edlib assignment report. SeqAn/Parasail comparisons are not claimed until docs/native-comparator-scope.md requirements are met.

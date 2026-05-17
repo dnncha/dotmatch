@@ -13,6 +13,14 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "examples" / "crispr_guides" / "output"
 
 
+def public_path(path: Path) -> str:
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(path)
+
+
 def parse_counts(path: Path) -> dict[str, int]:
     with path.open() as fh:
         reader = csv.DictReader(fh, delimiter="\t")
@@ -75,8 +83,8 @@ def compare(name: str, left_path: Path, right_path: Path, left_label: str, right
             "left": left_label,
             "right": right_label,
             "status": "missing_input",
-            "left_path": str(left_path),
-            "right_path": str(right_path),
+            "left_path": public_path(left_path),
+            "right_path": public_path(right_path),
             "n_guides": "0",
             "total_left": "",
             "total_right": "",
@@ -120,8 +128,8 @@ def compare(name: str, left_path: Path, right_path: Path, left_label: str, right
         "left": left_label,
         "right": right_label,
         "status": "ok",
-        "left_path": str(left_path),
-        "right_path": str(right_path),
+        "left_path": public_path(left_path),
+        "right_path": public_path(right_path),
         "n_guides": str(len(keys)),
         "total_left": str(total_left),
         "total_right": str(total_right),

@@ -3,14 +3,14 @@
 <text class="title" x="20" y="28">Verified candidates per read</text>
 <text class="axis" x="20" y="50">Mechanism figure: lookup-like candidate verification vs scan/workflow baselines</text>
 <text x="20" y="93">dotmatch_exact_k0</text>
-<rect class="bar" x="310" y="78" width="2" height="20" rx="2"/>
-<text x="320" y="93">0.89 verified/read</text>
+<rect class="bar" x="310" y="78" width="578" height="20" rx="2"/>
+<text x="896" y="93">0.89 verified/read</text>
 <text x="20" y="127">dotmatch_levenshtein_k1</text>
-<rect class="bar" x="310" y="112" width="9" height="20" rx="2"/>
-<text x="327" y="127">2.83 verified/read</text>
+<rect class="bar" x="310" y="112" width="637" height="20" rx="2"/>
+<text x="955" y="127">0.99 verified/read</text>
 <text x="20" y="161">dotmatch_hamming_k1</text>
 <rect class="bar" x="310" y="146" width="645" height="20" rx="2"/>
-<text x="963" y="161">202.03 verified/read</text>
+<text x="963" y="161">1.00 verified/read</text>
 <text x="20" y="195">mageck_count_exact</text>
 <rect class="bar" x="310" y="180" width="0" height="20" rx="2"/>
 <text x="318" y="195">0.00 verified/read</text>

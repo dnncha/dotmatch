@@ -13,35 +13,48 @@ const layoutNormalized = layout.replace(/\s+/g, " ");
 
 const requiredSnippets = [
   ["GitHub source link", "https://github.com/dnncha/dotmatch"],
+  ["autopsy section anchor", "id=\"autopsy\""],
   ["install section anchor", "id=\"install\""],
   ["citation section anchor", "id=\"cite\""],
   ["packaging docs link", "docs/packaging.md"],
   ["methods docs link", "docs/methods-and-citation.md"],
+  ["barcode science link", "docs/barcode-science-readiness.md"],
+  ["barcode benchmark link", "docs/benchmarks/barcode_demux/README.md"],
   ["benchmark evidence link", "docs/benchmarks/public_crispr/README.md"],
   ["citation file link", "CITATION.cff"],
   ["plain maintainer voice", "DotMatch is a small C/Python tool"],
-  ["auditable benchmark framing", "These rows are not a leaderboard."],
-  ["honest install framing", "The documented install path is a source build or local Python package install from the repository."],
-  ["human benchmark framing", "Benchmarks you can inspect, not just quote."],
-  ["biology-first hero", "Known-target DNA assignment for guide counts and barcode reads."],
-  ["validated use-case lead", "Current public benchmark: CRISPR guide counting"],
-  ["decision box inclusion", "Use DotMatch for"],
-  ["decision box exclusion", "Use other tools for"],
+  ["barcode hero", "Barcode autopsy for fixed-window FASTQ assays."],
+  ["barcode flagship command", "dotmatch barcode autopsy"],
+  ["autopsy report artifact", "report.html"],
+  ["autopsy findings artifact", "findings.tsv"],
+  ["autopsy provenance artifact", "provenance.json"],
+  ["bounded replacement claim", "DotMatch does not replace BCL Convert, genome aligners, or general adapter trimming."],
+  ["auditable benchmark framing", "Speed is shown only after the comparator semantics are documented."],
+  ["honest install framing", "Use the source install until the public package channels finish publication."],
+  ["human caveat framing", "We are keeping the claims narrow"],
+  ["fixed-window story", "post-FASTQ fixed-window assignment"],
+  ["science gate command", "make repository-ready"],
+  ["decision box inclusion", "Use DotMatch when you have"],
+  ["decision box exclusion", "Do not use DotMatch for"],
   ["hamming translation", "allow one mismatch, no indels"],
   ["levenshtein translation", "allow one substitution, insertion, or deletion"],
   ["plain benchmark sentence", "DotMatch Hamming k=1 processed about 331k reads/s"],
-  ["validation sample size", "2,000 checked reads"],
-  ["distribution status", "package-channel availability is documented without presenting unpublished channels as install paths"],
+  ["validation sample size", "2,000 reads"],
+  ["distribution maturity now", "Current distribution: source install, release artifacts, and a Bioconda recipe PR with CI green."],
+  ["distribution maturity next", "Coming next: PyPI, Bioconda merge, Docker/Singularity, Zenodo DOI."],
   ["Bioconda PR link", "https://github.com/bioconda/bioconda-recipes/pull/65367"],
   ["ambiguity example setup", "Some tools may pick or double-count."],
   ["ambiguity example result", "DotMatch reports: ambiguous"],
-  ["workflow status table", "Public benchmark"],
-  ["generated hero visual", "dotmatch-hero-workflow.png"],
-  ["human hero visual caption", "Reads move into known targets; ambiguous and unmatched lanes stay visible."]
+  ["workflow status table", "Comparator-backed, bounded"],
+  ["generated barcode visual", "dotmatch-barcode-autopsy.png"],
+  ["human hero visual caption", "FASTQ reads become unique, ambiguous, none, and invalid outcomes"]
 ];
 
 const missing = requiredSnippets.filter(([, snippet]) => !pageNormalized.includes(snippet));
 const bannedPhrases = [
+  "utterly dominate",
+  "replace cutadapt",
+  "100% scientifically accurate",
   "launch path",
   "evidence trail",
   "current scope",
@@ -49,13 +62,7 @@ const bannedPhrases = [
   "workflow-ready",
   "strongest public claim",
   "checked artifacts",
-  "current support",
-  "claim gates",
-  "coming next",
-  "ci green",
-  "validated now",
-  "supported, bounded",
-  "best-supported workflow"
+  "current support"
 ];
 const checkedCopyLower = `${page}\n${layout}`.toLowerCase();
 const banned = bannedPhrases.filter((phrase) => checkedCopyLower.includes(phrase));
@@ -103,6 +110,9 @@ if (!nextConfig.includes("devIndicators: false")) {
 
 const requiredCss = [
   [".hero-visual", "The generated workflow image should stay visible in the hero."],
+  [".autopsy-layout", "The barcode autopsy demo should have a prominent two-column layout."],
+  [".artifact-grid", "Barcode autopsy outputs should be scannable."],
+  [".finding-list", "Autopsy findings should stay visible as scientific diagnosis examples."],
   [".decision-grid", "The near-hero decision box should stay styled and visible."],
   [".translation-grid", "Jargon translations need a distinct scannable layout."],
   [".example-layout", "The biological example needs a stable two-column desktop layout."],
@@ -119,19 +129,19 @@ if (missingCss.length > 0) {
   process.exit(1);
 }
 
-if (!layoutNormalized.includes("CRISPR guide counts, barcode splits, and QC tables")) {
+if (!layoutNormalized.toLowerCase().includes("barcode splits, crispr guide counts, and qc reports")) {
   console.error("Metadata should describe practical user outcomes, not just implementation mechanics.");
   process.exit(1);
 }
 
 const requiredMetadataSnippets = [
-  "DotMatch - Known-Target DNA Assignment",
+  "DotMatch - Barcode Autopsy for Fixed-Window FASTQs",
   "openGraph: {",
   "siteName: \"DotMatch\"",
   "locale: \"en_US\"",
   "secureUrl: socialImageUrl",
   "type: \"image/png\"",
-  "DotMatch social preview showing CRISPR guide-count assignment into known DNA target rows"
+  "DotMatch social preview showing fixed-window barcode and guide assignment with auditable outcomes"
 ];
 
 const missingMetadata = requiredMetadataSnippets.filter((snippet) => !layout.includes(snippet));
@@ -169,10 +179,10 @@ for (const imagePath of ["../public/dotmatch-og.png", "../public/dotmatch-twitte
 }
 
 {
-  const imagePath = "../public/dotmatch-hero-workflow.png";
+  const imagePath = "../public/dotmatch-barcode-autopsy.png";
   const { width, height } = readPngDimensions(imagePath);
-  if (width < 1200 || height < 650) {
-    console.error(`${imagePath} should be a substantial generated hero visual; saw ${width}x${height}.`);
+  if (width < 1200 || height < 900) {
+    console.error(`${imagePath} should be a substantial generated barcode autopsy visual; saw ${width}x${height}.`);
     process.exit(1);
   }
 }

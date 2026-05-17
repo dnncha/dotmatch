@@ -3,41 +3,43 @@ const citationUrl = `${repoUrl}/blob/main/CITATION.cff`;
 const methodsUrl = `${repoUrl}/blob/main/docs/methods-and-citation.md`;
 const packagingUrl = `${repoUrl}/blob/main/docs/packaging.md`;
 const publicCrisprUrl = `${repoUrl}/blob/main/docs/benchmarks/public_crispr/README.md`;
+const barcodeScienceUrl = `${repoUrl}/blob/main/docs/barcode-science-readiness.md`;
+const barcodeBenchmarkUrl = `${repoUrl}/blob/main/docs/benchmarks/barcode_demux/README.md`;
 const biocondaPrUrl = "https://github.com/bioconda/bioconda-recipes/pull/65367";
 
 const proof = [
-  ["331k reads/s", "Hamming k=1", "Mean throughput on repeated public MAGeCK/Yusa CRISPR rows."],
-  ["28.7 MB", "peak RSS", "Peak memory for the repeated DotMatch Hamming and exact lanes."],
-  ["0 mismatches", "Edlib check", "Independent edit-distance validation over 2,000 checked reads."],
-  ["87,437 guides", "public fixture", "The current MAGeCK/Yusa guide library in the checked benchmark."]
+  ["4 outcomes", "unique, ambiguous, none, invalid", "Every read lands in an auditable assignment class."],
+  ["8 diagnoses", "barcode autopsy", "Wrong offset, unsafe rescue, collisions, unmatched classes, and more."],
+  ["5 lanes", "public evidence", "Fixed-window barcode/CRISPR checks are documented with scoped claims."],
+  ["0 silent picks", "ambiguity retained", "Ambiguous reads stay visible instead of being guessed into a sample."]
 ];
 
 const decisionCards = [
   {
-    title: "Use DotMatch for",
+    title: "Use DotMatch when you have",
     items: [
-      "CRISPR guide-counting FASTQs",
-      "fixed-position inline barcode reads",
+      "fixed-window barcode FASTQs",
+      "CRISPR guide-counting reads",
       "known primer, panel, or whitelist targets",
-      "classic per-cycle BCL demultiplexing checks"
+      "feature-barcode or amplicon slices"
     ]
   },
   {
-    title: "It gives you",
+    title: "DotMatch gives you",
     items: [
       "one assignment per read",
       "explicit ambiguous and unmatched reads",
-      "one-base mismatch or indel rescue",
-      "MAGeCK-compatible count matrices and QC tables"
+      "unsafe one-edit correction warnings",
+      "HTML, TSV, JSON, and workflow artifacts"
     ]
   },
   {
-    title: "Use other tools for",
+    title: "Do not use DotMatch for",
     items: [
       "genome alignment or variant calling",
       "SAM/BAM/CIGAR output",
       "downstream CRISPR screen statistics",
-      "CBCL/NovaSeq demultiplexing or wildcard N semantics"
+      "BCL Convert replacement workflows"
     ]
   }
 ];
@@ -53,29 +55,30 @@ const translations = [
 
 const audienceCards = [
   {
+    title: "Barcode assay owners",
+    body: "Find the barcode window, audit the barcode library, demultiplex fixed-position reads, and explain unassigned reads."
+  },
+  {
+    title: "Sequencing cores",
+    body: "Turn undetermined inline-barcode lanes into reports that show wrong offsets, collisions, and unsafe rescue choices."
+  },
+  {
     title: "CRISPR screen users",
     body: "Count guides from FASTQ/FASTQ.gz into MAGeCK-compatible matrices, with exact, rescued, ambiguous, and unmatched reads in the QC."
   },
   {
-    title: "Sequencing cores",
-    body: "Demultiplex fixed-position inline barcodes while keeping ambiguous and unmatched reads available for review."
-  },
-  {
-    title: "Bioinformatics developers",
-    body: "Integrate the C core, CLI, Python bindings, plain TSV/JSON schemas, and validation commands."
-  },
-  {
     title: "Methods reviewers",
-    body: "Trace the benchmark numbers back to raw CSVs, exact commands, and exhaustive or Edlib checks."
+    body: "Inspect claim gates, raw CSVs, exact commands, deterministic reports, and validation against exhaustive or Edlib checks."
   }
 ];
 
 const workflowStatusRows = [
-  ["CRISPR guide counting", "Public benchmark", "Repeated MAGeCK/Yusa rows, count agreement, Edlib validation, and raw command tables."],
-  ["Target-library audit", "CLI feature", "Duplicate targets, one-edit collisions, unsafe correction settings, and per-target risk tables."],
-  ["Inline barcode demux", "Fixed-window FASTQ", "Barcode FASTQ/FASTQ.gz splitting with ambiguous and unmatched reads kept visible."],
-  ["Classic BCL demux", "Classic BCL only", "RunInfo/SampleSheet/per-cycle BCL support for early compatibility checks; no CBCL/NovaSeq input."],
-  ["Genome alignment", "Use an aligner", "DotMatch does not produce SAM/BAM/CIGAR, reference mapping, variant calls, or cell-level quantification."]
+  ["Barcode autopsy", "Repo-ready", "Offset scans, safety audit, unmatched summaries, provenance, and conservative public-surface checks."],
+  ["Inline barcode demux", "Comparator-backed, bounded", "Fixed-position exact-prefix public lane with documented Cutadapt/hash-splitter semantics."],
+  ["CRISPR guide counting", "Validated now", "Public MAGeCK/Yusa repeated rows, count agreement, Edlib validation, and raw command tables."],
+  ["Target-library audit", "Supported", "CLI tests, schemas, and validation commands for unsafe one-edit libraries."],
+  ["Classic BCL demux", "Early milestone", "Public 10x tiny-BCL row; BCL Convert and CBCL/NovaSeq inputs remain outside the flagship story."],
+  ["Genome alignment", "Not supported", "No SAM/BAM/CIGAR, reference mapping, or variant calling."]
 ];
 
 const workflowChoiceRows = [
@@ -87,19 +90,34 @@ const workflowChoiceRows = [
 ];
 
 const evidenceNotes = [
-  ["Assignment rule", "unique or explicit", "A read is assigned only when the configured policy leaves one best target; ties stay visible."],
-  ["Best fit", "fixed target lists", "Guides, barcodes, primers, adapters, panels, and whitelist-style sequences where the candidates are known."],
-  ["Audit trail", "C, CLI, Python", "Core code, bindings, tests, scripts, reports, schemas, and raw benchmark tables live in the repo."]
+  ["Correctness rule", "index matches scan", "The fast path is tested against the native exhaustive scan for the same targets, error allowance, and ambiguity policy."],
+  ["Best fit", "fixed target lists", "Guides, barcodes, primers, adapters, panels, and whitelist-style sequences where the candidates are already known."],
+  ["Repository contents", "C, CLI, Python", "Core code, bindings, tests, scripts, reports, schemas, and raw benchmark tables live in the repo."]
 ];
 
 const commands = [
+  "dotmatch barcode autopsy --barcodes barcodes.tsv --reads pooled.fastq.gz --scan-starts 0:12 --k-values 0,1 --out-dir autopsy",
+  "dotmatch barcode infer --barcodes barcodes.tsv --reads pooled.fastq.gz --scan-starts 0:30 --sample-reads 100000 --out inference.tsv",
+  "dotmatch barcode demux --barcodes barcodes.tsv --reads pooled.fastq.gz --barcode-start 1 --barcode-length auto --k 1 --metric hamming --max-correction-qual 20 --out-dir demuxed --report report.html",
   "dotmatch crispr-count --library guides.csv --samples samples.tsv --guide-start 23 --guide-length 19 --k 1 --metric levenshtein --indel-window 1 --out counts.mageck.tsv --summary qc.json",
-  "dotmatch count --targets guides.csv --reads sample.fastq.gz --target-start 23 --target-length 19 --k 1 --metric levenshtein --indel-window 1 --report report.html --sample-qc sample_qc.tsv",
-  "dotmatch demux --barcodes barcodes.tsv --reads pooled.fastq.gz --barcode-start 0 --barcode-length 8 --k 1 --metric hamming --out-dir demuxed --summary demux.qc.json",
-  "dotmatch bcl-demux --run-folder 240101_RUN --sample-sheet SampleSheet.csv --out-dir bcl_demuxed --barcode-mismatches 1 --summary bcl.summary.json",
-  "dotmatch audit --targets guides.tsv --k 1 --out-dir audit",
-  "dotmatch inspect-unmatched --targets guides.tsv --reads sample.fastq.gz --target-start 23 --target-length 19 --k 1 --offset-window 2 --top 100 --out top_unmatched.tsv",
+  "dotmatch assay run assay.toml",
   "dotmatch validate --targets guides.tsv --reads sample.fastq.gz --target-start 23 --target-length 19 --k 1 --indel-window 1 --oracle edlib --sample 100000"
+];
+
+const autopsyArtifacts = [
+  ["report.html", "scientist-readable barcode autopsy report"],
+  ["findings.tsv", "wrong offset, unsafe rescue, and collision findings"],
+  ["offset_scan.tsv", "candidate windows ranked by assignment evidence"],
+  ["correction_safety.tsv", "whether one-edit rescue is safe for this barcode set"],
+  ["top_unmatched.tsv", "high-count unassigned barcode sequences"],
+  ["provenance.json", "commands, versions, thresholds, and artifacts"]
+];
+
+const autopsyFindings = [
+  ["wrong offset", "Detects a likely leading base, primer scar, or shifted barcode window."],
+  ["unsafe correction", "Shows barcode pairs or clusters that make k=1 rescue scientifically risky."],
+  ["ambiguous collision", "Keeps reads that match multiple barcodes out of forced assignments."],
+  ["unmatched classes", "Separates low-complexity, distant, reverse-complement, and quality-gated failures."]
 ];
 
 const throughputRows = [
@@ -129,7 +147,7 @@ const agreementRows = [
 ] as const;
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
-const heroWorkflowImage = `${basePath}/dotmatch-hero-workflow.png`;
+const barcodeAutopsyImage = `${basePath}/dotmatch-barcode-autopsy.png`;
 
 export default function Home() {
   return (
@@ -140,6 +158,7 @@ export default function Home() {
           DotMatch
         </a>
         <nav aria-label="Primary navigation">
+          <a href="#autopsy">Autopsy</a>
           <a href="#benchmarks">Benchmarks</a>
           <a href="#use-cases">Use cases</a>
           <a href="#install">Install</a>
@@ -153,25 +172,28 @@ export default function Home() {
         <div className="hero-copy">
           <h1>DotMatch</h1>
           <p className="hero-lede">
-            Known-target DNA assignment for guide counts and barcode reads.
+            Barcode autopsy for fixed-window FASTQ assays.
           </p>
           <p className="hero-text">
-            DotMatch turns fixed windows in FASTQ/FASTQ.gz into guide count
-            matrices, barcode splits, and QC tables. It supports exact,
-            one-mismatch, and one-base indel rescue while keeping ambiguous
-            reads out of silent counts.
+            DotMatch turns barcode, guide, feature-tag, primer, and whitelist
+            assignment into an auditable report: what matched, what was
+            ambiguous, what failed by offset, what is unsafe to rescue, and
+            exactly which commands produced the result.
           </p>
           <p className="hero-note">
-            <strong>Current public benchmark: CRISPR guide counting</strong> on
-            MAGeCK/Yusa FASTQs, with MAGeCK-compatible count matrices and raw
-            evidence in the repository.
+            <strong>Flagship story: post-FASTQ fixed-window assignment.</strong>{" "}
+            DotMatch does not replace BCL Convert, genome aligners, or general
+            adapter trimming. It makes known-target assignment explainable.
           </p>
           <div className="hero-actions">
-            <a href="#benchmarks" className="button primary">
-              See the benchmark
+            <a href="#autopsy" className="button primary">
+              See Barcode Autopsy
+            </a>
+            <a href={barcodeScienceUrl} className="button secondary">
+              Run the science gate
             </a>
             <a href="#install" className="button secondary">
-              Build from source
+              Install
             </a>
             <a href={repoUrl} className="button secondary">
               GitHub
@@ -181,35 +203,36 @@ export default function Home() {
         <div className="hero-panel" aria-label="DotMatch benchmark summary">
           <div className="panel-topline">
             <span>v0.1.0</span>
-            <span>known-target assignment</span>
+            <span>fixed-window evidence</span>
           </div>
           <figure className="hero-visual">
             <img
-              src={heroWorkflowImage}
-              alt="Short DNA reads flowing into known target assignments while ambiguous and unmatched reads stay visible"
+              src={barcodeAutopsyImage}
+              alt="DotMatch barcode autopsy workflow from FASTQ through fixed window audit into unique, ambiguous, none, invalid, report, and provenance outputs"
               decoding="async"
               fetchPriority="high"
             />
             <figcaption>
-              Reads move into known targets; ambiguous and unmatched lanes stay visible.
+              FASTQ reads become unique, ambiguous, none, and invalid outcomes,
+              with reports and provenance kept beside the split outputs.
             </figcaption>
           </figure>
           <div className="metric-grid">
             <div>
-              <strong>87,437</strong>
-              <span>public MAGeCK/Yusa guides</span>
+              <strong>4</strong>
+              <span>assignment outcomes, including ambiguous and invalid reads</span>
+            </div>
+            <div>
+              <strong>8</strong>
+              <span>barcode failure classes covered by the fixture catalog</span>
+            </div>
+            <div>
+              <strong>1.37M</strong>
+              <span>reads/s on the bounded exact-prefix barcode lane</span>
             </div>
             <div>
               <strong>0</strong>
-              <span>Edlib validation mismatches</span>
-            </div>
-            <div>
-              <strong>331k</strong>
-              <span>Hamming k=1 reads/s</span>
-            </div>
-            <div>
-              <strong>28.7 MB</strong>
-              <span>peak memory use</span>
+              <span>silent ambiguity when one-edit correction is unsafe</span>
             </div>
           </div>
           <div className="sequence-rail" aria-hidden="true">
@@ -230,22 +253,69 @@ export default function Home() {
         ))}
       </section>
 
+      <section id="autopsy" className="section autopsy-section">
+        <div className="section-heading">
+          <h2>The demo users understand in one run.</h2>
+          <p>
+            Barcode Autopsy answers the question demultiplexing logs usually
+            leave open: why were these reads not assigned, and is correction
+            safe for this barcode set? Speed is shown only after the comparator
+            semantics are documented.
+          </p>
+        </div>
+        <div className="autopsy-layout">
+          <article className="autopsy-command">
+            <span className="card-label">Flagship command</span>
+            <pre><code>{`dotmatch barcode autopsy \\
+  --barcodes barcodes.tsv \\
+  --reads pooled.fastq.gz \\
+  --scan-starts 0:12 \\
+  --k-values 0,1 \\
+  --out-dir autopsy`}</code></pre>
+            <p>
+              The command scans plausible windows, audits the barcode library,
+              writes split-read evidence, and produces report files that can be
+              attached to a sequencing handoff or workflow run.
+            </p>
+          </article>
+          <div className="artifact-grid" aria-label="Barcode autopsy outputs">
+            {autopsyArtifacts.map(([name, detail]) => (
+              <article key={name}>
+                <code>{name}</code>
+                <p>{detail}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+        <div className="finding-list" aria-label="Barcode autopsy diagnosis examples">
+          {autopsyFindings.map(([label, detail]) => (
+            <article key={label}>
+              <span>{label}</span>
+              <p>{detail}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section id="benchmarks" className="section proof-section">
         <div className="section-heading">
-          <h2>Benchmarks you can inspect, not just quote.</h2>
+          <h2>The public evidence in plain English.</h2>
           <p>
-            The headline CRISPR comparison uses five 100k-record/sample repeats
-            on public MAGeCK/Yusa data. DotMatch Hamming k=1 processed about
-            331k reads/s using about 28.7 MB peak memory; guide-counter
-            processed about 195k reads/s using about 529 MB, and MAGeCK exact
-            count processed about 93k reads/s using about 159 MB.
+            We are keeping the claims narrow for v0.1.0. The barcode lane
+            documents fixed-position exact-prefix semantics against Cutadapt and
+            a hash splitter, while the CRISPR rows document guide-counting
+            behavior. On repeated public
+            MAGeCK/Yusa CRISPR guide-counting rows, DotMatch Hamming k=1
+            processed about 331k reads/s using about 28.7 MB peak memory;
+            guide-counter processed about 195k reads/s using about 529 MB, and
+            MAGeCK exact count processed about 93k reads/s using about 159 MB.
           </p>
         </div>
         <div className="benchmark-grid">
           <article className="benchmark-card">
             <div className="chart-copy">
               <span className="card-label">Public CRISPR benchmark</span>
-              <h3>The Yusa rows are reproducible.</h3>
+              <h3>The Yusa rows are in the repo.</h3>
               <p>
                 These rows are not a leaderboard. They are the first public case
                 we can rerun and inspect: five 100k-record/sample repeats for
@@ -255,15 +325,16 @@ export default function Home() {
                 implementation.
               </p>
             </div>
+            <div className="link-stack compact">
+              <a href={barcodeBenchmarkUrl}>Barcode demux benchmark report</a>
+              <a href={publicCrisprUrl}>Public CRISPR benchmark report</a>
+            </div>
             <HorizontalBarChart
               rows={throughputRows}
               unit="reads/s"
               axisLabel="Mean throughput, 100k records/sample, log scale"
               scale="log"
             />
-            <div className="link-stack">
-              <a href={publicCrisprUrl}>Open the public CRISPR benchmark report</a>
-            </div>
           </article>
 
           <article className="benchmark-card">
@@ -353,9 +424,9 @@ export default function Home() {
         <div className="section-heading">
           <h2>One CRISPR run, from FASTQ to QC.</h2>
           <p>
-            This is the practical shape of the primary workflow: reads in, a
-            guide-by-sample count matrix out, and a small set of QC files that
-            say what happened to every assignment class.
+            This is the practical shape of the best-supported workflow: reads
+            in, a guide-by-sample count matrix out, and a small set of QC files
+            that say what happened to every assignment class.
           </p>
         </div>
         <div className="example-layout">
@@ -399,26 +470,27 @@ DotMatch reports: ambiguous`}</code></pre>
 
       <section id="install" className="section launch-section">
         <div className="section-heading">
-          <h2>Build from the repo. Cite the exact release.</h2>
+          <h2>Start from the repo. Cite the exact release.</h2>
           <p>
-            The documented install path is a source build or local Python
-            package install from the repository. Public package-channel status
-            is tracked in the packaging notes, and the Bioconda recipe PR is
-            linked for transparency.
+            Use the source install until the public package channels finish
+            publication. Current distribution: source install, release
+            artifacts, and a Bioconda recipe PR with CI green. Coming next:
+            PyPI, Bioconda merge, Docker/Singularity, Zenodo DOI.
           </p>
         </div>
         <div className="launch-grid">
           <article className="launch-card">
             <span className="card-label">Build it locally</span>
-            <h3>Clone the repo and verify the native core.</h3>
+            <h3>Clone the repo and run the release check.</h3>
             <pre><code>{`git clone https://github.com/dnncha/dotmatch.git
 cd dotmatch
 make
 python3 -m pip install .
-make test`}</code></pre>
+make repository-ready`}</code></pre>
             <div className="link-stack">
               <a href={repoUrl}>Open GitHub</a>
               <a href={packagingUrl}>Packaging notes</a>
+              <a href={biocondaPrUrl}>Bioconda recipe PR</a>
             </div>
           </article>
 
@@ -437,16 +509,16 @@ make test`}</code></pre>
           </article>
 
           <article className="launch-card">
-            <span className="card-label">Package status</span>
-            <h3>Source first, package channels clearly marked.</h3>
+            <span className="card-label">Check the data</span>
+            <h3>The main public comparison is deliberately narrow.</h3>
             <p>
-              DotMatch builds from source today. The Bioconda recipe is tracked
-              publicly, and package-channel availability is documented without
-              presenting unpublished channels as install paths.
+              The public CRISPR benchmark is the best-supported comparison
+              today: Yusa-style guide counting, checked-in rows, and validation
+              against the assignment oracle.
             </p>
             <div className="link-stack">
-              <a href={biocondaPrUrl}>Bioconda recipe PR</a>
-              <a href={packagingUrl}>Read packaging status</a>
+              <a href={publicCrisprUrl}>Public CRISPR benchmark report</a>
+              <a href="#benchmarks">Review benchmark summary</a>
             </div>
           </article>
         </div>
@@ -457,8 +529,8 @@ make test`}</code></pre>
           <h2>Who this is for.</h2>
           <p>
             The same engine serves a few different readers. The strongest
-            public example today is CRISPR guide counting, but the audit trail
-            is useful anywhere short reads must land on a fixed target list.
+            adoption path today is CRISPR guide counting, but the audit trail is
+            useful anywhere short reads must land on a fixed target list.
           </p>
         </div>
         <div className="usecase-grid">
@@ -474,25 +546,25 @@ make test`}</code></pre>
 
       <section className="section scope-section">
         <div className="section-heading">
-          <h2>What DotMatch does, and what it deliberately does not do.</h2>
+          <h2>What is validated, early, or out of scope.</h2>
           <p>
-            The site keeps assignment, demultiplexing, and downstream analysis
-            separate. DotMatch handles known short targets; it is not a genome
-            mapper or a replacement for statistical analysis tools.
+            CRISPR guide counting is the strongest public evidence today. Other
+            surfaces are useful, but the site keeps smoke tests and future
+            distribution work separate from the primary evidence.
           </p>
         </div>
         <div className="scope-layout">
           <div className="status-table" role="table" aria-label="DotMatch workflow maturity">
             <div role="row" className="table-head">
               <span>Workflow</span>
-              <span>Use</span>
-              <span>What to expect</span>
+              <span>Status</span>
+              <span>Evidence level</span>
             </div>
             {workflowStatusRows.map(([workflow, status, evidence]) => (
               <div role="row" key={workflow}>
                 <span data-label="Workflow">{workflow}</span>
-                <span data-label="Use">{status}</span>
-                <span data-label="What to expect">{evidence}</span>
+                <span data-label="Status">{status}</span>
+                <span data-label="Evidence level">{evidence}</span>
               </div>
             ))}
           </div>

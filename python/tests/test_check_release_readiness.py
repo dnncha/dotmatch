@@ -90,6 +90,13 @@ def _write_release_repo(root: Path) -> None:
             "        with:\n"
             "          name: dotmatch-sdist\n"
             "          path: dist/*.tar.gz\n"
+            "  wheel:\n"
+            "    needs: [preflight]\n"
+            "    steps:\n"
+            "      - uses: actions/upload-artifact@v7\n"
+            "        with:\n"
+            "          name: dotmatch-wheel-macos\n"
+            "          path: dist/*.whl\n"
             "  linux-repaired-wheels:\n"
             "    needs: [preflight]\n"
             "    steps:\n"
@@ -99,12 +106,16 @@ def _write_release_repo(root: Path) -> None:
             "          name: dotmatch-linux-repaired-wheels\n"
             "          path: dist-linux/*.whl\n"
             "  pypi-sdist:\n"
-            "    name: Publish PyPI sdist and repaired Linux wheels\n"
-            "    needs: [preflight, sdist, linux-repaired-wheels]\n"
+            "    name: Publish PyPI sdist, macOS wheel, and repaired Linux wheels\n"
+            "    needs: [preflight, sdist, wheel, linux-repaired-wheels]\n"
             "    steps:\n"
             "      - uses: actions/download-artifact@v8\n"
             "        with:\n"
             "          name: dotmatch-sdist\n"
+            "          path: dist-pypi\n"
+            "      - uses: actions/download-artifact@v8\n"
+            "        with:\n"
+            "          name: dotmatch-wheel-macos\n"
             "          path: dist-pypi\n"
             "      - uses: actions/download-artifact@v8\n"
             "        with:\n"
@@ -120,7 +131,7 @@ def _write_release_repo(root: Path) -> None:
         ),
         "docs/packaging.md": (
             "# Packaging\n\n"
-            "The release workflow uses trusted publishing and publishes the source distribution and repaired manylinux/musllinux wheels.\n"
+            "The release workflow uses trusted publishing and publishes the source distribution, the native macOS wheel, and repaired manylinux/musllinux Linux wheels.\n"
             "Raw `linux_x86_64` wheels are not uploaded to PyPI.\n"
             "Images are pushed to ghcr.io/dnncha/dotmatch with OCI labels.\n"
             "BioContainers images are checked at quay.io/biocontainers/dotmatch after Bioconda publication.\n"
@@ -473,7 +484,7 @@ def test_release_readiness_requires_preflight_before_publish_jobs(tmp_path):
         workflow
         .replace("  preflight:\n", "  missing-preflight:\n")
         .replace("    needs: [preflight]\n", "")
-        .replace("    needs: [preflight, sdist, linux-repaired-wheels]\n", "    needs: [sdist, linux-repaired-wheels]\n")
+        .replace("    needs: [preflight, sdist, wheel, linux-repaired-wheels]\n", "    needs: [sdist, wheel, linux-repaired-wheels]\n")
         .replace("    needs: [preflight, wheel, sdist, linux-repaired-wheels]\n", "    needs: [wheel, sdist, linux-repaired-wheels]\n"),
         encoding="utf-8",
     )
@@ -482,7 +493,7 @@ def test_release_readiness_requires_preflight_before_publish_jobs(tmp_path):
 
     assert any("release workflow missing preflight job" in failure for failure in result.failures)
     assert any("container publish job must depend on preflight" in failure for failure in result.failures)
-    assert any("PyPI publish job must depend on preflight, sdist, and repaired Linux wheels" in failure for failure in result.failures)
+    assert any("PyPI publish job must depend on preflight, sdist, macOS wheel, and repaired Linux wheels" in failure for failure in result.failures)
     assert any("GitHub release job must depend on preflight, wheels, sdist, and repaired Linux wheels" in failure for failure in result.failures)
 
 

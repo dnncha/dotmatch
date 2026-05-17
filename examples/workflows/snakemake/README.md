@@ -1,8 +1,9 @@
 # Snakemake CRISPR Counting Example
 
-This example wraps `dotmatch crispr-count` as a small Snakemake workflow. It is
-intended as an integration pattern for labs that already run Snakemake, not as a
-separate benchmark claim.
+This example includes two small Snakemake rules. `dotmatch_crispr_count` runs
+the native CRISPR counting command. `dotmatch_assay_run` runs an AssaySpec and
+emits the assay report and manifest summary. It is intended as an integration
+pattern for labs that already run Snakemake, not as benchmark evidence.
 
 From the repository root, create the small public CRISPR fixture:
 
@@ -25,7 +26,14 @@ Outputs are written under `examples/workflows/snakemake/output/`:
 - `counts.mageck.tsv`: MAGeCK-compatible count matrix;
 - `summary.json`: DotMatch assignment and QC summary;
 - `sample_qc.tsv`: sample-level QC table that can be consumed by the
-  MultiQC custom-content example.
+  MultiQC custom-content example;
+- `assay/crispr_qc.html`, `assay/crispr_qc.json`,
+  `assay/crispr_qc.summary.tsv`: CRISPR guide-count QC report, structured
+  report, and workflow summary;
+- `assay/assay_report.html`: primary human-readable AssaySpec report;
+- `assay/assay_manifest.json`: full run provenance and command manifest;
+- `assay/assay_manifest.summary.tsv`: manifest summary for MultiQC custom
+  content.
 
 The default config uses the same Yusa/MAGeCK fixture paths as
 `examples/crispr_guides/README.md`: `ERR376998.fastq.gz`,

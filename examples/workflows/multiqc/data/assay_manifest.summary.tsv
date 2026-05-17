@@ -1,0 +1,2 @@
+schema_version	mode	assay_type	status	native_version	autopsy_triggered	warning_count	production_warning_count	sample_count	primary_report	manifest
+1	count	crispr	ready	dotmatch 0.1.0	false	0	0	2	assay_report.html	assay_manifest.json

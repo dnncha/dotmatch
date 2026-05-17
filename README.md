@@ -20,6 +20,45 @@ Ambiguous reads are exposed explicitly instead of being assigned silently. That
 is the main design choice: DotMatch is for deterministic known-target
 assignment, not probabilistic read mapping.
 
+## Barcode Autopsy, Not Just Barcode Splitting
+
+DotMatch is a fixed-window barcode assignment and demultiplexing tool for
+assays where the expected barcode, guide, primer, feature tag, or whitelist
+sequence is known. That makes one-edit correction auditable: before enabling
+rescue, DotMatch can audit the barcode library for collisions, infer likely
+barcode offsets, report top unmatched sequences, and write machine-readable QC
+for workflow systems.
+
+```bash
+dotmatch barcode autopsy \
+  --barcodes barcodes.tsv \
+  --reads pooled.fastq.gz \
+  --scan-starts 0:12 \
+  --k-values 0,1 \
+  --out-dir autopsy
+```
+
+This is the one-command diagnostic path. Open `autopsy/report.html` first, then
+use `autopsy/findings.tsv`, `autopsy/offset_scan.tsv`,
+`autopsy/correction_safety.tsv`, `autopsy/top_unmatched.tsv`, and
+`autopsy/provenance.json` when you need machine-readable evidence for a
+workflow, methods section, or lab handoff.
+
+The autopsy report is designed to answer why reads were not assigned: wrong
+offset, exact no-match, one-edit collision, ambiguous rescue, low-quality
+correction candidate, invalid window, or barcode-sheet issue. Speed claims are
+reported only after comparator semantics and assignment parity have been
+checked for the dataset being discussed.
+
+The broader fixed-window evidence matrix is checked by:
+
+```bash
+make barcode-science-ready
+```
+
+See [Barcode Science Readiness](docs/barcode-science-readiness.md) for the
+public datasets, comparator semantics, and claim boundaries.
+
 ## When To Use DotMatch
 
 DotMatch is a good fit when you have a table of expected short sequences and
@@ -35,8 +74,9 @@ Common uses include:
 - validating an indexed assignment run against an exhaustive scan or Edlib.
 
 DotMatch is not a genome aligner. It does not produce SAM/BAM, CIGAR strings,
-variant calls, cell/UMI quantification, expression matrices, or guide-level
-statistics. It works on extracted short windows and known target lists.
+variant calls, cell/UMI quantification, expression matrices, or screen-level
+hit-calling statistics. It works on extracted short windows and known target
+lists.
 
 ## Installation
 
@@ -69,7 +109,22 @@ docker run --rm -v "$PWD:/work" dotmatch:dev dist ACGT AGGT
 ```
 
 Package-channel status for PyPI, Bioconda, containers, and release archives is
-tracked in [Packaging Notes](docs/packaging.md).
+tracked in [Packaging Notes](docs/packaging.md), the
+[Release Process](docs/release-process.md), and the machine-readable
+[Distribution Status](docs/distribution-release.json). Release artifacts are not
+yet published on public package channels; install from source until the tagged
+release appears on the relevant channel.
+
+The GitHub release workflow builds and smoke-tests repaired manylinux/musllinux
+x86_64 wheel artifacts. PyPI trusted publishing is configured for the source
+distribution and repaired Linux wheels. Public PyPI wheel availability is only
+claimed after the tagged release is visible on PyPI.
+
+Optional local Workbench: DotMatch also includes a desktop Workbench under
+`apps/workbench` for local AssaySpec design, inference, planning, running,
+autopsy, and report review. It is separate from the Bioconda recipe and keeps
+FASTQ, target, barcode, spec, and output paths inside a user-selected local
+workspace. See [Workbench](docs/workbench.md).
 
 ## Quick Example
 

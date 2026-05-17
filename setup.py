@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import platform
+import re
 import shlex
 import subprocess
 import sysconfig
@@ -17,6 +18,14 @@ except ImportError:
 
 
 ROOT = Path(__file__).resolve().parent
+
+
+def _project_version() -> str:
+    text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    match = re.search(r'^version\s*=\s*"([^"]+)"', text, flags=re.MULTILINE)
+    if match is None:
+        raise RuntimeError("pyproject.toml version not found")
+    return match.group(1)
 
 
 def _macos_arch_flags() -> list[str]:
@@ -56,6 +65,7 @@ class build_py(_build_py):
     def run(self) -> None:
         super().run()
         self.build_native_library()
+        self.build_native_cli()
 
     def build_native_library(self) -> None:
         system = platform.system()
@@ -104,6 +114,49 @@ class build_py(_build_py):
         subprocess.run(compile_cmd, check=True, env=build_env)
         subprocess.run(link_cmd, check=True, env=build_env)
 
+    def build_native_cli(self) -> None:
+        system = platform.system()
+        arch_flags: list[str] = []
+        if system == "Darwin":
+            arch_flags = _macos_arch_flags()
+            build_env = os.environ.copy()
+            build_env.setdefault("MACOSX_DEPLOYMENT_TARGET", _macos_deployment_target(arch_flags))
+        elif system == "Linux":
+            build_env = os.environ.copy()
+        else:
+            raise RuntimeError(f"DotMatch Python wheels are not yet supported on {system}")
+
+        build_cmd = self.get_finalized_command("build")
+        build_temp = Path(build_cmd.build_temp)
+        build_temp.mkdir(parents=True, exist_ok=True)
+        out_dir = Path(self.build_lib) / "dotmatch"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / "dotmatch-native"
+
+        cc = shlex.split(os.environ.get("CC") or sysconfig.get_config_var("CC") or "cc")
+        cflags = shlex.split(os.environ.get("CFLAGS", ""))
+        compile_cmd = [
+            *cc,
+            *arch_flags,
+            "-O3",
+            "-std=c11",
+            "-Wall",
+            "-Wextra",
+            "-Wpedantic",
+            "-I",
+            str(ROOT / "include"),
+            f'-DDOTMATCH_VERSION="{_project_version()}"',
+            *cflags,
+            str(ROOT / "src/qda.c"),
+            str(ROOT / "src/qdalign.c"),
+            "-o",
+            str(out_path),
+            "-lz",
+            "-pthread",
+        ]
+        subprocess.run(compile_cmd, check=True, env=build_env)
+        out_path.chmod(0o755)
+
 
 class bdist_wheel(_bdist_wheel):
     def finalize_options(self) -> None:
@@ -118,4 +171,5 @@ class bdist_wheel(_bdist_wheel):
 setup(
     cmdclass={"build_py": build_py, "bdist_wheel": bdist_wheel},
     distclass=BinaryDistribution,
+    package_data={"dotmatch": ["libdotmatch.*", "dotmatch-native"]},
 )

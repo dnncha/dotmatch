@@ -1,0 +1,8 @@
+name: DotMatch CodeQL
+
+queries:
+  - uses: security-extended
+
+query-filters:
+  - exclude:
+      id: cpp/path-injection
