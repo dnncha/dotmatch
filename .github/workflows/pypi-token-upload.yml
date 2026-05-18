@@ -1,0 +1,43 @@
+name: PyPI token upload
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to upload to PyPI
+        required: true
+        default: v0.1.2
+
+permissions:
+  contents: read
+
+jobs:
+  upload:
+    name: Upload release assets to PyPI with API token
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/dotmatch/
+    steps:
+      - name: Download PyPI distributions from GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist-pypi
+          gh release download "${RELEASE_TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --dir dist-pypi \
+            --pattern 'dotmatch-*.tar.gz' \
+            --pattern 'dotmatch-*-py3-none-macosx_11_0_universal2.whl' \
+            --pattern 'dotmatch-*-py3-none-manylinux*.whl' \
+            --pattern 'dotmatch-*-py3-none-musllinux*.whl'
+          ls -lh dist-pypi
+
+      - name: Upload distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist-pypi
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
