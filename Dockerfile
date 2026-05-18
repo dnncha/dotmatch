@@ -5,7 +5,7 @@ LABEL org.opencontainers.image.title="DotMatch" \
       org.opencontainers.image.source="https://github.com/dnncha/dotmatch" \
       org.opencontainers.image.url="https://github.com/dnncha/dotmatch" \
       org.opencontainers.image.documentation="https://github.com/dnncha/dotmatch#readme" \
-      org.opencontainers.image.version="0.1.1" \
+      org.opencontainers.image.version="0.1.2" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.authors="Donncha O'Toole"
 

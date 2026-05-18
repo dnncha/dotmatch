@@ -158,6 +158,7 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
         "pypa/gh-action-pypi-publish@release/v1",
         "packages-dir: dist-pypi",
         "docker/metadata-action",
+        "docker/login-action",
         "docker/build-push-action",
         "ghcr.io/dnncha/dotmatch",
         "docker image inspect dotmatch:ci",
@@ -194,6 +195,8 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
             result.failures.append("release workflow preflight job must run make python-package-test")
     if "needs: [preflight]" not in container_job:
         result.failures.append("container publish job must depend on preflight")
+    if "docker/login-action" not in container_job or "registry: ghcr.io" not in container_job:
+        result.failures.append("container publish job must log in to GHCR before pushing")
     if "python scripts/check_python_wheel.py --sdist-only --out-dir dist" not in sdist_job:
         result.failures.append("release workflow sdist job must verify the PyPI source distribution artifact")
     if "Publish PyPI sdist, macOS wheel, and repaired Linux wheels" not in pypi_job:

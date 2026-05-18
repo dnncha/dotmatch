@@ -81,6 +81,11 @@ def _write_release_repo(root: Path) -> None:
             "      - uses: docker/metadata-action@v5\n"
             "        with:\n"
             "          images: ghcr.io/dnncha/dotmatch\n"
+            "      - uses: docker/login-action@v3\n"
+            "        with:\n"
+            "          registry: ghcr.io\n"
+            "          username: ${{ github.actor }}\n"
+            "          password: ${{ secrets.GITHUB_TOKEN }}\n"
             "      - uses: docker/build-push-action@v6\n"
             "      - run: docker image inspect dotmatch:ci --format '{{ index .Config.Labels \"org.opencontainers.image.version\" }}'\n"
             "  sdist:\n"
@@ -290,6 +295,27 @@ def test_release_readiness_requires_preflight_before_publish_jobs(tmp_path):
     assert any("container publish job must depend on preflight" in failure for failure in result.failures)
     assert any("PyPI publish job must depend on preflight, sdist, macOS wheel, and repaired Linux wheels" in failure for failure in result.failures)
     assert any("GitHub release job must depend on preflight, wheels, sdist, and repaired Linux wheels" in failure for failure in result.failures)
+
+
+def test_release_readiness_requires_ghcr_login_before_container_push(tmp_path):
+    checker = _load_checker()
+    _write_release_repo(tmp_path)
+    workflow = (tmp_path / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+    login_block = (
+        "      - uses: docker/login-action@v3\n"
+        "        with:\n"
+        "          registry: ghcr.io\n"
+        "          username: ${{ github.actor }}\n"
+        "          password: ${{ secrets.GITHUB_TOKEN }}\n"
+    )
+    (tmp_path / ".github" / "workflows" / "release.yml").write_text(
+        workflow.replace(login_block, ""),
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("container publish job must log in to GHCR" in failure for failure in result.failures)
 
 
 def test_release_readiness_requires_repository_ready_in_preflight(tmp_path):

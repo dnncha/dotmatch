@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
   "status": "not_released",
-  "release_version": "0.1.1",
+  "release_version": "0.1.2",
   "post_release_gate": "make distribution-channels",
   "channels": [
     {
       "id": "pypi",
       "status": "prepared",
-      "expected_url": "https://pypi.org/project/dotmatch/0.1.1/",
+      "expected_url": "https://pypi.org/project/dotmatch/0.1.2/",
       "verification_command": "make distribution-channels",
-      "blocker": "The 0.1.1 source distribution, native macOS wheel, and repaired manylinux/musllinux wheels have not been published to PyPI yet.",
+      "blocker": "The 0.1.2 source distribution, native macOS wheel, and repaired manylinux/musllinux wheels have not been published to PyPI yet.",
       "next_action": "Publish the tagged source distribution, native macOS wheel, and repaired Linux wheels through PyPI trusted publishing, then rerun make distribution-channels."
     },
     {
@@ -26,7 +26,7 @@
       "status": "prepared",
       "expected_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "The GHCR image for version 0.1.1 has not been published from an immutable tag yet.",
+      "blocker": "The GHCR image for version 0.1.2 has not been published from an immutable tag yet.",
       "next_action": "Push the release tag, confirm the GHCR image label and runtime smoke tests, then rerun make distribution-channels."
     },
     {
