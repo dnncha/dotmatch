@@ -6,12 +6,14 @@ const benchmarksUrl = `${repoUrl}/blob/main/docs/benchmarks/README.md`;
 const evidenceGalleryUrl = `${repoUrl}/blob/main/docs/evidence-gallery/README.md`;
 const publicCrisprUrl = `${repoUrl}/blob/main/docs/benchmarks/public_crispr/README.md`;
 const barcodeBenchmarkUrl = `${repoUrl}/blob/main/docs/benchmarks/barcode_demux/README.md`;
+const panelDesignUrl = `${repoUrl}/blob/main/docs/barcode-panel-design.md`;
+const panelBenchmarkUrl = `${repoUrl}/blob/main/docs/benchmarks/barcode_panel_design/README.md`;
 const biocondaPrUrl = "https://github.com/bioconda/bioconda-recipes/pull/65367";
 
 const proof = [
   ["Guide counts", "CRISPR libraries", "FASTQ reads become guide-by-sample count tables."],
   ["Barcode splits", "fixed-position indexes", "Inline barcode reads can be assigned, split, and reviewed."],
-  ["QC files", "HTML, TSV, JSON", "Reports sit beside the raw tables a workflow needs."],
+  ["Panel certificates", "design, check, simulate", "Designed barcodes ship with machine-checkable safety files."],
   ["No guessing", "ambiguity stays visible", "Reads that fit multiple targets are reported as ambiguous."]
 ];
 
@@ -21,6 +23,7 @@ const decisionCards = [
     items: [
       "fixed-window barcode FASTQs",
       "CRISPR guide-counting reads",
+      "barcode panels to design or certify",
       "known primer, panel, or whitelist targets",
       "feature-barcode or amplicon slices"
     ]
@@ -30,6 +33,7 @@ const decisionCards = [
     items: [
       "one assignment per read",
       "explicit ambiguous and unmatched reads",
+      "panel safety certificates and lab exports",
       "unsafe one-edit correction warnings",
       "HTML, TSV, JSON, and workflow artifacts"
     ]
@@ -38,6 +42,7 @@ const decisionCards = [
     title: "Do not use DotMatch for",
     items: [
       "genome alignment or variant calling",
+      "basecalling or UMI entropy generation",
       "SAM/BAM/CIGAR output",
       "downstream CRISPR screen statistics",
       "BCL Convert replacement workflows"
@@ -64,6 +69,10 @@ const audienceCards = [
     body: "Turn undetermined inline-barcode lanes into reports that show wrong offsets, collisions, and unsafe rescue choices."
   },
   {
+    title: "Panel designers",
+    body: "Generate or audit barcode panels with exact DotMatch assignment certificates, plate layouts, and sample-sheet exports."
+  },
+  {
     title: "CRISPR screen users",
     body: "Count guides from FASTQ/FASTQ.gz into MAGeCK-compatible matrices, with exact, rescued, ambiguous, and unmatched reads in the QC."
   },
@@ -74,6 +83,7 @@ const audienceCards = [
 ];
 
 const workflowStatusRows = [
+  ["Barcode panel design", "Good fit", "Design, optimize, check, simulate, lay out, and export panels for known-target assignment."],
   ["CRISPR guide counting", "Good fit", "Guide-by-sample counts, QC summaries, and MAGeCK-compatible output."],
   ["Inline barcode demux", "Good fit", "Fixed-position barcodes, split FASTQs, unmatched reads, and ambiguous reads."],
   ["Barcode troubleshooting", "Good fit", "Window scans, barcode-library checks, and top-unmatched summaries."],
@@ -83,6 +93,7 @@ const workflowStatusRows = [
 ];
 
 const workflowChoiceRows = [
+  ["Design or certify a barcode panel", "DotMatch panel"],
   ["Count CRISPR guides from a fixed window", "DotMatch"],
   ["Split fixed-position inline barcodes", "DotMatch"],
   ["Find why a barcode lane is mostly unassigned", "DotMatch barcode troubleshooting"],
@@ -98,6 +109,8 @@ const evidenceNotes = [
 ];
 
 const commands = [
+  "dotmatch panel design --n 96 --length 16 --preset illumina-inline-strict --seed 42 --out-dir panel_96x16",
+  "dotmatch panel check panel_96x16/barcodes.tsv --k 1 --metric hamming --out-dir panel_check",
   "dotmatch barcode autopsy --barcodes barcodes.tsv --reads pooled.fastq.gz --scan-starts 0:12 --k-values 0,1 --out-dir autopsy",
   "dotmatch barcode infer --barcodes barcodes.tsv --reads pooled.fastq.gz --scan-starts 0:30 --sample-reads 100000 --out inference.tsv",
   "dotmatch barcode demux --barcodes barcodes.tsv --reads pooled.fastq.gz --barcode-start 1 --barcode-length auto --k 1 --metric hamming --max-correction-qual 20 --out-dir demuxed --report report.html",
@@ -120,6 +133,22 @@ const autopsyFindings = [
   ["unsafe correction", "Shows barcode pairs or clusters that make one-mismatch rescue unsafe."],
   ["ambiguous collision", "Keeps reads that match multiple barcodes out of forced assignments."],
   ["unmatched classes", "Separates low-complexity, distant, reverse-complement, and quality-gated failures."]
+];
+
+const panelOutputs = [
+  ["barcodes.tsv", "auditable barcode table, not just sequence IDs"],
+  ["panel_summary.json", "machine-checkable safety certificate"],
+  ["ambiguous_error_spheres.tsv", "queries that would create ambiguity"],
+  ["target_safety.tsv", "per-barcode nearest-neighbor and risk status"],
+  ["plate_layout.tsv", "96-well or 384-well operational layout"],
+  ["SampleSheet.csv", "lab-ready sample-sheet template"]
+];
+
+const panelChecks = [
+  ["Exact assignment proof", "Configured error spheres are enumerated up to k=2; larger radii are refused."],
+  ["Sequence filters", "GC, homopolymer, repeats, forbidden motifs, ambiguous bases, and reverse-complement traps."],
+  ["Context checks", "Optional flanks expose cross-boundary homopolymers, motifs, and boundary risks."],
+  ["Simulation", "Simple error models estimate unique, ambiguous, none, invalid, and false assignment rates."]
 ];
 
 const reportPreviewRows = [
@@ -157,6 +186,7 @@ const agreementRows = [
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const assignmentWorkflowImage = `${basePath}/dotmatch-read-assignment.svg`;
+const panelCertificateImage = `${basePath}/dotmatch-panel-certificate.png`;
 
 export default function Home() {
   return (
@@ -168,6 +198,7 @@ export default function Home() {
         </a>
         <nav aria-label="Primary navigation">
           <a href="#barcode-qc">Barcode QC</a>
+          <a href="#panel-design">Panel design</a>
           <a href="#benchmarks">Benchmarks</a>
           <a href="#use-cases">Use cases</a>
           <a href="#install">Install</a>
@@ -181,22 +212,27 @@ export default function Home() {
         <div className="hero-copy">
           <h1>DotMatch</h1>
           <p className="hero-lede">
-            Count guides. Split barcodes. See what failed.
+            Design panels. Count guides. Split barcodes. See what failed.
           </p>
           <p className="hero-text">
-            DotMatch works on FASTQ reads when the expected short DNA sequences
-            are already known: CRISPR guides, inline barcodes, primers, panels,
-            feature tags, or whitelist entries. It writes the count or split
-            output and keeps the ambiguous, unmatched, and invalid reads visible.
+            DotMatch works when the expected short DNA sequences are already
+            known: CRISPR guides, inline barcodes, primers, panels, feature
+            tags, or whitelist entries. It designs barcode panels, writes count
+            or split outputs, and keeps ambiguous, unmatched, and invalid reads
+            visible.
           </p>
           <p className="hero-note">
             <strong>Use it after FASTQs exist.</strong>{" "}
-            DotMatch does not replace BCL Convert, genome aligners, or general
-            adapter trimming. It is for known short-DNA target assignment.
+            DotMatch does not replace BCL Convert, basecallers, genome aligners,
+            or general adapter trimming. It is for known short-DNA target
+            assignment.
           </p>
           <div className="hero-actions">
             <a href="#barcode-qc" className="button primary">
               Troubleshoot Barcodes
+            </a>
+            <a href="#panel-design" className="button secondary">
+              Design Panels
             </a>
             <a href={benchmarksUrl} className="button secondary">
               Read Examples
@@ -223,7 +259,8 @@ export default function Home() {
             />
             <figcaption>
               FASTQ reads become unique, ambiguous, none, and invalid outcomes,
-              with QC tables and reports kept beside the count or split outputs.
+              with QC tables and reports kept beside panel, count, or split
+              outputs.
             </figcaption>
           </figure>
           <div className="metric-grid">
@@ -233,7 +270,7 @@ export default function Home() {
             </div>
             <div>
               <strong>8</strong>
-              <span>barcode troubleshooting checks in the examples</span>
+              <span>barcode troubleshooting and panel-safety checks in the examples</span>
             </div>
             <div>
               <strong>1.37M</strong>
@@ -241,7 +278,7 @@ export default function Home() {
             </div>
             <div>
               <strong>0</strong>
-              <span>silent ambiguity when one-edit correction is unsafe</span>
+              <span>forced assignments for reads DotMatch reports as ambiguous</span>
             </div>
           </div>
           <div className="sequence-rail" aria-hidden="true">
@@ -260,6 +297,68 @@ export default function Home() {
             <p>{detail}</p>
           </article>
         ))}
+      </section>
+
+      <section id="panel-design" className="section panel-design-section">
+        <div className="section-heading">
+          <h2>Design barcode panels with the assignment rules attached.</h2>
+          <p>
+            DotMatch panel design creates barcode sets, checks them under the
+            same assignment semantics used later, and writes certificate files a
+            pipeline can inspect. It does not hide ambiguous rescue, and it
+            refuses correction radii it cannot certify exactly.
+          </p>
+        </div>
+        <div className="panel-design-layout">
+          <figure className="panel-design-visual">
+            <img
+              src={panelCertificateImage}
+              alt="A lab bench scene with an abstract panel safety report, 96-well plate, and barcode strips"
+              decoding="async"
+            />
+          </figure>
+          <article className="panel-command">
+            <span className="card-label">Panel lifecycle</span>
+            <pre><code>{`dotmatch panel design \\
+  --n 96 \\
+  --length 16 \\
+  --preset illumina-inline-strict \\
+  --min-hamming-distance 5 \\
+  --min-levenshtein-distance 4 \\
+  --seed 42 \\
+  --out-dir panel_96x16
+
+dotmatch panel check panel_96x16/barcodes.tsv \\
+  --k 1 \\
+  --metric hamming \\
+  --out-dir panel_check`}</code></pre>
+            <p>
+              The certificate preserves DotMatch outcomes: unique, ambiguous,
+              none, and invalid. Exact error-sphere certification is currently
+              supported through k=2.
+            </p>
+            <div className="link-stack compact">
+              <a href={panelDesignUrl}>Read panel design docs</a>
+              <a href={panelBenchmarkUrl}>Open panel design gate</a>
+            </div>
+          </article>
+        </div>
+        <div className="panel-output-grid" aria-label="Panel design outputs">
+          {panelOutputs.map(([name, detail]) => (
+            <article key={name}>
+              <code>{name}</code>
+              <p>{detail}</p>
+            </article>
+          ))}
+        </div>
+        <div className="panel-check-grid" aria-label="Panel safety checks">
+          {panelChecks.map(([name, detail]) => (
+            <article key={name}>
+              <span>{name}</span>
+              <p>{detail}</p>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section id="barcode-qc" className="section autopsy-section">

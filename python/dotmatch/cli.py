@@ -2012,6 +2012,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return command_crispr_namespace(raw_args[1:])
     if raw_args and raw_args[0] == "barcode":
         return command_barcode_namespace(raw_args[1:])
+    if raw_args and raw_args[0] == "panel":
+        from .panel import command_panel_namespace
+
+        return command_panel_namespace(raw_args[1:])
     if raw_args and raw_args[0] == "crispr-qc":
         parser = build_parser()
         args = parser.parse_args(raw_args)

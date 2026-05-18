@@ -1,0 +1,4 @@
+workflow,status,barcodes,length,design_seconds,check_seconds,minimum_hamming_distance,ambiguous_error_spheres,silent_assignment_risk,context_warnings,expected_outcome
+small_symbolic_panel_smoke,warn,8,8,3.3379,0.1706,6,0,0,0,certified_safe_or_warn
+exact_k2_ambiguous_fixture,fail,2,4,,0.0841,4,12,0,0,must_fail
+contextual_flank_fixture,warn,1,4,,0.0809,,0,0,1,must_warn
