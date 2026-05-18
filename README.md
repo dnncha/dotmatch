@@ -10,8 +10,9 @@ those sequences without hiding ambiguous cases.
 
 It is built for CRISPR guide counting, inline barcode demultiplexing,
 fixed-window feature/barcode assignment, primer or adapter-prefix checks,
-amplicon-panel starts, and whitelist-style assays. It is not a genome aligner
-or a replacement for downstream screen statistics.
+amplicon-panel starts, whitelist-style assays, and barcode panel design for
+known-target assignment. It is not a genome aligner, a basecaller, a UMI entropy
+generator, or a replacement for downstream screen statistics.
 
 ![DotMatch workflow: FASTQ reads and a known target table are sliced at the same read position, assigned to known short DNA targets, and written to counts, split FASTQs, QC tables, and reports.](public/dotmatch-read-assignment.svg)
 
@@ -62,6 +63,55 @@ Speed is useful only after the assignment rules are clear. The checked barcode
 example documents the exact comparator settings in
 [docs/benchmarks/barcode_demux](docs/benchmarks/barcode_demux/README.md).
 
+## Barcode Panel Design
+
+DotMatch can design and certify barcode panels for the same assignment semantics
+used later by demux and counting. The point is not just to emit sequences. A
+designed panel is shipped with a machine-checkable safety certificate, per-target
+safety rows, collision tables, ambiguous-variant examples, plate layout, lab
+exports, and a report.
+
+```bash
+dotmatch panel design \
+  --n 96 \
+  --length 16 \
+  --preset illumina-inline-strict \
+  --min-hamming-distance 5 \
+  --min-levenshtein-distance 4 \
+  --gc-min 0.35 \
+  --gc-max 0.65 \
+  --max-homopolymer 3 \
+  --avoid-rc \
+  --seed 42 \
+  --out-dir dotmatch_96x16/
+```
+
+Important commands:
+
+```bash
+dotmatch panel check barcodes.tsv --k 1 --metric hamming --out-dir panel_check/
+dotmatch panel optimize vendor_barcodes.tsv --n 24 --out-dir optimized_panel/
+dotmatch panel simulate barcodes.tsv --reads 1000000 --out-dir simulation/
+dotmatch panel layout barcodes.tsv --plate 96 --out plate_layout.tsv
+dotmatch panel export barcodes.tsv --format illumina-samplesheet --out-dir sample_sheet_templates/
+```
+
+The certificate preserves DotMatch outcomes: `unique`, `ambiguous`, `none`, and
+`invalid`. It fails a configured correction radius if any query in that radius
+can map ambiguously or silently to the wrong barcode. The current exact
+certificate enumerates configured error spheres up to `k=2`; larger radii are
+refused rather than partially certified.
+
+Outputs include `barcodes.tsv`, `design_report.json`, `design_trace.tsv`,
+`panel_check/panel_summary.json`, `target_safety.tsv`, `collision_pairs.tsv`,
+`ambiguous_error_spheres.tsv`, `flanked_sequences.tsv`, `plate_layout.tsv`,
+`sample_sheet_templates/SampleSheet.csv`, `report.html`, and
+`README_FOR_LAB.md`.
+
+See [Barcode Panel Design](docs/barcode-panel-design.md) and the checked smoke
+gate in
+[docs/benchmarks/barcode_panel_design](docs/benchmarks/barcode_panel_design/README.md).
+
 ## When To Use DotMatch
 
 DotMatch is a good fit when you have a table of expected short sequences and the
@@ -74,13 +124,14 @@ Common uses include:
 - fixed-position barcode demultiplexing from FASTQ/FASTQ.gz;
 - per-read assignment of 10x guide-capture or feature-barcode windows;
 - primer-start, amplicon-panel, adapter-prefix, or whitelist-style assays;
+- designing, optimizing, certifying, simulating, and exporting barcode panels;
 - target-library audits before allowing one-edit correction;
 - validating an indexed assignment run against an exhaustive scan or Edlib.
 
-DotMatch is not a genome aligner. It does not produce SAM/BAM, CIGAR strings,
-variant calls, cell/UMI quantification, expression matrices, or screen-level
-hit-calling statistics. It works on extracted short windows and known target
-lists.
+DotMatch is not a genome aligner or basecaller. It does not produce SAM/BAM,
+CIGAR strings, variant calls, cell/UMI quantification, UMI entropy designs,
+expression matrices, or screen-level hit-calling statistics. It works on
+extracted short windows and known target lists.
 
 ## Installation
 

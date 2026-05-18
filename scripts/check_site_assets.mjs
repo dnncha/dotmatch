@@ -6,6 +6,7 @@ const requiredFiles = [
   "../app/globals.css",
   "../next.config.ts",
   "../public/dotmatch-read-assignment.svg",
+  "../public/dotmatch-panel-certificate.png",
   "../public/dotmatch-og.png",
   "../public/dotmatch-twitter.png",
   "../scripts/render_social_images.py"
@@ -23,7 +24,7 @@ const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8")
 const layout = readFileSync(new URL("../app/layout.tsx", import.meta.url), "utf8");
 const nextConfig = readFileSync(new URL("../next.config.ts", import.meta.url), "utf8");
 
-for (const anchor of ['id="top"', 'id="barcode-qc"', 'id="benchmarks"', 'id="install"', 'id="cite"', 'id="use-cases"']) {
+for (const anchor of ['id="top"', 'id="panel-design"', 'id="barcode-qc"', 'id="benchmarks"', 'id="install"', 'id="cite"', 'id="use-cases"']) {
   if (!page.includes(anchor)) {
     console.error(`Missing site section anchor: ${anchor}`);
     process.exit(1);
@@ -33,6 +34,8 @@ for (const anchor of ['id="top"', 'id="barcode-qc"', 'id="benchmarks"', 'id="ins
 for (const selector of [
   ".hero",
   ".hero-visual",
+  ".panel-design-layout",
+  ".panel-output-grid",
   ".metric-grid",
   ".autopsy-layout",
   ".artifact-grid",
