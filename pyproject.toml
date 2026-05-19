@@ -44,6 +44,7 @@ Homepage = "https://github.com/dnncha/dotmatch"
 Repository = "https://github.com/dnncha/dotmatch"
 Issues = "https://github.com/dnncha/dotmatch/issues"
 Documentation = "https://github.com/dnncha/dotmatch#readme"
+Bioconda = "https://anaconda.org/bioconda/dotmatch"
 
 [tool.setuptools]
 package-dir = {"" = "python"}

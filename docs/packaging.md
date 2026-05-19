@@ -1,7 +1,8 @@
 # Packaging Notes
 
-DotMatch should ship with three practical install paths:
+DotMatch should ship with practical install paths:
 
+- Bioconda package for command-line use on supported Conda platforms;
 - source build with `make && make shared`;
 - Docker image for reproducible command-line use;
 - Python package using the ctypes wrapper and bundled or discoverable native library.
@@ -28,11 +29,21 @@ assignment searches.
 ## Bioconda
 
 Bioconda packages DotMatch from a recipe in `bioconda-recipes`; DotMatch does
-not upload a Conda package directly. The v0.1.0 recipe is submitted at
-[bioconda/bioconda-recipes#65367](https://github.com/bioconda/bioconda-recipes/pull/65367),
-has passed Bioconda CI, and is waiting for Bioconda review/merge. Until that PR
-is merged and `https://anaconda.org/bioconda/dotmatch` shows version 0.1.0, do
-not claim that `conda install dotmatch` is available.
+not upload a Conda package directly. The v0.1.2 recipe was merged in
+[bioconda/bioconda-recipes#65367](https://github.com/bioconda/bioconda-recipes/pull/65367)
+and is public at <https://anaconda.org/bioconda/dotmatch>. Bioconda currently
+publishes `linux-64` and `osx-64` builds:
+
+```bash
+mamba create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.2
+conda activate dotmatch
+dotmatch --version
+dotmatch dist ACGT AGGT
+dotmatch leq 1 ACGT AGGT
+```
+
+There is no `osx-arm64` Bioconda build for v0.1.2; use a source build on native
+Apple Silicon environments.
 
 A release recipe template is kept under `packaging/bioconda/`. Before copying it
 to `bioconda-recipes`, replace `REPLACE_WITH_RELEASE_TARBALL_SHA256` with the
@@ -76,12 +87,10 @@ make distribution-record-ready
 make bioconda-recipe-ready
 ```
 
-While the first public release is still pending, this record must stay in
-`not_released` status with blockers and next actions for every public channel.
-For Bioconda, the blocker is now review/merge of PR #65367 and package
-propagation, not recipe submission. After publication, replace the expected
-links with verified public and evidence URLs, set channels to `verified`, and
-run the post-release gate.
+While some public channels are still pending, the top-level record stays in
+`not_released` status with blockers and next actions for unfinished channels.
+Channels that have actually propagated, such as Bioconda, should keep verified
+public and evidence URLs plus a `verified_date`.
 
 After publishing a tag, run:
 

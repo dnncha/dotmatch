@@ -48,9 +48,10 @@ def _check_channel(item: object, overall_status: str, result: AuditResult) -> st
     expected_url = str(item.get("expected_url") or "").strip()
     _check_https_url(channel_id, "expected_url", expected_url, result)
 
-    if overall_status == "released":
-        if status != "verified":
-            result.failures.append(f"released channel {channel_id} must be verified")
+    if overall_status == "released" and status != "verified":
+        result.failures.append(f"released channel {channel_id} must be verified")
+
+    if status == "verified":
         public_url = str(item.get("public_url") or "").strip()
         evidence_url = str(item.get("evidence_url") or "").strip()
         verified_date = str(item.get("verified_date") or "").strip()
@@ -59,16 +60,14 @@ def _check_channel(item: object, overall_status: str, result: AuditResult) -> st
         if not re.match(r"^\d{4}-\d{2}-\d{2}$", verified_date):
             result.failures.append(f"{channel_id} must declare verified_date as YYYY-MM-DD")
         if item.get("blocker"):
-            result.failures.append(f"released channel {channel_id} must not keep blocker text")
+            result.failures.append(f"verified channel {channel_id} must not keep blocker text")
         if item.get("next_action"):
-            result.failures.append(f"released channel {channel_id} must not keep next_action text")
+            result.failures.append(f"verified channel {channel_id} must not keep next_action text")
     else:
-        if status == "verified":
-            result.failures.append(f"not_released channel {channel_id} must not be marked verified")
         if not str(item.get("blocker") or "").strip():
-            result.failures.append(f"{channel_id} must declare blocker while not released")
+            result.failures.append(f"{channel_id} must declare blocker while not verified")
         if not str(item.get("next_action") or "").strip():
-            result.failures.append(f"{channel_id} must declare next_action while not released")
+            result.failures.append(f"{channel_id} must declare next_action while not verified")
         if channel_id == "pypi":
             pypi_text = f"{item.get('blocker') or ''} {item.get('next_action') or ''}"
             if "source distribution" not in pypi_text or "repaired" not in pypi_text or "wheel" not in pypi_text:

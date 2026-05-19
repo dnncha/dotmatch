@@ -94,9 +94,13 @@ Avoid:
 
 - Create a Zenodo archive and add the DOI to `CITATION.cff` when available.
 - Publish the PyPI source distribution, native macOS wheel, and repaired manylinux/musllinux wheels through trusted publishing; do not upload raw `linux_x86_64` wheels.
-- Track the Bioconda recipe PR after `make bioconda-recipe-ready`; for v0.1.0,
+  For the first PyPI upload, the pending publisher must match project
+  `dotmatch`, owner `dnncha`, repository `dotmatch`, workflow `release.yml`,
+  and environment `pypi`.
+- Bioconda v0.1.2 was merged through
   [bioconda/bioconda-recipes#65367](https://github.com/bioconda/bioconda-recipes/pull/65367)
-  has passed CI and is waiting for review/merge.
+  and is public for `linux-64` and `osx-64`; keep the README install command
+  and `docs/distribution-release.json` aligned with the Anaconda metadata.
 - Confirm the GHCR image labels and tag after the source tag is immutable.
 - Run `make distribution-channels` after PyPI, Bioconda, GHCR, and Zenodo are public.
 - Update `docs/distribution-release.json` with verified public and evidence links after public channels are live.

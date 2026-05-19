@@ -135,9 +135,23 @@ extracted short windows and known target lists.
 
 ## Installation
 
-DotMatch currently supports source builds and local Python package installs on
-Linux and macOS. You need a C compiler, `make`, Python 3.9 or newer for the
-Python package, and zlib for FASTQ.gz support.
+DotMatch is available from Bioconda for `linux-64` and `osx-64`:
+
+```bash
+mamba create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.2
+conda activate dotmatch
+
+dotmatch --version
+dotmatch dist ACGT AGGT
+dotmatch leq 1 ACGT AGGT
+```
+
+Apple Silicon Conda environments are not published by Bioconda for this first
+release; build from source on `osx-arm64`.
+
+Source builds and local Python package installs work on Linux and macOS. You
+need a C compiler, `make`, Python 3.9 or newer for the Python package, and zlib
+for FASTQ.gz support.
 
 ```bash
 git clone https://github.com/dnncha/dotmatch.git
@@ -166,9 +180,8 @@ docker run --rm -v "$PWD:/work" dotmatch:dev dist ACGT AGGT
 Package status for PyPI, Bioconda, containers, and release archives is tracked
 in [Packaging Notes](docs/packaging.md), the
 [Release Process](docs/release-process.md), and the machine-readable
-[Distribution Status](docs/distribution-release.json). Release artifacts are not
-yet published on public package channels; install from source until the tagged
-release appears on the channel you want to use.
+[Distribution Status](docs/distribution-release.json). Bioconda is public for
+0.1.2; PyPI is not public yet.
 
 The release workflow builds and smoke-tests the source distribution, the native
 macOS wheel, and repaired Linux wheels. PyPI trusted publishing is configured

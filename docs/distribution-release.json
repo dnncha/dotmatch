@@ -14,28 +14,29 @@
     },
     {
       "id": "bioconda",
-      "status": "prepared",
+      "status": "verified",
       "expected_url": "https://anaconda.org/bioconda/dotmatch",
       "recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/65367",
-      "verification_command": "make distribution-channels",
-      "blocker": "The Bioconda recipe PR has passed CI and has the review/merge label, but it has not been accepted, merged, and propagated to the public Bioconda channel yet.",
-      "next_action": "Track bioconda/bioconda-recipes#65367. After merge and channel propagation, rerun make distribution-channels and set the Bioconda channel to verified only after the metadata and install smoke tests pass."
+      "public_url": "https://anaconda.org/bioconda/dotmatch",
+      "evidence_url": "https://api.anaconda.org/package/bioconda/dotmatch",
+      "verified_date": "2026-05-19",
+      "verification_command": "make distribution-channels"
     },
     {
       "id": "ghcr",
       "status": "prepared",
       "expected_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "The GHCR image for version 0.1.2 has not been published from an immutable tag yet.",
-      "next_action": "Push the release tag, confirm the GHCR image label and runtime smoke tests, then rerun make distribution-channels."
+      "blocker": "The GHCR manifest for version 0.1.2 is reachable, but a public pull and runtime smoke test have not been completed in this environment.",
+      "next_action": "Run the post-release GHCR container smoke tests with Docker available, then rerun make distribution-channels."
     },
     {
       "id": "biocontainers",
       "status": "prepared",
       "expected_url": "https://quay.io/repository/biocontainers/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "The BioContainers image is not available until the Bioconda package is accepted.",
-      "next_action": "After Bioconda acceptance, wait for BioContainers publication and rerun make distribution-channels."
+      "blocker": "The BioContainers 0.1.2 tag is visible in Quay metadata, but a public pull and runtime smoke test have not been completed in this environment.",
+      "next_action": "Run the BioContainers image smoke tests with Docker available, then rerun make distribution-channels."
     },
     {
       "id": "zenodo",
@@ -47,7 +48,9 @@
     }
   ],
   "blockers": [
-    "The first public release has not been executed across PyPI, Bioconda, GHCR/BioContainers, and Zenodo."
+    "PyPI has not published the 0.1.2 artifacts yet.",
+    "GHCR and BioContainers still need public container runtime smoke tests.",
+    "No immutable Zenodo DOI has been minted and added to CITATION.cff yet."
   ],
-  "next_action": "Complete the public release flow, replace expected URLs with verified public and evidence URLs, set channels to verified, and rerun make distribution-channels."
+  "next_action": "Publish PyPI, complete container runtime checks, add the Zenodo DOI when available, and rerun make distribution-channels until every public channel is verified."
 }
