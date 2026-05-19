@@ -8,12 +8,12 @@ as the source of truth.
 All sequencing data stays on the user's machine. The app runs the installed
 `dotmatch` executable locally, writes ordinary AssaySpec outputs, and reads the
 same `assay_manifest.json`, `assay_manifest.summary.tsv`, `sample_qc.tsv`,
-audit, and autopsy artifacts that workflow systems can already consume.
+audit, and autopsy files that workflow systems can already consume.
 
 ## Status
 
 The Workbench is not part of the Bioconda recipe. It is a separate desktop app
-artifact that detects `dotmatch` from `PATH`, a user-configured executable path,
+app that detects `dotmatch` from `PATH`, a user-configured executable path,
 or the `DOTMATCH_WORKBENCH_DOTMATCH` environment variable.
 
 The current Bioconda target remains the command-line package. No hosted uploads,
@@ -60,7 +60,7 @@ The first Workbench release focuses on local safety:
 - workspace confinement for all file paths;
 - command allowlisting for DotMatch-only actions;
 - local-only data handling with no network service dependency;
-- escaped display of paths, warnings, command output, and artifact values;
+- escaped display of paths, warnings, command output, and file values;
 - command logs under `<workspace>/.dotmatch/workbench/`;
 - no raw FASTQ copying into Workbench state.
 

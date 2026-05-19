@@ -102,11 +102,11 @@ def write_report(rows: list[dict[str, str]]) -> None:
     lines = [
         "# Barcode Demultiplexing Benchmark",
         "",
-        "This report is the barcode-demultiplexing evidence track. It is separate from the CRISPR guide-counting report.",
+        "This report records the checked barcode-demultiplexing example. It is separate from the CRISPR guide-counting report.",
         "",
-        "Current status: DotMatch has a checked public SRP009896/SRR391079 exact-prefix inline-barcode lane with five repeats, Cutadapt anchored no-indel demux rows, and an exact hash-splitter baseline. Broader barcode-demultiplexing claims require additional datasets and comparator semantics, not only this public lane.",
+        "Current status: DotMatch has a checked public SRP009896/SRR391079 exact-prefix inline-barcode example with five repeats, Cutadapt anchored no-indel demux rows, and a simple exact-prefix hash splitter for comparison. This is a narrow barcode example; broader barcode-demultiplexing statements need additional datasets and comparison settings.",
         "",
-        "The benchmark script can also emit a simple `hash_splitter_exact` row. This is a transparent exact-prefix baseline, not an edit-distance demultiplexer.",
+        "The benchmark script can also emit a simple `hash_splitter_exact` row. This is an exact-prefix comparison, not an edit-distance demultiplexer.",
         "",
         "## Figures",
         "",
@@ -124,7 +124,7 @@ def write_report(rows: list[dict[str, str]]) -> None:
     lines.extend([
         "## Raw Rows",
         "",
-        "| tool | workflow | semantics | repeats | reads | barcodes | k | metric | mean seconds | mean reads/sec | peak RSS KB | assigned | ambiguous | unmatched | verified/read | cv | exit |",
+        "| tool | workflow | assignment rules | repeats | reads | barcodes | k | metric | mean seconds | mean reads/sec | peak RSS KB | assigned | ambiguous | unmatched | verified/read | cv | exit |",
         "| --- | --- | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ])
     for row in summary_rows:
@@ -133,7 +133,7 @@ def write_report(rows: list[dict[str, str]]) -> None:
         )
     lines.extend([
         "",
-        "## Comparison Evidence Gate",
+        "## Checked Comparison",
         "",
         "`make barcode-comparison-gate` passes for the SRP009896/SRR391079 exact-prefix lane shown above. The checked comparison is narrow: Cutadapt is run as an anchored no-indel demultiplexer after trimming the leading `N`, and `hash_splitter_exact` is a simple exact-prefix baseline, not an edit-distance demultiplexer.",
         "",

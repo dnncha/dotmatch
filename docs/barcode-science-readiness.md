@@ -20,7 +20,7 @@ The check requires:
 
 - at least five public fixed-window datasets;
 - successful DotMatch rows with positive assignments;
-- comparator or oracle rows with documented settings;
+- comparator rows or independent checks with documented settings;
 - zero recorded validation mismatches where validation is part of the row;
 - metadata for each public dataset;
 - plain notes on what each dataset does and does not support;

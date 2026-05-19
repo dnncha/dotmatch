@@ -1,5 +1,5 @@
 finding	severity	evidence	meaning	next_action
 low_confidence_offset	review	offset_scan.tsv best assignment_rate=0.11283000	The sampled scan has a weak best window; the assay specification may be wrong or incomplete.	Review read side, barcode start, barcode length, target sheet, and orientation before production use.
-low_assignment_rate	review	summary.json assigned_unique=72492 total_reads=100000	Fewer than 80% of reads were uniquely assigned under the selected fixed-window semantics.	Inspect offset_scan.tsv, top_unmatched.tsv, and the barcode sheet before trusting rescued reads.
+low_assignment_rate	review	summary.json assigned_unique=72492 total_reads=100000	Fewer than 80% of reads were uniquely assigned under the selected fixed-window rules.	Inspect offset_scan.tsv, top_unmatched.tsv, and the barcode sheet before trusting rescued reads.
 high_ambiguity_rate	review	summary.json ambiguous=13911 total_reads=100000	A material fraction of reads is compatible with more than one barcode.	Do not rescue ambiguous reads into either sample without changing the barcode design or assignment policy.
 unsafe_one_edit_correction	review	audit/audit_summary.json reports collision risk for k=1	At least one barcode is not safe for one-edit correction.	Use k=0 or redesign/fix colliding barcodes before enabling one-edit rescue.

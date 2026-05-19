@@ -12,24 +12,24 @@
 ## What This Shows
 
 - DotMatch can perform fixed-window per-read feature-barcode assignment on a public 10x-style lane.
-- The report keeps per-read assignment semantics separate from cell/UMI quantification.
+- The report keeps per-read assignment rules separate from cell/UMI quantification.
 
 ## What It Does Not Show
 
 - This is not Cell Ranger feature-count replacement evidence.
 - Cell barcode, UMI aggregation, and cell-level feature quantification are outside this lane.
 
-## Comparator And Validation
+## Comparison And Validation
 
-Comparator semantics: The public lane uses the 10x feature reference fixed R2 pattern and a transparent exact-slice hash baseline for per-read fixed-window assignment.
+Comparison settings: The public example uses the 10x feature reference fixed R2 pattern and a simple exact-slice hash comparison for per-read fixed-window assignment.
 
-Validation: The public gate requires synthetic diagnostics, public DotMatch k=0 and k=1 rows, zero validation mismatches, and exact agreement between DotMatch k=0 and the exact-slice baseline.
+Validation: The public check requires synthetic diagnostics, public DotMatch k=0 and k=1 rows, zero validation mismatches, and exact agreement between DotMatch k=0 and the exact-slice comparison.
 
 ## Report Examples
 
 - [Feature-barcode benchmark report](../../benchmarks/feature_barcode/README.md) (`markdown`)
 
-## Raw Artifacts
+## Raw Files
 
 - [benchmarks/raw/feature_barcode.csv](../../../benchmarks/raw/feature_barcode.csv)
 - [examples/feature_barcode/data/metadata.json](../../../examples/feature_barcode/data/metadata.json)

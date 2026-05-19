@@ -142,14 +142,14 @@ def _check_dataset(root: Path, dataset: dict, make_targets: set[str], result: Au
     if metadata_path.is_file():
         metadata = _load_json(metadata_path)
         _require(bool(metadata.get("evidence_ready")), f"{dataset_id}: metadata is not evidence_ready", result)
-    _require(raw_path.is_file(), f"{dataset_id}: missing raw artifact {dataset.get('raw_artifact')}", result)
+    _require(raw_path.is_file(), f"{dataset_id}: missing raw file {dataset.get('raw_artifact')}", result)
     if not raw_path.is_file():
         return
 
     fieldnames, rows = _read_rows(raw_path)
-    _require(bool(fieldnames), f"{dataset_id}: raw artifact must contain a CSV header", result)
+    _require(bool(fieldnames), f"{dataset_id}: raw file must contain a CSV header", result)
     public_rows = _public_rows(rows)
-    _require(bool(public_rows), f"{dataset_id}: raw artifact must include public or real-data rows", result)
+    _require(bool(public_rows), f"{dataset_id}: raw file must include public or real-data rows", result)
     _require(_has_successful_dotmatch(public_rows), f"{dataset_id}: public rows must include successful DotMatch assignments", result)
     _check_zero_validation_mismatches(dataset_id, str(dataset.get("raw_artifact")), public_rows, result)
 
@@ -162,7 +162,7 @@ def _check_dataset(root: Path, dataset: dict, make_targets: set[str], result: Au
     else:
         _require(
             _has_exact_baseline(public_rows),
-            f"{dataset_id}: public evidence must include a transparent exact baseline comparator",
+            f"{dataset_id}: public evidence must include a simple exact comparison row",
             result,
         )
 
@@ -211,7 +211,7 @@ def audit(root: Path) -> AuditResult:
 
     if result.ok:
         result.passed.append(f"{len(datasets)} public fixed-window datasets are comparator-backed")
-        result.passed.append("barcode validation manifest references raw artifacts and gates")
+        result.passed.append("barcode validation manifest references raw files and checks")
     return result
 
 

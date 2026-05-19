@@ -19,7 +19,7 @@ Suggested citation before DOI assignment:
 
 For CRISPR guide-counting workflows:
 
-> Reads were assigned to the guide library using DotMatch v0.1.0 with exact known-target assignment and deterministic `unique`, `ambiguous`, and `no-match` semantics. Count matrices retained only uniquely assigned reads; ambiguous and unmatched reads were excluded from target counts and retained in diagnostic summaries.
+> Reads were assigned to the guide library using DotMatch v0.1.0 with exact known-target assignment and deterministic `unique`, `ambiguous`, and `no-match` outcomes. Count matrices retained only uniquely assigned reads; ambiguous and unmatched reads were excluded from target counts and retained in diagnostic summaries.
 
 For one-edit Levenshtein rescue:
 
@@ -27,7 +27,7 @@ For one-edit Levenshtein rescue:
 
 For Hamming-only guide-counter-style comparisons:
 
-> DotMatch used Hamming distance <=1 over fixed-length extracted guide sequences so that the comparison matched one-substitution/no-indel guide-counting semantics.
+> DotMatch used Hamming distance <=1 over fixed-length extracted guide sequences so that the comparison matched one-substitution/no-indel guide-counting rules.
 
 ## Reproducibility Commands
 
@@ -44,44 +44,44 @@ make workflow-examples-ready
 make coverage
 ```
 
-Current CRISPR evidence gates:
+Current CRISPR evidence checks:
 
 ```bash
 make public-crispr-evidence-gate
 make crispr-comparison-gate
 ```
 
-Current inline-barcode evidence gate:
+Current inline-barcode evidence check:
 
 ```bash
 make barcode-comparison-gate
 ```
 
-Current feature-barcode assignment evidence gate:
+Current feature-barcode assignment evidence check:
 
 ```bash
 make feature-barcode-public-gate
 ```
 
-Current public CRISPR guide-capture assignment evidence gate:
+Current public CRISPR guide-capture assignment evidence check:
 
 ```bash
 make perturb-seq-public-gate
 ```
 
-Current amplicon/panel primer-start assignment evidence gate:
+Current amplicon/panel primer-start assignment evidence check:
 
 ```bash
 make amplicon-panel-public-gate
 ```
 
-Current public tiny-BCL milestone evidence gate:
+Current public tiny-BCL milestone evidence check:
 
 ```bash
 make bcl-tiny-public-gate
 ```
 
-Current oligo/adapter fixed-window public evidence gate:
+Current oligo/adapter fixed-window public evidence check:
 
 ```bash
 make oligo-adapter-public-gate
@@ -93,18 +93,18 @@ Blocked broader comparisons:
 make bcl-comparison-gate
 ```
 
-These gates are deliberately narrow. The barcode gate is for the
-SRP009896/SRR391079 exact-prefix lane. The feature-barcode gate is for the 10x
+These checks are deliberately narrow. The barcode check is for the
+SRP009896/SRR391079 exact-prefix lane. The feature-barcode check is for the 10x
 TotalSeq-B fixed-window per-read assignment lane, not Cell Ranger-style
-UMI/cell quantification. The perturb-seq public gate is for the 10x CRISPR
+UMI/cell quantification. The perturb-seq public check is for the 10x CRISPR
 Guide Capture fixed-window per-read assignment lane, not guide-per-cell calls,
 expression quantification, or perturbation-effect analysis. The amplicon/panel
-public gate is for the nf-core ARTIC V3 R1 fixed-window primer-start assignment
+public check is for the nf-core ARTIC V3 R1 fixed-window primer-start assignment
 lane, not consensus generation, primer trimming, variant calling, clinical
-panels, or diagnostic interpretation. The tiny-BCL public gate is for the
+panels, or diagnostic interpretation. The tiny-BCL public check is for the
 public 10x tiny-BCL classic per-cycle milestone, not production demultiplexing,
 CBCL/NovaSeq support, or broad BCL comparison evidence. The oligo/adapter public
-gate is for the fast-adapter-trimming TruSeq R1 fixed-window adapter-prefix
+check is for the fast-adapter-trimming TruSeq R1 fixed-window adapter-prefix
 assignment lane, not adapter trimming, primer removal, UMI grouping, read
 merging, or production adapter workflow evidence. Leave broader BCL comparison
 statements out until real-data comparator evidence is in the repository.

@@ -5,7 +5,7 @@
 A curated map of committed DotMatch benchmark reports, public-data examples, and diagnostic report patterns.
 
 Start here when you want to see what DotMatch does on real or deliberately diagnostic data.
-Each row links to the exact report, raw artifacts, command records, and a short interpretation.
+Each row links to the exact report, raw files, command records, and a short interpretation.
 
 ## Gallery
 
@@ -29,5 +29,5 @@ Each row links to the exact report, raw artifacts, command records, and a short 
 ## How To Read These Pages
 
 - Each scenario separates the observed result from what it does not establish.
-- Comparator settings are part of the evidence. Changing them changes the meaning of the result.
+- Comparison settings are part of the evidence. Changing them changes the meaning of the result.
 - HTML, TSV, JSON, FASTQ, and raw CSV files are linked directly when they are committed.

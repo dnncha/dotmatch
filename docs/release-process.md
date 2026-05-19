@@ -4,15 +4,15 @@ DotMatch releases should be specific, reproducible, and evidence-bounded.
 
 ## Pre-Tag Checks
 
-Run the consolidated local pre-tag gate:
+Run the consolidated local pre-tag check:
 
 ```bash
 make pretag-ready
 ```
 
-It is a local readiness gate and intentionally does not include
+It is a local readiness check and intentionally does not include
 `make distribution-channels`, `make workflow-adoption-status`, or
-`make bcl-comparison-gate`. Those gates require public/external evidence and
+`make bcl-comparison-gate`. Those checks require public/external evidence and
 are listed below.
 
 The target runs:
@@ -60,10 +60,10 @@ git push origin v0.1.0
 Pushing `v*` tags runs `.github/workflows/release.yml`. The workflow starts
 with a preflight job that runs `make test`, `make cli-test`,
 `make python-test`, `make repository-ready`, `make release-ready`, and
-`make python-package-test`; artifact publication jobs depend on that preflight.
+`make python-package-test`; package publication jobs depend on that preflight.
 The workflow builds:
 
-- raw Linux wheel release artifact;
+- raw Linux wheel release file;
 - macOS wheel;
 - source distribution;
 - repaired manylinux/musllinux Linux wheels for PyPI;
@@ -72,15 +72,15 @@ The workflow builds:
 - PyPI publication through trusted publishing for the sdist, macOS wheel, and repaired Linux wheels;
 - a draft GitHub release with generated notes.
 
-Keep the GitHub release as a draft until the release notes, artifacts, checksums, `CITATION.cff`, and `codemeta.json` have been checked.
+Keep the GitHub release as a draft until the release notes, files, checksums, `CITATION.cff`, and `codemeta.json` have been checked.
 
 ## Release Notes
 
 Lead with:
 
 - exact known-target short-DNA assignment;
-- deterministic `unique`, `ambiguous`, `none`, and `invalid` semantics;
-- CRISPR guide-counting, exact-prefix inline-barcode, narrow feature-barcode assignment, narrow CRISPR guide-capture assignment, and narrow ARTIC amplicon primer-start assignment evidence only where gates pass;
+- deterministic `unique`, `ambiguous`, `none`, and `invalid` outcomes;
+- CRISPR guide-counting, exact-prefix inline-barcode, narrow feature-barcode assignment, narrow CRISPR guide-capture assignment, and narrow ARTIC amplicon primer-start assignment evidence only where checks pass;
 - package/install improvements;
 - clear scope boundaries.
 
@@ -93,7 +93,7 @@ Avoid:
 ## Distribution Follow-Up
 
 - Create a Zenodo archive and add the DOI to `CITATION.cff` when available.
-- Publish the PyPI source distribution, native macOS wheel, and repaired manylinux/musllinux wheels through trusted publishing; do not upload raw `linux_x86_64` wheels.
+- Publish the PyPI source distribution, macOS wheel, and repaired manylinux/musllinux wheels through trusted publishing; do not upload raw `linux_x86_64` wheels.
   For the first PyPI upload, the pending publisher must match project
   `dotmatch`, owner `dnncha`, repository `dotmatch`, workflow `release.yml`,
   and environment `pypi`.
@@ -104,4 +104,4 @@ Avoid:
 - Confirm the GHCR image labels and tag after the source tag is immutable.
 - Run `make distribution-channels` after PyPI, Bioconda, GHCR, and Zenodo are public.
 - Update `docs/distribution-release.json` with verified public and evidence links after public channels are live.
-- Update `docs/scientific-claims.md` only when new evidence is committed and a corresponding gate passes.
+- Update `docs/scientific-claims.md` only when new evidence is committed and a corresponding check passes.

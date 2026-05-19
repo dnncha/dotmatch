@@ -5,22 +5,22 @@ DotMatch should ship with practical install paths:
 - Bioconda package for command-line use on supported Conda platforms;
 - source build with `make && make shared`;
 - Docker image for reproducible command-line use;
-- Python package using the ctypes wrapper and bundled or discoverable native library.
+- Python package using the Python wrapper and bundled or discoverable compiled library.
 
 ## PyPI
 
-Initial local/GitHub packaging builds the native C core into the wheel as `dotmatch/libdotmatch.{so,dylib}` for Linux and macOS. Wheels are platform-specific but Python-ABI-neutral (`py3-none-<platform>`) because the native library is loaded through `ctypes` rather than the Python C API. The ctypes loader still accepts:
+Initial local/GitHub packaging builds the compiled C core into the wheel as `dotmatch/libdotmatch.{so,dylib}` for Linux and macOS. Wheels are platform-specific but Python-ABI-neutral (`py3-none-<platform>`) because the library is loaded by the Python wrapper rather than the Python C API. The loader still accepts:
 
 - the bundled platform library in the wheel;
 - `DOTMATCH_LIB=/path/to/libdotmatch.{so,dylib}` for source-tree and custom installs.
 
-Use `make python-package-test` to build the wheel, inspect that it contains the native library, install it into a clean virtual environment, and verify `import dotmatch` without `DOTMATCH_LIB` or `PYTHONPATH`.
+Use `make python-package-test` to build the wheel, inspect that it contains the compiled library, install it into a clean virtual environment, and verify `import dotmatch` without `DOTMATCH_LIB` or `PYTHONPATH`.
 The same verifier also builds the sdist, confirms it contains `src/qdalign.c` and `include/qdalign.h`, and installs that sdist into a clean virtual environment.
 
-For PyPI, upload the sdist plus the native macOS wheel built on GitHub Actions. Linux binary wheels should go to PyPI only after they are built or repaired as manylinux/musllinux wheels. The release workflow builds repaired Linux wheel artifacts with cibuildwheel for `manylinux_x86_64` and `musllinux_x86_64`, smoke-tests `import dotmatch`, the installed console script, and `dotmatch dist ACGT AGGT`, and uploads them as GitHub release artifacts. Do not upload a raw `linux_x86_64` wheel to PyPI.
+For PyPI, upload the sdist plus the macOS wheel built on GitHub Actions. Linux binary wheels should go to PyPI only after they are built or repaired as manylinux/musllinux wheels. The release workflow builds repaired Linux wheel files with cibuildwheel for `manylinux_x86_64` and `musllinux_x86_64`, checks `import dotmatch`, the installed console script, and `dotmatch dist ACGT AGGT`, and uploads them as GitHub release files. Do not upload a raw `linux_x86_64` wheel to PyPI.
 
-The release workflow is prepared for PyPI trusted publishing and publishes the source distribution, the native macOS wheel, and repaired manylinux/musllinux Linux wheels on tagged releases.
-Raw `linux_x86_64` wheels remain GitHub release artifacts only and are not uploaded to PyPI.
+The release workflow is prepared for PyPI trusted publishing and publishes the source distribution, the macOS wheel, and repaired manylinux/musllinux Linux wheels on tagged releases.
+Raw `linux_x86_64` wheels remain GitHub release files only and are not uploaded to PyPI.
 `make citation-metadata-ready` also checks PyPI-facing `pyproject.toml`
 description, keywords, classifiers, and project URLs so the package page stays
 discoverable for bioinformatics, CRISPR, FASTQ, barcode, and known-target
@@ -42,14 +42,14 @@ dotmatch dist ACGT AGGT
 dotmatch leq 1 ACGT AGGT
 ```
 
-There is no `osx-arm64` Bioconda build for v0.1.2; use a source build on native
+There is no `osx-arm64` Bioconda build for v0.1.2; use a source build on
 Apple Silicon environments.
 
 A release recipe template is kept under `packaging/bioconda/`. Before copying it
 to `bioconda-recipes`, replace `REPLACE_WITH_RELEASE_TARBALL_SHA256` with the
 SHA256 for the tagged GitHub release tarball. Run `make bioconda-recipe-ready`
 before that copy so the checked-in template stays aligned with the release
-version, native install steps, CLI smoke tests, and scope notes.
+version, install steps, CLI checks, and scope notes.
 
 The recipe needs:
 
@@ -59,13 +59,13 @@ The recipe needs:
 - `run_exports` because the package installs a header and shared library;
 - runtime tests for `dotmatch --version`, `dotmatch dist ACGT AGGT`, and `dotmatch leq 1 ACGT AGGT`.
 
-The native CLI exposes `dotmatch --version`, so the Bioconda recipe and
+The DotMatch CLI exposes `dotmatch --version`, so the Bioconda recipe and
 post-release Bioconda install verifier should check version output as well as
-functional CLI smoke tests.
+functional CLI checks.
 
 ## Docker
 
-The root `Dockerfile` builds the native CLI and shared library on Debian. Example:
+The root `Dockerfile` builds the DotMatch CLI and shared library on Debian. Example:
 
 ```bash
 docker build -t dotmatch:dev .
@@ -73,7 +73,7 @@ docker run --rm -v "$PWD:/work" dotmatch:dev count --help
 ```
 
 The image carries OCI labels for title, description, source, documentation,
-version, license, and authorship. The release workflow smoke-tests both CLI
+version, license, and authorship. The release workflow checks both CLI
 behavior and the `org.opencontainers.image.version` label before pushing tagged
 images to `ghcr.io/dnncha/dotmatch`.
 
@@ -102,12 +102,12 @@ This checks that the release version is visible on PyPI as a source distribution
 `linux_x86_64` PyPI wheels, installs with `pip install dotmatch==<version>` in a clean virtual environment, imports the Python package, runs the installed
 `dotmatch` CLI, is available in Bioconda metadata, installs with
 `conda create -p <env> -c conda-forge -c bioconda dotmatch=<version>` or
-`micromamba`, runs the Bioconda `--version`/CLI smoke tests, has a matching BioContainers
+`micromamba`, runs the Bioconda `--version`/CLI checks, has a matching BioContainers
 tag such as `quay.io/biocontainers/dotmatch:<version>--<build>` that runs CLI
-distance and threshold smoke tests, is published as
+distance and threshold checks, is published as
 `ghcr.io/dnncha/dotmatch:vX.Y.Z`, runs with
 `docker run --rm ghcr.io/dnncha/dotmatch:v<version> --version` and a CLI distance
-smoke test, and is backed by a DOI in `CITATION.cff` that resolves through
+check, and is backed by a DOI in `CITATION.cff` that resolves through
 `doi.org`. It is not part of `make release-ready` because it should fail until
 public publication has actually happened.
 

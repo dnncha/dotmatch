@@ -4,7 +4,7 @@ DotMatch CRISPR QC evaluates guide-counting and representation diagnostics for
 a pooled CRISPR screen. It does not replace MAGeCK, BAGEL, drugZ, CERES,
 CRISPResso2, or other downstream screen/editing analysis methods. Its job is
 narrower: help detect likely FASTQ-to-guide counting configuration problems,
-surface guide representation issues, and make suspicious samples visible before
+show guide representation issues, and make suspicious samples visible before
 downstream statistics.
 
 ## Command
@@ -19,7 +19,7 @@ dotmatch crispr qc \
   --report crispr_qc.html
 ```
 
-`dotmatch assay run` writes these CRISPR QC artifacts automatically for
+`dotmatch assay run` writes these CRISPR QC files automatically for
 `mode = "count"` and `assay_type = "crispr"`.
 
 The legacy-compatible alias `dotmatch crispr-qc` runs the same QC command.
@@ -37,8 +37,8 @@ dotmatch crispr plan assay.toml
 dotmatch crispr run assay.toml
 ```
 
-These commands are thin wrappers over AssaySpec so the CRISPR interface and the
-general workflow layer produce the same artifacts and validation behavior.
+These commands use the same AssaySpec runner underneath, so the CRISPR-specific
+commands and the general assay workflow produce the same files and checks.
 
 ## Metrics
 

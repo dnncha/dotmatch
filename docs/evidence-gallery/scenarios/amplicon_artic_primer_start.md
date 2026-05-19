@@ -19,17 +19,17 @@
 - This is not primer trimming.
 - Consensus generation, variant calling, clinical panels, and diagnostic interpretation are outside this evidence lane.
 
-## Comparator And Validation
+## Comparison And Validation
 
-Comparator semantics: The public lane uses nf-core/test-datasets viralrecon Illumina ARTIC V3 R1, ARTIC V3 primer targets, and a transparent exact-prefix baseline.
+Comparison settings: The public example uses nf-core/test-datasets viralrecon Illumina ARTIC V3 R1, ARTIC V3 primer targets, and a simple exact-prefix comparison.
 
-Validation: The public gate requires synthetic diagnostics, public DotMatch k=0 and k=1 rows, zero validation mismatches, exact agreement with the k=0 baseline, and k=1 assignment count no lower than k=0.
+Validation: The public check requires synthetic diagnostics, public DotMatch k=0 and k=1 rows, zero validation mismatches, exact agreement with the k=0 comparison, and k=1 assignment count no lower than k=0.
 
 ## Report Examples
 
 - [Amplicon/panel benchmark report](../../benchmarks/amplicon_panel/README.md) (`markdown`)
 
-## Raw Artifacts
+## Raw Files
 
 - [benchmarks/raw/amplicon_panel.csv](../../../benchmarks/raw/amplicon_panel.csv)
 - [examples/amplicon_panel/data/metadata.json](../../../examples/amplicon_panel/data/metadata.json)

@@ -1,9 +1,9 @@
 # DotMatch AssaySpec v1
 
 AssaySpec is a TOML workflow layer for fixed-window known-target assays. It
-does not replace the native matching/counting code; it validates a declarative
-spec, writes reproducible run files, prints the native commands it will execute,
-and records an `assay_manifest.json` beside the outputs.
+does not replace DotMatch's matching/counting code; it validates a readable
+spec, writes reproducible run files, prints the DotMatch commands it will
+execute, and records an `assay_manifest.json` beside the outputs.
 
 ## Commands
 
@@ -26,9 +26,9 @@ Templates are:
 - `oligo-adapter`
 - `pair-count`
 
-`plan` is a dry run: it prints deterministic native commands and does not create
+`plan` is a dry run: it prints deterministic DotMatch commands and does not create
 the output directory. `run` creates the output directory, writes generated files,
-runs target audit first, runs the compiled native workflow, and records command
+runs target audit first, runs the compiled DotMatch workflow, and records command
 exit codes and warnings in `assay_manifest.json`. It also writes
 `assay_report.html` as the primary workflow report and
 `assay_manifest.summary.tsv` for workflow systems and MultiQC custom content.
@@ -39,7 +39,7 @@ plus `inference_candidates.tsv`. Low-confidence inference writes
 `status = "draft"`. `run` refuses draft specs until a user reviews the report
 and changes the status to `ready`.
 
-`autopsy` helps diagnose suspicious runs by wrapping native target audit and
+`autopsy` helps diagnose suspicious runs by wrapping target audit and
 `inspect-unmatched`. It writes `autopsy_summary.json`, `findings.tsv`, and
 `top_unmatched.*.tsv` files. `run` also triggers autopsy automatically when
 sample QC crosses conservative thresholds.
@@ -83,7 +83,7 @@ unmatched = true
 
 Count mode writes `counts.mageck.tsv` for CRISPR/MAGeCK output or `counts.tsv`
 for DotMatch output, plus `target_counts.long.tsv`, `sample_qc.tsv`,
-`summary.json`, native `report.html`, `assay_report.html`,
+`summary.json`, DotMatch `report.html`, `assay_report.html`,
 `assay_manifest.json`, `assay_manifest.summary.tsv`, `audit/`, and optional
 row-level diagnostics. CRISPR count runs also write `crispr_qc.json`,
 `crispr_qc.summary.tsv`, and `crispr_qc.html`.
@@ -100,10 +100,10 @@ optional `pair_assignments.tsv`.
 
 ## Safety Policy
 
-AssaySpec always runs native target audit before assignment. If the audit says
+AssaySpec always runs target audit before assignment. If the audit says
 the target set is unsafe at the configured `k`, `dotmatch assay run` records a
 warning and continues. It never changes `k`, target sequences, or ambiguity
-policy automatically; DotMatch's explicit `unique`/`ambiguous`/`none` semantics
+policy automatically; DotMatch's explicit `unique`/`ambiguous`/`none` outcomes
 remain the authority.
 
 Automatic autopsy triggers when any sample has assignment rate below `0.80`,

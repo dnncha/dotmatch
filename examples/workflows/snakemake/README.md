@@ -1,7 +1,7 @@
 # Snakemake CRISPR Counting Example
 
 This example includes two small Snakemake rules. `dotmatch_crispr_count` runs
-the native CRISPR counting command. `dotmatch_assay_run` runs an AssaySpec and
+the DotMatch CRISPR counting command. `dotmatch_assay_run` runs an AssaySpec and
 emits the assay report and manifest summary. It is intended as an integration
 pattern for labs that already run Snakemake, not as benchmark evidence.
 
@@ -37,7 +37,7 @@ Outputs are written under `examples/workflows/snakemake/output/`:
   `assay/crispr_qc.summary.tsv`: CRISPR guide-count QC report, structured
   report, and workflow summary;
 - `assay/assay_report.html`: primary human-readable AssaySpec report;
-- `assay/assay_manifest.json`: full run provenance and command manifest;
+- `assay/assay_manifest.json`: full run record and command manifest;
 - `assay/assay_manifest.summary.tsv`: manifest summary for MultiQC custom
   content.
 

@@ -35,7 +35,7 @@ The target writes:
 
 On the bundled SRP009896/SRR391079 fixture, the diagnostic output may mark the
 offset inference as `review` because the highest exact-window signal is still
-low. That is expected: the demo is meant to show how DotMatch surfaces failure
+low. That is expected: the demo is meant to show how DotMatch reports failure
 modes and unsafe rescue, not to turn a weak barcode signal into a silent
 assignment.
 

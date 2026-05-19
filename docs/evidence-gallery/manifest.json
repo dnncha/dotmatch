@@ -22,12 +22,12 @@
         "make bench-public-crispr-repeated",
         "make public-crispr-evidence-gate"
       ],
-      "comparator_semantics": "DotMatch guide counts are checked against public CRISPR workflow rows, count-agreement artifacts, and native Edlib assignment validation as documented in the benchmark report.",
-      "validation": "The public CRISPR gate requires repeated rows, positive throughput records, count agreement artifacts, and zero Edlib assignment mismatches for checked reads.",
+      "comparator_semantics": "DotMatch guide counts are checked against public CRISPR workflow rows, count-agreement files, and Edlib assignment validation as documented in the benchmark report.",
+      "validation": "The public CRISPR check requires repeated rows, positive throughput records, count agreement files, and zero Edlib assignment mismatches for checked reads.",
       "proves": [
         "DotMatch can run the documented fixed-window CRISPR guide-counting workflow on a public guide-counting lane.",
-        "The report shows exact, Hamming, and Levenshtein lanes separately instead of mixing their semantics.",
-        "Count-agreement and Edlib-validation artifacts are available for inspection."
+        "The report shows exact, Hamming, and Levenshtein settings separately instead of mixing their matching rules.",
+        "Count-agreement and Edlib-validation files are available for inspection."
       ],
       "limits": [
         "This is not a universal CRISPR-screen analysis claim.",
@@ -64,10 +64,10 @@
         "make bench-barcode-comparison",
         "make barcode-comparison-gate"
       ],
-      "comparator_semantics": "The checked public lane uses fixed-position k=0 DotMatch demux, Cutadapt anchored no-indel demux, and a transparent exact-prefix hash splitter baseline.",
-      "validation": "The barcode comparison gate requires evidence-ready metadata, five successful real-data repeats, assigned reads, Cutadapt rows, and the exact-prefix baseline row.",
+      "comparator_semantics": "The checked public example uses fixed-position k=0 DotMatch demux, Cutadapt anchored no-indel demux, and a simple exact-prefix hash splitter comparison.",
+      "validation": "The barcode comparison check requires evidence-ready metadata, five successful real-data repeats, assigned reads, Cutadapt rows, and the exact-prefix comparison row.",
       "proves": [
-        "DotMatch can reproduce a narrow exact-prefix inline-barcode demux comparison under documented semantics.",
+        "DotMatch can reproduce a narrow exact-prefix inline-barcode demux comparison under documented matching rules.",
         "Speed numbers are attached to comparator settings rather than reported in isolation."
       ],
       "limits": [
@@ -109,12 +109,12 @@
         "make barcode-autopsy-demo",
         "make barcode-validation-ready"
       ],
-      "comparator_semantics": "This is a diagnostic barcode autopsy run, not a broad comparator benchmark. It records the configured fixed-window barcode semantics and native audit/inspect-unmatched commands.",
+      "comparator_semantics": "This is a diagnostic barcode autopsy run, not a broad comparison benchmark. It records the configured fixed-window barcode rules and audit/inspect-unmatched commands.",
       "validation": "The report is generated from committed autopsy outputs and checked by barcode validation fixtures.",
       "proves": [
-        "DotMatch can turn a suspicious barcode run into a readable report with findings, next actions, and command provenance.",
+        "DotMatch can turn a suspicious barcode run into a readable report with findings, next actions, and command records.",
         "The report keeps ambiguous and unmatched evidence instead of silently assigning it.",
-        "Unsafe one-edit correction is surfaced as a report finding."
+        "Unsafe one-edit correction is shown as a report finding."
       ],
       "limits": [
         "The review status is intentional and should not be interpreted as a production-ready barcode assignment.",
@@ -156,7 +156,7 @@
       "commands": [
         "make barcode-validation-ready"
       ],
-      "comparator_semantics": "The fixture is a deterministic diagnostic fixture for barcode failure classifications, not a public dataset comparator.",
+      "comparator_semantics": "The fixture is a deterministic diagnostic fixture for barcode failure classifications, not a public dataset comparison.",
       "validation": "The barcode failure fixture checker requires the expected failure-mode table and matching fixture files.",
       "proves": [
         "DotMatch documents what wrong fixed-window coordinates and invalid extraction windows look like.",
@@ -197,7 +197,7 @@
       "commands": [
         "make barcode-validation-ready"
       ],
-      "comparator_semantics": "The fixture checks deterministic barcode collision and ambiguity classifications under fixed-window assignment semantics.",
+      "comparator_semantics": "The fixture checks deterministic barcode collision and ambiguity classifications under fixed-window assignment rules.",
       "validation": "The expected findings table includes duplicate barcode, unsafe one-edit collision, and ambiguous-read rows.",
       "proves": [
         "DotMatch can show why one-edit barcode rescue can corrupt sample assignment.",
@@ -233,11 +233,11 @@
         "make bench-feature-barcode-public",
         "make feature-barcode-public-gate"
       ],
-      "comparator_semantics": "The public lane uses the 10x feature reference fixed R2 pattern and a transparent exact-slice hash baseline for per-read fixed-window assignment.",
-      "validation": "The public gate requires synthetic diagnostics, public DotMatch k=0 and k=1 rows, zero validation mismatches, and exact agreement between DotMatch k=0 and the exact-slice baseline.",
+      "comparator_semantics": "The public example uses the 10x feature reference fixed R2 pattern and a simple exact-slice hash comparison for per-read fixed-window assignment.",
+      "validation": "The public check requires synthetic diagnostics, public DotMatch k=0 and k=1 rows, zero validation mismatches, and exact agreement between DotMatch k=0 and the exact-slice comparison.",
       "proves": [
         "DotMatch can perform fixed-window per-read feature-barcode assignment on a public 10x-style lane.",
-        "The report keeps per-read assignment semantics separate from cell/UMI quantification."
+        "The report keeps per-read assignment rules separate from cell/UMI quantification."
       ],
       "limits": [
         "This is not Cell Ranger feature-count replacement evidence.",
@@ -269,8 +269,8 @@
         "make bench-perturb-seq-public",
         "make perturb-seq-public-gate"
       ],
-      "comparator_semantics": "The checked public lane uses a 10x CRISPR Guide Capture R2 subsample, an observed fixed guide window, and a transparent exact-slice hash baseline.",
-      "validation": "The public gate requires synthetic pair-count diagnostics, public DotMatch k=0 and k=1 rows, zero validation mismatches, exact agreement with the k=0 baseline, and k=1 assignment count no lower than k=0.",
+      "comparator_semantics": "The checked public example uses a 10x CRISPR Guide Capture R2 subsample, an observed fixed guide window, and a simple exact-slice hash comparison.",
+      "validation": "The public check requires synthetic pair-count diagnostics, public DotMatch k=0 and k=1 rows, zero validation mismatches, exact agreement with the k=0 comparison, and k=1 assignment count no lower than k=0.",
       "proves": [
         "DotMatch can assign fixed-window guide-capture reads against known guide targets.",
         "The paired diagnostic fixture still checks side-level ambiguity handling."
@@ -305,8 +305,8 @@
         "make bench-amplicon-panel-public",
         "make amplicon-panel-public-gate"
       ],
-      "comparator_semantics": "The public lane uses nf-core/test-datasets viralrecon Illumina ARTIC V3 R1, ARTIC V3 primer targets, and a transparent exact-prefix baseline.",
-      "validation": "The public gate requires synthetic diagnostics, public DotMatch k=0 and k=1 rows, zero validation mismatches, exact agreement with the k=0 baseline, and k=1 assignment count no lower than k=0.",
+      "comparator_semantics": "The public example uses nf-core/test-datasets viralrecon Illumina ARTIC V3 R1, ARTIC V3 primer targets, and a simple exact-prefix comparison.",
+      "validation": "The public check requires synthetic diagnostics, public DotMatch k=0 and k=1 rows, zero validation mismatches, exact agreement with the k=0 comparison, and k=1 assignment count no lower than k=0.",
       "proves": [
         "DotMatch can report fixed-window known-primer assignment on a public amplicon-style read lane.",
         "Ambiguity handling is checked separately from downstream consensus or variant calling."
@@ -341,8 +341,8 @@
         "make bench-oligo-adapter-public",
         "make oligo-adapter-public-gate"
       ],
-      "comparator_semantics": "The public lane uses a fixed R1 window and deduplicated TruSeq adapter-prefix targets, with a transparent exact-slice baseline for fixed-window assignment.",
-      "validation": "The public gate requires DotMatch k=0 and k=1 rows, an exact-slice baseline, zero validation mismatches, k=0 agreement with the baseline, and k=1 assignment count no lower than k=0.",
+      "comparator_semantics": "The public example uses a fixed R1 window and deduplicated TruSeq adapter-prefix targets, with a simple exact-slice comparison for fixed-window assignment.",
+      "validation": "The public check requires DotMatch k=0 and k=1 rows, an exact-slice comparison, zero validation mismatches, k=0 agreement with the comparison, and k=1 assignment count no lower than k=0.",
       "proves": [
         "DotMatch can assign known oligo/adapter prefixes in a fixed read window.",
         "The report distinguishes assignment from trimming."
@@ -376,8 +376,8 @@
         "make bench-bcl-10x",
         "make bcl-tiny-public-gate"
       ],
-      "comparator_semantics": "The checked public row validates classic per-cycle output counts by count totals only; it is a parser/workflow milestone, not production demultiplexing comparator evidence.",
-      "validation": "The tiny public gate requires a successful DotMatch public_10x_tiny_bcl row, output hashes, positive assigned reads, count totals that sum to clusters, and zero-mismatch bcl2fastq count-total validation where available.",
+      "comparator_semantics": "The checked public row validates classic per-cycle output counts by count totals only; it is a parser/workflow milestone, not production demultiplexing evidence.",
+      "validation": "The tiny public check requires a successful DotMatch public_10x_tiny_bcl row, output hashes, positive assigned reads, count totals that sum to clusters, and zero-mismatch bcl2fastq count-total validation where available.",
       "proves": [
         "DotMatch has a checked classic-BCL parser milestone on a public tiny run folder.",
         "The report shows installed competitor availability and count-total validation."

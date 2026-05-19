@@ -19,17 +19,17 @@
 - This is not guide-per-cell calling.
 - Expression processing and perturbation-effect analysis remain outside DotMatch.
 
-## Comparator And Validation
+## Comparison And Validation
 
-Comparator semantics: The checked public lane uses a 10x CRISPR Guide Capture R2 subsample, an observed fixed guide window, and a transparent exact-slice hash baseline.
+Comparison settings: The checked public example uses a 10x CRISPR Guide Capture R2 subsample, an observed fixed guide window, and a simple exact-slice hash comparison.
 
-Validation: The public gate requires synthetic pair-count diagnostics, public DotMatch k=0 and k=1 rows, zero validation mismatches, exact agreement with the k=0 baseline, and k=1 assignment count no lower than k=0.
+Validation: The public check requires synthetic pair-count diagnostics, public DotMatch k=0 and k=1 rows, zero validation mismatches, exact agreement with the k=0 comparison, and k=1 assignment count no lower than k=0.
 
 ## Report Examples
 
 - [Perturb-seq/guide-capture benchmark report](../../benchmarks/perturb_seq/README.md) (`markdown`)
 
-## Raw Artifacts
+## Raw Files
 
 - [benchmarks/raw/perturb_seq.csv](../../../benchmarks/raw/perturb_seq.csv)
 - [examples/perturb_seq/data/metadata.json](../../../examples/perturb_seq/data/metadata.json)

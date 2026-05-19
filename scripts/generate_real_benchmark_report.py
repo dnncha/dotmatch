@@ -118,7 +118,7 @@ def main() -> None:
         "- Assignment threshold: exact Levenshtein `k=1`",
         f"- Real reads benchmarked against Edlib scan: `{READ_LIMIT}` extracted reads",
         f"- Real FASTQ records downloaded per sample: `{FETCH_RECORDS}`",
-        "- Correctness comparator: native Edlib exhaustive scan over the guide library",
+        "- Correctness check: Edlib full scan over the guide library",
         "",
         "![Real CRISPR throughput](../../../benchmarks/figures/real_crispr_throughput.svg)",
         "",
@@ -128,7 +128,7 @@ def main() -> None:
         "",
         "## Speedup",
         "",
-        f"DotMatch indexed speedup vs native Edlib scan on this real-data subset: `{speedup:.2f}x`." if speedup is not None else "Speedup unavailable.",
+        f"DotMatch indexed speedup vs Edlib full scan on this real-data subset: `{speedup:.2f}x`." if speedup is not None else "Speedup unavailable.",
         "",
         "## Workflow Comparator Availability",
         "",
@@ -138,7 +138,7 @@ def main() -> None:
         "",
         "## Evidence Boundary",
         "",
-        "This benchmark supports known-target CRISPR guide assignment only under the listed extraction rules. Native Edlib remains the exact semantic oracle; MAGeCK/Cutadapt/Bowtie2 comparisons should be described as workflow comparisons, not identical semantic oracles.",
+        "This benchmark supports known-target CRISPR guide assignment only under the listed extraction rules. Edlib full scan remains the independent assignment check; MAGeCK/Cutadapt/Bowtie2 comparisons should be described as workflow comparisons, not identical assignment checks.",
         "",
     ]
     (DOC / "README.md").write_text("\n".join(lines), encoding="utf-8")

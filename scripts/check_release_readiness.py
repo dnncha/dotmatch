@@ -198,7 +198,7 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
     if "docker/login-action" not in container_job or "registry: ghcr.io" not in container_job:
         result.failures.append("container publish job must log in to GHCR before pushing")
     if "python scripts/check_python_wheel.py --sdist-only --out-dir dist" not in sdist_job:
-        result.failures.append("release workflow sdist job must verify the PyPI source distribution artifact")
+        result.failures.append("release workflow sdist job must verify the PyPI source distribution file")
     if "Publish PyPI sdist, macOS wheel, and repaired Linux wheels" not in pypi_job:
         result.failures.append("PyPI publish job must publish sdist, macOS wheel, and repaired Linux wheels")
     if "needs: [preflight, sdist, wheel, linux-repaired-wheels]" not in pypi_job:
@@ -208,7 +208,7 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
         or "name: dotmatch-wheel-macos" not in pypi_job
         or "name: dotmatch-linux-repaired-wheels" not in pypi_job
     ):
-        result.failures.append("PyPI publish job must download sdist, macOS wheel, and repaired Linux wheel artifacts")
+        result.failures.append("PyPI publish job must download sdist, macOS wheel, and repaired Linux wheel files")
     if "needs: [preflight, wheel, sdist, linux-repaired-wheels]" not in github_release_job:
         result.failures.append("GitHub release job must depend on preflight, wheels, sdist, and repaired Linux wheels")
 
@@ -226,7 +226,7 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
     if "REPLACE_WITH_RELEASE_TARBALL_SHA256" not in bioconda:
         result.failures.append("Bioconda template must retain release SHA256 placeholder until copying into bioconda-recipes")
     if "dotmatch dist ACGT AGGT" not in bioconda:
-        result.failures.append("Bioconda template must include native CLI smoke test")
+        result.failures.append("Bioconda template must include a DotMatch CLI check")
 
     for label, text in [("docs/packaging.md", packaging), ("docs/release-process.md", release_process)]:
         if not text.strip():

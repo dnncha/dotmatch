@@ -1,7 +1,7 @@
 # Nextflow CRISPR Counting Example
 
 This example includes two small Nextflow DSL2 processes. `DOTMATCH_CRISPR_COUNT`
-runs the native CRISPR counting command. `DOTMATCH_ASSAY_RUN` runs an AssaySpec
+runs the DotMatch CRISPR counting command. `DOTMATCH_ASSAY_RUN` runs an AssaySpec
 and emits the assay report and manifest summary. It is intended as an integration
 pattern for labs that already run Nextflow, not as benchmark evidence.
 
@@ -32,7 +32,7 @@ Outputs are published under `examples/workflows/nextflow/output/`:
 - `crispr_qc.html`, `crispr_qc.json`, `crispr_qc.summary.tsv`: CRISPR
   guide-count QC report, structured report, and workflow summary;
 - `assay_report.html`: primary human-readable AssaySpec report;
-- `assay_manifest.json`: full run provenance and command manifest;
+- `assay_manifest.json`: full run record and command manifest;
 - `assay_manifest.summary.tsv`: manifest summary for MultiQC custom content.
 
 The default config uses the same Yusa/MAGeCK fixture paths as

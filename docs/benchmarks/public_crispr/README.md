@@ -1,12 +1,12 @@
 # Public CRISPR Workflow Comparator
 
-This report tracks the MAGeCK/Yusa public CRISPR benchmark. The single-run table below is a smoke/latest wiring check only; repeated rows and comparison-gated rows are the only rows intended to support user-facing performance statements.
+This report tracks the MAGeCK/Yusa public CRISPR benchmark. The single-run table below is a small/latest wiring check only; repeated rows and checked comparison rows are the only rows intended to support user-facing performance statements.
 
-## Smoke/Latest Wiring Table
+## Latest Wiring Table
 
 **Reduced evidence.** These rows are secondary benchmark context. Use the repeated-run statistics below, and use `docs/benchmarks/crispr_comparison/README.md` once `make crispr-comparison-gate` passes for two real CRISPR datasets.
 
-| tool | version | semantics | n_reads | n_targets | seconds | reads_per_sec | peak_rss_kb | assigned_reads | corrected_reads | ambiguous_reads | rejected_reads | overcount_reads | verified_per_read | exit_code |
+| tool | version | matching rules | n_reads | n_targets | seconds | reads_per_sec | peak_rss_kb | assigned_reads | corrected_reads | ambiguous_reads | rejected_reads | overcount_reads | verified_per_read | exit_code |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | dotmatch_exact_k0 | local | exact_k0_no_errors | 20000 | 87437 | 0.359338 | 55657.8 | 26752 | 17894 | 0 | 0 | 2106 | 0 | 0.8947 | 0 |
 | dotmatch_levenshtein_k1 | local | levenshtein_k1_substitution_insertion_deletion | 20000 | 87437 | 0.442764 | 45170.8 | 117072 | 19510 | 1616 | 38 | 452 | 0 | 0.9862 | 0 |
@@ -28,7 +28,7 @@ This report tracks the MAGeCK/Yusa public CRISPR benchmark. The single-run table
 
 ## Repeated-Run Statistics
 
-| tool | semantics | records_per_sample | repeats | mean_reads_per_sec | p50_reads_per_sec | p95_reads_per_sec | mean_seconds | p50_seconds | cv | max_peak_rss_mb | mean_verified_per_read |
+| tool | matching rules | records_per_sample | repeats | mean_reads_per_sec | p50_reads_per_sec | p95_reads_per_sec | mean_seconds | p50_seconds | cv | max_peak_rss_mb | mean_verified_per_read |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | dotmatch_exact_k0 | exact_k0_no_errors | 10000 | 5 | 1308776.5 | 1355374.7 | 1417802.5 | 0.1545 | 0.1476 | 0.1086 | 28.6 | 0.894 |
 | dotmatch_exact_k0 | exact_k0_no_errors | 100000 | 5 | 1143740.1 | 1087370.2 | 1483581.8 | 0.1914 | 0.1839 | 0.3043 | 28.7 | 0.894 |
@@ -51,7 +51,7 @@ This report tracks the MAGeCK/Yusa public CRISPR benchmark. The single-run table
 
 ## DotMatch Hamming Speedup
 
-This table keeps the fair CRISPR speed lane separate: DotMatch Hamming `k=1` versus tools with one-mismatch/no-indel or exact-count semantics.
+This table keeps the fair CRISPR speed lane separate: DotMatch Hamming `k=1` versus tools with one-mismatch/no-indel or exact-count rules.
 
 | baseline | records_per_sample | dotmatch_hamming_reads_per_sec | baseline_reads_per_sec | speedup |
 | --- | --- | --- | --- | --- |
@@ -84,7 +84,7 @@ This table keeps the fair CRISPR speed lane separate: DotMatch Hamming `k=1` ver
 
 ![Public CRISPR sample scaling memory](../../../benchmarks/figures/public_crispr_sample_scaling_memory.svg)
 
-## Edlib Oracle Validation
+## Edlib Validation
 
 | dataset | sample | oracle | checked_reads | mismatches | indel_window | stratum_exact | stratum_corrected | stratum_ambiguous | stratum_unmatched | stratum_contains_n |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -99,9 +99,9 @@ This table keeps the fair CRISPR speed lane separate: DotMatch Hamming `k=1` ver
 - MAGeCK is run as exact FASTQ counting with `--trim-5 23`, matching the public Yusa demo workflow.
 - guide-counter is fast, but on the 10k Yusa run its own stats report more mapped reads than input reads, consistent with its multi-offset counting loop; DotMatch assigns at most one target per read and reports ambiguity instead.
 - In the multi-sample scaling table, DotMatch processes sample batches with threads while staying in the tens of MB. guide-counter uses roughly half a GB and its count total grows beyond input reads.
-- Cutadapt and Bowtie2 rows are workflow comparators on extracted guide windows; they are not exact assignment oracles.
-- Native Edlib scan remains the exact semantic oracle for assignment correctness.
-- Public speed statements should cite only repeated rows with zero validation mismatches and explicit semantics.
+- Cutadapt and Bowtie2 rows are workflow comparisons on extracted guide windows; they are not exact assignment checks.
+- Edlib full scan remains the independent check for assignment correctness.
+- Public speed statements should cite only repeated rows with zero validation mismatches and explicit matching rules.
 
 ## Raw Commands
 

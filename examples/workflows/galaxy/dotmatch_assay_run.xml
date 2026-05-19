@@ -117,8 +117,8 @@ dotmatch assay run assay.toml
 DotMatch AssaySpec is the declarative workflow layer for fixed-window
 known-target assays. This example wrapper builds a reviewed `status = "ready"`
 count AssaySpec from Galaxy-staged inputs, then exposes the human-readable assay
-report, provenance manifest, manifest summary, sample QC, CRISPR QC, counts,
-and native summary.
+report, run manifest, manifest summary, sample QC, CRISPR QC, counts, and
+DotMatch summary.
 
 This wrapper is intended for local Galaxy installations and workflow testing.
     ]]></help>

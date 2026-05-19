@@ -316,8 +316,15 @@ def svg_scaling(rows: list[dict[str, str]], path: Path, metric: str, title: str,
     path.write_text("\n".join(parts), encoding="utf-8")
 
 
+DISPLAY_COLS = {
+    "semantics": "matching rules",
+    "oracle": "edlib_check",
+}
+
+
 def md_table(rows: list[dict[str, str]], cols: list[str]) -> list[str]:
-    lines = ["| " + " | ".join(cols) + " |", "| " + " | ".join(["---"] * len(cols)) + " |"]
+    header = [DISPLAY_COLS.get(col, col) for col in cols]
+    lines = ["| " + " | ".join(header) + " |", "| " + " | ".join(["---"] * len(cols)) + " |"]
     for r in rows:
         lines.append("| " + " | ".join((r.get(c, "") or "").replace("|", "\\|") for c in cols) + " |")
     return lines
@@ -371,9 +378,9 @@ def main() -> None:
     lines: list[str] = [
         "# Public CRISPR Workflow Comparator",
         "",
-        "This report tracks the MAGeCK/Yusa public CRISPR benchmark. The single-run table below is a smoke/latest wiring check only; repeated rows and comparison-gated rows are the only rows intended to support user-facing performance statements.",
+        "This report tracks the MAGeCK/Yusa public CRISPR benchmark. The single-run table below is a small/latest wiring check only; repeated rows and checked comparison rows are the only rows intended to support user-facing performance statements.",
         "",
-        "## Smoke/Latest Wiring Table",
+        "## Latest Wiring Table",
         "",
         "**Reduced evidence.** These rows are secondary benchmark context. Use the repeated-run statistics below, and use `docs/benchmarks/crispr_comparison/README.md` once `make crispr-comparison-gate` passes for two real CRISPR datasets.",
         "",
@@ -457,7 +464,7 @@ def main() -> None:
             lines.extend([
                 "## DotMatch Hamming Speedup",
                 "",
-                "This table keeps the fair CRISPR speed lane separate: DotMatch Hamming `k=1` versus tools with one-mismatch/no-indel or exact-count semantics.",
+                "This table keeps the fair CRISPR speed lane separate: DotMatch Hamming `k=1` versus tools with one-mismatch/no-indel or exact-count rules.",
                 "",
                 *md_table(speedups, [
                     "baseline",
@@ -537,7 +544,7 @@ def main() -> None:
             "",
         ])
     lines.extend([
-        "## Edlib Oracle Validation",
+        "## Edlib Validation",
         "",
     ])
     if validation_rows:
@@ -572,9 +579,9 @@ def main() -> None:
         "- MAGeCK is run as exact FASTQ counting with `--trim-5 23`, matching the public Yusa demo workflow.",
         "- guide-counter is fast, but on the 10k Yusa run its own stats report more mapped reads than input reads, consistent with its multi-offset counting loop; DotMatch assigns at most one target per read and reports ambiguity instead.",
         "- In the multi-sample scaling table, DotMatch processes sample batches with threads while staying in the tens of MB. guide-counter uses roughly half a GB and its count total grows beyond input reads.",
-        "- Cutadapt and Bowtie2 rows are workflow comparators on extracted guide windows; they are not exact assignment oracles.",
-        "- Native Edlib scan remains the exact semantic oracle for assignment correctness.",
-        "- Public speed statements should cite only repeated rows with zero validation mismatches and explicit semantics.",
+        "- Cutadapt and Bowtie2 rows are workflow comparisons on extracted guide windows; they are not exact assignment checks.",
+        "- Edlib full scan remains the independent check for assignment correctness.",
+        "- Public speed statements should cite only repeated rows with zero validation mismatches and explicit matching rules.",
         "",
         "## Raw Commands",
         "",

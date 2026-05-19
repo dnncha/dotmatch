@@ -11,7 +11,7 @@
 
 ## What This Shows
 
-- DotMatch can reproduce a narrow exact-prefix inline-barcode demux comparison under documented semantics.
+- DotMatch can reproduce a narrow exact-prefix inline-barcode demux comparison under documented matching rules.
 - Speed numbers are attached to comparator settings rather than reported in isolation.
 
 ## What It Does Not Show
@@ -19,18 +19,18 @@
 - This does not replace general adapter trimming.
 - This does not cover BCL/CBCL demultiplexing or arbitrary barcode placement.
 
-## Comparator And Validation
+## Comparison And Validation
 
-Comparator semantics: The checked public lane uses fixed-position k=0 DotMatch demux, Cutadapt anchored no-indel demux, and a transparent exact-prefix hash splitter baseline.
+Comparison settings: The checked public example uses fixed-position k=0 DotMatch demux, Cutadapt anchored no-indel demux, and a simple exact-prefix hash splitter comparison.
 
-Validation: The barcode comparison gate requires evidence-ready metadata, five successful real-data repeats, assigned reads, Cutadapt rows, and the exact-prefix baseline row.
+Validation: The barcode comparison check requires evidence-ready metadata, five successful real-data repeats, assigned reads, Cutadapt rows, and the exact-prefix comparison row.
 
 ## Report Examples
 
 - [Barcode demux benchmark report](../../benchmarks/barcode_demux/README.md) (`markdown`)
 - [Barcode raw comparison rows](../../../benchmarks/raw/barcode_demux.csv) (`csv`)
 
-## Raw Artifacts
+## Raw Files
 
 - [benchmarks/raw/barcode_demux.csv](../../../benchmarks/raw/barcode_demux.csv)
 - [examples/barcode_demux/data/metadata.json](../../../examples/barcode_demux/data/metadata.json)

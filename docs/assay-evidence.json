@@ -25,9 +25,9 @@
         "make bench-crispr-comparison",
         "make crispr-comparison-gate"
       ],
-      "comparator_semantics": "MAGeCK exact-count agreement, guide-counter Hamming-lane comparison where installed, and native Edlib assignment validation are workflow comparators or semantic oracles as documented by each report.",
-      "validation": "The public CRISPR gates require repeated rows, count agreement, and zero Edlib assignment mismatches for the checked samples.",
-      "claim_boundary": "Supported for the checked public MAGeCK/Yusa and Sanson/Brunello CRISPR guide-counting lanes with documented comparator semantics."
+      "comparator_semantics": "MAGeCK exact-count agreement, guide-counter Hamming comparison where installed, and Edlib assignment validation check the same guide-counting examples documented by each report.",
+      "validation": "The public CRISPR checks require repeated rows, count agreement, and zero Edlib assignment mismatches for the checked samples.",
+      "claim_boundary": "Supported for the checked public MAGeCK/Yusa and Sanson/Brunello CRISPR guide-counting lanes with documented comparison settings."
     },
     {
       "id": "inline_barcode",
@@ -48,9 +48,9 @@
         "make bench-barcode-demux",
         "make barcode-comparison-gate"
       ],
-      "comparator_semantics": "The checked public SRP009896 lane is an exact 5-prime inline-barcode comparison: DotMatch k=0 auto-length demux, Cutadapt anchored no-indel demux, and a transparent exact-prefix hash splitter baseline.",
-      "validation": "The barcode comparison gate requires evidence-ready metadata, five successful real-data repeats, assigned reads, Cutadapt rows, and a second exact-lane comparator.",
-      "claim_boundary": "Supported for the checked SRP009896/SRR391079 exact-prefix public inline-barcode lane with variable-length barcode sheet semantics; broader barcode demultiplexing claims need additional datasets and comparator semantics."
+      "comparator_semantics": "The checked public SRP009896 lane is an exact 5-prime inline-barcode comparison: DotMatch k=0 auto-length demux, Cutadapt anchored no-indel demux, and a simple exact-prefix hash splitter comparison.",
+      "validation": "The barcode comparison check requires evidence-ready metadata, five successful real-data repeats, assigned reads, Cutadapt rows, and a second exact-lane comparison.",
+      "claim_boundary": "Supported for the checked SRP009896/SRR391079 exact-prefix public inline-barcode lane with variable-length barcode sheet rules; broader barcode demultiplexing claims need additional datasets and comparison settings."
     },
     {
       "id": "raw_bcl_demux",
@@ -72,10 +72,10 @@
         "make bcl-tiny-public-gate",
         "make bcl-comparison-gate"
       ],
-      "comparator_semantics": "The checked public 10x tiny-BCL row validates DotMatch classic per-cycle output counts against an available bcl2fastq row by count totals only; it is a parser/workflow milestone, not production demultiplexing comparator evidence.",
-      "validation": "The tiny public gate requires a successful DotMatch public_10x_tiny_bcl row, output hashes, positive assigned reads, count totals that sum to clusters, and zero-mismatch bcl2fastq count-total validation. The comparison gate still blocks broader BCL claims until repeated real run-folder rows, CBCL evidence, and production comparator validation are present.",
+      "comparator_semantics": "The checked public 10x tiny-BCL row validates DotMatch classic per-cycle output counts against an available bcl2fastq row by count totals only; it is a parser/workflow milestone, not production demultiplexing evidence.",
+      "validation": "The tiny public check requires a successful DotMatch public_10x_tiny_bcl row, output hashes, positive assigned reads, count totals that sum to clusters, and zero-mismatch bcl2fastq count-total validation. The broader comparison check still blocks BCL claims until repeated real run-folder rows, CBCL evidence, and production comparison validation are present.",
       "claim_boundary": "Supported only for the checked public 10x tiny-BCL classic per-cycle milestone with count-total validation. Production Illumina replacement, CBCL/NovaSeq, and broader BCL comparison evidence are not covered.",
-      "next_public_evidence": "Add real run-folder rows with production comparator validation and CBCL evidence where relevant."
+      "next_public_evidence": "Add real run-folder rows with production comparison validation and CBCL evidence where relevant."
     },
     {
       "id": "oligo_adapter",
@@ -99,8 +99,8 @@
         "make oligo-adapter-smoke-gate",
         "make oligo-adapter-public-gate"
       ],
-      "comparator_semantics": "Synthetic fixed-window known-oligo assignment smoke row plus a public fast-adapter-trimming TruSeq R1 adapter-prefix lane. The public comparator is a transparent exact-slice hash baseline over target_start 229 and target_length 20 using deduplicated 20 bp adapter-prefix targets; it validates fixed-window assignment, not adapter trimming.",
-      "validation": "The smoke gate requires exact, corrected, ambiguous, unmatched, fixed-window, and zero-validation-mismatch diagnostics. The public gate requires DotMatch k=0 and k=1 rows plus an exact-slice baseline, zero validation mismatches, positive assignments, k=0 agreement with the exact baseline, k=1 assignment count not below k=0, fixed R1 window 229:20, recorded commands, and metadata path.",
+      "comparator_semantics": "Synthetic fixed-window known-oligo assignment fixture plus a public fast-adapter-trimming TruSeq R1 adapter-prefix lane. The public comparison checks the R1 window at positions 229:249 against deduplicated 20 bp adapter-prefix targets; it validates fixed-window assignment, not adapter trimming.",
+      "validation": "The fixture check requires exact, corrected, ambiguous, unmatched, fixed-window, and zero-validation-mismatch diagnostics. The public check requires DotMatch k=0 and k=1 rows plus an exact-slice comparison, zero validation mismatches, positive assignments, k=0 agreement with the exact comparison, k=1 assignment count not below k=0, fixed R1 window 229:20, recorded commands, and metadata path.",
       "claim_boundary": "Supported only for checked fixed-window oligo/adapter target assignment and the public fast-adapter-trimming TruSeq R1 adapter-prefix window. This is not adapter trimming, primer removal, UMI grouping, read merging, or production adapter workflow evidence.",
       "next_public_evidence": "Add adapter-trimming comparator evidence, primer-removal evidence, or broader oligo/adapter public datasets before making trimming or production workflow claims."
     },
@@ -116,10 +116,10 @@
       "commands": [
         "make cli-test"
       ],
-      "comparator_semantics": "The checked lane is a deterministic CLI semantics regression for independent left/right known-target windows, not a public perturbation-pair comparator.",
+      "comparator_semantics": "The checked lane is a deterministic CLI regression test for independent left/right known-target windows, not a public perturbation-pair comparison.",
       "validation": "CLI tests verify unique-pair counting and explicit ambiguous, unmatched, and invalid side diagnostics.",
-      "claim_boundary": "The fixed-window pair-count primitive is tested, but no public perturbation-pair dataset evidence is claimed.",
-      "next_public_evidence": "Add public dual-guide or combinatorial perturbation rows with pair-level oracle validation."
+      "claim_boundary": "The fixed-window pair-count command is tested, but no public perturbation-pair dataset evidence is claimed.",
+      "next_public_evidence": "Add public dual-guide or combinatorial perturbation rows with pair-level independent validation."
     },
     {
       "id": "perturb_seq",
@@ -141,9 +141,9 @@
         "make bench-perturb-seq-public",
         "make perturb-seq-public-gate"
       ],
-      "comparator_semantics": "The checked public lane uses a 10x Genomics CRISPR Guide Capture R2 subsample, an observed fixed guide window, and a transparent exact-slice hash baseline for per-read fixed-window assignment. The synthetic row still checks pair-count side diagnostics.",
-      "validation": "The public gate requires the synthetic diagnostic row, public DotMatch k=0 and k=1 rows, zero validation mismatches, exact agreement between DotMatch k=0 and the exact-slice baseline, and k=1 assignment count no lower than k=0.",
-      "claim_boundary": "Supported for the checked 10x GEM-X A375 public CRISPR Guide Capture R2 fixed-window per-read assignment lane and the synthetic pair-count diagnostic lane. Broader Perturb-seq, guide-per-cell, UMI/cell quantification, or perturbation-effect claims need Cell Ranger or equivalent comparator semantics."
+      "comparator_semantics": "The checked public lane uses a 10x Genomics CRISPR Guide Capture R2 subsample, an observed fixed guide window, and a simple exact-slice comparison for per-read fixed-window assignment. The synthetic row still checks pair-count side diagnostics.",
+      "validation": "The public check requires the synthetic diagnostic row, public DotMatch k=0 and k=1 rows, zero validation mismatches, exact agreement between DotMatch k=0 and the exact-slice comparison, and k=1 assignment count no lower than k=0.",
+      "claim_boundary": "Supported for the checked 10x GEM-X A375 public CRISPR Guide Capture R2 fixed-window per-read assignment lane and the synthetic pair-count diagnostic lane. Broader Perturb-seq, guide-per-cell, UMI/cell quantification, or perturbation-effect claims need Cell Ranger or equivalent comparison settings."
     },
     {
       "id": "feature_barcode",
@@ -165,9 +165,9 @@
         "make bench-feature-barcode-public",
         "make feature-barcode-public-gate"
       ],
-      "comparator_semantics": "The checked public lane uses the 10x Genomics TotalSeq-B feature reference fixed R2 pattern and a transparent exact-slice hash baseline for per-read fixed-window assignment. It is not a Cell Ranger UMI/cell-level quantification comparator.",
-      "validation": "The public gate requires synthetic diagnostic coverage, public DotMatch k=0 and k=1 rows, zero validation mismatches, exact agreement between DotMatch k=0 and the exact-slice baseline, and k=1 assignment count no lower than k=0.",
-      "claim_boundary": "Supported for the checked 10x TotalSeq-B public antibody Feature Barcode R2 fixed-window per-read assignment lane. Broader CITE-seq, cell-hashing, Cell Ranger quantification, or cell-level feature-count claims need UMI/cell aggregation validation and comparator semantics."
+      "comparator_semantics": "The checked public lane uses the 10x Genomics TotalSeq-B feature reference fixed R2 pattern and a simple exact-slice comparison for per-read fixed-window assignment. It is not a Cell Ranger UMI/cell-level quantification comparison.",
+      "validation": "The public check requires synthetic diagnostic coverage, public DotMatch k=0 and k=1 rows, zero validation mismatches, exact agreement between DotMatch k=0 and the exact-slice comparison, and k=1 assignment count no lower than k=0.",
+      "claim_boundary": "Supported for the checked 10x TotalSeq-B public antibody Feature Barcode R2 fixed-window per-read assignment lane. Broader CITE-seq, cell-hashing, Cell Ranger quantification, or cell-level feature-count claims need UMI/cell aggregation validation and comparison settings."
     },
     {
       "id": "amplicon_panel",
@@ -189,9 +189,9 @@
         "make bench-amplicon-panel-public",
         "make amplicon-panel-public-gate"
       ],
-      "comparator_semantics": "The checked public lane uses nf-core/test-datasets viralrecon Illumina ARTIC V3 amplicon sample R1, the ARTIC V3 primer FASTA, a selected full-primer fixed prefix, and a transparent exact-prefix hash baseline for per-read primer-start assignment.",
-      "validation": "The public gate requires the synthetic diagnostic row, public DotMatch k=0 and k=1 rows, zero validation mismatches, exact agreement between DotMatch k=0 and the exact-prefix baseline, and k=1 assignment count no lower than k=0.",
-      "claim_boundary": "Supported for the checked public nf-core viralrecon ARTIC V3 R1 fixed-window primer-start assignment lane and the synthetic diagnostic lane. Broader amplicon consensus, variant calling, primer trimming, clinical-panel, or diagnostic claims need full-assay comparator semantics and validation artifacts."
+      "comparator_semantics": "The checked public lane uses nf-core/test-datasets viralrecon Illumina ARTIC V3 amplicon sample R1, the ARTIC V3 primer FASTA, a selected full-primer fixed prefix, and a simple exact-prefix comparison for per-read primer-start assignment.",
+      "validation": "The public check requires the synthetic diagnostic row, public DotMatch k=0 and k=1 rows, zero validation mismatches, exact agreement between DotMatch k=0 and the exact-prefix comparison, and k=1 assignment count no lower than k=0.",
+      "claim_boundary": "Supported for the checked public nf-core viralrecon ARTIC V3 R1 fixed-window primer-start assignment lane and the synthetic diagnostic lane. Broader amplicon consensus, variant calling, primer trimming, clinical-panel, or diagnostic claims need full-assay comparison settings and validation files."
     }
   ]
 }

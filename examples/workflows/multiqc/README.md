@@ -23,4 +23,4 @@ The report will include a `DotMatch Sample QC` custom-content table with
 assignment rate, exact/rescue rates, ambiguous/no-match rates, target coverage,
 library sparsity, dominance, and candidate-verification totals. It will also
 include a `DotMatch Assay Manifest` table that links the workflow run back to
-the primary `assay_report.html` and `assay_manifest.json` artifacts.
+the primary `assay_report.html` and `assay_manifest.json` files.

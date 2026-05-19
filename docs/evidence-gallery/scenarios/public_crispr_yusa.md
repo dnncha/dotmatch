@@ -12,26 +12,26 @@
 ## What This Shows
 
 - DotMatch can run the documented fixed-window CRISPR guide-counting workflow on a public guide-counting lane.
-- The report shows exact, Hamming, and Levenshtein lanes separately instead of mixing their semantics.
-- Count-agreement and Edlib-validation artifacts are available for inspection.
+- The report shows exact, Hamming, and Levenshtein settings separately instead of mixing their matching rules.
+- Count-agreement and Edlib-validation files are available for inspection.
 
 ## What It Does Not Show
 
 - This is not a universal CRISPR-screen analysis claim.
 - Downstream essentiality, differential abundance, and screen interpretation remain outside DotMatch.
 
-## Comparator And Validation
+## Comparison And Validation
 
-Comparator semantics: DotMatch guide counts are checked against public CRISPR workflow rows, count-agreement artifacts, and native Edlib assignment validation as documented in the benchmark report.
+Comparison settings: DotMatch guide counts are checked against public CRISPR workflow rows, count-agreement files, and Edlib assignment validation as documented in the benchmark report.
 
-Validation: The public CRISPR gate requires repeated rows, positive throughput records, count agreement artifacts, and zero Edlib assignment mismatches for checked reads.
+Validation: The public CRISPR check requires repeated rows, positive throughput records, count agreement files, and zero Edlib assignment mismatches for checked reads.
 
 ## Report Examples
 
 - [Public CRISPR benchmark report](../../benchmarks/public_crispr/README.md) (`markdown`)
 - [Count agreement summary](../../../benchmarks/raw/count_agreement_summary.csv) (`csv`)
 
-## Raw Artifacts
+## Raw Files
 
 - [benchmarks/raw/public_crispr_repeated.csv](../../../benchmarks/raw/public_crispr_repeated.csv)
 - [benchmarks/raw/public_crispr_edlib_validation.csv](../../../benchmarks/raw/public_crispr_edlib_validation.csv)

@@ -2,7 +2,7 @@
 
 This report covers feature-barcode assignment evidence for DotMatch's known-target counting layer.
 
-The synthetic lane checks exact, ambiguous, and unmatched feature IDs. The public lane uses a 10x Genomics TotalSeq-B antibody Feature Barcode R2 subsample and validates DotMatch k=0 against a transparent exact-slice hash baseline over the documented feature-reference window.
+The synthetic lane checks exact, ambiguous, and unmatched feature IDs. The public lane uses a 10x Genomics TotalSeq-B antibody Feature Barcode R2 subsample and validates DotMatch k=0 against a simple exact-slice comparison over the documented feature-reference window.
 
 ## Synthetic Command
 
@@ -24,7 +24,7 @@ dotmatch count --targets benchmarks/work/feature_barcode/feature_barcodes.tsv --
 - Dataset: 10x Genomics 1k Human PBMCs with TotalSeq-B Human TBNK Antibody Cocktail, 3' v3.1.
 - Source page: https://www.10xgenomics.com/datasets/1-k-human-pbm-cs-with-total-seq-b-human-tbnk-antibody-cocktail-3-v-3-1-3-1-standard-6-0-0
 - Feature reference pattern: `^NNNNNNNNNN(BC)NNNNNNNNN`, so DotMatch uses `--target-start 10 --target-length 15` on antibody R2.
-- Comparator semantics: the exact-slice baseline counts reads whose fixed R2 substring exactly matches a feature-reference sequence. It validates per-read assignment semantics, not Cell Ranger cell/UMI quantification.
+- Comparison settings: the exact-slice check counts reads whose fixed R2 substring exactly matches a feature-reference sequence. It validates per-read assignment rules, not Cell Ranger cell/UMI quantification.
 
 ## Public Commands
 
@@ -43,4 +43,4 @@ python3 scripts/bench_feature_barcode.py --include-public --metadata examples/fe
 
 ## Evidence Boundary
 
-Use these lanes to verify fixed-window feature-barcode whitelist counting and explicit ambiguity handling. The public 10x lane supports only per-read assignment against the documented Feature Barcode reference window. Broader CITE-seq, cell-hashing, or cell-level quantification comparisons require public comparator output, UMI/cell aggregation validation, exact commands, and a passing gate.
+Use these lanes to verify fixed-window feature-barcode whitelist counting and explicit ambiguity handling. The public 10x lane supports only per-read assignment against the documented Feature Barcode reference window. Broader CITE-seq, cell-hashing, or cell-level quantification comparisons require public comparison output, UMI/cell aggregation validation, exact commands, and a passing check.

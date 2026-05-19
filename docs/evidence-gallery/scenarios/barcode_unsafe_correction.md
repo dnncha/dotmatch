@@ -19,9 +19,9 @@
 - This is a diagnostic fixture, not a public demultiplexing benchmark.
 - Collision-safe barcode design remains the user's responsibility.
 
-## Comparator And Validation
+## Comparison And Validation
 
-Comparator semantics: The fixture checks deterministic barcode collision and ambiguity classifications under fixed-window assignment semantics.
+Comparison settings: The fixture checks deterministic barcode collision and ambiguity classifications under fixed-window assignment rules.
 
 Validation: The expected findings table includes duplicate barcode, unsafe one-edit collision, and ambiguous-read rows.
 
@@ -29,7 +29,7 @@ Validation: The expected findings table includes duplicate barcode, unsafe one-e
 
 - [Expected unsafe-correction findings](../../../examples/barcode_autopsy/failure_modes/expected_findings.tsv) (`tsv`)
 
-## Raw Artifacts
+## Raw Files
 
 - [examples/barcode_autopsy/failure_modes/expected_findings.tsv](../../../examples/barcode_autopsy/failure_modes/expected_findings.tsv)
 - [examples/barcode_autopsy/failure_modes/barcodes.tsv](../../../examples/barcode_autopsy/failure_modes/barcodes.tsv)

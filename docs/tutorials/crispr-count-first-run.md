@@ -77,7 +77,7 @@ The key columns are:
 - `ambiguous_reads`: reads matching multiple guides within the allowed radius.
 - `no_match_reads`: valid guide windows that matched no guide.
 - `invalid_reads`: reads too short for the configured guide window.
-- `candidates_verified`: native target candidates checked after indexing.
+- `candidates_verified`: target candidates checked after indexing.
 
 In `sample_a`, the fixture deliberately includes one exact guide assignment, one
 ambiguous one-edit read, one unmatched read, and one invalid short read. That is

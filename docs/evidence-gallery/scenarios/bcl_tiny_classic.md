@@ -19,17 +19,17 @@
 - This does not establish production Illumina demultiplexing replacement.
 - CBCL/NovaSeq support and broader multi-lane BCL operation need separate evidence.
 
-## Comparator And Validation
+## Comparison And Validation
 
-Comparator semantics: The checked public row validates classic per-cycle output counts by count totals only; it is a parser/workflow milestone, not production demultiplexing comparator evidence.
+Comparison settings: The checked public row validates classic per-cycle output counts by count totals only; it is a parser/workflow milestone, not production demultiplexing evidence.
 
-Validation: The tiny public gate requires a successful DotMatch public_10x_tiny_bcl row, output hashes, positive assigned reads, count totals that sum to clusters, and zero-mismatch bcl2fastq count-total validation where available.
+Validation: The tiny public check requires a successful DotMatch public_10x_tiny_bcl row, output hashes, positive assigned reads, count totals that sum to clusters, and zero-mismatch bcl2fastq count-total validation where available.
 
 ## Report Examples
 
 - [BCL demultiplexing benchmark report](../../benchmarks/bcl_demux/README.md) (`markdown`)
 
-## Raw Artifacts
+## Raw Files
 
 - [benchmarks/raw/bcl_demux.csv](../../../benchmarks/raw/bcl_demux.csv)
 

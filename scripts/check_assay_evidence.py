@@ -48,7 +48,7 @@ def _check_relative_path(root: Path, field: str, value: str, result: AuditResult
         result.failures.append(f"{field} must be a repository-relative path: {value}")
         return
     if not (root / path).is_file():
-        kind = "raw artifact" if field == "raw_artifacts" else "report"
+        kind = "raw file" if field == "raw_artifacts" else "report"
         result.failures.append(f"missing {kind}: {value}")
 
 
@@ -71,22 +71,22 @@ def _check_raw_csv(root: Path, value: str, result: AuditResult) -> None:
             reader = csv.DictReader(fh)
             rows = list(reader)
     except Exception as exc:
-        result.failures.append(f"raw artifact {value} could not be read as CSV: {exc}")
+        result.failures.append(f"raw file {value} could not be read as CSV: {exc}")
         return
 
     if not reader.fieldnames:
-        result.failures.append(f"raw artifact {value} must contain a CSV header")
+        result.failures.append(f"raw file {value} must contain a CSV header")
         return
     if not rows:
-        result.failures.append(f"raw artifact {value} must contain at least one data row")
+        result.failures.append(f"raw file {value} must contain at least one data row")
         return
 
     if "command" in reader.fieldnames:
         for row_number, row in enumerate(rows, start=2):
             if not str(row.get("command") or "").strip():
-                result.failures.append(f"raw artifact {value}:{row_number} must record command provenance")
+                result.failures.append(f"raw file {value}:{row_number} must record the command")
             if "exit_code" in reader.fieldnames and not str(row.get("exit_code") or "").strip():
-                result.failures.append(f"raw artifact {value}:{row_number} must record exit_code provenance")
+                result.failures.append(f"raw file {value}:{row_number} must record exit_code")
 
     for column in ["validation_mismatches", "mismatches"]:
         if column not in reader.fieldnames:
@@ -97,9 +97,9 @@ def _check_raw_csv(root: Path, value: str, result: AuditResult) -> None:
                 continue
             value_int = _parse_int(raw)
             if value_int is None:
-                result.failures.append(f"raw artifact {value}:{row_number} has nonnumeric {column}: {raw}")
+                result.failures.append(f"raw file {value}:{row_number} has nonnumeric {column}: {raw}")
             elif value_int != 0:
-                result.failures.append(f"raw artifact {value}:{row_number} must have zero {column}")
+                result.failures.append(f"raw file {value}:{row_number} must have zero {column}")
 
     if "checked_reads" in reader.fieldnames:
         for row_number, row in enumerate(rows, start=2):
@@ -108,7 +108,7 @@ def _check_raw_csv(root: Path, value: str, result: AuditResult) -> None:
                 continue
             checked = _parse_int(raw)
             if checked is None or checked <= 0:
-                result.failures.append(f"raw artifact {value}:{row_number} must record positive checked_reads")
+                result.failures.append(f"raw file {value}:{row_number} must record positive checked_reads")
 
 
 def _check_gate(gate: str, make_targets: set[str], result: AuditResult) -> None:
@@ -210,7 +210,7 @@ def check_assay_entries(root: Path, assays: list[dict], result: AuditResult) -> 
             "commands",
             "comparator_semantics",
             "validation",
-            "raw artifact",
+            "raw file",
             "report",
             "make target",
             "next_public_evidence",

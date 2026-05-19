@@ -29,7 +29,7 @@ output:
       pattern: "assay_report.html"
   - assay_manifest:
       type: file
-      description: Full DotMatch AssaySpec provenance manifest.
+      description: Full DotMatch AssaySpec run manifest.
       pattern: "assay_manifest.json"
   - assay_manifest_summary:
       type: file

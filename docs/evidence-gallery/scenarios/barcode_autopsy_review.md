@@ -11,18 +11,18 @@
 
 ## What This Shows
 
-- DotMatch can turn a suspicious barcode run into a readable report with findings, next actions, and command provenance.
+- DotMatch can turn a suspicious barcode run into a readable report with findings, next actions, and command records.
 - The report keeps ambiguous and unmatched evidence instead of silently assigning it.
-- Unsafe one-edit correction is surfaced as a report finding.
+- Unsafe one-edit correction is shown as a report finding.
 
 ## What It Does Not Show
 
 - The review status is intentional and should not be interpreted as a production-ready barcode assignment.
 - Users must correct the assay specification or barcode design before trusting rescued reads.
 
-## Comparator And Validation
+## Comparison And Validation
 
-Comparator semantics: This is a diagnostic barcode autopsy run, not a broad comparator benchmark. It records the configured fixed-window barcode semantics and native audit/inspect-unmatched commands.
+Comparison settings: This is a diagnostic barcode autopsy run, not a broad comparison benchmark. It records the configured fixed-window barcode rules and audit/inspect-unmatched commands.
 
 Validation: The report is generated from committed autopsy outputs and checked by barcode validation fixtures.
 
@@ -32,7 +32,7 @@ Validation: The report is generated from committed autopsy outputs and checked b
 - [Barcode autopsy Markdown report](../snapshots/barcode_autopsy/report.md) (`markdown`)
 - [Findings table](../snapshots/barcode_autopsy/findings.tsv) (`tsv`)
 
-## Raw Artifacts
+## Raw Files
 
 - [docs/evidence-gallery/snapshots/barcode_autopsy/findings.tsv](../snapshots/barcode_autopsy/findings.tsv)
 - [docs/evidence-gallery/snapshots/barcode_autopsy/offset_scan.tsv](../snapshots/barcode_autopsy/offset_scan.tsv)

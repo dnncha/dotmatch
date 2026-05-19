@@ -71,7 +71,7 @@ def render_index(manifest: dict[str, Any]) -> str:
         str(manifest.get("summary") or "Public evidence, benchmark reports, and report examples for DotMatch."),
         "",
         "Start here when you want to see what DotMatch does on real or deliberately diagnostic data.",
-        "Each row links to the exact report, raw artifacts, command records, and a short interpretation.",
+        "Each row links to the exact report, raw files, command records, and a short interpretation.",
         "",
         "## Gallery",
         "",
@@ -100,7 +100,7 @@ def render_index(manifest: dict[str, Any]) -> str:
             "## How To Read These Pages",
             "",
             "- Each scenario separates the observed result from what it does not establish.",
-            "- Comparator settings are part of the evidence. Changing them changes the meaning of the result.",
+            "- Comparison settings are part of the evidence. Changing them changes the meaning of the result.",
             "- HTML, TSV, JSON, FASTQ, and raw CSV files are linked directly when they are committed.",
             "",
         ]
@@ -161,7 +161,7 @@ def render_scenario(scenario: dict[str, Any]) -> str:
     lines.extend(f"- {item}" for item in _as_list(scenario.get("proves")))
     lines.extend(["", "## What It Does Not Show", ""])
     lines.extend(f"- {item}" for item in _as_list(scenario.get("limits")))
-    lines.extend(["", "## Comparator And Validation", "", f"Comparator semantics: {scenario.get('comparator_semantics', '')}", "", f"Validation: {scenario.get('validation', '')}", ""])
+    lines.extend(["", "## Comparison And Validation", "", f"Comparison settings: {scenario.get('comparator_semantics', '')}", "", f"Validation: {scenario.get('validation', '')}", ""])
     if report_examples:
         lines.extend(["## Report Examples", ""])
         for example in report_examples:
@@ -169,12 +169,12 @@ def render_scenario(scenario: dict[str, Any]) -> str:
                 continue
             label = str(example.get("label") or example.get("path") or "report")
             path = str(example.get("path") or "")
-            kind = str(example.get("kind") or "artifact")
+            kind = str(example.get("kind") or "file")
             lines.append(f"- {_link(out, path, label)} (`{kind}`)")
         lines.append("")
     raw_artifacts = _as_list(scenario.get("raw_artifacts"))
     if raw_artifacts:
-        lines.extend(["## Raw Artifacts", "", *_bullet_links(out, raw_artifacts), ""])
+        lines.extend(["## Raw Files", "", *_bullet_links(out, raw_artifacts), ""])
     commands = _as_list(scenario.get("commands"))
     if commands:
         lines.extend(["## Reproduce Or Check", ""])

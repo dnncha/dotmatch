@@ -19,9 +19,9 @@
 - This fixture is synthetic and should not be used for performance claims.
 - Reverse-complement findings are advisory; users must normalize assay inputs themselves.
 
-## Comparator And Validation
+## Comparison And Validation
 
-Comparator semantics: The fixture is a deterministic diagnostic fixture for barcode failure classifications, not a public dataset comparator.
+Comparison settings: The fixture is a deterministic diagnostic fixture for barcode failure classifications, not a public dataset comparison.
 
 Validation: The barcode failure fixture checker requires the expected failure-mode table and matching fixture files.
 
@@ -30,7 +30,7 @@ Validation: The barcode failure fixture checker requires the expected failure-mo
 - [Failure-mode README](../../../examples/barcode_autopsy/failure_modes/README.md) (`markdown`)
 - [Expected findings](../../../examples/barcode_autopsy/failure_modes/expected_findings.tsv) (`tsv`)
 
-## Raw Artifacts
+## Raw Files
 
 - [examples/barcode_autopsy/failure_modes/expected_findings.tsv](../../../examples/barcode_autopsy/failure_modes/expected_findings.tsv)
 - [examples/barcode_autopsy/failure_modes/barcodes.tsv](../../../examples/barcode_autopsy/failure_modes/barcodes.tsv)

@@ -1,23 +1,23 @@
-# Native Edlib Benchmark Report
+# Edlib Benchmark Report
 
 - Platform: `macOS-26.2-arm64-arm-64bit`
 - Python: `3.9.6`
 - Reads per benchmark case: `10`
 - Repetitions per benchmark case: `2`
-- Comparator: native Edlib C/C++ API, `EDLIB_MODE_NW`, `EDLIB_TASK_DISTANCE`, fixed threshold `k`.
+- Comparison tool: Edlib C/C++ API, `EDLIB_MODE_NW`, `EDLIB_TASK_DISTANCE`, fixed threshold `k`.
 - Additional baselines: exact hash lookup for `k=0`; BK-tree and neighbor lookup approximate baselines for `k=1`.
 - Assignment mismatches recorded across all rows: `0`.
-- Every benchmark run aborts on assignment disagreement between DotMatch and native Edlib scan.
+- Every benchmark run aborts on assignment disagreement between DotMatch and the Edlib full scan.
 
-![Native speedup vs Edlib](native_speedup_vs_edlib.svg)
+![Speedup vs Edlib](native_speedup_vs_edlib.svg)
 
-![Native candidates per read](native_candidates_per_read.svg)
+![Candidates per read](native_candidates_per_read.svg)
 
-![Native assignment throughput](native_assignment_throughput.svg)
+![Assignment throughput](native_assignment_throughput.svg)
 
 ## Highest Observed Microbenchmark Speedups
 
-| n_targets | len | k | error_mode | err | reads_per_sec_dotmatch | reads_per_sec_edlib | verified_per_read | peak_rss_kb | speedup_vs_edlib_native |
+| n_targets | len | k | error_mode | err | reads_per_sec_dotmatch | reads_per_sec_edlib | verified_per_read | peak_rss_kb | speedup_vs_edlib |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 4096 | 16 | 0 | one_substitution | 0.005 | 4166669.30 | 248.10 | 0.00 | 2960 | 16953.44 |
 | 4096 | 16 | 0 | one_substitution | 0.000 | 3333340.30 | 256.85 | 0.00 | 2880 | 12991.50 |
@@ -34,7 +34,7 @@
 
 ## Median Speedup Summary
 
-| len | k | n_targets | error_mode | speedup_vs_edlib_native |
+| len | k | n_targets | error_mode | speedup_vs_edlib |
 | --- | --- | --- | --- | --- |
 | 16 | 0 | 4096 | one_substitution | 12747.04 |
 | 16 | 0 | 4096 | exact | 10711.79 |
@@ -72,4 +72,4 @@
 
 ## Evidence Boundary
 
-These are native Edlib scan microbenchmarks for exact short-DNA assignment workloads, plus simple exact-hash and BK-tree baselines. The largest rows are useful for understanding algorithmic scaling against exhaustive scan, but they are not end-to-end workflow speed claims. Exact `k=0` lookup should be judged against hash-table baselines. For `k=1`, the indexed path is reported only when it has zero correctness disagreements against the exhaustive comparator. Levenshtein `k=2` uses the exhaustive assignment path. The direct Levenshtein `k=1` threshold helper is separately covered by `make test` through `tests/test_qdalign_threshold_alloc.c`, which asserts exact/substitution/insertion/deletion threshold cases do not allocate heap memory.
+These are Edlib full-scan microbenchmarks for exact short-DNA assignment work, plus simple exact-hash and BK-tree comparisons. The largest rows are useful for understanding how the algorithm scales against a full target-by-target scan, but they are not end-to-end workflow speed claims. Exact `k=0` lookup should be judged against hash-table comparisons. For `k=1`, the indexed path is reported only when it has zero correctness disagreements against the full-scan comparison. Levenshtein `k=2` uses the full target-by-target assignment path. The direct Levenshtein `k=1` threshold helper is separately covered by `make test` through `tests/test_qdalign_threshold_alloc.c`, which checks exact/substitution/insertion/deletion threshold cases without heap allocation.

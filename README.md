@@ -79,7 +79,8 @@ dotmatch barcode autopsy \
 
 Open `autopsy/report.html` first. The TSV and JSON files beside it are there for
 pipelines and lab handoff: `findings.tsv`, `offset_scan.tsv`,
-`correction_safety.tsv`, `top_unmatched.tsv`, and `provenance.json`.
+`correction_safety.tsv`, `top_unmatched.tsv`, and `provenance.json` with the
+commands and settings used for the run.
 
 Speed is useful only after the assignment rules are clear. The checked barcode
 example documents the exact comparator settings in
@@ -87,7 +88,7 @@ example documents the exact comparator settings in
 
 ## Barcode Panel Design
 
-DotMatch can design and certify barcode panels for the same assignment semantics
+DotMatch can design and certify barcode panels for the same assignment rules
 used later by demux and counting. The point is not just to emit sequences. A
 designed panel is shipped with a machine-checkable safety certificate, per-target
 safety rows, collision tables, ambiguous-variant examples, plate layout, lab
@@ -119,9 +120,9 @@ dotmatch panel export barcodes.tsv --format illumina-samplesheet --out-dir sampl
 ```
 
 The certificate preserves DotMatch outcomes: `unique`, `ambiguous`, `none`, and
-`invalid`. It fails a configured correction radius if any query in that radius
-can map ambiguously or silently to the wrong barcode. The current exact
-certificate enumerates configured error spheres up to `k=2`; larger radii are
+`invalid`. It fails a configured edit distance if any possible barcode variant
+inside that distance can map ambiguously or silently to the wrong barcode. The
+current certificate checks all variants up to `k=2`; larger edit distances are
 refused rather than partially certified.
 
 Outputs include `barcodes.tsv`, `design_report.json`, `design_trace.tsv`,
@@ -130,8 +131,8 @@ Outputs include `barcodes.tsv`, `design_report.json`, `design_trace.tsv`,
 `sample_sheet_templates/SampleSheet.csv`, `report.html`, and
 `README_FOR_LAB.md`.
 
-See [Barcode Panel Design](docs/barcode-panel-design.md) and the checked smoke
-gate in
+See [Barcode Panel Design](docs/barcode-panel-design.md) and the checked example
+in
 [docs/benchmarks/barcode_panel_design](docs/benchmarks/barcode_panel_design/README.md).
 
 ## When To Use DotMatch
@@ -148,7 +149,7 @@ Common uses include:
 - primer-start, amplicon-panel, adapter-prefix, or whitelist-style assays;
 - designing, optimizing, certifying, simulating, and exporting barcode panels;
 - target-library audits before allowing one-edit correction;
-- validating an indexed assignment run against an exhaustive scan or Edlib.
+- validating a fast assignment run against a full target-by-target scan or Edlib.
 
 DotMatch is not a genome aligner or basecaller. It does not produce SAM/BAM,
 CIGAR strings, variant calls, cell/UMI quantification, UMI entropy designs,
@@ -191,12 +192,10 @@ in [Packaging Notes](docs/packaging.md), the
 [Distribution Status](docs/distribution-release.json). Bioconda is public for
 0.1.2; PyPI is not public yet.
 
-The release workflow builds and smoke-tests the source distribution, the native
-macOS wheel, and repaired Linux wheels. PyPI trusted publishing is configured
-for those artifacts. We will only describe PyPI wheel availability after the
-tagged release is visible on PyPI. For Linux wheels, the GitHub release workflow
-builds and smoke-tests repaired manylinux/musllinux wheel artifacts before any
-wheel is considered for PyPI.
+The release workflow builds and checks the files that will go to PyPI: a source
+distribution, a macOS wheel, and Linux wheels that follow PyPI's manylinux and
+musllinux rules. PyPI trusted publishing is configured for those files. We will
+only describe PyPI availability after the tagged release is visible on PyPI.
 
 Optional local Workbench: DotMatch also includes a desktop Workbench under
 `apps/workbench` for local AssaySpec design, inference, planning, running, and
@@ -350,7 +349,7 @@ at `k=1`.
 
 ## Python API
 
-The Python package loads the native library through `ctypes`.
+The Python package calls the compiled DotMatch library directly.
 
 ```python
 import dotmatch
@@ -374,22 +373,21 @@ DOTMATCH_LIB=$PWD/libdotmatch.dylib PYTHONPATH=$PWD/python python3
 
 On Linux, use `libdotmatch.so` instead of `libdotmatch.dylib`.
 
-The historical `quickdna` Python package, `quickdna` console script, and `qda`
-native CLI target remain as compatibility aliases. New workflows should use
-`dotmatch`.
+The older `quickdna` Python package, `quickdna` console script, and `qda`
+command remain as compatibility aliases. New workflows should use `dotmatch`.
 
-## Matching Semantics
+## Matching Rules
 
-DotMatch uses literal-byte DNA matching. `A`, `C`, `G`, `T`, `N`, and IUPAC
-ambiguity symbols are ordinary byte symbols; `N` and IUPAC codes are not
-expanded as wildcards.
+DotMatch treats DNA letters literally. `A`, `C`, `G`, `T`, `N`, and IUPAC
+ambiguity symbols are ordinary characters; `N` and IUPAC codes are not expanded
+as wildcards.
 
 Supported assignment modes include:
 
 - exact matching (`k=0`);
 - Hamming matching for fixed-length one-substitution workflows;
 - global Levenshtein matching for substitutions, insertions, and deletions;
-- fixed-window `k=2` correction through the exhaustive assignment path;
+- fixed-window `k=2` correction by checking every target;
 - explicit ambiguity policies for best-target and whole-radius assignment.
 
 The public policy string reported by the C and Python APIs is:
@@ -400,9 +398,9 @@ literal-byte; A/C/G/T/N/IUPAC symbols are ordinary byte symbols; no wildcard exp
 
 ## Checked Examples And Benchmarks
 
-The repository includes native C tests, CLI fixture tests, Python tests,
-deterministic fuzz checks against a dynamic-programming oracle, and optional
-Edlib validation for assignment runs.
+The repository includes C tests, command-line fixture tests, Python tests,
+randomized checks against an independent edit-distance implementation, and
+optional Edlib validation for assignment runs.
 
 Useful local checks:
 
@@ -418,7 +416,7 @@ Reports with data sources, commands, comparator settings, and checked outputs:
 - [Why DotMatch / usability comparison](docs/usability-comparison.md)
 - [Evidence gallery](docs/evidence-gallery/README.md)
 - [Benchmark overview](docs/benchmarks/README.md)
-- [Native Edlib assignment report](docs/benchmarks/native/README.md)
+- [Edlib assignment report](docs/benchmarks/native/README.md)
 - [Public CRISPR guide-counting report](docs/benchmarks/public_crispr/README.md)
 - [Barcode demultiplexing report](docs/benchmarks/barcode_demux/README.md)
 - [Feature-barcode assignment report](docs/benchmarks/feature_barcode/README.md)

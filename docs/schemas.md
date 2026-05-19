@@ -94,8 +94,8 @@ manifest
 
 Rules:
 
-- `primary_report` points to the `assay_report.html` artifact;
-- `manifest` points to the full `assay_manifest.json` provenance record;
+- `primary_report` points to the `assay_report.html` file;
+- `manifest` points to the full `assay_manifest.json` run record;
 - warning counts are decimal integers;
 - `autopsy_triggered` is `true` or `false`.
 
@@ -197,7 +197,7 @@ ambiguous_query_variants_k1
 recommended_k
 ```
 
-`audit_mode=exact` computes exhaustive pairwise distances. `audit_mode=fast` computes `k=1` safety through one-edit variant indexing and may report `not_computed` for `k=2` metrics.
+`audit_mode=exact` checks every target pair. `audit_mode=fast` computes `k=1` safety through one-edit variant indexing and may report `not_computed` for `k=2` metrics.
 
 ## `audit_summary.json`
 
@@ -269,7 +269,7 @@ query_variant
 targets_within_k1
 ```
 
-This file answers the practical question behind one-edit rescue: which observed sequences would be ambiguous under exact `k=1` Levenshtein semantics?
+This file answers the practical question behind one-edit rescue: which observed sequences would be ambiguous under exact `k=1` Levenshtein matching rules?
 
 ## `top_unmatched.tsv`
 
@@ -333,7 +333,7 @@ field.
 with `--max-correction-qual`. When set, one-edit substitution and read-insertion
 rescues require the observed edited base to have quality at or below this
 threshold; exact matches and read-deletion rescues are not rejected by this
-gate. Demultiplexing summaries include the same field.
+filter. Demultiplexing summaries include the same field.
 
 Each sample object includes:
 

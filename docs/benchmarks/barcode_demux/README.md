@@ -2,9 +2,14 @@
 
 This report records the checked barcode-demultiplexing example. It is separate from the CRISPR guide-counting report.
 
-Current status: DotMatch has a checked public SRP009896/SRR391079 exact-prefix inline-barcode lane with five repeats, Cutadapt anchored no-indel demux rows, and an exact hash-splitter baseline. This is a narrow barcode example; broader barcode-demultiplexing statements need additional datasets and comparator settings.
+Current status: DotMatch has a checked public SRP009896/SRR391079 exact-prefix
+inline-barcode example with five repeats, Cutadapt anchored no-indel demux rows,
+and a simple exact-prefix hash splitter for comparison. This is a narrow
+barcode example; broader barcode-demultiplexing statements need additional
+datasets and comparator settings.
 
-The benchmark script can also emit a simple `hash_splitter_exact` row. This is a transparent exact-prefix baseline, not an edit-distance demultiplexer.
+The benchmark script can also emit a simple `hash_splitter_exact` row. This is
+an exact-prefix comparison, not an edit-distance demultiplexer.
 
 ## Figures
 
@@ -18,7 +23,7 @@ The benchmark script can also emit a simple `hash_splitter_exact` row. This is a
 
 ## Raw Rows
 
-| tool | workflow | semantics | repeats | reads | barcodes | k | metric | mean seconds | mean reads/sec | peak RSS KB | assigned | ambiguous | unmatched | verified/read | cv | exit |
+| tool | workflow | assignment rules | repeats | reads | barcodes | k | metric | mean seconds | mean reads/sec | peak RSS KB | assigned | ambiguous | unmatched | verified/read | cv | exit |
 | --- | --- | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | cutadapt_demux | real_srp009896_inline_barcode | anchored_cutadapt_demux_no_indels | 5 | 100000 | 48 | 0 | hamming | 0.578074 | 173055.7 | 23408 | 658 |  | 99342 |  | 0.0222 | 0 |
 | dotmatch_demux | real_srp009896_inline_barcode | fixed_position_unique_ambiguous_nomatch | 5 | 100000 | 48 | 0 | hamming | 0.063247 | 1581617.3 | 5712 | 658 | 0 | 99342 | 0.0066 | 0.0203 | 0 |
@@ -26,7 +31,11 @@ The benchmark script can also emit a simple `hash_splitter_exact` row. This is a
 
 ## Checked Comparison
 
-`make barcode-comparison-gate` passes for the SRP009896/SRR391079 exact-prefix lane shown above. The checked comparison is narrow: Cutadapt is run as an anchored no-indel demultiplexer after trimming the leading `N`, and `hash_splitter_exact` is a simple exact-prefix baseline, not an edit-distance demultiplexer.
+`make barcode-comparison-gate` passes for the SRP009896/SRR391079 exact-prefix
+example shown above. The checked comparison is narrow: Cutadapt is run as an
+anchored no-indel demultiplexer after trimming the leading `N`, and
+`hash_splitter_exact` is a simple exact-prefix comparison, not an edit-distance
+demultiplexer.
 
 Suggested real-data starting point: SRP009896 / SRR391079-SRR391082, a maize GBS dataset described in public Cutadapt demultiplexing examples as 5-prime inline barcode reads with 96 demultiplexed outputs. `scripts/fetch_srp009896_barcode_demo.py --use-public-example-barcodes` extracts the first-member barcode sheet from the public Google Drive example archive with a ranged request instead of downloading the full 7.4 GB ZIP, then filters rows to the requested accession when the run column is present.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate native Edlib comparison graphs for README benchmarks."""
+"""Generate Edlib comparison graphs for README benchmarks."""
 
 from __future__ import annotations
 
@@ -27,8 +27,12 @@ def run_command(cmd: list[str]) -> str:
 
 def markdown_table(df: pd.DataFrame, floatfmt: str = ".2f") -> str:
     columns = list(df.columns)
+    display_columns = {
+        "speedup_vs_edlib_native": "speedup_vs_edlib",
+        "edlib_native_scan": "edlib_full_scan",
+    }
     lines = [
-        "| " + " | ".join(columns) + " |",
+        "| " + " | ".join(display_columns.get(col, col) for col in columns) + " |",
         "| " + " | ".join("---" for _ in columns) + " |",
     ]
     for _, row in df.iterrows():
@@ -102,7 +106,7 @@ def plot_speedup(speedups: pd.DataFrame) -> None:
         ax.plot(summary["n_targets"], summary["speedup_vs_edlib_native"], marker="o", label=f"len={length} k={k}")
     ax.axhline(10.0, color="#8b0000", linestyle="--", linewidth=1, label="10x target")
     ax.set_xscale("log")
-    ax.set_title("Indexed assignment speedup vs native Edlib scan")
+    ax.set_title("Indexed assignment speedup vs Edlib full scan")
     ax.set_xlabel("number of targets")
     ax.set_ylabel("reads/sec speedup")
     ax.grid(axis="y", alpha=0.25)
@@ -171,22 +175,22 @@ def write_report(df: pd.DataFrame, speedups: pd.DataFrame) -> None:
     summary = summary.sort_values("speedup_vs_edlib_native", ascending=False).head(12)
     zero_mismatch = int(df["mismatches"].sum())
     lines = [
-        "# Native Edlib Benchmark Report",
+        "# Edlib Benchmark Report",
         "",
         f"- Platform: `{platform.platform()}`",
         f"- Python: `{platform.python_version()}`",
         f"- Reads per benchmark case: `{REPORT_READS}`",
         f"- Repetitions per benchmark case: `{REPORT_REPEATS}`",
-        "- Comparator: native Edlib C/C++ API, `EDLIB_MODE_NW`, `EDLIB_TASK_DISTANCE`, fixed threshold `k`.",
+        "- Comparison tool: Edlib C/C++ API, `EDLIB_MODE_NW`, `EDLIB_TASK_DISTANCE`, fixed threshold `k`.",
         "- Additional baselines: exact hash lookup for `k=0`; BK-tree and neighbor lookup approximate baselines for `k=1`.",
         f"- Assignment mismatches recorded across all rows: `{zero_mismatch}`.",
-        "- Every benchmark run aborts on assignment disagreement between DotMatch and native Edlib scan.",
+        "- Every benchmark run aborts on assignment disagreement between DotMatch and the Edlib full scan.",
         "",
-        "![Native speedup vs Edlib](native_speedup_vs_edlib.svg)",
+        "![Speedup vs Edlib](native_speedup_vs_edlib.svg)",
         "",
-        "![Native candidates per read](native_candidates_per_read.svg)",
+        "![Candidates per read](native_candidates_per_read.svg)",
         "",
-        "![Native assignment throughput](native_assignment_throughput.svg)",
+        "![Assignment throughput](native_assignment_throughput.svg)",
         "",
         "## Highest Observed Microbenchmark Speedups",
         "",
@@ -202,7 +206,7 @@ def write_report(df: pd.DataFrame, speedups: pd.DataFrame) -> None:
         "",
         "## Evidence Boundary",
         "",
-        "These are native Edlib scan microbenchmarks for exact short-DNA assignment workloads, plus simple exact-hash and BK-tree baselines. The largest rows are useful for understanding algorithmic scaling against exhaustive scan, but they are not end-to-end workflow speed claims. Exact `k=0` lookup should be judged against hash-table baselines. For `k=1`, the indexed path is reported only when it has zero correctness disagreements against the exhaustive comparator. Levenshtein `k=2` uses the exhaustive assignment path.",
+        "These are Edlib full-scan microbenchmarks for exact short-DNA assignment work, plus simple exact-hash and BK-tree comparisons. The largest rows are useful for understanding how the algorithm scales against a full target-by-target scan, but they are not end-to-end workflow speed claims. Exact `k=0` lookup should be judged against hash-table comparisons. For `k=1`, the indexed path is reported only when it has zero correctness disagreements against the full-scan comparison. Levenshtein `k=2` uses the full target-by-target assignment path.",
         "",
     ]
     (OUT_DIR / "README.md").write_text("\n".join(lines), encoding="utf-8")

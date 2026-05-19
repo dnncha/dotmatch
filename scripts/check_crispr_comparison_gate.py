@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail unless CRISPR comparison evidence has real datasets, repeats, competitors, and oracle validation."""
+"""Fail unless CRISPR comparison evidence has real datasets, repeats, competitors, and Edlib validation."""
 
 from __future__ import annotations
 

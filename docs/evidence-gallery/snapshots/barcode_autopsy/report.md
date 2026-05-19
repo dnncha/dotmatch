@@ -45,7 +45,7 @@ Do not rescue ambiguous reads into either sample without changing the barcode de
 ## Findings
 
 - review: low_confidence_offset - The sampled scan has a weak best window; the assay specification may be wrong or incomplete. Next action: Review read side, barcode start, barcode length, target sheet, and orientation before production use.
-- review: low_assignment_rate - Fewer than 80% of reads were uniquely assigned under the selected fixed-window semantics. Next action: Inspect offset_scan.tsv, top_unmatched.tsv, and the barcode sheet before trusting rescued reads.
+- review: low_assignment_rate - Fewer than 80% of reads were uniquely assigned under the selected fixed-window rules. Next action: Inspect offset_scan.tsv, top_unmatched.tsv, and the barcode sheet before trusting rescued reads.
 - review: high_ambiguity_rate - A material fraction of reads is compatible with more than one barcode. Next action: Do not rescue ambiguous reads into either sample without changing the barcode design or assignment policy.
 - review: unsafe_one_edit_correction - At least one barcode is not safe for one-edit correction. Next action: Use k=0 or redesign/fix colliding barcodes before enabling one-edit rescue.
 
@@ -55,7 +55,7 @@ Artifacts are written as stable TSV, JSON, FASTQ, HTML, and MultiQC custom-conte
 
 ## QC Checklist
 
-- Exact command provenance is recorded in `provenance.json`.
+- Exact command records are stored in `provenance.json`.
 - Offset evidence is recorded in `offset_scan.tsv`.
 - Barcode collision safety is recorded under `audit/` and summarized in `correction_safety.tsv`.
 - Ambiguous and unmatched reads are retained when requested instead of being silently assigned.

@@ -221,7 +221,7 @@ def write_report(edlib_df: pd.DataFrame, batch_df: pd.DataFrame) -> None:
         "## Scope",
         "",
         "These results cover short-DNA global edit-distance and threshold matching against Edlib's Python binding.",
-        "Native-library comparator records are tracked in `docs/benchmarks/native/README.md` and `docs/native-comparator-scope.md`.",
+        "Edlib and other low-level comparison records are tracked in `docs/benchmarks/native/README.md` and `docs/native-comparator-scope.md`.",
         "",
     ]
     (OUT_DIR / "README.md").write_text("\n".join(lines), encoding="utf-8")

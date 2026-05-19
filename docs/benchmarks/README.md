@@ -16,7 +16,7 @@
 ## Workflow Reports
 
 - [Evidence gallery and report examples](../evidence-gallery/README.md)
-- [Native Edlib assignment report](native/README.md)
+- [Edlib assignment report](native/README.md)
 - [Public CRISPR guide-counting report](public_crispr/README.md)
 - [Barcode demultiplexing report](barcode_demux/README.md)
 - [Raw BCL demultiplexing report](bcl_demux/README.md)
@@ -25,7 +25,10 @@
 - [Feature-barcode public assignment report](feature_barcode/README.md)
 - [Amplicon/panel public primer-start assignment report](amplicon_panel/README.md)
 
-Assay-lane coverage and public-evidence gaps are tracked in `docs/assay-evidence.json` and checked by `make assay-evidence-ready`. The gate inspects the listed raw CSV artifacts for data rows, command and exit-code provenance where present, and zero validation mismatch fields where recorded.
+Assay coverage and public-evidence gaps are tracked in
+`docs/assay-evidence.json` and checked by `make assay-evidence-ready`. That
+check inspects the listed raw CSV files for data rows, command records, exit
+codes where present, and zero validation mismatches where recorded.
 
 ## Exact Distance Mean Speedup
 
@@ -69,4 +72,5 @@ Assay-lane coverage and public-evidence gaps are tracked in `docs/assay-evidence
 ## Scope
 
 These results cover short-DNA global edit-distance and threshold matching against Edlib's Python binding.
-Native-library comparator records are tracked in `docs/benchmarks/native/README.md` and `docs/native-comparator-scope.md`.
+Edlib and other low-level comparison records are tracked in
+`docs/benchmarks/native/README.md` and `docs/native-comparator-scope.md`.

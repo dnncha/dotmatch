@@ -8,7 +8,7 @@ const publicCrisprUrl = `${repoUrl}/blob/main/docs/benchmarks/public_crispr/READ
 const barcodeBenchmarkUrl = `${repoUrl}/blob/main/docs/benchmarks/barcode_demux/README.md`;
 const panelDesignUrl = `${repoUrl}/blob/main/docs/barcode-panel-design.md`;
 const panelBenchmarkUrl = `${repoUrl}/blob/main/docs/benchmarks/barcode_panel_design/README.md`;
-const biocondaPrUrl = "https://github.com/bioconda/bioconda-recipes/pull/65367";
+const biocondaUrl = "https://anaconda.org/bioconda/dotmatch";
 
 const proof = [
   ["Guide counts", "CRISPR libraries", "FASTQ reads become guide-by-sample count tables."],
@@ -35,7 +35,7 @@ const decisionCards = [
       "explicit ambiguous and unmatched reads",
       "panel safety certificates and lab exports",
       "unsafe one-edit correction warnings",
-      "HTML, TSV, JSON, and workflow artifacts"
+      "HTML, TSV, JSON, and workflow-ready files"
     ]
   },
   {
@@ -78,7 +78,7 @@ const audienceCards = [
   },
   {
     title: "Methods reviewers",
-    body: "Reproduce the exact commands, inspect raw CSVs, and compare reports with exhaustive or Edlib checks."
+    body: "Reproduce the exact commands, inspect raw CSVs, and compare reports with full target-by-target or Edlib checks."
   }
 ];
 
@@ -103,9 +103,9 @@ const workflowChoiceRows = [
 ];
 
 const evidenceNotes = [
-  ["Assignment rule", "index matches scan", "The fast path is tested against exhaustive scan for the same settings."],
+  ["Assignment rule", "fast mode matches full scan", "The indexed search is tested against a check of every target for the same settings."],
   ["Input", "known short targets", "Guides, barcodes, primers, panels, and whitelist-style sequences."],
-  ["Repository", "C, CLI, Python", "Core code, bindings, tests, reports, schemas, and benchmark tables."]
+  ["Repository", "command line and Python", "Core code, bindings, tests, reports, file formats, and benchmark tables."]
 ];
 
 const commands = [
@@ -125,7 +125,7 @@ const autopsyArtifacts = [
   ["offset_scan.tsv", "candidate barcode windows ranked by assignment rate"],
   ["correction_safety.tsv", "whether one-edit rescue can mix barcodes"],
   ["top_unmatched.tsv", "high-count unassigned barcode sequences"],
-  ["provenance.json", "commands, versions, thresholds, and artifacts"]
+  ["provenance.json", "run record: commands, versions, thresholds, and output files"]
 ];
 
 const autopsyFindings = [
@@ -145,7 +145,7 @@ const panelOutputs = [
 ];
 
 const panelChecks = [
-  ["Exact assignment proof", "Configured error spheres are enumerated up to k=2; larger radii are refused."],
+  ["Checked correction rules", "All possible barcode variants are checked up to k=2; larger edit distances are refused."],
   ["Sequence filters", "GC, homopolymer, repeats, forbidden motifs, ambiguous bases, and reverse-complement traps."],
   ["Context checks", "Optional flanks expose cross-boundary homopolymers, motifs, and boundary risks."],
   ["Simulation", "Simple error models estimate unique, ambiguous, none, invalid, and false assignment rates."]
@@ -247,7 +247,7 @@ export default function Home() {
         </div>
         <div className="hero-panel" aria-label="DotMatch benchmark summary">
           <div className="panel-topline">
-            <span>v0.1.1</span>
+            <span>v0.1.2</span>
             <span>known-target assignment</span>
           </div>
           <figure className="hero-visual">
@@ -304,9 +304,9 @@ export default function Home() {
           <h2>Design barcode panels with the assignment rules attached.</h2>
           <p>
             DotMatch panel design creates barcode sets, checks them under the
-            same assignment semantics used later, and writes certificate files a
-            pipeline can inspect. It does not hide ambiguous rescue, and it
-            refuses correction radii it cannot certify exactly.
+            same assignment rules used later, and writes safety files a pipeline
+            can inspect. It does not hide ambiguous rescue, and it refuses edit
+            distances it cannot check exactly.
           </p>
         </div>
         <div className="panel-design-layout">
@@ -334,12 +334,12 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
   --out-dir panel_check`}</code></pre>
             <p>
               The certificate preserves DotMatch outcomes: unique, ambiguous,
-              none, and invalid. Exact error-sphere certification is currently
-              supported through k=2.
+              none, and invalid. DotMatch currently checks all possible barcode
+              variants through k=2.
             </p>
             <div className="link-stack compact">
               <a href={panelDesignUrl}>Read panel design docs</a>
-              <a href={panelBenchmarkUrl}>Open panel design gate</a>
+              <a href={panelBenchmarkUrl}>Open checked panel example</a>
             </div>
           </article>
         </div>
@@ -382,7 +382,7 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
   --out-dir autopsy`}</code></pre>
             <p>
               The command writes the report, window scan, barcode safety table,
-              top-unmatched table, and provenance files into one directory.
+              top-unmatched table, and run record into one directory.
             </p>
           </article>
           <div className="artifact-grid" aria-label="Barcode QC outputs">
@@ -456,7 +456,7 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
               <h3>See what clean and suspicious runs look like.</h3>
               <p>
                 The gallery links public benchmark reports, barcode autopsy
-                HTML, findings tables, raw artifacts, and exact commands for
+                HTML, findings tables, raw files, and exact commands for
                 known-good lanes and diagnostic failure patterns.
               </p>
             </div>
@@ -533,7 +533,7 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
               <p>
                 MAGeCK and guide-counter are useful references for familiar
                 CRISPR workflows. DotMatch also checks assignment behavior
-                against exhaustive scan and Edlib.
+                against a full target-by-target scan and Edlib.
               </p>
             </div>
             <AgreementChart rows={agreementRows} />
@@ -621,26 +621,24 @@ DotMatch reports: ambiguous`}</code></pre>
 
       <section id="install" className="section launch-section">
         <div className="section-heading">
-          <h2>Install from source for now.</h2>
+          <h2>Install from Bioconda.</h2>
           <p>
-            The repository install works today. Bioconda review is tracked in
-            PR #65367; the site will list package-channel commands only after
-            those packages are available.
+            DotMatch 0.1.2 is available from Bioconda for Linux and Intel macOS
+            Conda environments. Source builds remain available for other
+            platforms.
           </p>
         </div>
         <div className="launch-grid">
           <article className="launch-card">
-            <span className="card-label">Build it locally</span>
-            <h3>Clone, build, and run one command.</h3>
-            <pre><code>{`git clone https://github.com/dnncha/dotmatch.git
-cd dotmatch
-make
-python3 -m pip install .
+            <span className="card-label">Bioconda</span>
+            <h3>Create an environment and run one command.</h3>
+            <pre><code>{`mamba create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.2
+conda activate dotmatch
 dotmatch dist ACGT AGGT`}</code></pre>
             <div className="link-stack">
-              <a href={repoUrl}>Open GitHub</a>
+              <a href={biocondaUrl}>Open Bioconda package</a>
+              <a href={repoUrl}>Build from source</a>
               <a href={packagingUrl}>Packaging notes</a>
-              <a href={biocondaPrUrl}>Bioconda recipe PR</a>
             </div>
           </article>
 

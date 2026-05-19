@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate CRISPR comparison evidence report from gate-grade raw CSVs."""
+"""Generate CRISPR comparison evidence report from checked raw CSVs."""
 
 from __future__ import annotations
 
@@ -214,14 +214,14 @@ def main() -> None:
     content = [
         "# CRISPR Comparison Evidence",
         "",
-        "This report is generated from raw CSV artifacts. It is intentionally stricter than the public smoke report: comparison rows require both MAGeCK/Yusa and Sanson/Brunello real-data rows, competitor rows, count agreement, and Edlib validation.",
+        "This report is generated from raw CSV files. It is intentionally stricter than the public quick-check report: comparison rows require both MAGeCK/Yusa and Sanson/Brunello real-data rows, competitor rows, count agreement, and Edlib validation.",
         "",
         "## Evidence Boundary",
         "",
         "- Hamming `k=1` rows are the fair guide-counter lane: one mismatch, no indels.",
         "- Levenshtein `k=1` rows are the DotMatch differentiator lane: substitutions plus single-base insertions/deletions, with Edlib validation.",
         "- Full FASTQ rows are reported separately from repeated subsamples.",
-        "- Broad comparisons require `make crispr-comparison-gate` to pass.",
+        "- Broad comparisons require the `make crispr-comparison-gate` check to pass.",
         "",
         "## Throughput Figure",
         "",
@@ -250,7 +250,7 @@ def main() -> None:
             "speedup", "status",
         ]),
         "",
-        "## Edlib Oracle Validation",
+        "## Edlib Validation",
         "",
         markdown_table(validation, [
             "dataset", "sample", "checked_reads", "mismatches", "oracle_strategy",

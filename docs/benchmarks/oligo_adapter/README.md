@@ -2,7 +2,7 @@
 
 This report covers fixed-window assignment of short adapter-like oligos with DotMatch's known-target counting layer.
 
-The synthetic lane checks exact, one-substitution, ambiguous, and unmatched adapter-like oligos. The public lane uses the fast-adapter-trimming TruSeq R1 fixture and validates DotMatch k=0 against a transparent exact-slice hash baseline over the documented fixed window.
+The synthetic lane checks exact, one-substitution, ambiguous, and unmatched adapter-like oligos. The public lane uses the fast-adapter-trimming TruSeq R1 fixture and validates DotMatch k=0 against a simple exact-slice comparison over the documented fixed window.
 
 ## Synthetic Command
 
@@ -25,7 +25,7 @@ dotmatch count --targets benchmarks/work/oligo_adapter/adapter_oligos.tsv --read
 - Source repository: https://github.com/linsalrob/fast-adapter-trimming
 - Source license: MIT, as reported by the upstream GitHub repository metadata.
 - Fixed window: DotMatch uses `--target-start 229 --target-length 20` on R1.
-- Comparator semantics: the exact-slice hash baseline counts reads whose fixed R1 substring exactly matches a deduplicated TruSeq adapter-prefix target. It validates fixed-window assignment semantics, not trimming correctness.
+- Comparison settings: the exact-slice check counts reads whose fixed R1 substring exactly matches a deduplicated TruSeq adapter-prefix target. It validates fixed-window assignment rules, not trimming correctness.
 
 ## Public Commands
 
@@ -46,8 +46,8 @@ python3 scripts/bench_oligo_adapter.py --include-public --metadata examples/olig
 
 Use these lanes for fixed-window known-oligo/adapter assignment,
 one-substitution rescue, and explicit ambiguous/unmatched diagnostics. Run
-`make oligo-adapter-smoke-gate` for the smoke fixture and
+`make oligo-adapter-smoke-gate` for the small fixture and
 `make oligo-adapter-public-gate` for the public lane. The public lane supports
 adapter-prefix assignment for the checked R1 window. Adapter trimming, primer
 removal, UMI grouping, read merging, and production workflow comparisons need
-their own comparator semantics, raw artifacts, validation, and gate.
+their own comparison settings, raw files, validation, and check.

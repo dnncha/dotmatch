@@ -1,6 +1,6 @@
 # CRISPR Comparison Evidence
 
-This report is generated from raw CSV artifacts. It is intentionally stricter than the public smoke report: comparison rows require both MAGeCK/Yusa and Sanson/Brunello real-data rows, competitor rows, count agreement, and Edlib validation.
+This report is generated from raw CSV files. It is intentionally stricter than the public quick-check report: comparison rows require both MAGeCK/Yusa and Sanson/Brunello real-data rows, competitor rows, count agreement, and Edlib validation.
 
 ## Evidence Boundary
 
@@ -59,7 +59,7 @@ This report is generated from raw CSV artifacts. It is intentionally stricter th
 |sanson_brunello|3568639.0|2320384.8|1.54|pass|
 
 
-## Edlib Oracle Validation
+## Edlib Validation
 
 |dataset|sample|checked_reads|mismatches|oracle_strategy|edlib_alignments|bounded_windows|fallback_windows|selected_target_start|stratum_exact|stratum_corrected|stratum_ambiguous|stratum_unmatched|stratum_contains_n|
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|

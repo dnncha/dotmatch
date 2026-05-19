@@ -19,17 +19,17 @@
 - This is not adapter trimming evidence.
 - Primer removal, UMI grouping, and read merging are outside this lane.
 
-## Comparator And Validation
+## Comparison And Validation
 
-Comparator semantics: The public lane uses a fixed R1 window and deduplicated TruSeq adapter-prefix targets, with a transparent exact-slice baseline for fixed-window assignment.
+Comparison settings: The public example uses a fixed R1 window and deduplicated TruSeq adapter-prefix targets, with a simple exact-slice comparison for fixed-window assignment.
 
-Validation: The public gate requires DotMatch k=0 and k=1 rows, an exact-slice baseline, zero validation mismatches, k=0 agreement with the baseline, and k=1 assignment count no lower than k=0.
+Validation: The public check requires DotMatch k=0 and k=1 rows, an exact-slice comparison, zero validation mismatches, k=0 agreement with the comparison, and k=1 assignment count no lower than k=0.
 
 ## Report Examples
 
 - [Oligo/adapter benchmark report](../../benchmarks/oligo_adapter/README.md) (`markdown`)
 
-## Raw Artifacts
+## Raw Files
 
 - [benchmarks/raw/oligo_adapter.csv](../../../benchmarks/raw/oligo_adapter.csv)
 - [examples/oligo_adapter/data/metadata.json](../../../examples/oligo_adapter/data/metadata.json)
