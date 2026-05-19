@@ -1,15 +1,22 @@
-# Usability Comparison
+# Why DotMatch For Known-Target Assignment
 
-This table summarizes workflow fit and usability boundaries. It is not a benchmark result.
+This table summarizes workflow fit and usability boundaries. It is not a
+benchmark result. DotMatch is designed for runs where the target set and read
+window are known up front and the assignment policy must remain auditable.
 
-| Tool | Primary workflow | Direct FASTQ.gz input | Count matrix | One substitution | One insertion/deletion | Explicit ambiguous/no-match | Target audit | Notes |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| DotMatch | known short-target assignment | yes | yes | yes | yes | yes | yes | General engine for guides, barcodes, panels, whitelists |
-| guide-counter | CRISPR guide counting | yes | yes | yes | no, per current docs | workflow-specific | no | Serious CRISPR comparator; compare directly for mismatch-only guide counting |
-| MAGeCK count | CRISPR guide counting | yes | yes | exact FASTQ mode | no direct mismatch FASTQ route | limited | no | Downstream ecosystem standard |
-| Cutadapt | adapter/search/trimming | yes | no | yes | yes | not assignment-centered | no | Workflow comparator, not assignment oracle |
-| Bowtie2 | reference alignment | yes | no | yes | yes | mapping-centered | no | Over-general for known short-target assignment |
-| Edlib scan | exact pairwise oracle | no workflow shell | no | yes | yes | yes if wrapped | no | Exact semantic comparator; exhaustive over targets |
+| Tool | Primary workflow | Direct FASTQ.gz input | Count matrix | One substitution | One insertion/deletion | Explicit ambiguous/no-match | Target audit | Offset/length diagnostics | Report output | Notes |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| DotMatch | known short-target assignment | yes | yes | yes | yes | yes | yes | yes | yes | General engine for guides, barcodes, panels, whitelists |
+| guide-counter | CRISPR guide counting | yes | yes | yes | no, per current docs | workflow-specific | no | limited | no | Serious CRISPR comparator; compare directly for mismatch-only guide counting |
+| MAGeCK count | CRISPR guide counting | yes | yes | exact FASTQ mode | no direct mismatch FASTQ route | limited | no | no | no | Downstream ecosystem standard |
+| Cutadapt | adapter/search/trimming | yes | no | yes | yes | not assignment-centered | no | adapter-centered | no | Workflow comparator, not assignment oracle |
+| Bowtie2 | reference alignment | yes | no | yes | yes | mapping-centered | no | mapping-centered | no | Over-general for known short-target assignment |
+| Edlib scan | exact pairwise oracle | no workflow shell | no | yes | yes | yes if wrapped | no | no | no | Exact semantic comparator; exhaustive over targets |
+
+The practical difference is that DotMatch reports `unique`, `ambiguous`,
+`none`, and `invalid` assignment outcomes under the same fixed-window rules used
+for counting or demultiplexing. Barcode workflows can also produce collision,
+offset, correction-safety, top-unmatched, and provenance outputs for review.
 
 ## Example Workflow
 

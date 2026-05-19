@@ -19,6 +19,7 @@ if (sample_rows.isEmpty()) {
 process DOTMATCH_CRISPR_COUNT {
     tag "dotmatch_crispr_count"
     publishDir params.outdir, mode: 'copy', overwrite: true
+    conda 'bioconda::dotmatch=0.1.2'
 
     input:
     path library
@@ -56,6 +57,7 @@ process DOTMATCH_CRISPR_COUNT {
 process DOTMATCH_ASSAY_RUN {
     tag "dotmatch_assay_run"
     publishDir params.outdir, mode: 'copy', overwrite: true
+    conda 'bioconda::dotmatch=0.1.2'
 
     input:
     path library

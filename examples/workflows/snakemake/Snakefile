@@ -44,6 +44,8 @@ rule dotmatch_crispr_count:
         k=config.get("k", 1),
         metric=metric,
         indel_window_arg=indel_window_arg,
+    conda:
+        "envs/dotmatch.yaml"
     shell:
         """
         dotmatch crispr-count \
@@ -111,6 +113,8 @@ rule dotmatch_assay_run:
         crispr_qc_summary=f"{outdir}/assay/crispr_qc.summary.tsv",
         counts=f"{outdir}/assay/counts.mageck.tsv",
         summary=f"{outdir}/assay/summary.json",
+    conda:
+        "envs/dotmatch.yaml"
     shell:
         """
         dotmatch assay run {input.spec}

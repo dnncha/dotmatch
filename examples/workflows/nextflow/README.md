@@ -18,6 +18,11 @@ nextflow run examples/workflows/nextflow/main.nf \
   -c examples/workflows/nextflow/nextflow.config
 ```
 
+The processes pin DotMatch through Bioconda with
+`conda 'bioconda::dotmatch=0.1.2'`. Add `-with-conda` on supported Bioconda
+platforms (`linux-64` or `osx-64`) when you want Nextflow to create the task
+environment; otherwise install DotMatch on `PATH` before running the workflow.
+
 Outputs are published under `examples/workflows/nextflow/output/`:
 
 - `counts.mageck.tsv`: MAGeCK-compatible count matrix;

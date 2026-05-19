@@ -20,6 +20,12 @@ snakemake \
   --cores 1
 ```
 
+Rules that execute DotMatch declare
+`examples/workflows/snakemake/envs/dotmatch.yaml`, which pins
+`dotmatch=0.1.2` from Bioconda. Add `--use-conda` on supported Bioconda
+platforms (`linux-64` or `osx-64`) when you want Snakemake to create the rule
+environment; otherwise install DotMatch on `PATH` before running the workflow.
+
 Outputs are written under `examples/workflows/snakemake/output/`:
 
 - `samples.tsv`: sample sheet generated from `config.json`;

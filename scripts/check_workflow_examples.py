@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -49,9 +50,17 @@ def _require(text: str, needle: str, message: str, result: WorkflowAudit) -> Non
         result.failures.append(message)
 
 
+def _project_version(root: Path) -> str:
+    text = (root / "pyproject.toml").read_text(encoding="utf-8")
+    match = re.search(r'^version\s*=\s*"([^"]+)"', text, flags=re.MULTILINE)
+    return match.group(1) if match else ""
+
+
 def check_snakemake(root: Path, result: WorkflowAudit) -> None:
     config_path = root / "examples" / "workflows" / "snakemake" / "config.json"
     snakefile_path = root / "examples" / "workflows" / "snakemake" / "Snakefile"
+    project_version = _project_version(root)
+    conda_dep = f"dotmatch={project_version}" if project_version else "dotmatch="
     try:
         config = json.loads(_read(config_path, result))
     except json.JSONDecodeError as exc:
@@ -81,6 +90,10 @@ def check_snakemake(root: Path, result: WorkflowAudit) -> None:
     _require(snakefile, "--ambiguous discard", "Snakemake Snakefile must keep ambiguity policy explicit", result)
     _require(snakefile, "--sample-qc", "Snakemake Snakefile must emit sample_qc.tsv for MultiQC", result)
     _require(snakefile, "sample_qc", "Snakemake Snakefile must declare sample_qc output", result)
+    _require(snakefile, "envs/dotmatch.yaml", "Snakemake DotMatch rules must declare the Bioconda environment", result)
+    conda_env = _read(root / "examples" / "workflows" / "snakemake" / "envs" / "dotmatch.yaml", result)
+    _require(conda_env, "bioconda", "Snakemake DotMatch environment must include the bioconda channel", result)
+    _require(conda_env, conda_dep, f"Snakemake DotMatch environment must pin {conda_dep}", result)
 
     if not any("Snakemake" in failure for failure in result.failures):
         result.passed.append("Snakemake CRISPR workflow example present")
@@ -89,6 +102,8 @@ def check_snakemake(root: Path, result: WorkflowAudit) -> None:
 def check_nextflow(root: Path, result: WorkflowAudit) -> None:
     config = _read(root / "examples" / "workflows" / "nextflow" / "nextflow.config", result)
     workflow = _read(root / "examples" / "workflows" / "nextflow" / "main.nf", result)
+    project_version = _project_version(root)
+    conda_spec = f"bioconda::dotmatch={project_version}" if project_version else "bioconda::dotmatch="
 
     for needle in [
         "library = 'examples/crispr_guides/data/yusa_library.csv'",
@@ -115,6 +130,7 @@ def check_nextflow(root: Path, result: WorkflowAudit) -> None:
         ("--sample-qc", "Nextflow workflow must emit sample_qc.tsv for MultiQC"),
         ("path \"sample_qc.tsv\", emit: sample_qc", "Nextflow workflow must declare sample_qc output"),
         ("publishDir params.outdir", "Nextflow workflow must publish outputs to params.outdir"),
+        (conda_spec, f"Nextflow workflow must pin {conda_spec} through Bioconda"),
     ]:
         _require(workflow, needle, message, result)
 
@@ -124,6 +140,8 @@ def check_nextflow(root: Path, result: WorkflowAudit) -> None:
 
 def check_nfcore(root: Path, result: WorkflowAudit) -> None:
     base = root / "examples" / "workflows" / "nf-core"
+    project_version = _project_version(root)
+    conda_spec = f"bioconda::dotmatch={project_version}" if project_version else "bioconda::dotmatch="
     if not (base / "README.md").is_file():
         result.failures.append("nf-core README.md missing")
     module = _read(base / "modules" / "local" / "dotmatch" / "crispr_count" / "main.nf", result)
@@ -141,6 +159,7 @@ def check_nfcore(root: Path, result: WorkflowAudit) -> None:
         ("versions.yml", "nf-core module must emit versions.yml"),
         ("dotmatch --version", "nf-core module must record dotmatch --version"),
         ("task.ext.args", "nf-core module must expose task.ext.args"),
+        (conda_spec, f"nf-core module must pin {conda_spec} through Bioconda"),
     ]:
         _require(module, needle, message, result)
     for needle in [
@@ -186,6 +205,7 @@ def check_nfcore(root: Path, result: WorkflowAudit) -> None:
         ("emit: crispr_qc_json", "nf-core AssaySpec module must emit crispr_qc_json"),
         ("emit: crispr_qc_summary", "nf-core AssaySpec module must emit crispr_qc_summary"),
         ("versions.yml", "nf-core AssaySpec module must emit versions.yml"),
+        (conda_spec, f"nf-core AssaySpec module must pin {conda_spec} through Bioconda"),
     ]:
         _require(assay_module, needle, message, result)
     for needle in [

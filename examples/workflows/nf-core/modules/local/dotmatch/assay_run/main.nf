@@ -1,6 +1,7 @@
 process DOTMATCH_ASSAY_RUN {
     tag "$meta.id"
     label 'process_low'
+    conda "bioconda::dotmatch=0.1.2"
 
     input:
     tuple val(meta), path(assay_spec), path(assay_inputs)

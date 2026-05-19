@@ -16,6 +16,28 @@ generator, or a replacement for downstream screen statistics.
 
 ![DotMatch workflow: FASTQ reads and a known target table are sliced at the same read position, assigned to known short DNA targets, and written to counts, split FASTQs, QC tables, and reports.](public/dotmatch-read-assignment.svg)
 
+## Install
+
+DotMatch is available from Bioconda for `linux-64` and `osx-64`:
+
+```bash
+mamba create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.2
+conda activate dotmatch
+
+dotmatch --version
+dotmatch dist ACGT AGGT
+dotmatch leq 1 ACGT AGGT
+```
+
+In an existing Conda environment with Bioconda and conda-forge configured:
+
+```bash
+conda install -c conda-forge -c bioconda dotmatch
+```
+
+Apple Silicon Conda environments are not published by Bioconda for this first
+release; build from source on `osx-arm64`.
+
 ## The Basic Idea
 
 A fixed window means DotMatch looks at the same position in every read. For
@@ -133,21 +155,7 @@ CIGAR strings, variant calls, cell/UMI quantification, UMI entropy designs,
 expression matrices, or screen-level hit-calling statistics. It works on
 extracted short windows and known target lists.
 
-## Installation
-
-DotMatch is available from Bioconda for `linux-64` and `osx-64`:
-
-```bash
-mamba create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.2
-conda activate dotmatch
-
-dotmatch --version
-dotmatch dist ACGT AGGT
-dotmatch leq 1 ACGT AGGT
-```
-
-Apple Silicon Conda environments are not published by Bioconda for this first
-release; build from source on `osx-arm64`.
+## Source And Package Status
 
 Source builds and local Python package installs work on Linux and macOS. You
 need a C compiler, `make`, Python 3.9 or newer for the Python package, and zlib
@@ -407,6 +415,7 @@ make python-package-test
 
 Reports with data sources, commands, comparator settings, and checked outputs:
 
+- [Why DotMatch / usability comparison](docs/usability-comparison.md)
 - [Evidence gallery](docs/evidence-gallery/README.md)
 - [Benchmark overview](docs/benchmarks/README.md)
 - [Native Edlib assignment report](docs/benchmarks/native/README.md)
