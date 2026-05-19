@@ -186,7 +186,7 @@ const agreementRows = [
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const assignmentWorkflowImage = `${basePath}/dotmatch-read-assignment.svg`;
-const panelCertificateImage = `${basePath}/dotmatch-panel-certificate.png`;
+const panelComputationImage = `${basePath}/dotmatch-panel-computation.svg`;
 
 export default function Home() {
   return (
@@ -312,8 +312,8 @@ export default function Home() {
         <div className="panel-design-layout">
           <figure className="panel-design-visual">
             <img
-              src={panelCertificateImage}
-              alt="A lab bench scene with an abstract panel safety report, 96-well plate, and barcode strips"
+              src={panelComputationImage}
+              alt="Abstract computational view of barcode panels, distance checks, and read assignment paths"
               decoding="async"
             />
           </figure>

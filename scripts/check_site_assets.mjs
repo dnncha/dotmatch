@@ -6,7 +6,7 @@ const requiredFiles = [
   "../app/globals.css",
   "../next.config.ts",
   "../public/dotmatch-read-assignment.svg",
-  "../public/dotmatch-panel-certificate.png",
+  "../public/dotmatch-panel-computation.svg",
   "../public/dotmatch-og.png",
   "../public/dotmatch-twitter.png",
   "../scripts/render_social_images.py"
@@ -86,8 +86,10 @@ for (const imagePath of ["../public/dotmatch-og.png", "../public/dotmatch-twitte
   }
 }
 
-const svg = readFileSync(new URL("../public/dotmatch-read-assignment.svg", import.meta.url), "utf8");
-if (!svg.startsWith("<svg ") || !svg.includes('role="img"') || !svg.includes("<title")) {
-  console.error("Workflow SVG should be a valid image asset with title metadata.");
-  process.exit(1);
+for (const imagePath of ["../public/dotmatch-read-assignment.svg", "../public/dotmatch-panel-computation.svg"]) {
+  const svg = readFileSync(new URL(imagePath, import.meta.url), "utf8");
+  if (!svg.startsWith("<svg ") || !svg.includes('role="img"') || !svg.includes("<title")) {
+    console.error(`${imagePath} should be a valid image asset with title metadata.`);
+    process.exit(1);
+  }
 }

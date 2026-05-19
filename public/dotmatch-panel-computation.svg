@@ -1,0 +1,259 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1672" height="941" viewBox="0 0 1672 941" role="img" aria-labelledby="title desc">
+  <title id="title">Computational barcode panel analysis</title>
+  <desc id="desc">Abstract visualization of DNA barcode sequences, edit-distance checks, collision detection, and read assignment paths.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#fbfffd"/>
+      <stop offset="0.58" stop-color="#eef8f5"/>
+      <stop offset="1" stop-color="#f9fbff"/>
+    </linearGradient>
+    <radialGradient id="glow-green" cx="50%" cy="50%" r="55%">
+      <stop offset="0" stop-color="#2dd4bf" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#2dd4bf" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow-blue" cx="50%" cy="50%" r="58%">
+      <stop offset="0" stop-color="#60a5fa" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#60a5fa" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse">
+      <path d="M 42 0 L 0 0 0 42" fill="none" stroke="#d9e5e2" stroke-width="1" opacity="0.42"/>
+    </pattern>
+    <style>
+      .line { stroke: #b9cbc6; stroke-width: 2; fill: none; }
+      .soft-line { stroke: #cbdad6; stroke-width: 1.5; fill: none; opacity: 0.72; }
+      .trace { stroke: #0f766e; stroke-width: 5; fill: none; stroke-linecap: round; }
+      .trace-blue { stroke: #2563eb; stroke-width: 4; fill: none; stroke-linecap: round; opacity: 0.8; }
+      .trace-amber { stroke: #f59e0b; stroke-width: 4; fill: none; stroke-linecap: round; opacity: 0.86; }
+      .trace-red { stroke: #dc2626; stroke-width: 4; fill: none; stroke-linecap: round; opacity: 0.82; }
+      .panel { fill: #ffffff; stroke: #cbdad6; stroke-width: 2; }
+      .chip { fill: #f8fbfa; stroke: #d8e5e1; stroke-width: 1.5; }
+      .base-a { fill: #c7f0dc; }
+      .base-c { fill: #b8ddff; }
+      .base-g { fill: #fde68a; }
+      .base-t { fill: #d8c7ff; }
+      .base-n { fill: #fee2e2; }
+      .heat-0 { fill: #111827; }
+      .heat-1 { fill: #15803d; }
+      .heat-2 { fill: #2dd4bf; }
+      .heat-3 { fill: #93c5fd; }
+      .heat-4 { fill: #fcd34d; }
+      .heat-bad { fill: #ef4444; }
+      .node { stroke: #ffffff; stroke-width: 5; }
+      .dna { font: 700 20px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fill: #1f2a28; }
+    </style>
+  </defs>
+
+  <rect width="1672" height="941" fill="url(#bg)"/>
+  <rect width="1672" height="941" fill="url(#grid)" opacity="0.72"/>
+  <circle cx="1128" cy="284" r="280" fill="url(#glow-green)"/>
+  <circle cx="485" cy="624" r="250" fill="url(#glow-blue)"/>
+
+  <g opacity="0.58">
+    <path class="soft-line" d="M110 146C242 96 391 112 520 178S758 272 934 198 1280 70 1515 152"/>
+    <path class="soft-line" d="M78 794C280 706 468 724 653 785S1027 882 1240 752 1472 629 1602 656"/>
+    <path class="soft-line" d="M226 93V853M532 72V858M838 74V868M1144 70V850M1450 92V832"/>
+  </g>
+
+  <g transform="translate(96 118)">
+    <rect class="panel" x="0" y="0" width="515" height="706" rx="24"/>
+    <path d="M36 64h150M36 102h285M36 140h232" stroke="#9fb3ad" stroke-width="13" stroke-linecap="round" opacity="0.46"/>
+    <path d="M36 64h112" stroke="#0f8f70" stroke-width="13" stroke-linecap="round"/>
+
+    <g transform="translate(40 194)">
+      <rect class="chip" x="0" y="0" width="435" height="58" rx="15"/>
+      <text class="dna" x="23" y="37">A</text>
+      <text class="dna" x="68" y="37">C</text>
+      <text class="dna" x="113" y="37">T</text>
+      <text class="dna" x="158" y="37">G</text>
+      <text class="dna" x="203" y="37">A</text>
+      <text class="dna" x="248" y="37">C</text>
+      <text class="dna" x="293" y="37">C</text>
+      <text class="dna" x="338" y="37">T</text>
+      <circle class="base-a" cx="34" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-c" cx="79" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-t" cx="169" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-g" cx="124" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-a" cx="214" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-c" cx="259" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-c" cx="304" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-t" cx="349" cy="29" r="18" opacity="0.5"/>
+      <path d="M390 18l22 11-22 11" fill="none" stroke="#0f8f70" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <g transform="translate(40 276)">
+      <rect class="chip" x="0" y="0" width="435" height="58" rx="15"/>
+      <text class="dna" x="23" y="37">A</text>
+      <text class="dna" x="68" y="37">C</text>
+      <text class="dna" x="113" y="37">T</text>
+      <text class="dna" x="158" y="37">T</text>
+      <text class="dna" x="203" y="37">A</text>
+      <text class="dna" x="248" y="37">C</text>
+      <text class="dna" x="293" y="37">G</text>
+      <text class="dna" x="338" y="37">T</text>
+      <circle class="base-a" cx="34" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-c" cx="79" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-t" cx="124" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-t" cx="169" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-a" cx="214" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-c" cx="259" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-g" cx="304" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-t" cx="349" cy="29" r="18" opacity="0.5"/>
+      <path d="M390 18l22 11-22 11" fill="none" stroke="#2563eb" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <g transform="translate(40 358)">
+      <rect class="chip" x="0" y="0" width="435" height="58" rx="15"/>
+      <text class="dna" x="23" y="37">G</text>
+      <text class="dna" x="68" y="37">C</text>
+      <text class="dna" x="113" y="37">T</text>
+      <text class="dna" x="158" y="37">G</text>
+      <text class="dna" x="203" y="37">A</text>
+      <text class="dna" x="248" y="37">T</text>
+      <text class="dna" x="293" y="37">C</text>
+      <text class="dna" x="338" y="37">A</text>
+      <circle class="base-g" cx="34" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-c" cx="79" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-t" cx="124" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-g" cx="169" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-a" cx="214" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-t" cx="259" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-c" cx="304" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-a" cx="349" cy="29" r="18" opacity="0.5"/>
+      <path d="M390 18l22 11-22 11" fill="none" stroke="#0f8f70" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <g transform="translate(40 440)">
+      <rect class="chip" x="0" y="0" width="435" height="58" rx="15"/>
+      <text class="dna" x="23" y="37">C</text>
+      <text class="dna" x="68" y="37">A</text>
+      <text class="dna" x="113" y="37">T</text>
+      <text class="dna" x="158" y="37">G</text>
+      <text class="dna" x="203" y="37">A</text>
+      <text class="dna" x="248" y="37">T</text>
+      <text class="dna" x="293" y="37">C</text>
+      <text class="dna" x="338" y="37">A</text>
+      <circle class="base-c" cx="34" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-a" cx="79" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-t" cx="124" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-g" cx="169" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-a" cx="214" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-t" cx="259" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-c" cx="304" cy="29" r="18" opacity="0.5"/>
+      <circle class="base-a" cx="349" cy="29" r="18" opacity="0.5"/>
+      <path d="M390 18l22 11-22 11" fill="none" stroke="#f59e0b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <g transform="translate(40 545)">
+      <circle class="base-a" cx="18" cy="18" r="18"/>
+      <circle class="base-c" cx="72" cy="18" r="18"/>
+      <circle class="base-g" cx="126" cy="18" r="18"/>
+      <circle class="base-t" cx="180" cy="18" r="18"/>
+      <circle class="base-n" cx="234" cy="18" r="18"/>
+      <path d="M0 78h408M0 118h346M0 158h382" stroke="#b9cbc6" stroke-width="10" stroke-linecap="round" opacity="0.7"/>
+      <path d="M0 78h214" stroke="#0f8f70" stroke-width="10" stroke-linecap="round"/>
+      <path d="M0 118h112" stroke="#2563eb" stroke-width="10" stroke-linecap="round"/>
+      <path d="M0 158h64" stroke="#f59e0b" stroke-width="10" stroke-linecap="round"/>
+    </g>
+  </g>
+
+  <g transform="translate(650 86)">
+    <circle cx="345" cy="350" r="246" fill="#ffffff" opacity="0.76" stroke="#d4e3df" stroke-width="2"/>
+    <circle cx="345" cy="350" r="186" fill="none" stroke="#a7d8cf" stroke-width="3" stroke-dasharray="8 15"/>
+    <circle cx="345" cy="350" r="116" fill="none" stroke="#bfdbfe" stroke-width="3" stroke-dasharray="7 14"/>
+    <path class="line" d="M209 214L345 178 503 235 548 389 448 529 260 514 164 373Z"/>
+    <path class="line" d="M345 178L448 529M209 214L503 235M260 514L548 389M164 373L503 235M260 514L345 178"/>
+    <path class="trace" d="M116 640C238 578 290 519 346 350S444 179 572 100"/>
+    <path class="trace-blue" d="M105 580C211 520 312 486 448 529S617 541 725 487"/>
+    <path class="trace-amber" d="M120 704C240 660 315 590 260 514S202 418 164 373"/>
+    <path class="trace-red" d="M610 640C553 574 531 488 548 389S610 243 670 182"/>
+
+    <circle class="node" cx="345" cy="178" r="35" fill="#0f8f70"/>
+    <circle class="node" cx="503" cy="235" r="32" fill="#2563eb"/>
+    <circle class="node" cx="548" cy="389" r="30" fill="#f59e0b"/>
+    <circle class="node" cx="448" cy="529" r="33" fill="#8b5cf6"/>
+    <circle class="node" cx="260" cy="514" r="30" fill="#14b8a6"/>
+    <circle class="node" cx="164" cy="373" r="34" fill="#0f8f70"/>
+    <circle class="node" cx="209" cy="214" r="29" fill="#60a5fa"/>
+    <circle class="node" cx="398" cy="338" r="26" fill="#ef4444"/>
+    <circle class="node" cx="432" cy="374" r="23" fill="#ef4444"/>
+    <path d="M398 338L432 374" stroke="#ef4444" stroke-width="7" stroke-linecap="round"/>
+
+    <g transform="translate(229 673)">
+      <rect x="0" y="0" width="318" height="66" rx="20" fill="#ffffff" stroke="#cadbd6" stroke-width="2"/>
+      <circle cx="40" cy="33" r="15" fill="#0f8f70"/>
+      <circle cx="96" cy="33" r="15" fill="#2563eb"/>
+      <circle cx="152" cy="33" r="15" fill="#f59e0b"/>
+      <circle cx="208" cy="33" r="15" fill="#ef4444"/>
+      <path d="M240 24h45M240 42h30" stroke="#a7b8b3" stroke-width="7" stroke-linecap="round"/>
+    </g>
+  </g>
+
+  <g transform="translate(1210 135)">
+    <rect class="panel" x="0" y="0" width="358" height="612" rx="24"/>
+    <path d="M38 58h118M38 93h214" stroke="#a2b4af" stroke-width="12" stroke-linecap="round" opacity="0.5"/>
+    <path d="M38 58h82" stroke="#2563eb" stroke-width="12" stroke-linecap="round"/>
+    <g transform="translate(38 144)">
+      <rect class="heat-0" x="0" y="0" width="34" height="34" rx="8"/>
+      <rect class="heat-2" x="44" y="0" width="34" height="34" rx="8"/>
+      <rect class="heat-3" x="88" y="0" width="34" height="34" rx="8"/>
+      <rect class="heat-4" x="132" y="0" width="34" height="34" rx="8"/>
+      <rect class="heat-3" x="176" y="0" width="34" height="34" rx="8"/>
+      <rect class="heat-2" x="220" y="0" width="34" height="34" rx="8"/>
+
+      <rect class="heat-2" x="0" y="44" width="34" height="34" rx="8"/>
+      <rect class="heat-0" x="44" y="44" width="34" height="34" rx="8"/>
+      <rect class="heat-bad" x="88" y="44" width="34" height="34" rx="8"/>
+      <rect class="heat-3" x="132" y="44" width="34" height="34" rx="8"/>
+      <rect class="heat-4" x="176" y="44" width="34" height="34" rx="8"/>
+      <rect class="heat-2" x="220" y="44" width="34" height="34" rx="8"/>
+
+      <rect class="heat-3" x="0" y="88" width="34" height="34" rx="8"/>
+      <rect class="heat-bad" x="44" y="88" width="34" height="34" rx="8"/>
+      <rect class="heat-0" x="88" y="88" width="34" height="34" rx="8"/>
+      <rect class="heat-2" x="132" y="88" width="34" height="34" rx="8"/>
+      <rect class="heat-3" x="176" y="88" width="34" height="34" rx="8"/>
+      <rect class="heat-4" x="220" y="88" width="34" height="34" rx="8"/>
+
+      <rect class="heat-4" x="0" y="132" width="34" height="34" rx="8"/>
+      <rect class="heat-3" x="44" y="132" width="34" height="34" rx="8"/>
+      <rect class="heat-2" x="88" y="132" width="34" height="34" rx="8"/>
+      <rect class="heat-0" x="132" y="132" width="34" height="34" rx="8"/>
+      <rect class="heat-2" x="176" y="132" width="34" height="34" rx="8"/>
+      <rect class="heat-3" x="220" y="132" width="34" height="34" rx="8"/>
+
+      <rect class="heat-3" x="0" y="176" width="34" height="34" rx="8"/>
+      <rect class="heat-4" x="44" y="176" width="34" height="34" rx="8"/>
+      <rect class="heat-3" x="88" y="176" width="34" height="34" rx="8"/>
+      <rect class="heat-2" x="132" y="176" width="34" height="34" rx="8"/>
+      <rect class="heat-0" x="176" y="176" width="34" height="34" rx="8"/>
+      <rect class="heat-2" x="220" y="176" width="34" height="34" rx="8"/>
+
+      <rect class="heat-2" x="0" y="220" width="34" height="34" rx="8"/>
+      <rect class="heat-2" x="44" y="220" width="34" height="34" rx="8"/>
+      <rect class="heat-4" x="88" y="220" width="34" height="34" rx="8"/>
+      <rect class="heat-3" x="132" y="220" width="34" height="34" rx="8"/>
+      <rect class="heat-2" x="176" y="220" width="34" height="34" rx="8"/>
+      <rect class="heat-0" x="220" y="220" width="34" height="34" rx="8"/>
+    </g>
+    <g transform="translate(38 445)">
+      <path d="M0 0h274M0 39h220M0 78h248" stroke="#c3d2ce" stroke-width="10" stroke-linecap="round"/>
+      <path d="M0 0h166" stroke="#0f8f70" stroke-width="10" stroke-linecap="round"/>
+      <path d="M0 39h94" stroke="#2563eb" stroke-width="10" stroke-linecap="round"/>
+      <path d="M0 78h54" stroke="#ef4444" stroke-width="10" stroke-linecap="round"/>
+      <circle cx="294" cy="0" r="13" fill="#0f8f70"/>
+      <circle cx="294" cy="39" r="13" fill="#2563eb"/>
+      <circle cx="294" cy="78" r="13" fill="#ef4444"/>
+    </g>
+  </g>
+
+  <g transform="translate(164 826)">
+    <rect x="0" y="0" width="1340" height="58" rx="18" fill="#ffffff" opacity="0.82" stroke="#d7e5e1" stroke-width="2"/>
+    <path d="M40 29H1260" stroke="#bdd0cb" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="132" cy="29" r="16" fill="#0f8f70"/>
+    <circle cx="354" cy="29" r="16" fill="#2563eb"/>
+    <circle cx="632" cy="29" r="16" fill="#f59e0b"/>
+    <circle cx="814" cy="29" r="16" fill="#0f8f70"/>
+    <circle cx="1012" cy="29" r="16" fill="#8b5cf6"/>
+    <circle cx="1190" cy="29" r="16" fill="#ef4444"/>
+  </g>
+</svg>
