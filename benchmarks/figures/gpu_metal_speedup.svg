@@ -4,8 +4,8 @@
 <text class="axis" x="20" y="50">GPU total reads/sec divided by CPU indexed total reads/sec; higher is better</text>
 <text x="20" y="93">20000 reads / 737 targets</text>
 <rect class="bar" x="320" y="78" width="470" height="21" rx="2"/>
-<text x="798" y="93">9.90x</text>
+<text x="798" y="93">13.50x</text>
 <text x="20" y="127">50000 reads / 4096 targets</text>
-<rect class="bar" x="320" y="112" width="403" height="21" rx="2"/>
-<text x="731" y="127">8.50x</text>
+<rect class="bar" x="320" y="112" width="349" height="21" rx="2"/>
+<text x="677" y="127">10.05x</text>
 </svg>

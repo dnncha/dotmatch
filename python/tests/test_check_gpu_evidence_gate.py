@@ -66,6 +66,56 @@ def test_gpu_gate_accepts_explicit_unavailable_row():
     assert failures == []
 
 
+def test_gpu_gate_accepts_public_crispr_zero_mismatch_row():
+    gate = _load_gate()
+    failures = []
+    cpu = {
+        "tool": "dotmatch_cpu_index",
+        "status": "ok",
+        "packable_reads": "1000",
+        "n_targets": "96",
+        "target_length": "19",
+        "k": "1",
+        "checksum": "123",
+    }
+    gpu = {
+        **cpu,
+        "tool": "dotmatch_gpu_metal",
+        "mismatches": "0",
+        "count_delta": "0",
+        "device": "Apple test GPU",
+    }
+
+    gate.real_row_gate([cpu, gpu], failures)
+
+    assert failures == []
+
+
+def test_gpu_gate_rejects_public_crispr_count_delta():
+    gate = _load_gate()
+    failures = []
+    cpu = {
+        "tool": "dotmatch_cpu_index",
+        "status": "ok",
+        "packable_reads": "1000",
+        "n_targets": "96",
+        "target_length": "19",
+        "k": "1",
+        "checksum": "123",
+    }
+    gpu = {
+        **cpu,
+        "tool": "dotmatch_gpu_metal",
+        "mismatches": "0",
+        "count_delta": "3",
+        "device": "Apple test GPU",
+    }
+
+    gate.real_row_gate([cpu, gpu], failures)
+
+    assert any("count delta" in failure for failure in failures)
+
+
 def test_gpu_report_gate_requires_experimental_boundary(tmp_path):
     gate = _load_gate()
     report = tmp_path / "README.md"

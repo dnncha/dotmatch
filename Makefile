@@ -100,14 +100,22 @@ bench-batch: build/bench_batch
 ifeq ($(UNAME_S),Darwin)
 build/bench_gpu_metal: tools/bench_gpu_metal.mm build/qdalign.o include/qdalign.h | build
 	$(CXX) $(CXXFLAGS) tools/bench_gpu_metal.mm build/qdalign.o -o $@ $(LDFLAGS) -framework Foundation -framework Metal
+
+build/bench_gpu_crispr_metal: tools/bench_gpu_crispr_metal.mm build/qdalign.o include/qdalign.h | build
+	$(CXX) $(CXXFLAGS) tools/bench_gpu_crispr_metal.mm build/qdalign.o -o $@ $(LDFLAGS) $(ZLIB_LIBS) -framework Foundation -framework Metal
 else
 build/bench_gpu_metal: | build
 	@printf '#!/bin/sh\necho "Metal GPU benchmark unavailable on %s" >&2\nexit 127\n' "$(UNAME_S)" > $@
 	@chmod +x $@
+
+build/bench_gpu_crispr_metal: | build
+	@printf '#!/bin/sh\necho "Metal CRISPR GPU benchmark unavailable on %s" >&2\nexit 127\n' "$(UNAME_S)" > $@
+	@chmod +x $@
 endif
 
-bench-gpu: build/bench_gpu_metal
+bench-gpu: build/bench_gpu_metal build/bench_gpu_crispr_metal
 	python3 scripts/bench_gpu.py --metal-bin "$(CURDIR)/build/bench_gpu_metal"
+	python3 scripts/bench_gpu_crispr.py --metal-bin "$(CURDIR)/build/bench_gpu_crispr_metal"
 	python3 scripts/generate_gpu_report.py
 
 gpu-report:

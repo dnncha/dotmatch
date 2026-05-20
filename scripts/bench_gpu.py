@@ -84,7 +84,7 @@ def run_metal(metal_bin: Path) -> list[dict[str, str]]:
 def write_rows(rows: list[dict[str, str]], out: Path) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=FIELDS)
+        writer = csv.DictWriter(fh, fieldnames=FIELDS, lineterminator="\n")
         writer.writeheader()
         for row in rows:
             writer.writerow({field: row.get(field, "") for field in FIELDS})

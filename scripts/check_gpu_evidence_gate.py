@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "benchmarks" / "raw" / "gpu_acceleration.csv"
+CRISPR_RAW = ROOT / "benchmarks" / "raw" / "gpu_crispr.csv"
 REPORT = ROOT / "docs" / "benchmarks" / "gpu" / "README.md"
 
 
@@ -37,9 +38,18 @@ def case_key(row: dict[str, str]) -> tuple[str, str, str, str, str]:
     )
 
 
-def row_gate(rows: list[dict[str, str]], failures: list[str]) -> None:
+def real_case_key(row: dict[str, str]) -> tuple[str, str, str, str]:
+    return (
+        row.get("packable_reads", ""),
+        row.get("n_targets", ""),
+        row.get("target_length", ""),
+        row.get("k", ""),
+    )
+
+
+def row_gate(rows: list[dict[str, str]], failures: list[str], label: str = "gpu_acceleration.csv") -> None:
     if not rows:
-        failures.append("gpu_acceleration.csv is empty")
+        failures.append(f"{label} is empty")
         return
     unavailable = [row for row in rows if row.get("tool") == "dotmatch_gpu_metal" and row.get("status") == "unavailable"]
     gpu_rows = [row for row in rows if row.get("tool") == "dotmatch_gpu_metal" and row.get("status") == "ok"]
@@ -65,6 +75,38 @@ def row_gate(rows: list[dict[str, str]], failures: list[str]) -> None:
             failures.append(f"GPU row missing device name for case {key}")
 
 
+def real_row_gate(rows: list[dict[str, str]], failures: list[str]) -> None:
+    if not rows:
+        failures.append("gpu_crispr.csv is empty")
+        return
+    unavailable = [row for row in rows if row.get("tool") == "dotmatch_gpu_metal" and row.get("status") == "unavailable"]
+    gpu_rows = [row for row in rows if row.get("tool") == "dotmatch_gpu_metal" and row.get("status") == "ok"]
+    cpu_rows = {
+        real_case_key(row): row
+        for row in rows
+        if row.get("tool") == "dotmatch_cpu_index" and row.get("status") == "ok"
+    }
+    if not gpu_rows:
+        if not unavailable:
+            failures.append("missing successful public CRISPR GPU rows or explicit unavailable row")
+        return
+    for row in gpu_rows:
+        key = real_case_key(row)
+        if key not in cpu_rows:
+            failures.append(f"missing public CRISPR CPU baseline for GPU case {key}")
+            continue
+        if as_int(row.get("mismatches")) != 0:
+            failures.append(f"public CRISPR GPU mismatches for case {key}: {row.get('mismatches')}")
+        if as_int(row.get("count_delta")) != 0:
+            failures.append(f"public CRISPR GPU count delta for case {key}: {row.get('count_delta')}")
+        if row.get("checksum") != cpu_rows[key].get("checksum"):
+            failures.append(f"public CRISPR GPU checksum differs from CPU baseline for case {key}")
+        if as_int(row.get("packable_reads")) <= 0 or as_int(row.get("n_targets")) <= 0:
+            failures.append(f"public CRISPR GPU row missing positive reads or targets for case {key}")
+        if not row.get("device"):
+            failures.append(f"public CRISPR GPU row missing device name for case {key}")
+
+
 def report_gate(path: Path, failures: list[str]) -> None:
     if not path.exists():
         failures.append(f"missing GPU benchmark report: {path}")
@@ -79,11 +121,13 @@ def report_gate(path: Path, failures: list[str]) -> None:
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--csv", default=str(RAW))
+    parser.add_argument("--crispr-csv", default=str(CRISPR_RAW))
     parser.add_argument("--report", default=str(REPORT))
     args = parser.parse_args(argv)
 
     failures: list[str] = []
     row_gate(read_rows(Path(args.csv)), failures)
+    real_row_gate(read_rows(Path(args.crispr_csv)), failures)
     report_gate(Path(args.report), failures)
     if failures:
         for failure in failures:

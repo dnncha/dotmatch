@@ -38,7 +38,8 @@ Applied techniques:
   and BK-tree baselines where the semantics are comparable;
 - experimental Apple Metal GPU benchmarking for packed fixed-window Hamming
   `k=1` workloads, with CPU checksum agreement required before speed ratios
-  are reported;
+  are reported, including a public CRISPR extract-pack-dispatch-readback-count
+  lane;
 - HTML/TSV/JSON QC outputs, MultiQC/workflow examples, and autopsy reports that
   expose offset errors, unsafe rescue, ambiguous reads, unmatched reads, and
   invalid extraction windows.
@@ -65,7 +66,7 @@ Techniques deliberately not claimed:
 | Indexed assignment preserves native exhaustive-scan semantics for `unique`, `ambiguous`, `none`, and `invalid` outcomes in the supported `k<=2` lanes. | Supported | `dotmatch validate`, native assignment tests, Edlib validation artifacts under `benchmarks/raw/`, Levenshtein `k=2` CLI regression cases | `k=2` uses packed A/C/G/T hash-neighborhood pruning for windows up to 32 bases, with fallback preserving semantics for unsupported cases; current `N`/IUPAC behavior is literal-byte matching, not wildcard expansion semantics. |
 | Public CRISPR guide-counting rows are validated. | Supported | `make public-crispr-evidence-gate` passes; report at `docs/benchmarks/public_crispr/README.md` | Supports the documented MAGeCK/Yusa public-data workflow, not universal CRISPR superiority. |
 | Extended CRISPR comparison rows are validated. | Supported | `make crispr-comparison-gate` passes; report at `docs/benchmarks/crispr_comparison/README.md` | Applies to the recorded CRISPR guide-counting lanes and their documented comparator semantics. |
-| DotMatch has an experimental GPU acceleration evidence lane. | Experimental | `make bench-gpu`, `make gpu-evidence-gate`, report at `docs/benchmarks/gpu/README.md` | Current evidence is Apple Metal-only, synthetic packed Hamming `k=1`, and not a production speed claim. Promotion requires end-to-end real-workload gates including extraction, packing, transfer/shared-memory preparation, dispatch, readback, and QC output generation. |
+| DotMatch has an experimental GPU acceleration evidence lane. | Experimental | `make bench-gpu`, `make gpu-evidence-gate`, report at `docs/benchmarks/gpu/README.md` | Current evidence is Apple Metal-only for packed Hamming `k=1`, including synthetic rows and a public CRISPR FASTQ extract-pack-dispatch-readback-count row. It is not a production speed claim. Promotion requires additional real-workload gates, non-A/C/G/T fallback, and production scheduling. |
 | FASTQ count and demux workflows can optionally gate one-edit substitution and read-insertion rescue by observed Sanger Phred quality. | Supported | `make cli-test`; `--max-correction-qual` CLI regression cases | This is a deterministic correction filter, not a calibrated sequencing-error probability model. Read-deletion rescue has no observed edited base to score and is not rejected by this gate. |
 | FASTQ count and demux workflows support optional Levenshtein `k=2` fixed-window correction. | Supported | `make cli-test`; Levenshtein `k=2` count/demux regression cases | Hamming remains limited to `k=0` and `k=1`; `--indel-window` remains a `k=1` option. |
 | DotMatch has a first paired/combinatorial fixed-window counting command. | Supported | `make cli-test`; `pair-count` CLI regression case | Counts only reads where both target windows are uniquely assigned. This is not a perturb-seq expression quantification or guide-pair statistical-analysis workflow. |
