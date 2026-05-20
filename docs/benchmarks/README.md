@@ -24,6 +24,7 @@
 
 - [Evidence gallery and report examples](../evidence-gallery/README.md)
 - [Native Edlib assignment report](native/README.md)
+- [Experimental GPU acceleration report](gpu/README.md)
 - [Public CRISPR guide-counting report](public_crispr/README.md)
 - [CRISPR multi-dataset comparison report](crispr_comparison/README.md)
 - [Barcode demultiplexing report](barcode_demux/README.md)

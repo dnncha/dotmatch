@@ -1,0 +1,5 @@
+tool,backend,status,workload,n_reads,n_targets,len,k,error_rate,prep_seconds,seconds,total_seconds,reads_per_sec,total_reads_per_sec,pairs_per_sec,checksum,mismatches,device,notes
+dotmatch_cpu_index,cpu,ok,synthetic_hamming,20000,737,20,1,0.01,0.000362625,0.0437863,0.044149,456764,453012,3.36635e+08,124483641,0,Apple M5,CPU indexed Hamming k=1 baseline; prep is index build
+dotmatch_gpu_metal,metal,ok,synthetic_hamming,20000,737,20,1,0.01,8.9291e-05,0.00437067,0.00445996,4.57596e+06,4.48435e+06,3.37248e+09,124483641,0,Apple M5,Metal brute-force packed Hamming k=1; prep is shared-buffer allocation and copy
+dotmatch_cpu_index,cpu,ok,synthetic_hamming,50000,4096,20,1,0.01,0.00176629,0.112742,0.114508,443491,436650,1.81654e+09,1714574030,0,Apple M5,CPU indexed Hamming k=1 baseline; prep is index build
+dotmatch_gpu_metal,metal,ok,synthetic_hamming,50000,4096,20,1,0.01,0.000163958,0.0133081,0.013472,3.75711e+06,3.71139e+06,1.53891e+10,1714574030,0,Apple M5,Metal brute-force packed Hamming k=1; prep is shared-buffer allocation and copy
