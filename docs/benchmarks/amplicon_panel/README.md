@@ -16,7 +16,7 @@ dotmatch count --targets benchmarks/work/amplicon_panel/panel_targets.tsv --read
 
 | tool | workflow | status | targets | reads | start | length | k | metric | assigned | exact | corrected | ambiguous | unmatched | validation mismatches |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| dotmatch_count | synthetic_amplicon_panel_fixture | smoke | 4 | 6 | 0 | 12 | 1 | hamming | 4 | 4 | 0 | 1 | 1 | 0 |
+| dotmatch_count | synthetic_amplicon_panel_fixture | smoke | 4 | 6 | 0 | 12 | 1 | hamming | 2 | 2 | 0 | 3 | 1 | 0 |
 | dotmatch_count | public_nfcore_artic_v3_amplicon_primer | supported | 80 | 20000 | 0 | 22 | 0 | hamming | 6454 | 6454 | 0 | 0 | 13546 | 0 |
 | dotmatch_count | public_nfcore_artic_v3_amplicon_primer | supported | 80 | 20000 | 0 | 22 | 1 | hamming | 6545 | 6454 | 91 | 0 | 13455 | 0 |
 | exact_prefix_hash | public_nfcore_artic_v3_amplicon_primer | supported | 80 | 20000 | 0 | 22 | 0 | exact | 6454 | 6454 | 0 | 0 | 13546 | 0 |

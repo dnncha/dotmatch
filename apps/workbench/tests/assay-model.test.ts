@@ -37,6 +37,7 @@ test("buildCountAssayToml creates a ready AssaySpec with workspace-relative path
   assert.match(toml, /fastq = "reads\/treated.fastq.gz"/);
   assert.match(toml, /\[extract\]\nstart = 23\nlength = 19/);
   assert.match(toml, /\[assignment\]\nk = 1\nmetric = "levenshtein"/);
+  assert.match(toml, /ambiguity_policy = "radius"/);
 });
 
 test("buildDemuxAssayToml creates a demux AssaySpec", () => {
@@ -56,6 +57,7 @@ test("buildDemuxAssayToml creates a demux AssaySpec", () => {
   assert.match(toml, /barcodes = "inputs\/barcodes.tsv"/);
   assert.match(toml, /reads = "reads\/pooled.fastq.gz"/);
   assert.match(toml, /\[extract\]\nstart = 0\nlength = 8/);
+  assert.match(toml, /ambiguity_policy = "radius"/);
 });
 
 test("buildPairAssayToml creates a pair-count AssaySpec", () => {
@@ -79,6 +81,7 @@ test("buildPairAssayToml creates a pair-count AssaySpec", () => {
   assert.match(toml, /right_targets = "inputs\/right.tsv"/);
   assert.match(toml, /\[left\]\nstart = 0\nlength = 8/);
   assert.match(toml, /\[right\]\nstart = 20\nlength = 8/);
+  assert.match(toml, /ambiguity_policy = "radius"/);
 });
 
 test("buildCountAssayToml escapes TOML strings instead of injecting raw values", () => {

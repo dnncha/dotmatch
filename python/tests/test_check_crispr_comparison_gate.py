@@ -109,7 +109,7 @@ def _speed_row(dataset, tool, reads_per_sec):
     return row
 
 
-def test_repeated_gate_accepts_hamming_speedup_that_beats_guide_counter():
+def test_repeated_gate_accepts_guide_counter_rows_without_speed_superiority_claim():
     gate = _load_gate()
     rows = []
     for dataset in gate.DATASETS:
@@ -124,10 +124,10 @@ def test_repeated_gate_accepts_hamming_speedup_that_beats_guide_counter():
     gate.repeated_gate(rows, min_records=100000, min_repeats=1, require_full=False,
                        require_mageck=False, require_guide_counter=True, failures=failures)
 
-    assert not any("speedup vs guide-counter" in f for f in failures)
+    assert not any("guide-counter" in f for f in failures)
 
 
-def test_repeated_gate_rejects_hamming_slower_than_guide_counter():
+def test_repeated_gate_still_requires_guide_counter_when_requested():
     gate = _load_gate()
     rows = []
     for dataset in gate.DATASETS:
@@ -135,14 +135,13 @@ def test_repeated_gate_rejects_hamming_slower_than_guide_counter():
             _repeated_row(dataset, "dotmatch_exact_k0"),
             _speed_row(dataset, "dotmatch_hamming_k1", "99.0"),
             _repeated_row(dataset, "dotmatch_levenshtein_k1", verified_per_read="1.0"),
-            _speed_row(dataset, "guide_counter_one_mismatch", "100.0"),
         ])
     failures = []
 
     gate.repeated_gate(rows, min_records=100000, min_repeats=1, require_full=False,
                        require_mageck=False, require_guide_counter=True, failures=failures)
 
-    assert any("speedup vs guide-counter" in f for f in failures)
+    assert any("guide_counter_one_mismatch needs >= 1 repeats" in f for f in failures)
 
 
 def test_repeated_gate_no_full_speedup_ignores_full_rows():
@@ -264,7 +263,7 @@ def test_repeated_gate_rejects_incomplete_full_sample_rows():
     assert any("sanson_brunello:dotmatch_exact_k0 needs at least one full FASTQ timing row" in f for f in failures)
 
 
-def test_repeated_gate_rejects_full_hamming_slower_than_full_guide_counter():
+def test_repeated_gate_accepts_full_hamming_slower_than_full_guide_counter_when_full_rows_exist():
     gate = _load_gate()
     rows = []
     for dataset in gate.DATASETS:
@@ -299,4 +298,4 @@ def test_repeated_gate_rejects_full_hamming_slower_than_full_guide_counter():
     gate.repeated_gate(rows, min_records=1, min_repeats=1, require_full=True,
                        require_mageck=False, require_guide_counter=True, failures=failures)
 
-    assert any("mageck_yusa full DotMatch Hamming speedup vs guide-counter" in f for f in failures)
+    assert not any("guide-counter" in f for f in failures)

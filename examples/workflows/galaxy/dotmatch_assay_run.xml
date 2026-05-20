@@ -30,6 +30,7 @@ length = $guide_length
 [assignment]
 k = $k
 metric = "$metric"
+ambiguity_policy = "radius"
 ambiguous = "$ambiguous"
 #if str($metric) == 'levenshtein' and int($indel_window) > 0
 indel_window = $indel_window

@@ -53,6 +53,7 @@ rule dotmatch_crispr_count:
           --guide-length {params.guide_length} \
           --k {params.k} \
           --metric {params.metric} \
+          --ambiguity-policy radius \
           {params.indel_window_arg} \
           --out {output.counts} \
           --summary {output.summary} \
@@ -91,6 +92,7 @@ rule dotmatch_assay_spec:
             handle.write("[assignment]\n")
             handle.write(f"k = {config.get('k', 1)}\n")
             handle.write(f'metric = "{metric}"\n')
+            handle.write('ambiguity_policy = "radius"\n')
             handle.write('ambiguous = "discard"\n')
             if metric == "levenshtein" and indel_window > 0:
                 handle.write(f"indel_window = {indel_window}\n")

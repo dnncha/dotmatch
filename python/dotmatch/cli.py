@@ -315,6 +315,7 @@ def command_count(args: argparse.Namespace) -> int:
         "unmatched": 0,
         "invalid": 0,
         "k": args.k,
+        "ambiguity_policy": args.ambiguity_policy,
         "target_start": args.target_start,
         "target_length": args.target_length,
         "n_targets": len(targets),
@@ -341,7 +342,7 @@ def command_count(args: argparse.Namespace) -> int:
                 observed.append(seq)
                 valid_positions.append(pos)
 
-            results, stats = matcher.assign_with_stats(observed, k=args.k)
+            results, stats = matcher.assign_with_stats(observed, k=args.k, policy=args.ambiguity_policy)
             summary["candidates_considered"] += stats.candidates_considered
             summary["candidates_verified"] += stats.candidates_verified
             for record_index, obs, result in zip(valid_positions, observed, results):
@@ -580,6 +581,7 @@ def command_barcode_namespace(argv: Sequence[str]) -> int:
     demux.add_argument("--barcode-length", required=True)
     demux.add_argument("--k", type=int, default=0)
     demux.add_argument("--metric", choices=["hamming", "levenshtein"], default="hamming")
+    demux.add_argument("--ambiguity-policy", choices=["radius", "best"], default="radius")
     demux.add_argument("--max-correction-qual", type=int)
     demux.add_argument("--out-dir", required=True)
     demux.add_argument("--summary")
@@ -594,6 +596,7 @@ def command_barcode_namespace(argv: Sequence[str]) -> int:
     count.add_argument("--barcode-length", type=int, required=True)
     count.add_argument("--k", type=int, default=0)
     count.add_argument("--metric", choices=["hamming", "levenshtein"], default="hamming")
+    count.add_argument("--ambiguity-policy", choices=["radius", "best"], default="radius")
     count.add_argument("--max-correction-qual", type=int)
     count.add_argument("--out", required=True)
     count.add_argument("--summary")
@@ -924,6 +927,8 @@ def _barcode_demux(args: argparse.Namespace) -> int:
         str(args.k),
         "--metric",
         args.metric,
+        "--ambiguity-policy",
+        args.ambiguity_policy,
         "--out-dir",
         args.out_dir,
     ]
@@ -957,6 +962,8 @@ def _barcode_count(args: argparse.Namespace) -> int:
         str(args.k),
         "--metric",
         args.metric,
+        "--ambiguity-policy",
+        args.ambiguity_policy,
         "--out",
         args.out,
         "--format",
@@ -1035,6 +1042,8 @@ def _barcode_autopsy(args: argparse.Namespace) -> int:
         str(audit_k),
         "--metric",
         args.metric,
+        "--ambiguity-policy",
+        "radius",
         "--out-dir",
         str(demux_dir),
         "--summary",
@@ -1974,6 +1983,7 @@ def build_parser() -> argparse.ArgumentParser:
     count.add_argument("--target-start", type=int, default=0)
     count.add_argument("--target-length", type=int, required=True)
     count.add_argument("--k", type=int, default=1)
+    count.add_argument("--ambiguity-policy", choices=["radius", "best"], default="radius")
     count.add_argument("--out", required=True, help="counts TSV output")
     count.add_argument("--assignments", help="optional per-read assignments TSV")
     count.add_argument("--summary", help="optional summary JSON output")

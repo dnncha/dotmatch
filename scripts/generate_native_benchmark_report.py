@@ -202,7 +202,7 @@ def write_report(df: pd.DataFrame, speedups: pd.DataFrame) -> None:
         "",
         "## Evidence Boundary",
         "",
-        "These are native Edlib scan microbenchmarks for exact short-DNA assignment workloads, plus simple exact-hash and BK-tree baselines. The largest rows are useful for understanding algorithmic scaling against exhaustive scan, but they are not end-to-end workflow speed claims. Exact `k=0` lookup should be judged against hash-table baselines. For `k=1`, the indexed path is reported only when it has zero correctness disagreements against the exhaustive comparator. Levenshtein `k=2` uses the exhaustive assignment path.",
+        "These are native Edlib scan microbenchmarks for exact short-DNA assignment workloads, plus simple exact-hash and BK-tree baselines. The largest rows are useful for understanding algorithmic scaling against exhaustive scan, but they are not end-to-end workflow speed claims. Exact `k=0` lookup should be judged against hash-table baselines. For `k=1`, the indexed path is reported only when it has zero correctness disagreements against the exhaustive comparator. Levenshtein `k=2` has native hash-neighborhood pruning coverage for packed A/C/G/T windows up to 32 bases in this regenerated report; use only the recorded rows for `k=2` throughput statements, scoped to fixed-window short-DNA assignment.",
         "",
     ]
     (OUT_DIR / "README.md").write_text("\n".join(lines), encoding="utf-8")

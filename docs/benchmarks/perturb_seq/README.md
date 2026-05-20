@@ -16,7 +16,7 @@ dotmatch pair-count --left-targets benchmarks/work/perturb_seq/perturb_guides.ts
 
 | tool | workflow | guides | features | reads | k | metric | assigned pairs | ambiguous | left unmatched | right unmatched | invalid | validation mismatches |
 | --- | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| dotmatch_pair_count | synthetic_perturb_seq_fixture | 3 | 2 | 7 | 1 | hamming | 3 | 1 | 1 | 1 | 1 | 0 |
+| dotmatch_pair_count | synthetic_perturb_seq_fixture | 3 | 2 | 7 | 1 | hamming | 1 | 4 | 1 | 1 | 1 | 0 |
 
 ## Public CRISPR Guide-Capture Rows
 

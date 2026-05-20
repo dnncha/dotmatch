@@ -379,6 +379,7 @@ def command_panel_namespace(argv: Sequence[str]) -> int:
 def _add_assignment_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--k", type=int, default=1)
     parser.add_argument("--metric", choices=["hamming", "levenshtein", "sequence-levenshtein", "seqlev"], default="hamming")
+    parser.add_argument("--ambiguity-policy", choices=["radius", "best"], default="radius")
     parser.add_argument("--reverse-complement-mode", choices=["ignore", "warn", "fail"], default="warn")
 
 
@@ -979,7 +980,7 @@ def simulate_panel(
         source_index = rng.randrange(len(records))
         source = records[source_index]
         observed = mutate_sequence(source.sequence, rng, substitution_rate, insertion_rate, deletion_rate)
-        outcome = assign_query(observed, records, assignment.metric, assignment.k)
+        outcome = assign_query(observed, records, assignment.metric, assignment.k, assignment.ambiguity_policy)
         assigned_id = records[outcome.target_index].barcode_id if outcome.status == "unique" and outcome.target_index >= 0 else ""
         assigned_sequence = records[outcome.target_index].sequence if outcome.status == "unique" and outcome.target_index >= 0 else ""
         false_assignment = outcome.status == "unique" and outcome.target_index != source_index
@@ -1284,6 +1285,7 @@ def _assignment_from_args(args: argparse.Namespace) -> AssignmentConfig:
     return AssignmentConfig(
         metric=_normalize_metric(args.metric),
         k=args.k,
+        ambiguity_policy=args.ambiguity_policy,
         reverse_complement_mode=args.reverse_complement_mode,
     )
 
@@ -1512,10 +1514,18 @@ def _normalize_metric(metric: str) -> str:
     return metric
 
 
-def assign_query(query: str, records: Sequence[PanelRecord], metric: str, k: int) -> AssignmentOutcome:
+def assign_query(
+    query: str,
+    records: Sequence[PanelRecord],
+    metric: str,
+    k: int,
+    ambiguity_policy: str = "radius",
+) -> AssignmentOutcome:
     query = query.upper()
     if any(base not in DNA for base in query):
         return AssignmentOutcome(-1, -1, -1, 0, "invalid")
+    if ambiguity_policy not in {"radius", "best"}:
+        raise ValueError("ambiguity_policy must be 'radius' or 'best'")
     metric = _normalize_metric(metric)
     matches: list[tuple[int, int]] = []
     distances: list[int] = []
@@ -1531,6 +1541,8 @@ def assign_query(query: str, records: Sequence[PanelRecord], metric: str, k: int
     best = min(dist for _i, dist in matches)
     best_matches = [(i, dist) for i, dist in matches if dist == best]
     second = min((dist for _i, dist in matches if dist > best), default=-1)
+    if ambiguity_policy == "radius" and len(matches) > 1:
+        return AssignmentOutcome(best_matches[0][0], best, second, len(matches), "ambiguous")
     if len(best_matches) == 1:
         return AssignmentOutcome(best_matches[0][0], best, second, len(matches), "unique")
     return AssignmentOutcome(-1, best, second, len(best_matches), "ambiguous")
@@ -1607,9 +1619,9 @@ def _assignment_risk_rows(records: Sequence[PanelRecord], assignment: Assignment
     enumerate_k = assignment.k
     for source_index, source in enumerate(records):
         for variant in sorted(variants_within(source.sequence, assignment.metric, enumerate_k)):
-            outcome = assign_query(variant, records, assignment.metric, assignment.k)
+            outcome = assign_query(variant, records, assignment.metric, assignment.k, assignment.ambiguity_policy)
             if outcome.status == "ambiguous":
-                candidates = _best_candidate_ids(variant, records, assignment.metric, assignment.k)
+                candidates = _candidate_ids(variant, records, assignment.metric, assignment.k, assignment.ambiguity_policy)
                 rows.append(
                     {
                         "source_barcode_id": source.barcode_id,
@@ -1647,11 +1659,13 @@ def _assignment_risk_rows(records: Sequence[PanelRecord], assignment: Assignment
     return rows
 
 
-def _best_candidate_ids(query: str, records: Sequence[PanelRecord], metric: str, k: int) -> list[str]:
+def _candidate_ids(query: str, records: Sequence[PanelRecord], metric: str, k: int, ambiguity_policy: str) -> list[str]:
     distances = [(record.barcode_id, metric_distance(query, record.sequence, metric)) for record in records if metric != "hamming" or len(query) == len(record.sequence)]
     within = [(barcode_id, dist) for barcode_id, dist in distances if dist <= k]
     if not within:
         return []
+    if ambiguity_policy == "radius":
+        return [barcode_id for barcode_id, _dist in within]
     best = min(dist for _barcode_id, dist in within)
     return [barcode_id for barcode_id, dist in within if dist == best]
 
@@ -2413,6 +2427,7 @@ def _certified_command(panel_path: Path, assignment: AssignmentConfig, length: i
         f"--barcode-length {length} "
         f"--k {assignment.k} "
         f"--metric {_normalize_metric(assignment.metric)} "
+        f"--ambiguity-policy {assignment.ambiguity_policy} "
         "--out-dir demuxed/"
     )
 

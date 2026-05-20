@@ -226,6 +226,8 @@ def test_load_count_spec_and_compile_deterministic_plan(tmp_path: Path) -> None:
     assert plan.steps[0].argv[:3] == ["dotmatch-native", "audit", "--targets"]
     assert plan.steps[1].argv[:2] == ["dotmatch-native", "crispr-count"]
     assert plan.steps[2].argv[:2] == ["dotmatch", "crispr-qc"]
+    assert "--ambiguity-policy" in plan.steps[1].argv
+    assert "radius" in plan.steps[1].argv
     assert "--sample-qc" in plan.steps[1].argv
     assert "--target-counts-long" in plan.steps[1].argv
     assert "--format" not in plan.steps[1].argv

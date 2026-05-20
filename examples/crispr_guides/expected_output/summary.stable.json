@@ -1,7 +1,7 @@
 {
   "k": 1,
   "metric": "levenshtein",
-  "ambiguity_policy": "best",
+  "ambiguity_policy": "radius",
   "indel_window": 1,
   "target_start": 23,
   "auto_offset": 0,

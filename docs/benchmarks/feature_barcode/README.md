@@ -14,7 +14,7 @@ dotmatch count --targets benchmarks/work/feature_barcode/feature_barcodes.tsv --
 
 | tool | workflow | status | features | reads | start | length | k | metric | assigned | exact | corrected | ambiguous | unmatched | validation mismatches |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| dotmatch_count | synthetic_feature_barcode_fixture | smoke | 4 | 6 | 0 | 10 | 1 | hamming | 4 | 4 | 0 | 1 | 1 | 0 |
+| dotmatch_count | synthetic_feature_barcode_fixture | smoke | 4 | 6 | 0 | 10 | 1 | hamming | 2 | 2 | 0 | 3 | 1 | 0 |
 | dotmatch_count | public_10x_totalseq_b_feature_barcode | supported | 10 | 20000 | 10 | 15 | 0 | hamming | 18575 | 18575 | 0 | 0 | 1425 | 0 |
 | dotmatch_count | public_10x_totalseq_b_feature_barcode | supported | 10 | 20000 | 10 | 15 | 1 | hamming | 19101 | 18575 | 526 | 0 | 899 | 0 |
 | exact_slice_hash | public_10x_totalseq_b_feature_barcode | supported | 10 | 20000 | 10 | 15 | 0 | exact | 18575 | 18575 | 0 | 0 | 1425 | 0 |

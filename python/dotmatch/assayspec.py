@@ -115,7 +115,7 @@ def validate_assay_spec(assay: AssaySpec) -> None:
     if "k" in assignment:
         _require_int_range(assignment["k"], 0, 2, "assignment.k")
     _require_enum(assignment.get("metric", "levenshtein"), METRICS, "assignment.metric")
-    _require_enum(assignment.get("ambiguity_policy", "best"), AMBIGUITY_POLICIES, "assignment.ambiguity_policy")
+    _require_enum(assignment.get("ambiguity_policy", "radius"), AMBIGUITY_POLICIES, "assignment.ambiguity_policy")
     _require_enum(assignment.get("ambiguous", "discard"), AMBIGUOUS_OUTPUT, "assignment.ambiguous")
     if int(assignment.get("k", 1)) == 2 and assignment.get("metric", "levenshtein") == "hamming":
         raise AssaySpecError("assignment.k=2 is only valid with assignment.metric='levenshtein'")
@@ -597,6 +597,7 @@ length = {chosen["length"]}
 [assignment]
 k = 1
 metric = "hamming"
+ambiguity_policy = "radius"
 ambiguous = "discard"
 
 [outputs]
@@ -630,6 +631,7 @@ length = {chosen["length"]}
 [assignment]
 k = 1
 metric = "hamming"
+ambiguity_policy = "radius"
 
 [outputs]
 assignments = true
@@ -665,6 +667,7 @@ length = {right["length"]}
 [assignment]
 k = 1
 metric = "hamming"
+ambiguity_policy = "radius"
 
 [outputs]
 assignments = true
@@ -1020,7 +1023,7 @@ def _compile_demux(assay: AssaySpec, steps: list[PlanStep], artifacts: dict[str,
         "--summary",
         str(artifacts["summary"]),
     ]
-    _add_assignment_options(cmd, assignment, include_ambiguity_policy=False)
+    _add_assignment_options(cmd, assignment)
     if outputs.get("assignments"):
         artifacts["assignments"] = out_dir / "assignments.tsv"
         cmd.extend(["--assignments", str(artifacts["assignments"])])
@@ -1067,6 +1070,7 @@ def _compile_pair(assay: AssaySpec, steps: list[PlanStep], artifacts: dict[str, 
         "--summary",
         str(artifacts["pair_summary"]),
     ]
+    cmd.extend(["--ambiguity-policy", str(assignment.get("ambiguity_policy", "radius"))])
     if outputs.get("assignments"):
         artifacts["pair_assignments"] = out_dir / "pair_assignments.tsv"
         cmd.extend(["--assignments", str(artifacts["pair_assignments"])])
@@ -1078,8 +1082,8 @@ def _audit_cmd(targets: Path, out_dir: Path, k: int) -> list[str]:
 
 
 def _add_assignment_options(cmd: list[str], assignment: Mapping[str, Any], *, include_ambiguity_policy: bool = True) -> None:
-    if include_ambiguity_policy and "ambiguity_policy" in assignment:
-        cmd.extend(["--ambiguity-policy", str(assignment["ambiguity_policy"])])
+    if include_ambiguity_policy:
+        cmd.extend(["--ambiguity-policy", str(assignment.get("ambiguity_policy", "radius"))])
     if "indel_window" in assignment:
         cmd.extend(["--indel-window", str(assignment["indel_window"])])
     if "max_correction_qual" in assignment:

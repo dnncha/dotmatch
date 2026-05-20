@@ -14,7 +14,7 @@ dotmatch count --targets benchmarks/work/oligo_adapter/adapter_oligos.tsv --read
 
 | tool | workflow | status | targets | reads | start | length | k | metric | assigned | exact | corrected | ambiguous | unmatched | validation mismatches |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| dotmatch_count | synthetic_oligo_adapter_fixture | smoke | 3 | 6 | 0 | 12 | 1 | hamming | 4 | 3 | 1 | 1 | 1 | 0 |
+| dotmatch_count | synthetic_oligo_adapter_fixture | smoke | 3 | 6 | 0 | 12 | 1 | hamming | 2 | 1 | 1 | 3 | 1 | 0 |
 | dotmatch_count | public_fast_adapter_truseq_r1 | supported | 9 | 10000 | 229 | 20 | 0 | hamming | 156 | 156 | 0 | 0 | 9844 | 0 |
 | dotmatch_count | public_fast_adapter_truseq_r1 | supported | 9 | 10000 | 229 | 20 | 1 | hamming | 159 | 156 | 3 | 0 | 9841 | 0 |
 | exact_slice_hash | public_fast_adapter_truseq_r1 | supported | 9 | 10000 | 229 | 20 | 0 | exact | 156 | 156 | 0 | 0 | 9844 | 0 |
@@ -42,12 +42,6 @@ python3 scripts/bench_oligo_adapter.py --include-public --metadata examples/olig
 ```
 
 
-## Evidence Boundary
+## Scope
 
-Use these lanes for fixed-window known-oligo/adapter assignment,
-one-substitution rescue, and explicit ambiguous/unmatched diagnostics. Run
-`make oligo-adapter-smoke-gate` for the smoke fixture and
-`make oligo-adapter-public-gate` for the public lane. The public lane supports
-adapter-prefix assignment for the checked R1 window. Adapter trimming, primer
-removal, UMI grouping, read merging, and production workflow comparisons need
-their own comparator semantics, raw artifacts, validation, and gate.
+These lanes verify fixed-window known-oligo/adapter assignment, one-substitution rescue, and explicit ambiguous/unmatched diagnostics. Run `make oligo-adapter-smoke-gate` for smoke evidence and `make oligo-adapter-public-gate` for the public lane. The public lane checks adapter-prefix assignment for the recorded R1 window. Primer removal, UMI grouping, read merging, and adapter-trimming workflows need separate comparator records.

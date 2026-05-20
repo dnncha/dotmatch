@@ -208,13 +208,16 @@ Expected output:
 
 ```text
 mode	read_id	read_seq	target_index	target_seq	distance	status	match_count	second_best_distance
-assign	r0	ACGT	0	ACGT	0	unique	3	1
+assign	r0	ACGT	0	ACGT	0	ambiguous	3	1
 assign	r1	ACGC	0	ACGT	1	ambiguous	2	-1
 assign	r2	TTTT	-1		-1	none	0	-1
 ```
 
-`r1` is deliberately ambiguous: it is within one edit of more than one target,
-so DotMatch reports the ambiguity instead of choosing a target.
+`r0` is an exact match to `bc0`, but two other targets are also within the
+configured one-edit radius. DotMatch's default `radius` ambiguity policy
+therefore reports it as ambiguous instead of forcing an assignment. Use
+`--ambiguity-policy best` or Python `policy="best"` only when best-distance
+assignment is the intended compatibility mode.
 
 ## CRISPR Guide Counting
 
@@ -235,6 +238,7 @@ EOF
   --guide-length 20 \
   --k 1 \
   --metric hamming \
+  --ambiguity-policy radius \
   --out counts.mageck.tsv \
   --summary qc.json \
   --ambiguous discard
@@ -265,7 +269,7 @@ more FASTQ/FASTQ.gz inputs.
   --k 1 \
   --metric levenshtein \
   --indel-window 1 \
-  --ambiguity-policy best \
+  --ambiguity-policy radius \
   --out counts.tsv \
   --target-counts-long target_counts.long.tsv \
   --sample-qc sample_qc.tsv \
@@ -294,6 +298,7 @@ assigned barcode and can optionally retain ambiguous and unmatched reads.
   --barcode-length 8 \
   --k 1 \
   --metric hamming \
+  --ambiguity-policy radius \
   --max-correction-qual 20 \
   --out-dir demuxed \
   --summary demux.qc.json \
@@ -344,6 +349,10 @@ matcher = dotmatch.Matcher(["ACGT", "AGGT", "ACGA"])
 results, stats = matcher.assign_with_stats(["ACGT", "ACGC"], k=1)
 ```
 
+The Python API also defaults to radius-safe assignment. Pass `policy="best"` to
+`assign`, `Matcher.assign`, or `Matcher.assign_with_stats` only for explicit
+best-distance compatibility.
+
 When working from a source checkout, build the shared library first:
 
 ```bash
@@ -368,8 +377,11 @@ Supported assignment modes include:
 - exact matching (`k=0`);
 - Hamming matching for fixed-length one-substitution workflows;
 - global Levenshtein matching for substitutions, insertions, and deletions;
-- fixed-window `k=2` correction through the exhaustive assignment path;
-- explicit ambiguity policies for best-target and whole-radius assignment.
+- fixed-window `k=2` Levenshtein correction with packed A/C/G/T hash-neighborhood
+  pruning for windows up to 32 bases and exhaustive fallback for unsupported
+  cases;
+- radius-safe ambiguity by default, with explicit `best` policy available for
+  best-target compatibility.
 
 The public policy string reported by the C and Python APIs is:
 

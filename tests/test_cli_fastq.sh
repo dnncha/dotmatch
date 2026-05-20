@@ -48,6 +48,19 @@ AC
 II
 FASTQ
 
+cat > "$TMPDIR/assign_reads.tsv" <<'ASSIGNREADS'
+r0	ACGT
+r1	ACGC
+r2	TTTT
+ASSIGNREADS
+
+"$DOTMATCH_BIN" assign 1 "$TMPDIR/barcodes.tsv" "$TMPDIR/assign_reads.tsv" > "$TMPDIR/assign_radius.tsv"
+grep '^assign	r0	ACGT	0	ACGT	0	ambiguous	3	1$' "$TMPDIR/assign_radius.tsv" >/dev/null
+grep '^assign	r1	ACGC	0	ACGT	1	ambiguous	2	-1$' "$TMPDIR/assign_radius.tsv" >/dev/null
+
+"$DOTMATCH_BIN" assign 1 "$TMPDIR/barcodes.tsv" "$TMPDIR/assign_reads.tsv" --ambiguity-policy best > "$TMPDIR/assign_best.tsv"
+grep '^assign	r0	ACGT	0	ACGT	0	unique	3	1$' "$TMPDIR/assign_best.tsv" >/dev/null
+
 "$DOTMATCH_BIN" fastq-assign \
   --barcodes "$TMPDIR/barcodes.tsv" \
   --reads "$TMPDIR/reads.fastq" \
@@ -64,7 +77,26 @@ r2	GGGG	-1			-1	-1	0	none
 r3		-1			-1	-1	0	invalid
 EXPECTED
 
-diff -u "$TMPDIR/expected.tsv" "$TMPDIR/out.tsv"
+cat > "$TMPDIR/expected_radius.tsv" <<'EXPECTEDRADIUS'
+read_id	observed_barcode	target_index	target_id	target_seq	best_distance	second_best_distance	match_count	status
+r0	ACGT	0	bc0	ACGT	0	1	3	ambiguous
+r1	TTTG	3	bc3	TTTT	1	-1	1	unique
+r2	GGGG	-1			-1	-1	0	none
+r3		-1			-1	-1	0	invalid
+EXPECTEDRADIUS
+
+diff -u "$TMPDIR/expected_radius.tsv" "$TMPDIR/out.tsv"
+
+"$DOTMATCH_BIN" fastq-assign \
+  --barcodes "$TMPDIR/barcodes.tsv" \
+  --reads "$TMPDIR/reads.fastq" \
+  --barcode-start 0 \
+  --barcode-length 4 \
+  --k 1 \
+  --ambiguity-policy best \
+  --out "$TMPDIR/out_best.tsv"
+
+diff -u "$TMPDIR/expected.tsv" "$TMPDIR/out_best.tsv"
 
 "$DOTMATCH_BIN" fastq-assign \
   --barcodes "$TMPDIR/barcodes.tsv" \
@@ -252,6 +284,7 @@ mkdir "$TMPDIR/demux"
   --barcode-length 4 \
   --k 1 \
   --metric hamming \
+  --ambiguity-policy best \
   --out-dir "$TMPDIR/demux" \
   --summary "$TMPDIR/demux_summary.json" \
   --assignments "$TMPDIR/demux_assignments.tsv" \
@@ -270,6 +303,23 @@ grep '"ambiguous": 1' "$TMPDIR/demux_summary.json" >/dev/null
 grep '"unmatched": 1' "$TMPDIR/demux_summary.json" >/dev/null
 grep '"invalid": 1' "$TMPDIR/demux_summary.json" >/dev/null
 grep '^d2	AGGA	1	bc1	AGGT	1	-1	2	ambiguous$' "$TMPDIR/demux_assignments.tsv" >/dev/null
+
+mkdir "$TMPDIR/demux_radius_default"
+"$DOTMATCH_BIN" demux \
+  --barcodes "$TMPDIR/barcodes.tsv" \
+  --reads "$TMPDIR/demux_reads.fastq" \
+  --barcode-start 0 \
+  --barcode-length 4 \
+  --k 1 \
+  --metric hamming \
+  --out-dir "$TMPDIR/demux_radius_default" \
+  --summary "$TMPDIR/demux_radius_default_summary.json" \
+  --assignments "$TMPDIR/demux_radius_default_assignments.tsv" \
+  --ambiguous-out "$TMPDIR/demux_radius_default_ambiguous.fastq"
+
+grep '"ambiguity_policy": "radius"' "$TMPDIR/demux_radius_default_summary.json" >/dev/null
+grep '^@d0$' "$TMPDIR/demux_radius_default_ambiguous.fastq" >/dev/null
+grep '^d0	ACGT	0	bc0	ACGT	0	1	3	ambiguous$' "$TMPDIR/demux_radius_default_assignments.tsv" >/dev/null
 
 cat > "$TMPDIR/demux_quality.fastq" <<'DEMUXQUAL'
 @dq_exact
@@ -598,6 +648,7 @@ TARGETS
   --target-start 0 \
   --target-length 4 \
   --k 1 \
+  --ambiguity-policy best \
   --out "$TMPDIR/counts.tsv" \
   --assignments "$TMPDIR/assignments.tsv" \
   --summary "$TMPDIR/summary.json" \
@@ -717,6 +768,7 @@ grep '^k2	k2_none	TTTT	-1			-1	-1	0	none	none$' "$TMPDIR/k2_unmatched.tsv" >/dev
   --target-length 4 \
   --k 1 \
   --metric levenshtein \
+  --ambiguity-policy best \
   --format mageck \
   --out "$TMPDIR/counts_lev.tsv" \
   --summary "$TMPDIR/summary_lev.json"
@@ -729,6 +781,7 @@ grep '^k2	k2_none	TTTT	-1			-1	-1	0	none	none$' "$TMPDIR/k2_unmatched.tsv" >/dev
   --target-length 4 \
   --k 1 \
   --metric levenshtein \
+  --ambiguity-policy best \
   --format mageck \
   --threads 2 \
   --out "$TMPDIR/counts_lev_threads.tsv" \
@@ -745,6 +798,7 @@ grep '"read_threads": 2' "$TMPDIR/summary_lev_threads.json" >/dev/null
   --target-length 4 \
   --k 1 \
   --metric hamming \
+  --ambiguity-policy best \
   --format mageck \
   --out "$TMPDIR/counts_hamming.tsv" \
   --summary "$TMPDIR/summary_hamming.json"
@@ -761,6 +815,7 @@ grep '"count_engine": "hamming_lookup_direct_single_offset"' "$TMPDIR/summary_ha
   --target-length 4 \
   --k 1 \
   --metric hamming \
+  --ambiguity-policy best \
   --format mageck \
   --threads 2 \
   --out "$TMPDIR/counts_hamming_threads.tsv" \
@@ -788,6 +843,7 @@ PY
   --target-length 4 \
   --k 1 \
   --metric hamming \
+  --ambiguity-policy best \
   --format mageck \
   --out "$TMPDIR/counts_long_header.tsv" \
   --summary "$TMPDIR/summary_long_header.json"
@@ -803,6 +859,7 @@ grep '"total_reads": 1' "$TMPDIR/summary_long_header.json" >/dev/null
   --target-length 4 \
   --k 1 \
   --metric levenshtein \
+  --ambiguity-policy best \
   --format mageck \
   --out "$TMPDIR/counts_long_header_lev.tsv" \
   --summary "$TMPDIR/summary_long_header_lev.json"
@@ -970,6 +1027,7 @@ MULTIFASTQ
   --target-length 4 \
   --k 1 \
   --metric hamming \
+  --ambiguity-policy best \
   --hamming-index precompute \
   --auto-offset 6 \
   --auto-offset-sample 3 \
@@ -997,6 +1055,7 @@ grep '"selected_target_starts": \[0, 1, 2, 3, 4, 5, 6\]' "$TMPDIR/summary_multi_
   --target-length 4 \
   --k 1 \
   --metric hamming \
+  --ambiguity-policy best \
   --hamming-index precompute \
   --auto-offset 6 \
   --auto-offset-sample 3 \
@@ -1129,6 +1188,7 @@ fi
   --target-start 0 \
   --target-length 4 \
   --k 1 \
+  --ambiguity-policy best \
   --format mageck \
   --out "$TMPDIR/mageck.tsv"
 
@@ -1154,6 +1214,7 @@ SAMPLES
   --guide-length 4 \
   --k 1 \
   --metric levenshtein \
+  --ambiguity-policy best \
   --threads 2 \
   --out "$TMPDIR/crispr_mageck.tsv" \
   --summary "$TMPDIR/crispr_qc.json"

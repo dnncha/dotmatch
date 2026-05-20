@@ -6,6 +6,10 @@ DotMatch uses a literal-byte alphabet policy for known-target assignment:
 `N` and IUPAC ambiguity symbols are ordinary symbols and are not expanded as
 wildcards. This policy is reported by `qdaln_alphabet_policy()` and recorded in
 DotMatch count, demux, and pair-count summaries as `alphabet_policy`.
+User-facing assignment workflows default to the `radius` ambiguity policy:
+a read is `unique` only when exactly one target lies inside the configured
+edit-distance radius. The `best` policy is available as an explicit
+compatibility mode.
 
 ## Software Citation
 
@@ -19,11 +23,11 @@ Suggested citation before DOI assignment:
 
 For CRISPR guide-counting workflows:
 
-> Reads were assigned to the guide library using DotMatch v0.1.0 with exact known-target assignment and deterministic `unique`, `ambiguous`, and `no-match` semantics. Count matrices retained only uniquely assigned reads; ambiguous and unmatched reads were excluded from target counts and retained in diagnostic summaries.
+> Reads were assigned to the guide library using DotMatch v0.1.0 with known-target assignment, literal-byte sequence semantics, and the radius ambiguity policy. Count matrices retained only reads for which exactly one guide lay inside the configured edit-distance radius; ambiguous and unmatched reads were excluded from target counts and retained in diagnostic summaries.
 
 For one-edit Levenshtein rescue:
 
-> DotMatch used global Levenshtein distance <=1 over the extracted guide window, including one-base substitutions, insertions, and deletions. Assignments were retained only when the best target was unique under the configured ambiguity policy.
+> DotMatch used global Levenshtein distance <=1 over the extracted guide window, including one-base substitutions, insertions, and deletions. Assignments were retained only when exactly one target was inside the configured radius, unless an explicit best-distance compatibility policy was recorded in the run summary.
 
 For Hamming-only guide-counter-style comparisons:
 

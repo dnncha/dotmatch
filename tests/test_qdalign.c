@@ -217,6 +217,37 @@ static void index_fixed_tests(void) {
     assert(qdaln_index_build(NULL, target_lens, 5) == NULL);
 }
 
+static void empty_index_tests(void) {
+    const char *reads[] = {"ACGT", ""};
+    size_t read_lens[] = {4, 0};
+    qdaln_match_result results[2];
+    qdaln_index_stats stats;
+
+    qdaln_index *idx = qdaln_index_build(NULL, NULL, 0);
+    assert(idx != NULL);
+
+    for (int k = 0; k <= 2; ++k) {
+        assert(qdaln_index_assign_stats(idx, reads, read_lens, 2, k, results, &stats) == 0);
+        assert(results[0].status == QDALN_MATCH_NONE);
+        assert(results[1].status == QDALN_MATCH_NONE);
+        assert(stats.candidates_considered == 0);
+        assert(stats.candidates_verified == 0);
+    }
+
+    assert(qdaln_index_assign_status_stats(idx, reads, read_lens, 2, 1, results, &stats) == 0);
+    assert(results[0].status == QDALN_MATCH_NONE);
+    assert(results[1].status == QDALN_MATCH_NONE);
+    assert(stats.candidates_considered == 0);
+    assert(stats.candidates_verified == 0);
+
+    assert(qdaln_index_assign_hamming_stats(idx, reads, read_lens, 2, 1, results, &stats) == 0);
+    assert(results[0].status == QDALN_MATCH_NONE);
+    assert(results[1].status == QDALN_MATCH_NONE);
+    assert(stats.candidates_considered == 0);
+    assert(stats.candidates_verified == 0);
+    qdaln_index_free(idx);
+}
+
 static void index_duplicate_exact_tests(void) {
     const char *targets[] = {"ACGT", "ACGT", "AGGT"};
     size_t target_lens[] = {4, 4, 4};
@@ -286,6 +317,44 @@ static void levenshtein_k1_avoids_false_deletion_seed_candidates_tests(void) {
     assert_match_result(indexed[0], scan[0]);
     assert(indexed[0].match_count == 4);
     assert(stats.candidates_verified == 4);
+    assert(stats.candidates_considered == stats.candidates_verified);
+    qdaln_index_free(idx);
+}
+
+static void levenshtein_k2_uses_index_without_full_scan_tests(void) {
+    const char *targets[] = {
+        "ACGTACGT",    /* exact */
+        "ACGTTCGA",    /* two substitutions */
+        "ACGTTACGT",   /* target has one inserted base */
+        "ACGTTTACGT",  /* target has two inserted bases */
+        "ACGACGT",     /* read has one inserted base */
+        "ACACGT",      /* read has two inserted bases */
+        "TTTTTTTT",
+        "CCCCCCCC",
+        "GGGGGGGG",
+        "TGTGTGTG",
+        "CACACACA",
+        "GATCGATC",
+        "TTAACCGG",
+        "CCGGTTAA",
+        "GGCCAATT",
+        "TCCGTCCG",
+    };
+    size_t target_lens[] = {8, 8, 9, 10, 7, 6, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8};
+    const char *reads[] = {"ACGTACGT"};
+    size_t read_lens[] = {8};
+    qdaln_match_result scan[1];
+    qdaln_match_result indexed[1];
+    qdaln_index_stats stats;
+
+    qdaln_index *idx = qdaln_index_build(targets, target_lens, 16);
+    assert(idx != NULL);
+    assert(qdaln_match_many(reads, read_lens, 1, targets, target_lens, 16, 2, scan) == 0);
+    assert(qdaln_index_assign_stats(idx, reads, read_lens, 1, 2, indexed, &stats) == 0);
+
+    assert(scan[0].match_count == 6);
+    assert_match_result(indexed[0], scan[0]);
+    assert(stats.candidates_verified < 16);
     assert(stats.candidates_considered == stats.candidates_verified);
     qdaln_index_free(idx);
 }
@@ -610,9 +679,11 @@ int main(void) {
     batch_fixed_tests();
     assignment_contract_tests();
     index_fixed_tests();
+    empty_index_tests();
     index_duplicate_exact_tests();
     index_stats_pruning_tests();
     levenshtein_k1_avoids_false_deletion_seed_candidates_tests();
+    levenshtein_k2_uses_index_without_full_scan_tests();
     hamming_single_unknown_uses_index_tests();
     levenshtein_non_acgt_indel_uses_index_tests();
     index_status_shortcut_stops_after_ambiguity_tests();

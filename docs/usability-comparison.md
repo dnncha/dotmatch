@@ -24,6 +24,7 @@ dotmatch count \
   --k 1 \
   --metric levenshtein \
   --indel-window 1 \
+  --ambiguity-policy radius \
   --auto-offset 2 \
   --out counts.tsv \
   --summary summary.json \

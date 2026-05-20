@@ -29,9 +29,9 @@ def test_make_fixture_includes_panel_targets_and_diagnostic_reads(tmp_path):
     assert "@unmatched\nCCCCCCCCCCCC" in reads
     assert fixture.expected == {
         "total_reads": 6,
-        "assigned_unique": 4,
-        "assigned_exact": 4,
-        "ambiguous": 1,
+        "assigned_unique": 2,
+        "assigned_exact": 2,
+        "ambiguous": 3,
         "unmatched": 1,
     }
 
@@ -43,18 +43,18 @@ def test_validation_detects_summary_mismatches(tmp_path):
         json.dumps(
             {
                 "total_reads": 6,
-                "assigned_unique": 4,
-                "assigned_exact": 4,
-                "ambiguous": 1,
+                "assigned_unique": 2,
+                "assigned_exact": 2,
+                "ambiguous": 3,
                 "unmatched": 1,
             }
         ),
         encoding="utf-8",
     )
 
-    assert bench.validation_mismatches(summary, {"assigned_unique": 4, "ambiguous": 1}) == []
-    assert bench.validation_mismatches(summary, {"assigned_unique": 5, "ambiguous": 1}) == [
-        "assigned_unique expected 5 observed 4"
+    assert bench.validation_mismatches(summary, {"assigned_unique": 2, "ambiguous": 3}) == []
+    assert bench.validation_mismatches(summary, {"assigned_unique": 5, "ambiguous": 3}) == [
+        "assigned_unique expected 5 observed 2"
     ]
 
 

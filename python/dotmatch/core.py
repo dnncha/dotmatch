@@ -180,9 +180,39 @@ def _results_to_python(results: ctypes.Array) -> list[MatchResult]:
     ]
 
 
-def assign(reads: Sequence[str | bytes], barcodes: Sequence[str | bytes], k: int = 1) -> list[MatchResult]:
+def _normalize_policy(policy: str) -> str:
+    if policy not in {"radius", "best"}:
+        raise ValueError("policy must be 'radius' or 'best'")
+    return policy
+
+
+def _apply_policy(results: list[MatchResult], policy: str) -> list[MatchResult]:
+    policy = _normalize_policy(policy)
+    if policy == "best":
+        return results
+    return [
+        MatchResult(
+            target_index=r.target_index,
+            best_distance=r.best_distance,
+            second_best_distance=r.second_best_distance,
+            match_count=r.match_count,
+            status=MATCH_AMBIGUOUS,
+        )
+        if r.status == MATCH_UNIQUE and r.match_count > 1
+        else r
+        for r in results
+    ]
+
+
+def assign(
+    reads: Sequence[str | bytes],
+    barcodes: Sequence[str | bytes],
+    k: int = 1,
+    policy: str = "radius",
+) -> list[MatchResult]:
     if k < 0:
         raise ValueError("k must be non-negative")
+    _normalize_policy(policy)
     _read_bytes, read_ptrs, read_lens = _array_inputs(reads)
     _target_bytes, target_ptrs, target_lens = _array_inputs(barcodes)
     results = (_CMatchResult * len(reads))()
@@ -202,7 +232,7 @@ def assign(reads: Sequence[str | bytes], barcodes: Sequence[str | bytes], k: int
     if rc != 0:
         raise ValueError("invalid batch assignment input")
 
-    return _results_to_python(results)
+    return _apply_policy(_results_to_python(results), policy)
 
 
 class Matcher:
@@ -233,15 +263,21 @@ class Matcher:
         except Exception:
             pass
 
-    def assign(self, reads: Sequence[str | bytes], k: int = 1) -> list[MatchResult]:
-        results, _stats = self.assign_with_stats(reads, k=k)
+    def assign(self, reads: Sequence[str | bytes], k: int = 1, policy: str = "radius") -> list[MatchResult]:
+        results, _stats = self.assign_with_stats(reads, k=k, policy=policy)
         return results
 
-    def assign_with_stats(self, reads: Sequence[str | bytes], k: int = 1) -> tuple[list[MatchResult], AssignmentStats]:
+    def assign_with_stats(
+        self,
+        reads: Sequence[str | bytes],
+        k: int = 1,
+        policy: str = "radius",
+    ) -> tuple[list[MatchResult], AssignmentStats]:
         if self._closed:
             raise ValueError("matcher is closed")
         if k < 0:
             raise ValueError("k must be non-negative")
+        _normalize_policy(policy)
 
         _read_bytes, read_ptrs, read_lens = _array_inputs(reads)
         results = (_CMatchResult * len(reads))()
@@ -260,7 +296,7 @@ class Matcher:
         if rc != 0:
             raise ValueError("invalid indexed assignment input")
 
-        return _results_to_python(results), AssignmentStats(
+        return _apply_policy(_results_to_python(results), policy), AssignmentStats(
             candidates_considered=int(stats.candidates_considered),
             candidates_verified=int(stats.candidates_verified),
         )

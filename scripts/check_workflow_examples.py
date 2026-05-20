@@ -78,7 +78,8 @@ def check_snakemake(root: Path, result: WorkflowAudit) -> None:
     _require(snakefile, "crispr_qc.html", "Snakemake AssaySpec rule must expose crispr_qc.html", result)
     _require(snakefile, "crispr_qc.json", "Snakemake AssaySpec rule must expose crispr_qc.json", result)
     _require(snakefile, "crispr_qc.summary.tsv", "Snakemake AssaySpec rule must expose crispr_qc.summary.tsv", result)
-    _require(snakefile, "--ambiguous discard", "Snakemake Snakefile must keep ambiguity policy explicit", result)
+    _require(snakefile, "--ambiguity-policy radius", "Snakemake Snakefile must keep assignment ambiguity policy explicit", result)
+    _require(snakefile, "--ambiguous discard", "Snakemake Snakefile must keep ambiguous-output handling explicit", result)
     _require(snakefile, "--sample-qc", "Snakemake Snakefile must emit sample_qc.tsv for MultiQC", result)
     _require(snakefile, "sample_qc", "Snakemake Snakefile must declare sample_qc output", result)
 
@@ -111,7 +112,8 @@ def check_nextflow(root: Path, result: WorkflowAudit) -> None:
         ("path \"crispr_qc.html\", emit: assay_crispr_qc_report", "Nextflow AssaySpec workflow must emit crispr_qc.html"),
         ("path \"crispr_qc.json\", emit: assay_crispr_qc_json", "Nextflow AssaySpec workflow must emit crispr_qc.json"),
         ("path \"crispr_qc.summary.tsv\", emit: assay_crispr_qc_summary", "Nextflow AssaySpec workflow must emit crispr_qc.summary.tsv"),
-        ("--ambiguous discard", "Nextflow workflow must keep ambiguity policy explicit"),
+        ("--ambiguity-policy radius", "Nextflow workflow must keep assignment ambiguity policy explicit"),
+        ("--ambiguous discard", "Nextflow workflow must keep ambiguous-output handling explicit"),
         ("--sample-qc", "Nextflow workflow must emit sample_qc.tsv for MultiQC"),
         ("path \"sample_qc.tsv\", emit: sample_qc", "Nextflow workflow must declare sample_qc output"),
         ("publishDir params.outdir", "Nextflow workflow must publish outputs to params.outdir"),
@@ -135,7 +137,8 @@ def check_nfcore(root: Path, result: WorkflowAudit) -> None:
         ("process DOTMATCH_CRISPR_COUNT", "nf-core module missing DOTMATCH_CRISPR_COUNT process"),
         ("tuple val(meta), path(reads), path(library)", "nf-core module missing expected input tuple"),
         ("dotmatch crispr-count", "nf-core module must run dotmatch crispr-count"),
-        ("--ambiguous discard", "nf-core module must keep ambiguity policy explicit"),
+        ("--ambiguity-policy radius", "nf-core module must keep assignment ambiguity policy explicit"),
+        ("--ambiguous discard", "nf-core module must keep ambiguous-output handling explicit"),
         ("--sample-qc", "nf-core module must emit sample_qc.tsv for MultiQC"),
         ("emit: sample_qc", "nf-core module must declare sample_qc output"),
         ("versions.yml", "nf-core module must emit versions.yml"),
@@ -320,6 +323,7 @@ def check_galaxy(root: Path, result: WorkflowAudit) -> None:
         result.failures.append("Galaxy wrapper must be tool id dotmatch_crispr_count")
     command = wrapper.findtext("command") or ""
     _require(command, "dotmatch crispr-count", "Galaxy wrapper command must run dotmatch crispr-count", result)
+    _require(command, "--ambiguity-policy radius", "Galaxy wrapper command must keep assignment ambiguity policy explicit", result)
     _require(command, "--ambiguous", "Galaxy wrapper command must expose --ambiguous", result)
     _require(command, "--summary", "Galaxy wrapper command must include --summary", result)
     _require(command, "--sample-qc", "Galaxy wrapper command must include --sample-qc", result)
@@ -366,6 +370,7 @@ def check_galaxy(root: Path, result: WorkflowAudit) -> None:
             result.failures.append("Galaxy AssaySpec wrapper must be tool id dotmatch_assay_run")
         assay_command = assay_wrapper.findtext("command") or ""
         _require(assay_command, "cat > assay.toml", "Galaxy AssaySpec wrapper command must generate an AssaySpec from staged inputs", result)
+        _require(assay_command, 'ambiguity_policy = "radius"', "Galaxy AssaySpec wrapper command must keep assignment ambiguity policy explicit", result)
         _require(assay_command, "dotmatch assay run assay.toml", "Galaxy AssaySpec wrapper command must run dotmatch assay run", result)
         assay_input_names = {node.attrib.get("name", "") for node in assay_wrapper.findall("./inputs/param")}
         required_inputs = {"library", "sample1_fastq", "sample1_label", "sample2_fastq", "sample2_label", "guide_start", "guide_length", "k", "metric", "ambiguous"}

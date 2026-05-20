@@ -34,7 +34,7 @@ def _write_workflow_repo(root: Path) -> None:
             "    shell: 'dotmatch assay run {input.spec}'\n"
             "rule dotmatch_crispr_count:\n"
             "    output: counts='counts.mageck.tsv', summary='summary.json', sample_qc='sample_qc.tsv'\n"
-            "    shell: 'dotmatch crispr-count --ambiguous discard --summary {output.summary} --sample-qc {output.sample_qc}'\n"
+            "    shell: 'dotmatch crispr-count --ambiguity-policy radius --ambiguous discard --summary {output.summary} --sample-qc {output.sample_qc}'\n"
         ),
         "examples/workflows/nextflow/nextflow.config": (
             "params {\n"
@@ -54,7 +54,7 @@ def _write_workflow_repo(root: Path) -> None:
             "  path \"sample_qc.tsv\", emit: sample_qc\n"
             "  script:\n"
             "  \"\"\"\n"
-            "  dotmatch crispr-count --ambiguous discard --summary summary.json --sample-qc sample_qc.tsv\n"
+            "  dotmatch crispr-count --ambiguity-policy radius --ambiguous discard --summary summary.json --sample-qc sample_qc.tsv\n"
             "  \"\"\"\n"
             "}\n"
             "process DOTMATCH_ASSAY_RUN {\n"
@@ -93,7 +93,7 @@ def _write_workflow_repo(root: Path) -> None:
             "  tuple val(meta), path('sample_qc.tsv'), emit: sample_qc\n"
             "  script:\n"
             "  \"\"\"\n"
-            "  dotmatch crispr-count --ambiguous discard --summary summary.json --sample-qc sample_qc.tsv\n"
+            "  dotmatch crispr-count --ambiguity-policy radius --ambiguous discard --summary summary.json --sample-qc sample_qc.tsv\n"
             "  dotmatch --version > versions.yml\n"
             "  $task.ext.args\n"
             "  \"\"\"\n"
@@ -248,7 +248,7 @@ def _write_workflow_repo(root: Path) -> None:
         "examples/workflows/galaxy/dotmatch_crispr_count.xml": (
             "<tool id=\"dotmatch_crispr_count\">\n"
             "  <requirements><requirement type=\"package\">dotmatch</requirement></requirements>\n"
-            "  <command>dotmatch crispr-count --ambiguous discard --summary '$summary' --sample-qc '$sample_qc'</command>\n"
+            "  <command>dotmatch crispr-count --ambiguity-policy radius --ambiguous discard --summary '$summary' --sample-qc '$sample_qc'</command>\n"
             "  <outputs><data name=\"counts\"/><data name=\"summary\"/><data name=\"sample_qc\"/></outputs>\n"
             "  <tests><test><param name=\"library\" value=\"crispr_library.csv\"/><param name=\"sample1_fastq\" value=\"sample_a.fastq\"/><param name=\"sample1_label\" value=\"sample_a\"/><param name=\"sample2_fastq\" value=\"sample_b.fastq\"/><param name=\"sample2_label\" value=\"sample_b\"/><output name=\"counts\" file=\"expected_counts.mageck.tsv\"/><output name=\"sample_qc\"><assert_contents><has_text text=\"assignment_rate\"/><has_text text=\"sample_a\"/><has_text text=\"sample_b\"/></assert_contents></output></test></tests>\n"
             "</tool>\n"
@@ -256,7 +256,7 @@ def _write_workflow_repo(root: Path) -> None:
         "examples/workflows/galaxy/dotmatch_assay_run.xml": (
             "<tool id=\"dotmatch_assay_run\">\n"
             "  <requirements><requirement type=\"package\">dotmatch</requirement></requirements>\n"
-            "  <command>cat > assay.toml\n dotmatch assay run assay.toml</command>\n"
+            "  <command>cat > assay.toml\nambiguity_policy = \"radius\"\n dotmatch assay run assay.toml</command>\n"
             "  <inputs><param name=\"library\"/><param name=\"sample1_fastq\"/><param name=\"sample1_label\"/><param name=\"sample2_fastq\"/><param name=\"sample2_label\"/><param name=\"guide_start\"/><param name=\"guide_length\"/><param name=\"k\"/><param name=\"metric\"/><param name=\"ambiguous\"/></inputs>\n"
             "  <outputs><data name=\"assay_report\" from_work_dir=\"assay_out/assay_report.html\"/><data name=\"assay_manifest\" from_work_dir=\"assay_out/assay_manifest.json\"/><data name=\"assay_manifest_summary\" from_work_dir=\"assay_out/assay_manifest.summary.tsv\"/><data name=\"sample_qc\" from_work_dir=\"assay_out/sample_qc.tsv\"/><data name=\"crispr_qc_report\" from_work_dir=\"assay_out/crispr_qc.html\"/><data name=\"crispr_qc_json\" from_work_dir=\"assay_out/crispr_qc.json\"/><data name=\"crispr_qc_summary\" from_work_dir=\"assay_out/crispr_qc.summary.tsv\"/><data name=\"counts\" from_work_dir=\"assay_out/counts.mageck.tsv\"/><data name=\"summary\" from_work_dir=\"assay_out/summary.json\"/></outputs>\n"
             "  <tests><test><param name=\"library\" value=\"crispr_library.csv\"/><param name=\"sample1_fastq\" value=\"sample_a.fastq\"/><param name=\"sample1_label\" value=\"sample_a\"/><param name=\"sample2_fastq\" value=\"sample_b.fastq\"/><param name=\"sample2_label\" value=\"sample_b\"/><output name=\"assay_report\"><assert_contents><has_text text=\"DotMatch Assay Report\"/></assert_contents></output><output name=\"assay_manifest_summary\"><assert_contents><has_text text=\"primary_report\"/></assert_contents></output><output name=\"crispr_qc_summary\"><assert_contents><has_text text=\"qc_status\"/></assert_contents></output><output name=\"crispr_qc_report\"><assert_contents><has_text text=\"DotMatch CRISPR QC\"/></assert_contents></output></test></tests>\n"
@@ -280,7 +280,7 @@ def _write_workflow_repo(root: Path) -> None:
         ),
         "examples/workflows/fixtures/expected_counts.mageck.tsv": (
             "sgRNA\tGene\tsample_a\tsample_b\n"
-            "guide_a\tGENEA\t1\t0\n"
+            "guide_a\tGENEA\t0\t0\n"
             "guide_b\tGENEB\t0\t0\n"
             "guide_c\tGENEC\t0\t1\n"
         ),
@@ -290,9 +290,9 @@ def _write_workflow_repo(root: Path) -> None:
             "no_match_reads\tinvalid_reads\tassignment_rate\texact_rate\trescue_rate\tambiguous_rate\t"
             "no_match_rate\ttargets_observed\tzero_count_targets\tgini_index\ttop_1pct_read_fraction\t"
             "candidates_verified\n"
-            "sample_a\tsample_a.fastq\t4\t3\t1\t1\t0\t0\t0\t0\t1\t1\t1\t0.33333333\t"
-            "0.33333333\t0.00000000\t0.33333333\t0.33333333\t1\t2\t0.66666667\t"
-            "1.00000000\t3\n"
+            "sample_a\tsample_a.fastq\t4\t3\t0\t0\t0\t0\t0\t0\t2\t1\t1\t0.00000000\t"
+            "0.00000000\t0.00000000\t0.66666667\t0.33333333\t0\t3\t0.00000000\t"
+            "0.00000000\t4\n"
             "sample_b\tsample_b.fastq\t2\t2\t1\t1\t0\t0\t0\t0\t0\t1\t0\t0.50000000\t"
             "0.50000000\t0.00000000\t0.00000000\t0.50000000\t1\t2\t0.66666667\t"
             "1.00000000\t1\n"
@@ -310,6 +310,7 @@ def _write_workflow_repo(root: Path) -> None:
             "[assignment]\n"
             "k = 1\n"
             "metric = \"hamming\"\n"
+            "ambiguity_policy = \"radius\"\n"
             "[[samples]]\n"
             "id = \"sample_a\"\n"
             "fastq = \"examples/workflows/fixtures/sample_a.fastq\"\n"
@@ -328,7 +329,7 @@ def _write_workflow_repo(root: Path) -> None:
         ),
         "examples/workflows/galaxy/test-data/expected_counts.mageck.tsv": (
             "sgRNA\tGene\tsample_a\tsample_b\n"
-            "guide_a\tGENEA\t1\t0\n"
+            "guide_a\tGENEA\t0\t0\n"
             "guide_b\tGENEB\t0\t0\n"
             "guide_c\tGENEC\t0\t1\n"
         ),
@@ -345,6 +346,7 @@ def _write_workflow_repo(root: Path) -> None:
             "[assignment]\n"
             "k = 1\n"
             "metric = \"hamming\"\n"
+            "ambiguity_policy = \"radius\"\n"
             "[[samples]]\n"
             "id = \"sample_a\"\n"
             "fastq = \"sample_a.fastq\"\n"

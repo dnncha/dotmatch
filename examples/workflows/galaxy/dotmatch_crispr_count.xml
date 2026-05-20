@@ -16,6 +16,7 @@ dotmatch crispr-count \
   --guide-length '$guide_length' \
   --k '$k' \
   --metric '$metric' \
+  --ambiguity-policy radius \
 #if str($metric) == 'levenshtein' and int($indel_window) > 0
   --indel-window '$indel_window' \
 #end if

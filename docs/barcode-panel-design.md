@@ -31,9 +31,9 @@ Every designed panel includes a machine-checkable safety certificate:
 
 ## Safety Semantics
 
-Panel safety is checked under DotMatch assignment outcomes: `unique`, `ambiguous`, `none`, and `invalid`.
+Panel safety is checked under DotMatch assignment outcomes: `unique`, `ambiguous`, `none`, and `invalid`, using the same default radius ambiguity policy as demux and counting.
 
-DotMatch never marks a panel safe for a configured correction radius when any query inside the checked error sphere maps ambiguously. It also reports silent assignment risk, where a possible error from one barcode would be assigned uniquely to another barcode.
+DotMatch never marks a panel safe for a configured correction radius when any query inside the checked error sphere maps ambiguously. If `ambiguity_policy = "best"` is selected for compatibility, the report also includes silent assignment risk: possible errors from one barcode that would be assigned uniquely to another barcode.
 
 The v1 certificate exhaustively enumerates configured error spheres up to `k=2`. Requests above `k=2` are refused rather than downgraded to a partial proof.
 

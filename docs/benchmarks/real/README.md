@@ -16,12 +16,12 @@ This report uses real public MAGeCK/Yusa CRISPR screen inputs, not synthetic rea
 
 | tool | workflow | n_reads | n_targets | len | k | seconds | reads_per_sec | candidates_per_read | verified_per_read | checksum | mismatches |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| dotmatch_indexed | public_crispr_yusa | 25 | 87437 | 19 | 1 | 0.00 | 17972.70 | 0.84 | 0.84 | 14224824 | 0 |
-| edlib_native_scan | public_crispr_yusa | 25 | 87437 | 19 | 1 | 1.72 | 14.50 | 87437.00 | 87437.00 | 14224824 | 0 |
+| dotmatch_indexed | public_crispr_yusa | 25 | 87437 | 19 | 1 | 0.00 | 19669.60 | 0.84 | 0.84 | 14224824 | 0 |
+| edlib_native_scan | public_crispr_yusa | 25 | 87437 | 19 | 1 | 1.80 | 13.90 | 87437.00 | 87437.00 | 14224824 | 0 |
 
 ## Speedup
 
-DotMatch indexed speedup vs native Edlib scan on this real-data subset: `1239.50x`.
+DotMatch indexed speedup vs native Edlib scan on this real-data subset: `1415.08x`.
 
 ## Workflow Comparator Availability
 

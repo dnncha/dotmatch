@@ -90,8 +90,8 @@ def make_fixture(work: Path) -> Fixture:
         reads=reads,
         expected={
             "total_reads": 7,
-            "assigned_pairs": 3,
-            "pair_ambiguous": 1,
+            "assigned_pairs": 1,
+            "pair_ambiguous": 4,
             "left_unmatched": 1,
             "right_unmatched": 1,
             "invalid": 1,

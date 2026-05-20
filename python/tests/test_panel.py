@@ -45,8 +45,22 @@ def test_panel_check_fails_ambiguous_k1_hamming(tmp_path: Path) -> None:
     assert summary["unsafe_k1_variants"] > 0
     assert summary["safe_for_k1_hamming"] is False
     assert "dotmatch demux" in summary["certified_dotmatch_command"]
+    assert "--ambiguity-policy radius" in summary["certified_dotmatch_command"]
     assert _rows(out_dir / "ambiguous_error_spheres.tsv")
     assert (out_dir / "panel_report.html").read_text(encoding="utf-8").count("Do not use") >= 1
+
+
+def test_panel_check_treats_exact_neighbors_as_radius_ambiguous(tmp_path: Path) -> None:
+    panel = tmp_path / "panel.tsv"
+    panel.write_text("barcode_id\tsequence\nBC001\tACGT\nBC002\tACGA\n", encoding="utf-8")
+    out_dir = tmp_path / "check"
+
+    rc = _run_cli(["panel", "check", str(panel), "--k", "1", "--metric", "hamming", "--out-dir", str(out_dir)])
+
+    assert rc.returncode == 1, rc.stderr
+    rows = _rows(out_dir / "ambiguous_error_spheres.tsv")
+    assert any(row["source_barcode_id"] == "BC001" and row["variant"] == "ACGT" for row in rows)
+    assert any(row["source_barcode_id"] == "BC002" and row["variant"] == "ACGA" for row in rows)
 
 
 def test_panel_check_detects_silent_assignment_and_reverse_complement_risk(tmp_path: Path) -> None:
@@ -63,6 +77,8 @@ def test_panel_check_detects_silent_assignment_and_reverse_complement_risk(tmp_p
             "1",
             "--metric",
             "hamming",
+            "--ambiguity-policy",
+            "best",
             "--reverse-complement-mode",
             "warn",
             "--out-dir",

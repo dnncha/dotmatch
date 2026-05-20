@@ -399,9 +399,9 @@ def test_crispr_qc_writes_count_qc_report(tmp_path):
     assert report["library"]["collision_radius_audited"] == 1
     assert report["library"]["safe_for_audited_radius"] is False
     assert report["library"]["safe_for_k"] is False
-    assert report["samples"]["sample_a"]["assignment_rate"] == 0.33333333
+    assert report["samples"]["sample_a"]["assignment_rate"] == 0.0
     assert report["samples"]["sample_a"]["invalid_rate"] == 0.25
-    assert report["samples"]["sample_a"]["zero_count_fraction"] == 2 / 3
+    assert report["samples"]["sample_a"]["zero_count_fraction"] == 1.0
     assert report["samples"]["sample_a"]["gini_index"] >= 0
     assert report["samples"]["sample_a"]["qc_status"] == "review"
     assert report["sample_correlations"][0]["sample_a"] == "sample_a"

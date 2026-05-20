@@ -352,6 +352,124 @@ h1 {
   margin-bottom: 2.5rem;
 }
 
+.real-workflows-section {
+  background:
+    linear-gradient(180deg, #f7fbf9, #ffffff 46%),
+    #fff;
+}
+
+.real-workflow-list {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.real-workflow-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(380px, 0.85fr);
+  gap: 1rem;
+  align-items: start;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 16px 46px rgba(16, 21, 19, 0.07);
+}
+
+.real-workflow-visual {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.real-workflow-visual img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+}
+
+.real-workflow-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0.35rem 0.25rem 0.35rem 0.65rem;
+}
+
+.real-workflow-copy h3 {
+  max-width: 620px;
+  margin-bottom: 0.75rem;
+  font-size: 2rem;
+  line-height: 1.05;
+}
+
+.workflow-question {
+  color: var(--ink);
+  font-size: 1.08rem;
+  font-weight: 780;
+  line-height: 1.4;
+}
+
+.real-workflow-copy p {
+  color: var(--muted);
+  line-height: 1.58;
+}
+
+.real-workflow-copy pre {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 0.35rem 0 1rem;
+  padding: 1rem;
+  border: 1px solid #1d2a24;
+  border-radius: 8px;
+  background: #08110d;
+}
+
+.real-workflow-copy pre code {
+  color: #d9f9eb;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.82rem;
+  line-height: 1.52;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.output-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+}
+
+.output-chip-row code {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 0.55rem;
+  border: 1px solid rgba(14, 124, 90, 0.22);
+  border-radius: 6px;
+  color: var(--green);
+  background: var(--mint);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.82rem;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.boundary-note {
+  margin-bottom: 0;
+  padding: 0.85rem 1rem;
+  border-left: 3px solid #b26a00;
+  color: #6d4c10;
+  background: #fff8e8;
+}
+
 h2 {
   max-width: 850px;
   margin-bottom: 1rem;
@@ -1247,6 +1365,7 @@ h3 {
   }
 
   .hero,
+  .real-workflow-card,
   .panel-design-layout,
   .autopsy-layout,
   .report-preview,
@@ -1305,6 +1424,8 @@ h3 {
   .hero-copy,
   .hero-panel,
   .section-heading,
+  .real-workflow-card,
+  .real-workflow-visual,
   .autopsy-command,
   .panel-command,
   .panel-design-visual,
@@ -1377,6 +1498,22 @@ h3 {
 
   .panel-design-visual img {
     min-height: 260px;
+  }
+
+  .real-workflow-card {
+    padding: 0.75rem;
+  }
+
+  .real-workflow-visual img {
+    aspect-ratio: 3 / 2;
+  }
+
+  .real-workflow-copy {
+    padding: 0.25rem;
+  }
+
+  .real-workflow-copy h3 {
+    font-size: 1.55rem;
   }
 
   .hero-actions {

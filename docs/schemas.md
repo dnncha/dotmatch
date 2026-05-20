@@ -324,6 +324,11 @@ samples
 For count and demux summaries, `k=2` is currently a Levenshtein-only fixed-window
 mode. Hamming summaries remain limited to `k=0` and `k=1`.
 
+`ambiguity_policy` is `radius` by default for user-facing assignment workflows:
+`unique` means exactly one target is inside the configured radius. `best` is an
+explicit compatibility mode that allows a nearer target to win even when other
+targets are also inside the radius.
+
 `alphabet_policy` records the assignment alphabet contract reported by
 `qdaln_alphabet_policy()`: `N` and IUPAC ambiguity symbols are literal byte
 symbols, not wildcard expansions. Demultiplexing summaries include the same

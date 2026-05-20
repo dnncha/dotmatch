@@ -3,23 +3,23 @@
 <text class="title" x="20" y="28">Repeated public CRISPR peak RSS</text>
 <text class="axis" x="20" y="50">Maximum observed peak resident memory across repeated runs</text>
 <text x="20" y="91">dotmatch_exact_k0 (10000/sample)</text>
-<rect class="bar" x="430" y="76" width="32" height="19" rx="2"/>
-<text x="470" y="90">28.60 MB</text>
+<rect class="bar" x="430" y="76" width="126" height="19" rx="2"/>
+<text x="564" y="90">111.80 MB</text>
 <text x="20" y="123">dotmatch_exact_k0 (100000/sample)</text>
-<rect class="bar" x="430" y="108" width="32" height="19" rx="2"/>
-<text x="470" y="122">28.70 MB</text>
+<rect class="bar" x="430" y="108" width="128" height="19" rx="2"/>
+<text x="566" y="122">113.30 MB</text>
 <text x="20" y="155">dotmatch_hamming_k1 (10000/sample)</text>
-<rect class="bar" x="430" y="140" width="30" height="19" rx="2"/>
-<text x="468" y="154">26.70 MB</text>
+<rect class="bar" x="430" y="140" width="131" height="19" rx="2"/>
+<text x="569" y="154">115.80 MB</text>
 <text x="20" y="187">dotmatch_hamming_k1 (100000/sample)</text>
-<rect class="bar" x="430" y="172" width="32" height="19" rx="2"/>
-<text x="470" y="186">28.70 MB</text>
+<rect class="bar" x="430" y="172" width="137" height="19" rx="2"/>
+<text x="575" y="186">121.40 MB</text>
 <text x="20" y="219">dotmatch_levenshtein_k1 (10000/sample)</text>
-<rect class="bar" x="430" y="204" width="32" height="19" rx="2"/>
-<text x="470" y="218">28.90 MB</text>
+<rect class="bar" x="430" y="204" width="129" height="19" rx="2"/>
+<text x="567" y="218">114.40 MB</text>
 <text x="20" y="251">dotmatch_levenshtein_k1 (100000/sample)</text>
-<rect class="bar" x="430" y="236" width="31" height="19" rx="2"/>
-<text x="469" y="250">27.50 MB</text>
+<rect class="bar" x="430" y="236" width="133" height="19" rx="2"/>
+<text x="571" y="250">117.60 MB</text>
 <text x="20" y="283">guide_counter_one_mismatch (10000/sample)</text>
 <rect class="bar" x="430" y="268" width="600" height="19" rx="2"/>
 <text x="1038" y="282">528.70 MB</text>
@@ -27,9 +27,9 @@
 <rect class="bar" x="430" y="300" width="600" height="19" rx="2"/>
 <text x="1038" y="314">528.70 MB</text>
 <text x="20" y="347">mageck_count_exact (10000/sample)</text>
-<rect class="bar" x="430" y="332" width="176" height="19" rx="2"/>
-<text x="614" y="346">155.20 MB</text>
+<rect class="bar" x="430" y="332" width="146" height="19" rx="2"/>
+<text x="584" y="346">129.50 MB</text>
 <text x="20" y="379">mageck_count_exact (100000/sample)</text>
-<rect class="bar" x="430" y="364" width="180" height="19" rx="2"/>
-<text x="618" y="378">158.90 MB</text>
+<rect class="bar" x="430" y="364" width="174" height="19" rx="2"/>
+<text x="612" y="378">153.60 MB</text>
 </svg>

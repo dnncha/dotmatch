@@ -39,6 +39,7 @@ cat examples/workflows/fixtures/crispr_library.csv
   --guide-length 4 \
   --k 1 \
   --metric hamming \
+  --ambiguity-policy radius \
   --out tmp/crispr-first-run/counts.mageck.tsv \
   --summary tmp/crispr-first-run/qc.json \
   --sample-qc tmp/crispr-first-run/sample_qc.tsv \
@@ -55,7 +56,7 @@ Expected output:
 
 ```text
 sgRNA	Gene	sample_a	sample_b
-guide_a	GENEA	1	0
+guide_a	GENEA	0	0
 guide_b	GENEB	0	0
 guide_c	GENEC	0	1
 ```
@@ -79,9 +80,10 @@ The key columns are:
 - `invalid_reads`: reads too short for the configured guide window.
 - `candidates_verified`: native target candidates checked after indexing.
 
-In `sample_a`, the fixture deliberately includes one exact guide assignment, one
-ambiguous one-edit read, one unmatched read, and one invalid short read. That is
-the behavior DotMatch is designed to expose rather than hide.
+In `sample_a`, the fixture deliberately includes one exact read that is withheld
+because another guide is inside the one-edit radius, one ambiguous one-edit
+read, one unmatched read, and one invalid short read. That is the behavior
+DotMatch is designed to expose rather than hide.
 
 ## 6. Verify against the checked fixture outputs
 

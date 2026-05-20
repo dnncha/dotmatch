@@ -45,8 +45,8 @@ def test_crispr_comparison_report_uses_relative_figure_links(tmp_path, monkeypat
     text = (out_dir / "README.md").read_text(encoding="utf-8")
     assert "](../../../benchmarks/figures/crispr_comparison_throughput.svg)" in text
     assert "|dataset|sample|checked_reads|mismatches|oracle_strategy|edlib_alignments|bounded_windows|fallback_windows|" in text
-    assert "## Full Hamming Speed Check" in text
-    assert "|mageck_yusa|50.0|100.0|0.50|blocked|" in text
+    assert "## Full Hamming Guide-Counter Ratio" in text
+    assert "|mageck_yusa|50.0|100.0|0.50|reported|" in text
     assert str(root) not in text
 
 
@@ -82,4 +82,4 @@ def test_crispr_comparison_report_aggregates_complete_full_sample_rows(tmp_path,
 
     text = (out_dir / "README.md").read_text(encoding="utf-8")
     assert "|sanson_brunello|dotmatch_hamming_k1|full|1|61737602.8|4.0000|1.0|1.000|" in text
-    assert "|sanson_brunello|61737602.8|30868801.4|2.00|pass|" in text
+    assert "|sanson_brunello|61737602.8|30868801.4|2.00|reported|" in text

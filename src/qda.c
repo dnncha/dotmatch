@@ -49,15 +49,15 @@ static void usage(const char *argv0) {
     fprintf(stderr, "  %s --version\n", argv0);
     fprintf(stderr, "  %s dist SEQ1 SEQ2\n", argv0);
     fprintf(stderr, "  %s leq K SEQ1 SEQ2\n", argv0);
-    fprintf(stderr, "  %s assign K barcodes.txt reads.txt\n", argv0);
-    fprintf(stderr, "  %s match K targets.txt reads.txt\n", argv0);
-    fprintf(stderr, "  %s fastq-assign --barcodes barcodes.tsv --reads reads.fastq[.gz] --barcode-start N --barcode-length L --k 0|1 --out assignments.tsv\n", argv0);
-    fprintf(stderr, "  %s pair-count --left-targets left.tsv --right-targets right.tsv --reads reads.fastq[.gz] --left-start N --left-length L --right-start N --right-length L --k 0|1|2 --metric hamming|levenshtein --out pair_counts.tsv [--summary summary.json]\n", argv0);
-    fprintf(stderr, "  %s demux --barcodes barcodes.tsv|barcodes.csv --reads reads.fastq[.gz] --barcode-start N --barcode-length L|auto --k 0|1|2 --metric hamming|levenshtein [--max-correction-qual Q] --out-dir demux_dir [--summary qc.json]\n", argv0);
+    fprintf(stderr, "  %s assign K barcodes.txt reads.txt [--ambiguity-policy radius|best]\n", argv0);
+    fprintf(stderr, "  %s match K targets.txt reads.txt [--ambiguity-policy radius|best]\n", argv0);
+    fprintf(stderr, "  %s fastq-assign --barcodes barcodes.tsv --reads reads.fastq[.gz] --barcode-start N --barcode-length L --k 0|1 [--ambiguity-policy radius|best] --out assignments.tsv\n", argv0);
+    fprintf(stderr, "  %s pair-count --left-targets left.tsv --right-targets right.tsv --reads reads.fastq[.gz] --left-start N --left-length L --right-start N --right-length L --k 0|1|2 --metric hamming|levenshtein [--ambiguity-policy radius|best] --out pair_counts.tsv [--summary summary.json]\n", argv0);
+    fprintf(stderr, "  %s demux --barcodes barcodes.tsv|barcodes.csv --reads reads.fastq[.gz] --barcode-start N --barcode-length L|auto --k 0|1|2 --metric hamming|levenshtein [--ambiguity-policy radius|best] [--max-correction-qual Q] --out-dir demux_dir [--summary qc.json]\n", argv0);
     fprintf(stderr, "  %s bcl-demux --run-folder RUN --sample-sheet SampleSheet.csv --out-dir demux_dir --barcode-mismatches 0|1|1,1 [--threads N] [--gzip-level 0..9] [--emit-index-fastqs] [--summary summary.json]\n", argv0);
     fprintf(stderr, "  %s bcl-validate --dotmatch-out DIR --truth-out DIR\n", argv0);
-    fprintf(stderr, "  %s count --targets targets.tsv|targets.csv --reads reads.fastq[.gz] [--reads more.fastq.gz] --sample-label labels --target-start N --target-length L --k 0|1|2 --metric hamming|levenshtein [--hamming-index auto|query|precompute] [--max-correction-qual Q] --ambiguity-policy best|radius --offset-mode best|multi --out counts.tsv [--format dotmatch|mageck]\n", argv0);
-    fprintf(stderr, "  %s crispr-count --library guides.tsv|guides.csv --samples samples.tsv --guide-start N --guide-length L --k 0|1|2 --out counts.tsv [--summary qc.json]\n", argv0);
+    fprintf(stderr, "  %s count --targets targets.tsv|targets.csv --reads reads.fastq[.gz] [--reads more.fastq.gz] --sample-label labels --target-start N --target-length L --k 0|1|2 --metric hamming|levenshtein [--hamming-index auto|query|precompute] [--max-correction-qual Q] [--ambiguity-policy radius|best] --offset-mode best|multi --out counts.tsv [--format dotmatch|mageck]\n", argv0);
+    fprintf(stderr, "  %s crispr-count --library guides.tsv|guides.csv --samples samples.tsv --guide-start N --guide-length L --k 0|1|2 [--ambiguity-policy radius|best] --out counts.tsv [--summary qc.json]\n", argv0);
     fprintf(stderr, "  %s inspect-unmatched --targets targets.tsv|targets.csv --reads reads.fastq[.gz] --target-start N --target-length L --k 0|1 --top N --out top_unmatched.tsv [--low-quality-threshold Q]\n", argv0);
     fprintf(stderr, "  %s audit --targets targets.tsv|targets.csv --k 1 --out-dir audit_dir [--audit-mode auto|exact|fast]\n", argv0);
     fprintf(stderr, "  %s validate --targets targets.tsv|targets.csv --reads reads.fastq[.gz] --target-start N --target-length L --k 0|1 [--metric hamming|levenshtein] [--indel-window 0|1] [--offset-mode best|multi] [--threads N] --oracle scan|edlib\n", argv0);
@@ -352,7 +352,7 @@ static int read_target_table(const char *path, seq_table *table) {
 }
 
 static int run_batch(const char *argv0, int argc, char **argv, const char *mode) {
-    if (argc != 5) {
+    if (argc != 5 && argc != 7) {
         usage(argv0);
         return 2;
     }
@@ -361,6 +361,22 @@ static int run_batch(const char *argv0, int argc, char **argv, const char *mode)
     if (sscanf(argv[2], "%d", &k) != 1 || k < 0) {
         usage(argv0);
         return 2;
+    }
+
+    int radius_policy = 1;
+    if (argc == 7) {
+        if (strcmp(argv[5], "--ambiguity-policy") != 0) {
+            usage(argv0);
+            return 2;
+        }
+        if (strcmp(argv[6], "radius") == 0) {
+            radius_policy = 1;
+        } else if (strcmp(argv[6], "best") == 0) {
+            radius_policy = 0;
+        } else {
+            usage(argv0);
+            return 2;
+        }
     }
 
     seq_table targets = {0};
@@ -410,6 +426,9 @@ static int run_batch(const char *argv0, int argc, char **argv, const char *mode)
     printf("mode\tread_id\tread_seq\ttarget_index\ttarget_seq\tdistance\tstatus\tmatch_count\tsecond_best_distance\n");
     for (size_t i = 0; i < reads.count; ++i) {
         qdaln_match_result r = results[i];
+        if (radius_policy && r.status == QDALN_MATCH_UNIQUE && r.match_count > 1) {
+            r.status = QDALN_MATCH_AMBIGUOUS;
+        }
         const char *target_seq = r.target_index >= 0 ? targets.records[r.target_index].seq : "";
         printf("%s\t%s\t%s\t%d\t%s\t%d\t%s\t%d\t%d\n",
                mode, reads.records[i].id, reads.records[i].seq, r.target_index,
@@ -3400,7 +3419,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
     const int crispr_mode = strcmp(argv[1], "crispr-count") == 0;
     const char *format = crispr_mode ? "mageck" : "dotmatch";
     const char *ambiguous_policy = "discard";
-    ambiguity_policy assignment_policy = AMBIGUITY_POLICY_BEST;
+    ambiguity_policy assignment_policy = AMBIGUITY_POLICY_RADIUS;
     count_metric metric = COUNT_METRIC_LEVENSHTEIN;
     hamming_index_strategy hamming_strategy = HAMMING_INDEX_AUTO;
     size_t target_start = 0;
@@ -4067,6 +4086,7 @@ static int run_fastq_assign(const char *argv0, int argc, char **argv) {
     const char *barcodes_path = NULL;
     const char *reads_path = NULL;
     const char *out_path = NULL;
+    ambiguity_policy assignment_policy = AMBIGUITY_POLICY_RADIUS;
     size_t barcode_start = 0;
     size_t barcode_len = 0;
     int k = -1;
@@ -4090,6 +4110,16 @@ static int run_fastq_assign(const char *argv0, int argc, char **argv) {
             }
         } else if (strcmp(arg, "--k") == 0 && i < argc) {
             if (parse_int_value(argv[i++], &k) != 0 || (k != 0 && k != 1)) {
+                usage(argv0);
+                return 2;
+            }
+        } else if (strcmp(arg, "--ambiguity-policy") == 0 && i < argc) {
+            const char *value = argv[i++];
+            if (strcmp(value, "best") == 0) {
+                assignment_policy = AMBIGUITY_POLICY_BEST;
+            } else if (strcmp(value, "radius") == 0) {
+                assignment_policy = AMBIGUITY_POLICY_RADIUS;
+            } else {
                 usage(argv0);
                 return 2;
             }
@@ -4169,6 +4199,7 @@ static int run_fastq_assign(const char *argv0, int argc, char **argv) {
                 fprintf(stderr, "FASTQ assignment failed\n");
                 goto done;
             }
+            apply_ambiguity_policy(&result, assignment_policy);
         }
         print_fastq_row(out, &targets, read_id, observed, result);
     }
@@ -5300,6 +5331,7 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
     size_t right_len = 0;
     int k = -1;
     count_metric metric = COUNT_METRIC_LEVENSHTEIN;
+    ambiguity_policy assignment_policy = AMBIGUITY_POLICY_RADIUS;
 
     int i = 2;
     while (i < argc) {
@@ -5341,6 +5373,16 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
                 metric = COUNT_METRIC_HAMMING;
             } else if (strcmp(value, "levenshtein") == 0) {
                 metric = COUNT_METRIC_LEVENSHTEIN;
+            } else {
+                usage(argv0);
+                return 2;
+            }
+        } else if (strcmp(arg, "--ambiguity-policy") == 0 && i < argc) {
+            const char *value = argv[i++];
+            if (strcmp(value, "radius") == 0) {
+                assignment_policy = AMBIGUITY_POLICY_RADIUS;
+            } else if (strcmp(value, "best") == 0) {
+                assignment_policy = AMBIGUITY_POLICY_BEST;
             } else {
                 usage(argv0);
                 return 2;
@@ -5451,6 +5493,8 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
             fprintf(stderr, "FASTQ pair assignment failed\n");
             goto done;
         }
+        apply_ambiguity_policy(&left, assignment_policy);
+        apply_ambiguity_policy(&right, assignment_policy);
         stats.candidates_considered += left_stats.candidates_considered + right_stats.candidates_considered;
         stats.candidates_verified += left_stats.candidates_verified + right_stats.candidates_verified;
 
@@ -5497,8 +5541,8 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
             goto done;
         }
         fprintf(summary,
-                "{\n  \"workflow\": \"pair-count\",\n  \"k\": %d,\n  \"metric\": \"%s\",\n  \"alphabet_policy\": \"%s\",\n  \"left_start\": %zu,\n  \"left_length\": %zu,\n  \"right_start\": %zu,\n  \"right_length\": %zu,\n  \"n_left_targets\": %zu,\n  \"n_right_targets\": %zu,\n  \"total_reads\": %llu,\n  \"assigned_pairs\": %llu,\n  \"pair_ambiguous\": %llu,\n  \"left_unmatched\": %llu,\n  \"right_unmatched\": %llu,\n  \"invalid\": %llu,\n  \"candidates_considered\": %llu,\n  \"candidates_verified\": %llu\n}\n",
-                k, metric_name(metric), qdaln_alphabet_policy(), left_start, left_len, right_start, right_len,
+                "{\n  \"workflow\": \"pair-count\",\n  \"k\": %d,\n  \"metric\": \"%s\",\n  \"ambiguity_policy\": \"%s\",\n  \"alphabet_policy\": \"%s\",\n  \"left_start\": %zu,\n  \"left_length\": %zu,\n  \"right_start\": %zu,\n  \"right_length\": %zu,\n  \"n_left_targets\": %zu,\n  \"n_right_targets\": %zu,\n  \"total_reads\": %llu,\n  \"assigned_pairs\": %llu,\n  \"pair_ambiguous\": %llu,\n  \"left_unmatched\": %llu,\n  \"right_unmatched\": %llu,\n  \"invalid\": %llu,\n  \"candidates_considered\": %llu,\n  \"candidates_verified\": %llu\n}\n",
+                k, metric_name(metric), ambiguity_policy_name(assignment_policy), qdaln_alphabet_policy(), left_start, left_len, right_start, right_len,
                 left_targets.count, right_targets.count, stats.total_reads, stats.assigned_pairs,
                 stats.pair_ambiguous, stats.left_unmatched, stats.right_unmatched, stats.invalid,
                 stats.candidates_considered, stats.candidates_verified);
@@ -5549,6 +5593,7 @@ static int run_demux(const char *argv0, int argc, char **argv) {
     size_t indel_window = 0;
     int max_correction_qual = -1;
     int k = -1;
+    ambiguity_policy assignment_policy = AMBIGUITY_POLICY_RADIUS;
 
     int i = 2;
     while (i < argc) {
@@ -5582,6 +5627,16 @@ static int run_demux(const char *argv0, int argc, char **argv) {
                 metric = COUNT_METRIC_HAMMING;
             } else if (strcmp(value, "levenshtein") == 0) {
                 metric = COUNT_METRIC_LEVENSHTEIN;
+            } else {
+                usage(argv0);
+                return 2;
+            }
+        } else if (strcmp(arg, "--ambiguity-policy") == 0 && i < argc) {
+            const char *value = argv[i++];
+            if (strcmp(value, "radius") == 0) {
+                assignment_policy = AMBIGUITY_POLICY_RADIUS;
+            } else if (strcmp(value, "best") == 0) {
+                assignment_policy = AMBIGUITY_POLICY_BEST;
             } else {
                 usage(argv0);
                 return 2;
@@ -5736,6 +5791,7 @@ static int run_demux(const char *argv0, int argc, char **argv) {
             fprintf(stderr, "FASTQ assignment failed\n");
             goto done;
         }
+        apply_ambiguity_policy(&result, assignment_policy);
         if (result.status == QDALN_MATCH_UNIQUE && result.target_index >= 0 && result.best_distance > 0) {
             seq_record *target = &targets.records[result.target_index];
             offset_list barcode_offset = {0};
@@ -5802,8 +5858,8 @@ static int run_demux(const char *argv0, int argc, char **argv) {
             }
         }
         fprintf(summary,
-                "{\n  \"workflow\": \"demux\",\n  \"k\": %d,\n  \"metric\": \"%s\",\n  \"alphabet_policy\": \"%s\",\n  \"max_correction_qual\": ",
-                k, metric_name(metric), qdaln_alphabet_policy());
+                "{\n  \"workflow\": \"demux\",\n  \"k\": %d,\n  \"metric\": \"%s\",\n  \"ambiguity_policy\": \"%s\",\n  \"alphabet_policy\": \"%s\",\n  \"max_correction_qual\": ",
+                k, metric_name(metric), ambiguity_policy_name(assignment_policy), qdaln_alphabet_policy());
         if (max_correction_qual >= 0) {
             fprintf(summary, "%d", max_correction_qual);
         } else {

@@ -3,24 +3,24 @@
 <text class="title" x="20" y="28">Public CRISPR workflow throughput</text>
 <text class="axis" x="20" y="50">Small real MAGeCK/Yusa FASTQ subset; higher is better</text>
 <text x="20" y="90">dotmatch_exact_k0</text>
-<rect class="bar" x="260" y="75" width="204" height="20" rx="2"/>
-<text x="472" y="90">55657.8 reads/s</text>
+<rect class="bar" x="260" y="75" width="560" height="20" rx="2"/>
+<text x="828" y="90">181275.9 reads/s</text>
 <text x="20" y="124">dotmatch_levenshtein_k1</text>
-<rect class="bar" x="260" y="109" width="166" height="20" rx="2"/>
-<text x="434" y="124">45170.8 reads/s</text>
+<rect class="bar" x="260" y="109" width="18" height="20" rx="2"/>
+<text x="286" y="124">5877.9 reads/s</text>
 <text x="20" y="158">dotmatch_hamming_k1</text>
-<rect class="bar" x="260" y="143" width="560" height="20" rx="2"/>
-<text x="828" y="158">152147.7 reads/s</text>
+<rect class="bar" x="260" y="143" width="305" height="20" rx="2"/>
+<text x="573" y="158">98876.7 reads/s</text>
 <text x="20" y="192">mageck_count_exact</text>
-<rect class="bar" x="260" y="177" width="70" height="20" rx="2"/>
-<text x="338" y="192">19029.3 reads/s</text>
+<rect class="bar" x="260" y="177" width="56" height="20" rx="2"/>
+<text x="324" y="192">18197.4 reads/s</text>
 <text x="20" y="226">guide_counter_one_mismatch</text>
-<rect class="bar" x="260" y="211" width="77" height="20" rx="2"/>
-<text x="345" y="226">21020.9 reads/s</text>
+<rect class="bar" x="260" y="211" width="52" height="20" rx="2"/>
+<text x="320" y="226">17109.3 reads/s</text>
 <text x="20" y="260">external_competitors_ERR376998.fastq.gz</text>
 <rect class="bar" x="260" y="245" width="3" height="20" rx="2"/>
-<text x="271" y="260">993.0 reads/s</text>
+<text x="271" y="260">984.4 reads/s</text>
 <text x="20" y="294">external_competitors_ERR376999.fastq.gz</text>
 <rect class="bar" x="260" y="279" width="3" height="20" rx="2"/>
-<text x="271" y="294">1043.1 reads/s</text>
+<text x="271" y="294">1121.9 reads/s</text>
 </svg>

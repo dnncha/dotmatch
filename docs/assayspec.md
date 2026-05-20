@@ -72,6 +72,7 @@ length = 19
 [assignment]
 k = 1
 metric = "hamming"
+ambiguity_policy = "radius"
 ambiguous = "discard"
 
 [outputs]
@@ -105,6 +106,11 @@ the target set is unsafe at the configured `k`, `dotmatch assay run` records a
 warning and continues. It never changes `k`, target sequences, or ambiguity
 policy automatically; DotMatch's explicit `unique`/`ambiguous`/`none` semantics
 remain the authority.
+
+Templates and inferred specs default to `ambiguity_policy = "radius"`, which
+keeps any read with more than one target inside the configured radius out of
+forced assignments. Use `ambiguity_policy = "best"` only when best-distance
+compatibility is deliberate.
 
 Automatic autopsy triggers when any sample has assignment rate below `0.80`,
 ambiguous rate above `0.05`, no-match rate above `0.15`, or invalid rate above

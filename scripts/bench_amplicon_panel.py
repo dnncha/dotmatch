@@ -79,9 +79,9 @@ def make_fixture(work: Path) -> Fixture:
         reads=reads,
         expected={
             "total_reads": 6,
-            "assigned_unique": 4,
-            "assigned_exact": 4,
-            "ambiguous": 1,
+            "assigned_unique": 2,
+            "assigned_exact": 2,
+            "ambiguous": 3,
             "unmatched": 1,
         },
     )

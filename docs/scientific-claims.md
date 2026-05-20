@@ -11,13 +11,55 @@ semantics, validation notes, and a clear next step when the evidence is not
 there yet. For raw CSV files, it also checks rows, command provenance, exit
 codes where present, and recorded zero-mismatch validation columns.
 
+## System Design Review
+
+DotMatch is a deterministic known-target assignment system, not a learned
+classifier. The current design uses exact edit-distance semantics, indexed
+candidate generation, explicit ambiguity accounting, public-data benchmarks,
+workflow fixtures, and gate scripts because those are the techniques that most
+directly reduce scientist time while preserving auditability.
+
+Applied techniques:
+
+- packed A/C/G/T indexing for exact, Hamming `k=1`, Levenshtein `k=1`, and
+  Levenshtein `k=2` candidate pruning where the fixed window can be encoded;
+- exhaustive scan fallback for unsupported windows so the optimized path does
+  not change assignment semantics;
+- independent correctness checks against exhaustive scan and Edlib before
+  performance rows are treated as evidence;
+- radius ambiguity policy by default, so a read is counted only when exactly
+  one target lies inside the configured edit-distance radius;
+- Phred-quality gating for one-edit substitution and read-insertion rescue;
+- barcode-panel error-sphere enumeration through `k=2`, nearest-neighbor
+  checks, reverse-complement warnings, simulation, and machine-checkable
+  certificates;
+- workflow-specific comparator rows for MAGeCK, guide-counter, Cutadapt-style
+  barcode checks, exact-slice baselines, native Edlib scan, exact hash lookup,
+  and BK-tree baselines where the semantics are comparable;
+- HTML/TSV/JSON QC outputs, MultiQC/workflow examples, and autopsy reports that
+  expose offset errors, unsafe rescue, ambiguous reads, unmatched reads, and
+  invalid extraction windows.
+
+Techniques deliberately not claimed:
+
+- supervised ML assignment is not used because the core workflow already has a
+  known target list and exact error model; a learned classifier would need
+  labeled assay-specific training data and would reduce reproducibility unless
+  it beat the deterministic oracle on held-out public lanes;
+- calibrated statistical screen interpretation is left to downstream tools such
+  as MAGeCK, BAGEL, drugZ, or CERES because DotMatch stops at read assignment
+  and QC;
+- probabilistic basecalling, UMI modeling, cell-level quantification, genome
+  alignment, variant calling, adapter trimming, and production BCL conversion
+  are outside the current evidence boundary.
+
 ## Current Defensible Statements
 
 | Statement | Status | Evidence | Boundary |
 | --- | --- | --- | --- |
 | DotMatch provides exact short-DNA global edit distance and threshold matching for known targets. | Supported | `make test`, `make cli-test`, native C tests, Python tests, `docs/benchmarks/native/README.md` | Not a genome aligner; no CIGAR/SAM/BAM support. |
 | The core Levenshtein `k=1` threshold predicate avoids heap allocation for exact, one-substitution, one-insertion, and one-deletion checks. | Supported | `make test`; native allocation regression in `tests/test_qdalign_threshold_alloc.c` | This describes the implementation of the threshold predicate. It does not make a cross-platform speed claim. |
-| Indexed assignment preserves native exhaustive-scan semantics for `unique`, `ambiguous`, `none`, and `invalid` outcomes in the supported `k<=2` lanes. | Supported | `dotmatch validate`, native assignment tests, Edlib validation artifacts under `benchmarks/raw/`, Levenshtein `k=2` CLI regression cases | `k=2` count/demux uses the exhaustive assignment fallback; current `N`/IUPAC behavior is literal-byte matching, not wildcard expansion semantics. |
+| Indexed assignment preserves native exhaustive-scan semantics for `unique`, `ambiguous`, `none`, and `invalid` outcomes in the supported `k<=2` lanes. | Supported | `dotmatch validate`, native assignment tests, Edlib validation artifacts under `benchmarks/raw/`, Levenshtein `k=2` CLI regression cases | `k=2` uses packed A/C/G/T hash-neighborhood pruning for windows up to 32 bases, with fallback preserving semantics for unsupported cases; current `N`/IUPAC behavior is literal-byte matching, not wildcard expansion semantics. |
 | Public CRISPR guide-counting rows are validated. | Supported | `make public-crispr-evidence-gate` passes; report at `docs/benchmarks/public_crispr/README.md` | Supports the documented MAGeCK/Yusa public-data workflow, not universal CRISPR superiority. |
 | Extended CRISPR comparison rows are validated. | Supported | `make crispr-comparison-gate` passes; report at `docs/benchmarks/crispr_comparison/README.md` | Applies to the recorded CRISPR guide-counting lanes and their documented comparator semantics. |
 | FASTQ count and demux workflows can optionally gate one-edit substitution and read-insertion rescue by observed Sanger Phred quality. | Supported | `make cli-test`; `--max-correction-qual` CLI regression cases | This is a deterministic correction filter, not a calibrated sequencing-error probability model. Read-deletion rescue has no observed edited base to score and is not rejected by this gate. |

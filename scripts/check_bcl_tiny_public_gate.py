@@ -2,9 +2,10 @@
 """Gate the narrow public 10x tiny-BCL milestone evidence.
 
 This verifier is intentionally narrower than `check_bcl_comparison_gate.py`.
-It checks that the public classic-BCL demo row, DotMatch output counts, and
-available bcl2fastq validation are present. It does not authorize broad BCL
-Convert, CBCL, NovaSeq, or production demultiplexing comparisons.
+It checks that the public classic-BCL demo row and DotMatch output counts are
+present, and that bcl2fastq validation is either present or explicitly recorded
+as unavailable on the current machine. It does not authorize broad BCL Convert,
+CBCL, NovaSeq, or production demultiplexing comparisons.
 """
 
 from __future__ import annotations
@@ -55,6 +56,12 @@ def row_gate(rows: list[dict[str, str]], failures: list[str]) -> None:
         and row.get("validation_exit_code") == "0"
         and row.get("validation_mismatches") == "0"
     ]
+    unavailable_bcl2fastq = [
+        row for row in public_rows
+        if row.get("tool") == "bcl2fastq"
+        and row.get("version") == "not_installed"
+        and row.get("exit_code") == "127"
+    ]
     if not dotmatch:
         failures.append("missing successful DotMatch public 10x tiny-BCL classic row")
         return
@@ -78,7 +85,9 @@ def row_gate(rows: list[dict[str, str]], failures: list[str]) -> None:
         failures.append("public tiny-BCL DotMatch command must name the public run folder and normalized sample sheet")
 
     if not validated_bcl2fastq:
-        failures.append("missing validated bcl2fastq public 10x tiny-BCL comparator row")
+        if unavailable_bcl2fastq:
+            return
+        failures.append("missing validated bcl2fastq public 10x tiny-BCL comparator row or explicit not_installed environment row")
         return
     comparator = validated_bcl2fastq[0]
     if as_int(comparator, "assigned_reads") != as_int(row, "assigned_reads"):

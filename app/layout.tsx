@@ -5,14 +5,14 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://dnncha.github.io/do
 const socialImageUrl = `${siteUrl}/dotmatch-og.png`;
 const twitterImageUrl = `${siteUrl}/dotmatch-twitter.png`;
 const socialImageAlt =
-  "DotMatch social preview showing CRISPR guide counts, barcode panel checks, barcode splits, and visible QC outcomes";
+  "DotMatch preview showing CRISPR guide counts, barcode checks, and QC outcomes";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: "DotMatch",
   title: "DotMatch - Barcode Panels, Guide Counts, and Barcode QC",
   description:
-    "DotMatch designs barcode panels, counts CRISPR guides, and splits fixed-position barcodes from FASTQ reads, with ambiguity kept visible.",
+    "DotMatch counts guides, checks barcode panels, and splits fixed-window barcode reads from FASTQ.",
   authors: [{ name: "DotMatch maintainers", url: "https://github.com/dnncha/dotmatch" }],
   creator: "DotMatch maintainers",
   publisher: "DotMatch",
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "DotMatch - Barcode Panels, Guide Counts, and Barcode QC",
     description:
-      "Barcode panel certificates, CRISPR guide counts, barcode splits, and QC reports for known short-DNA targets.",
+      "Guide counts, barcode checks, barcode splits, and QC reports for known short DNA targets.",
     type: "website",
     siteName: "DotMatch",
     locale: "en_US",
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "DotMatch - Barcode Panels, Guide Counts, and Barcode QC",
     description:
-      "Barcode panel certificates, CRISPR guide counts, barcode splits, and QC reports for known short-DNA targets.",
+      "Guide counts, barcode checks, barcode splits, and QC reports for known short DNA targets.",
     images: [
       {
         url: twitterImageUrl,
