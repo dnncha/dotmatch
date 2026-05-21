@@ -44,6 +44,9 @@ k = 1
 metric = "hamming"
 ambiguous = "discard"
 
+[reliability]
+fail_on_unsafe_targets = false
+
 [outputs]
 format = "mageck"
 assignments = true
@@ -84,6 +87,9 @@ length = 4
 [assignment]
 k = 1
 metric = "hamming"
+
+[reliability]
+fail_on_unsafe_targets = false
 
 [outputs]
 assignments = true
@@ -201,6 +207,54 @@ format = "mageck"
     return spec
 
 
+def _write_unsafe_count_spec(tmp_path: Path, *, profile: str) -> Path:
+    targets = tmp_path / f"unsafe_targets_{profile}.tsv"
+    reads = tmp_path / f"unsafe_reads_{profile}.fastq"
+    out_dir = tmp_path / f"unsafe_{profile}_out"
+    targets.write_text("g0\tACGT\ng1\tACGA\n", encoding="utf-8")
+    reads.write_text(
+        "@u0\nACGTAAAA\n+\nIIIIIIII\n"
+        "@u1\nACGAAAAA\n+\nIIIIIIII\n",
+        encoding="utf-8",
+    )
+    spec = tmp_path / f"unsafe_{profile}.toml"
+    spec.write_text(
+        f"""
+schema_version = 1
+mode = "count"
+assay_type = "crispr"
+targets = "{targets}"
+
+[[samples]]
+id = "unsafe"
+fastq = "{reads}"
+
+[run]
+out_dir = "{out_dir}"
+threads = 1
+
+[extract]
+start = 0
+length = 4
+
+[assignment]
+k = 1
+metric = "hamming"
+ambiguous = "discard"
+
+[reliability]
+profile = "{profile}"
+fail_on_unsafe_targets = true
+
+[outputs]
+format = "mageck"
+assignments = true
+""".lstrip(),
+        encoding="utf-8",
+    )
+    return spec
+
+
 def _run_cli(args: list[str], *, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
     merged_env = os.environ.copy()
     if env:
@@ -232,6 +286,10 @@ def test_load_count_spec_and_compile_deterministic_plan(tmp_path: Path) -> None:
     assert "--target-counts-long" in plan.steps[1].argv
     assert "--format" not in plan.steps[1].argv
     assert plan.artifacts["counts"].name == "counts.mageck.tsv"
+    assert plan.artifacts["reliability_summary"].name == "reliability_summary.json"
+    assert plan.artifacts["reliability_findings"].name == "reliability_findings.tsv"
+    assert plan.artifacts["reliability_report"].name == "reliability_report.html"
+    assert plan.artifacts["reliability_manifest_summary"].name == "reliability_manifest.summary.tsv"
 
 
 def test_assay_check_rejects_invalid_enum(tmp_path: Path) -> None:
@@ -253,7 +311,38 @@ def test_assay_plan_prints_native_commands_without_creating_outputs(tmp_path: Pa
     assert rc.returncode == 0, rc.stderr
     assert "dotmatch-native audit --targets" in rc.stdout
     assert "dotmatch-native crispr-count --library" in rc.stdout
+    assert "# reliability_report:" in rc.stdout
     assert not (tmp_path / "assay_out").exists()
+
+
+def test_assay_check_writes_preflight_reliability_artifacts(tmp_path: Path) -> None:
+    spec = _write_count_spec(tmp_path)
+
+    rc = _run_cli(["assay", "check", str(spec)])
+
+    assert rc.returncode == 0, rc.stderr
+    out_dir = tmp_path / "assay_out"
+    summary = json.loads((out_dir / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert summary["stage"] == "preflight"
+    assert summary["overall_status"] == "passed"
+    assert summary["profile"] == "production"
+    assert summary["backend"]["authority"] == "cpu"
+    assert summary["backend"]["gpu_status"] == "eligible_but_not_used"
+    assert summary["evidence_boundary"]["status"] == "supported"
+    assert "checked public" in summary["evidence_boundary"]["claim_boundary"]
+    assert any(finding["finding_id"] == "read_qc_unavailable" for finding in summary["findings"])
+
+    findings = (out_dir / "reliability_findings.tsv").read_text(encoding="utf-8")
+    assert "finding_id\tseverity\tstage\tsample_id\tmetric\tobserved\tthreshold\tmessage\trecommended_action\tsource_artifact" in findings
+    assert "read_qc_unavailable" in findings
+
+    manifest_summary = (out_dir / "reliability_manifest.summary.tsv").read_text(encoding="utf-8")
+    assert "overall_status\tprofile\tfinding_count\tblocked_count\terror_count\twarning_count" in manifest_summary
+
+    report = (out_dir / "reliability_report.html").read_text(encoding="utf-8")
+    assert "<title>DotMatch Reliability Report</title>" in report
+    assert "Evidence Boundary" in report
+    assert "read_qc_unavailable" in report
 
 
 def test_assay_run_count_reproduces_existing_crispr_fixture(tmp_path: Path) -> None:
@@ -272,6 +361,10 @@ def test_assay_run_count_reproduces_existing_crispr_fixture(tmp_path: Path) -> N
     assert manifest["commands"][0]["name"] == "audit"
     assert manifest["commands"][-1]["name"] == "validate"
     assert manifest["commands"][-2]["name"] == "crispr-qc"
+    assert manifest["artifacts"]["reliability_summary"].endswith("reliability_summary.json")
+    assert manifest["artifacts"]["reliability_findings"].endswith("reliability_findings.tsv")
+    assert manifest["artifacts"]["reliability_report"].endswith("reliability_report.html")
+    assert manifest["artifacts"]["reliability_manifest_summary"].endswith("reliability_manifest.summary.tsv")
     assert (out_dir / "crispr_qc.json").exists()
     assert (out_dir / "crispr_qc.summary.tsv").exists()
     assert (out_dir / "crispr_qc.html").exists()
@@ -294,13 +387,28 @@ def test_assay_run_count_reproduces_existing_crispr_fixture(tmp_path: Path) -> N
         "manifest",
     ]
     assert summary_lines[1].split("\t")[1:4] == ["count", "crispr", "ready"]
+    reliability = json.loads((out_dir / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert reliability["stage"] == "postrun"
+    assert reliability["overall_status"] == "failed"
+    assert reliability["backend"]["authority"] == "cpu"
+    assert reliability["backend"]["gpu_status"] == "eligible_but_not_used"
+    assert reliability["evidence_boundary"]["status"] == "supported"
+    finding_ids = {finding["finding_id"] for finding in reliability["findings"]}
+    assert "assignment_rate_below_min" in finding_ids
+    assert "ambiguous_rate_above_max" in finding_ids
+    assert "unmatched_rate_above_max" in finding_ids
+    assert (out_dir / "reliability_findings.tsv").exists()
+    assert (out_dir / "reliability_report.html").exists()
+    assert (out_dir / "reliability_manifest.summary.tsv").exists()
     report = (out_dir / "assay_report.html").read_text(encoding="utf-8")
     assert "<title>DotMatch Assay Report</title>" in report
     assert "Run Status" in report
+    assert "Reliability" in report
     assert "Sample QC" in report
     assert "Library Audit" in report
     assert "Native Commands" in report
     assert "assay_manifest.json" in report
+    assert "reliability_report.html" in report
     assert "report.html" in report
 
 
@@ -486,6 +594,37 @@ def test_assay_run_auto_triggers_autopsy_on_bad_qc(tmp_path: Path) -> None:
     assert "wrong_offset" in report
     summary = (tmp_path / "wrong_offset_out" / "assay_manifest.summary.tsv").read_text(encoding="utf-8")
     assert "\ttrue\t" in summary
+
+
+def test_assay_run_production_blocks_unsafe_targets_before_assignment(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_unsafe_count_spec(tmp_path, profile="production")
+
+    rc = _run_cli(["assay", "run", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+
+    assert rc.returncode == 2
+    assert "unsafe target" in rc.stderr.lower()
+    out_dir = tmp_path / "unsafe_production_out"
+    assert not (out_dir / "counts.mageck.tsv").exists()
+    manifest = json.loads((out_dir / "assay_manifest.json").read_text(encoding="utf-8"))
+    assert [command["name"] for command in manifest["commands"]] == ["audit"]
+    reliability = json.loads((out_dir / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert reliability["overall_status"] == "blocked"
+    assert any(finding["finding_id"] == "unsafe_targets" and finding["severity"] == "blocked" for finding in reliability["findings"])
+
+
+def test_assay_run_exploratory_records_unsafe_targets_without_preflight_block(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_unsafe_count_spec(tmp_path, profile="exploratory")
+
+    rc = _run_cli(["assay", "run", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+
+    assert rc.returncode == 0, rc.stderr
+    out_dir = tmp_path / "unsafe_exploratory_out"
+    assert (out_dir / "counts.mageck.tsv").exists()
+    reliability = json.loads((out_dir / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert reliability["profile"] == "exploratory"
+    assert any(finding["finding_id"] == "unsafe_targets" and finding["severity"] == "warning" for finding in reliability["findings"])
 
 
 def test_assay_report_escapes_spec_values(tmp_path: Path) -> None:

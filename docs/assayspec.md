@@ -27,10 +27,12 @@ Templates are:
 - `pair-count`
 
 `plan` is a dry run: it prints deterministic native commands and does not create
-the output directory. `run` creates the output directory, writes generated files,
-runs target audit first, runs the compiled native workflow, and records command
-exit codes and warnings in `assay_manifest.json`. It also writes
-`assay_report.html` as the primary workflow report and
+the output directory. The plan also lists the reliability artifacts that a run
+or check will write. `check` validates the spec and writes preflight reliability
+artifacts without running read assignment. `run` creates the output directory,
+writes generated files, runs target audit first, runs the compiled native
+workflow, and records command exit codes and warnings in `assay_manifest.json`.
+It also writes `assay_report.html` as the primary workflow report and
 `assay_manifest.summary.tsv` for workflow systems and MultiQC custom content.
 
 `infer` samples FASTQ reads, scores fixed-window candidates against the supplied
@@ -75,6 +77,20 @@ metric = "hamming"
 ambiguity_policy = "radius"
 ambiguous = "discard"
 
+[reliability]
+profile = "production"
+fail_on_unsafe_targets = true
+fail_on_draft_inference = true
+min_assignment_rate = 0.80
+max_ambiguous_rate = 0.05
+max_unmatched_rate = 0.15
+max_invalid_rate = 0.02
+require_public_evidence_boundary = true
+
+[backend]
+mode = "auto"
+allow_gpu = true
+
 [outputs]
 format = "mageck"
 assignments = true
@@ -89,6 +105,34 @@ for DotMatch output, plus `target_counts.long.tsv`, `sample_qc.tsv`,
 row-level diagnostics. CRISPR count runs also write `crispr_qc.json`,
 `crispr_qc.summary.tsv`, and `crispr_qc.html`.
 
+## Reliability Artifacts
+
+AssaySpec writes closed-loop reliability artifacts for `check` and `run`:
+
+- `reliability_summary.json`
+- `reliability_findings.tsv`
+- `reliability_report.html`
+- `reliability_manifest.summary.tsv`
+
+`reliability_summary.json` records the profile, thresholds, backend authority,
+GPU eligibility, evidence boundary, artifact paths, and normalized findings.
+Findings use `info`, `warning`, `error`, and `blocked` severity. `check` records
+read-dependent QC as unavailable because no assignment has run yet. `run`
+aggregates target audit results, sample QC thresholds, autopsy findings, command
+failures, and assay evidence metadata.
+
+`profile = "production"` fails fast after target audit if
+`fail_on_unsafe_targets = true` and the target set is unsafe at the configured
+radius. Runtime threshold failures are written after assignment and leave output
+artifacts in place for diagnosis. `profile = "exploratory"` records the same
+conditions as findings without using unsafe preflight status to stop the run.
+
+`[backend] mode = "auto"` keeps CPU assignment as the production authority and
+records whether the assay is eligible for the experimental Metal GPU path.
+`gpu-metal-experimental` remains advisory unless an assay-specific real-workload
+gate validates it; DotMatch does not silently switch production assignment to
+GPU.
+
 ## Demux And Pair Modes
 
 Demux mode uses `mode = "demux"`, `barcodes`, `reads`, `[extract]`, and writes
@@ -102,10 +146,10 @@ optional `pair_assignments.tsv`.
 ## Safety Policy
 
 AssaySpec always runs native target audit before assignment. If the audit says
-the target set is unsafe at the configured `k`, `dotmatch assay run` records a
-warning and continues. It never changes `k`, target sequences, or ambiguity
-policy automatically; DotMatch's explicit `unique`/`ambiguous`/`none` semantics
-remain the authority.
+the target set is unsafe at the configured `k`, the reliability profile decides
+whether to stop before assignment or record the risk and continue. It never
+changes `k`, target sequences, or ambiguity policy automatically; DotMatch's
+explicit `unique`/`ambiguous`/`none` semantics remain the authority.
 
 Templates and inferred specs default to `ambiguity_policy = "radius"`, which
 keeps any read with more than one target inside the configured radius out of

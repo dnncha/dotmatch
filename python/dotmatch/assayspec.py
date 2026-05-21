@@ -34,6 +34,42 @@ AUTOPSY_THRESHOLDS = {
     "no_match_rate_max": 0.15,
     "invalid_rate_max": 0.02,
 }
+RELIABILITY_PROFILES = {"production", "exploratory"}
+BACKEND_MODES = {"auto", "cpu", "gpu-metal-experimental"}
+RELIABILITY_DEFAULTS: dict[str, Any] = {
+    "profile": "production",
+    "fail_on_unsafe_targets": True,
+    "fail_on_draft_inference": True,
+    "min_assignment_rate": AUTOPSY_THRESHOLDS["assignment_rate_min"],
+    "max_ambiguous_rate": AUTOPSY_THRESHOLDS["ambiguous_rate_max"],
+    "max_unmatched_rate": AUTOPSY_THRESHOLDS["no_match_rate_max"],
+    "max_invalid_rate": AUTOPSY_THRESHOLDS["invalid_rate_max"],
+    "require_public_evidence_boundary": True,
+}
+BACKEND_DEFAULTS: dict[str, Any] = {
+    "mode": "auto",
+    "allow_gpu": True,
+}
+RELIABILITY_FINDING_COLUMNS = [
+    "finding_id",
+    "severity",
+    "stage",
+    "sample_id",
+    "metric",
+    "observed",
+    "threshold",
+    "message",
+    "recommended_action",
+    "source_artifact",
+]
+ASSAY_EVIDENCE_IDS = {
+    "crispr": "crispr_guide_counting",
+    "feature_barcode": "feature_barcode",
+    "inline_barcode": "inline_barcode",
+    "amplicon_panel": "amplicon_panel",
+    "oligo_adapter": "oligo_adapter",
+    "generic": "paired_combinatorial",
+}
 TEMPLATES = {
     "crispr",
     "feature-barcode",
@@ -73,6 +109,18 @@ class AssaySpec:
     @property
     def status(self) -> str:
         return str(self.data.get("status", "ready"))
+
+    @property
+    def reliability(self) -> dict[str, Any]:
+        config = dict(RELIABILITY_DEFAULTS)
+        config.update(_table(self.data, "reliability"))
+        return config
+
+    @property
+    def backend(self) -> dict[str, Any]:
+        config = dict(BACKEND_DEFAULTS)
+        config.update(_table(self.data, "backend"))
+        return config
 
 
 @dataclass(frozen=True)
@@ -120,6 +168,22 @@ def validate_assay_spec(assay: AssaySpec) -> None:
     if int(assignment.get("k", 1)) == 2 and assignment.get("metric", "levenshtein") == "hamming":
         raise AssaySpecError("assignment.k=2 is only valid with assignment.metric='levenshtein'")
 
+    reliability = _table(data, "reliability")
+    if "profile" in reliability:
+        _require_enum(reliability["profile"], RELIABILITY_PROFILES, "reliability.profile")
+    for key in ["fail_on_unsafe_targets", "fail_on_draft_inference", "require_public_evidence_boundary"]:
+        if key in reliability:
+            _require_bool(reliability[key], f"reliability.{key}")
+    for key in ["min_assignment_rate", "max_ambiguous_rate", "max_unmatched_rate", "max_invalid_rate"]:
+        if key in reliability:
+            _require_float_range(reliability[key], 0.0, 1.0, f"reliability.{key}")
+
+    backend = _table(data, "backend")
+    if "mode" in backend:
+        _require_enum(backend["mode"], BACKEND_MODES, "backend.mode")
+    if "allow_gpu" in backend:
+        _require_bool(backend["allow_gpu"], "backend.allow_gpu")
+
     mode = str(data["mode"])
     if mode == "count":
         _require_path(assay, "targets")
@@ -153,6 +217,10 @@ def compile_assay_plan(assay: AssaySpec) -> AssayPlan:
         "manifest_summary": out_dir / "assay_manifest.summary.tsv",
         "assay_report": out_dir / "assay_report.html",
         "normalized_spec": out_dir / "assay.normalized.json",
+        "reliability_summary": out_dir / "reliability_summary.json",
+        "reliability_findings": out_dir / "reliability_findings.tsv",
+        "reliability_report": out_dir / "reliability_report.html",
+        "reliability_manifest_summary": out_dir / "reliability_manifest.summary.tsv",
     }
     steps: list[PlanStep] = []
 
@@ -181,7 +249,17 @@ def compile_assay_plan(assay: AssaySpec) -> AssayPlan:
 
 
 def format_plan(plan: AssayPlan) -> str:
-    return "\n".join(shlex.join(step.argv) for step in plan.steps) + "\n"
+    lines = [shlex.join(step.argv) for step in plan.steps]
+    lines.extend(
+        [
+            "# Reliability artifacts",
+            f"# reliability_summary: {plan.artifacts['reliability_summary']}",
+            f"# reliability_findings: {plan.artifacts['reliability_findings']}",
+            f"# reliability_report: {plan.artifacts['reliability_report']}",
+            f"# reliability_manifest_summary: {plan.artifacts['reliability_manifest_summary']}",
+        ]
+    )
+    return "\n".join(lines) + "\n"
 
 
 def run_assay_plan(plan: AssayPlan) -> int:
@@ -225,6 +303,20 @@ def run_assay_plan(plan: AssayPlan) -> int:
         manifest["commands"].append(command_record)
         if step.name.startswith("audit") and result.returncode == 0:
             _append_audit_warnings(plan, step, manifest)
+            if _audit_step_unsafe(plan, step) and _blocks_on_unsafe_targets(plan.spec):
+                message = f"{step.name}: unsafe target audit at k={plan.spec.k}; blocked by production reliability profile"
+                manifest["production_warnings"].append(message)
+                reliability = _build_reliability_summary(plan, stage="preflight", manifest=manifest)
+                manifest["reliability"] = {
+                    "overall_status": reliability["overall_status"],
+                    "finding_counts": reliability["finding_counts"],
+                    "summary": str(plan.artifacts["reliability_summary"]),
+                    "report": str(plan.artifacts["reliability_report"]),
+                }
+                _write_reliability_artifacts(plan, reliability)
+                _write_manifest(plan, manifest)
+                print(f"dotmatch assay: {message}", file=sys.stderr)
+                return 2
         if result.returncode != 0:
             _write_manifest(plan, manifest)
             sys.stderr.write(result.stderr)
@@ -238,6 +330,14 @@ def run_assay_plan(plan: AssayPlan) -> int:
         manifest["autopsy_artifacts"] = {key: str(value) for key, value in autopsy_result.items()}
         manifest["production_warnings"].extend(autopsy_reasons)
 
+    reliability = _build_reliability_summary(plan, stage="postrun", manifest=manifest)
+    manifest["reliability"] = {
+        "overall_status": reliability["overall_status"],
+        "finding_counts": reliability["finding_counts"],
+        "summary": str(plan.artifacts["reliability_summary"]),
+        "report": str(plan.artifacts["reliability_report"]),
+    }
+    _write_reliability_artifacts(plan, reliability)
     _write_manifest(plan, manifest)
     return 0
 
@@ -284,6 +384,8 @@ def command_assay(argv: Sequence[str]) -> int:
             run_autopsy(assay, Path(args.out_dir))
             return 0
         if args.command == "check":
+            plan = compile_assay_plan(assay)
+            _write_preflight_reliability(plan)
             print(f"{assay.path}: ok")
             return 0
         if args.command == "run" and assay.status == "draft":
@@ -1121,6 +1223,475 @@ def _write_manifest(plan: AssayPlan, manifest: Mapping[str, Any]) -> None:
     _write_assay_report(plan, manifest)
 
 
+def _write_preflight_reliability(plan: AssayPlan) -> dict[str, Any]:
+    summary = _build_reliability_summary(plan, stage="preflight")
+    _write_reliability_artifacts(plan, summary)
+    return summary
+
+
+def _build_reliability_summary(plan: AssayPlan, *, stage: str, manifest: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    findings: list[dict[str, str]] = []
+    findings.extend(_base_reliability_findings(plan, stage))
+    findings.extend(_audit_reliability_findings(plan, stage))
+    if manifest is not None:
+        findings.extend(_command_reliability_findings(manifest, stage))
+        findings.extend(_sample_qc_reliability_findings(plan, stage))
+        findings.extend(_autopsy_reliability_findings(manifest, stage))
+    if stage == "preflight":
+        findings.append(
+            _finding(
+                "read_qc_unavailable",
+                "info",
+                "preflight",
+                "",
+                "sample_qc",
+                "unavailable",
+                "",
+                "Read-dependent QC is unavailable during assay check.",
+                "Run dotmatch assay run to evaluate assignment, ambiguous, unmatched, and invalid read rates.",
+                "",
+            )
+        )
+    counts = _finding_counts(findings)
+    summary = {
+        "schema_version": 1,
+        "stage": stage,
+        "overall_status": _overall_reliability_status(counts),
+        "mode": plan.spec.mode,
+        "assay_type": plan.spec.assay_type,
+        "spec_status": plan.spec.status,
+        "profile": str(plan.spec.reliability["profile"]),
+        "thresholds": _reliability_thresholds(plan.spec),
+        "backend": _backend_summary(plan.spec),
+        "evidence_boundary": _evidence_boundary(plan.spec),
+        "findings": findings,
+        "finding_counts": counts,
+        "artifacts": {key: str(value) for key, value in plan.artifacts.items()},
+        "commands": list((manifest or {}).get("commands", []) or []),
+    }
+    return summary
+
+
+def _command_reliability_findings(manifest: Mapping[str, Any], stage: str) -> list[dict[str, str]]:
+    findings: list[dict[str, str]] = []
+    for command in manifest.get("commands", []) or []:
+        if not isinstance(command, dict):
+            continue
+        exit_code = command.get("exit_code")
+        if exit_code not in (0, None):
+            findings.append(
+                _finding(
+                    "command_failed",
+                    "error",
+                    stage,
+                    "",
+                    str(command.get("name", "command")),
+                    str(exit_code),
+                    "0",
+                    "A native command failed during the assay run.",
+                    "Inspect command stderr/stdout in assay_manifest.json before trusting outputs.",
+                    str(manifest.get("artifacts", {}).get("manifest", "")),
+                )
+            )
+    return findings
+
+
+def _sample_qc_reliability_findings(plan: AssayPlan, stage: str) -> list[dict[str, str]]:
+    sample_qc = plan.artifacts.get("sample_qc")
+    if sample_qc is None or not sample_qc.exists():
+        return [
+            _finding(
+                "read_qc_unavailable",
+                "info",
+                stage,
+                "",
+                "sample_qc",
+                "unavailable",
+                "",
+                "Read-dependent QC was not available for this assay mode.",
+                "Use a count workflow with sample_qc.tsv to evaluate read-level reliability thresholds.",
+                "",
+            )
+        ]
+    findings: list[dict[str, str]] = []
+    thresholds = _reliability_thresholds(plan.spec)
+    severity = _threshold_severity(plan.spec)
+    with sample_qc.open("r", encoding="utf-8") as fh:
+        reader = csv.DictReader(fh, delimiter="\t")
+        for row in reader:
+            sample = row.get("sample_id", "")
+            total = _float(row.get("total_reads"))
+            invalid = _float(row.get("invalid_reads"))
+            invalid_rate = invalid / total if total else 0.0
+            checks = [
+                ("assignment_rate_below_min", "assignment_rate", _float(row.get("assignment_rate")), "<", thresholds["min_assignment_rate"]),
+                ("ambiguous_rate_above_max", "ambiguous_rate", _float(row.get("ambiguous_rate")), ">", thresholds["max_ambiguous_rate"]),
+                ("unmatched_rate_above_max", "no_match_rate", _float(row.get("no_match_rate")), ">", thresholds["max_unmatched_rate"]),
+                ("invalid_rate_above_max", "invalid_rate", invalid_rate, ">", thresholds["max_invalid_rate"]),
+            ]
+            for finding_id, metric, observed, op, threshold in checks:
+                failed = observed < threshold if op == "<" else observed > threshold
+                if not failed:
+                    continue
+                findings.append(
+                    _finding(
+                        finding_id,
+                        severity,
+                        stage,
+                        sample,
+                        metric,
+                        f"{observed:.8f}",
+                        f"{threshold:.8f}",
+                        f"{sample or 'sample'} has {metric} {op} configured reliability threshold.",
+                        "Review the assay window, target set, correction radius, and autopsy outputs before using counts.",
+                        str(sample_qc),
+                    )
+                )
+    return findings
+
+
+def _audit_reliability_findings(plan: AssayPlan, stage: str) -> list[dict[str, str]]:
+    findings: list[dict[str, str]] = []
+    for key in ["audit", "left_audit", "right_audit"]:
+        audit_dir = plan.artifacts.get(key)
+        if audit_dir is None:
+            continue
+        summary = Path(audit_dir) / "audit_summary.json"
+        if not summary.exists():
+            continue
+        try:
+            data = json.loads(summary.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            findings.append(
+                _finding(
+                    "audit_summary_malformed",
+                    "error",
+                    stage,
+                    "",
+                    key,
+                    "malformed",
+                    "valid JSON",
+                    "Target audit summary could not be parsed.",
+                    "Re-run assay audit and inspect audit_summary.json.",
+                    str(summary),
+                )
+            )
+            continue
+        safe_key = f"safe_at_k{plan.spec.k}"
+        if data.get(safe_key) is False:
+            severity = "blocked" if _blocks_on_unsafe_targets(plan.spec) else _threshold_severity(plan.spec)
+            findings.append(
+                _finding(
+                    "unsafe_targets",
+                    severity,
+                    stage,
+                    "",
+                    safe_key,
+                    "false",
+                    "true",
+                    f"Target audit reports {safe_key}=false for {key}.",
+                    "Lower correction radius, use k=0, or redesign/fix colliding targets before production use.",
+                    str(summary),
+                )
+            )
+    return findings
+
+
+def _blocks_on_unsafe_targets(assay: AssaySpec) -> bool:
+    reliability = assay.reliability
+    return str(reliability["profile"]) == "production" and bool(reliability["fail_on_unsafe_targets"])
+
+
+def _audit_step_unsafe(plan: AssayPlan, step: PlanStep) -> bool:
+    summary = Path(step.argv[-1]) / "audit_summary.json"
+    if not summary.exists():
+        return False
+    try:
+        data = json.loads(summary.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return False
+    return data.get(f"safe_at_k{plan.spec.k}") is False
+
+
+def _autopsy_reliability_findings(manifest: Mapping[str, Any], stage: str) -> list[dict[str, str]]:
+    if not manifest.get("autopsy_triggered"):
+        return []
+    findings = [
+        _finding(
+            "autopsy_triggered",
+            "warning",
+            stage,
+            "",
+            "autopsy",
+            "triggered",
+            "not_triggered",
+            "Automatic autopsy was triggered by conservative assay QC thresholds.",
+            "Review autopsy findings before using the run for downstream interpretation.",
+            str((manifest.get("autopsy_artifacts", {}) or {}).get("findings", "")),
+        )
+    ]
+    autopsy_findings = (manifest.get("autopsy_artifacts", {}) or {}).get("findings")
+    if autopsy_findings and Path(str(autopsy_findings)).exists():
+        with Path(str(autopsy_findings)).open("r", encoding="utf-8") as fh:
+            reader = csv.DictReader(fh, delimiter="\t")
+            for row in reader:
+                findings.append(
+                    _finding(
+                        f"autopsy_{row.get('finding', 'finding')}",
+                        str(row.get("severity", "warning") or "warning"),
+                        stage,
+                        str(row.get("sample", "")),
+                        "autopsy",
+                        str(row.get("finding", "")),
+                        "",
+                        str(row.get("evidence", "")),
+                        "Review the linked autopsy artifact before using the run.",
+                        str(row.get("artifact", autopsy_findings)),
+                    )
+                )
+    return findings
+
+
+def _threshold_severity(assay: AssaySpec) -> str:
+    return "error" if str(assay.reliability["profile"]) == "production" else "warning"
+
+
+def _base_reliability_findings(plan: AssayPlan, stage: str) -> list[dict[str, str]]:
+    findings: list[dict[str, str]] = []
+    reliability = plan.spec.reliability
+    if plan.spec.status == "draft" and reliability["fail_on_draft_inference"]:
+        findings.append(
+            _finding(
+                "draft_assayspec",
+                "blocked",
+                stage,
+                "",
+                "status",
+                plan.spec.status,
+                "ready",
+                "Production reliability profile refuses draft inferred AssaySpec files.",
+                "Review the inference report and promote status to ready before production runs.",
+                str(plan.spec.path),
+            )
+        )
+    evidence = _evidence_boundary(plan.spec)
+    if reliability["require_public_evidence_boundary"] and evidence["status"] == "missing":
+        findings.append(
+            _finding(
+                "evidence_boundary_missing",
+                "error",
+                stage,
+                "",
+                "assay_type",
+                plan.spec.assay_type,
+                "documented public evidence boundary",
+                "No assay evidence boundary is recorded for this assay type.",
+                "Add assay evidence metadata before making public claims for this workflow.",
+                "docs/assay-evidence.json",
+            )
+        )
+    backend = _backend_summary(plan.spec)
+    if backend["mode"] == "gpu-metal-experimental":
+        findings.append(
+            _finding(
+                "experimental_gpu_forced",
+                "warning",
+                stage,
+                "",
+                "backend.mode",
+                "gpu-metal-experimental",
+                "cpu or auto for production",
+                "The Metal GPU backend is experimental and CPU remains the assignment authority.",
+                "Use backend.mode = \"auto\" or \"cpu\" for production evidence until assay-specific GPU gates are promoted.",
+                "",
+            )
+        )
+    return findings
+
+
+def _reliability_thresholds(assay: AssaySpec) -> dict[str, float]:
+    reliability = assay.reliability
+    return {
+        "min_assignment_rate": float(reliability["min_assignment_rate"]),
+        "max_ambiguous_rate": float(reliability["max_ambiguous_rate"]),
+        "max_unmatched_rate": float(reliability["max_unmatched_rate"]),
+        "max_invalid_rate": float(reliability["max_invalid_rate"]),
+    }
+
+
+def _backend_summary(assay: AssaySpec) -> dict[str, str]:
+    backend = assay.backend
+    mode = str(backend["mode"])
+    if mode == "cpu":
+        gpu_status = "disabled_by_mode"
+    elif not bool(backend["allow_gpu"]):
+        gpu_status = "disabled_by_config"
+    elif _gpu_eligible(assay):
+        gpu_status = "eligible_but_not_used"
+    else:
+        gpu_status = "not_eligible"
+    return {
+        "mode": mode,
+        "authority": "cpu",
+        "selected": "cpu",
+        "gpu_status": gpu_status,
+    }
+
+
+def _gpu_eligible(assay: AssaySpec) -> bool:
+    assignment = _table(assay.data, "assignment")
+    if int(assignment.get("k", 1)) != 1 or str(assignment.get("metric", "levenshtein")) != "hamming":
+        return False
+    extract: Mapping[str, Any]
+    if assay.mode in {"count", "demux"}:
+        extract = _table(assay.data, "extract")
+    elif assay.mode == "pair-count":
+        return False
+    else:
+        return False
+    length = extract.get("length")
+    return isinstance(length, int) and 1 <= length <= 32
+
+
+def _evidence_boundary(assay: AssaySpec) -> dict[str, str]:
+    evidence_id = ASSAY_EVIDENCE_IDS.get(assay.assay_type, "")
+    path = Path(__file__).resolve().parents[2] / "docs" / "assay-evidence.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {"id": evidence_id, "status": "missing", "label": "", "claim_boundary": ""}
+    for row in data.get("assays", []):
+        if isinstance(row, dict) and row.get("id") == evidence_id:
+            return {
+                "id": str(row.get("id", "")),
+                "status": str(row.get("status", "")),
+                "label": str(row.get("label", "")),
+                "claim_boundary": str(row.get("claim_boundary", "")),
+            }
+    return {"id": evidence_id, "status": "missing", "label": "", "claim_boundary": ""}
+
+
+def _finding(
+    finding_id: str,
+    severity: str,
+    stage: str,
+    sample_id: str,
+    metric: str,
+    observed: str,
+    threshold: str,
+    message: str,
+    recommended_action: str,
+    source_artifact: str,
+) -> dict[str, str]:
+    return {
+        "finding_id": finding_id,
+        "severity": severity,
+        "stage": stage,
+        "sample_id": sample_id,
+        "metric": metric,
+        "observed": observed,
+        "threshold": threshold,
+        "message": message,
+        "recommended_action": recommended_action,
+        "source_artifact": source_artifact,
+    }
+
+
+def _finding_counts(findings: Sequence[Mapping[str, str]]) -> dict[str, int]:
+    counts = {"blocked": 0, "error": 0, "warning": 0, "info": 0}
+    for finding in findings:
+        severity = str(finding.get("severity", "info"))
+        counts[severity] = counts.get(severity, 0) + 1
+    return counts
+
+
+def _overall_reliability_status(counts: Mapping[str, int]) -> str:
+    if int(counts.get("blocked", 0)) > 0:
+        return "blocked"
+    if int(counts.get("error", 0)) > 0:
+        return "failed"
+    if int(counts.get("warning", 0)) > 0:
+        return "needs_review"
+    return "passed"
+
+
+def _write_reliability_artifacts(plan: AssayPlan, summary: Mapping[str, Any]) -> None:
+    path = plan.artifacts["reliability_summary"]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    _write_reliability_findings(plan.artifacts["reliability_findings"], summary.get("findings", []) or [])
+    _write_reliability_manifest_summary(plan.artifacts["reliability_manifest_summary"], summary)
+    _write_reliability_report(plan.artifacts["reliability_report"], summary)
+
+
+def _write_reliability_findings(path: Path, findings: Sequence[Mapping[str, str]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=RELIABILITY_FINDING_COLUMNS, delimiter="\t", lineterminator="\n")
+        writer.writeheader()
+        for finding in findings:
+            writer.writerow({field: str(finding.get(field, "")) for field in RELIABILITY_FINDING_COLUMNS})
+
+
+def _write_reliability_manifest_summary(path: Path, summary: Mapping[str, Any]) -> None:
+    counts = summary.get("finding_counts", {}) or {}
+    header = ["overall_status", "profile", "finding_count", "blocked_count", "error_count", "warning_count", "report"]
+    row = [
+        str(summary.get("overall_status", "")),
+        str(summary.get("profile", "")),
+        str(len(summary.get("findings", []) or [])),
+        str(counts.get("blocked", 0)),
+        str(counts.get("error", 0)),
+        str(counts.get("warning", 0)),
+        str(summary.get("artifacts", {}).get("reliability_report", "")),
+    ]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.writer(fh, delimiter="\t", lineterminator="\n")
+        writer.writerow(header)
+        writer.writerow(row)
+
+
+def _write_reliability_report(path: Path, summary: Mapping[str, Any]) -> None:
+    evidence = summary.get("evidence_boundary", {}) or {}
+    backend = summary.get("backend", {}) or {}
+    sections = [
+        "<!doctype html>",
+        "<html><head><meta charset=\"utf-8\"><title>DotMatch Reliability Report</title>",
+        "<style>body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;margin:32px;color:#18212f}"
+        "table{border-collapse:collapse;width:100%;margin:12px 0}th,td{border:1px solid #d8dee4;padding:7px 9px;text-align:left;vertical-align:top}"
+        "th{background:#eef2f7}.ok{color:#1a7f37}.warn{color:#9a6700}.bad{color:#cf222e}code{background:#eef2f7;padding:2px 4px;border-radius:4px}</style>",
+        "</head><body>",
+        "<h1>DotMatch Reliability Report</h1>",
+        f"<p>Status: <strong>{html.escape(str(summary.get('overall_status', '')))}</strong></p>",
+        "<h2>Backend</h2>",
+        _mapping_table(backend),
+        "<h2>Evidence Boundary</h2>",
+        _mapping_table(evidence),
+        "<h2>Findings</h2>",
+        _html_findings_table(summary.get("findings", []) or []),
+        "</body></html>\n",
+    ]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(sections), encoding="utf-8")
+
+
+def _html_findings_table(findings: Sequence[Mapping[str, str]]) -> str:
+    if not findings:
+        return "<p class=\"ok\">No reliability findings were recorded.</p>"
+    rows = ["<table><tr>"]
+    for column in RELIABILITY_FINDING_COLUMNS:
+        rows.append(f"<th>{html.escape(column)}</th>")
+    rows.append("</tr>")
+    for finding in findings:
+        rows.append("<tr>")
+        for column in RELIABILITY_FINDING_COLUMNS:
+            rows.append(f"<td>{html.escape(str(finding.get(column, '')))}</td>")
+        rows.append("</tr>")
+    rows.append("</table>")
+    return "".join(rows)
+
+
 def _write_manifest_summary(plan: AssayPlan, manifest: Mapping[str, Any]) -> None:
     path = plan.artifacts["manifest_summary"]
     header = [
@@ -1192,6 +1763,8 @@ def _write_assay_report(plan: AssayPlan, manifest: Mapping[str, Any]) -> None:
         "</div>",
         "<h2>Inputs</h2>",
         _samples_table(plan.spec),
+        "<h2>Reliability</h2>",
+        _reliability_html(plan),
         "<h2>Sample QC</h2>",
         _sample_qc_table(plan.artifacts.get("sample_qc")),
         "<h2>Warnings</h2>",
@@ -1247,6 +1820,20 @@ def _sample_qc_table(path: Path | None) -> str:
     if path is None or not path.exists():
         return "<p class=\"empty\">No sample QC table was produced for this mode.</p>"
     return _tsv_preview_table(path, 12)
+
+
+def _reliability_html(plan: AssayPlan) -> str:
+    artifacts = {
+        "reliability_summary": plan.artifacts.get("reliability_summary", ""),
+        "reliability_findings": plan.artifacts.get("reliability_findings", ""),
+        "reliability_report": plan.artifacts.get("reliability_report", ""),
+        "reliability_manifest_summary": plan.artifacts.get("reliability_manifest_summary", ""),
+    }
+    parts = [_mapping_table({key: str(value) for key, value in artifacts.items() if value})]
+    summary = plan.artifacts.get("reliability_manifest_summary")
+    if summary is not None and summary.exists():
+        parts.append(_tsv_preview_table(summary, 4))
+    return "".join(parts)
 
 
 def _audit_html(plan: AssayPlan) -> str:
@@ -1482,6 +2069,16 @@ def _require_enum(value: Any, choices: set[str], name: str) -> None:
 def _require_int_range(value: Any, low: int, high: int, name: str) -> None:
     if not isinstance(value, int) or not low <= value <= high:
         raise AssaySpecError(f"{name} must be an integer from {low} to {high}")
+
+
+def _require_float_range(value: Any, low: float, high: float, name: str) -> None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not low <= float(value) <= high:
+        raise AssaySpecError(f"{name} must be a number from {low} to {high}")
+
+
+def _require_bool(value: Any, name: str) -> None:
+    if not isinstance(value, bool):
+        raise AssaySpecError(f"{name} must be a boolean")
 
 
 def _require_extract(data: Mapping[str, Any], name: str, *, allow_auto: bool = False) -> None:
