@@ -419,6 +419,21 @@ def check_macos_architecture(wheel: Path, native_member: str) -> None:
             )
 
 
+def wheel_supported_by_current_platform(wheel: Path) -> bool:
+    name = wheel.name
+    system = platform.system()
+    libc_name = platform.libc_ver()[0].lower()
+    if "musllinux" in name:
+        return system == "Linux" and libc_name == "musl"
+    if "manylinux" in name:
+        return system == "Linux" and libc_name == "glibc"
+    if "macosx" in name:
+        return system == "Darwin"
+    if "win_" in name or "win32" in name or "win_amd64" in name:
+        return os.name == "nt"
+    return True
+
+
 def build_and_verify_sdist(out_dir: Path, install_root: Path, expected_version: str) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     run([sys.executable, "-m", "build", "--sdist", "--outdir", str(out_dir)], cwd=ROOT)
@@ -461,7 +476,8 @@ def verify_existing_wheels(wheel_dir: Path, install_root: Path, expected_version
     wheels = sorted(wheel_dir.glob("dotmatch-*.whl"))
     if not wheels:
         raise SystemExit(f"expected at least one dotmatch wheel in {wheel_dir}")
-    for index, wheel in enumerate(wheels):
+    clean_install_index = 0
+    for wheel in wheels:
         native_members = wheel_native_members(wheel)
         if not native_members:
             raise SystemExit(f"{wheel.name} does not contain dotmatch/libdotmatch.*")
@@ -470,7 +486,11 @@ def verify_existing_wheels(wheel_dir: Path, install_root: Path, expected_version
         if not wheel_assay_evidence_members(wheel):
             raise SystemExit(f"{wheel.name} does not contain dotmatch/data/assay-evidence.json")
         check_distribution_metadata(wheel, expected_version)
-        verify_clean_install(wheel, install_root / f"wheel-{index}", expected_version)
+        if not wheel_supported_by_current_platform(wheel):
+            print(f"skipping clean install for unsupported wheel tag on this host: {wheel.name}")
+            continue
+        verify_clean_install(wheel, install_root / f"wheel-{clean_install_index}", expected_version)
+        clean_install_index += 1
     return wheels
 
 
