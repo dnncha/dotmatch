@@ -16,7 +16,7 @@
 #include <zlib.h>
 
 #ifndef DOTMATCH_VERSION
-#define DOTMATCH_VERSION "0.1.0"
+#define DOTMATCH_VERSION "0.1.3"
 #endif
 
 #define MAX_AUTO_OFFSET 1024
@@ -46,6 +46,7 @@ static double seconds_now(void) {
 
 static void usage(const char *argv0) {
     fprintf(stderr, "Usage:\n");
+    fprintf(stderr, "  %s --help\n", argv0);
     fprintf(stderr, "  %s --version\n", argv0);
     fprintf(stderr, "  %s dist SEQ1 SEQ2\n", argv0);
     fprintf(stderr, "  %s leq K SEQ1 SEQ2\n", argv0);
@@ -61,6 +62,85 @@ static void usage(const char *argv0) {
     fprintf(stderr, "  %s inspect-unmatched --targets targets.tsv|targets.csv --reads reads.fastq[.gz] --target-start N --target-length L --k 0|1 --top N --out top_unmatched.tsv [--low-quality-threshold Q]\n", argv0);
     fprintf(stderr, "  %s audit --targets targets.tsv|targets.csv --k 1 --out-dir audit_dir [--audit-mode auto|exact|fast]\n", argv0);
     fprintf(stderr, "  %s validate --targets targets.tsv|targets.csv --reads reads.fastq[.gz] --target-start N --target-length L --k 0|1 [--metric hamming|levenshtein] [--indel-window 0|1] [--offset-mode best|multi] [--threads N] --oracle scan|edlib\n", argv0);
+}
+
+static void help_manual(FILE *out, const char *argv0) {
+    fprintf(out, "DotMatch %s\n", DOTMATCH_VERSION);
+    fprintf(out, "\n");
+    fprintf(out, "Deterministic known-target short-DNA assignment for fixed read windows.\n");
+    fprintf(out, "DotMatch is for cases where the expected guides, barcodes, primers, or\n");
+    fprintf(out, "panel targets are already known. It is not a genome aligner, basecaller,\n");
+    fprintf(out, "variant caller, adapter trimmer, cell/UMI quantifier, or screen statistics tool.\n");
+    fprintf(out, "\n");
+    fprintf(out, "Usage:\n");
+    fprintf(out, "  %s --help\n", argv0);
+    fprintf(out, "  %s --version\n", argv0);
+    fprintf(out, "  %s <command> [options]\n", argv0);
+    fprintf(out, "\n");
+    fprintf(out, "Core commands:\n");
+    fprintf(out, "  dist SEQ1 SEQ2\n");
+    fprintf(out, "      Print the global edit distance between two short DNA strings.\n");
+    fprintf(out, "  leq K SEQ1 SEQ2\n");
+    fprintf(out, "      Print true when the edit distance is <= K, otherwise false.\n");
+    fprintf(out, "  assign K targets.tsv reads.tsv [--ambiguity-policy radius|best]\n");
+    fprintf(out, "      Assign tabular read sequences to known targets.\n");
+    fprintf(out, "  fastq-assign --barcodes barcodes.tsv --reads reads.fastq[.gz] \\\n");
+    fprintf(out, "      --barcode-start N --barcode-length L --k 0|1 --out assignments.tsv\n");
+    fprintf(out, "      Write per-read FASTQ barcode assignments.\n");
+    fprintf(out, "\n");
+    fprintf(out, "Counting and demultiplexing:\n");
+    fprintf(out, "  count --targets targets.tsv|targets.csv --reads reads.fastq[.gz] \\\n");
+    fprintf(out, "      --sample-label sample --target-start N --target-length L \\\n");
+    fprintf(out, "      --k 0|1|2 --metric hamming|levenshtein --out counts.tsv\n");
+    fprintf(out, "      Count fixed-window target assignments. Add --format mageck for MAGeCK-style counts.\n");
+    fprintf(out, "  crispr-count --library guides.tsv|guides.csv --samples samples.tsv \\\n");
+    fprintf(out, "      --guide-start N --guide-length L --k 0|1|2 --out counts.tsv\n");
+    fprintf(out, "      Convenience wrapper for guide-counting sample sheets.\n");
+    fprintf(out, "  demux --barcodes barcodes.tsv|barcodes.csv --reads reads.fastq[.gz] \\\n");
+    fprintf(out, "      --barcode-start N --barcode-length L|auto --k 0|1|2 --out-dir demux_dir\n");
+    fprintf(out, "      Split reads by fixed-position inline barcodes.\n");
+    fprintf(out, "  pair-count --left-targets left.tsv --right-targets right.tsv --reads reads.fastq[.gz] \\\n");
+    fprintf(out, "      --left-start N --left-length L --right-start N --right-length L --out pair_counts.tsv\n");
+    fprintf(out, "      Count pairs of independent fixed-window targets.\n");
+    fprintf(out, "\n");
+    fprintf(out, "Diagnostics and validation:\n");
+    fprintf(out, "  audit --targets targets.tsv|targets.csv --k K --out-dir audit_dir\n");
+    fprintf(out, "      Report nearby target pairs that make correction ambiguous or unsafe.\n");
+    fprintf(out, "  inspect-unmatched --targets targets.tsv|targets.csv --reads reads.fastq[.gz] \\\n");
+    fprintf(out, "      --target-start N --target-length L --k 0|1 --top N --out top_unmatched.tsv\n");
+    fprintf(out, "      Summarize the most frequent unmatched read windows.\n");
+    fprintf(out, "  validate --targets targets.tsv|targets.csv --reads reads.fastq[.gz] \\\n");
+    fprintf(out, "      --target-start N --target-length L --k 0|1 --oracle scan|edlib\n");
+    fprintf(out, "      Compare indexed assignment with a validation oracle. Installed packages should use --oracle scan.\n");
+    fprintf(out, "  bcl-demux --run-folder RUN --sample-sheet SampleSheet.csv --out-dir demux_dir \\\n");
+    fprintf(out, "      --barcode-mismatches 0|1|1,1 [--threads N] [--gzip-level 0..9]\n");
+    fprintf(out, "      Classic per-cycle BCL parser milestone; not a production CBCL/NovaSeq replacement.\n");
+    fprintf(out, "\n");
+    fprintf(out, "Assignment outcomes:\n");
+    fprintf(out, "  unique       exactly one target is compatible with the read window\n");
+    fprintf(out, "  ambiguous    more than one target is compatible; not silently forced\n");
+    fprintf(out, "  none         no target is close enough\n");
+    fprintf(out, "  invalid      the requested read window cannot be extracted\n");
+    fprintf(out, "\n");
+    fprintf(out, "Defaults and conventions:\n");
+    fprintf(out, "  --ambiguity-policy radius is the conservative default for assignment commands.\n");
+    fprintf(out, "  --ambiguity-policy best is available only when best-distance compatibility is intended.\n");
+    fprintf(out, "  --metric levenshtein supports k=0,1,2 for count/demux fixed windows; hamming supports fixed-length comparisons.\n");
+    fprintf(out, "  N and IUPAC ambiguity symbols are treated as literal bytes, not wildcards.\n");
+    fprintf(out, "\n");
+    fprintf(out, "Examples:\n");
+    fprintf(out, "  %s dist ACGT AGGT\n", argv0);
+    fprintf(out, "  %s leq 1 ACGT AGGT\n", argv0);
+    fprintf(out, "  %s count --targets guides.tsv --reads sample.fastq.gz --sample-label sample \\\n", argv0);
+    fprintf(out, "      --target-start 23 --target-length 20 --k 1 --metric hamming --out counts.tsv\n");
+    fprintf(out, "  %s demux --barcodes barcodes.tsv --reads pooled.fastq.gz \\\n", argv0);
+    fprintf(out, "      --barcode-start 0 --barcode-length auto --k 0 --out-dir demuxed\n");
+    fprintf(out, "\n");
+    fprintf(out, "Packaging note:\n");
+    fprintf(out, "  The Bioconda package installs this native CLI plus C header/library artifacts.\n");
+    fprintf(out, "  The Python workflow layer, including dotmatch assay, barcode/panel convenience\n");
+    fprintf(out, "  namespaces, reliability reports, and Workbench-backed workflows, requires a\n");
+    fprintf(out, "  PyPI or source Python install.\n");
 }
 
 static char *xstrndup(const char *s, size_t n) {
@@ -7306,6 +7386,15 @@ int main(int argc, char **argv) {
     if (argc < 2) {
         usage(argv[0]);
         return 2;
+    }
+
+    if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "help") == 0) {
+        if (argc != 2) {
+            usage(argv[0]);
+            return 2;
+        }
+        help_manual(stdout, argv[0]);
+        return 0;
     }
 
     if (strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "version") == 0) {

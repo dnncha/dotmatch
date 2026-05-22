@@ -102,6 +102,11 @@ def _check_meta(meta: str, result: AuditResult) -> None:
         "dotmatch --version",
         "dotmatch dist ACGT AGGT",
         "dotmatch leq 1 ACGT AGGT",
+        "dotmatch count --targets targets.tsv",
+        "test -f \"${PREFIX}/include/qdalign.h\"",
+        "test -f \"${PREFIX}/lib/libdotmatch.a\"",
+        "libdotmatch.so",
+        "libdotmatch.dylib",
     ]:
         if command not in meta:
             result.failures.append(f"Bioconda recipe test commands must include {command}")
@@ -110,6 +115,7 @@ def _check_meta(meta: str, result: AuditResult) -> None:
 def _check_build(build: str, result: AuditResult) -> None:
     required_fragments = [
         ("set -euo pipefail", "Bioconda build.sh must fail fast with set -euo pipefail"),
+        ('DOTMATCH_VERSION="${PKG_VERSION}"', "Bioconda build.sh must pass PKG_VERSION into the native build"),
         ('CC="${CC}"', "Bioconda build.sh must use Conda's C compiler"),
         ("CPPFLAGS", "Bioconda build.sh must include Conda preprocessor flags"),
         ("LDFLAGS", "Bioconda build.sh must include Conda linker flags"),

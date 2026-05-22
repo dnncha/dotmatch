@@ -14,6 +14,10 @@ amplicon-panel starts, whitelist-style assays, and barcode panel design for
 known-target assignment. It is not a genome aligner, a basecaller, a UMI entropy
 generator, or a replacement for downstream screen statistics.
 
+Package scope: Bioconda installs the native `dotmatch` CLI and C library. The
+examples that use `dotmatch barcode`, `dotmatch panel`, `dotmatch assay`, Python
+imports, or HTML workflow reports require a PyPI or source Python install.
+
 ![DotMatch workflow: FASTQ reads and a known target table are sliced at the same read position, assigned to known short DNA targets, and written to counts, split FASTQs, QC tables, and reports.](public/dotmatch-read-assignment.svg)
 
 ## The Basic Idea
@@ -163,12 +167,21 @@ docker build -t dotmatch:dev .
 docker run --rm -v "$PWD:/work" dotmatch:dev dist ACGT AGGT
 ```
 
+Bioconda install for the native CLI and C library on published Bioconda
+platforms:
+
+```bash
+conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.2
+conda activate dotmatch
+dotmatch --version
+```
+
 Package status for PyPI, Bioconda, containers, and release archives is tracked
 in [Packaging Notes](docs/packaging.md), the
 [Release Process](docs/release-process.md), and the machine-readable
-[Distribution Status](docs/distribution-release.json). Release artifacts are not
-yet published on public package channels; install from source until the tagged
-release appears on the channel you want to use.
+[Distribution Status](docs/distribution-release.json). Only claim a channel as
+available for a release after `make distribution-channels` verifies public
+metadata and install smoke tests.
 
 The release workflow builds and smoke-tests the source distribution, the native
 macOS wheel, and repaired Linux wheels. PyPI trusted publishing is configured
@@ -176,6 +189,12 @@ for those artifacts. We will only describe PyPI wheel availability after the
 tagged release is visible on PyPI. For Linux wheels, the GitHub release workflow
 builds and smoke-tests repaired manylinux/musllinux wheel artifacts before any
 wheel is considered for PyPI.
+
+Bioconda currently provides the native `dotmatch` command-line tool and C
+library artifacts. The Python workflow layer, including `dotmatch assay ...`,
+barcode/panel convenience namespaces, reliability reports, and Python imports,
+is available from PyPI/source Python installs rather than the native Bioconda
+recipe.
 
 Optional local Workbench: DotMatch also includes a desktop Workbench under
 `apps/workbench` for local AssaySpec design, inference, planning, running, and

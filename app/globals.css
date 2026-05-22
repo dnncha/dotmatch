@@ -1335,6 +1335,16 @@ h3 {
   white-space: pre-wrap;
 }
 
+.terminal code .terminal-surface {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #a7c4b6;
+  font-size: 0.73rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
 .terminal code:last-child {
   border-bottom: 0;
 }

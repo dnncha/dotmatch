@@ -21,6 +21,19 @@ if [ "$("$DOTMATCH_BIN" --version)" != "dotmatch $EXPECTED_VERSION" ]; then
   echo "dotmatch --version must report pyproject version" >&2
   exit 1
 fi
+for help_arg in --help -h help; do
+  "$DOTMATCH_BIN" "$help_arg" > "$TMPDIR/help-$help_arg.txt" 2> "$TMPDIR/help-$help_arg.err"
+  if [ -s "$TMPDIR/help-$help_arg.err" ]; then
+    echo "dotmatch $help_arg must write help to stdout without stderr" >&2
+    exit 1
+  fi
+done
+cp "$TMPDIR/help---help.txt" "$TMPDIR/help.txt"
+grep "DotMatch $EXPECTED_VERSION" "$TMPDIR/help.txt" >/dev/null
+grep "Counting and demultiplexing:" "$TMPDIR/help.txt" >/dev/null
+grep "Assignment outcomes:" "$TMPDIR/help.txt" >/dev/null
+grep "Packaging note:" "$TMPDIR/help.txt" >/dev/null
+grep "dotmatch assay" "$TMPDIR/help.txt" >/dev/null
 
 cat > "$TMPDIR/barcodes.tsv" <<'BARCODES'
 bc0	ACGT

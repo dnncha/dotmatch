@@ -14,6 +14,7 @@ const panelBenchmarkUrl = `${repoUrl}/blob/main/docs/benchmarks/barcode_panel_de
 const nextflowExampleUrl = `${repoUrl}/tree/main/examples/workflows/nextflow`;
 const nfcoreExampleUrl = `${repoUrl}/tree/main/examples/workflows/nf-core`;
 const biocondaPrUrl = "https://github.com/bioconda/bioconda-recipes/pull/65367";
+const biocondaUrl = "https://anaconda.org/bioconda/dotmatch";
 
 const proof = [
   ["Guide counts", "screen reads", "FASTQ to guide-by-sample counts."],
@@ -114,14 +115,38 @@ const evidenceNotes = [
 ];
 
 const commands = [
-  "dotmatch panel design --n 96 --length 16 --preset illumina-inline-strict --seed 42 --out-dir panel_96x16",
-  "dotmatch panel check panel_96x16/barcodes.tsv --k 1 --metric hamming --out-dir panel_check",
-  "dotmatch barcode autopsy --barcodes barcodes.tsv --reads pooled.fastq.gz --scan-starts 0:12 --k-values 0,1 --out-dir autopsy",
-  "dotmatch barcode infer --barcodes barcodes.tsv --reads pooled.fastq.gz --scan-starts 0:30 --sample-reads 100000 --out inference.tsv",
-  "dotmatch barcode demux --barcodes barcodes.tsv --reads pooled.fastq.gz --barcode-start 1 --barcode-length auto --k 1 --metric hamming --max-correction-qual 20 --out-dir demuxed --report report.html",
-  "dotmatch crispr-count --library guides.csv --samples samples.tsv --guide-start 23 --guide-length 19 --k 1 --metric levenshtein --indel-window 1 --out counts.mageck.tsv --summary qc.json",
-  "dotmatch assay run assay.toml",
-  "dotmatch validate --targets guides.tsv --reads sample.fastq.gz --target-start 23 --target-length 19 --k 1 --indel-window 1 --oracle edlib --sample 100000"
+  {
+    surface: "Python workflow install",
+    command: "dotmatch panel design --n 96 --length 16 --preset illumina-inline-strict --seed 42 --out-dir panel_96x16"
+  },
+  {
+    surface: "Python workflow install",
+    command: "dotmatch panel check panel_96x16/barcodes.tsv --k 1 --metric hamming --out-dir panel_check"
+  },
+  {
+    surface: "Python workflow install",
+    command: "dotmatch barcode autopsy --barcodes barcodes.tsv --reads pooled.fastq.gz --scan-starts 0:12 --k-values 0,1 --out-dir autopsy"
+  },
+  {
+    surface: "Python workflow install",
+    command: "dotmatch barcode infer --barcodes barcodes.tsv --reads pooled.fastq.gz --scan-starts 0:30 --sample-reads 100000 --out inference.tsv"
+  },
+  {
+    surface: "Python workflow install",
+    command: "dotmatch barcode demux --barcodes barcodes.tsv --reads pooled.fastq.gz --barcode-start 1 --barcode-length auto --k 1 --metric hamming --max-correction-qual 20 --out-dir demuxed --report report.html"
+  },
+  {
+    surface: "Native CLI or Python install",
+    command: "dotmatch crispr-count --library guides.csv --samples samples.tsv --guide-start 23 --guide-length 19 --k 1 --metric levenshtein --indel-window 1 --out counts.mageck.tsv --summary qc.json"
+  },
+  {
+    surface: "Python workflow install",
+    command: "dotmatch assay run assay.toml"
+  },
+  {
+    surface: "Native CLI or Python install",
+    command: "dotmatch validate --targets guides.tsv --reads sample.fastq.gz --target-start 23 --target-length 19 --k 1 --indel-window 1 --oracle edlib --sample 100000"
+  }
 ];
 
 const autopsyArtifacts = [
@@ -320,7 +345,7 @@ export default function Home() {
         </div>
         <div className="hero-panel" aria-label="DotMatch benchmark summary">
           <div className="panel-topline">
-            <span>v0.1.1</span>
+            <span>v0.1.3</span>
             <span>known-target assignment</span>
           </div>
           <figure className="hero-visual">
@@ -429,7 +454,7 @@ export default function Home() {
             />
           </figure>
           <article className="panel-command">
-            <span className="card-label">Panel lifecycle</span>
+            <span className="card-label">Python workflow install</span>
             <pre><code>{`dotmatch panel design \\
   --n 96 \\
   --length 16 \\
@@ -446,6 +471,7 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
             <p>
               The check records unique, ambiguous, unmatched, and invalid
               outcomes. Exact error-sphere checks are supported through k=2.
+              Use a PyPI or source Python install for these panel commands.
             </p>
             <div className="link-stack compact">
               <a href={panelDesignUrl}>Read panel design docs</a>
@@ -482,7 +508,7 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
         </div>
         <div className="autopsy-layout">
           <article className="autopsy-command">
-            <span className="card-label">Common command</span>
+            <span className="card-label">Python workflow install</span>
             <pre><code>{`dotmatch barcode autopsy \\
   --barcodes barcodes.tsv \\
   --reads pooled.fastq.gz \\
@@ -491,7 +517,8 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
   --out-dir autopsy`}</code></pre>
             <p>
               One directory: report, window scan, barcode safety, top unmatched,
-              and provenance.
+              and provenance. Use a PyPI or source Python install for barcode
+              troubleshooting commands.
             </p>
           </article>
           <div className="artifact-grid" aria-label="Barcode QC outputs">
@@ -719,25 +746,41 @@ DotMatch reports: ambiguous`}</code></pre>
 
       <section id="install" className="section launch-section">
         <div className="section-heading">
-          <h2>Install from source for now.</h2>
+          <h2>Install the native CLI from Bioconda.</h2>
           <p>
-            Source install works today. Bioconda is still under review in PR
-            #65367.
+            Bioconda provides the native `dotmatch` command plus C
+            header/library artifacts on published platforms. Use a PyPI or
+            source Python install for `dotmatch assay`, `dotmatch barcode`, and
+            `dotmatch panel` workflow commands.
           </p>
         </div>
         <div className="launch-grid">
           <article className="launch-card">
-            <span className="card-label">Build it locally</span>
-            <h3>Clone, build, run.</h3>
-            <pre><code>{`git clone https://github.com/dnncha/dotmatch.git
-cd dotmatch
-make
-python3 -m pip install .
+            <span className="card-label">Native CLI</span>
+            <h3>Create a Bioconda env.</h3>
+            <pre><code>{`conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.2
+conda activate dotmatch
+dotmatch --version
 dotmatch dist ACGT AGGT`}</code></pre>
             <div className="link-stack">
+              <a href={biocondaUrl}>Open Bioconda package</a>
               <a href={repoUrl}>Open GitHub</a>
               <a href={packagingUrl}>Packaging notes</a>
               <a href={biocondaPrUrl}>Bioconda recipe PR</a>
+            </div>
+          </article>
+
+          <article className="launch-card">
+            <span className="card-label">Python workflow layer</span>
+            <h3>Use PyPI or source installs.</h3>
+            <p>
+              The workflow namespaces for assay specs, barcode autopsy, panel
+              design, HTML reports, and Workbench-backed runs are not part of
+              the native Bioconda package.
+            </p>
+            <div className="link-stack">
+              <a href={packagingUrl}>Read package boundaries</a>
+              <a href={repoUrl}>Install from source</a>
             </div>
           </article>
 
@@ -843,8 +886,9 @@ dotmatch dist ACGT AGGT`}</code></pre>
         <div className="workflow-copy">
           <h2>Command-line first.</h2>
           <p>
-            CLI and Python bindings. Count matrices, split FASTQs, QC tables,
-            diagnostics, validation summaries, and HTML reports.
+            Native CLI commands cover fixed-window assignment and validation.
+            Python workflow installs add barcode autopsy, panel design, assay
+            specs, and HTML reports.
           </p>
         </div>
         <div className="terminal" aria-label="DotMatch commands">
@@ -853,8 +897,9 @@ dotmatch dist ACGT AGGT`}</code></pre>
             <span />
             <span />
           </div>
-          {commands.map((command) => (
+          {commands.map(({ surface, command }) => (
             <code key={command}>
+              <span className="terminal-surface">{surface}</span>
               <span>$</span> {command}
             </code>
           ))}

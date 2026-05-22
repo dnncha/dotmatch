@@ -43,6 +43,7 @@ def _write_release_repo(root: Path) -> None:
             "include src/qdalign.c\n"
             "include include/qdalign.h\n"
         ),
+        "include/qdalign.h": '#define QDALN_VERSION "0.1.0"\n',
         "scripts/check_python_wheel.py": (
             'required_suffixes = ["/CITATION.cff", "/codemeta.json", '
             '"/docs/assay-evidence.json", "/src/qdalign.c", "/include/qdalign.h"]\n'
@@ -221,6 +222,16 @@ def test_release_readiness_rejects_unaligned_container_label(tmp_path):
     result = checker.audit(tmp_path)
 
     assert any("Dockerfile" in failure and "version" in failure for failure in result.failures)
+
+
+def test_release_readiness_rejects_unaligned_c_header_version(tmp_path):
+    checker = _load_checker()
+    _write_release_repo(tmp_path)
+    (tmp_path / "include" / "qdalign.h").write_text('#define QDALN_VERSION "0.1.0-dev"\n', encoding="utf-8")
+
+    result = checker.audit(tmp_path)
+
+    assert any("include/qdalign.h" in failure and "version" in failure for failure in result.failures)
 
 
 def test_release_readiness_rejects_missing_sdist_metadata(tmp_path):

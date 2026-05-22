@@ -10,6 +10,8 @@ from pathlib import Path
 REQUIRED_ASSAYS = [
     "crispr_guide_counting",
     "inline_barcode",
+    "raw_bcl_demux",
+    "paired_combinatorial",
     "perturb_seq",
     "feature_barcode",
     "amplicon_panel",

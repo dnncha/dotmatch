@@ -53,8 +53,8 @@ NEXT_OUTPUT=export NEXT_PUBLIC_BASE_PATH=/dotmatch NEXT_PUBLIC_SITE_URL=https://
 Use annotated tags:
 
 ```bash
-git tag -a v0.1.0 -m "DotMatch v0.1.0"
-git push origin v0.1.0
+git tag -a v<version> -m "DotMatch v<version>"
+git push origin v<version>
 ```
 
 Pushing `v*` tags runs `.github/workflows/release.yml`. The workflow starts
@@ -94,9 +94,11 @@ Avoid:
 
 - Create a Zenodo archive and add the DOI to `CITATION.cff` when available.
 - Publish the PyPI source distribution, native macOS wheel, and repaired manylinux/musllinux wheels through trusted publishing; do not upload raw `linux_x86_64` wheels.
-- Track the Bioconda recipe PR after `make bioconda-recipe-ready`; for v0.1.0,
-  [bioconda/bioconda-recipes#65367](https://github.com/bioconda/bioconda-recipes/pull/65367)
-  has passed CI and is waiting for review/merge.
+- For Bioconda updates, submit or update the `bioconda-recipes` recipe after
+  `make bioconda-recipe-ready`. Replace the source SHA256 only in the upstream
+  recipe copy. After merge and channel propagation, verify with
+  `make distribution-channels` before announcing conda install instructions or
+  BioContainers availability.
 - Confirm the GHCR image labels and tag after the source tag is immutable.
 - Run `make distribution-channels` after PyPI, Bioconda, GHCR, and Zenodo are public.
 - Update `docs/distribution-release.json` with verified public and evidence links after public channels are live.

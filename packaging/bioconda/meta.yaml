@@ -1,5 +1,5 @@
 {% set name = "dotmatch" %}
-{% set version = "0.1.1" %}
+{% set version = "0.1.3" %}
 {% set sha256 = "REPLACE_WITH_RELEASE_TARBALL_SHA256" %}
 
 package:
@@ -29,6 +29,13 @@ test:
     - dotmatch --version | grep '^dotmatch {{ version }}$'
     - dotmatch dist ACGT AGGT | grep '^1$'
     - dotmatch leq 1 ACGT AGGT | grep '^true$'
+    - test -f "${PREFIX}/include/qdalign.h"
+    - test -f "${PREFIX}/lib/libdotmatch.a"
+    - test -f "${PREFIX}/lib/libdotmatch.so" || test -f "${PREFIX}/lib/libdotmatch.dylib"
+    - printf 'target_id\ttarget_seq\nbc0\tACGT\n' > targets.tsv
+    - printf '@r0\nACGT\n+\nIIII\n' > reads.fastq
+    - dotmatch count --targets targets.tsv --reads reads.fastq --sample-label sample --target-start 0 --target-length 4 --k 0 --metric hamming --out counts.tsv
+    - awk -F '\t' 'NR==2 { exit !($1=="bc0" && $2=="ACGT" && $3=="" && $4=="0" && $5=="1" && $10=="1") }' counts.tsv
 
 about:
   home: https://github.com/dnncha/dotmatch

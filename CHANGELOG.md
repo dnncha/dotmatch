@@ -2,6 +2,44 @@
 
 All notable user-facing changes are tracked here. Public statements in release notes must stay aligned with `docs/scientific-claims.md`.
 
+## 0.1.3 - 2026-05-22
+
+### Added
+
+- Assay reliability evidence now records biological units, unsupported claims,
+  and minimum public evidence requirements for each public claim boundary.
+- Release-gate coverage now keeps BCL and paired-combinatorial evidence lanes
+  from disappearing silently from `docs/assay-evidence.json`.
+
+### Changed
+
+- Bioconda packaging remains a native CLI and C library package. The recipe now
+  passes `PKG_VERSION` directly into the native build and adds installed-file and
+  tiny native `count` smoke tests without adding Python, Workbench, or browser
+  dependencies.
+- Package and release metadata are aligned for the next `0.1.3` update after
+  the public `0.1.2` Bioconda publication.
+- Public installation docs now distinguish the native Bioconda package from the
+  Python workflow layer that provides `dotmatch assay`, barcode/panel
+  convenience namespaces, and Workbench-backed AssaySpec workflows.
+
+### Fixed
+
+- Release and packaging docs no longer describe the initial Bioconda recipe as
+  pending; `bioconda/bioconda-recipes#65367` has already published DotMatch
+  `0.1.2` for the current Bioconda platforms.
+- BCL evidence metadata no longer lists the broader `bcl-comparison-gate` as a
+  passing release evidence gate; the supported public BCL statement remains the
+  narrow tiny-BCL parser milestone.
+
+## 0.1.2 - 2026-05-18
+
+### Packaging
+
+- Published the first Bioconda package for DotMatch with native CLI smoke tests.
+  Bioconda availability is a distribution milestone only; it does not expand
+  the scientific evidence boundaries documented in `docs/scientific-claims.md`.
+
 ## 0.1.0 - Initial Release
 
 ### Added

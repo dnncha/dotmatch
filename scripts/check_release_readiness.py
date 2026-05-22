@@ -58,6 +58,11 @@ def _bioconda_template_version(text: str) -> Optional[str]:
     return match.group(1) if match else None
 
 
+def _c_header_version(text: str) -> Optional[str]:
+    match = re.search(r'#define\s+QDALN_VERSION\s+"([^"]+)"', text)
+    return match.group(1) if match else None
+
+
 def _has_release_doi_field(path: Path) -> bool:
     if path.name == "CITATION.cff":
         return re.search(r"^\s*doi\s*:", _read(path), re.I | re.M) is not None
@@ -98,6 +103,7 @@ def check_versions(root: Path, result: ReleaseAudit) -> None:
         version_files[".zenodo.json"] = str(_json(root / ".zenodo.json").get("version") or "")
         version_files["CITATION.cff"] = _cff_version(root / "CITATION.cff")
         version_files["Dockerfile OCI label"] = _docker_label_version(_read(root / "Dockerfile"))
+        version_files["include/qdalign.h"] = _c_header_version(_read(root / "include" / "qdalign.h"))
         version_files["packaging/bioconda/meta.yaml"] = _bioconda_template_version(
             _read(root / "packaging" / "bioconda" / "meta.yaml")
         )

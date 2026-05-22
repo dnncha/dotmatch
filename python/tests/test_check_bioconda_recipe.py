@@ -43,7 +43,14 @@ def _meta(version: str = "0.1.0") -> str:
         "  commands:\n"
         "    - dotmatch --version | grep '^dotmatch {{ version }}$'\n"
         "    - dotmatch dist ACGT AGGT | grep '^1$'\n"
-        "    - dotmatch leq 1 ACGT AGGT | grep '^true$'\n\n"
+        "    - dotmatch leq 1 ACGT AGGT | grep '^true$'\n"
+        "    - test -f \"${PREFIX}/include/qdalign.h\"\n"
+        "    - test -f \"${PREFIX}/lib/libdotmatch.a\"\n"
+        "    - test -f \"${PREFIX}/lib/libdotmatch.so\" || test -f \"${PREFIX}/lib/libdotmatch.dylib\"\n"
+        "    - printf 'target_id\\ttarget_seq\\nbc0\\tACGT\\n' > targets.tsv\n"
+        "    - printf '@r0\\nACGT\\n+\\nIIII\\n' > reads.fastq\n"
+        "    - dotmatch count --targets targets.tsv --reads reads.fastq --sample-label sample --target-start 0 --target-length 4 --k 0 --metric hamming --out counts.tsv\n"
+        "    - awk -F '\\t' 'NR==2 { exit !($1==\"bc0\" && $2==\"ACGT\" && $3==\"\" && $4==\"0\" && $5==\"1\" && $10==\"1\") }' counts.tsv\n\n"
         "about:\n"
         "  home: https://github.com/dnncha/dotmatch\n"
         "  license: Apache-2.0\n"
@@ -65,6 +72,7 @@ def _build() -> str:
         "#!/usr/bin/env bash\n"
         "set -euo pipefail\n\n"
         "make \\\n"
+        '  DOTMATCH_VERSION="${PKG_VERSION}" \\\n'
         '  CC="${CC}" \\\n'
         '  CFLAGS="${CFLAGS:-} ${CPPFLAGS:-} -std=c11 -Wall -Wextra -Wpedantic -Iinclude" \\\n'
         '  LDFLAGS="${LDFLAGS:-}" \\\n'

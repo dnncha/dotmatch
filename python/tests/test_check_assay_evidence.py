@@ -57,6 +57,38 @@ def _valid_manifest() -> dict:
                 "validation": "Smoke gate checks deterministic demux execution.",
             },
             {
+                "id": "raw_bcl_demux",
+                "label": "Classic per-cycle BCL demultiplexing",
+                "status": "gated",
+                "raw_artifacts": ["benchmarks/raw/bcl_demux.csv"],
+                "reports": ["docs/benchmarks/bcl_demux/README.md"],
+                "gates": ["make bcl-tiny-public-gate"],
+                "claim_boundary": "Tiny public BCL rows cover a parser milestone only.",
+                "biological_unit": "per-cluster classic per-cycle BCL parser output counts",
+                "unsupported_claims": ["production demultiplexing replacement", "CBCL support"],
+                "minimum_public_evidence": ["real run-folder rows", "production comparator validation"],
+                "next_public_evidence": "Add real run-folder rows with production comparator validation.",
+                "commands": ["make bench-bcl-10x", "make bcl-tiny-public-gate"],
+                "comparator_semantics": "Tiny BCL rows validate count totals only.",
+                "validation": "Tiny public gate checks parser milestone rows.",
+            },
+            {
+                "id": "paired_combinatorial",
+                "label": "Paired or combinatorial target assignment",
+                "status": "smoke",
+                "raw_artifacts": [],
+                "reports": [],
+                "gates": ["make cli-test"],
+                "claim_boundary": "CLI regression only; no public pair comparator.",
+                "biological_unit": "per-read paired fixed-window target assignment",
+                "unsupported_claims": ["guide-pair effect inference", "cell-level calls"],
+                "minimum_public_evidence": ["public dual-target FASTQ", "pair-level oracle validation"],
+                "next_public_evidence": "Add public dual-guide rows with pair-level validation.",
+                "commands": ["make cli-test"],
+                "comparator_semantics": "Native CLI pair-count semantics regression.",
+                "validation": "CLI test checks paired assignment diagnostics.",
+            },
+            {
                 "id": "perturb_seq",
                 "label": "Perturb-seq guide or feature assignment",
                 "status": "planned",
@@ -117,6 +149,9 @@ def _write_assay_repo(root: Path, manifest=None) -> None:
         "Makefile": (
             "public-crispr-evidence-gate:\n\ttrue\n"
             "barcode-comparison-gate:\n\ttrue\n"
+            "bcl-tiny-public-gate:\n\ttrue\n"
+            "bench-bcl-10x:\n\ttrue\n"
+            "cli-test:\n\ttrue\n"
             "bench-public-crispr-repeated:\n\ttrue\n"
             "bench-barcode-demux:\n\ttrue\n"
         ),
@@ -130,8 +165,13 @@ def _write_assay_repo(root: Path, manifest=None) -> None:
             "tool,workflow,command,exit_code\n"
             "dotmatch_demux,real_public_inline_barcode,dotmatch demux --barcodes barcodes.tsv,0\n"
         ),
+        "benchmarks/raw/bcl_demux.csv": (
+            "tool,workflow,command,exit_code\n"
+            "dotmatch_bcl,public_10x_tiny_bcl,dotmatch bcl-demux --run-folder run,0\n"
+        ),
         "docs/benchmarks/public_crispr/README.md": "# Public CRISPR\n",
         "docs/benchmarks/barcode_demux/README.md": "# Barcode Demux\n",
+        "docs/benchmarks/bcl_demux/README.md": "# BCL Demux\n",
     }
     for path, text in files.items():
         full = root / path
@@ -193,7 +233,8 @@ def test_assay_evidence_rejects_gate_without_make_target(tmp_path):
 def test_assay_evidence_requires_next_public_evidence_for_planned_lanes(tmp_path):
     checker = _load_checker()
     manifest = _valid_manifest()
-    del manifest["assays"][2]["next_public_evidence"]
+    perturb = next(assay for assay in manifest["assays"] if assay["id"] == "perturb_seq")
+    del perturb["next_public_evidence"]
     _write_assay_repo(tmp_path, manifest)
 
     result = checker.audit(tmp_path)
