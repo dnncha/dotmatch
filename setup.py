@@ -66,6 +66,12 @@ class build_py(_build_py):
         super().run()
         self.build_native_library()
         self.build_native_cli()
+        self.copy_assay_evidence()
+
+    def copy_assay_evidence(self) -> None:
+        out_dir = Path(self.build_lib) / "dotmatch" / "data"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        self.copy_file(str(ROOT / "docs" / "assay-evidence.json"), str(out_dir / "assay-evidence.json"))
 
     def build_native_library(self) -> None:
         system = platform.system()
@@ -171,5 +177,5 @@ class bdist_wheel(_bdist_wheel):
 setup(
     cmdclass={"build_py": build_py, "bdist_wheel": bdist_wheel},
     distclass=BinaryDistribution,
-    package_data={"dotmatch": ["libdotmatch.*", "dotmatch-native"]},
+    package_data={"dotmatch": ["libdotmatch.*", "dotmatch-native", "data/*.json"]},
 )

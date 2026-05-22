@@ -134,12 +134,15 @@ def check_no_unminted_doi_fields(root: Path, result: ReleaseAudit) -> None:
 def check_sdist_metadata(root: Path, result: ReleaseAudit) -> None:
     manifest = _read(root / "MANIFEST.in")
     verifier = _read(root / "scripts" / "check_python_wheel.py")
-    for required in ["CITATION.cff", "codemeta.json", "src/qdalign.c", "include/qdalign.h"]:
+    for required in ["CITATION.cff", "codemeta.json", "docs/assay-evidence.json", "src/qdalign.c", "include/qdalign.h"]:
         if f"include {required}" not in manifest:
             result.failures.append(f"MANIFEST.in must include {required}")
-    for required_suffix in ["/CITATION.cff", "/codemeta.json", "/src/qdalign.c", "/include/qdalign.h"]:
+    for required_suffix in ["/CITATION.cff", "/codemeta.json", "/docs/assay-evidence.json", "/src/qdalign.c", "/include/qdalign.h"]:
         if required_suffix not in verifier:
             result.failures.append(f"scripts/check_python_wheel.py must verify {required_suffix}")
+    for verifier_fragment in ["dotmatch/data/assay-evidence.json", "evidence_boundary"]:
+        if verifier_fragment not in verifier:
+            result.failures.append(f"scripts/check_python_wheel.py must verify {verifier_fragment}")
     if not any("MANIFEST.in" in failure or "check_python_wheel.py" in failure for failure in result.failures):
         result.passed.append("sdist release metadata verified")
 
@@ -160,6 +163,7 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
         "docker/metadata-action",
         "docker/build-push-action",
         "ghcr.io/dnncha/dotmatch",
+        "python scripts/check_python_wheel.py --wheel-only --out-dir dist-linux",
         "docker image inspect dotmatch:ci",
         "SHA256SUMS.txt",
     ]

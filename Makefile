@@ -393,7 +393,7 @@ repository-ready:
 	python3 scripts/check_barcode_failure_fixtures.py
 	python3 scripts/check_evidence_gallery.py
 
-release-ready: assay-evidence-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready evidence-gallery-ready distribution-record-ready bioconda-recipe-ready gpu-evidence-gate public-crispr-evidence-gate crispr-comparison-gate barcode-comparison-gate feature-barcode-public-gate perturb-seq-public-gate amplicon-panel-public-gate bcl-tiny-public-gate oligo-adapter-public-gate
+release-ready: python-test python-package-test assay-evidence-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready evidence-gallery-ready distribution-record-ready bioconda-recipe-ready gpu-evidence-gate public-crispr-evidence-gate crispr-comparison-gate barcode-comparison-gate feature-barcode-public-gate perturb-seq-public-gate amplicon-panel-public-gate bcl-tiny-public-gate oligo-adapter-public-gate
 	python3 scripts/check_release_readiness.py
 
 pretag-ready:

@@ -74,6 +74,8 @@ jobs:
           CIBW_PLATFORM: linux
         with:
           output-dir: dist-linux
+      - name: Verify repaired Linux wheels
+        run: python scripts/check_python_wheel.py --wheel-only --out-dir dist-linux
       - uses: actions/upload-artifact@v7
         with:
           name: dotmatch-linux-repaired-wheels

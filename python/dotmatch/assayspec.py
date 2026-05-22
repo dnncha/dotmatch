@@ -5,9 +5,11 @@ import csv
 import gzip
 import html
 import json
+import re
 import shlex
 import subprocess
 import sys
+from importlib import resources as importlib_resources
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -79,6 +81,7 @@ TEMPLATES = {
     "oligo-adapter",
     "pair-count",
 }
+SAMPLE_ID_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 
 class AssaySpecError(ValueError):
@@ -100,7 +103,12 @@ class AssaySpec:
 
     @property
     def out_dir(self) -> Path:
-        return _path_from_spec(self.path, str(_table(self.data, "run").get("out_dir", "dotmatch_assay_out")))
+        return _path_from_spec(
+            self.path,
+            str(_table(self.data, "run").get("out_dir", "dotmatch_assay_out")),
+            allow_absolute=True,
+            name="run.out_dir",
+        )
 
     @property
     def k(self) -> int:
@@ -195,6 +203,7 @@ def validate_assay_spec(assay: AssaySpec) -> None:
                 raise AssaySpecError(f"samples[{i}] must be a table")
             if not sample.get("id"):
                 raise AssaySpecError(f"samples[{i}].id is required")
+            _require_safe_identifier(sample.get("id"), f"samples[{i}].id")
             _require_existing_path(assay, sample.get("fastq"), f"samples[{i}].fastq")
         _require_extract(data, "extract")
     elif mode == "demux":
@@ -263,19 +272,17 @@ def format_plan(plan: AssayPlan) -> str:
 
 
 def run_assay_plan(plan: AssayPlan) -> int:
-    native = find_native_cli()
     out_dir = plan.spec.out_dir
     out_dir.mkdir(parents=True, exist_ok=True)
     _write_generated_files(plan)
     _write_normalized_spec(plan)
-
     manifest: dict[str, Any] = {
         "schema_version": 1,
         "mode": plan.spec.mode,
         "assay_type": plan.spec.assay_type,
         "status": plan.spec.status,
         "spec_path": str(plan.spec.path),
-        "native_cli": str(native),
+        "native_cli": "",
         "commands": [],
         "artifacts": {key: str(value) for key, value in plan.artifacts.items()},
         "inference_report": str(plan.spec.data.get("inference_report", "")),
@@ -285,6 +292,39 @@ def run_assay_plan(plan: AssayPlan) -> int:
         "production_warnings": [],
         "warnings": [],
     }
+    try:
+        native = find_native_cli()
+    except FileNotFoundError as exc:
+        manifest["native_cli"] = ""
+        manifest["production_warnings"].append(str(exc))
+        reliability = _build_reliability_summary(plan, stage="preflight", manifest=manifest)
+        reliability["findings"].append(
+            _finding(
+                "native_cli_missing",
+                "blocked",
+                "preflight",
+                "",
+                "native_cli",
+                "missing",
+                "executable",
+                str(exc),
+                "Build with make dotmatch, install a wheel with the bundled native executable, or set DOTMATCH_NATIVE_CLI.",
+                "",
+            )
+        )
+        reliability["finding_counts"] = _finding_counts(reliability["findings"])
+        reliability["overall_status"] = _overall_reliability_status(reliability["finding_counts"])
+        manifest["reliability"] = {
+            "overall_status": reliability["overall_status"],
+            "finding_counts": reliability["finding_counts"],
+            "summary": str(plan.artifacts["reliability_summary"]),
+            "report": str(plan.artifacts["reliability_report"]),
+        }
+        _write_reliability_artifacts(plan, reliability)
+        _write_manifest(plan, manifest)
+        print(f"dotmatch assay: {exc}", file=sys.stderr)
+        return 2
+    manifest["native_cli"] = str(native)
     version = subprocess.run([str(native), "--version"], check=False, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     manifest["native_version"] = version.stdout.strip() if version.returncode == 0 else ""
 
@@ -318,6 +358,14 @@ def run_assay_plan(plan: AssayPlan) -> int:
                 print(f"dotmatch assay: {message}", file=sys.stderr)
                 return 2
         if result.returncode != 0:
+            reliability = _build_reliability_summary(plan, stage="postrun", manifest=manifest)
+            manifest["reliability"] = {
+                "overall_status": reliability["overall_status"],
+                "finding_counts": reliability["finding_counts"],
+                "summary": str(plan.artifacts["reliability_summary"]),
+                "report": str(plan.artifacts["reliability_report"]),
+            }
+            _write_reliability_artifacts(plan, reliability)
             _write_manifest(plan, manifest)
             sys.stderr.write(result.stderr)
             return int(result.returncode)
@@ -388,7 +436,10 @@ def command_assay(argv: Sequence[str]) -> int:
             _write_preflight_reliability(plan)
             print(f"{assay.path}: ok")
             return 0
-        if args.command == "run" and assay.status == "draft":
+        if args.command == "run" and assay.status == "draft" and _blocks_on_draft_inference(assay):
+            plan = compile_assay_plan(assay)
+            reliability = _build_reliability_summary(plan, stage="preflight")
+            _write_reliability_artifacts(plan, reliability)
             raise AssaySpecError("refusing to run draft AssaySpec; review inference report and promote status to 'ready'")
         plan = compile_assay_plan(assay)
         if args.command == "plan":
@@ -674,22 +725,23 @@ def _choose_candidate(candidates: list[dict[str, Any]]) -> tuple[dict[str, Any],
 
 def _write_inferred_count_spec(out: Path, status: str, assay_type: str, targets: Path, reads: Path, sample_id: str,
                                chosen: Mapping[str, Any]) -> None:
+    _require_safe_identifier(sample_id, "sample_id")
     format_name = "mageck" if assay_type == "crispr" else "dotmatch"
     command = "crispr" if assay_type == "crispr" else assay_type
     _write_text_file(
         out,
         f"""schema_version = 1
-status = "{status}"
+status = {_toml_string(status)}
 mode = "count"
-assay_type = "{assay_type}"
-targets = "{targets}"
+assay_type = {_toml_string(assay_type)}
+targets = {_toml_string(str(targets))}
 
 [[samples]]
-id = "{sample_id}"
-fastq = "{reads}"
+id = {_toml_string(sample_id)}
+fastq = {_toml_string(str(reads))}
 
 [run]
-out_dir = "{out.with_suffix('').name}_out"
+out_dir = {_toml_string(f"{out.with_suffix('').name}_out")}
 threads = 1
 
 [extract]
@@ -717,14 +769,14 @@ def _write_inferred_demux_spec(out: Path, status: str, assay_type: str, barcodes
     _write_text_file(
         out,
         f"""schema_version = 1
-status = "{status}"
+status = {_toml_string(status)}
 mode = "demux"
-assay_type = "{assay_type}"
-barcodes = "{barcodes}"
-reads = "{reads}"
+assay_type = {_toml_string(assay_type)}
+barcodes = {_toml_string(str(barcodes))}
+reads = {_toml_string(str(reads))}
 
 [run]
-out_dir = "{out.with_suffix('').name}_out"
+out_dir = {_toml_string(f"{out.with_suffix('').name}_out")}
 
 [extract]
 start = {chosen["start"]}
@@ -748,15 +800,15 @@ def _write_inferred_pair_spec(out: Path, status: str, assay_type: str, left_targ
     _write_text_file(
         out,
         f"""schema_version = 1
-status = "{status}"
+status = {_toml_string(status)}
 mode = "pair-count"
-assay_type = "{assay_type}"
-left_targets = "{left_targets}"
-right_targets = "{right_targets}"
-reads = "{reads}"
+assay_type = {_toml_string(assay_type)}
+left_targets = {_toml_string(str(left_targets))}
+right_targets = {_toml_string(str(right_targets))}
+reads = {_toml_string(str(reads))}
 
 [run]
-out_dir = "{out.with_suffix('').name}_out"
+out_dir = {_toml_string(f"{out.with_suffix('').name}_out")}
 
 [left]
 start = {left["start"]}
@@ -780,6 +832,10 @@ assignments = true
 def _write_text_file(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
+
+
+def _toml_string(value: str) -> str:
+    return json.dumps(value, ensure_ascii=False)
 
 
 def _write_candidates_tsv(path: Path, report_data: Mapping[str, Any]) -> None:
@@ -818,7 +874,7 @@ def _autopsy_count(assay: AssaySpec, native: Path, out_dir: Path, findings: list
             "--targets",
             str(_spec_path(assay, "targets")),
             "--reads",
-            str(_path_from_spec(assay.path, str(sample["fastq"]))),
+            str(_path_from_spec(assay.path, str(sample["fastq"]), allow_absolute=True, name="samples.fastq")),
             "--target-start",
             str(extract["start"]),
             "--target-length",
@@ -940,11 +996,17 @@ def _add_top_unmatched_findings(top_path: Path, findings: list[dict[str, str]], 
 def _write_findings(path: Path, findings: Sequence[Mapping[str, str]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as fh:
-        fh.write("sample\tfinding\tseverity\tevidence\tartifact\n")
+        writer = csv.writer(fh, delimiter="\t", lineterminator="\n")
+        writer.writerow(["sample", "finding", "severity", "evidence", "artifact"])
         for finding in findings:
-            fh.write(
-                f"{finding['sample']}\t{finding['finding']}\t{finding['severity']}\t"
-                f"{finding['evidence']}\t{finding['artifact']}\n"
+            writer.writerow(
+                [
+                    finding["sample"],
+                    finding["finding"],
+                    finding["severity"],
+                    finding["evidence"],
+                    finding["artifact"],
+                ]
             )
 
 
@@ -955,18 +1017,25 @@ def _autopsy_trigger_reasons(plan: AssayPlan) -> list[str]:
     if sample_qc is None or not sample_qc.exists():
         return []
     reasons: list[str] = []
+    thresholds = _reliability_thresholds(plan.spec)
     with sample_qc.open("r", encoding="utf-8") as fh:
         reader = csv.DictReader(fh, delimiter="\t")
         for row in reader:
             sample = row.get("sample_id", "")
-            total = _float(row.get("total_reads"))
-            invalid = _float(row.get("invalid_reads"))
+            try:
+                total = _required_float(row, "total_reads")
+                invalid = _required_float(row, "invalid_reads")
+                assignment_rate = _required_float(row, "assignment_rate")
+                ambiguous_rate = _required_float(row, "ambiguous_rate")
+                no_match_rate = _required_float(row, "no_match_rate")
+            except AssaySpecError:
+                continue
             invalid_rate = invalid / total if total else 0.0
             checks = [
-                ("assignment_rate", _float(row.get("assignment_rate")), "<", AUTOPSY_THRESHOLDS["assignment_rate_min"]),
-                ("ambiguous_rate", _float(row.get("ambiguous_rate")), ">", AUTOPSY_THRESHOLDS["ambiguous_rate_max"]),
-                ("no_match_rate", _float(row.get("no_match_rate")), ">", AUTOPSY_THRESHOLDS["no_match_rate_max"]),
-                ("invalid_rate", invalid_rate, ">", AUTOPSY_THRESHOLDS["invalid_rate_max"]),
+                ("assignment_rate", assignment_rate, "<", thresholds["min_assignment_rate"]),
+                ("ambiguous_rate", ambiguous_rate, ">", thresholds["max_ambiguous_rate"]),
+                ("no_match_rate", no_match_rate, ">", thresholds["max_unmatched_rate"]),
+                ("invalid_rate", invalid_rate, ">", thresholds["max_invalid_rate"]),
             ]
             for metric, value, op, threshold in checks:
                 if (op == "<" and value < threshold) or (op == ">" and value > threshold):
@@ -979,6 +1048,16 @@ def _float(value: Any) -> float:
         return float(value)
     except (TypeError, ValueError):
         return 0.0
+
+
+def _required_float(row: Mapping[str, Any], key: str) -> float:
+    value = row.get(key)
+    if value is None or value == "":
+        raise AssaySpecError(f"sample_qc missing {key}")
+    try:
+        return float(value)
+    except (TypeError, ValueError) as exc:
+        raise AssaySpecError(f"sample_qc has invalid {key}: {value!r}") from exc
 
 
 def _compile_count(assay: AssaySpec, steps: list[PlanStep], artifacts: dict[str, Path], samples_path: Path) -> None:
@@ -1081,7 +1160,7 @@ def _compile_count(assay: AssaySpec, steps: list[PlanStep], artifacts: dict[str,
         "--targets",
         str(_spec_path(assay, "targets")),
         "--reads",
-        str(_path_from_spec(assay.path, str(first_sample["fastq"]))),
+        str(_path_from_spec(assay.path, str(first_sample["fastq"]), allow_absolute=True, name="samples.fastq")),
         "--target-start",
         str(extract["start"]),
         "--target-length",
@@ -1200,9 +1279,15 @@ def _write_generated_files(plan: AssayPlan) -> None:
         return
     samples_path.parent.mkdir(parents=True, exist_ok=True)
     with samples_path.open("w", encoding="utf-8") as fh:
-        fh.write("sample_id\tfastq\n")
+        writer = csv.writer(fh, delimiter="\t", lineterminator="\n")
+        writer.writerow(["sample_id", "fastq"])
         for sample in _samples(plan.spec.data):
-            fh.write(f"{sample['id']}\t{_path_from_spec(plan.spec.path, str(sample['fastq']))}\n")
+            writer.writerow(
+                [
+                    sample["id"],
+                    _path_from_spec(plan.spec.path, str(sample["fastq"]), allow_absolute=True, name="samples.fastq"),
+                ]
+            )
 
 
 def _write_normalized_spec(plan: AssayPlan) -> None:
@@ -1318,15 +1403,52 @@ def _sample_qc_reliability_findings(plan: AssayPlan, stage: str) -> list[dict[st
     severity = _threshold_severity(plan.spec)
     with sample_qc.open("r", encoding="utf-8") as fh:
         reader = csv.DictReader(fh, delimiter="\t")
+        required = {"sample_id", "assignment_rate", "ambiguous_rate", "no_match_rate", "total_reads", "invalid_reads"}
+        missing = sorted(required - set(reader.fieldnames or []))
+        if missing:
+            return [
+                _finding(
+                    "sample_qc_malformed",
+                    "error",
+                    stage,
+                    "",
+                    "sample_qc",
+                    f"missing columns: {', '.join(missing)}",
+                    "required columns present",
+                    "sample_qc.tsv is missing required reliability columns.",
+                    "Regenerate assay outputs before trusting reliability metrics.",
+                    str(sample_qc),
+                )
+            ]
         for row in reader:
             sample = row.get("sample_id", "")
-            total = _float(row.get("total_reads"))
-            invalid = _float(row.get("invalid_reads"))
+            try:
+                total = _required_float(row, "total_reads")
+                invalid = _required_float(row, "invalid_reads")
+                assignment_rate = _required_float(row, "assignment_rate")
+                ambiguous_rate = _required_float(row, "ambiguous_rate")
+                no_match_rate = _required_float(row, "no_match_rate")
+            except AssaySpecError as exc:
+                findings.append(
+                    _finding(
+                        "sample_qc_malformed",
+                        "error",
+                        stage,
+                        sample,
+                        "sample_qc",
+                        str(exc),
+                        "numeric reliability metrics",
+                        "sample_qc.tsv contains malformed reliability data.",
+                        "Regenerate assay outputs before trusting reliability metrics.",
+                        str(sample_qc),
+                    )
+                )
+                continue
             invalid_rate = invalid / total if total else 0.0
             checks = [
-                ("assignment_rate_below_min", "assignment_rate", _float(row.get("assignment_rate")), "<", thresholds["min_assignment_rate"]),
-                ("ambiguous_rate_above_max", "ambiguous_rate", _float(row.get("ambiguous_rate")), ">", thresholds["max_ambiguous_rate"]),
-                ("unmatched_rate_above_max", "no_match_rate", _float(row.get("no_match_rate")), ">", thresholds["max_unmatched_rate"]),
+                ("assignment_rate_below_min", "assignment_rate", assignment_rate, "<", thresholds["min_assignment_rate"]),
+                ("ambiguous_rate_above_max", "ambiguous_rate", ambiguous_rate, ">", thresholds["max_ambiguous_rate"]),
+                ("unmatched_rate_above_max", "no_match_rate", no_match_rate, ">", thresholds["max_unmatched_rate"]),
                 ("invalid_rate_above_max", "invalid_rate", invalid_rate, ">", thresholds["max_invalid_rate"]),
             ]
             for finding_id, metric, observed, op, threshold in checks:
@@ -1402,6 +1524,11 @@ def _blocks_on_unsafe_targets(assay: AssaySpec) -> bool:
     return str(reliability["profile"]) == "production" and bool(reliability["fail_on_unsafe_targets"])
 
 
+def _blocks_on_draft_inference(assay: AssaySpec) -> bool:
+    reliability = assay.reliability
+    return str(reliability["profile"]) == "production" and bool(reliability["fail_on_draft_inference"])
+
+
 def _audit_step_unsafe(plan: AssayPlan, step: PlanStep) -> bool:
     summary = Path(step.argv[-1]) / "audit_summary.json"
     if not summary.exists():
@@ -1460,10 +1587,11 @@ def _base_reliability_findings(plan: AssayPlan, stage: str) -> list[dict[str, st
     findings: list[dict[str, str]] = []
     reliability = plan.spec.reliability
     if plan.spec.status == "draft" and reliability["fail_on_draft_inference"]:
+        severity = "blocked" if _blocks_on_draft_inference(plan.spec) else _threshold_severity(plan.spec)
         findings.append(
             _finding(
                 "draft_assayspec",
-                "blocked",
+                severity,
                 stage,
                 "",
                 "status",
@@ -1543,23 +1671,36 @@ def _gpu_eligible(assay: AssaySpec) -> bool:
     if int(assignment.get("k", 1)) != 1 or str(assignment.get("metric", "levenshtein")) != "hamming":
         return False
     extract: Mapping[str, Any]
-    if assay.mode in {"count", "demux"}:
+    if assay.mode == "count":
         extract = _table(assay.data, "extract")
+        target_key = "targets"
+    elif assay.mode == "demux":
+        extract = _table(assay.data, "extract")
+        target_key = "barcodes"
     elif assay.mode == "pair-count":
         return False
     else:
         return False
     length = extract.get("length")
-    return isinstance(length, int) and 1 <= length <= 32
+    if not isinstance(length, int) or not 1 <= length <= 32:
+        return False
+    try:
+        target_set = _read_target_sequences(_spec_path(assay, target_key))
+    except AssaySpecError:
+        return False
+    return target_set.lengths == [length] and all(set(seq) <= {"A", "C", "G", "T"} for seq in target_set.sequences)
 
 
 def _evidence_boundary(assay: AssaySpec) -> dict[str, str]:
     evidence_id = ASSAY_EVIDENCE_IDS.get(assay.assay_type, "")
-    path = Path(__file__).resolve().parents[2] / "docs" / "assay-evidence.json"
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return {"id": evidence_id, "status": "missing", "label": "", "claim_boundary": ""}
+        data = json.loads(importlib_resources.files("dotmatch").joinpath("data", "assay-evidence.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, ModuleNotFoundError, AttributeError):
+        path = Path(__file__).resolve().parents[2] / "docs" / "assay-evidence.json"
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return {"id": evidence_id, "status": "missing", "label": "", "claim_boundary": ""}
     for row in data.get("assays", []):
         if isinstance(row, dict) and row.get("id") == evidence_id:
             return {
@@ -1801,7 +1942,7 @@ def _samples_table(assay: AssaySpec) -> str:
             rows.append(
                 "<tr><td>{}</td><td>{}</td></tr>".format(
                     html.escape(str(sample.get("id", ""))),
-                    html.escape(str(_path_from_spec(assay.path, str(sample.get("fastq", ""))))),
+                    html.escape(str(_path_from_spec(assay.path, str(sample.get("fastq", "")), allow_absolute=True, name="samples.fastq"))),
                 )
             )
     else:
@@ -1809,7 +1950,7 @@ def _samples_table(assay: AssaySpec) -> str:
         rows.append(
             "<tr><td>{}</td><td>{}</td></tr>".format(
                 html.escape(assay.mode),
-                html.escape(str(_path_from_spec(assay.path, str(assay.data.get(reads_key, ""))))),
+                html.escape(str(_path_from_spec(assay.path, str(assay.data.get(reads_key, "")), allow_absolute=True, name=reads_key))),
             )
         )
     rows.append("</table>")
@@ -2099,17 +2240,31 @@ def _require_path(assay: AssaySpec, key: str) -> None:
 def _require_existing_path(assay: AssaySpec, value: Any, name: str) -> None:
     if not isinstance(value, str) or not value:
         raise AssaySpecError(f"{name} is required")
-    path = _path_from_spec(assay.path, value)
+    path = _path_from_spec(assay.path, value, allow_absolute=True, name=name)
     if not path.exists():
         raise AssaySpecError(f"{name} does not exist: {path}")
 
 
 def _spec_path(assay: AssaySpec, key: str) -> Path:
-    return _path_from_spec(assay.path, str(assay.data[key]))
+    return _path_from_spec(assay.path, str(assay.data[key]), allow_absolute=True, name=key)
 
 
-def _path_from_spec(spec_path: Path, value: str) -> Path:
+def _path_from_spec(spec_path: Path, value: str, *, allow_absolute: bool = False, name: str = "path") -> Path:
     path = Path(value)
     if path.is_absolute():
+        if not allow_absolute:
+            raise AssaySpecError(f"{name} must be relative to the AssaySpec")
         return path
-    return spec_path.parent / path
+    base = spec_path.parent.resolve()
+    resolved = (base / path).resolve(strict=False)
+    try:
+        resolved.relative_to(base)
+    except ValueError as exc:
+        raise AssaySpecError(f"{name} must stay inside the AssaySpec directory: {value}") from exc
+    return resolved
+
+
+def _require_safe_identifier(value: Any, name: str) -> None:
+    text = str(value)
+    if not SAMPLE_ID_RE.fullmatch(text):
+        raise AssaySpecError(f"{name} must contain only letters, digits, '.', '_' or '-'")

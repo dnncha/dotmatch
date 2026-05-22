@@ -519,6 +519,75 @@ def test_assay_infer_accepts_gzipped_fastq(tmp_path: Path) -> None:
     assert data["chosen"]["assignment_rate"] == 1.0
 
 
+def test_assay_infer_rejects_sample_id_toml_injection(tmp_path: Path) -> None:
+    targets = _write_inference_targets(tmp_path)
+    reads = _write_inference_reads(tmp_path)
+    spec = tmp_path / "injected.toml"
+    report = tmp_path / "injected_report.json"
+
+    rc = _run_cli(
+        [
+            "assay",
+            "infer",
+            "--mode",
+            "count",
+            "--assay-type",
+            "crispr",
+            "--targets",
+            str(targets),
+            "--reads",
+            str(reads),
+            "--sample-id",
+            'x"\n[run]\nout_dir="/tmp/pwn"',
+            "--out",
+            str(spec),
+            "--report",
+            str(report),
+        ]
+    )
+
+    assert rc.returncode == 2
+    assert not spec.exists()
+
+
+def test_assay_infer_escapes_quoted_paths(tmp_path: Path) -> None:
+    try:
+        import tomllib
+    except ModuleNotFoundError:
+        import tomli as tomllib
+
+    targets = tmp_path / 'targets"quoted.tsv'
+    reads = tmp_path / 'reads"quoted.fastq'
+    targets.write_text("guide_a\tACGT\tGENEA\nguide_b\tTTTT\tGENEB\n", encoding="utf-8")
+    reads.write_text("@r0\nNNACGTAAAA\n+\nIIIIIIIIII\n@r1\nNNTTTTAAAA\n+\nIIIIIIIIII\n", encoding="utf-8")
+    spec = tmp_path / "quoted.toml"
+    report = tmp_path / "quoted_report.json"
+
+    rc = _run_cli(
+        [
+            "assay",
+            "infer",
+            "--mode",
+            "count",
+            "--assay-type",
+            "crispr",
+            "--targets",
+            str(targets),
+            "--reads",
+            str(reads),
+            "--out",
+            str(spec),
+            "--report",
+            str(report),
+        ]
+    )
+
+    assert rc.returncode == 0, rc.stderr
+    data = tomllib.loads(spec.read_text(encoding="utf-8"))
+    assert data["targets"] == str(targets)
+    assert data["samples"][0]["fastq"] == str(reads)
+
+
 def test_assay_infer_low_confidence_writes_draft_spec(tmp_path: Path) -> None:
     targets = _write_inference_targets(tmp_path)
     reads = _write_inference_reads(tmp_path, good=False)
@@ -561,6 +630,143 @@ def test_assay_run_refuses_draft_specs(tmp_path: Path) -> None:
 
     assert rc.returncode == 2
     assert "draft" in rc.stderr
+    reliability = json.loads((tmp_path / "assay_out" / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert reliability["overall_status"] == "blocked"
+    assert any(finding["finding_id"] == "draft_assayspec" for finding in reliability["findings"])
+
+
+def test_assay_run_allows_draft_when_reliability_policy_allows_it(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_count_spec(tmp_path)
+    spec.write_text(
+        'status = "draft"\n'
+        + spec.read_text(encoding="utf-8").replace("fail_on_unsafe_targets = false", "fail_on_unsafe_targets = false\nfail_on_draft_inference = false"),
+        encoding="utf-8",
+    )
+
+    rc = _run_cli(["assay", "run", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+
+    assert rc.returncode == 0, rc.stderr
+    reliability = json.loads((tmp_path / "assay_out" / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert not any(finding["finding_id"] == "draft_assayspec" for finding in reliability["findings"])
+
+
+def test_assay_run_records_exploratory_draft_without_blocking(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_count_spec(tmp_path)
+    spec.write_text(
+        'status = "draft"\n'
+        + spec.read_text(encoding="utf-8").replace("fail_on_unsafe_targets = false", 'profile = "exploratory"\nfail_on_unsafe_targets = false'),
+        encoding="utf-8",
+    )
+
+    rc = _run_cli(["assay", "run", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+
+    assert rc.returncode == 0, rc.stderr
+    reliability = json.loads((tmp_path / "assay_out" / "reliability_summary.json").read_text(encoding="utf-8"))
+    draft_findings = [finding for finding in reliability["findings"] if finding["finding_id"] == "draft_assayspec"]
+    assert draft_findings and draft_findings[0]["severity"] == "warning"
+
+
+def test_assay_run_writes_reliability_artifacts_when_native_command_fails(tmp_path: Path) -> None:
+    native = tmp_path / "dotmatch-native"
+    native.write_text(
+        "#!/bin/sh\n"
+        "if [ \"$1\" = '--version' ]; then echo 'dotmatch 0.test'; exit 0; fi\n"
+        "if [ \"$1\" = 'audit' ]; then mkdir -p \"$6\"; printf '{\"safe_at_k1\": true}\\n' > \"$6/audit_summary.json\"; printf 'metric\\tvalue\\n' > \"$6/audit_summary.tsv\"; exit 0; fi\n"
+        "echo forced failure >&2\n"
+        "exit 9\n",
+        encoding="utf-8",
+    )
+    native.chmod(0o755)
+    spec = _write_count_spec(tmp_path)
+
+    rc = _run_cli(["assay", "run", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(native)})
+
+    assert rc.returncode == 9
+    out_dir = tmp_path / "assay_out"
+    reliability = json.loads((out_dir / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert reliability["overall_status"] == "failed"
+    assert any(finding["finding_id"] == "command_failed" and finding["observed"] == "9" for finding in reliability["findings"])
+    assert (out_dir / "reliability_report.html").exists()
+
+
+def test_assay_run_writes_reliability_artifacts_when_native_cli_missing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import dotmatch.assayspec as assayspec
+
+    spec = _write_count_spec(tmp_path)
+    plan = assayspec.compile_assay_plan(assayspec.load_assay_spec(spec))
+
+    def missing_native() -> Path:
+        raise FileNotFoundError("missing native")
+
+    monkeypatch.setattr(assayspec, "find_native_cli", missing_native)
+
+    rc = assayspec.run_assay_plan(plan)
+
+    assert rc == 2
+    reliability = json.loads((tmp_path / "assay_out" / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert reliability["overall_status"] == "blocked"
+    assert any(finding["finding_id"] == "native_cli_missing" for finding in reliability["findings"])
+
+
+def test_assay_rejects_parent_traversal_paths(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    outside = tmp_path / "targets.tsv"
+    outside.write_text("guide_a\tACGT\tGENEA\n", encoding="utf-8")
+    reads = workspace / "reads.fastq"
+    reads.write_text("@r0\nACGTAAAA\n+\nIIIIIIII\n", encoding="utf-8")
+    spec = workspace / "escape.toml"
+    spec.write_text(
+        """
+schema_version = 1
+mode = "count"
+assay_type = "crispr"
+targets = "../targets.tsv"
+
+[[samples]]
+id = "sample"
+fastq = "reads.fastq"
+
+[run]
+out_dir = "assay_out"
+
+[extract]
+start = 0
+length = 4
+
+[assignment]
+k = 1
+metric = "hamming"
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    rc = _run_cli(["assay", "check", str(spec)])
+
+    assert rc.returncode == 2
+    assert "must stay inside" in rc.stderr
+    assert not (workspace / "assay_out").exists()
+
+
+def test_malformed_sample_qc_is_error_not_zeroed(tmp_path: Path) -> None:
+    import dotmatch.assayspec as assayspec
+
+    spec = _write_count_spec(tmp_path)
+    plan = assayspec.compile_assay_plan(assayspec.load_assay_spec(spec))
+    out_dir = tmp_path / "assay_out"
+    out_dir.mkdir()
+    plan.artifacts["sample_qc"].write_text(
+        "sample_id\tassignment_rate\tambiguous_rate\tno_match_rate\ttotal_reads\tinvalid_reads\n"
+        "sample\tbad\t0\t0\t10\t0\n",
+        encoding="utf-8",
+    )
+
+    reliability = assayspec._build_reliability_summary(plan, stage="postrun", manifest={})
+
+    assert reliability["overall_status"] == "failed"
+    assert any(finding["finding_id"] == "sample_qc_malformed" for finding in reliability["findings"])
 
 
 def test_assay_autopsy_reports_wrong_offset_findings(tmp_path: Path) -> None:
@@ -627,7 +833,7 @@ def test_assay_run_exploratory_records_unsafe_targets_without_preflight_block(tm
     assert any(finding["finding_id"] == "unsafe_targets" and finding["severity"] == "warning" for finding in reliability["findings"])
 
 
-def test_assay_report_escapes_spec_values(tmp_path: Path) -> None:
+def test_assay_rejects_sample_id_html_injection(tmp_path: Path) -> None:
     subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
     spec = _write_count_spec(tmp_path)
     spec.write_text(
@@ -637,10 +843,8 @@ def test_assay_report_escapes_spec_values(tmp_path: Path) -> None:
 
     rc = _run_cli(["assay", "run", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
 
-    assert rc.returncode == 0, rc.stderr
-    report = (tmp_path / "assay_out" / "assay_report.html").read_text(encoding="utf-8")
-    assert "sample_<script>alert(1)</script>" not in report
-    assert "sample_&lt;script&gt;alert(1)&lt;/script&gt;" in report
+    assert rc.returncode == 2
+    assert "samples[0].id" in rc.stderr
 
 
 def test_assay_infer_demux_and_pair_reports_are_deterministic(tmp_path: Path) -> None:

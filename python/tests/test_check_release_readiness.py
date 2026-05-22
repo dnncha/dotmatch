@@ -36,10 +36,18 @@ def _write_release_repo(root: Path) -> None:
             '"license": "Apache-2.0", "access_right": "open", '
             '"keywords": ["known-target assignment"]}\n'
         ),
-        "MANIFEST.in": "include CITATION.cff\ninclude codemeta.json\ninclude src/qdalign.c\ninclude include/qdalign.h\n",
+        "MANIFEST.in": (
+            "include CITATION.cff\n"
+            "include codemeta.json\n"
+            "include docs/assay-evidence.json\n"
+            "include src/qdalign.c\n"
+            "include include/qdalign.h\n"
+        ),
         "scripts/check_python_wheel.py": (
             'required_suffixes = ["/CITATION.cff", "/codemeta.json", '
-            '"/src/qdalign.c", "/include/qdalign.h"]\n'
+            '"/docs/assay-evidence.json", "/src/qdalign.c", "/include/qdalign.h"]\n'
+            'wheel_members = ["dotmatch/data/assay-evidence.json"]\n'
+            'assert "evidence_boundary"\n'
         ),
         "Dockerfile": (
             'FROM debian:bookworm-slim\n'
@@ -101,6 +109,7 @@ def _write_release_repo(root: Path) -> None:
             "    needs: [preflight]\n"
             "    steps:\n"
             "      - uses: pypa/cibuildwheel@v3.3.0\n"
+            "      - run: python scripts/check_python_wheel.py --wheel-only --out-dir dist-linux\n"
             "      - uses: actions/upload-artifact@v7\n"
             "        with:\n"
             "          name: dotmatch-linux-repaired-wheels\n"
@@ -154,6 +163,8 @@ def _write_release_repo(root: Path) -> None:
             "Publish the PyPI source distribution and repaired manylinux/musllinux wheels through trusted publishing.\n"
         ),
         "Makefile": (
+            "release-ready: python-test python-package-test\n"
+            "\tpython3 scripts/check_release_readiness.py\n"
             "pretag-ready:\n"
             "\t$(MAKE) test\n"
             "\t$(MAKE) cli-test\n"

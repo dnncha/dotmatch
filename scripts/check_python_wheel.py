@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 from email.parser import Parser
 from email.message import Message
+import json
 import os
 import platform
 import re
@@ -60,6 +61,11 @@ def wheel_native_cli_members(wheel: Path) -> list[str]:
         return [name for name in archive.namelist() if name == "dotmatch/dotmatch-native"]
 
 
+def wheel_assay_evidence_members(wheel: Path) -> list[str]:
+    with zipfile.ZipFile(wheel) as archive:
+        return [name for name in archive.namelist() if name == "dotmatch/data/assay-evidence.json"]
+
+
 def check_sdist_members(sdist: Path) -> None:
     required_suffixes = [
         "/src/qdalign.c",
@@ -70,6 +76,7 @@ def check_sdist_members(sdist: Path) -> None:
         "/README.md",
         "/CITATION.cff",
         "/codemeta.json",
+        "/docs/assay-evidence.json",
         "/LICENSE",
     ]
     with tarfile.open(sdist, "r:gz") as archive:
@@ -253,6 +260,26 @@ metric = "hamming"
         encoding="utf-8",
     )
     run([str(venv_script(env_dir, "dotmatch")), "assay", "check", str(spec)], cwd=probe_dir, env=env)
+    reliability_summary = json.loads((probe_dir / "assay_out" / "reliability_summary.json").read_text(encoding="utf-8"))
+    evidence_boundary = reliability_summary.get("evidence_boundary", {})
+    if evidence_boundary.get("status") != "supported" or evidence_boundary.get("id") != "crispr_guide_counting":
+        raise SystemExit(f"{artifact.name} installed assay reliability evidence boundary is invalid: {evidence_boundary!r}")
+    run([str(venv_script(env_dir, "dotmatch")), "assay", "run", str(spec)], cwd=probe_dir, env=env)
+    reliability_dir = probe_dir / "assay_out"
+    postrun_summary = json.loads((reliability_dir / "reliability_summary.json").read_text(encoding="utf-8"))
+    postrun_evidence = postrun_summary.get("evidence_boundary", {})
+    if postrun_summary.get("stage") != "postrun" or postrun_summary.get("overall_status") not in {"passed", "informational"}:
+        raise SystemExit(f"{artifact.name} installed assay run reliability summary is invalid: {postrun_summary!r}")
+    if postrun_evidence.get("status") != "supported" or postrun_evidence.get("id") != "crispr_guide_counting":
+        raise SystemExit(f"{artifact.name} installed assay run evidence boundary is invalid: {postrun_evidence!r}")
+    for required in [
+        "reliability_summary.json",
+        "reliability_findings.tsv",
+        "reliability_report.html",
+        "reliability_manifest.summary.tsv",
+    ]:
+        if not (reliability_dir / required).exists():
+            raise SystemExit(f"{artifact.name} installed assay run did not write {required}")
     counts = probe_dir / "counts.mageck.tsv"
     sample_qc = probe_dir / "sample_qc.tsv"
     crispr_qc = probe_dir / "crispr_qc.json"
@@ -420,17 +447,38 @@ def build_and_verify_wheel(out_dir: Path, install_root: Path, expected_version: 
     native_cli_members = wheel_native_cli_members(wheel)
     if not native_cli_members:
         raise SystemExit(f"{wheel.name} does not contain dotmatch-native")
+    assay_evidence_members = wheel_assay_evidence_members(wheel)
+    if not assay_evidence_members:
+        raise SystemExit(f"{wheel.name} does not contain dotmatch/data/assay-evidence.json")
     check_distribution_metadata(wheel, expected_version)
     check_macos_tag(wheel)
     check_macos_architecture(wheel, native_members[0])
     verify_clean_install(wheel, install_root, expected_version)
-    return wheel, native_members + native_cli_members
+    return wheel, native_members + native_cli_members + assay_evidence_members
+
+
+def verify_existing_wheels(wheel_dir: Path, install_root: Path, expected_version: str) -> list[Path]:
+    wheels = sorted(wheel_dir.glob("dotmatch-*.whl"))
+    if not wheels:
+        raise SystemExit(f"expected at least one dotmatch wheel in {wheel_dir}")
+    for index, wheel in enumerate(wheels):
+        native_members = wheel_native_members(wheel)
+        if not native_members:
+            raise SystemExit(f"{wheel.name} does not contain dotmatch/libdotmatch.*")
+        if not wheel_native_cli_members(wheel):
+            raise SystemExit(f"{wheel.name} does not contain dotmatch-native")
+        if not wheel_assay_evidence_members(wheel):
+            raise SystemExit(f"{wheel.name} does not contain dotmatch/data/assay-evidence.json")
+        check_distribution_metadata(wheel, expected_version)
+        verify_clean_install(wheel, install_root / f"wheel-{index}", expected_version)
+    return wheels
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build and verify the DotMatch Python wheel.")
     parser.add_argument("--out-dir", default="", help="optional wheel output directory")
     parser.add_argument("--sdist-only", action="store_true", help="build and verify only the source distribution")
+    parser.add_argument("--wheel-only", action="store_true", help="verify existing wheels in --out-dir without building")
     args = parser.parse_args()
 
     if args.out_dir:
@@ -445,6 +493,10 @@ def main() -> int:
         install_root = Path(install_tmp)
         try:
             expected_version = project_version()
+            if args.wheel_only:
+                wheels = verify_existing_wheels(out_dir, install_root / "existing-wheel-install", expected_version)
+                print("verified existing wheels: " + ", ".join(wheel.name for wheel in wheels))
+                return 0
             sdist_out_dir = out_dir if args.sdist_only else install_root / "sdist"
             sdist = build_and_verify_sdist(sdist_out_dir, install_root / "sdist-install", expected_version)
             if args.sdist_only:

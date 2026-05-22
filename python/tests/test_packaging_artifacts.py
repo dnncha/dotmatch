@@ -99,8 +99,12 @@ def test_codemeta_is_included_in_source_distribution_manifest() -> None:
 
     assert "include CITATION.cff" in manifest
     assert "include codemeta.json" in manifest
+    assert "include docs/assay-evidence.json" in manifest
     assert "/CITATION.cff" in verifier
     assert "/codemeta.json" in verifier
+    assert "/docs/assay-evidence.json" in verifier
+    assert "dotmatch/data/assay-evidence.json" in verifier
+    assert "evidence_boundary" in verifier
 
 
 def test_python_package_verifier_checks_installed_cli_version() -> None:
@@ -124,6 +128,7 @@ def test_python_package_build_bundles_native_cli() -> None:
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 
     assert "dotmatch-native" in setup
+    assert "assay-evidence.json" in setup
     assert "src/qda.c" in setup
     assert "DOTMATCH_VERSION" in setup
     assert 'tomli; python_version < \\"3.11\\"' in pyproject

@@ -38,8 +38,9 @@ It also writes `assay_report.html` as the primary workflow report and
 `infer` samples FASTQ reads, scores fixed-window candidates against the supplied
 target table, writes a candidate AssaySpec, and writes `inference_report.json`
 plus `inference_candidates.tsv`. Low-confidence inference writes
-`status = "draft"`. `run` refuses draft specs until a user reviews the report
-and changes the status to `ready`.
+`status = "draft"`. Production runs refuse draft specs by default until a user
+reviews the report and changes the status to `ready`; this can be explicitly
+relaxed with `[reliability] fail_on_draft_inference = false`.
 
 `autopsy` helps diagnose suspicious runs by wrapping native target audit and
 `inspect-unmatched`. It writes `autopsy_summary.json`, `findings.tsv`, and
@@ -156,6 +157,6 @@ keeps any read with more than one target inside the configured radius out of
 forced assignments. Use `ambiguity_policy = "best"` only when best-distance
 compatibility is deliberate.
 
-Automatic autopsy triggers when any sample has assignment rate below `0.80`,
-ambiguous rate above `0.05`, no-match rate above `0.15`, or invalid rate above
-`0.02`. These thresholds are recorded in `assay_manifest.json`.
+Automatic autopsy uses the configured reliability thresholds for assignment,
+ambiguous, no-match, and invalid rates. These thresholds are recorded in
+`assay_manifest.json`.
