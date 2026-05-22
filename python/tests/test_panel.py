@@ -288,6 +288,9 @@ def test_panel_simulate_layout_export_optimize_compare_and_dual_design(tmp_path:
     sim_summary = json.loads((sim / "simulation_summary.json").read_text(encoding="utf-8"))
     assert sim_summary["total_reads"] == 200
     assert {"unique_rate", "ambiguous_rate", "none_rate", "invalid_rate", "false_assignment_rate"} <= set(sim_summary)
+    assert sim_summary["false_assignment_upper_bound"] > sim_summary["false_assignment_rate"]
+    assert sim_summary["false_assignment_confidence_level"] == 0.95
+    assert sim_summary["source_distribution"] == "uniform"
     assert (sim / "per_barcode_confusion.tsv").exists()
 
     plate = tmp_path / "plate.tsv"
@@ -344,6 +347,19 @@ def test_panel_simulate_layout_export_optimize_compare_and_dual_design(tmp_path:
     assert len(dual_rows) == 6
     assert dual_rows[0]["index_hop_detectable"] == "true"
     assert (dual / "sample_sheet_templates" / "SampleSheet.csv").exists()
+
+
+def test_panel_simulate_rejects_invalid_error_model(tmp_path: Path) -> None:
+    panel = tmp_path / "panel.tsv"
+    panel.write_text("barcode_id\tsequence\nA\tTACGACAC\nB\tCCATTGGT\n", encoding="utf-8")
+
+    negative = _run_cli(["panel", "simulate", str(panel), "--substitution-rate", "-0.1", "--out-dir", str(tmp_path / "neg")])
+    too_high = _run_cli(["panel", "simulate", str(panel), "--deletion-rate", "1.5", "--out-dir", str(tmp_path / "high")])
+    unknown_model = _run_cli(["panel", "simulate", str(panel), "--quality-model", "empirical", "--out-dir", str(tmp_path / "model")])
+
+    assert negative.returncode == 2
+    assert too_high.returncode == 2
+    assert unknown_model.returncode == 2
 
 
 def test_panel_docs_scope_and_gate_exist() -> None:

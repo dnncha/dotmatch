@@ -255,12 +255,12 @@ def svg_assignment_impact(rows: list[dict[str, str]], path: Path) -> None:
     path.write_text("\n".join(parts), encoding="utf-8")
 
 
-def speedup_rows(stats: list[dict[str, str]]) -> list[dict[str, str]]:
-    by_size = {r["records_per_sample"]: r for r in stats if r["tool"] == "dotmatch_hamming_k1"}
+def speedup_rows(stats: list[dict[str, str]], *, dotmatch_tool: str, baseline_tools: set[str], label: str) -> list[dict[str, str]]:
+    by_size = {r["records_per_sample"]: r for r in stats if r["tool"] == dotmatch_tool}
     out: list[dict[str, str]] = []
     for row in stats:
         size = row["records_per_sample"]
-        if size not in by_size or row["tool"].startswith("dotmatch"):
+        if size not in by_size or row["tool"] not in baseline_tools:
             continue
         dot = float(by_size[size].get("mean_reads_per_sec") or 0.0)
         other = float(row.get("mean_reads_per_sec") or 0.0)
@@ -269,7 +269,7 @@ def speedup_rows(stats: list[dict[str, str]]) -> list[dict[str, str]]:
         out.append({
             "baseline": row["tool"],
             "records_per_sample": size,
-            "dotmatch_hamming_reads_per_sec": f"{dot:.1f}",
+            f"{label}_reads_per_sec": f"{dot:.1f}",
             "baseline_reads_per_sec": f"{other:.1f}",
             "speedup": f"{dot / other:.2f}x",
         })
@@ -452,17 +452,43 @@ def main() -> None:
             "![Repeated public CRISPR verified candidates](../../../benchmarks/figures/public_crispr_repeated_verified_candidates.svg)",
             "",
         ])
-        speedups = speedup_rows(repeated_summary)
-        if speedups:
+        hamming_speedups = speedup_rows(
+            repeated_summary,
+            dotmatch_tool="dotmatch_hamming_k1",
+            baseline_tools={"guide_counter_one_mismatch"},
+            label="dotmatch_hamming",
+        )
+        if hamming_speedups:
             lines.extend([
                 "## DotMatch Hamming Speedup",
                 "",
-                "This table keeps the fair CRISPR speed lane separate: DotMatch Hamming `k=1` versus tools with one-mismatch/no-indel or exact-count semantics.",
+                "This table keeps the fair CRISPR speed lane separate: DotMatch Hamming `k=1` versus tools with one-mismatch/no-indel semantics.",
                 "",
-                *md_table(speedups, [
+                *md_table(hamming_speedups, [
                     "baseline",
                     "records_per_sample",
                     "dotmatch_hamming_reads_per_sec",
+                    "baseline_reads_per_sec",
+                    "speedup",
+                ]),
+                "",
+            ])
+        exact_speedups = speedup_rows(
+            repeated_summary,
+            dotmatch_tool="dotmatch_exact_k0",
+            baseline_tools={"mageck_count_exact"},
+            label="dotmatch_exact",
+        )
+        if exact_speedups:
+            lines.extend([
+                "## DotMatch Exact Count Speedup",
+                "",
+                "This table compares exact-count semantics only: DotMatch exact `k=0` versus MAGeCK exact counting.",
+                "",
+                *md_table(exact_speedups, [
+                    "baseline",
+                    "records_per_sample",
+                    "dotmatch_exact_reads_per_sec",
                     "baseline_reads_per_sec",
                     "speedup",
                 ]),

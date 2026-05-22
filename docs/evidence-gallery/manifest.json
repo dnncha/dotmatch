@@ -253,12 +253,12 @@
     },
     {
       "id": "perturb_seq_10x_guide_capture",
-      "title": "CRISPR guide capture assignment: 10x GEM-X public lane",
+      "title": "CRISPR guide capture extraction: 10x GEM-X public lane",
       "category": "Public data",
       "assay_type": "crispr",
-      "status": "supported",
+      "status": "gated",
       "dataset": "10x GEM-X A375 CRISPR Guide Capture R2 sample",
-      "condition": "Per-read fixed-window guide-capture assignment with exact-slice baseline agreement.",
+      "condition": "Single-guide fixed-window guide-capture extraction with exact-slice baseline agreement.",
       "gallery_roles": ["known_good"],
       "primary_report": "docs/benchmarks/perturb_seq/README.md",
       "raw_artifacts": [
@@ -269,13 +269,14 @@
         "make bench-perturb-seq-public",
         "make perturb-seq-public-gate"
       ],
-      "comparator_semantics": "The checked public lane uses a 10x CRISPR Guide Capture R2 subsample, an observed fixed guide window, and a transparent exact-slice hash baseline.",
+      "comparator_semantics": "The checked public lane uses a 10x CRISPR Guide Capture R2 subsample, one observed guide target, an observed fixed guide window, and a transparent exact-slice hash baseline.",
       "validation": "The public gate requires synthetic pair-count diagnostics, public DotMatch k=0 and k=1 rows, zero validation mismatches, exact agreement with the k=0 baseline, and k=1 assignment count no lower than k=0.",
       "proves": [
-        "DotMatch can assign fixed-window guide-capture reads against known guide targets.",
+        "DotMatch can extract and count a fixed-window guide-capture signal against one observed guide target.",
         "The paired diagnostic fixture still checks side-level ambiguity handling."
       ],
       "limits": [
+        "This is not useful multi-guide assignment evidence.",
         "This is not guide-per-cell calling.",
         "Expression processing and perturbation-effect analysis remain outside DotMatch."
       ],

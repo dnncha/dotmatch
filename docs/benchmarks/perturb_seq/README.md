@@ -4,7 +4,7 @@ This report covers perturb-seq-adjacent guide assignment evidence for DotMatch's
 
 The synthetic lane checks fixed-window guide plus feature-barcode pair assignment through `pair-count`. The public lane uses a 10x Genomics CRISPR Guide Capture R2 subsample and validates DotMatch k=0 against a transparent exact-slice hash baseline over the observed fixed guide window.
 
-Current status: public guide-capture assignment evidence only. This is not single-cell expression quantification or Cell Ranger perturbation-effect validation.
+Current status: public single-guide guide-capture extraction evidence only. The public target set has one observed guide, so it validates fixed-window extraction and exact-slice counting, not useful multi-guide assignment, single-cell expression quantification, or Cell Ranger perturbation-effect validation.
 
 ## Synthetic Command
 
@@ -22,9 +22,9 @@ dotmatch pair-count --left-targets benchmarks/work/perturb_seq/perturb_guides.ts
 
 | tool | workflow | status | guides | reads | start | length | k | metric | assigned | exact | corrected | unmatched | validation mismatches |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: |
-| dotmatch_count | public_10x_crispr_guide_capture | supported | 1 | 20000 | 63 | 19 | 0 | hamming | 15979 | 15979 | 0 | 4021 | 0 |
-| dotmatch_count | public_10x_crispr_guide_capture | supported | 1 | 20000 | 63 | 19 | 1 | hamming | 16582 | 15979 | 603 | 3418 | 0 |
-| exact_slice_hash | public_10x_crispr_guide_capture | supported | 1 | 20000 | 63 | 19 | 0 | exact | 15979 | 15979 | 0 | 4021 | 0 |
+| dotmatch_count | public_10x_crispr_guide_capture | gated | 1 | 20000 | 63 | 19 | 0 | hamming | 15979 | 15979 | 0 | 4021 | 0 |
+| dotmatch_count | public_10x_crispr_guide_capture | gated | 1 | 20000 | 63 | 19 | 1 | hamming | 16582 | 15979 | 603 | 3418 | 0 |
+| exact_slice_hash | public_10x_crispr_guide_capture | gated | 1 | 20000 | 63 | 19 | 0 | exact | 15979 | 15979 | 0 | 4021 | 0 |
 
 ## Public Dataset
 
@@ -50,4 +50,4 @@ python3 scripts/bench_perturb_seq.py --include-public --metadata examples/pertur
 
 ## Evidence Boundary
 
-Use these lanes to verify fixed-window guide/feature pair assignment, side-level diagnostics, and narrow public CRISPR guide-capture per-read assignment. Broader Perturb-seq comparisons require public cell barcode and UMI handling, guide-per-cell calls, expression or perturbation-effect comparator output, exact commands, validation artifacts, and a passing gate.
+Use these lanes to verify fixed-window guide/feature pair assignment, side-level diagnostics, and narrow public CRISPR guide-capture fixed-window extraction. Broader Perturb-seq comparisons require a multi-guide public target set, public cell barcode and UMI handling, guide-per-cell calls, expression or perturbation-effect comparator output, exact commands, validation artifacts, and a passing gate.

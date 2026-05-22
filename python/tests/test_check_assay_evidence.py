@@ -30,6 +30,9 @@ def _valid_manifest() -> dict:
                 "reports": ["docs/benchmarks/public_crispr/README.md"],
                 "gates": ["make public-crispr-evidence-gate"],
                 "claim_boundary": "Public MAGeCK/Yusa rows only.",
+                "biological_unit": "per-read fixed-window guide assignment and per-sample guide counts",
+                "unsupported_claims": ["screen interpretation", "gene essentiality inference"],
+                "minimum_public_evidence": ["public FASTQ rows", "zero-mismatch assignment validation"],
                 "commands": [
                     "make bench-public-crispr-repeated",
                     "make public-crispr-evidence-gate",
@@ -45,6 +48,9 @@ def _valid_manifest() -> dict:
                 "reports": ["docs/benchmarks/barcode_demux/README.md"],
                 "gates": ["make barcode-comparison-gate"],
                 "claim_boundary": "Fixture rows cover workflow smoke evidence only.",
+                "biological_unit": "per-read fixed-position barcode assignment",
+                "unsupported_claims": ["arbitrary adapter trimming", "BCL demultiplexing"],
+                "minimum_public_evidence": ["public barcode sheet", "exact-prefix comparator agreement"],
                 "next_public_evidence": "Add public barcode-sheet rows with comparator agreement.",
                 "commands": ["make bench-barcode-demux"],
                 "comparator_semantics": "Fixture rows record deterministic demux execution.",
@@ -58,6 +64,9 @@ def _valid_manifest() -> dict:
                 "reports": [],
                 "gates": [],
                 "claim_boundary": "No public perturb-seq evidence claim yet.",
+                "biological_unit": "per-read fixed-window guide assignment",
+                "unsupported_claims": ["cell-level quantification", "perturbation-effect inference"],
+                "minimum_public_evidence": ["public guide-capture FASTQ", "cell-level comparator before quantification claims"],
                 "next_public_evidence": "Add a public Perturb-seq guide or feature-barcode FASTQ fixture and oracle.",
             },
             {
@@ -68,6 +77,9 @@ def _valid_manifest() -> dict:
                 "reports": [],
                 "gates": [],
                 "claim_boundary": "No public feature-barcode evidence claim yet.",
+                "biological_unit": "per-read fixed-window feature barcode assignment",
+                "unsupported_claims": ["cell hashing calls", "UMI/cell quantification"],
+                "minimum_public_evidence": ["public feature FASTQ", "Cell Ranger-compatible comparator before cell-level claims"],
                 "next_public_evidence": "Add a public cell-hashing or CITE-seq barcode fixture and comparator semantics.",
             },
             {
@@ -78,6 +90,9 @@ def _valid_manifest() -> dict:
                 "reports": [],
                 "gates": [],
                 "claim_boundary": "No public amplicon/panel evidence claim yet.",
+                "biological_unit": "per-read fixed-window primer or panel target assignment",
+                "unsupported_claims": ["variant calling", "clinical interpretation"],
+                "minimum_public_evidence": ["public amplicon FASTQ", "full-assay comparator before diagnostic claims"],
                 "next_public_evidence": "Add a public panel-style FASTQ fixture and validation oracle.",
             },
             {
@@ -88,6 +103,9 @@ def _valid_manifest() -> dict:
                 "reports": [],
                 "gates": [],
                 "claim_boundary": "No public oligo/adapter evidence claim yet.",
+                "biological_unit": "per-read fixed-window oligo or adapter assignment",
+                "unsupported_claims": ["adapter trimming", "read merging"],
+                "minimum_public_evidence": ["public oligo/adapter FASTQ", "trimming comparator before trimming claims"],
                 "next_public_evidence": "Add a public oligo or adapter FASTQ fixture and validation oracle.",
             },
         ],
@@ -129,6 +147,14 @@ def test_assay_evidence_accepts_manifest_with_required_lanes(tmp_path):
 
     assert result.failures == []
     assert any("required assay lanes" in item for item in result.passed)
+
+
+def test_assay_evidence_accepts_checked_in_manifest():
+    checker = _load_checker()
+
+    result = checker.audit(ROOT)
+
+    assert result.failures == []
 
 
 def test_assay_evidence_rejects_missing_required_lane(tmp_path):

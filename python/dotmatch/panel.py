@@ -310,7 +310,7 @@ def command_panel_namespace(argv: Sequence[str]) -> int:
     simulate.add_argument("--substitution-rate", type=float, default=0.005)
     simulate.add_argument("--insertion-rate", type=float, default=0.001)
     simulate.add_argument("--deletion-rate", type=float, default=0.001)
-    simulate.add_argument("--quality-model", default="simple")
+    simulate.add_argument("--quality-model", choices=["simple"], default="simple")
     simulate.add_argument("--out-dir", required=True)
     _add_assignment_args(simulate)
 
@@ -454,6 +454,10 @@ def command_panel_optimize(args: argparse.Namespace) -> int:
 def command_panel_simulate(args: argparse.Namespace) -> int:
     records = read_panel(args.panel)
     assignment = _assignment_from_args(args)
+    for name in ["substitution_rate", "insertion_rate", "deletion_rate"]:
+        value = float(getattr(args, name))
+        if not math.isfinite(value) or value < 0.0 or value > 1.0:
+            raise ValueError(f"{name.replace('_', '-')} must be a finite probability from 0 to 1")
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     simulate_panel(
@@ -1035,6 +1039,7 @@ def simulate_panel(
             }
         )
     false_rate = counts["false_assignment"] / reads
+    false_upper = _binomial_upper_bound(counts["false_assignment"], reads)
     summary = {
         "schema_version": PANEL_SCHEMA_VERSION,
         "total_reads": reads,
@@ -1052,7 +1057,10 @@ def simulate_panel(
         "none_rate": counts["none"] / reads,
         "invalid_rate": counts["invalid"] / reads,
         "false_assignment_rate": false_rate,
-        "false_assignment_upper_bound": false_rate + 1.96 * math.sqrt(false_rate * (1 - false_rate) / reads) if reads else 0.0,
+        "false_assignment_upper_bound": false_upper,
+        "false_assignment_confidence_method": "clopper_pearson_one_sided_zero_event_rule",
+        "false_assignment_confidence_level": 0.95,
+        "source_distribution": "uniform",
         "worst_barcode_recall": worst_recall,
         "worst_pair_confusion": worst_pair,
         "ambiguous_variant_count": sum(1 for row in risk_rows if row["risk_type"] == "ambiguous"),
@@ -2178,6 +2186,19 @@ def mutate_sequence(seq: str, rng: random.Random, substitution_rate: float, inse
     if rng.random() < insertion_rate:
         out.append(rng.choice(DNA))
     return "".join(out)
+
+
+def _binomial_upper_bound(events: int, trials: int, confidence: float = 0.95) -> float:
+    if trials <= 0:
+        return 0.0
+    if events <= 0:
+        return min(1.0, max(0.0, 1.0 - (1.0 - confidence) ** (1.0 / trials)))
+    p = events / trials
+    z = 1.96
+    denom = 1.0 + z * z / trials
+    centre = p + z * z / (2.0 * trials)
+    margin = z * math.sqrt((p * (1.0 - p) + z * z / (4.0 * trials)) / trials)
+    return min(1.0, max(0.0, (centre + margin) / denom))
 
 
 def _plate_shape(plate: int) -> tuple[int, int]:

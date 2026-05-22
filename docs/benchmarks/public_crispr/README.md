@@ -51,14 +51,21 @@ This report tracks the MAGeCK/Yusa public CRISPR benchmark. The single-run table
 
 ## DotMatch Hamming Speedup
 
-This table keeps the fair CRISPR speed lane separate: DotMatch Hamming `k=1` versus tools with one-mismatch/no-indel or exact-count semantics.
+This table keeps the fair CRISPR speed lane separate: DotMatch Hamming `k=1` versus tools with one-mismatch/no-indel semantics.
 
 | baseline | records_per_sample | dotmatch_hamming_reads_per_sec | baseline_reads_per_sec | speedup |
 | --- | --- | --- | --- | --- |
 | guide_counter_one_mismatch | 10000 | 98031.2 | 29200.3 | 3.36x |
 | guide_counter_one_mismatch | 100000 | 201672.3 | 209503.8 | 0.96x |
-| mageck_count_exact | 10000 | 98031.2 | 25454.9 | 3.85x |
-| mageck_count_exact | 100000 | 201672.3 | 109483.7 | 1.84x |
+
+## DotMatch Exact Count Speedup
+
+This table compares exact-count semantics only: DotMatch exact `k=0` versus MAGeCK exact counting.
+
+| baseline | records_per_sample | dotmatch_exact_reads_per_sec | baseline_reads_per_sec | speedup |
+| --- | --- | --- | --- | --- |
+| mageck_count_exact | 10000 | 157549.3 | 25454.9 | 6.19x |
+| mageck_count_exact | 100000 | 891240.9 | 109483.7 | 8.14x |
 
 ## Count Agreement
 

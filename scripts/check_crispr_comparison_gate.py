@@ -199,14 +199,18 @@ def agreement_gate(rows: list[dict[str, str]], require_guide_counter: bool, fail
         require(bool(rows_for_dataset), f"missing count agreement rows for {dataset}", failures)
         exact = [r for r in rows_for_dataset if r.get("comparison", "").endswith("dotmatch_exact_vs_mageck_exact")]
         require(bool(exact), f"missing exact DotMatch-vs-MAGeCK agreement row for {dataset}", failures)
-        if dataset == "mageck_yusa":
-            require(bool(exact) and exact[0].get("status") == "ok",
-                    f"missing exact DotMatch-vs-MAGeCK agreement for {dataset}", failures)
-        if dataset == "mageck_yusa" and exact and exact[0].get("status") == "ok":
+        if exact and exact[0].get("status") == "ok":
             require(as_int(exact[0].get("total_delta")) == 0,
                     f"{dataset} exact total differs from MAGeCK", failures)
             require(as_int(exact[0].get("differing_guides")) == 0,
                     f"{dataset} exact guide-level differences vs MAGeCK", failures)
+            require(exact[0].get("pearson") not in {"", "nan", "NaN"},
+                    f"{dataset} exact agreement must report finite Pearson correlation", failures)
+            require(exact[0].get("spearman") not in {"", "nan", "NaN"},
+                    f"{dataset} exact agreement must report finite Spearman correlation", failures)
+        if dataset == "mageck_yusa":
+            require(bool(exact) and exact[0].get("status") == "ok",
+                    f"missing exact DotMatch-vs-MAGeCK agreement for {dataset}", failures)
         if require_guide_counter:
             ham = [r for r in rows_for_dataset if r.get("comparison", "").endswith("dotmatch_hamming_vs_guide_counter")]
             require(bool(ham) and ham[0].get("status") == "ok",

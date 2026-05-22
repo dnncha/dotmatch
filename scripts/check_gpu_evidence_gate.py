@@ -38,10 +38,13 @@ def case_key(row: dict[str, str]) -> tuple[str, str, str, str, str]:
     )
 
 
-def real_case_key(row: dict[str, str]) -> tuple[str, str, str, str]:
+def real_case_key(row: dict[str, str]) -> tuple[str, str, str, str, str, str, str]:
     return (
+        row.get("workload", ""),
+        row.get("total_reads", ""),
         row.get("packable_reads", ""),
         row.get("n_targets", ""),
+        row.get("target_start", ""),
         row.get("target_length", ""),
         row.get("k", ""),
     )
@@ -103,6 +106,8 @@ def real_row_gate(rows: list[dict[str, str]], failures: list[str]) -> None:
             failures.append(f"public CRISPR GPU checksum differs from CPU baseline for case {key}")
         if as_int(row.get("packable_reads")) <= 0 or as_int(row.get("n_targets")) <= 0:
             failures.append(f"public CRISPR GPU row missing positive reads or targets for case {key}")
+        if as_int(row.get("skipped_targets")) != 0:
+            failures.append(f"public CRISPR GPU row has skipped targets for case {key}: {row.get('skipped_targets')}")
         if not row.get("device"):
             failures.append(f"public CRISPR GPU row missing device name for case {key}")
 

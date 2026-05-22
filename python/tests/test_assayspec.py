@@ -345,6 +345,19 @@ def test_assay_check_writes_preflight_reliability_artifacts(tmp_path: Path) -> N
     assert "read_qc_unavailable" in report
 
 
+def test_assay_check_ignores_stale_audit_artifacts(tmp_path: Path) -> None:
+    spec = _write_count_spec(tmp_path)
+    stale_audit = tmp_path / "assay_out" / "audit" / "audit_summary.json"
+    stale_audit.parent.mkdir(parents=True)
+    stale_audit.write_text('{"safe_at_k1": false}\n', encoding="utf-8")
+
+    rc = _run_cli(["assay", "check", str(spec)])
+
+    assert rc.returncode == 0, rc.stderr
+    reliability = json.loads((tmp_path / "assay_out" / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert not any(finding["finding_id"] == "unsafe_targets" for finding in reliability["findings"])
+
+
 def test_assay_run_count_reproduces_existing_crispr_fixture(tmp_path: Path) -> None:
     subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
     spec = _write_count_spec(tmp_path)
@@ -415,6 +428,25 @@ def test_assay_run_count_reproduces_existing_crispr_fixture(tmp_path: Path) -> N
     assert "sample_a.fastq" in report
 
 
+def test_assay_run_manifest_records_configured_reliability_thresholds(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_count_spec(tmp_path)
+    spec.write_text(
+        spec.read_text(encoding="utf-8").replace(
+            "fail_on_unsafe_targets = false",
+            "fail_on_unsafe_targets = false\nmin_assignment_rate = 0.25\nmax_unmatched_rate = 0.75",
+        ),
+        encoding="utf-8",
+    )
+
+    rc = _run_cli(["assay", "run", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+
+    assert rc.returncode == 0, rc.stderr
+    manifest = json.loads((tmp_path / "assay_out" / "assay_manifest.json").read_text(encoding="utf-8"))
+    assert manifest["autopsy_thresholds"]["min_assignment_rate"] == 0.25
+    assert manifest["autopsy_thresholds"]["max_unmatched_rate"] == 0.75
+
+
 def test_assay_run_demux_and_pair_count_specs(tmp_path: Path) -> None:
     subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
     demux_spec = _write_demux_spec(tmp_path)
@@ -430,6 +462,17 @@ def test_assay_run_demux_and_pair_count_specs(tmp_path: Path) -> None:
     assert pair.returncode == 0, pair.stderr
     assert "L0\tR0\t1" in (tmp_path / "pair_out" / "pair_counts.tsv").read_text(encoding="utf-8")
     assert "L1\tR1\t1" in (tmp_path / "pair_out" / "pair_counts.tsv").read_text(encoding="utf-8")
+    pair_reliability = json.loads((tmp_path / "pair_out" / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert pair_reliability["evidence_boundary"]["status"] == "smoke"
+    assert any(finding["finding_id"] == "evidence_boundary_not_supported" for finding in pair_reliability["findings"])
+
+
+def test_demux_gpu_metadata_requires_public_gpu_gate(tmp_path: Path) -> None:
+    from dotmatch.assayspec import _backend_summary, load_assay_spec
+
+    assay = load_assay_spec(_write_demux_spec(tmp_path))
+
+    assert _backend_summary(assay)["gpu_status"] == "compute_compatible_no_public_gpu_gate"
 
 
 def test_assay_init_writes_requested_template(tmp_path: Path) -> None:
@@ -651,7 +694,8 @@ def test_assay_run_allows_draft_when_reliability_policy_allows_it(tmp_path: Path
 
     assert rc.returncode == 0, rc.stderr
     reliability = json.loads((tmp_path / "assay_out" / "reliability_summary.json").read_text(encoding="utf-8"))
-    assert not any(finding["finding_id"] == "draft_assayspec" for finding in reliability["findings"])
+    draft_findings = [finding for finding in reliability["findings"] if finding["finding_id"] == "draft_assayspec"]
+    assert draft_findings and draft_findings[0]["severity"] == "error"
 
 
 def test_assay_run_records_exploratory_draft_without_blocking(tmp_path: Path) -> None:

@@ -167,6 +167,14 @@ def check_assay_entries(root: Path, assays: list[dict], result: AuditResult) -> 
             result.failures.append(f"{assay_id} must declare label")
         if not assay.get("claim_boundary"):
             result.failures.append(f"{assay_id} must declare claim_boundary")
+        if not assay.get("biological_unit"):
+            result.failures.append(f"{assay_id} must declare biological_unit")
+        unsupported_claims = assay.get("unsupported_claims")
+        if not isinstance(unsupported_claims, list) or not unsupported_claims:
+            result.failures.append(f"{assay_id} must list unsupported_claims")
+        minimum_evidence = assay.get("minimum_public_evidence")
+        if not isinstance(minimum_evidence, list) or not minimum_evidence:
+            result.failures.append(f"{assay_id} must list minimum_public_evidence")
 
         raw_artifacts = assay.get("raw_artifacts") or []
         reports = assay.get("reports") or []

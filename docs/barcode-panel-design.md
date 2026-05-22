@@ -39,6 +39,8 @@ The v1 certificate exhaustively enumerates configured error spheres up to `k=2`.
 
 For Hamming distance, a minimum pairwise distance `d` gives substitution correction up to `floor((d - 1) / 2)` and detection up to `d - 1`. The certificate still matters because DotMatch checks the exact assignment rules that will later be used by demux/counting.
 
+Simulation is a stochastic stress test, not the certificate. The default source distribution is uniform across panel records and the simple error model uses explicit substitution, insertion, and deletion probabilities in `[0, 1]`. `simulation_summary.json` records the source distribution, the false-assignment confidence method, and a one-sided 95% upper bound; zero observed false assignments therefore still produce a positive upper bound rather than proving zero risk.
+
 ## Outputs From `panel design`
 
 `panel design` writes:

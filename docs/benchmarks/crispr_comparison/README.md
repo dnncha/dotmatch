@@ -69,7 +69,7 @@ _No rows available._
 |mageck_yusa|mageck_yusa:dotmatch_hamming_vs_guide_counter|ok|87437|-26043|13852|27|0.93492501|0.94108416|
 |mageck_yusa|mageck_yusa:dotmatch_exact_vs_mageck_exact|ok|87437|0|0|0|1.00000000|1.00000000|
 |sanson_brunello|sanson_brunello:dotmatch_hamming_vs_guide_counter|ok|77441|-2352|817|24|0.99330729|0.99268340|
-|sanson_brunello|sanson_brunello:dotmatch_exact_vs_mageck_exact|ok|77441|321536|67253|71|nan|nan|
+|sanson_brunello|sanson_brunello:dotmatch_exact_vs_mageck_exact|non_comparable|77441|321536|67253|71|nan|nan|
 
 
 ## Raw Inputs

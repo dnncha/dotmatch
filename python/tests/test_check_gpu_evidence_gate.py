@@ -72,10 +72,14 @@ def test_gpu_gate_accepts_public_crispr_zero_mismatch_row():
     cpu = {
         "tool": "dotmatch_cpu_index",
         "status": "ok",
+        "workload": "public_crispr",
+        "total_reads": "1200",
         "packable_reads": "1000",
         "n_targets": "96",
+        "target_start": "23",
         "target_length": "19",
         "k": "1",
+        "skipped_targets": "0",
         "checksum": "123",
     }
     gpu = {
@@ -97,10 +101,14 @@ def test_gpu_gate_rejects_public_crispr_count_delta():
     cpu = {
         "tool": "dotmatch_cpu_index",
         "status": "ok",
+        "workload": "public_crispr",
+        "total_reads": "1200",
         "packable_reads": "1000",
         "n_targets": "96",
+        "target_start": "23",
         "target_length": "19",
         "k": "1",
+        "skipped_targets": "0",
         "checksum": "123",
     }
     gpu = {
@@ -114,6 +122,42 @@ def test_gpu_gate_rejects_public_crispr_count_delta():
     gate.real_row_gate([cpu, gpu], failures)
 
     assert any("count delta" in failure for failure in failures)
+
+
+def test_gpu_gate_rejects_public_crispr_mismatched_case_or_skipped_targets():
+    gate = _load_gate()
+    failures = []
+    cpu = {
+        "tool": "dotmatch_cpu_index",
+        "status": "ok",
+        "workload": "public_crispr",
+        "total_reads": "1200",
+        "packable_reads": "1000",
+        "n_targets": "96",
+        "target_start": "23",
+        "target_length": "19",
+        "k": "1",
+        "skipped_targets": "0",
+        "checksum": "123",
+    }
+    gpu = {
+        **cpu,
+        "tool": "dotmatch_gpu_metal",
+        "target_start": "24",
+        "mismatches": "0",
+        "count_delta": "0",
+        "device": "Apple test GPU",
+    }
+
+    gate.real_row_gate([cpu, gpu], failures)
+
+    assert any("missing public CRISPR CPU baseline" in failure for failure in failures)
+
+    failures = []
+    gpu = {**cpu, "tool": "dotmatch_gpu_metal", "skipped_targets": "2", "mismatches": "0", "count_delta": "0", "device": "Apple test GPU"}
+    gate.real_row_gate([cpu, gpu], failures)
+
+    assert any("skipped targets" in failure for failure in failures)
 
 
 def test_gpu_report_gate_requires_experimental_boundary(tmp_path):

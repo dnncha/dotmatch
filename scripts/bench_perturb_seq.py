@@ -229,7 +229,7 @@ def write_report(rows, report: Path) -> None:
         "",
         "The synthetic lane checks fixed-window guide plus feature-barcode pair assignment through `pair-count`. The public lane uses a 10x Genomics CRISPR Guide Capture R2 subsample and validates DotMatch k=0 against a transparent exact-slice hash baseline over the observed fixed guide window.",
         "",
-        "Current status: public guide-capture assignment evidence only. This is not single-cell expression quantification or Cell Ranger perturbation-effect validation.",
+        "Current status: public single-guide guide-capture extraction evidence only. The public target set has one observed guide, so it validates fixed-window extraction and exact-slice counting, not useful multi-guide assignment, single-cell expression quantification, or Cell Ranger perturbation-effect validation.",
         "",
         "## Synthetic Command",
         "",
@@ -281,7 +281,7 @@ def write_report(rows, report: Path) -> None:
             "",
             "## Evidence Boundary",
             "",
-            "Use these lanes to verify fixed-window guide/feature pair assignment, side-level diagnostics, and narrow public CRISPR guide-capture per-read assignment. Broader Perturb-seq comparisons require public cell barcode and UMI handling, guide-per-cell calls, expression or perturbation-effect comparator output, exact commands, validation artifacts, and a passing gate.",
+            "Use these lanes to verify fixed-window guide/feature pair assignment, side-level diagnostics, and narrow public CRISPR guide-capture fixed-window extraction. Broader Perturb-seq comparisons require a multi-guide public target set, public cell barcode and UMI handling, guide-per-cell calls, expression or perturbation-effect comparator output, exact commands, validation artifacts, and a passing gate.",
             "",
         ]
     )
@@ -401,7 +401,7 @@ def run_public_dotmatch(
     row = {
         "tool": "dotmatch_count",
         "workflow": PUBLIC_WORKFLOW,
-        "status": "supported",
+        "status": "gated",
         "target_start": str(target_start),
         "target_length": str(target_length),
         "k": str(k),
@@ -436,7 +436,7 @@ def run_public_exact_baseline(metadata_path: Path, metadata: dict, targets: Path
     return {
         "tool": "exact_slice_hash",
         "workflow": PUBLIC_WORKFLOW,
-        "status": "supported",
+        "status": "gated",
         "target_start": str(target_start),
         "target_length": str(target_length),
         "k": "0",

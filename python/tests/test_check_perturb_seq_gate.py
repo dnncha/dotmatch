@@ -38,7 +38,7 @@ def _public_row(**overrides) -> dict[str, str]:
     row = {
         "tool": "dotmatch_count",
         "workflow": "public_10x_crispr_guide_capture",
-        "status": "supported",
+        "status": "gated",
         "exit_code": "0",
         "n_reads": "20000",
         "n_targets": "1",
@@ -142,3 +142,25 @@ def test_perturb_seq_public_gate_rejects_exact_baseline_mismatch():
     gate.public_row_gate(rows, failures)
 
     assert any("exact-slice baseline" in failure for failure in failures)
+
+
+def test_perturb_seq_public_gate_rejects_supported_single_guide_claim():
+    gate = _load_gate()
+    rows = [
+        _public_row(status="supported", k="0", assigned_unique="15000", assigned_exact="15000"),
+        _public_row(status="supported", k="1", assigned_unique="15500", assigned_exact="15000", corrected_reads="500"),
+        _public_row(
+            status="supported",
+            tool="exact_slice_hash",
+            k="0",
+            metric="exact",
+            command="python3 scripts/bench_perturb_seq.py --include-public --metadata examples/perturb_seq/data/metadata.json",
+            assigned_unique="15000",
+            assigned_exact="15000",
+        ),
+    ]
+    failures = []
+
+    gate.public_row_gate(rows, failures)
+
+    assert any("single-guide" in failure and "gated" in failure for failure in failures)

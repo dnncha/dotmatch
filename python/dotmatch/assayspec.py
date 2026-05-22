@@ -288,7 +288,7 @@ def run_assay_plan(plan: AssayPlan) -> int:
         "artifacts": {key: str(value) for key, value in plan.artifacts.items()},
         "inference_report": str(plan.spec.data.get("inference_report", "")),
         "autopsy_triggered": False,
-        "autopsy_thresholds": AUTOPSY_THRESHOLDS,
+        "autopsy_thresholds": _reliability_thresholds(plan.spec),
         "autopsy_artifacts": {},
         "production_warnings": [],
         "warnings": [],
@@ -1318,7 +1318,8 @@ def _write_preflight_reliability(plan: AssayPlan) -> dict[str, Any]:
 def _build_reliability_summary(plan: AssayPlan, *, stage: str, manifest: Mapping[str, Any] | None = None) -> dict[str, Any]:
     findings: list[dict[str, str]] = []
     findings.extend(_base_reliability_findings(plan, stage))
-    findings.extend(_audit_reliability_findings(plan, stage))
+    if manifest is not None or stage != "preflight":
+        findings.extend(_audit_reliability_findings(plan, stage))
     if manifest is not None:
         findings.extend(_command_reliability_findings(manifest, stage))
         findings.extend(_sample_qc_reliability_findings(plan, stage))
@@ -1587,7 +1588,7 @@ def _threshold_severity(assay: AssaySpec) -> str:
 def _base_reliability_findings(plan: AssayPlan, stage: str) -> list[dict[str, str]]:
     findings: list[dict[str, str]] = []
     reliability = plan.spec.reliability
-    if plan.spec.status == "draft" and reliability["fail_on_draft_inference"]:
+    if plan.spec.status == "draft":
         severity = "blocked" if _blocks_on_draft_inference(plan.spec) else _threshold_severity(plan.spec)
         findings.append(
             _finding(
@@ -1616,6 +1617,21 @@ def _base_reliability_findings(plan: AssayPlan, stage: str) -> list[dict[str, st
                 "documented public evidence boundary",
                 "No assay evidence boundary is recorded for this assay type.",
                 "Add assay evidence metadata before making public claims for this workflow.",
+                "docs/assay-evidence.json",
+            )
+        )
+    elif reliability["require_public_evidence_boundary"] and evidence["status"] != "supported":
+        findings.append(
+            _finding(
+                "evidence_boundary_not_supported",
+                _threshold_severity(plan.spec),
+                stage,
+                "",
+                "assay_type",
+                plan.spec.assay_type,
+                "supported public evidence boundary",
+                f"Assay evidence boundary is {evidence['status']!r}, not supported.",
+                "Treat this run as smoke or gated evidence until public comparator validation is recorded.",
                 "docs/assay-evidence.json",
             )
         )
@@ -1655,8 +1671,10 @@ def _backend_summary(assay: AssaySpec) -> dict[str, str]:
         gpu_status = "disabled_by_mode"
     elif not bool(backend["allow_gpu"]):
         gpu_status = "disabled_by_config"
-    elif _gpu_eligible(assay):
+    elif _gpu_eligible(assay) and _gpu_public_evidence_validated(assay):
         gpu_status = "eligible_but_not_used"
+    elif _gpu_eligible(assay):
+        gpu_status = "compute_compatible_no_public_gpu_gate"
     else:
         gpu_status = "not_eligible"
     return {
@@ -1692,6 +1710,10 @@ def _gpu_eligible(assay: AssaySpec) -> bool:
     return target_set.lengths == [length] and all(set(seq) <= {"A", "C", "G", "T"} for seq in target_set.sequences)
 
 
+def _gpu_public_evidence_validated(assay: AssaySpec) -> bool:
+    return assay.mode == "count" and assay.assay_type == "crispr"
+
+
 def _evidence_boundary(assay: AssaySpec) -> dict[str, str]:
     evidence_id = ASSAY_EVIDENCE_IDS.get(assay.assay_type, "")
     try:
@@ -1701,7 +1723,7 @@ def _evidence_boundary(assay: AssaySpec) -> dict[str, str]:
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
-            return {"id": evidence_id, "status": "missing", "label": "", "claim_boundary": ""}
+            return _missing_evidence_boundary(evidence_id)
     for row in data.get("assays", []):
         if isinstance(row, dict) and row.get("id") == evidence_id:
             return {
@@ -1709,8 +1731,23 @@ def _evidence_boundary(assay: AssaySpec) -> dict[str, str]:
                 "status": str(row.get("status", "")),
                 "label": str(row.get("label", "")),
                 "claim_boundary": str(row.get("claim_boundary", "")),
+                "biological_unit": str(row.get("biological_unit", "")),
+                "unsupported_claims": "; ".join(str(item) for item in row.get("unsupported_claims", []) if item),
+                "minimum_public_evidence": "; ".join(str(item) for item in row.get("minimum_public_evidence", []) if item),
             }
-    return {"id": evidence_id, "status": "missing", "label": "", "claim_boundary": ""}
+    return _missing_evidence_boundary(evidence_id)
+
+
+def _missing_evidence_boundary(evidence_id: str) -> dict[str, str]:
+    return {
+        "id": evidence_id,
+        "status": "missing",
+        "label": "",
+        "claim_boundary": "",
+        "biological_unit": "",
+        "unsupported_claims": "",
+        "minimum_public_evidence": "",
+    }
 
 
 def _finding(

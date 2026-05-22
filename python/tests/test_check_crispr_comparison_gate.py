@@ -21,6 +21,10 @@ def _agreement_row(dataset, comparison, status="ok", total_left="200000", total_
         "status": status,
         "total_left": total_left,
         "total_right": total_right,
+        "total_delta": "0",
+        "differing_guides": "0",
+        "pearson": "1.00000000",
+        "spearman": "1.00000000",
     }
 
 
@@ -37,6 +41,28 @@ def test_strict_gate_rejects_shallow_guide_counter_count_agreement():
     gate.agreement_gate(rows, require_guide_counter=True, failures=failures)
 
     assert any("sanson_brunello Hamming count agreement is below evidence threshold" in f for f in failures)
+
+
+def test_agreement_gate_rejects_ok_exact_rows_with_deltas_or_nan():
+    gate = _load_gate()
+    rows = [
+        _agreement_row("mageck_yusa", "dotmatch_exact_vs_mageck_exact"),
+        _agreement_row("mageck_yusa", "dotmatch_hamming_vs_guide_counter"),
+        _agreement_row(
+            "sanson_brunello",
+            "dotmatch_exact_vs_mageck_exact",
+            total_left="321536",
+            total_right="0",
+        ) | {"total_delta": "321536", "differing_guides": "67253", "pearson": "nan", "spearman": "nan"},
+        _agreement_row("sanson_brunello", "dotmatch_hamming_vs_guide_counter"),
+    ]
+    failures = []
+
+    gate.agreement_gate(rows, require_guide_counter=False, failures=failures)
+
+    assert any("sanson_brunello exact total differs" in f for f in failures)
+    assert any("sanson_brunello exact guide-level differences" in f for f in failures)
+    assert any("finite Pearson" in f for f in failures)
 
 
 def _repeated_row(dataset, tool, verified_per_read=""):
