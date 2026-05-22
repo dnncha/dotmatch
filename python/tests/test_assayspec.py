@@ -410,6 +410,9 @@ def test_assay_run_count_reproduces_existing_crispr_fixture(tmp_path: Path) -> N
     assert "assay_manifest.json" in report
     assert "reliability_report.html" in report
     assert "report.html" in report
+    assert str(tmp_path) not in report
+    assert str(ROOT) not in report
+    assert "sample_a.fastq" in report
 
 
 def test_assay_run_demux_and_pair_count_specs(tmp_path: Path) -> None:

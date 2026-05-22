@@ -14,6 +14,7 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Sequence
+from urllib.parse import quote
 
 from .core import MATCH_AMBIGUOUS, MATCH_NONE, MATCH_UNIQUE, Matcher
 from .native import find_native_cli
@@ -1905,7 +1906,7 @@ def _write_assay_report(plan: AssayPlan, manifest: Mapping[str, Any]) -> None:
         "<h2>Inputs</h2>",
         _samples_table(plan.spec),
         "<h2>Reliability</h2>",
-        _reliability_html(plan),
+        _reliability_html(plan, path.parent),
         "<h2>Sample QC</h2>",
         _sample_qc_table(plan.artifacts.get("sample_qc")),
         "<h2>Warnings</h2>",
@@ -1913,11 +1914,11 @@ def _write_assay_report(plan: AssayPlan, manifest: Mapping[str, Any]) -> None:
         "<h2>Library Audit</h2>",
         _audit_html(plan),
         "<h2>Autopsy</h2>",
-        _autopsy_html(autopsy_artifacts),
+        _autopsy_html(autopsy_artifacts, path.parent),
         "<h2>Artifacts</h2>",
-        _mapping_table(artifacts),
+        _mapping_table(artifacts, path.parent),
         "<h2>Native Commands</h2>",
-        _commands_table(manifest.get("commands", []) or []),
+        _commands_table(manifest.get("commands", []) or [], path.parent),
         "</main></body></html>\n",
     ]
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1942,7 +1943,7 @@ def _samples_table(assay: AssaySpec) -> str:
             rows.append(
                 "<tr><td>{}</td><td>{}</td></tr>".format(
                     html.escape(str(sample.get("id", ""))),
-                    html.escape(str(_path_from_spec(assay.path, str(sample.get("fastq", "")), allow_absolute=True, name="samples.fastq"))),
+                    html.escape(Path(str(sample.get("fastq", ""))).name),
                 )
             )
     else:
@@ -1950,7 +1951,7 @@ def _samples_table(assay: AssaySpec) -> str:
         rows.append(
             "<tr><td>{}</td><td>{}</td></tr>".format(
                 html.escape(assay.mode),
-                html.escape(str(_path_from_spec(assay.path, str(assay.data.get(reads_key, "")), allow_absolute=True, name=reads_key))),
+                html.escape(Path(str(assay.data.get(reads_key, ""))).name),
             )
         )
     rows.append("</table>")
@@ -1963,14 +1964,14 @@ def _sample_qc_table(path: Path | None) -> str:
     return _tsv_preview_table(path, 12)
 
 
-def _reliability_html(plan: AssayPlan) -> str:
+def _reliability_html(plan: AssayPlan, report_dir: Path) -> str:
     artifacts = {
         "reliability_summary": plan.artifacts.get("reliability_summary", ""),
         "reliability_findings": plan.artifacts.get("reliability_findings", ""),
         "reliability_report": plan.artifacts.get("reliability_report", ""),
         "reliability_manifest_summary": plan.artifacts.get("reliability_manifest_summary", ""),
     }
-    parts = [_mapping_table({key: str(value) for key, value in artifacts.items() if value})]
+    parts = [_mapping_table({key: str(value) for key, value in artifacts.items() if value}, report_dir)]
     summary = plan.artifacts.get("reliability_manifest_summary")
     if summary is not None and summary.exists():
         parts.append(_tsv_preview_table(summary, 4))
@@ -1990,11 +1991,11 @@ def _audit_html(plan: AssayPlan) -> str:
     return "".join(blocks) if blocks else "<p class=\"empty\">No audit summary was available.</p>"
 
 
-def _autopsy_html(artifacts: Mapping[str, str]) -> str:
+def _autopsy_html(artifacts: Mapping[str, str], report_dir: Path) -> str:
     if not artifacts:
         return "<p class=\"empty\">Autopsy was not triggered for this run.</p>"
     findings = artifacts.get("findings")
-    parts = [_mapping_table(artifacts)]
+    parts = [_mapping_table(artifacts, report_dir)]
     if findings and Path(findings).exists():
         parts.append(_tsv_preview_table(Path(findings), 40))
     return "".join(parts)
@@ -2007,23 +2008,23 @@ def _warnings_html(warnings: Sequence[str]) -> str:
     return f"<ul class=\"warn\">{items}</ul>"
 
 
-def _mapping_table(mapping: Mapping[str, Any]) -> str:
+def _mapping_table(mapping: Mapping[str, Any], report_dir: Path | None = None) -> str:
     if not mapping:
         return "<p class=\"empty\">No artifacts recorded.</p>"
     rows = ["<table><tr><th>Name</th><th>Path</th></tr>"]
     for key in sorted(mapping):
         value = str(mapping[key])
-        rows.append(f"<tr><td>{html.escape(str(key))}</td><td>{_artifact_link(value)}</td></tr>")
+        rows.append(f"<tr><td>{html.escape(str(key))}</td><td>{_artifact_link(value, report_dir)}</td></tr>")
     rows.append("</table>")
     return "".join(rows)
 
 
-def _commands_table(commands: Sequence[Mapping[str, Any]]) -> str:
+def _commands_table(commands: Sequence[Mapping[str, Any]], report_dir: Path) -> str:
     if not commands:
         return "<p class=\"empty\">No native commands were recorded.</p>"
     rows = ["<table><tr><th>Step</th><th>Exit</th><th>Command</th></tr>"]
     for command in commands:
-        argv = " ".join(shlex.quote(str(part)) for part in command.get("argv", []))
+        argv = " ".join(shlex.quote(_report_path_label(str(part), report_dir)) for part in command.get("argv", []))
         rows.append(
             "<tr><td>{}</td><td>{}</td><td><code>{}</code></td></tr>".format(
                 html.escape(str(command.get("name", ""))),
@@ -2045,16 +2046,41 @@ def _tsv_preview_table(path: Path, max_rows: int) -> str:
     rows = ["<table>"]
     for row_index, line in enumerate(lines[:max_rows]):
         tag = "th" if row_index == 0 else "td"
-        cells = "".join(f"<{tag}>{html.escape(cell)}</{tag}>" for cell in line.split("\t"))
+        cells = "".join(f"<{tag}>{html.escape(_html_table_cell(cell))}</{tag}>" for cell in line.split("\t"))
         rows.append(f"<tr>{cells}</tr>")
     rows.append("</table>")
     return "".join(rows)
 
 
-def _artifact_link(value: str) -> str:
-    escaped = html.escape(value)
-    name = html.escape(Path(value).name or value)
-    return f"<a href=\"{escaped}\">{name}</a><br><code>{escaped}</code>"
+def _html_table_cell(value: str) -> str:
+    path = Path(value)
+    if path.is_absolute():
+        return path.name
+    return value
+
+
+def _artifact_link(value: str, report_dir: Path | None = None) -> str:
+    path = Path(value)
+    if report_dir is not None:
+        try:
+            relative = path.resolve(strict=False).relative_to(report_dir.resolve(strict=False))
+        except (OSError, ValueError):
+            return f"<code>{html.escape(path.name or '[external path]')}</code>"
+        href = quote(relative.as_posix())
+        label = html.escape(relative.as_posix())
+        return f"<a href=\"{href}\">{label}</a>"
+    escaped = html.escape(path.name or value)
+    return f"<code>{escaped}</code>"
+
+
+def _report_path_label(value: str, report_dir: Path) -> str:
+    path = Path(value)
+    if not path.is_absolute():
+        return value
+    try:
+        return path.resolve(strict=False).relative_to(report_dir.resolve(strict=False)).as_posix()
+    except (OSError, ValueError):
+        return path.name or "[external path]"
 
 
 def _append_audit_warnings(plan: AssayPlan, step: PlanStep, manifest: dict[str, Any]) -> None:
