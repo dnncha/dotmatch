@@ -167,6 +167,7 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
         "pypa/gh-action-pypi-publish@release/v1",
         "packages-dir: dist-pypi",
         "docker/metadata-action",
+        "docker/login-action",
         "docker/build-push-action",
         "ghcr.io/dnncha/dotmatch",
         "python scripts/check_python_wheel.py --wheel-only --out-dir dist-linux",
