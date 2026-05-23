@@ -5,6 +5,7 @@ import csv
 import gzip
 import html
 import json
+import math
 import re
 import shlex
 import subprocess
@@ -53,6 +54,32 @@ BACKEND_DEFAULTS: dict[str, Any] = {
     "mode": "auto",
     "allow_gpu": True,
 }
+GPU_BENCHMARK_PRIORS = [
+    {
+        "workload": "public_crispr_yusa_hamming",
+        "mode": "count",
+        "assay_type": "crispr",
+        "target_count": 87437,
+        "target_length": 19,
+        "total_speedup": 1.92,
+    },
+    {
+        "workload": "synthetic_hamming_737_targets",
+        "mode": "count",
+        "assay_type": "generic",
+        "target_count": 737,
+        "target_length": 20,
+        "total_speedup": 13.50,
+    },
+    {
+        "workload": "synthetic_hamming_4096_targets",
+        "mode": "count",
+        "assay_type": "generic",
+        "target_count": 4096,
+        "target_length": 20,
+        "total_speedup": 10.05,
+    },
+]
 RELIABILITY_FINDING_COLUMNS = [
     "finding_id",
     "severity",
@@ -231,6 +258,7 @@ def compile_assay_plan(assay: AssaySpec) -> AssayPlan:
         "reliability_findings": out_dir / "reliability_findings.tsv",
         "reliability_report": out_dir / "reliability_report.html",
         "reliability_manifest_summary": out_dir / "reliability_manifest.summary.tsv",
+        "backend_optimization": out_dir / "backend_optimization.json",
     }
     steps: list[PlanStep] = []
 
@@ -420,6 +448,7 @@ def command_assay(argv: Sequence[str]) -> int:
 
     workflow_help = {
         "check": "validate an AssaySpec and write preflight reliability artifacts",
+        "optimize": "write a benchmark-informed CPU/GPU backend recommendation",
         "plan": "print the native commands and outputs for an AssaySpec",
         "run": "run an AssaySpec workflow and write reports, manifests, and outputs",
     }
@@ -441,6 +470,12 @@ def command_assay(argv: Sequence[str]) -> int:
             plan = compile_assay_plan(assay)
             _write_preflight_reliability(plan)
             print(f"{assay.path}: ok")
+            return 0
+        if args.command == "optimize":
+            plan = compile_assay_plan(assay)
+            optimization = optimize_assay_backend(assay)
+            _write_backend_optimization(plan, optimization)
+            print(_format_backend_optimization(optimization), end="")
             return 0
         if args.command == "run" and assay.status == "draft" and _blocks_on_draft_inference(assay):
             plan = compile_assay_plan(assay)
@@ -1355,6 +1390,7 @@ def _build_reliability_summary(plan: AssayPlan, *, stage: str, manifest: Mapping
         "profile": str(plan.spec.reliability["profile"]),
         "thresholds": _reliability_thresholds(plan.spec),
         "backend": _backend_summary(plan.spec),
+        "backend_optimizer": optimize_assay_backend(plan.spec),
         "evidence_boundary": _evidence_boundary(plan.spec),
         "findings": findings,
         "finding_counts": counts,
@@ -1688,6 +1724,187 @@ def _backend_summary(assay: AssaySpec) -> dict[str, str]:
         "selected": "cpu",
         "gpu_status": gpu_status,
     }
+
+
+def optimize_assay_backend(assay: AssaySpec) -> dict[str, Any]:
+    features, reason_codes = _backend_optimizer_features(assay)
+    speed_model = _gpu_speed_model(features)
+    compute_compatible = not any(code.endswith("_not_gpu_supported") or code.endswith("_not_gpu_packable") for code in reason_codes)
+    public_gate = _gpu_public_evidence_validated(assay)
+    backend = assay.backend
+    allow_gpu = bool(backend["allow_gpu"]) and str(backend["mode"]) != "cpu"
+
+    if not allow_gpu:
+        candidate_backend = "cpu"
+        recommendation = "cpu_required"
+        expected_speedup_band = "1x"
+        if str(backend["mode"]) == "cpu":
+            reason_codes.append("gpu_disabled_by_mode")
+        else:
+            reason_codes.append("gpu_disabled_by_config")
+    elif compute_compatible and public_gate:
+        candidate_backend = "gpu-metal-experimental"
+        recommendation = "gpu_candidate_requires_cpu_validation"
+        expected_speedup_band = _gpu_expected_speedup_band(speed_model["estimated_total_speedup"])
+        reason_codes.append("public_gpu_gate_validated")
+    elif compute_compatible:
+        candidate_backend = "gpu-metal-experimental"
+        recommendation = "gpu_candidate_gated"
+        expected_speedup_band = "unknown_until_public_gate"
+        reason_codes.append("compute_compatible_no_public_gpu_gate")
+    else:
+        candidate_backend = "cpu"
+        recommendation = "cpu_required"
+        expected_speedup_band = "1x"
+
+    accuracy_gates = [
+        "cpu_assignment_authority",
+        "cpu_count_checksum_required",
+        "zero_mismatch_required_before_speed_claim",
+    ]
+    return {
+        "schema_version": 1,
+        "optimizer": "local_benchmark_informed_scorer_v1",
+        "authority": "cpu",
+        "selected_backend": "cpu",
+        "candidate_backend": candidate_backend,
+        "recommendation": recommendation,
+        "expected_speedup_band": expected_speedup_band,
+        "estimated_total_speedup": speed_model["estimated_total_speedup"],
+        "speed_model": speed_model,
+        "reason_codes": sorted(dict.fromkeys(reason_codes)),
+        "accuracy_gates": accuracy_gates,
+        "workload_features": features,
+    }
+
+
+def _backend_optimizer_features(assay: AssaySpec) -> tuple[dict[str, Any], list[str]]:
+    assignment = _table(assay.data, "assignment")
+    metric = str(assignment.get("metric", "levenshtein"))
+    k = int(assignment.get("k", 1))
+    reason_codes: list[str] = []
+    target_key = ""
+    extract: Mapping[str, Any] = {}
+
+    if assay.mode == "count":
+        target_key = "targets"
+        extract = _table(assay.data, "extract")
+    elif assay.mode == "demux":
+        target_key = "barcodes"
+        extract = _table(assay.data, "extract")
+    else:
+        reason_codes.append("pair_count_not_gpu_supported")
+
+    length = extract.get("length")
+    target_count = 0
+    target_lengths: list[int] = []
+    acgt_packable = False
+    uniform_target_length = False
+    if target_key:
+        try:
+            target_set = _read_target_sequences(_spec_path(assay, target_key))
+        except AssaySpecError:
+            target_set = TargetSet(sequences=[], lengths=[])
+            reason_codes.append("target_table_unreadable")
+        target_count = len(target_set.sequences)
+        target_lengths = target_set.lengths
+        uniform_target_length = len(target_lengths) == 1
+        acgt_packable = bool(target_set.sequences) and all(set(seq) <= {"A", "C", "G", "T"} for seq in target_set.sequences)
+    if metric != "hamming":
+        reason_codes.append("metric_not_gpu_supported")
+    if k != 1:
+        reason_codes.append("edit_radius_not_gpu_supported")
+    if not isinstance(length, int) or not 1 <= length <= 32:
+        reason_codes.append("target_length_not_gpu_supported")
+    if target_lengths and target_lengths != [length]:
+        reason_codes.append("variable_target_length_not_gpu_supported")
+    if not uniform_target_length and target_key:
+        reason_codes.append("variable_target_length_not_gpu_supported")
+    if not acgt_packable and target_key:
+        reason_codes.append("target_alphabet_not_gpu_packable")
+
+    features = {
+        "mode": assay.mode,
+        "assay_type": assay.assay_type,
+        "backend_mode": str(assay.backend["mode"]),
+        "allow_gpu": bool(assay.backend["allow_gpu"]),
+        "metric": metric,
+        "k": k,
+        "target_count": target_count,
+        "target_length": int(length) if isinstance(length, int) else None,
+        "target_lengths": target_lengths,
+        "acgt_packable": acgt_packable,
+        "uniform_target_length": uniform_target_length,
+        "public_gpu_evidence_validated": _gpu_public_evidence_validated(assay),
+    }
+    return features, reason_codes
+
+
+def _gpu_speed_model(features: Mapping[str, Any]) -> dict[str, Any]:
+    target_count = max(int(features.get("target_count") or 0), 1)
+    target_length = int(features.get("target_length") or 0)
+    mode = str(features.get("mode", ""))
+    assay_type = str(features.get("assay_type", ""))
+    if mode == "count" and assay_type == "crispr" and bool(features.get("public_gpu_evidence_validated")):
+        nearest = GPU_BENCHMARK_PRIORS[0]
+        return {
+            "model": "nearest_neighbor_benchmark_priors_v1",
+            "training_rows": len(GPU_BENCHMARK_PRIORS),
+            "estimated_total_speedup": round(float(nearest["total_speedup"]), 2),
+            "nearest_workload": str(nearest["workload"]),
+            "nearest_total_speedup": float(nearest["total_speedup"]),
+        }
+    ranked = []
+    for row in GPU_BENCHMARK_PRIORS:
+        target_penalty = abs(math.log10(target_count) - math.log10(int(row["target_count"])))
+        length_penalty = abs(target_length - int(row["target_length"])) / 10.0
+        mode_penalty = 0.0 if mode == row["mode"] else 1.0
+        assay_penalty = 0.0 if assay_type == row["assay_type"] else 0.4
+        distance = target_penalty + length_penalty + mode_penalty + assay_penalty
+        ranked.append((distance, row))
+    ranked.sort(key=lambda item: item[0])
+    nearest = ranked[0][1]
+    estimated = float(nearest["total_speedup"])
+    return {
+        "model": "nearest_neighbor_benchmark_priors_v1",
+        "training_rows": len(GPU_BENCHMARK_PRIORS),
+        "estimated_total_speedup": round(estimated, 2),
+        "nearest_workload": str(nearest["workload"]),
+        "nearest_total_speedup": float(nearest["total_speedup"]),
+    }
+
+
+def _gpu_expected_speedup_band(estimated_total_speedup: float) -> str:
+    if estimated_total_speedup < 1.25:
+        return "1x"
+    if estimated_total_speedup < 3.0:
+        return "1.5-3x"
+    if estimated_total_speedup < 8.0:
+        return "3-8x"
+    return "8-15x"
+
+
+def _write_backend_optimization(plan: AssayPlan, optimization: Mapping[str, Any]) -> None:
+    path = plan.artifacts["backend_optimization"]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(optimization, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _format_backend_optimization(optimization: Mapping[str, Any]) -> str:
+    reason_codes = ", ".join(str(code) for code in optimization.get("reason_codes", []) or [])
+    accuracy_gates = ", ".join(str(gate) for gate in optimization.get("accuracy_gates", []) or [])
+    return "\n".join(
+        [
+            "DotMatch backend optimizer",
+            f"authority: {optimization.get('authority', '')}",
+            f"selected_backend: {optimization.get('selected_backend', '')}",
+            f"candidate_backend: {optimization.get('candidate_backend', '')}",
+            f"recommendation: {optimization.get('recommendation', '')}",
+            f"expected_speedup_band: {optimization.get('expected_speedup_band', '')}",
+            f"reason_codes: {reason_codes}",
+            f"accuracy_gates: {accuracy_gates}",
+        ]
+    ) + "\n"
 
 
 def _gpu_eligible(assay: AssaySpec) -> bool:

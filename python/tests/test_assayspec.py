@@ -328,6 +328,8 @@ def test_assay_check_writes_preflight_reliability_artifacts(tmp_path: Path) -> N
     assert summary["profile"] == "production"
     assert summary["backend"]["authority"] == "cpu"
     assert summary["backend"]["gpu_status"] == "eligible_but_not_used"
+    assert summary["backend_optimizer"]["authority"] == "cpu"
+    assert summary["backend_optimizer"]["candidate_backend"] == "gpu-metal-experimental"
     assert summary["evidence_boundary"]["status"] == "supported"
     assert "checked public" in summary["evidence_boundary"]["claim_boundary"]
     assert any(finding["finding_id"] == "read_qc_unavailable" for finding in summary["findings"])
@@ -473,6 +475,62 @@ def test_demux_gpu_metadata_requires_public_gpu_gate(tmp_path: Path) -> None:
     assay = load_assay_spec(_write_demux_spec(tmp_path))
 
     assert _backend_summary(assay)["gpu_status"] == "compute_compatible_no_public_gpu_gate"
+
+
+def test_backend_optimizer_recommends_gpu_candidate_for_public_crispr(tmp_path: Path) -> None:
+    from dotmatch.assayspec import load_assay_spec, optimize_assay_backend
+
+    assay = load_assay_spec(_write_count_spec(tmp_path))
+    plan = optimize_assay_backend(assay)
+
+    assert plan["authority"] == "cpu"
+    assert plan["selected_backend"] == "cpu"
+    assert plan["candidate_backend"] == "gpu-metal-experimental"
+    assert plan["recommendation"] == "gpu_candidate_requires_cpu_validation"
+    assert plan["expected_speedup_band"] == "1.5-3x"
+    assert "public_gpu_gate_validated" in plan["reason_codes"]
+    assert "cpu_count_checksum_required" in plan["accuracy_gates"]
+
+
+def test_backend_optimizer_gates_compute_compatible_demux_without_public_gpu_gate(tmp_path: Path) -> None:
+    from dotmatch.assayspec import load_assay_spec, optimize_assay_backend
+
+    assay = load_assay_spec(_write_demux_spec(tmp_path))
+    plan = optimize_assay_backend(assay)
+
+    assert plan["selected_backend"] == "cpu"
+    assert plan["candidate_backend"] == "gpu-metal-experimental"
+    assert plan["recommendation"] == "gpu_candidate_gated"
+    assert "compute_compatible_no_public_gpu_gate" in plan["reason_codes"]
+
+
+def test_backend_optimizer_requires_cpu_for_levenshtein(tmp_path: Path) -> None:
+    from dotmatch.assayspec import load_assay_spec, optimize_assay_backend
+
+    spec = _write_count_spec(tmp_path)
+    spec.write_text(
+        spec.read_text(encoding="utf-8").replace('metric = "hamming"', 'metric = "levenshtein"'),
+        encoding="utf-8",
+    )
+    assay = load_assay_spec(spec)
+    plan = optimize_assay_backend(assay)
+
+    assert plan["candidate_backend"] == "cpu"
+    assert plan["recommendation"] == "cpu_required"
+    assert "metric_not_gpu_supported" in plan["reason_codes"]
+
+
+def test_assay_optimize_writes_backend_optimization_artifact(tmp_path: Path) -> None:
+    spec = _write_count_spec(tmp_path)
+
+    rc = _run_cli(["assay", "optimize", str(spec)])
+
+    assert rc.returncode == 0, rc.stderr
+    assert "gpu-metal-experimental" in rc.stdout
+    artifact = tmp_path / "assay_out" / "backend_optimization.json"
+    data = json.loads(artifact.read_text(encoding="utf-8"))
+    assert data["authority"] == "cpu"
+    assert data["candidate_backend"] == "gpu-metal-experimental"
 
 
 def test_assay_init_writes_requested_template(tmp_path: Path) -> None:
