@@ -53,7 +53,7 @@ def _meta(version: str = "0.1.0") -> str:
         "    - dotmatch --version | grep '^dotmatch {{ version }}$'\n"
         "    - dotmatch dist ACGT AGGT | grep '^1$'\n"
         "    - dotmatch leq 1 ACGT AGGT | grep '^true$'\n"
-        "    - dotmatch --help | grep 'Workflow namespaces:'\n"
+        "    - dotmatch --help | grep 'Workflow namespaces'\n"
         "    - dotmatch assay --help | grep 'dotmatch assay'\n"
         "    - dotmatch barcode --help | grep 'dotmatch barcode'\n"
         "    - dotmatch panel --help | grep 'dotmatch panel'\n"
