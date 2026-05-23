@@ -1016,7 +1016,9 @@ static size_t seed_hash_local(uint64_t code, size_t len, unsigned char seed_id, 
 }
 
 static uint64_t code_low_mask_local(size_t len) {
-    return len == 0 ? 0 : ((1ULL << (2 * len)) - 1ULL);
+    if (len == 0) return 0;
+    if (len >= 32) return UINT64_MAX;
+    return (1ULL << (2 * len)) - 1ULL;
 }
 
 static uint64_t code_segment_local(uint64_t code, size_t start, size_t len) {

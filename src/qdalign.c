@@ -93,6 +93,63 @@ static uint64_t code_insert_base(uint64_t code, size_t len, size_t insert_pos, u
     return lower | ((base & 3ULL) << lower_bits) | shifted_upper;
 }
 
+static uint64_t code_low_mask_qd(size_t len) {
+    if (len == 0) return 0;
+    if (len >= 32) return UINT64_MAX;
+    return (1ULL << (2 * len)) - 1ULL;
+}
+
+static int popcount64_qd(uint64_t x) {
+#if defined(__GNUC__) || defined(__clang__)
+    return __builtin_popcountll(x);
+#else
+    int count = 0;
+    while (x != 0) {
+        x &= x - 1;
+        ++count;
+    }
+    return count;
+#endif
+}
+
+static int code_hamming_distance_qd(uint64_t a, uint64_t b, size_t len) {
+    uint64_t diff = a ^ b;
+    diff |= diff >> 1;
+    diff &= code_low_mask_qd(len);
+    diff &= 0x5555555555555555ULL;
+    return popcount64_qd(diff);
+}
+
+static int nonzero_bytes_u64(uint64_t x) {
+    int count = 0;
+    for (size_t i = 0; i < 8; ++i) {
+        count += (x & 0xffU) != 0;
+        x >>= 8;
+    }
+    return count;
+}
+
+static int same_length_hamming_distance_within_k(const char *a, const char *b, size_t len, int k) {
+    int d = 0;
+    size_t i = 0;
+    while (i + sizeof(uint64_t) <= len) {
+        uint64_t wa = 0;
+        uint64_t wb = 0;
+        memcpy(&wa, a + i, sizeof(wa));
+        memcpy(&wb, b + i, sizeof(wb));
+        uint64_t diff = wa ^ wb;
+        if (diff != 0) {
+            d += nonzero_bytes_u64(diff);
+            if (d > k) return -1;
+        }
+        i += sizeof(uint64_t);
+    }
+    for (; i < len; ++i) {
+        if (a[i] != b[i] && ++d > k) return -1;
+    }
+    return d;
+}
+
 int qdaln_edit_distance_dp(const char *a, size_t a_len, const char *b, size_t b_len) {
     if ((a == NULL && a_len != 0) || (b == NULL && b_len != 0)) return -1;
     if (a_len > (size_t)INT32_MAX || b_len > (size_t)INT32_MAX) return -1;
@@ -219,11 +276,7 @@ int qdaln_edit_distance_leq(const char *a, size_t a_len, const char *b, size_t b
 
     if (k == 1) {
         if (a_len == b_len) {
-            int mismatches = 0;
-            for (size_t i = 0; i < a_len; ++i) {
-                if (a[i] != b[i] && ++mismatches > 1) return 0;
-            }
-            return 1;
+            return same_length_hamming_distance_within_k(a, b, a_len, 1) >= 0 ? 1 : 0;
         }
         if (a_len == b_len + 1) return one_delete_matches_qd(a, a_len, b, b_len);
         if (b_len == a_len + 1) return one_delete_matches_qd(b, b_len, a, a_len);
@@ -328,11 +381,7 @@ static int candidate_distance_within_k(const char *read, size_t read_len,
     if (k == 1) {
         if ((read == NULL && read_len != 0) || (target == NULL && target_len != 0)) return -2;
         if (read_len == target_len) {
-            int mismatches = 0;
-            for (size_t i = 0; i < read_len; ++i) {
-                if (read[i] != target[i] && ++mismatches > 1) return -1;
-            }
-            return mismatches;
+            return same_length_hamming_distance_within_k(read, target, read_len, 1);
         }
         if (read_len == target_len + 1) {
             return one_delete_matches_qd(read, read_len, target, target_len) ? 1 : -1;
@@ -1099,21 +1148,33 @@ static int index_assign_exact_one(const qdaln_index *index, const char *read, si
 
 static int hamming_distance_within_k(const char *a, size_t a_len, const char *b, size_t b_len, int k) {
     if (a_len != b_len) return -1;
-    int d = 0;
-    for (size_t i = 0; i < a_len; ++i) {
-        if (a[i] != b[i] && ++d > k) return -1;
+    if (a_len <= 32) {
+        uint64_t a_code = 0;
+        uint64_t b_code = 0;
+        if (dna2_code(a, a_len, &a_code) && dna2_code(b, b_len, &b_code)) {
+            int d = code_hamming_distance_qd(a_code, b_code, a_len);
+            return d <= k ? d : -1;
+        }
     }
-    return d;
+    return same_length_hamming_distance_within_k(a, b, a_len, k);
 }
 
 static int index_assign_hamming_scan_one(const qdaln_index *index, const char *read, size_t read_len, int k,
                                          qdaln_match_result *result, qdaln_index_stats *stats) {
     int best_tie_count = 0;
+    uint64_t read_code = 0;
+    int read_encodable = dna2_code(read, read_len, &read_code);
     *result = empty_match_result(QDALN_MATCH_NONE);
     for (size_t j = 0; j < index->n_targets; ++j) {
         if (index->target_lens[j] != read_len) continue;
         if (stats != NULL) ++stats->candidates_considered;
-        int d = hamming_distance_within_k(read, read_len, index->targets[j], index->target_lens[j], k);
+        int d;
+        if (read_encodable && index->encodable[j]) {
+            d = code_hamming_distance_qd(read_code, index->codes[j], read_len);
+            if (d > k) d = -1;
+        } else {
+            d = hamming_distance_within_k(read, read_len, index->targets[j], index->target_lens[j], k);
+        }
         if (stats != NULL) ++stats->candidates_verified;
         if (d < 0) continue;
         index_update_verified(result, (int)j, d, &best_tie_count);
