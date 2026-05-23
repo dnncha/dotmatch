@@ -255,6 +255,51 @@ assignments = true
     return spec
 
 
+def _write_non_acgt_count_spec(tmp_path: Path) -> Path:
+    targets = tmp_path / "iupac_targets.tsv"
+    reads = tmp_path / "iupac_reads.fastq"
+    targets.write_text("g0\tACGN\ng1\tTTTT\n", encoding="utf-8")
+    reads.write_text(
+        "@n0\nACGNAAAA\n+\nIIIIIIII\n"
+        "@n1\nTTTTAAAA\n+\nIIIIIIII\n",
+        encoding="utf-8",
+    )
+    spec = tmp_path / "iupac_count.toml"
+    spec.write_text(
+        f"""
+schema_version = 1
+mode = "count"
+assay_type = "generic"
+targets = "{targets}"
+
+[[samples]]
+id = "iupac"
+fastq = "{reads}"
+
+[run]
+out_dir = "{tmp_path / 'iupac_out'}"
+threads = 8
+
+[extract]
+start = 0
+length = 4
+
+[assignment]
+k = 1
+metric = "hamming"
+ambiguous = "discard"
+
+[reliability]
+fail_on_unsafe_targets = false
+
+[outputs]
+assignments = true
+""".lstrip(),
+        encoding="utf-8",
+    )
+    return spec
+
+
 def _run_cli(args: list[str], *, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
     merged_env = os.environ.copy()
     if env:
@@ -490,6 +535,15 @@ def test_backend_optimizer_recommends_gpu_candidate_for_public_crispr(tmp_path: 
     assert plan["expected_speedup_band"] == "1.5-3x"
     assert "public_gpu_gate_validated" in plan["reason_codes"]
     assert "cpu_count_checksum_required" in plan["accuracy_gates"]
+    assert plan["cpu_strategy"] == "cpu_hamming_seed_index"
+    assert plan["benchmark_prior_count"] == 3
+    assert plan["benchmark_confidence"] == "public_prior"
+    assert plan["thread_hint"]["recommended_threads"] == 1
+    assert "configured_threads_cap" in plan["thread_hint"]["reason_codes"]
+    assert "cpu_remains_assignment_authority" in plan["diagnostic_constraints"]
+    assert "hamming_seed_index_available" in plan["route_reasons"]
+    assert "fixed_length_acgt_targets" in plan["route_reasons"]
+    assert "gpu_candidate_public_gate" in plan["route_reasons"]
 
 
 def test_backend_optimizer_gates_compute_compatible_demux_without_public_gpu_gate(tmp_path: Path) -> None:
@@ -502,6 +556,13 @@ def test_backend_optimizer_gates_compute_compatible_demux_without_public_gpu_gat
     assert plan["candidate_backend"] == "gpu-metal-experimental"
     assert plan["recommendation"] == "gpu_candidate_gated"
     assert "compute_compatible_no_public_gpu_gate" in plan["reason_codes"]
+    assert plan["cpu_strategy"] == "cpu_hamming_seed_index"
+    assert plan["benchmark_prior_count"] == 3
+    assert plan["benchmark_confidence"] == "nearest_prior"
+    assert "hamming_seed_index_available" in plan["route_reasons"]
+    assert "gpu_candidate_without_public_gate" in plan["route_reasons"]
+    assert plan["thread_hint"]["recommended_threads"] >= 1
+    assert "small_target_set" in plan["thread_hint"]["reason_codes"]
 
 
 def test_backend_optimizer_requires_cpu_for_levenshtein(tmp_path: Path) -> None:
@@ -518,6 +579,30 @@ def test_backend_optimizer_requires_cpu_for_levenshtein(tmp_path: Path) -> None:
     assert plan["candidate_backend"] == "cpu"
     assert plan["recommendation"] == "cpu_required"
     assert "metric_not_gpu_supported" in plan["reason_codes"]
+    assert plan["cpu_strategy"] == "cpu_levenshtein_indexed"
+    assert plan["benchmark_confidence"] == "unsupported_route"
+    assert "levenshtein_indexed_cpu" in plan["route_reasons"]
+    assert "metric_not_gpu_supported" in plan["route_reasons"]
+    assert "gpu_candidate_requires_zero_mismatch_diagnostic" in plan["diagnostic_constraints"]
+
+
+def test_backend_optimizer_routes_non_acgt_hamming_to_cpu_only(tmp_path: Path) -> None:
+    from dotmatch.assayspec import load_assay_spec, optimize_assay_backend
+
+    assay = load_assay_spec(_write_non_acgt_count_spec(tmp_path))
+    plan = optimize_assay_backend(assay)
+
+    assert plan["selected_backend"] == "cpu"
+    assert plan["candidate_backend"] == "cpu"
+    assert plan["recommendation"] == "cpu_required"
+    assert plan["cpu_strategy"] == "cpu_hamming_indexed"
+    assert plan["benchmark_prior_count"] == 3
+    assert plan["benchmark_confidence"] == "unsupported_route"
+    assert "target_alphabet_not_gpu_packable" in plan["reason_codes"]
+    assert "non_acgt_targets_cpu_only" in plan["route_reasons"]
+    assert "gpu_ineligible_cpu_only" in plan["route_reasons"]
+    assert plan["thread_hint"]["recommended_threads"] <= plan["thread_hint"]["max_threads"]
+    assert "small_target_set" in plan["thread_hint"]["reason_codes"]
 
 
 def test_assay_optimize_writes_backend_optimization_artifact(tmp_path: Path) -> None:

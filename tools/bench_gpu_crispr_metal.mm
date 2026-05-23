@@ -6,11 +6,13 @@
 #include <zlib.h>
 
 #include <chrono>
+#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 struct GpuResult {
@@ -34,6 +36,11 @@ struct Counts {
     size_t assigned_corrected = 0;
     size_t ambiguous = 0;
     size_t unmatched = 0;
+};
+
+struct SeedCandidateStats {
+    uint64_t total_candidates = 0;
+    uint32_t max_candidates = 0;
 };
 
 struct Inputs {
@@ -108,6 +115,77 @@ static bool pack_dna2(const std::string &s, uint64_t *out) {
     }
     *out = code;
     return true;
+}
+
+static uint64_t seed_code(uint64_t packed, size_t offset, size_t length) {
+    if (length == 0) return 0;
+    uint64_t mask = length == 32 ? UINT64_MAX : ((1ULL << (2 * length)) - 1ULL);
+    return (packed >> (2 * offset)) & mask;
+}
+
+static void build_seed_candidates(const std::vector<uint64_t> &reads,
+                                  const std::vector<uint64_t> &targets,
+                                  size_t len,
+                                  int k,
+                                  std::vector<uint32_t> *offsets,
+                                  std::vector<uint32_t> *indices,
+                                  SeedCandidateStats *stats) {
+    offsets->clear();
+    indices->clear();
+    stats->total_candidates = 0;
+    stats->max_candidates = 0;
+    offsets->reserve(reads.size() + 1);
+    offsets->push_back(0);
+
+    if (k > 1 || len == 0 || len > 32 || targets.empty()) {
+        offsets->resize(reads.size() + 1, 0);
+        return;
+    }
+
+    const size_t first_len = len / 2;
+    const size_t second_offset = first_len;
+    const size_t second_len = len - first_len;
+    std::unordered_map<uint64_t, std::vector<uint32_t> > first_seed;
+    std::unordered_map<uint64_t, std::vector<uint32_t> > second_seed;
+    first_seed.reserve(targets.size() * 2);
+    second_seed.reserve(targets.size() * 2);
+    for (size_t i = 0; i < targets.size(); ++i) {
+        first_seed[seed_code(targets[i], 0, first_len)].push_back((uint32_t)i);
+        second_seed[seed_code(targets[i], second_offset, second_len)].push_back((uint32_t)i);
+    }
+
+    std::vector<uint32_t> seen(targets.size(), 0);
+    uint32_t stamp = 1;
+    for (uint64_t read : reads) {
+        uint32_t before = (uint32_t)indices->size();
+        const uint64_t s0 = seed_code(read, 0, first_len);
+        const uint64_t s1 = seed_code(read, second_offset, second_len);
+        std::unordered_map<uint64_t, std::vector<uint32_t> >::const_iterator it0 = first_seed.find(s0);
+        if (it0 != first_seed.end()) {
+            for (uint32_t target_idx : it0->second) {
+                if (seen[target_idx] == stamp) continue;
+                seen[target_idx] = stamp;
+                indices->push_back(target_idx);
+            }
+        }
+        std::unordered_map<uint64_t, std::vector<uint32_t> >::const_iterator it1 = second_seed.find(s1);
+        if (it1 != second_seed.end()) {
+            for (uint32_t target_idx : it1->second) {
+                if (seen[target_idx] == stamp) continue;
+                seen[target_idx] = stamp;
+                indices->push_back(target_idx);
+            }
+        }
+        uint32_t count = (uint32_t)indices->size() - before;
+        stats->total_candidates += count;
+        if (count > stats->max_candidates) stats->max_candidates = count;
+        offsets->push_back((uint32_t)indices->size());
+        ++stamp;
+        if (stamp == 0) {
+            std::fill(seen.begin(), seen.end(), 0);
+            stamp = 1;
+        }
+    }
 }
 
 static int parse_args(int argc, char **argv, Args *args) {
@@ -298,19 +376,15 @@ static NSString *kernel_source(void) {
             "using namespace metal;\n"
             "struct GpuResult { int target_index; int best_distance; int second_best_distance; int match_count; int status; };\n"
             "struct GpuParams { uint n_targets; uint len; uint k; uint reserved; };\n"
-            "kernel void hamming_assign(device const ulong *reads [[buffer(0)]],\n"
-            "                           device const ulong *targets [[buffer(1)]],\n"
-            "                           constant GpuParams &params [[buffer(2)]],\n"
-            "                           device GpuResult *results [[buffer(3)]],\n"
-            "                           uint gid [[thread_position_in_grid]]) {\n"
-            "    ulong read = reads[gid];\n"
+            "static inline GpuResult assign_from_candidates(ulong read, device const ulong *targets, constant GpuParams &params, uint begin, uint end, device const uint *candidate_indices, bool use_candidates) {\n"
             "    ulong mask = params.len == 32 ? 0xffffffffffffffffUL : ((1UL << (params.len * 2)) - 1UL);\n"
             "    int best = -1;\n"
             "    int second = -1;\n"
             "    int best_idx = -1;\n"
             "    int match_count = 0;\n"
             "    int best_ties = 0;\n"
-            "    for (uint j = 0; j < params.n_targets; ++j) {\n"
+            "    for (uint p = begin; p < end; ++p) {\n"
+            "        uint j = use_candidates ? candidate_indices[p] : p;\n"
             "        ulong diff = (read ^ targets[j]) & mask;\n"
             "        ulong pair_bits = (diff | (diff >> 1)) & 0x5555555555555555UL;\n"
             "        int d = (int)popcount(pair_bits);\n"
@@ -334,19 +408,39 @@ static NSString *kernel_source(void) {
             "    out.second_best_distance = second;\n"
             "    out.match_count = match_count;\n"
             "    out.status = match_count == 0 ? 0 : (best_ties > 1 ? 2 : 1);\n"
-            "    results[gid] = out;\n"
+            "    return out;\n"
+            "}\n"
+            "kernel void hamming_assign(device const ulong *reads [[buffer(0)]],\n"
+            "                           device const ulong *targets [[buffer(1)]],\n"
+            "                           constant GpuParams &params [[buffer(2)]],\n"
+            "                           device GpuResult *results [[buffer(3)]],\n"
+            "                           uint gid [[thread_position_in_grid]]) {\n"
+            "    results[gid] = assign_from_candidates(reads[gid], targets, params, 0, params.n_targets, nullptr, false);\n"
+            "}\n"
+            "kernel void hamming_seed_assign(device const ulong *reads [[buffer(0)]],\n"
+            "                                device const ulong *targets [[buffer(1)]],\n"
+            "                                constant GpuParams &params [[buffer(2)]],\n"
+            "                                device GpuResult *results [[buffer(3)]],\n"
+            "                                device const uint *candidate_offsets [[buffer(4)]],\n"
+            "                                device const uint *candidate_indices [[buffer(5)]],\n"
+            "                                uint gid [[thread_position_in_grid]]) {\n"
+            "    uint begin = candidate_offsets[gid];\n"
+            "    uint end = candidate_offsets[gid + 1];\n"
+            "    results[gid] = assign_from_candidates(reads[gid], targets, params, begin, end, candidate_indices, true);\n"
             "}\n";
 }
 
-static void print_row(const char *tool, const char *backend, const char *status, const Args &args,
+static void print_row(const char *tool, const char *backend, const char *path, const char *status, const Args &args,
                       const Inputs &inputs, double input_seconds, double prep_seconds, double seconds,
                       const Counts &counts, long checksum, size_t mismatches, long delta,
-                      const char *device, const char *notes) {
+                      uint64_t candidate_count, uint32_t max_candidates, const char *device, const char *notes) {
     double total_seconds = input_seconds + prep_seconds + seconds;
     double reads_per_sec = seconds > 0.0 ? (double)inputs.total_reads / seconds : 0.0;
     double total_reads_per_sec = total_seconds > 0.0 ? (double)inputs.total_reads / total_seconds : 0.0;
+    double avg_candidates = inputs.reads.empty() ? 0.0 : (double)candidate_count / (double)inputs.reads.size();
     std::cout << tool << ','
               << backend << ','
+              << path << ','
               << status << ",public_crispr_yusa_hamming,"
               << inputs.total_reads << ','
               << inputs.reads.size() << ','
@@ -371,6 +465,9 @@ static void print_row(const char *tool, const char *backend, const char *status,
               << checksum << ','
               << mismatches << ','
               << delta << ','
+              << candidate_count << ','
+              << avg_candidates << ','
+              << max_candidates << ','
               << clean_csv(device) << ','
               << clean_csv(notes) << '\n';
 }
@@ -379,8 +476,8 @@ static void print_unavailable(const char *device, const char *notes) {
     Args args;
     Inputs inputs;
     Counts counts;
-    print_row("dotmatch_gpu_metal", "metal", "unavailable", args, inputs, 0.0, 0.0, 0.0,
-              counts, 0, 0, 0, device, notes);
+    print_row("dotmatch_gpu_metal", "metal", "unavailable", "unavailable", args, inputs, 0.0, 0.0, 0.0,
+              counts, 0, 0, 0, 0, 0, device, notes);
 }
 
 int main(int argc, char **argv) {
@@ -392,7 +489,7 @@ int main(int argc, char **argv) {
             return 2;
         }
 
-        std::cout << "tool,backend,status,workload,total_reads,packable_reads,n_targets,target_start,target_length,k,input_seconds,prep_seconds,seconds,total_seconds,reads_per_sec,total_reads_per_sec,assigned_unique,assigned_exact,assigned_corrected,ambiguous,unmatched,invalid_windows,non_acgt_windows,skipped_targets,checksum,mismatches,count_delta,device,notes\n";
+        std::cout << "tool,backend,path,status,workload,total_reads,packable_reads,n_targets,target_start,target_length,k,input_seconds,prep_seconds,seconds,total_seconds,reads_per_sec,total_reads_per_sec,assigned_unique,assigned_exact,assigned_corrected,ambiguous,unmatched,invalid_windows,non_acgt_windows,skipped_targets,checksum,mismatches,count_delta,candidate_count,avg_candidates,max_candidates,device,notes\n";
 
         id<MTLDevice> device = MTLCreateSystemDefaultDevice();
         if (device == nil) {
@@ -432,8 +529,8 @@ int main(int argc, char **argv) {
         long cpu_sum = checksum_cpu(cpu_results.data(), inputs.reads.size());
         double cpu_seconds = seconds_now() - cpu_start;
         if (cpu_rc != 0) return 2;
-        print_row("dotmatch_cpu_index", "cpu", "ok", args, inputs, input_seconds, cpu_prep_seconds,
-                  cpu_seconds, cpu_counts, cpu_sum, 0, 0, [[device name] UTF8String],
+        print_row("dotmatch_cpu_index", "cpu", "seed_index_cpu", "ok", args, inputs, input_seconds, cpu_prep_seconds,
+                  cpu_seconds, cpu_counts, cpu_sum, 0, 0, (uint64_t)stats.candidates_verified, 0, [[device name] UTF8String],
                   "CPU indexed Hamming k=1 public CRISPR baseline");
 
         NSError *error = nil;
@@ -446,8 +543,10 @@ int main(int argc, char **argv) {
         }
         id<MTLFunction> function = [library newFunctionWithName:@"hamming_assign"];
         id<MTLComputePipelineState> pipeline = [device newComputePipelineStateWithFunction:function error:&error];
+        id<MTLFunction> seed_function = [library newFunctionWithName:@"hamming_seed_assign"];
+        id<MTLComputePipelineState> seed_pipeline = [device newComputePipelineStateWithFunction:seed_function error:&error];
         id<MTLCommandQueue> queue = [device newCommandQueue];
-        if (pipeline == nil || queue == nil) {
+        if (pipeline == nil || seed_pipeline == nil || queue == nil) {
             print_unavailable([[device name] UTF8String],
                               error == nil ? "Metal pipeline unavailable" : [[error localizedDescription] UTF8String]);
             qdaln_index_free(index);
@@ -492,9 +591,60 @@ int main(int argc, char **argv) {
         long delta = count_delta(cpu_counts, gpu_counts);
         double gpu_seconds = seconds_now() - gpu_start;
 
-        print_row("dotmatch_gpu_metal", "metal", "ok", args, inputs, input_seconds, gpu_prep_seconds,
-                  gpu_seconds, gpu_counts, gpu_sum, mismatches, delta, [[device name] UTF8String],
+        print_row("dotmatch_gpu_metal", "metal", "brute_force_scan", "ok", args, inputs, input_seconds, gpu_prep_seconds,
+                  gpu_seconds, gpu_counts, gpu_sum, mismatches, delta,
+                  (uint64_t)inputs.reads.size() * (uint64_t)inputs.targets.size(), (uint32_t)inputs.targets.size(),
+                  [[device name] UTF8String],
                   "Metal public CRISPR FASTQ extract-pack-dispatch-readback-count lane");
+
+        double seed_prep_start = seconds_now();
+        std::vector<uint32_t> candidate_offsets;
+        std::vector<uint32_t> candidate_indices;
+        SeedCandidateStats seed_stats;
+        build_seed_candidates(inputs.read_codes, inputs.target_codes, args.target_length, args.k,
+                              &candidate_offsets, &candidate_indices, &seed_stats);
+        id<MTLBuffer> seed_result_buffer = [device newBufferWithLength:inputs.reads.size() * sizeof(GpuResult)
+                                                                options:MTLResourceStorageModeShared];
+        id<MTLBuffer> candidate_offsets_buffer = [device newBufferWithLength:candidate_offsets.size() * sizeof(uint32_t)
+                                                                      options:MTLResourceStorageModeShared];
+        size_t candidate_bytes = std::max<size_t>(candidate_indices.size() * sizeof(uint32_t), sizeof(uint32_t));
+        id<MTLBuffer> candidate_indices_buffer = [device newBufferWithLength:candidate_bytes
+                                                                      options:MTLResourceStorageModeShared];
+        if (seed_result_buffer == nil || candidate_offsets_buffer == nil || candidate_indices_buffer == nil) return 2;
+        memcpy([candidate_offsets_buffer contents], candidate_offsets.data(), candidate_offsets.size() * sizeof(uint32_t));
+        if (!candidate_indices.empty()) {
+            memcpy([candidate_indices_buffer contents], candidate_indices.data(), candidate_indices.size() * sizeof(uint32_t));
+        }
+        double seed_prep_seconds = seconds_now() - seed_prep_start;
+
+        double seed_gpu_start = seconds_now();
+        id<MTLCommandBuffer> seed_command_buffer = [queue commandBuffer];
+        id<MTLComputeCommandEncoder> seed_encoder = [seed_command_buffer computeCommandEncoder];
+        [seed_encoder setComputePipelineState:seed_pipeline];
+        [seed_encoder setBuffer:read_buffer offset:0 atIndex:0];
+        [seed_encoder setBuffer:target_buffer offset:0 atIndex:1];
+        [seed_encoder setBuffer:params_buffer offset:0 atIndex:2];
+        [seed_encoder setBuffer:seed_result_buffer offset:0 atIndex:3];
+        [seed_encoder setBuffer:candidate_offsets_buffer offset:0 atIndex:4];
+        [seed_encoder setBuffer:candidate_indices_buffer offset:0 atIndex:5];
+        NSUInteger seed_threads_per_group = seed_pipeline.maxTotalThreadsPerThreadgroup;
+        if (seed_threads_per_group > 256) seed_threads_per_group = 256;
+        [seed_encoder dispatchThreads:MTLSizeMake(inputs.reads.size(), 1, 1)
+                threadsPerThreadgroup:MTLSizeMake(seed_threads_per_group, 1, 1)];
+        [seed_encoder endEncoding];
+        [seed_command_buffer commit];
+        [seed_command_buffer waitUntilCompleted];
+        GpuResult *seed_gpu_results = (GpuResult *)[seed_result_buffer contents];
+        Counts seed_gpu_counts = count_gpu(seed_gpu_results, inputs.reads.size());
+        long seed_gpu_sum = checksum_gpu(seed_gpu_results, inputs.reads.size());
+        size_t seed_mismatches = result_mismatches(cpu_results.data(), seed_gpu_results, inputs.reads.size());
+        long seed_delta = count_delta(cpu_counts, seed_gpu_counts);
+        double seed_gpu_seconds = seconds_now() - seed_gpu_start;
+
+        print_row("dotmatch_gpu_metal", "metal", "seed_index_cpu_candidates", "ok", args, inputs, input_seconds,
+                  seed_prep_seconds, seed_gpu_seconds, seed_gpu_counts, seed_gpu_sum, seed_mismatches, seed_delta,
+                  seed_stats.total_candidates, seed_stats.max_candidates, [[device name] UTF8String],
+                  "Prototype: CPU-built two-seed candidate buffer for exact Hamming k<=1 reduction; Metal verifies candidates only");
 
         qdaln_index_free(index);
     }

@@ -1733,6 +1733,8 @@ def optimize_assay_backend(assay: AssaySpec) -> dict[str, Any]:
     public_gate = _gpu_public_evidence_validated(assay)
     backend = assay.backend
     allow_gpu = bool(backend["allow_gpu"]) and str(backend["mode"]) != "cpu"
+    cpu_strategy, route_reasons = _cpu_route_strategy(features, reason_codes)
+    benchmark_confidence = _benchmark_confidence(features, reason_codes, compute_compatible, public_gate, allow_gpu)
 
     if not allow_gpu:
         candidate_backend = "cpu"
@@ -1740,27 +1742,38 @@ def optimize_assay_backend(assay: AssaySpec) -> dict[str, Any]:
         expected_speedup_band = "1x"
         if str(backend["mode"]) == "cpu":
             reason_codes.append("gpu_disabled_by_mode")
+            route_reasons.append("gpu_disabled_by_mode")
         else:
             reason_codes.append("gpu_disabled_by_config")
+            route_reasons.append("gpu_disabled_by_config")
     elif compute_compatible and public_gate:
         candidate_backend = "gpu-metal-experimental"
         recommendation = "gpu_candidate_requires_cpu_validation"
         expected_speedup_band = _gpu_expected_speedup_band(speed_model["estimated_total_speedup"])
         reason_codes.append("public_gpu_gate_validated")
+        route_reasons.append("gpu_candidate_public_gate")
     elif compute_compatible:
         candidate_backend = "gpu-metal-experimental"
         recommendation = "gpu_candidate_gated"
         expected_speedup_band = "unknown_until_public_gate"
         reason_codes.append("compute_compatible_no_public_gpu_gate")
+        route_reasons.append("gpu_candidate_without_public_gate")
     else:
         candidate_backend = "cpu"
         recommendation = "cpu_required"
         expected_speedup_band = "1x"
+        route_reasons.append("gpu_ineligible_cpu_only")
 
     accuracy_gates = [
         "cpu_assignment_authority",
         "cpu_count_checksum_required",
         "zero_mismatch_required_before_speed_claim",
+    ]
+    diagnostic_constraints = [
+        "cpu_remains_assignment_authority",
+        "cpu_count_checksum_required",
+        "gpu_candidate_requires_zero_mismatch_diagnostic",
+        "benchmark_priors_are_route_metadata_only",
     ]
     return {
         "schema_version": 1,
@@ -1772,9 +1785,87 @@ def optimize_assay_backend(assay: AssaySpec) -> dict[str, Any]:
         "expected_speedup_band": expected_speedup_band,
         "estimated_total_speedup": speed_model["estimated_total_speedup"],
         "speed_model": speed_model,
+        "cpu_strategy": cpu_strategy,
+        "thread_hint": _thread_hint(assay, features),
+        "benchmark_prior_count": int(speed_model["training_rows"]),
+        "benchmark_confidence": benchmark_confidence,
+        "diagnostic_constraints": diagnostic_constraints,
+        "route_reasons": sorted(dict.fromkeys(route_reasons)),
         "reason_codes": sorted(dict.fromkeys(reason_codes)),
         "accuracy_gates": accuracy_gates,
         "workload_features": features,
+    }
+
+
+def _cpu_route_strategy(features: Mapping[str, Any], reason_codes: Sequence[str]) -> tuple[str, list[str]]:
+    metric = str(features.get("metric", "levenshtein"))
+    reasons = [str(code) for code in reason_codes]
+    fixed_length = bool(features.get("uniform_target_length")) and features.get("target_length") is not None
+    acgt_packable = bool(features.get("acgt_packable"))
+
+    if metric == "levenshtein":
+        return "cpu_levenshtein_indexed", reasons + ["levenshtein_indexed_cpu"]
+
+    if metric == "hamming":
+        hamming_reasons = ["hamming_distance_cpu"]
+        if fixed_length and acgt_packable:
+            hamming_reasons.extend(["hamming_seed_index_available", "fixed_length_acgt_targets"])
+            return "cpu_hamming_seed_index", reasons + hamming_reasons
+        if not acgt_packable:
+            hamming_reasons.append("non_acgt_targets_cpu_only")
+        if not fixed_length:
+            hamming_reasons.append("variable_length_targets_cpu_only")
+        return "cpu_hamming_indexed", reasons + hamming_reasons
+
+    return "cpu_generic_assignment", reasons + ["generic_cpu_assignment"]
+
+
+def _benchmark_confidence(
+    features: Mapping[str, Any],
+    reason_codes: Sequence[str],
+    compute_compatible: bool,
+    public_gate: bool,
+    allow_gpu: bool,
+) -> str:
+    if not allow_gpu:
+        return "gpu_disabled"
+    if not compute_compatible:
+        return "unsupported_route"
+    if public_gate and bool(features.get("public_gpu_evidence_validated")):
+        return "public_prior"
+    if reason_codes:
+        return "nearest_prior_with_constraints"
+    return "nearest_prior"
+
+
+def _thread_hint(assay: AssaySpec, features: Mapping[str, Any]) -> dict[str, Any]:
+    configured = _table(assay.data, "run").get("threads")
+    configured_threads = configured if isinstance(configured, int) and configured > 0 else None
+    max_threads = configured_threads or 4
+    target_count = int(features.get("target_count") or 0)
+    target_length = int(features.get("target_length") or 0)
+    reasons: list[str] = []
+
+    if configured_threads is not None:
+        reasons.append("configured_threads_cap")
+    else:
+        reasons.append("default_threads_cap")
+
+    if target_count <= 1024 or target_length <= 8:
+        recommended = 1
+        reasons.append("small_target_set")
+    elif target_count <= 10000:
+        recommended = min(4, max_threads)
+        reasons.append("moderate_target_set")
+    else:
+        recommended = min(8, max_threads)
+        reasons.append("large_target_set")
+
+    recommended = max(1, min(recommended, max_threads))
+    return {
+        "recommended_threads": recommended,
+        "max_threads": max_threads,
+        "reason_codes": sorted(dict.fromkeys(reasons)),
     }
 
 

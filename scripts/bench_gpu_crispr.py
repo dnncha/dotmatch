@@ -18,6 +18,7 @@ RAW = ROOT / "benchmarks" / "raw" / "gpu_crispr.csv"
 FIELDS = [
     "tool",
     "backend",
+    "path",
     "status",
     "workload",
     "total_reads",
@@ -43,6 +44,9 @@ FIELDS = [
     "checksum",
     "mismatches",
     "count_delta",
+    "candidate_count",
+    "avg_candidates",
+    "max_candidates",
     "device",
     "notes",
 ]
@@ -53,6 +57,7 @@ def unavailable_row(reason: str) -> dict[str, str]:
     row.update({
         "tool": "dotmatch_gpu_metal",
         "backend": "metal",
+        "path": "unavailable",
         "status": "unavailable",
         "workload": "public_crispr_yusa_hamming",
         "total_reads": "0",
@@ -70,6 +75,9 @@ def unavailable_row(reason: str) -> dict[str, str]:
         "checksum": "0",
         "mismatches": "0",
         "count_delta": "0",
+        "candidate_count": "0",
+        "avg_candidates": "0.0",
+        "max_candidates": "0",
         "device": platform.platform(),
         "notes": reason,
     })

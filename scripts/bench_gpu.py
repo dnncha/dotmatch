@@ -16,6 +16,7 @@ RAW = ROOT / "benchmarks" / "raw" / "gpu_acceleration.csv"
 FIELDS = [
     "tool",
     "backend",
+    "path",
     "status",
     "workload",
     "n_reads",
@@ -31,6 +32,9 @@ FIELDS = [
     "pairs_per_sec",
     "checksum",
     "mismatches",
+    "candidate_count",
+    "avg_candidates",
+    "max_candidates",
     "device",
     "notes",
 ]
@@ -40,6 +44,7 @@ def unavailable_row(reason: str) -> dict[str, str]:
     return {
         "tool": "dotmatch_gpu_metal",
         "backend": "metal",
+        "path": "unavailable",
         "status": "unavailable",
         "workload": "synthetic_hamming",
         "n_reads": "0",
@@ -55,6 +60,9 @@ def unavailable_row(reason: str) -> dict[str, str]:
         "pairs_per_sec": "0.0",
         "checksum": "0",
         "mismatches": "0",
+        "candidate_count": "0",
+        "avg_candidates": "0.0",
+        "max_candidates": "0",
         "device": platform.platform(),
         "notes": reason,
     }

@@ -7,6 +7,7 @@
 typedef struct qdaln_hamming_seed_entry {
     uint64_t code;
     size_t target_index;
+    size_t seed_len;
     unsigned char seed_id;
     size_t next;
 } qdaln_hamming_seed_entry;
@@ -118,6 +119,20 @@ static uint64_t code_low_mask_qd(size_t len) {
 
 static uint64_t code_segment_qd(uint64_t code, size_t start, size_t len) {
     return (code >> (2 * start)) & code_low_mask_qd(len);
+}
+
+static void hamming_seed_partition(size_t total_len, size_t n_seeds, size_t seed_id,
+                                   size_t *start_out, size_t *len_out) {
+    size_t base = total_len / n_seeds;
+    size_t rem = total_len % n_seeds;
+    size_t seed_len = base + (seed_id < rem ? 1U : 0U);
+    size_t start = seed_id * base + (seed_id < rem ? seed_id : rem);
+    *start_out = start;
+    *len_out = seed_len;
+}
+
+static unsigned char hamming_seed_key(size_t n_seeds, size_t seed_id) {
+    return (unsigned char)((n_seeds - 2U) * 4U + seed_id);
 }
 
 static int popcount64_qd(uint64_t x) {
@@ -563,6 +578,7 @@ static int index_hamming_seed_insert(qdaln_index *index, unsigned char seed_id, 
     size_t e = index->n_hamming_seeds++;
     index->hamming_seeds[e].code = code;
     index->hamming_seeds[e].target_index = target_index;
+    index->hamming_seeds[e].seed_len = seed_len;
     index->hamming_seeds[e].seed_id = seed_id;
     index->hamming_seeds[e].next = index->hamming_seed_heads[slot];
     index->hamming_seed_heads[slot] = e;
@@ -654,8 +670,8 @@ qdaln_index *qdaln_index_build(const char *const *targets, const size_t *target_
 
     size_t hamming_seed_need = 0;
     for (size_t i = 0; i < n_targets; ++i) {
-        if (idx->encodable[i] && idx->target_lens[i] >= 2 && idx->target_lens[i] <= 32) {
-            hamming_seed_need += 2;
+        if (idx->encodable[i] && idx->target_lens[i] <= 32) {
+            hamming_seed_need += 2 + 3 + 4;
         }
     }
     if (hamming_seed_need != 0) {
@@ -669,15 +685,18 @@ qdaln_index *qdaln_index_build(const char *const *targets, const size_t *target_
         for (size_t i = 0; i < idx->hamming_seed_hash_cap; ++i) idx->hamming_seed_heads[i] = SIZE_MAX;
 
         for (size_t i = 0; i < n_targets; ++i) {
-            if (!idx->encodable[i] || idx->target_lens[i] < 2 || idx->target_lens[i] > 32) continue;
-            size_t seed0_len = idx->target_lens[i] / 2;
-            size_t seed1_len = idx->target_lens[i] - seed0_len;
-            uint64_t seed0 = code_segment_qd(idx->codes[i], 0, seed0_len);
-            uint64_t seed1 = code_segment_qd(idx->codes[i], seed0_len, seed1_len);
-            if (index_hamming_seed_insert(idx, 0, seed0, seed0_len, i) != 0 ||
-                index_hamming_seed_insert(idx, 1, seed1, seed1_len, i) != 0) {
-                qdaln_index_free(idx);
-                return NULL;
+            if (!idx->encodable[i] || idx->target_lens[i] > 32) continue;
+            for (size_t n_seeds = 2; n_seeds <= 4; ++n_seeds) {
+                for (size_t seed_id = 0; seed_id < n_seeds; ++seed_id) {
+                    size_t start = 0;
+                    size_t seed_len = 0;
+                    hamming_seed_partition(idx->target_lens[i], n_seeds, seed_id, &start, &seed_len);
+                    uint64_t seed = code_segment_qd(idx->codes[i], start, seed_len);
+                    if (index_hamming_seed_insert(idx, hamming_seed_key(n_seeds, seed_id), seed, seed_len, i) != 0) {
+                        qdaln_index_free(idx);
+                        return NULL;
+                    }
+                }
             }
         }
         idx->hamming_seed_ready = 1;
@@ -1246,7 +1265,7 @@ static int index_visit_hamming_exact_seen_candidates(const qdaln_index *index, u
 
 static int index_visit_hamming_seed_candidates(const qdaln_index *index, unsigned char seed_id,
                                                uint64_t seed_code, size_t seed_len, candidate_seen *seen,
-                                               uint64_t read_code, size_t read_len,
+                                               uint64_t read_code, size_t read_len, int k,
                                                qdaln_match_result *result, int *best_tie_count,
                                                qdaln_index_stats *stats) {
     if (!index->hamming_seed_ready || index->hamming_seed_hash_cap == 0) return 0;
@@ -1254,21 +1273,24 @@ static int index_visit_hamming_seed_candidates(const qdaln_index *index, unsigne
     for (size_t e = index->hamming_seed_heads[slot]; e != SIZE_MAX; e = index->hamming_seeds[e].next) {
         const qdaln_hamming_seed_entry *entry = &index->hamming_seeds[e];
         size_t j = entry->target_index;
-        if (entry->seed_id != seed_id || entry->code != seed_code || index->target_lens[j] != read_len) continue;
+        if (entry->seed_id != seed_id || entry->seed_len != seed_len || entry->code != seed_code ||
+            index->target_lens[j] != read_len) {
+            continue;
+        }
         int seen_rc = candidate_seen_add(seen, j);
         if (seen_rc < 0) return -1;
         if (seen_rc == 0) continue;
         if (stats != NULL) ++stats->candidates_considered;
         int d = code_hamming_distance_qd(read_code, index->codes[j], read_len);
         if (stats != NULL) ++stats->candidates_verified;
-        if (d > 1) continue;
+        if (d > k) continue;
         index_update_verified(result, (int)j, d, best_tie_count);
     }
     return 0;
 }
 
 static int index_assign_hamming_seed_one(const qdaln_index *index, const char *read, uint64_t read_code, size_t read_len,
-                                         qdaln_match_result *result, qdaln_index_stats *stats) {
+                                         int k, qdaln_match_result *result, qdaln_index_stats *stats) {
     candidate_seen seen;
     candidate_seen_init(&seen);
     int best_tie_count = 0;
@@ -1280,16 +1302,18 @@ static int index_assign_hamming_seed_one(const qdaln_index *index, const char *r
         return 0;
     }
 
-    size_t seed0_len = read_len / 2;
-    size_t seed1_len = read_len - seed0_len;
-    uint64_t seed0 = code_segment_qd(read_code, 0, seed0_len);
-    uint64_t seed1 = code_segment_qd(read_code, seed0_len, seed1_len);
-    if (index_visit_hamming_seed_candidates(index, 0, seed0, seed0_len, &seen, read_code, read_len,
-                                            result, &best_tie_count, stats) != 0 ||
-        index_visit_hamming_seed_candidates(index, 1, seed1, seed1_len, &seen, read_code, read_len,
-                                            result, &best_tie_count, stats) != 0) {
-        candidate_seen_free(&seen);
-        return 0;
+    size_t n_seeds = (size_t)k + 1U;
+    for (size_t seed_id = 0; seed_id < n_seeds; ++seed_id) {
+        size_t start = 0;
+        size_t seed_len = 0;
+        hamming_seed_partition(read_len, n_seeds, seed_id, &start, &seed_len);
+        uint64_t seed = code_segment_qd(read_code, start, seed_len);
+        if (index_visit_hamming_seed_candidates(index, hamming_seed_key(n_seeds, seed_id), seed, seed_len,
+                                                &seen, read_code, read_len, k, result, &best_tie_count,
+                                                stats) != 0) {
+            candidate_seen_free(&seen);
+            return 0;
+        }
     }
 
     if (index->n_nonencodable != 0) {
@@ -1302,7 +1326,7 @@ static int index_assign_hamming_seed_one(const qdaln_index *index, const char *r
             }
             if (seen_rc == 0) continue;
             if (stats != NULL) ++stats->candidates_considered;
-            int d = hamming_distance_within_k(read, read_len, index->targets[j], index->target_lens[j], 1);
+            int d = hamming_distance_within_k(read, read_len, index->targets[j], index->target_lens[j], k);
             if (stats != NULL) ++stats->candidates_verified;
             if (d < 0) continue;
             index_update_verified(result, (int)j, d, &best_tie_count);
@@ -1379,24 +1403,22 @@ static int index_assign_hamming_one(const qdaln_index *index, const char *read, 
         return 1;
     }
     if (k == 0) return index_assign_exact_one(index, read, read_len, result, stats);
-    if (k != 1) return 0;
+    if (k < 1 || k > 3) return 0;
 
     uint64_t read_code = 0;
     if (!dna2_code(read, read_len, &read_code)) {
         if (k == 1 && index_assign_hamming_single_unknown_one(index, read, read_len, result, stats)) return 1;
-        if (index->n_nonencodable == 0) {
-            *result = empty_match_result(QDALN_MATCH_NONE);
-            return 1;
-        }
         return index_assign_hamming_scan_one(index, read, read_len, k, result, stats);
     }
+
+    if (read_len > 32) return index_assign_hamming_scan_one(index, read, read_len, k, result, stats);
 
     int best_tie_count = 0;
     uint64_t seen_codes[128];
     size_t n_seen_codes = 0;
     *result = empty_match_result(QDALN_MATCH_NONE);
-    if (index->hamming_seed_ready && read_len >= 2 && read_len <= 32) {
-        return index_assign_hamming_seed_one(index, read, read_code, read_len, result, stats);
+    if (index->hamming_seed_ready && read_len <= 32) {
+        return index_assign_hamming_seed_one(index, read, read_code, read_len, k, result, stats);
     }
     seen_codes[n_seen_codes++] = read_code;
     index_visit_hamming_code_candidates(index, read_code, read_len, NULL, 0, result, &best_tie_count, stats);
@@ -1535,7 +1557,7 @@ int qdaln_index_assign_hamming_stats(const qdaln_index *index, const char *const
                                      const size_t *read_lens, size_t n_reads, int k,
                                      qdaln_match_result *results, qdaln_index_stats *stats) {
     if (index == NULL || results == NULL) return -1;
-    if (k < 0 || k > 1) return -1;
+    if (k < 0 || k > 3) return -1;
     if (n_reads != 0 && (reads == NULL || read_lens == NULL)) return -1;
     if (stats != NULL) {
         stats->candidates_considered = 0;

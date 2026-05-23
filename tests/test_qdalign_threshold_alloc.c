@@ -64,7 +64,7 @@ static void hamming_seed_index_build_tests(void) {
 
     assert(idx != NULL);
     assert(idx->hamming_seed_ready == 1);
-    assert(idx->n_hamming_seeds == 4);
+    assert(idx->n_hamming_seeds == 27);
     assert(idx->hamming_seed_hash_cap >= 8);
     qdaln_index_free(idx);
 }

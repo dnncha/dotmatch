@@ -839,6 +839,70 @@ grep '"count_engine": "hamming_lookup_direct_single_offset"' "$TMPDIR/summary_ha
 diff -u "$TMPDIR/counts_hamming.tsv" "$TMPDIR/counts_hamming_threads.tsv"
 grep '"read_threads": 2' "$TMPDIR/summary_hamming_threads.json" >/dev/null
 
+python3 - "$TMPDIR/sparse_targets.tsv" "$TMPDIR/sparse_reads.fastq" <<'PY'
+import random
+import sys
+
+targets_path, reads_path = sys.argv[1:3]
+alphabet = "ACGT"
+rng = random.Random(7)
+targets = []
+
+while len(targets) < 2048:
+    seq = "".join(rng.choice(alphabet) for _ in range(12))
+    if any(sum(a != b for a, b in zip(seq, other)) < 3 for other in targets):
+        continue
+    targets.append(seq)
+
+with open(targets_path, "w", encoding="utf-8") as out:
+    for i, seq in enumerate(targets):
+        out.write(f"sparse_{i}\t{seq}\tG{i % 17}\n")
+
+touched = [targets[3], targets[701], targets[1777]]
+with open(reads_path, "w", encoding="utf-8") as out:
+    for i in range(4096):
+        seq = touched[i % len(touched)]
+        if i % 11 == 0:
+            repl = "A" if seq[0] != "A" else "C"
+            seq = repl + seq[1:]
+        elif i % 17 == 0:
+            seq = "N" + seq[1:]
+        elif i % 29 == 0:
+            seq = "TTTTTTTTTTTT"
+        out.write(f"@sparse_{i}\n{seq}AAAA\n+\n{'I' * 16}\n")
+PY
+
+"$DOTMATCH_BIN" count \
+  --targets "$TMPDIR/sparse_targets.tsv" \
+  --reads "$TMPDIR/sparse_reads.fastq" \
+  --sample-label sparse_hamming \
+  --target-start 0 \
+  --target-length 12 \
+  --k 1 \
+  --metric hamming \
+  --ambiguity-policy best \
+  --out "$TMPDIR/sparse_counts_hamming.tsv" \
+  --summary "$TMPDIR/sparse_summary_hamming.json"
+
+"$DOTMATCH_BIN" count \
+  --targets "$TMPDIR/sparse_targets.tsv" \
+  --reads "$TMPDIR/sparse_reads.fastq" \
+  --sample-label sparse_hamming \
+  --target-start 0 \
+  --target-length 12 \
+  --k 1 \
+  --metric hamming \
+  --ambiguity-policy best \
+  --threads 4 \
+  --out "$TMPDIR/sparse_counts_hamming_threads.tsv" \
+  --summary "$TMPDIR/sparse_summary_hamming_threads.json"
+
+diff -u "$TMPDIR/sparse_counts_hamming.tsv" "$TMPDIR/sparse_counts_hamming_threads.tsv"
+grep '^sparse_3	' "$TMPDIR/sparse_counts_hamming_threads.tsv" | grep '	[1-9][0-9]*$' >/dev/null
+grep '^sparse_701	' "$TMPDIR/sparse_counts_hamming_threads.tsv" | grep '	[1-9][0-9]*$' >/dev/null
+grep '^sparse_1777	' "$TMPDIR/sparse_counts_hamming_threads.tsv" | grep '	[1-9][0-9]*$' >/dev/null
+grep '"read_threads": 4' "$TMPDIR/sparse_summary_hamming_threads.json" >/dev/null
+
 python3 - "$TMPDIR/long_header.fastq.gz" <<'PY'
 import gzip
 import sys

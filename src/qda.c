@@ -1621,6 +1621,19 @@ static int write_count_html_report(const char *path, const seq_table *targets, c
     return 0;
 }
 
+typedef struct count_dirty_slot {
+    size_t slot;
+    unsigned long long count;
+} count_dirty_slot;
+
+typedef struct count_dirty_slots {
+    count_dirty_slot *items;
+    size_t count;
+    size_t cap;
+    size_t *table;
+    size_t table_cap;
+} count_dirty_slots;
+
 typedef struct count_sample_job {
     const qdaln_index *index;
     const hamming_lookup *hlookup;
@@ -1652,6 +1665,7 @@ typedef struct count_sample_job {
     size_t read_threads;
     int max_correction_qual;
     int rc;
+    count_dirty_slots *dirty_slots;
 } count_sample_job;
 
 static void write_assignment_like_row(FILE *out, const seq_table *targets, const char *sample, const char *read_id,
@@ -2473,6 +2487,84 @@ static void merge_count_stats(count_stats *dst, const count_stats *src) {
     dst->candidates_verified += src->candidates_verified;
 }
 
+static void free_count_dirty_slots(count_dirty_slots *dirty) {
+    if (dirty == NULL) return;
+    free(dirty->items);
+    free(dirty->table);
+    dirty->items = NULL;
+    dirty->table = NULL;
+    dirty->count = 0;
+    dirty->cap = 0;
+    dirty->table_cap = 0;
+}
+
+static size_t count_dirty_slot_hash(size_t slot) {
+    uint64_t x = (uint64_t)slot;
+    x ^= x >> 30;
+    x *= UINT64_C(0xbf58476d1ce4e5b9);
+    x ^= x >> 27;
+    x *= UINT64_C(0x94d049bb133111eb);
+    x ^= x >> 31;
+    return (size_t)x;
+}
+
+static int count_dirty_slots_rehash(count_dirty_slots *dirty, size_t min_cap) {
+    size_t cap = 32;
+    while (cap < min_cap) cap *= 2;
+    size_t *table = (size_t *)calloc(cap, sizeof(size_t));
+    if (table == NULL) return -1;
+
+    for (size_t i = 0; i < dirty->count; ++i) {
+        size_t mask = cap - 1;
+        size_t pos = count_dirty_slot_hash(dirty->items[i].slot) & mask;
+        while (table[pos] != 0) pos = (pos + 1) & mask;
+        table[pos] = i + 1;
+    }
+
+    free(dirty->table);
+    dirty->table = table;
+    dirty->table_cap = cap;
+    return 0;
+}
+
+static int mark_count_dirty_slot(count_dirty_slots *dirty, size_t slot) {
+    if (dirty == NULL) return 0;
+
+    if (dirty->table_cap == 0 || ((dirty->count + 1) * 2) > dirty->table_cap) {
+        if (count_dirty_slots_rehash(dirty, (dirty->count + 1) * 4) != 0) return -1;
+    }
+
+    size_t mask = dirty->table_cap - 1;
+    size_t pos = count_dirty_slot_hash(slot) & mask;
+    while (dirty->table[pos] != 0) {
+        count_dirty_slot *item = &dirty->items[dirty->table[pos] - 1];
+        if (item->slot == slot) {
+            ++item->count;
+            return 0;
+        }
+        pos = (pos + 1) & mask;
+    }
+
+    if (dirty->count == dirty->cap) {
+        size_t next_cap = dirty->cap == 0 ? 16 : dirty->cap * 2;
+        count_dirty_slot *next = (count_dirty_slot *)realloc(dirty->items, next_cap * sizeof(count_dirty_slot));
+        if (next == NULL) return -1;
+        dirty->items = next;
+        dirty->cap = next_cap;
+    }
+    dirty->items[dirty->count].slot = slot;
+    dirty->items[dirty->count].count = 1;
+    dirty->table[pos] = dirty->count + 1;
+    ++dirty->count;
+    return 0;
+}
+
+static int increment_count_slot(count_sample_job *job, size_t slot) {
+    if (job->dirty_slots != NULL) return mark_count_dirty_slot(job->dirty_slots, slot);
+    ++job->counts[slot];
+    return 0;
+}
+
 static void direct_hamming_visit_seed(const count_sample_job *job, unsigned char seed_id, uint64_t seed_code,
                                       uint64_t read_code, int *best_target, int *ambiguous) {
     const hamming_lookup *lookup = job->hlookup;
@@ -2645,7 +2737,9 @@ static int direct_hamming_count_seq(count_sample_job *job, const char *seq, size
             if (exact_ambiguous) {
                 ++job->stats->ambiguous;
             } else {
-                ++job->counts[((job->sample_index * job->targets->count + (size_t)exact_target) * 5) + 0];
+                if (increment_count_slot(job, ((job->sample_index * job->targets->count + (size_t)exact_target) * 5) + 0) != 0) {
+                    return -1;
+                }
                 ++job->stats->unique;
                 ++job->stats->exact;
             }
@@ -2692,7 +2786,9 @@ static int direct_hamming_count_seq(count_sample_job *job, const char *seq, size
             if (mismatch_ambiguous) {
                 ++job->stats->ambiguous;
             } else {
-                ++job->counts[((job->sample_index * job->targets->count + (size_t)mismatch_target) * 5) + 1];
+                if (increment_count_slot(job, ((job->sample_index * job->targets->count + (size_t)mismatch_target) * 5) + 1) != 0) {
+                    return -1;
+                }
                 ++job->stats->unique;
                 ++job->stats->corrected;
             }
@@ -2748,7 +2844,15 @@ static int direct_hamming_count_seq(count_sample_job *job, const char *seq, size
         if (exact_ambiguous) {
             ++job->stats->ambiguous;
         } else {
-            ++job->counts[((job->sample_index * job->targets->count + (size_t)exact_target) * 5) + 0];
+            if (increment_count_slot(job, ((job->sample_index * job->targets->count + (size_t)exact_target) * 5) + 0) != 0) {
+                if (codes != inline_codes) {
+                    free(codes);
+                    free(valid);
+                    free(invalid_counts);
+                    free(bad_positions);
+                }
+                return -1;
+            }
             ++job->stats->unique;
             ++job->stats->exact;
         }
@@ -2802,7 +2906,15 @@ static int direct_hamming_count_seq(count_sample_job *job, const char *seq, size
         if (mismatch_ambiguous) {
             ++job->stats->ambiguous;
         } else {
-            ++job->counts[((job->sample_index * job->targets->count + (size_t)mismatch_target) * 5) + 1];
+            if (increment_count_slot(job, ((job->sample_index * job->targets->count + (size_t)mismatch_target) * 5) + 1) != 0) {
+                if (codes != inline_codes) {
+                    free(codes);
+                    free(valid);
+                    free(invalid_counts);
+                    free(bad_positions);
+                }
+                return -1;
+            }
             ++job->stats->unique;
             ++job->stats->corrected;
         }
@@ -2827,16 +2939,16 @@ typedef struct direct_hamming_batch_job {
     size_t *lens;
     size_t start;
     size_t end;
-    unsigned long long *local_counts;
+    count_dirty_slots dirty_slots;
     count_stats local_stats;
     int rc;
 } direct_hamming_batch_job;
 
 static void *direct_hamming_batch_worker(void *arg) {
     direct_hamming_batch_job *batch = (direct_hamming_batch_job *)arg;
-    batch->job.counts = batch->local_counts;
     batch->job.sample_index = 0;
     batch->job.stats = &batch->local_stats;
+    batch->job.dirty_slots = &batch->dirty_slots;
     batch->rc = 0;
     for (size_t i = batch->start; i < batch->end; ++i) {
         if (direct_hamming_count_seq(&batch->job, batch->items[i], batch->lens[i]) != 0) {
@@ -2861,12 +2973,9 @@ static int process_direct_hamming_buffer(count_sample_job *job, const seq_buffer
     size_t target_slots = job->targets->count * 5;
     pthread_t *thread_ids = (pthread_t *)calloc(read_threads, sizeof(pthread_t));
     direct_hamming_batch_job *jobs = (direct_hamming_batch_job *)calloc(read_threads, sizeof(direct_hamming_batch_job));
-    unsigned long long *local_counts = (unsigned long long *)calloc(read_threads * (target_slots == 0 ? 1 : target_slots),
-                                                                    sizeof(unsigned long long));
-    if (thread_ids == NULL || jobs == NULL || local_counts == NULL) {
+    if (thread_ids == NULL || jobs == NULL) {
         free(thread_ids);
         free(jobs);
-        free(local_counts);
         return 1;
     }
 
@@ -2880,7 +2989,6 @@ static int process_direct_hamming_buffer(count_sample_job *job, const seq_buffer
         jobs[t].lens = buffer->lens;
         jobs[t].start = start;
         jobs[t].end = end;
-        jobs[t].local_counts = local_counts + t * target_slots;
         if (pthread_create(&thread_ids[t], NULL, direct_hamming_batch_worker, &jobs[t]) != 0) {
             rc = 1;
             break;
@@ -2896,15 +3004,16 @@ static int process_direct_hamming_buffer(count_sample_job *job, const seq_buffer
         size_t dst_offset = job->sample_index * target_slots;
         for (size_t t = 0; t < launched; ++t) {
             merge_count_stats(job->stats, &jobs[t].local_stats);
-            for (size_t slot = 0; slot < target_slots; ++slot) {
-                job->counts[dst_offset + slot] += jobs[t].local_counts[slot];
+            for (size_t i = 0; i < jobs[t].dirty_slots.count; ++i) {
+                size_t slot = jobs[t].dirty_slots.items[i].slot;
+                job->counts[dst_offset + slot] += jobs[t].dirty_slots.items[i].count;
             }
         }
     }
 
+    for (size_t t = 0; t < read_threads; ++t) free_count_dirty_slots(&jobs[t].dirty_slots);
     free(thread_ids);
     free(jobs);
-    free(local_counts);
     return rc;
 }
 
@@ -3088,7 +3197,7 @@ static int count_sample_sequence(count_sample_job *job, const char *seq, size_t 
         seq_record *target = &job->targets->records[result.target_index];
         int kind = correction_kind(observed, strlen(observed), target->seq, target->len, result.best_distance);
         size_t slot = ((job->sample_index * job->targets->count + (size_t)result.target_index) * 5) + (size_t)kind;
-        ++job->counts[slot];
+        if (increment_count_slot(job, slot) != 0) return -1;
         ++job->stats->unique;
         if (result.best_distance == 0) ++job->stats->exact;
         else ++job->stats->corrected;
@@ -3127,16 +3236,16 @@ typedef struct count_batch_job {
     size_t *lens;
     size_t start;
     size_t end;
-    unsigned long long *local_counts;
+    count_dirty_slots dirty_slots;
     count_stats local_stats;
     int rc;
 } count_batch_job;
 
 static void *count_batch_worker(void *arg) {
     count_batch_job *batch = (count_batch_job *)arg;
-    batch->job.counts = batch->local_counts;
     batch->job.sample_index = 0;
     batch->job.stats = &batch->local_stats;
+    batch->job.dirty_slots = &batch->dirty_slots;
     batch->job.assignments = NULL;
     batch->job.ambiguous_out = NULL;
     batch->job.unmatched_out = NULL;
@@ -3164,12 +3273,9 @@ static int process_count_buffer(count_sample_job *job, const seq_buffer *buffer)
     size_t target_slots = job->targets->count * 5;
     pthread_t *thread_ids = (pthread_t *)calloc(read_threads, sizeof(pthread_t));
     count_batch_job *jobs = (count_batch_job *)calloc(read_threads, sizeof(count_batch_job));
-    unsigned long long *local_counts = (unsigned long long *)calloc(read_threads * (target_slots == 0 ? 1 : target_slots),
-                                                                    sizeof(unsigned long long));
-    if (thread_ids == NULL || jobs == NULL || local_counts == NULL) {
+    if (thread_ids == NULL || jobs == NULL) {
         free(thread_ids);
         free(jobs);
-        free(local_counts);
         return 1;
     }
 
@@ -3183,7 +3289,6 @@ static int process_count_buffer(count_sample_job *job, const seq_buffer *buffer)
         jobs[t].lens = buffer->lens;
         jobs[t].start = start;
         jobs[t].end = end;
-        jobs[t].local_counts = local_counts + t * target_slots;
         if (pthread_create(&thread_ids[t], NULL, count_batch_worker, &jobs[t]) != 0) {
             rc = 1;
             break;
@@ -3199,15 +3304,16 @@ static int process_count_buffer(count_sample_job *job, const seq_buffer *buffer)
         size_t dst_offset = job->sample_index * target_slots;
         for (size_t t = 0; t < launched; ++t) {
             merge_count_stats(job->stats, &jobs[t].local_stats);
-            for (size_t slot = 0; slot < target_slots; ++slot) {
-                job->counts[dst_offset + slot] += jobs[t].local_counts[slot];
+            for (size_t i = 0; i < jobs[t].dirty_slots.count; ++i) {
+                size_t slot = jobs[t].dirty_slots.items[i].slot;
+                job->counts[dst_offset + slot] += jobs[t].dirty_slots.items[i].count;
             }
         }
     }
 
+    for (size_t t = 0; t < read_threads; ++t) free_count_dirty_slots(&jobs[t].dirty_slots);
     free(thread_ids);
     free(jobs);
-    free(local_counts);
     return rc;
 }
 
@@ -3907,7 +4013,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
                 target_len, k, metric, indel_window, counts, &stats_by_sample[sample],
                 assignments, ambiguous_out, unmatched_out, ambiguous_policy, assignment_policy,
                 direct_hamming_counts, fused_offset_detection, target_start, auto_offset, auto_offset_sample,
-                offsets_mode, offset_min_fraction, effective_read_threads, max_correction_qual, 1
+                offsets_mode, offset_min_fraction, effective_read_threads, max_correction_qual, 1, NULL
             };
             count_sample_worker(&job);
             if (job.rc != 0) goto done;
@@ -3933,7 +4039,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
                     target_len, k, metric, indel_window, counts, &stats_by_sample[sample],
                     NULL, NULL, NULL, ambiguous_policy, assignment_policy,
                     direct_hamming_counts, fused_offset_detection, target_start, auto_offset, auto_offset_sample,
-                    offsets_mode, offset_min_fraction, 1, max_correction_qual, 1
+                    offsets_mode, offset_min_fraction, 1, max_correction_qual, 1, NULL
                 };
                 if (pthread_create(&thread_ids[i], NULL, count_sample_worker, &jobs[sample]) != 0) {
                     fprintf(stderr, "failed to create worker thread\n");

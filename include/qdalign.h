@@ -157,7 +157,7 @@ int qdaln_index_assign_status_stats(const qdaln_index *index, const char *const 
 
 /*
  * Hamming-distance indexed assignment for equal-length known-target workflows.
- * Supports k=0 and k=1. Unlike Levenshtein assignment, this does not consider
+ * Supports k=0..3. Unlike Levenshtein assignment, this does not consider
  * insertion/deletion neighbors, which is the fair mode for one-mismatch guide
  * counters.
  */
