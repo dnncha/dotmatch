@@ -69,7 +69,7 @@ def _meta(version: str = "0.1.0") -> str:
         "    - printf 'barcode_id\\tbarcode_seq\\ns1\\tACGT\\ns2\\tTTTT\\n' > barcodes.tsv\n"
         "    - printf '@r1\\nNACGTAAAA\\n+\\nIIIIIIIII\\n@r2\\nNTTTTAAAA\\n+\\nIIIIIIIII\\n' > barcode_reads.fastq\n"
         "    - dotmatch barcode infer --barcodes barcodes.tsv --reads barcode_reads.fastq --scan-starts 0:2 --barcode-length 4 --sample-reads 10 --out offset_scan.tsv --summary barcode_summary.json\n"
-        "    - grep '\"recommended_start\": 1' barcode_summary.json\n"
+        "    - \"grep '\\\"recommended_start\\\": 1' barcode_summary.json\"\n"
         "    - dotmatch panel design --n 2 --length 4 --candidate-pool-size 100 --restarts 1 --min-hamming-distance 2 --min-levenshtein-distance 2 --out-dir panel_out\n"
         "    - test -f panel_out/barcodes.tsv\n"
         "    - test -f panel_out/design_report.json\n\n"
