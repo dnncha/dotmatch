@@ -5,12 +5,12 @@
 - External exact edit-distance baseline: Edlib Python binding with `mode="NW"`, `task="distance"`.
 - These graphs cover short global edit-distance workloads.
 
-## Launch Snapshot
+## Benchmark Summary
 
 - Core engine: deterministic short-DNA assignment with explicit `unique`, `ambiguous`, `none`, and `invalid` outcomes.
-- Throughput lane: indexed fixed-window assignment reaches multi-million-read/sec rows in the regenerated native and batch benchmarks, with zero assignment mismatches in native Edlib validation.
-- Biology lane: public CRISPR, barcode, BCL, feature-barcode, amplicon, oligo/adapter, and perturb-seq reports are generated from raw command artifacts and gated by scope-specific checks.
-- Competitor lane: guide-counter, MAGeCK, Cutadapt-style, exact-slice, Edlib, exact-hash, and BK-tree comparators are reported where semantics are comparable; speed ratios are evidence, not universal replacement claims.
+- Assignment throughput: indexed fixed-window rows reach multi-million-read/sec cases in the regenerated native and batch benchmarks, with zero assignment mismatches in native Edlib validation.
+- Public assay evidence: CRISPR, barcode, BCL, feature-barcode, amplicon, oligo/adapter, and perturb-seq reports are generated from raw command artifacts and gated by scope-specific checks.
+- Comparator scope: guide-counter, MAGeCK, Cutadapt-style, exact-slice, Edlib, exact-hash, and BK-tree comparators are reported where semantics are comparable; speed ratios are evidence, not universal replacement claims.
 
 ## Graphs
 

@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1220" height="630" viewBox="0 0 1220 630">
+<style>text{font-family:Arial,sans-serif;font-size:12px}.title{font-size:18px;font-weight:700}.axis{fill:#444}.bar{fill:#2f7d68}</style>
+<text class="title" x="20" y="28">CRISPR comparison repeated real-data throughput</text>
+<text class="axis" x="20" y="50">Mean reads/s; rows are separated by dataset, tool, and records/sample</text>
+<text x="20" y="89">mageck_yusa dotmatch_exact_k0 10000</text>
+<rect class="bar" x="560" y="75" width="97" height="18" rx="2"/>
+<text x="665" y="89">160359.4</text>
+<text x="20" y="117">mageck_yusa dotmatch_exact_k0 100000</text>
+<rect class="bar" x="560" y="103" width="540" height="18" rx="2"/>
+<text x="1108" y="117">887206.3</text>
+<text x="20" y="145">mageck_yusa dotmatch_hamming_k1 10000</text>
+<rect class="bar" x="560" y="131" width="57" height="18" rx="2"/>
+<text x="625" y="145">94076.1</text>
+<text x="20" y="173">mageck_yusa dotmatch_hamming_k1 100000</text>
+<rect class="bar" x="560" y="159" width="128" height="18" rx="2"/>
+<text x="696" y="173">210421.0</text>
+<text x="20" y="201">mageck_yusa dotmatch_levenshtein_k1 10000</text>
+<rect class="bar" x="560" y="187" width="4" height="18" rx="2"/>
+<text x="572" y="201">6921.9</text>
+<text x="20" y="229">mageck_yusa dotmatch_levenshtein_k1 100000</text>
+<rect class="bar" x="560" y="215" width="4" height="18" rx="2"/>
+<text x="572" y="229">6635.0</text>
+<text x="20" y="257">mageck_yusa guide_counter_one_mismatch 10000</text>
+<rect class="bar" x="560" y="243" width="16" height="18" rx="2"/>
+<text x="584" y="257">26684.9</text>
+<text x="20" y="285">mageck_yusa guide_counter_one_mismatch 100000</text>
+<rect class="bar" x="560" y="271" width="116" height="18" rx="2"/>
+<text x="684" y="285">191862.5</text>
+<text x="20" y="313">mageck_yusa mageck_count_exact 10000</text>
+<rect class="bar" x="560" y="299" width="13" height="18" rx="2"/>
+<text x="581" y="313">21856.7</text>
+<text x="20" y="341">mageck_yusa mageck_count_exact 100000</text>
+<rect class="bar" x="560" y="327" width="77" height="18" rx="2"/>
+<text x="645" y="341">127848.7</text>
+<text x="20" y="369">sanson_brunello dotmatch_exact_k0 10000</text>
+<rect class="bar" x="560" y="355" width="63" height="18" rx="2"/>
+<text x="631" y="369">103809.6</text>
+<text x="20" y="397">sanson_brunello dotmatch_exact_k0 100000</text>
+<rect class="bar" x="560" y="383" width="101" height="18" rx="2"/>
+<text x="669" y="397">167486.7</text>
+<text x="20" y="425">sanson_brunello dotmatch_hamming_k1 10000</text>
+<rect class="bar" x="560" y="411" width="46" height="18" rx="2"/>
+<text x="614" y="425">75635.5</text>
+<text x="20" y="453">sanson_brunello dotmatch_hamming_k1 100000</text>
+<rect class="bar" x="560" y="439" width="85" height="18" rx="2"/>
+<text x="653" y="453">141126.5</text>
+<text x="20" y="481">sanson_brunello dotmatch_levenshtein_k1 10000</text>
+<rect class="bar" x="560" y="467" width="1" height="18" rx="2"/>
+<text x="569" y="481">878.1</text>
+<text x="20" y="509">sanson_brunello dotmatch_levenshtein_k1 100000</text>
+<rect class="bar" x="560" y="495" width="1" height="18" rx="2"/>
+<text x="569" y="509">803.4</text>
+<text x="20" y="537">sanson_brunello guide_counter_one_mismatch 10000</text>
+<rect class="bar" x="560" y="523" width="28" height="18" rx="2"/>
+<text x="596" y="537">46552.4</text>
+<text x="20" y="565">sanson_brunello guide_counter_one_mismatch 100000</text>
+<rect class="bar" x="560" y="551" width="202" height="18" rx="2"/>
+<text x="770" y="565">332365.0</text>
+<text x="20" y="593">sanson_brunello mageck_count_exact 10000</text>
+<rect class="bar" x="560" y="579" width="22" height="18" rx="2"/>
+<text x="590" y="593">37236.0</text>
+<text x="20" y="621">sanson_brunello mageck_count_exact 100000</text>
+<rect class="bar" x="560" y="607" width="133" height="18" rx="2"/>
+<text x="701" y="621">219199.4</text>
+</svg>

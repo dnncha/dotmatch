@@ -16,8 +16,8 @@ codes where present, and recorded zero-mismatch validation columns.
 DotMatch is a deterministic known-target assignment system, not a learned
 classifier. The current design uses exact edit-distance semantics, indexed
 candidate generation, explicit ambiguity accounting, public-data benchmarks,
-workflow fixtures, and gate scripts because those are the techniques that most
-directly reduce scientist time while preserving auditability.
+workflow fixtures, and gate scripts because those choices keep assignment
+auditable and reproducible.
 
 Applied techniques:
 
@@ -32,7 +32,7 @@ Applied techniques:
 - Phred-quality gating for one-edit substitution and read-insertion rescue;
 - barcode-panel error-sphere enumeration through `k=2`, nearest-neighbor
   checks, reverse-complement warnings, simulation, and machine-checkable
-  certificates;
+  assignment-collision reports;
 - workflow-specific comparator rows for MAGeCK, guide-counter, Cutadapt-style
   barcode checks, exact-slice baselines, native Edlib scan, exact hash lookup,
   and BK-tree baselines where the semantics are comparable;
@@ -46,10 +46,11 @@ Applied techniques:
 
 Techniques deliberately not claimed:
 
-- supervised ML assignment is not used because the core workflow already has a
-  known target list and exact error model; a learned classifier would need
-  labeled assay-specific training data and would reduce reproducibility unless
-  it beat the deterministic oracle on held-out public lanes;
+- supervised ML assignment is not currently used because the core workflow has
+  a known target list and an explicit error model. A learned assignment layer
+  would need labeled assay-specific training data, held-out public validation,
+  and a clear advantage over the deterministic oracle before it could be
+  claimed;
 - calibrated statistical screen interpretation is left to downstream tools such
   as MAGeCK, BAGEL, drugZ, or CERES because DotMatch stops at read assignment
   and QC;

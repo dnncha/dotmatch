@@ -10,6 +10,14 @@ const requiredFiles = [
   "../public/dotmatch-nfcore-artic-flow.png",
   "../public/dotmatch-nextflow-crispr-flow.png",
   "../public/dotmatch-10x-guide-capture-flow.png",
+  "../public/benchmarks/gpu_metal_speedup.svg",
+  "../public/benchmarks/gpu_crispr_metal_speedup.svg",
+  "../public/benchmarks/crispr_comparison_throughput.svg",
+  "../public/benchmarks/barcode_demux_throughput.svg",
+  "../public/benchmarks/barcode_demux_peak_memory.svg",
+  "../public/benchmarks/public_crispr_repeated_throughput.svg",
+  "../public/benchmarks/public_crispr_repeated_peak_memory.svg",
+  "../public/benchmarks/public_crispr_repeated_verified_candidates.svg",
   "../public/dotmatch-og.png",
   "../public/dotmatch-twitter.png",
   "../scripts/render_social_images.py"
@@ -23,6 +31,7 @@ for (const path of requiredFiles) {
 }
 
 const page = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
+const normalizedPage = page.replace(/\s+/g, " ");
 const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
 const layout = readFileSync(new URL("../app/layout.tsx", import.meta.url), "utf8");
 const nextConfig = readFileSync(new URL("../next.config.ts", import.meta.url), "utf8");
@@ -37,6 +46,8 @@ for (const anchor of ['id="top"', 'id="real-workflows"', 'id="panel-design"', 'i
 for (const selector of [
   ".hero",
   ".hero-visual",
+  ".hero-link-row",
+  ".mobile-header-actions",
   ".real-workflows-section",
   ".real-workflow-card",
   ".panel-design-layout",
@@ -45,6 +56,9 @@ for (const selector of [
   ".autopsy-layout",
   ".artifact-grid",
   ".report-table",
+  ".benchmark-reader-guide",
+  ".benchmark-figure-grid",
+  ".benchmark-figure",
   ".decision-grid",
   ".example-layout",
   ".status-table",
@@ -69,6 +83,18 @@ if (!layout.includes("export const viewport")) {
 if (!nextConfig.includes("devIndicators: false")) {
   console.error("Next.js dev indicator should be disabled for local screenshots.");
   process.exit(1);
+}
+
+for (const phrase of [
+  "experimental evidence lane",
+  "CPU indexed assignment remains the production baseline",
+  "DotMatch Hamming k=1 against guide-counter one-mismatch",
+  "Single-guide fixed-window check only"
+]) {
+  if (!normalizedPage.includes(phrase)) {
+    console.error(`Missing bounded marketing copy: ${phrase}`);
+    process.exit(1);
+  }
 }
 
 function readPngDimensions(imagePath) {

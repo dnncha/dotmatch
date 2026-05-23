@@ -15,7 +15,11 @@
 
 ![Native assignment throughput](native_assignment_throughput.svg)
 
-## Highest Observed Microbenchmark Speedups
+## Evidence Boundary
+
+These are native Edlib scan microbenchmarks for exact short-DNA assignment workloads, plus simple exact-hash and BK-tree baselines. The largest rows are useful for understanding algorithmic scaling against exhaustive scan, but they are not end-to-end workflow speed claims. Exact `k=0` lookup should be judged against hash-table baselines. For `k=1`, the indexed path is reported only when it has zero correctness disagreements against the exhaustive comparator. Levenshtein `k=2` has native hash-neighborhood pruning coverage for packed A/C/G/T windows up to 32 bases in this regenerated report; use only the recorded rows for `k=2` throughput statements, scoped to fixed-window short-DNA assignment.
+
+## Highest Observed Exhaustive-Scan Microbenchmark Speedups
 
 | n_targets | len | k | error_mode | err | reads_per_sec_dotmatch | reads_per_sec_edlib | verified_per_read | peak_rss_kb | speedup_vs_edlib_native |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -69,7 +73,3 @@
 | dotmatch_indexed | exact | 4096 | 16 | 1 | 194791.67 | 175963.40 | 258173.72 | 0.33 | 11024 | 0 |
 | dotmatch_indexed | exact | 4096 | 24 | 0 | 4068141.47 | 4347826.00 | 4347826.00 | 0.12 | 13072 | 0 |
 | dotmatch_indexed | exact | 4096 | 24 | 1 | 201508.43 | 199481.30 | 206902.88 | 0.03 | 14432 | 0 |
-
-## Evidence Boundary
-
-These are native Edlib scan microbenchmarks for exact short-DNA assignment workloads, plus simple exact-hash and BK-tree baselines. The largest rows are useful for understanding algorithmic scaling against exhaustive scan, but they are not end-to-end workflow speed claims. Exact `k=0` lookup should be judged against hash-table baselines. For `k=1`, the indexed path is reported only when it has zero correctness disagreements against the exhaustive comparator. Levenshtein `k=2` has native hash-neighborhood pruning coverage for packed A/C/G/T windows up to 32 bases in this regenerated report; use only the recorded rows for `k=2` throughput statements, scoped to fixed-window short-DNA assignment.

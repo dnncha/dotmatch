@@ -16,7 +16,8 @@ generator, or a replacement for downstream screen statistics.
 
 Package scope: Bioconda installs the native `dotmatch` CLI and C library. The
 examples that use `dotmatch barcode`, `dotmatch panel`, `dotmatch assay`, Python
-imports, or HTML workflow reports require a PyPI or source Python install.
+imports, or HTML workflow reports require a source Python install until the
+tagged PyPI release is visible.
 
 ![DotMatch workflow: FASTQ reads and a known target table are sliced at the same read position, assigned to known short DNA targets, and written to counts, split FASTQs, QC tables, and reports.](public/dotmatch-read-assignment.svg)
 
@@ -69,11 +70,11 @@ example documents the exact comparator settings in
 
 ## Barcode Panel Design
 
-DotMatch can design and certify barcode panels for the same assignment semantics
-used later by demux and counting. The point is not just to emit sequences. A
-designed panel is shipped with a machine-checkable safety certificate, per-target
-safety rows, collision tables, ambiguous-variant examples, plate layout, lab
-exports, and a report.
+DotMatch can design barcode panels and check their assignment-collision risk
+for the same semantics used later by demux and counting. The point is not just
+to emit sequences. A designed panel is shipped with a machine-checkable
+assignment report, per-target collision-risk rows, collision tables,
+ambiguous-variant examples, plate layout, lab exports, and a report.
 
 ```bash
 dotmatch panel design \
@@ -100,11 +101,11 @@ dotmatch panel layout barcodes.tsv --plate 96 --out plate_layout.tsv
 dotmatch panel export barcodes.tsv --format illumina-samplesheet --out-dir sample_sheet_templates/
 ```
 
-The certificate preserves DotMatch outcomes: `unique`, `ambiguous`, `none`, and
+The assignment report preserves DotMatch outcomes: `unique`, `ambiguous`, `none`, and
 `invalid`. It fails a configured correction radius if any query in that radius
 can map ambiguously or silently to the wrong barcode. The current exact
-certificate enumerates configured error spheres up to `k=2`; larger radii are
-refused rather than partially certified.
+report enumerates configured error spheres up to `k=2`; larger radii are
+refused rather than partially checked.
 
 Outputs include `barcodes.tsv`, `design_report.json`, `design_trace.tsv`,
 `panel_check/panel_summary.json`, `target_safety.tsv`, `collision_pairs.tsv`,
@@ -128,7 +129,7 @@ Common uses include:
 - fixed-position barcode demultiplexing from FASTQ/FASTQ.gz;
 - per-read assignment of 10x guide-capture or feature-barcode windows;
 - primer-start, amplicon-panel, adapter-prefix, or whitelist-style assays;
-- designing, optimizing, certifying, simulating, and exporting barcode panels;
+- designing, optimizing, checking, simulating, and exporting barcode panels;
 - target-library audits before allowing one-edit correction;
 - validating an indexed assignment run against an exhaustive scan or Edlib.
 
@@ -193,8 +194,8 @@ wheel is considered for PyPI.
 Bioconda currently provides the native `dotmatch` command-line tool and C
 library artifacts. The Python workflow layer, including `dotmatch assay ...`,
 barcode/panel convenience namespaces, reliability reports, and Python imports,
-is available from PyPI/source Python installs rather than the native Bioconda
-recipe.
+is available from source Python installs, and from PyPI after release
+verification, rather than the native Bioconda recipe.
 
 Optional local Workbench: DotMatch also includes a desktop Workbench under
 `apps/workbench` for local AssaySpec design, inference, planning, running, and

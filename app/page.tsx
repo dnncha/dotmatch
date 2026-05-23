@@ -2,7 +2,6 @@ const repoUrl = "https://github.com/dnncha/dotmatch";
 const citationUrl = `${repoUrl}/blob/main/CITATION.cff`;
 const methodsUrl = `${repoUrl}/blob/main/docs/methods-and-citation.md`;
 const packagingUrl = `${repoUrl}/blob/main/docs/packaging.md`;
-const benchmarksUrl = `${repoUrl}/blob/main/docs/benchmarks/README.md`;
 const evidenceGalleryUrl = `${repoUrl}/blob/main/docs/evidence-gallery/README.md`;
 const scientificClaimsUrl = `${repoUrl}/blob/main/docs/scientific-claims.md`;
 const publicCrisprUrl = `${repoUrl}/blob/main/docs/benchmarks/public_crispr/README.md`;
@@ -19,7 +18,7 @@ const biocondaUrl = "https://anaconda.org/bioconda/dotmatch";
 const proof = [
   ["Guide counts", "screen reads", "FASTQ to guide-by-sample counts."],
   ["Barcode splits", "inline barcodes", "Split reads, then inspect what did not split."],
-  ["Panel checks", "barcode panels", "Keep the safety check with the panel."],
+  ["Panel checks", "barcode panels", "Keep the collision check with the panel."],
   ["No guessing", "ambiguous stays ambiguous", "A read that fits two targets is not forced into one."]
 ];
 
@@ -99,7 +98,7 @@ const workflowStatusRows = [
 ];
 
 const workflowChoiceRows = [
-  ["Design or certify a barcode panel", "DotMatch panel"],
+  ["Design or check a barcode panel", "DotMatch panel"],
   ["Count CRISPR guides from a fixed window", "DotMatch"],
   ["Split fixed-position inline barcodes", "DotMatch"],
   ["Find why a barcode lane is mostly unassigned", "DotMatch barcode troubleshooting"],
@@ -167,7 +166,7 @@ const autopsyFindings = [
 
 const panelOutputs = [
   ["barcodes.tsv", "barcode table"],
-  ["panel_summary.json", "safety summary"],
+  ["panel_summary.json", "assignment-risk summary"],
   ["ambiguous_error_spheres.tsv", "ambiguous rescue examples"],
   ["target_safety.tsv", "nearest-neighbor checks"],
   ["plate_layout.tsv", "plate layout"],
@@ -221,6 +220,73 @@ const nfcoreArticImage = `${basePath}/dotmatch-nfcore-artic-flow.png`;
 const nextflowCrisprImage = `${basePath}/dotmatch-nextflow-crispr-flow.png`;
 const guideCaptureImage = `${basePath}/dotmatch-10x-guide-capture-flow.png`;
 
+const benchmarkFigures = [
+  {
+    title: "Public CRISPR throughput",
+    label: "CRISPR comparison",
+    image: `${basePath}/benchmarks/crispr_comparison_throughput.svg`,
+    alt: "CRISPR comparison throughput graph for DotMatch, MAGeCK, and guide-counter public datasets",
+    body: "Exact, Hamming, and Levenshtein lanes are separated so the chart compares the same biological question rather than mixing rescue rules.",
+    href: `${repoUrl}/blob/main/docs/benchmarks/crispr_comparison/README.md`
+  },
+  {
+    title: "Apple Metal GPU lane",
+    label: "Experimental GPU",
+    image: `${basePath}/benchmarks/gpu_crispr_metal_speedup.svg`,
+    alt: "Public CRISPR GPU benchmark graph comparing DotMatch CPU indexed Hamming assignment with the Apple Metal packed Hamming lane",
+    body: "The public CRISPR row includes FASTQ parsing, guide-window extraction, GPU dispatch, readback, and count aggregation. It is evidence for productizing GPU work, not a default production claim.",
+    href: `${repoUrl}/blob/main/docs/benchmarks/gpu/README.md`
+  },
+  {
+    title: "Synthetic GPU stress test",
+    label: "GPU comparison",
+    image: `${basePath}/benchmarks/gpu_metal_speedup.svg`,
+    alt: "Synthetic GPU benchmark graph comparing Apple Metal brute-force Hamming assignment against DotMatch CPU indexed assignment",
+    body: "The synthetic lane shows where a GPU can help when the target set is large and every read-target pair is packable A/C/G/T Hamming k=1.",
+    href: `${repoUrl}/blob/main/docs/benchmarks/gpu/README.md`
+  },
+  {
+    title: "Inline barcode demux",
+    label: "Barcode comparison",
+    image: `${basePath}/benchmarks/barcode_demux_throughput.svg`,
+    alt: "Barcode demultiplexing throughput graph for DotMatch, Cutadapt, and exact hash splitter rows",
+    body: "The barcode graph is scoped to a public exact-prefix SRP009896 lane. It compares fixed-position assignment, anchored Cutadapt demux, and a transparent exact-prefix baseline.",
+    href: barcodeBenchmarkUrl
+  },
+  {
+    title: "Barcode memory",
+    label: "Resource use",
+    image: `${basePath}/benchmarks/barcode_demux_peak_memory.svg`,
+    alt: "Peak memory graph for the public barcode demultiplexing benchmark",
+    body: "Memory is shown beside throughput because a demux tool is only useful if it keeps routine lanes practical on shared machines.",
+    href: barcodeBenchmarkUrl
+  },
+  {
+    title: "Repeated CRISPR throughput",
+    label: "Public repeatability",
+    image: `${basePath}/benchmarks/public_crispr_repeated_throughput.svg`,
+    alt: "Repeated public CRISPR benchmark graph showing throughput by tool and edit-distance lane",
+    body: "Repeated rows make run-to-run variation visible before anyone quotes a single throughput number.",
+    href: publicCrisprUrl
+  },
+  {
+    title: "Repeated CRISPR memory",
+    label: "Resource use",
+    image: `${basePath}/benchmarks/public_crispr_repeated_peak_memory.svg`,
+    alt: "Repeated public CRISPR benchmark graph showing peak memory by tool and edit-distance lane",
+    body: "Memory stays beside speed so the comparison is useful for real shared workstations and CI machines.",
+    href: publicCrisprUrl
+  },
+  {
+    title: "Verified work per read",
+    label: "Algorithm shape",
+    image: `${basePath}/benchmarks/public_crispr_repeated_verified_candidates.svg`,
+    alt: "Public CRISPR repeated benchmark graph showing verified candidate guides per read",
+    body: "This is the reason the indexed path matters: one-edit Levenshtein checks a small candidate set instead of scanning the whole guide library.",
+    href: publicCrisprUrl
+  }
+] as const;
+
 const realWorkflowExamples = [
   {
     title: "ARTIC V3 primer check in nf-core viralrecon",
@@ -262,12 +328,12 @@ const realWorkflowExamples = [
     ]
   },
   {
-    title: "10x CRISPR guide-capture fixed-window assignment",
-    label: "public guide-capture lane",
+    title: "10x CRISPR guide-capture fixed-window check",
+    label: "single-guide public lane",
     image: guideCaptureImage,
     alt: "Workflow diagram showing a 10x CRISPR Guide Capture R2 read window assigned by DotMatch to guide targets with QC outputs",
-    question: "Can the guide window be counted before single-cell analysis?",
-    body: "A public 10x Guide Capture R2 file is checked at start 63, length 19. DotMatch reports guide counts and per-read assignments.",
+    question: "Can the guide sequence window be checked before single-cell analysis?",
+    body: "A public 10x Guide Capture R2 file is checked at start 63, length 19. The evidence lane is a fixed-window single-guide extraction and count check.",
     command: `dotmatch count \\
   --targets examples/perturb_seq/data/crispr_guides.tsv \\
   --reads examples/perturb_seq/data/1k_CRISPR_5p_gemx_crispr_S1_L001_R2.subsample20000.fastq.gz \\
@@ -277,7 +343,7 @@ const realWorkflowExamples = [
   --metric hamming`,
     outputs: ["counts.tsv", "assignments.tsv", "summary.json", "sample_qc.tsv"],
     boundary:
-      "Per-read guide assignment only. Cell barcodes, UMIs, expression matrices, and perturbation calls stay elsewhere.",
+      "Single-guide fixed-window check only. Cell barcodes, UMIs, expression matrices, multi-guide calls, and perturbation calls stay elsewhere.",
     links: [
       ["Guide-capture evidence", perturbSeqUrl],
       ["Evidence gallery", evidenceGalleryUrl]
@@ -304,6 +370,10 @@ export default function Home() {
           <a href={repoUrl}>GitHub</a>
         </nav>
         <a className="header-cta" href={repoUrl}>Source</a>
+        <div className="mobile-header-actions" aria-label="Quick navigation">
+          <a href="#real-workflows">Examples</a>
+          <a href="#install">Install</a>
+        </div>
       </header>
 
       <section id="top" className="hero">
@@ -326,21 +396,15 @@ export default function Home() {
             <a href="#real-workflows" className="button primary">
               See Real Workflows
             </a>
-            <a href="#barcode-qc" className="button secondary">
-              Troubleshoot Barcodes
-            </a>
-            <a href="#panel-design" className="button secondary">
-              Design Panels
-            </a>
-            <a href={benchmarksUrl} className="button secondary">
-              Read Examples
-            </a>
-            <a href="#install" className="button secondary">
-              Install
-            </a>
             <a href={repoUrl} className="button secondary">
               GitHub
             </a>
+          </div>
+          <div className="hero-link-row" aria-label="Secondary DotMatch links">
+            <a href="#barcode-qc">Barcode QC</a>
+            <a href="#panel-design">Panel Design</a>
+            <a href="#benchmarks">Benchmarks</a>
+            <a href="#install">Install</a>
           </div>
         </div>
         <div className="hero-panel" aria-label="DotMatch benchmark summary">
@@ -440,16 +504,16 @@ export default function Home() {
         <div className="section-heading">
           <h2>Design barcodes, then check the rescue rules.</h2>
           <p>
-            A barcode panel is only useful if rescue is safe. DotMatch designs
-            panels, checks nearest neighbors, and writes files a lab or pipeline
-            can keep.
+            A barcode panel is only useful if correction will not mix samples.
+            DotMatch designs panels, checks nearest neighbors, and writes files
+            a lab or pipeline can keep.
           </p>
         </div>
         <div className="panel-design-layout">
           <figure className="panel-design-visual">
             <img
               src={panelCertificateImage}
-              alt="A lab bench scene with an abstract panel safety report, 96-well plate, and barcode strips"
+              alt="A lab bench scene with an abstract barcode panel collision report, 96-well plate, and barcode strips"
               decoding="async"
             />
           </figure>
@@ -471,7 +535,8 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
             <p>
               The check records unique, ambiguous, unmatched, and invalid
               outcomes. Exact error-sphere checks are supported through k=2.
-              Use a PyPI or source Python install for these panel commands.
+              Use a source Python install, or PyPI after the tagged release is
+              visible, for these panel commands.
             </p>
             <div className="link-stack compact">
               <a href={panelDesignUrl}>Read panel design docs</a>
@@ -487,7 +552,7 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
             </article>
           ))}
         </div>
-        <div className="panel-check-grid" aria-label="Panel safety checks">
+        <div className="panel-check-grid" aria-label="Panel assignment-collision checks">
           {panelChecks.map(([name, detail]) => (
             <article key={name}>
               <span>{name}</span>
@@ -516,9 +581,10 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
   --k-values 0,1 \\
   --out-dir autopsy`}</code></pre>
             <p>
-              One directory: report, window scan, barcode safety, top unmatched,
-              and provenance. Use a PyPI or source Python install for barcode
-              troubleshooting commands.
+              One directory: report, window scan, correction-risk checks, top
+              unmatched, and provenance. Use a source Python install, or PyPI
+              after the tagged release is visible, for barcode troubleshooting
+              commands.
             </p>
           </article>
           <div className="artifact-grid" aria-label="Barcode QC outputs">
@@ -575,12 +641,41 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
 
       <section id="benchmarks" className="section proof-section">
         <div className="section-heading">
-          <h2>Examples you can rerun.</h2>
+          <h2>Benchmarks you can read without guessing.</h2>
           <p>
-            The repo includes public FASTQ examples, commands, raw tables, and
-            comparator notes. The Yusa CRISPR repeats are included so the
-            numbers can be checked.
+            The repo includes public FASTQ examples, commands, raw tables,
+            generated graphs, and comparator notes. GPU results are shown as an
+            experimental evidence lane with zero-mismatch gates, while CPU
+            indexed assignment remains the production baseline.
           </p>
+        </div>
+        <div className="benchmark-reader-guide" aria-label="How to read DotMatch benchmarks">
+          <article>
+            <span>Compare like with like</span>
+            <p>Exact, Hamming k=1, and Levenshtein k=1 are separate lanes.</p>
+          </article>
+          <article>
+            <span>Check the comparator</span>
+            <p>MAGeCK exact, guide-counter one-mismatch, Cutadapt, Edlib, and hash baselines answer different questions.</p>
+          </article>
+          <article>
+            <span>Treat GPU as experimental</span>
+            <p>Metal rows must match CPU outputs before speed is considered useful.</p>
+          </article>
+        </div>
+        <div className="benchmark-figure-grid">
+          {benchmarkFigures.map((figure) => (
+            <figure key={figure.title} className="benchmark-figure">
+              <a href={figure.href} aria-label={`Open source report for ${figure.title}`}>
+                <img src={figure.image} alt={figure.alt} loading="lazy" decoding="async" />
+              </a>
+              <figcaption>
+                <span className="card-label">{figure.label}</span>
+                <strong>{figure.title}</strong>
+                <p>{figure.body}</p>
+              </figcaption>
+            </figure>
+          ))}
         </div>
         <div className="benchmark-grid">
           <article className="benchmark-card">
@@ -603,14 +698,14 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
               <span className="card-label">Public CRISPR example</span>
               <h3>CRISPR guide counting.</h3>
               <p>
-                Five repeats compare DotMatch, MAGeCK, and guide-counter on the
-                same public guide-counting example. Exact, Hamming, and
-                Levenshtein runs are kept separate.
+                Repeated public rows compare DotMatch exact against MAGeCK
+                exact, DotMatch Hamming k=1 against guide-counter one-mismatch,
+                and DotMatch Levenshtein k=1 as its own indel-rescue lane.
               </p>
             </div>
             <div className="link-stack compact">
-              <a href={barcodeBenchmarkUrl}>Barcode demux benchmark report</a>
               <a href={publicCrisprUrl}>Public CRISPR benchmark report</a>
+              <a href={`${repoUrl}/blob/main/docs/benchmarks/crispr_comparison/README.md`}>CRISPR comparison report</a>
             </div>
             <HorizontalBarChart
               rows={throughputRows}
@@ -749,9 +844,10 @@ DotMatch reports: ambiguous`}</code></pre>
           <h2>Install the native CLI from Bioconda.</h2>
           <p>
             Bioconda provides the native `dotmatch` command plus C
-            header/library artifacts on published platforms. Use a PyPI or
-            source Python install for `dotmatch assay`, `dotmatch barcode`, and
-            `dotmatch panel` workflow commands.
+            header/library artifacts on published platforms. Use a source
+            Python install, or PyPI after the tagged release is visible, for
+            `dotmatch assay`, `dotmatch barcode`, and `dotmatch panel` workflow
+            commands.
           </p>
         </div>
         <div className="launch-grid">
@@ -772,7 +868,7 @@ dotmatch dist ACGT AGGT`}</code></pre>
 
           <article className="launch-card">
             <span className="card-label">Python workflow layer</span>
-            <h3>Use PyPI or source installs.</h3>
+            <h3>Use source installs, then PyPI after release verification.</h3>
             <p>
               The workflow namespaces for assay specs, barcode autopsy, panel
               design, HTML reports, and Workbench-backed runs are not part of

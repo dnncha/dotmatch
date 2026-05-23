@@ -103,6 +103,25 @@ a {
   background: var(--ink);
 }
 
+.mobile-header-actions {
+  display: none;
+  gap: 0.55rem;
+  margin-left: auto;
+}
+
+.mobile-header-actions a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: #fff;
+  font-size: 0.86rem;
+  font-weight: 760;
+}
+
 .hero {
   display: grid;
   grid-template-columns: minmax(0, 0.84fr) minmax(460px, 1.16fr);
@@ -168,6 +187,21 @@ h1 {
   margin-top: 1.55rem;
   min-width: 0;
   flex-wrap: wrap;
+}
+
+.hero-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  margin-top: 0.85rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 720;
+}
+
+.hero-link-row a {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
 }
 
 .button {
@@ -964,6 +998,84 @@ h3 {
   line-height: 1.55;
 }
 
+.benchmark-reader-guide {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin-bottom: 1rem;
+  border: 1px solid var(--line);
+  background: var(--line);
+}
+
+.benchmark-reader-guide article {
+  min-height: 128px;
+  padding: 1rem;
+  background: #f7fbf9;
+}
+
+.benchmark-reader-guide span {
+  display: block;
+  margin-bottom: 0.65rem;
+  color: var(--ink);
+  font-weight: 850;
+}
+
+.benchmark-reader-guide p {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.52;
+}
+
+.benchmark-figure-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.benchmark-figure {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.benchmark-figure a {
+  display: block;
+  min-width: 0;
+  padding: 1rem;
+  border-bottom: 1px solid var(--line);
+  background: #fbfdfc;
+}
+
+.benchmark-figure img {
+  display: block;
+  width: 100%;
+  max-height: 360px;
+  height: auto;
+  object-fit: contain;
+}
+
+.benchmark-figure figcaption {
+  min-height: 172px;
+  padding: 1.1rem;
+}
+
+.benchmark-figure strong {
+  display: block;
+  margin-bottom: 0.7rem;
+  font-size: 1.35rem;
+  line-height: 1.12;
+}
+
+.benchmark-figure p {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.58;
+}
+
 .benchmark-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1374,6 +1486,10 @@ h3 {
     display: none;
   }
 
+  .mobile-header-actions {
+    display: flex;
+  }
+
   .hero,
   .real-workflow-card,
   .panel-design-layout,
@@ -1391,6 +1507,7 @@ h3 {
   }
 
   .evidence-strip,
+  .benchmark-reader-guide,
   .translation-grid,
   .usecase-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1398,6 +1515,7 @@ h3 {
 
   .launch-grid,
   .decision-grid,
+  .benchmark-figure-grid,
   .benchmark-grid,
   .benchmark-card.split,
   .panel-output-grid,
@@ -1441,6 +1559,7 @@ h3 {
   .panel-design-visual,
   .artifact-grid,
   .report-preview,
+  .benchmark-figure,
   .benchmark-card,
   .decision-card,
   .example-card,
@@ -1536,10 +1655,6 @@ h3 {
     padding-left: 0.95rem;
   }
 
-  .hero-actions .button.primary {
-    flex-basis: 100%;
-  }
-
   .panel-topline {
     gap: 0.75rem;
     flex-wrap: wrap;
@@ -1547,6 +1662,7 @@ h3 {
 
   .metric-grid,
   .evidence-strip,
+  .benchmark-reader-guide,
   .translation-grid,
   .panel-output-grid,
   .panel-check-grid,
