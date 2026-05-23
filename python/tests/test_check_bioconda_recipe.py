@@ -31,26 +31,48 @@ def _meta(version: str = "0.1.0") -> str:
         "  number: 0\n"
         "  run_exports:\n"
         "    - {{ pin_subpackage(\"dotmatch\", max_pin=\"x.x\") }}\n"
-        "  skip: true  # [win]\n\n"
+        "  skip: true  # [win or py<39]\n\n"
         "requirements:\n"
         "  build:\n"
         "    - {{ compiler('c') }}\n"
         "    - {{ stdlib('c') }}\n"
         "    - make\n"
         "  host:\n"
-        "    - zlib\n\n"
+        "    - python >=3.9\n"
+        "    - pip\n"
+        "    - setuptools >=77\n"
+        "    - wheel\n"
+        "    - zlib\n"
+        "  run:\n"
+        "    - python >=3.9\n"
+        "    - tomli  # [py<311]\n\n"
         "test:\n"
         "  commands:\n"
+        "    - python -c \"import dotmatch; assert dotmatch.distance('ACGT', 'AGGT') == 1\"\n"
+        "    - python -c \"from dotmatch.native import find_native_cli; p=find_native_cli(); assert p.name == 'dotmatch-native' and p.exists()\"\n"
         "    - dotmatch --version | grep '^dotmatch {{ version }}$'\n"
         "    - dotmatch dist ACGT AGGT | grep '^1$'\n"
         "    - dotmatch leq 1 ACGT AGGT | grep '^true$'\n"
+        "    - dotmatch --help | grep 'Workflow namespaces:'\n"
+        "    - dotmatch assay --help | grep 'dotmatch assay'\n"
+        "    - dotmatch barcode --help | grep 'dotmatch barcode'\n"
+        "    - dotmatch panel --help | grep 'dotmatch panel'\n"
         "    - test -f \"${PREFIX}/include/qdalign.h\"\n"
         "    - test -f \"${PREFIX}/lib/libdotmatch.a\"\n"
         "    - test -f \"${PREFIX}/lib/libdotmatch.so\" || test -f \"${PREFIX}/lib/libdotmatch.dylib\"\n"
+        "    - dotmatch assay init --template crispr --out assay.toml\n"
+        "    - grep 'assay_type = \"crispr\"' assay.toml\n"
         "    - printf 'target_id\\ttarget_seq\\nbc0\\tACGT\\n' > targets.tsv\n"
         "    - printf '@r0\\nACGT\\n+\\nIIII\\n' > reads.fastq\n"
         "    - dotmatch count --targets targets.tsv --reads reads.fastq --sample-label sample --target-start 0 --target-length 4 --k 0 --metric hamming --out counts.tsv\n"
         "    - awk -F '\\t' 'NR==2 { exit !($1==\"bc0\" && $2==\"ACGT\" && $3==\"\" && $4==\"0\" && $5==\"1\" && $10==\"1\") }' counts.tsv\n\n"
+        "    - printf 'barcode_id\\tbarcode_seq\\ns1\\tACGT\\ns2\\tTTTT\\n' > barcodes.tsv\n"
+        "    - printf '@r1\\nNACGTAAAA\\n+\\nIIIIIIIII\\n@r2\\nNTTTTAAAA\\n+\\nIIIIIIIII\\n' > barcode_reads.fastq\n"
+        "    - dotmatch barcode infer --barcodes barcodes.tsv --reads barcode_reads.fastq --scan-starts 0:2 --barcode-length 4 --sample-reads 10 --out offset_scan.tsv --summary barcode_summary.json\n"
+        "    - grep '\"recommended_start\": 1' barcode_summary.json\n"
+        "    - dotmatch panel design --n 2 --length 4 --candidate-pool-size 100 --restarts 1 --min-hamming-distance 2 --min-levenshtein-distance 2 --out-dir panel_out\n"
+        "    - test -f panel_out/barcodes.tsv\n"
+        "    - test -f panel_out/design_report.json\n\n"
         "about:\n"
         "  home: https://github.com/dnncha/dotmatch\n"
         "  license: Apache-2.0\n"
@@ -76,12 +98,12 @@ def _build() -> str:
         '  CC="${CC}" \\\n'
         '  CFLAGS="${CFLAGS:-} ${CPPFLAGS:-} -std=c11 -Wall -Wextra -Wpedantic -Iinclude" \\\n'
         '  LDFLAGS="${LDFLAGS:-}" \\\n'
-        "  dotmatch libdotmatch.a shared\n\n"
+        "  libdotmatch.a shared\n\n"
         'mkdir -p "${PREFIX}/bin" \\\n'
         '         "${PREFIX}/include" \\\n'
         '         "${PREFIX}/lib" \\\n'
         '         "${PREFIX}/share/${PKG_NAME}"\n\n'
-        'install -m 755 dotmatch "${PREFIX}/bin/dotmatch"\n'
+        '${PYTHON} -m pip install . -vv --no-deps --no-build-isolation\n\n'
         'install -m 644 include/qdalign.h "${PREFIX}/include/qdalign.h"\n'
         'install -m 644 libdotmatch.a "${PREFIX}/lib/libdotmatch.a"\n'
         'install -m 644 LICENSE "${PREFIX}/share/${PKG_NAME}/LICENSE"\n\n'
@@ -166,7 +188,7 @@ def test_bioconda_recipe_requires_native_install_steps(tmp_path):
     checker = _load_checker()
     build = (
         _build()
-        .replace('install -m 755 dotmatch "${PREFIX}/bin/dotmatch"\n', "")
+        .replace('${PYTHON} -m pip install . -vv --no-deps --no-build-isolation\n\n', "")
         .replace('install -m 644 include/qdalign.h "${PREFIX}/include/qdalign.h"\n', "")
         .replace('install -m 644 libdotmatch.a "${PREFIX}/lib/libdotmatch.a"\n', "")
         .replace('install -m 644 LICENSE "${PREFIX}/share/${PKG_NAME}/LICENSE"\n', "")
@@ -177,7 +199,7 @@ def test_bioconda_recipe_requires_native_install_steps(tmp_path):
 
     result = checker.audit(tmp_path)
 
-    assert any("dotmatch" in failure for failure in result.failures)
+    assert any("Python console script" in failure for failure in result.failures)
     assert any("qdalign.h" in failure for failure in result.failures)
     assert any("libdotmatch.a" in failure for failure in result.failures)
     assert any("LICENSE" in failure for failure in result.failures)

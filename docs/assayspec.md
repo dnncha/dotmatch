@@ -5,9 +5,9 @@ does not replace the native matching/counting code; it validates a declarative
 spec, writes reproducible run files, prints the native commands it will execute,
 and records an `assay_manifest.json` beside the outputs.
 
-AssaySpec is part of the Python package surface. Use a PyPI/source Python
-install for `dotmatch assay ...`; the current Bioconda recipe intentionally
-installs the native CLI and C library/header only.
+AssaySpec is part of the Python package surface. PyPI/source installs and the
+Python-enabled Bioconda recipe expose `dotmatch assay ...` through the standard
+`dotmatch` console script.
 
 ## Commands
 

@@ -418,8 +418,13 @@ def command_assay(argv: Sequence[str]) -> int:
     autopsy.add_argument("spec")
     autopsy.add_argument("--out-dir", required=True)
 
-    for name in ["check", "plan", "run"]:
-        child = sub.add_parser(name)
+    workflow_help = {
+        "check": "validate an AssaySpec and write preflight reliability artifacts",
+        "plan": "print the native commands and outputs for an AssaySpec",
+        "run": "run an AssaySpec workflow and write reports, manifests, and outputs",
+    }
+    for name, help_text in workflow_help.items():
+        child = sub.add_parser(name, help=help_text)
         child.add_argument("spec")
 
     args = parser.parse_args(list(argv))

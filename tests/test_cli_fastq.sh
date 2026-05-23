@@ -32,8 +32,10 @@ cp "$TMPDIR/help---help.txt" "$TMPDIR/help.txt"
 grep "DotMatch $EXPECTED_VERSION" "$TMPDIR/help.txt" >/dev/null
 grep "Counting and demultiplexing:" "$TMPDIR/help.txt" >/dev/null
 grep "Assignment outcomes:" "$TMPDIR/help.txt" >/dev/null
-grep "Packaging note:" "$TMPDIR/help.txt" >/dev/null
-grep "dotmatch assay" "$TMPDIR/help.txt" >/dev/null
+if grep "Packaging note:" "$TMPDIR/help.txt" >/dev/null; then
+  echo "native help must not include packaging policy notes" >&2
+  exit 1
+fi
 
 cat > "$TMPDIR/barcodes.tsv" <<'BARCODES'
 bc0	ACGT

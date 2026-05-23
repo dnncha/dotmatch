@@ -34,6 +34,26 @@ def test_cli_reports_package_version():
     assert rc.stderr == ""
 
 
+def test_cli_top_level_help_lists_python_namespaces():
+    rc = subprocess.run(
+        [sys.executable, "-m", "dotmatch.cli", "--help"],
+        check=False,
+        env=LEGACY_ENV,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    assert rc.returncode == 0, rc.stderr
+    assert rc.stderr == ""
+    assert f"DotMatch {_pyproject_version()}" in rc.stdout
+    assert "Workflow namespaces:" in rc.stdout
+    assert "  assay" in rc.stdout
+    assert "  barcode" in rc.stdout
+    assert "  panel" in rc.stdout
+    assert "Packaging note:" not in rc.stdout
+
+
 def _write_fixture_files(tmp_path: Path):
     targets = tmp_path / "targets.tsv"
     targets.write_text(

@@ -41,21 +41,24 @@ SHA256 for the tagged GitHub release tarball. Run `make bioconda-recipe-ready`
 before that copy so the checked-in template stays aligned with the release
 version, native install steps, CLI smoke tests, and scope notes.
 
-The current Bioconda recipe intentionally packages the native `dotmatch` CLI,
-header, static library, shared library, and license. It does not install the
-Python package, Python console entry points, Workbench, browser assets, or the
-Python workflow layer behind `dotmatch assay ...`, `dotmatch barcode ...`, and
-`dotmatch panel ...`. Use PyPI/source Python installs for that surface.
+The current Bioconda recipe installs the Python `dotmatch` console script as
+the user-facing command, with the native executable bundled inside the Python
+package as `dotmatch-native`. It also installs the public C header, static
+library, shared library, and license. Workbench and browser assets remain
+outside the Bioconda recipe.
 
 The recipe needs:
 
 - `make`;
 - `{{ compiler('c') }}` and `{{ stdlib('c') }}`;
-- host `zlib`, with runtime library dependencies inferred by Conda;
+- host `python`, `pip`, `setuptools`, `wheel`, and `zlib`, with runtime library
+  dependencies inferred by Conda;
+- run `python`, plus `tomli` for Python versions before 3.11;
 - `run_exports` because the package installs a header and shared library;
 - runtime tests for `dotmatch --version`, `dotmatch dist ACGT AGGT`,
-  `dotmatch leq 1 ACGT AGGT`, installed C artifacts, and a tiny native
-  `dotmatch count` smoke test.
+  `dotmatch leq 1 ACGT AGGT`, Python import/native discovery, installed C
+  artifacts, namespace help for `dotmatch assay`, `dotmatch barcode`, and
+  `dotmatch panel`, and tiny installed-package workflow smoke tests.
 
 The native CLI exposes `dotmatch --version`, so the Bioconda recipe and
 post-release Bioconda install verifier should check version output as well as

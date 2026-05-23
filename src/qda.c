@@ -20,7 +20,7 @@
 #include <zlib.h>
 
 #ifndef DOTMATCH_VERSION
-#define DOTMATCH_VERSION "0.1.3"
+#define DOTMATCH_VERSION "0.1.4"
 #endif
 
 #define MAX_AUTO_OFFSET 1024
@@ -139,12 +139,6 @@ static void help_manual(FILE *out, const char *argv0) {
     fprintf(out, "      --target-start 23 --target-length 20 --k 1 --metric hamming --out counts.tsv\n");
     fprintf(out, "  %s demux --barcodes barcodes.tsv --reads pooled.fastq.gz \\\n", argv0);
     fprintf(out, "      --barcode-start 0 --barcode-length auto --k 0 --out-dir demuxed\n");
-    fprintf(out, "\n");
-    fprintf(out, "Packaging note:\n");
-    fprintf(out, "  The Bioconda package installs this native CLI plus C header/library artifacts.\n");
-    fprintf(out, "  The Python workflow layer, including dotmatch assay, barcode/panel convenience\n");
-    fprintf(out, "  namespaces, reliability reports, and Workbench-backed workflows, requires a\n");
-    fprintf(out, "  PyPI or source Python install.\n");
 }
 
 static char *xstrndup(const char *s, size_t n) {

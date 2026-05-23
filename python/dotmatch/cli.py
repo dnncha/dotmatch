@@ -2014,8 +2014,76 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def print_top_level_help() -> None:
+    print(
+        f"""DotMatch {__version__}
+
+Deterministic known-target short-DNA assignment for fixed read windows.
+DotMatch is for cases where the expected guides, barcodes, primers, or
+panel targets are already known. It is not a genome aligner, basecaller,
+variant caller, adapter trimmer, cell/UMI quantifier, or screen statistics tool.
+
+Usage:
+  dotmatch --help
+  dotmatch --version
+  dotmatch <command> [options]
+
+Core commands:
+  dist SEQ1 SEQ2
+      Print the global edit distance between two short DNA strings.
+  leq K SEQ1 SEQ2
+      Print true when the edit distance is <= K, otherwise false.
+  count --targets targets.tsv|targets.csv --reads reads.fastq[.gz] \\
+      --sample-label sample --target-start N --target-length L \\
+      --k 0|1|2 --metric hamming|levenshtein --out counts.tsv
+      Count fixed-window target assignments.
+  demux --barcodes barcodes.tsv|barcodes.csv --reads reads.fastq[.gz] \\
+      --barcode-start N --barcode-length L|auto --k 0|1|2 --out-dir demux_dir
+      Split reads by fixed-position inline barcodes.
+
+Workflow namespaces:
+  assay
+      Validate, plan, and run AssaySpec TOML workflows.
+  barcode
+      Infer barcode windows, audit barcode sets, demultiplex reads, and write autopsy reports.
+  panel
+      Design, certify, simulate, lay out, and export barcode panels.
+  crispr
+      Convenience commands for CRISPR guide-count workflows.
+
+Diagnostics and validation:
+  audit --targets targets.tsv|targets.csv --k K --out-dir audit_dir
+      Report nearby target pairs that make correction ambiguous or unsafe.
+  inspect-unmatched --targets targets.tsv|targets.csv --reads reads.fastq[.gz] \\
+      --target-start N --target-length L --k 0|1 --top N --out top_unmatched.tsv
+      Summarize the most frequent unmatched read windows.
+  validate --targets targets.tsv|targets.csv --reads reads.fastq[.gz] \\
+      --target-start N --target-length L --k 0|1 --oracle scan|edlib
+      Compare indexed assignment with a validation oracle.
+
+Assignment outcomes:
+  unique       exactly one target is compatible with the read window
+  ambiguous    more than one target is compatible; not silently forced
+  none         no target is close enough
+  invalid      the requested read window cannot be extracted
+
+Examples:
+  dotmatch dist ACGT AGGT
+  dotmatch leq 1 ACGT AGGT
+  dotmatch count --targets guides.tsv --reads sample.fastq.gz --sample-label sample \\
+      --target-start 23 --target-length 20 --k 1 --metric hamming --out counts.tsv
+  dotmatch assay check assay.toml
+  dotmatch barcode infer --barcodes barcodes.tsv --reads pooled.fastq.gz --out offset_scan.tsv
+  dotmatch panel design --preset illumina-inline-96 --out-dir panel
+"""
+    )
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     raw_args = list(sys.argv[1:] if argv is None else argv)
+    if raw_args and raw_args[0] in {"-h", "--help", "help"}:
+        print_top_level_help()
+        return 0
     if raw_args and raw_args[0] == "assay":
         return command_assay(raw_args[1:])
     if raw_args and raw_args[0] == "crispr":

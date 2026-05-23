@@ -32,7 +32,7 @@ def test_bioconda_recipe_tracks_release_metadata() -> None:
     assert "recipe-maintainers:" in text
 
 
-def test_bioconda_recipe_builds_native_cli_and_smoke_tests() -> None:
+def test_bioconda_recipe_builds_python_console_script_and_smoke_tests() -> None:
     recipe = (ROOT / "packaging" / "bioconda" / "meta.yaml").read_text(encoding="utf-8")
     build = (ROOT / "packaging" / "bioconda" / "build.sh").read_text(encoding="utf-8")
 
@@ -40,13 +40,23 @@ def test_bioconda_recipe_builds_native_cli_and_smoke_tests() -> None:
     assert "- {{ stdlib('c') }}" in recipe
     assert "{{ pin_subpackage(\"dotmatch\", max_pin=\"x.x\") }}" in recipe
     assert "- make" in recipe
+    assert "- python >=3.9" in recipe
+    assert "- pip" in recipe
+    assert "- setuptools >=77" in recipe
     assert "- zlib" in recipe
     assert "dotmatch dist ACGT AGGT | grep '^1$'" in recipe
     assert "dotmatch leq 1 ACGT AGGT | grep '^true$'" in recipe
+    assert "dotmatch assay --help" in recipe
+    assert "dotmatch barcode --help" in recipe
+    assert "dotmatch panel --help" in recipe
+    assert "dotmatch assay init" in recipe
+    assert "dotmatch barcode infer" in recipe
+    assert "dotmatch panel design" in recipe
     assert "dotmatch count --help" not in recipe
     assert 'CC="${CC}"' in build
-    assert "dotmatch libdotmatch.a shared" in build
-    assert 'install -m 755 dotmatch "${PREFIX}/bin/dotmatch"' in build
+    assert "libdotmatch.a shared" in build
+    assert "${PYTHON} -m pip install . -vv --no-deps --no-build-isolation" in build
+    assert 'install -m 755 dotmatch "${PREFIX}/bin/dotmatch"' not in build
     assert 'install -m 644 include/qdalign.h "${PREFIX}/include/qdalign.h"' in build
 
 

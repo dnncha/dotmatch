@@ -14,10 +14,9 @@ amplicon-panel starts, whitelist-style assays, and barcode panel design for
 known-target assignment. It is not a genome aligner, a basecaller, a UMI entropy
 generator, or a replacement for downstream screen statistics.
 
-Package scope: Bioconda installs the native `dotmatch` CLI and C library. The
-examples that use `dotmatch barcode`, `dotmatch panel`, `dotmatch assay`, Python
-imports, or HTML workflow reports require a source Python install until the
-tagged PyPI release is visible.
+Package scope: Bioconda installs the `dotmatch` CLI, Python workflow namespaces,
+Python imports, and C header/library artifacts. The Workbench desktop app is a
+separate local application and is not part of the Bioconda recipe.
 
 ![DotMatch workflow: FASTQ reads and a known target table are sliced at the same read position, assigned to known short DNA targets, and written to counts, split FASTQs, QC tables, and reports.](public/dotmatch-read-assignment.svg)
 
@@ -191,11 +190,10 @@ tagged release is visible on PyPI. For Linux wheels, the GitHub release workflow
 builds and smoke-tests repaired manylinux/musllinux wheel artifacts before any
 wheel is considered for PyPI.
 
-Bioconda currently provides the native `dotmatch` command-line tool and C
-library artifacts. The Python workflow layer, including `dotmatch assay ...`,
-barcode/panel convenience namespaces, reliability reports, and Python imports,
-is available from source Python installs, and from PyPI after release
-verification, rather than the native Bioconda recipe.
+Bioconda provides the `dotmatch` command-line tool, Python workflow namespaces,
+Python imports, and C header/library artifacts. The installed `dotmatch` console
+script exposes the native assignment commands plus `dotmatch assay ...`,
+`dotmatch barcode ...`, and `dotmatch panel ...`.
 
 Optional local Workbench: DotMatch also includes a desktop Workbench under
 `apps/workbench` for local AssaySpec design, inference, planning, running, and

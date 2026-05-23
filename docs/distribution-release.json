@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
   "status": "not_released",
-  "release_version": "0.1.3",
+  "release_version": "0.1.4",
   "post_release_gate": "make distribution-channels",
   "channels": [
     {
       "id": "pypi",
       "status": "prepared",
-      "expected_url": "https://pypi.org/project/dotmatch/0.1.3/",
+      "expected_url": "https://pypi.org/project/dotmatch/0.1.4/",
       "verification_command": "make distribution-channels",
-      "blocker": "The 0.1.3 source distribution, native macOS wheel, and repaired manylinux/musllinux wheels have not been published to PyPI yet.",
+      "blocker": "The 0.1.4 source distribution, native macOS wheel, and repaired manylinux/musllinux wheels have not been published to PyPI yet.",
       "next_action": "Publish the tagged source distribution, native macOS wheel, and repaired Linux wheels through PyPI trusted publishing, then rerun make distribution-channels."
     },
     {
@@ -18,15 +18,15 @@
       "expected_url": "https://anaconda.org/bioconda/dotmatch",
       "recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/65367",
       "verification_command": "make distribution-channels",
-      "blocker": "The public Bioconda channel currently carries DotMatch 0.1.2. The 0.1.3 recipe update has not been submitted, merged, and propagated yet.",
-      "next_action": "After tagging v0.1.3, copy the recipe template to bioconda-recipes, replace the source SHA256, keep the native-only package scope, and rerun make distribution-channels after channel propagation."
+      "blocker": "The public Bioconda channel currently carries DotMatch 0.1.2. The 0.1.4 recipe update has not been submitted, merged, and propagated yet.",
+      "next_action": "After tagging v0.1.4, copy the recipe template to bioconda-recipes, replace the source SHA256, keep the Python console-script package scope, and rerun make distribution-channels after channel propagation."
     },
     {
       "id": "ghcr",
       "status": "prepared",
       "expected_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "The GHCR image for version 0.1.3 has not been published from an immutable tag yet.",
+      "blocker": "The GHCR image for version 0.1.4 has not been published from an immutable tag yet.",
       "next_action": "Push the release tag, confirm the GHCR image label and runtime smoke tests, then rerun make distribution-channels."
     },
     {
@@ -34,8 +34,8 @@
       "status": "prepared",
       "expected_url": "https://quay.io/repository/biocontainers/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "The BioContainers image for version 0.1.3 is not available until the Bioconda package update is accepted.",
-      "next_action": "After Bioconda accepts 0.1.3, wait for BioContainers publication and rerun make distribution-channels."
+      "blocker": "The BioContainers image for version 0.1.4 is not available until the Bioconda package update is accepted.",
+      "next_action": "After Bioconda accepts 0.1.4, wait for BioContainers publication and rerun make distribution-channels."
     },
     {
       "id": "zenodo",
@@ -47,7 +47,7 @@
     }
   ],
   "blockers": [
-    "DotMatch 0.1.3 has not been executed across PyPI, Bioconda, GHCR/BioContainers, and Zenodo."
+    "DotMatch 0.1.4 has not been executed across PyPI, Bioconda, GHCR/BioContainers, and Zenodo."
   ],
-  "next_action": "Complete the 0.1.3 public release flow, replace expected URLs with verified public and evidence URLs, set channels to verified, and rerun make distribution-channels."
+  "next_action": "Complete the 0.1.4 public release flow, replace expected URLs with verified public and evidence URLs, set channels to verified, and rerun make distribution-channels."
 }

@@ -82,11 +82,16 @@ def _check_meta(meta: str, result: AuditResult) -> None:
         ),
         ("sha256: {{ sha256 }}", "Bioconda recipe must wire source sha256 through the Jinja sha256 variable"),
         ('{{ pin_subpackage("dotmatch", max_pin="x.x") }}', "Bioconda recipe must export a compatible shared-library runtime pin"),
-        ("skip: true  # [win]", "Bioconda recipe must skip unsupported Windows builds"),
+        ("skip: true  # [win or py<39]", "Bioconda recipe must skip unsupported Windows and Python builds"),
         ("{{ compiler('c') }}", "Bioconda recipe must request the C compiler"),
         ("{{ stdlib('c') }}", "Bioconda recipe must request the C standard library"),
         ("- make", "Bioconda recipe must include make in build requirements"),
+        ("- python >=3.9", "Bioconda recipe must include Python >=3.9"),
+        ("- pip", "Bioconda recipe must include pip in host requirements"),
+        ("- setuptools >=77", "Bioconda recipe must include setuptools >=77 in host requirements"),
+        ("- wheel", "Bioconda recipe must include wheel in host requirements"),
         ("- zlib", "Bioconda recipe must include host zlib"),
+        ("- tomli  # [py<311]", "Bioconda recipe must include tomli for Python <3.11"),
         ("license: Apache-2.0", "Bioconda recipe must declare Apache-2.0 license"),
         ("license_file: LICENSE", "Bioconda recipe must install and declare LICENSE"),
         ("recipe-maintainers:", "Bioconda recipe must declare recipe maintainers"),
@@ -102,6 +107,14 @@ def _check_meta(meta: str, result: AuditResult) -> None:
         "dotmatch --version",
         "dotmatch dist ACGT AGGT",
         "dotmatch leq 1 ACGT AGGT",
+        "dotmatch --help",
+        "dotmatch assay --help",
+        "dotmatch barcode --help",
+        "dotmatch panel --help",
+        "dotmatch assay init",
+        "dotmatch barcode infer",
+        "dotmatch panel design",
+        "from dotmatch.native import find_native_cli",
         "dotmatch count --targets targets.tsv",
         "test -f \"${PREFIX}/include/qdalign.h\"",
         "test -f \"${PREFIX}/lib/libdotmatch.a\"",
@@ -119,12 +132,12 @@ def _check_build(build: str, result: AuditResult) -> None:
         ('CC="${CC}"', "Bioconda build.sh must use Conda's C compiler"),
         ("CPPFLAGS", "Bioconda build.sh must include Conda preprocessor flags"),
         ("LDFLAGS", "Bioconda build.sh must include Conda linker flags"),
-        ("dotmatch libdotmatch.a shared", "Bioconda build.sh must build CLI, static library, and shared library"),
+        ("libdotmatch.a shared", "Bioconda build.sh must build static and shared libraries"),
+        ('${PYTHON} -m pip install . -vv --no-deps --no-build-isolation', "Bioconda build.sh must install the Python console script"),
         ('"${PREFIX}/bin"', "Bioconda build.sh must create the bin install directory"),
         ('"${PREFIX}/include"', "Bioconda build.sh must create the include install directory"),
         ('"${PREFIX}/lib"', "Bioconda build.sh must create the lib install directory"),
         ('"${PREFIX}/share/${PKG_NAME}"', "Bioconda build.sh must create the package share directory"),
-        ('install -m 755 dotmatch "${PREFIX}/bin/dotmatch"', "Bioconda build.sh must install dotmatch"),
         ('install -m 644 include/qdalign.h "${PREFIX}/include/qdalign.h"', "Bioconda build.sh must install qdalign.h"),
         ('install -m 644 libdotmatch.a "${PREFIX}/lib/libdotmatch.a"', "Bioconda build.sh must install libdotmatch.a"),
         ('install -m 644 LICENSE "${PREFIX}/share/${PKG_NAME}/LICENSE"', "Bioconda build.sh must install LICENSE"),
@@ -133,6 +146,8 @@ def _check_build(build: str, result: AuditResult) -> None:
     ]
     for fragment, message in required_fragments:
         _require(build, fragment, message, result)
+    if 'install -m 755 dotmatch "${PREFIX}/bin/dotmatch"' in build:
+        result.failures.append("Bioconda build.sh must let the Python console script own ${PREFIX}/bin/dotmatch")
     if "uname -s" not in build or "Darwin" not in build:
         result.failures.append("Bioconda build.sh must branch shared-library install by platform")
 

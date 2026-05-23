@@ -2,6 +2,23 @@
 
 All notable user-facing changes are tracked here. Public statements in release notes must stay aligned with `docs/scientific-claims.md`.
 
+## 0.1.4 - 2026-05-23
+
+### Changed
+
+- Bioconda packaging now installs the Python `dotmatch` console script so
+  `dotmatch assay`, `dotmatch barcode`, and `dotmatch panel` are available from
+  the Bioconda package alongside the native assignment commands.
+- Top-level Python help now lists the workflow namespaces, and native help no
+  longer includes package-channel policy notes.
+- Python native builds now honor Conda `CPPFLAGS` and `LDFLAGS` during wheel and
+  source-install builds.
+
+### Fixed
+
+- `dotmatch assay --help` now describes the `check`, `plan`, and `run`
+  subcommands.
+
 ## 0.1.3 - 2026-05-22
 
 ### Added
