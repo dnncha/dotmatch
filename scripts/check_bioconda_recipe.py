@@ -114,6 +114,7 @@ def _check_meta(meta: str, result: AuditResult) -> None:
         "dotmatch assay init",
         "dotmatch barcode infer",
         "dotmatch panel design",
+        "chmod -R a+rwX panel_out",
         "from dotmatch.native import find_native_cli",
         "dotmatch count --targets targets.tsv",
         "test -f \"${PREFIX}/include/qdalign.h\"",
