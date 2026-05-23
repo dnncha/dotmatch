@@ -57,8 +57,21 @@ static void packed_hamming_tests(void) {
                                                  "TCGTACGTACGTACGA", 16, 1) == -1);
 }
 
+static void hamming_seed_index_build_tests(void) {
+    const char *targets[] = {"ACGTACGT", "ACGTTCGT", "A", "NNNN"};
+    size_t target_lens[] = {8, 8, 1, 4};
+    qdaln_index *idx = qdaln_index_build(targets, target_lens, 4);
+
+    assert(idx != NULL);
+    assert(idx->hamming_seed_ready == 1);
+    assert(idx->n_hamming_seeds == 4);
+    assert(idx->hamming_seed_hash_cap >= 8);
+    qdaln_index_free(idx);
+}
+
 int main(void) {
     packed_hamming_tests();
+    hamming_seed_index_build_tests();
     assert_k1_leq_no_heap("ACGT", 4, "ACGT", 4, 1);
     assert_k1_leq_no_heap("ACGT", 4, "ACGA", 4, 1);
     assert_k1_leq_no_heap("ACGT", 4, "ACGTT", 5, 1);

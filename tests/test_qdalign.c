@@ -383,6 +383,41 @@ static void hamming_single_unknown_uses_index_tests(void) {
     qdaln_index_free(idx);
 }
 
+static void hamming_seed_index_semantics_tests(void) {
+    const char *targets[] = {
+        "ACGTACGT",
+        "ACGTACGT",
+        "ACGTACGA",
+        "TTTTTTTT",
+        "ACGTTCGT",
+        "CCCCCCCN",
+    };
+    size_t target_lens[] = {8, 8, 8, 8, 8, 8};
+    const char *reads[] = {"ACGTACGT", "ACGTACGC", "TTTTTTTA", "CCCCCCCC"};
+    size_t read_lens[] = {8, 8, 8, 8};
+    qdaln_match_result scan[4];
+    qdaln_match_result indexed[4];
+    qdaln_index_stats stats;
+
+    qdaln_index *idx = qdaln_index_build(targets, target_lens, 6);
+    assert(idx != NULL);
+    assert(qdaln_match_many(reads, read_lens, 4, targets, target_lens, 6, 1, scan) == 0);
+    assert(qdaln_index_assign_hamming_stats(idx, reads, read_lens, 4, 1, indexed, &stats) == 0);
+    for (size_t i = 0; i < 4; ++i) assert_match_result(indexed[i], scan[i]);
+    assert(indexed[0].status == QDALN_MATCH_AMBIGUOUS);
+    assert(indexed[0].best_distance == 0);
+    assert(indexed[0].second_best_distance == 1);
+    assert(indexed[0].match_count == 4);
+    assert(indexed[1].status == QDALN_MATCH_AMBIGUOUS);
+    assert(indexed[1].best_distance == 1);
+    assert(indexed[2].status == QDALN_MATCH_UNIQUE);
+    assert(indexed[3].status == QDALN_MATCH_UNIQUE);
+    assert(indexed[3].best_distance == 1);
+    assert(indexed[3].target_index == 5);
+    assert(stats.candidates_considered == stats.candidates_verified);
+    qdaln_index_free(idx);
+}
+
 static void levenshtein_non_acgt_indel_uses_index_tests(void) {
     const char *targets[] = {"ACGT", "TGCA"};
     size_t target_lens[] = {4, 4};
@@ -685,6 +720,7 @@ int main(void) {
     levenshtein_k1_avoids_false_deletion_seed_candidates_tests();
     levenshtein_k2_uses_index_without_full_scan_tests();
     hamming_single_unknown_uses_index_tests();
+    hamming_seed_index_semantics_tests();
     levenshtein_non_acgt_indel_uses_index_tests();
     index_status_shortcut_stops_after_ambiguity_tests();
     large_panel_oracle_tests();
