@@ -13,6 +13,7 @@
 #include <limits.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <regex.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/wait.h>
@@ -63,6 +64,7 @@ static void usage(const char *argv0) {
     fprintf(stderr, "  %s bcl-validate --dotmatch-out DIR --truth-out DIR\n", argv0);
     fprintf(stderr, "  %s count --targets targets.tsv|targets.csv --reads reads.fastq[.gz] [--reads more.fastq.gz] --sample-label labels --target-start N --target-length L --k 0|1|2 --metric hamming|levenshtein [--hamming-index auto|query|precompute] [--max-correction-qual Q] [--ambiguity-policy radius|best] --offset-mode best|multi --out counts.tsv [--format dotmatch|mageck]\n", argv0);
     fprintf(stderr, "  %s crispr-count --library guides.tsv|guides.csv --samples samples.tsv --guide-start N --guide-length L --k 0|1|2 [--ambiguity-policy radius|best] --out counts.tsv [--summary qc.json]\n", argv0);
+    fprintf(stderr, "  %s guide-counter count --input reads.fastq[.gz]... --library guides.tsv|guides.csv --output prefix [--samples labels...] [--exact-match]\n", argv0);
     fprintf(stderr, "  %s inspect-unmatched --targets targets.tsv|targets.csv --reads reads.fastq[.gz] --target-start N --target-length L --k 0|1 --top N --out top_unmatched.tsv [--low-quality-threshold Q]\n", argv0);
     fprintf(stderr, "  %s audit --targets targets.tsv|targets.csv --k 1 --out-dir audit_dir [--audit-mode auto|exact|fast]\n", argv0);
     fprintf(stderr, "  %s validate --targets targets.tsv|targets.csv --reads reads.fastq[.gz] --target-start N --target-length L --k 0|1 [--metric hamming|levenshtein] [--indel-window 0|1] [--offset-mode best|multi] [--threads N] --oracle scan|edlib\n", argv0);
@@ -100,6 +102,9 @@ static void help_manual(FILE *out, const char *argv0) {
     fprintf(out, "  crispr-count --library guides.tsv|guides.csv --samples samples.tsv \\\n");
     fprintf(out, "      --guide-start N --guide-length L --k 0|1|2 --out counts.tsv\n");
     fprintf(out, "      Convenience wrapper for guide-counting sample sheets.\n");
+    fprintf(out, "  guide-counter count --input reads.fastq[.gz]... --library guides.tsv|guides.csv \\\n");
+    fprintf(out, "      --output prefix [--samples labels...] [--exact-match]\n");
+    fprintf(out, "      GuideCounter-compatible count, extended-counts, and stats outputs.\n");
     fprintf(out, "  demux --barcodes barcodes.tsv|barcodes.csv --reads reads.fastq[.gz] \\\n");
     fprintf(out, "      --barcode-start N --barcode-length L|auto --k 0|1|2 --out-dir demux_dir\n");
     fprintf(out, "      Split reads by fixed-position inline barcodes.\n");
@@ -372,8 +377,10 @@ static int read_target_table(const char *path, seq_table *table) {
         size_t nf = split_fields(buf, delim, fields, 16);
         if (first_data) {
             int maybe_id = find_column(fields, nf, "id", "target_id", "barcode_id");
+            if (maybe_id < 0) maybe_id = find_column(fields, nf, "guide", NULL, NULL);
             if (maybe_id < 0) maybe_id = find_column(fields, nf, "sgRNAID", "sgrnaid", "guide_id");
             int maybe_seq = find_column(fields, nf, "gRNA.sequence", "target_seq", "sequence");
+            if (maybe_seq < 0) maybe_seq = find_column(fields, nf, "bases", NULL, NULL);
             if (maybe_seq < 0) maybe_seq = find_column(fields, nf, "Seq", "seq", "barcode_seq");
             if (maybe_seq < 0) maybe_seq = find_column(fields, nf, "guide_seq", "sgRNA.sequence", "sgrna_sequence");
             int maybe_gene = find_column(fields, nf, "Gene", "gene", NULL);
@@ -4268,6 +4275,503 @@ fail_args:
     return 2;
 }
 
+static int string_list_contains_exact(const string_list *list, const char *s) {
+    if (list == NULL || s == NULL) return 0;
+    for (size_t i = 0; i < list->count; ++i) {
+        if (strcmp(list->items[i], s) == 0) return 1;
+    }
+    return 0;
+}
+
+static int read_first_column_values(const char *path, string_list *values) {
+    if (path == NULL) return 0;
+    fastq_reader reader = {0};
+    if (fastq_reader_open(&reader, path) != 0) return -1;
+    char buf[8192];
+    size_t len = 0;
+    int rc = 0;
+    while ((rc = fastq_getline_len(&reader, buf, sizeof(buf), &len)) > 0) {
+        (void)len;
+        trim_line(buf);
+        if (buf[0] == '\0' || buf[0] == '#') continue;
+        char *tab = strchr(buf, '\t');
+        if (tab != NULL) *tab = '\0';
+        if (push_string(values, buf) != 0) {
+            fastq_reader_close(&reader);
+            return -1;
+        }
+    }
+    fastq_reader_close(&reader);
+    return rc < 0 ? -1 : 0;
+}
+
+static int guide_counter_push_sample_name(string_list *labels, const char *path, size_t idx) {
+    const char *base = path_basename(path);
+    char fallback[32];
+    if (base == NULL || base[0] == '\0') {
+        int n = snprintf(fallback, sizeof(fallback), "s%zu", idx + 1);
+        if (n < 0 || (size_t)n >= sizeof(fallback)) return -1;
+        return push_string(labels, fallback);
+    }
+    char *name = xstrndup(base, strlen(base));
+    if (name == NULL) return -1;
+    if (ends_with(name, ".gz")) name[strlen(name) - 3] = '\0';
+    if (ends_with(name, ".fastq")) {
+        name[strlen(name) - 6] = '\0';
+    } else if (ends_with(name, ".fq")) {
+        name[strlen(name) - 3] = '\0';
+    }
+    int rc = push_string(labels, name);
+    free(name);
+    return rc;
+}
+
+static const char *guide_counter_type_for_target(const seq_record *target, const string_list *essential_genes,
+                                                 const string_list *nonessential_genes,
+                                                 const string_list *control_guides,
+                                                 regex_t *control_re) {
+    if (string_list_contains_exact(essential_genes, target->gene)) return "Essential";
+    if (string_list_contains_exact(nonessential_genes, target->gene)) return "Nonessential";
+    if (string_list_contains_exact(control_guides, target->id)) return "Control";
+    if (control_re != NULL &&
+        (regexec(control_re, target->id, 0, NULL, 0) == 0 ||
+         regexec(control_re, target->gene, 0, NULL, 0) == 0)) {
+        return "Control";
+    }
+    return "Other";
+}
+
+static int parse_ull_value(const char *s, unsigned long long *out) {
+    char *end = NULL;
+    unsigned long long v = strtoull(s, &end, 10);
+    if (end == s || *end != '\0') return -1;
+    *out = v;
+    return 0;
+}
+
+static double round_positive_dp(double value, int places) {
+    double factor = 1.0;
+    for (int i = 0; i < places; ++i) factor *= 10.0;
+    unsigned long long scaled = (unsigned long long)(value * factor + 0.5);
+    return (double)scaled / factor;
+}
+
+static int guide_counter_write_outputs(const char *output_prefix, const char *tmp_counts_path,
+                                       const char *tmp_qc_path, const seq_table *targets,
+                                       const string_list *reads, const string_list *labels,
+                                       const string_list *essential_genes,
+                                       const string_list *nonessential_genes,
+                                       const string_list *control_guides, regex_t *control_re) {
+    char counts_path[4096];
+    char extended_path[4096];
+    char stats_path[4096];
+    int n = snprintf(counts_path, sizeof(counts_path), "%s.counts.txt", output_prefix);
+    if (n < 0 || (size_t)n >= sizeof(counts_path)) return -1;
+    n = snprintf(extended_path, sizeof(extended_path), "%s.extended-counts.txt", output_prefix);
+    if (n < 0 || (size_t)n >= sizeof(extended_path)) return -1;
+    n = snprintf(stats_path, sizeof(stats_path), "%s.stats.txt", output_prefix);
+    if (n < 0 || (size_t)n >= sizeof(stats_path)) return -1;
+
+    unsigned long long *matrix = (unsigned long long *)calloc(
+            (targets->count == 0 ? 1 : targets->count) * (labels->count == 0 ? 1 : labels->count),
+            sizeof(unsigned long long));
+    const char **types = (const char **)calloc(targets->count == 0 ? 1 : targets->count, sizeof(const char *));
+    if (matrix == NULL || types == NULL) {
+        free(matrix);
+        free(types);
+        return -1;
+    }
+    for (size_t t = 0; t < targets->count; ++t) {
+        types[t] = guide_counter_type_for_target(&targets->records[t], essential_genes, nonessential_genes,
+                                                 control_guides, control_re);
+    }
+
+    FILE *in = fopen(tmp_counts_path, "r");
+    FILE *counts = open_output_file(counts_path);
+    FILE *extended = open_output_file(extended_path);
+    if (in == NULL || counts == NULL || extended == NULL) {
+        if (in != NULL) fclose(in);
+        if (counts != NULL) fclose(counts);
+        if (extended != NULL) fclose(extended);
+        free(matrix);
+        free(types);
+        return -1;
+    }
+
+    fprintf(counts, "guide\tgene");
+    fprintf(extended, "guide\tgene\tguide_type");
+    for (size_t sample = 0; sample < labels->count; ++sample) {
+        fprintf(counts, "\t%s", labels->items[sample]);
+        fprintf(extended, "\t%s", labels->items[sample]);
+    }
+    fprintf(counts, "\n");
+    fprintf(extended, "\n");
+
+    char buf[65536];
+    size_t row = 0;
+    int first = 1;
+    while (fgets(buf, sizeof(buf), in) != NULL) {
+        trim_line(buf);
+        if (first) {
+            first = 0;
+            continue;
+        }
+        char *fields[1024];
+        size_t nf = split_fields(buf, '\t', fields, sizeof(fields) / sizeof(fields[0]));
+        if (nf < 2 + labels->count || row >= targets->count) {
+            fclose(in);
+            fclose(counts);
+            fclose(extended);
+            free(matrix);
+            free(types);
+            return -1;
+        }
+        fprintf(counts, "%s\t%s", targets->records[row].id, targets->records[row].gene);
+        fprintf(extended, "%s\t%s\t%s", targets->records[row].id, targets->records[row].gene, types[row]);
+        for (size_t sample = 0; sample < labels->count; ++sample) {
+            unsigned long long value = 0;
+            if (parse_ull_value(fields[2 + sample], &value) != 0) {
+                fclose(in);
+                fclose(counts);
+                fclose(extended);
+                free(matrix);
+                free(types);
+                return -1;
+            }
+            matrix[row * labels->count + sample] = value;
+            fprintf(counts, "\t%llu", value);
+            fprintf(extended, "\t%llu", value);
+        }
+        fprintf(counts, "\n");
+        fprintf(extended, "\n");
+        ++row;
+    }
+    int matrix_ok = !ferror(in) && row == targets->count;
+    fclose(in);
+    fclose(counts);
+    fclose(extended);
+    if (!matrix_ok) {
+        free(matrix);
+        free(types);
+        return -1;
+    }
+
+    unsigned long long *total_reads = (unsigned long long *)calloc(labels->count == 0 ? 1 : labels->count,
+                                                                   sizeof(unsigned long long));
+    if (total_reads == NULL) {
+        free(matrix);
+        free(types);
+        return -1;
+    }
+    FILE *qc = fopen(tmp_qc_path, "r");
+    if (qc == NULL) {
+        free(total_reads);
+        free(matrix);
+        free(types);
+        return -1;
+    }
+    int total_reads_col = -1;
+    size_t qc_row = 0;
+    first = 1;
+    while (fgets(buf, sizeof(buf), qc) != NULL) {
+        trim_line(buf);
+        char *fields[64];
+        size_t nf = split_fields(buf, '\t', fields, sizeof(fields) / sizeof(fields[0]));
+        if (first) {
+            total_reads_col = find_column(fields, nf, "total_reads", NULL, NULL);
+            first = 0;
+            continue;
+        }
+        if (total_reads_col < 0 || (size_t)total_reads_col >= nf || qc_row >= labels->count ||
+            parse_ull_value(fields[total_reads_col], &total_reads[qc_row]) != 0) {
+            fclose(qc);
+            free(total_reads);
+            free(matrix);
+            free(types);
+            return -1;
+        }
+        ++qc_row;
+    }
+    int qc_ok = !ferror(qc) && qc_row == labels->count;
+    fclose(qc);
+    if (!qc_ok) {
+        free(total_reads);
+        free(matrix);
+        free(types);
+        return -1;
+    }
+
+    FILE *stats = open_output_file(stats_path);
+    if (stats == NULL) {
+        free(total_reads);
+        free(matrix);
+        free(types);
+        return -1;
+    }
+    fprintf(stats, "file\tlabel\ttotal_guides\ttotal_reads\tmapped_reads\tfrac_mapped\tmean_reads_per_guide\tmean_reads_essential\tmean_reads_nonessential\tmean_reads_control\tmean_reads_other\tzero_read_guides\n");
+    for (size_t sample = 0; sample < labels->count; ++sample) {
+        unsigned long long mapped = 0;
+        unsigned long long zero = 0;
+        double essential_sum = 0.0;
+        double nonessential_sum = 0.0;
+        double control_sum = 0.0;
+        double other_sum = 0.0;
+        size_t essential_count = 0;
+        size_t nonessential_count = 0;
+        size_t control_count = 0;
+        size_t other_count = 0;
+        for (size_t t = 0; t < targets->count; ++t) {
+            unsigned long long value = matrix[t * labels->count + sample];
+            mapped += value;
+            if (value == 0) ++zero;
+            if (strcmp(types[t], "Essential") == 0) {
+                essential_sum += (double)value;
+                ++essential_count;
+            } else if (strcmp(types[t], "Nonessential") == 0) {
+                nonessential_sum += (double)value;
+                ++nonessential_count;
+            } else if (strcmp(types[t], "Control") == 0) {
+                control_sum += (double)value;
+                ++control_count;
+            } else {
+                other_sum += (double)value;
+                ++other_count;
+            }
+        }
+        double total = (double)total_reads[sample];
+        double frac = total == 0.0 ? 0.0 : round_positive_dp((double)mapped / total, 4);
+        double mean_all = targets->count == 0 ? 0.0 : round_positive_dp((double)mapped / (double)targets->count, 2);
+        double mean_essential = essential_count == 0 ? 0.0 : round_positive_dp(essential_sum / (double)essential_count, 2);
+        double mean_nonessential = nonessential_count == 0 ? 0.0 : round_positive_dp(nonessential_sum / (double)nonessential_count, 2);
+        double mean_control = control_count == 0 ? 0.0 : round_positive_dp(control_sum / (double)control_count, 2);
+        double mean_other = other_count == 0 ? 0.0 : round_positive_dp(other_sum / (double)other_count, 2);
+        fprintf(stats, "%s\t%s\t%zu\t%llu\t%llu\t%.4f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%llu\n",
+                reads->items[sample], labels->items[sample], targets->count, total_reads[sample], mapped,
+                frac, mean_all, mean_essential, mean_nonessential, mean_control, mean_other, zero);
+    }
+    fclose(stats);
+    free(total_reads);
+    free(matrix);
+    free(types);
+    return 0;
+}
+
+static int push_count_arg(string_list *args, const char *s) {
+    return push_string(args, s);
+}
+
+static int run_guide_counter_compatible(const char *argv0, int argc, char **argv) {
+    int start = 2;
+    if (strcmp(argv[1], "guide-counter") == 0) {
+        if (argc < 3 || strcmp(argv[2], "count") != 0) {
+            usage(argv0);
+            return 2;
+        }
+        start = 3;
+    }
+
+    const char *library_path = NULL;
+    const char *output_prefix = NULL;
+    const char *essential_path = NULL;
+    const char *nonessential_path = NULL;
+    const char *control_guides_path = NULL;
+    const char *control_pattern = NULL;
+    size_t offset_sample_size = 100000;
+    double offset_min_fraction = 0.0025;
+    int exact_match = 0;
+    string_list reads = {0};
+    string_list labels = {0};
+
+    int i = start;
+    while (i < argc) {
+        const char *arg = argv[i++];
+        if ((strcmp(arg, "--input") == 0 || strcmp(arg, "-i") == 0) && i < argc) {
+            while (i < argc && argv[i][0] != '-') {
+                if (push_string(&reads, argv[i++]) != 0) goto oom;
+            }
+        } else if ((strcmp(arg, "--samples") == 0 || strcmp(arg, "-s") == 0) && i < argc) {
+            while (i < argc && argv[i][0] != '-') {
+                if (push_string(&labels, argv[i++]) != 0) goto oom;
+            }
+        } else if ((strcmp(arg, "--library") == 0 || strcmp(arg, "-l") == 0) && i < argc) {
+            library_path = argv[i++];
+        } else if ((strcmp(arg, "--output") == 0 || strcmp(arg, "-o") == 0) && i < argc) {
+            output_prefix = argv[i++];
+        } else if ((strcmp(arg, "--essential-genes") == 0 || strcmp(arg, "-e") == 0) && i < argc) {
+            essential_path = argv[i++];
+        } else if ((strcmp(arg, "--nonessential-genes") == 0 || strcmp(arg, "-n") == 0) && i < argc) {
+            nonessential_path = argv[i++];
+        } else if ((strcmp(arg, "--control-guides") == 0 || strcmp(arg, "-c") == 0) && i < argc) {
+            control_guides_path = argv[i++];
+        } else if ((strcmp(arg, "--control-pattern") == 0 || strcmp(arg, "-C") == 0) && i < argc) {
+            control_pattern = argv[i++];
+        } else if ((strcmp(arg, "--offset-sample-size") == 0 || strcmp(arg, "-N") == 0) && i < argc) {
+            if (parse_size_value(argv[i++], &offset_sample_size) != 0 || offset_sample_size == 0) goto bad_args;
+        } else if ((strcmp(arg, "--offset-min-fraction") == 0 || strcmp(arg, "-f") == 0) && i < argc) {
+            if (parse_double_value(argv[i++], &offset_min_fraction) != 0 ||
+                offset_min_fraction < 0.0 || offset_min_fraction > 1.0) {
+                goto bad_args;
+            }
+        } else if (strcmp(arg, "--exact-match") == 0 || strcmp(arg, "-x") == 0) {
+            exact_match = 1;
+        } else if (strcmp(arg, "--help") == 0 || strcmp(arg, "-h") == 0) {
+            usage(argv0);
+            free_string_list(&reads);
+            free_string_list(&labels);
+            return 0;
+        } else {
+            goto bad_args;
+        }
+    }
+
+    if (library_path == NULL || output_prefix == NULL || reads.count == 0) goto bad_args;
+    if (labels.count == 0) {
+        for (size_t sample = 0; sample < reads.count; ++sample) {
+            if (guide_counter_push_sample_name(&labels, reads.items[sample], sample) != 0) goto oom;
+        }
+    }
+    if (labels.count != reads.count) {
+        fprintf(stderr, "--samples count must match --input count\n");
+        free_string_list(&reads);
+        free_string_list(&labels);
+        return 2;
+    }
+
+    seq_table targets = {0};
+    string_list essential_genes = {0};
+    string_list nonessential_genes = {0};
+    string_list control_guides = {0};
+    regex_t control_re;
+    int have_control_re = 0;
+    string_list count_args = {0};
+    int rc = 1;
+    char target_len_s[32];
+    char k_s[8];
+    char auto_offset_s[16];
+    char offset_sample_s[32];
+    char offset_min_s[64];
+    char label_csv[8192];
+    char tmp_counts_path[4096] = "";
+    char tmp_qc_path[4096] = "";
+
+    if (read_target_table(library_path, &targets) != 0 || targets.count == 0) {
+        fprintf(stderr, "failed to read guide library\n");
+        goto done;
+    }
+    size_t guide_len = targets.records[0].len;
+    for (size_t t = 1; t < targets.count; ++t) {
+        if (targets.records[t].len != guide_len) {
+            fprintf(stderr, "GuideCounter compatibility requires one guide length\n");
+            goto done;
+        }
+    }
+    if (read_first_column_values(essential_path, &essential_genes) != 0 ||
+        read_first_column_values(nonessential_path, &nonessential_genes) != 0 ||
+        read_first_column_values(control_guides_path, &control_guides) != 0) {
+        fprintf(stderr, "failed to read guide annotation files\n");
+        goto done;
+    }
+    if (control_pattern != NULL) {
+        if (regcomp(&control_re, control_pattern, REG_EXTENDED | REG_ICASE | REG_NOSUB) != 0) {
+            fprintf(stderr, "failed to compile --control-pattern\n");
+            goto done;
+        }
+        have_control_re = 1;
+    }
+
+    label_csv[0] = '\0';
+    for (size_t sample = 0; sample < labels.count; ++sample) {
+        size_t used = strlen(label_csv);
+        int n = snprintf(label_csv + used, sizeof(label_csv) - used, "%s%s",
+                         sample == 0 ? "" : ",", labels.items[sample]);
+        if (n < 0 || (size_t)n >= sizeof(label_csv) - used) {
+            fprintf(stderr, "too many sample labels for GuideCounter compatibility wrapper\n");
+            goto done;
+        }
+    }
+    int n = snprintf(tmp_counts_path, sizeof(tmp_counts_path), "%s.dotmatch-counts.tmp", output_prefix);
+    if (n < 0 || (size_t)n >= sizeof(tmp_counts_path)) goto done;
+    n = snprintf(tmp_qc_path, sizeof(tmp_qc_path), "%s.dotmatch-qc.tmp", output_prefix);
+    if (n < 0 || (size_t)n >= sizeof(tmp_qc_path)) goto done;
+    snprintf(target_len_s, sizeof(target_len_s), "%zu", guide_len);
+    snprintf(k_s, sizeof(k_s), "%d", exact_match ? 0 : 1);
+    snprintf(auto_offset_s, sizeof(auto_offset_s), "%d", 499);
+    snprintf(offset_sample_s, sizeof(offset_sample_s), "%zu", offset_sample_size);
+    snprintf(offset_min_s, sizeof(offset_min_s), "%.8g", offset_min_fraction);
+
+    if (push_count_arg(&count_args, argv0) != 0 ||
+        push_count_arg(&count_args, "count") != 0 ||
+        push_count_arg(&count_args, "--targets") != 0 ||
+        push_count_arg(&count_args, library_path) != 0) {
+        fprintf(stderr, "out of memory\n");
+        goto done;
+    }
+    for (size_t sample = 0; sample < reads.count; ++sample) {
+        if (push_count_arg(&count_args, "--reads") != 0 ||
+            push_count_arg(&count_args, reads.items[sample]) != 0) {
+            fprintf(stderr, "out of memory\n");
+            goto done;
+        }
+    }
+    const char *fixed_args[] = {
+        "--sample-label", label_csv,
+        "--target-start", "0",
+        "--target-length", target_len_s,
+        "--k", k_s,
+        "--metric", "hamming",
+        "--ambiguity-policy", "best",
+        "--format", "mageck",
+        "--auto-offset", auto_offset_s,
+        "--auto-offset-sample", offset_sample_s,
+        "--offset-mode", "multi",
+        "--offset-min-fraction", offset_min_s,
+        "--out", tmp_counts_path,
+        "--sample-qc", tmp_qc_path
+    };
+    for (size_t ai = 0; ai < sizeof(fixed_args) / sizeof(fixed_args[0]); ++ai) {
+        if (push_count_arg(&count_args, fixed_args[ai]) != 0) {
+            fprintf(stderr, "out of memory\n");
+            goto done;
+        }
+    }
+
+    rc = run_count(argv0, (int)count_args.count, count_args.items);
+    if (rc != 0) goto done;
+    if (guide_counter_write_outputs(output_prefix, tmp_counts_path, tmp_qc_path, &targets, &reads, &labels,
+                                    &essential_genes, &nonessential_genes, &control_guides,
+                                    have_control_re ? &control_re : NULL) != 0) {
+        fprintf(stderr, "failed to write GuideCounter-compatible outputs\n");
+        rc = 1;
+        goto done;
+    }
+    rc = 0;
+
+done:
+    if (have_control_re) regfree(&control_re);
+    unlink(tmp_counts_path);
+    unlink(tmp_qc_path);
+    free_string_list(&count_args);
+    free_string_list(&essential_genes);
+    free_string_list(&nonessential_genes);
+    free_string_list(&control_guides);
+    free_table(&targets);
+    free_string_list(&reads);
+    free_string_list(&labels);
+    return rc;
+
+oom:
+    fprintf(stderr, "out of memory\n");
+    free_string_list(&reads);
+    free_string_list(&labels);
+    return 1;
+
+bad_args:
+    usage(argv0);
+    free_string_list(&reads);
+    free_string_list(&labels);
+    return 2;
+}
+
 static int run_fastq_assign(const char *argv0, int argc, char **argv) {
     const char *barcodes_path = NULL;
     const char *reads_path = NULL;
@@ -7565,6 +8069,11 @@ int main(int argc, char **argv) {
 
     if (strcmp(argv[1], "count") == 0 || strcmp(argv[1], "crispr-count") == 0) {
         return run_count(argv[0], argc, argv);
+    }
+
+    if (strcmp(argv[1], "guide-counter") == 0 || strcmp(argv[1], "guide-counter-count") == 0 ||
+        strcmp(argv[1], "guide-count") == 0) {
+        return run_guide_counter_compatible(argv[0], argc, argv);
     }
 
     if (strcmp(argv[1], "inspect-unmatched") == 0) {

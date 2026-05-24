@@ -822,6 +822,88 @@ grep '^bc0	G0	1$' "$TMPDIR/counts_hamming.tsv" >/dev/null
 grep '^bc3	G3	1$' "$TMPDIR/counts_hamming.tsv" >/dev/null
 grep '"count_engine": "hamming_lookup_direct_single_offset"' "$TMPDIR/summary_hamming.json" >/dev/null
 
+cat > "$TMPDIR/gc_library.tsv" <<'GCLIB'
+guide	bases	gene
+g_exact	ACGT	GENE_ESS
+g_control	TTTT	CTRL_SAFE
+g_other	GGCC	GENE_OTHER
+GCLIB
+
+cat > "$TMPDIR/gc_essential.tsv" <<'GCESS'
+GENE_ESS
+GCESS
+
+cat > "$TMPDIR/gc_nonessential.tsv" <<'GCNON'
+GENE_OTHER
+GCNON
+
+cat > "$TMPDIR/gc_control.tsv" <<'GCCTRL'
+g_control
+GCCTRL
+
+cat > "$TMPDIR/gc_sample.fastq" <<'GCFASTQ'
+@gc0
+NNACGTAA
++
+IIIIIIII
+@gc1
+NNTTTTAA
++
+IIIIIIII
+@gc2
+NNACGAAA
++
+IIIIIIII
+@gc3
+NNGGCCAA
++
+IIIIIIII
+@gc4
+NNAAAAAA
++
+IIIIIIII
+GCFASTQ
+
+"$DOTMATCH_BIN" guide-counter count \
+  --input "$TMPDIR/gc_sample.fastq" \
+  --library "$TMPDIR/gc_library.tsv" \
+  --essential-genes "$TMPDIR/gc_essential.tsv" \
+  --nonessential-genes "$TMPDIR/gc_nonessential.tsv" \
+  --control-guides "$TMPDIR/gc_control.tsv" \
+  --control-pattern ctrl \
+  --offset-sample-size 5 \
+  --offset-min-fraction 0.1 \
+  --output "$TMPDIR/gc_out"
+
+cat > "$TMPDIR/gc_expected_counts.tsv" <<'GCCOUNTS'
+guide	gene	gc_sample
+g_exact	GENE_ESS	2
+g_control	CTRL_SAFE	1
+g_other	GENE_OTHER	1
+GCCOUNTS
+diff -u "$TMPDIR/gc_expected_counts.tsv" "$TMPDIR/gc_out.counts.txt"
+grep '^guide	gene	guide_type	gc_sample$' "$TMPDIR/gc_out.extended-counts.txt" >/dev/null
+grep '^g_exact	GENE_ESS	Essential	2$' "$TMPDIR/gc_out.extended-counts.txt" >/dev/null
+grep '^g_control	CTRL_SAFE	Control	1$' "$TMPDIR/gc_out.extended-counts.txt" >/dev/null
+grep '^g_other	GENE_OTHER	Nonessential	1$' "$TMPDIR/gc_out.extended-counts.txt" >/dev/null
+grep '^file	label	total_guides	total_reads	mapped_reads	frac_mapped	mean_reads_per_guide	mean_reads_essential	mean_reads_nonessential	mean_reads_control	mean_reads_other	zero_read_guides$' "$TMPDIR/gc_out.stats.txt" >/dev/null
+grep "^$TMPDIR/gc_sample.fastq	gc_sample	3	5	4	0.8000	1.33	2.00	1.00	1.00	0.00	0$" "$TMPDIR/gc_out.stats.txt" >/dev/null
+
+"$DOTMATCH_BIN" guide-counter-count \
+  --input "$TMPDIR/gc_sample.fastq" \
+  --samples explicit_sample \
+  --library "$TMPDIR/gc_library.tsv" \
+  --exact-match \
+  --offset-sample-size 5 \
+  --offset-min-fraction 0.1 \
+  --output "$TMPDIR/gc_exact"
+
+grep '^guide	gene	explicit_sample$' "$TMPDIR/gc_exact.counts.txt" >/dev/null
+grep '^g_exact	GENE_ESS	1$' "$TMPDIR/gc_exact.counts.txt" >/dev/null
+grep '^g_control	CTRL_SAFE	1$' "$TMPDIR/gc_exact.counts.txt" >/dev/null
+grep '^g_other	GENE_OTHER	1$' "$TMPDIR/gc_exact.counts.txt" >/dev/null
+grep "^$TMPDIR/gc_sample.fastq	explicit_sample	3	5	3	0.6000	1.00" "$TMPDIR/gc_exact.stats.txt" >/dev/null
+
 "$DOTMATCH_BIN" count \
   --targets "$TMPDIR/targets.csv" \
   --reads "$TMPDIR/reads.fastq.gz" \
