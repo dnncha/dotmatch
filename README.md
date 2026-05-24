@@ -14,9 +14,12 @@ amplicon-panel starts, whitelist-style assays, and barcode panel design for
 known-target assignment. It is not a genome aligner, a basecaller, a UMI entropy
 generator, or a replacement for downstream screen statistics.
 
-Package scope: Bioconda installs the `dotmatch` CLI, Python workflow namespaces,
-Python imports, and C header/library artifacts. The Workbench desktop app is a
-separate local application and is not part of the Bioconda recipe.
+Package scope: the published Bioconda package installs the `dotmatch` command,
+Python imports/workflow namespaces, and C header/library artifacts. The
+Workbench desktop app is a separate local application and is not part of the
+Bioconda recipe. New release features are only described as available from a
+public package after the matching package version has passed the install smoke
+tests in [Packaging Notes](docs/packaging.md).
 
 ![DotMatch workflow: FASTQ reads and a known target table are sliced at the same read position, assigned to known short DNA targets, and written to counts, split FASTQs, QC tables, and reports.](public/dotmatch-read-assignment.svg)
 
@@ -167,8 +170,8 @@ docker build -t dotmatch:dev .
 docker run --rm -v "$PWD:/work" dotmatch:dev dist ACGT AGGT
 ```
 
-Bioconda install for the native CLI and C library on published Bioconda
-platforms:
+Bioconda install for the published package on platforms visible in Bioconda
+repodata:
 
 ```bash
 conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.2
@@ -191,9 +194,12 @@ builds and smoke-tests repaired manylinux/musllinux wheel artifacts before any
 wheel is considered for PyPI.
 
 Bioconda provides the `dotmatch` command-line tool, Python workflow namespaces,
-Python imports, and C header/library artifacts. The installed `dotmatch` console
-script exposes the native assignment commands plus `dotmatch assay ...`,
-`dotmatch barcode ...`, and `dotmatch panel ...`.
+Python imports, and C header/library artifacts for the published package
+version. The installed `dotmatch` console script exposes the native assignment
+commands plus `dotmatch assay ...`, `dotmatch barcode ...`, and
+`dotmatch panel ...`. The next release is packaging-ready in this repository,
+but do not cite a newer Bioconda version until the channel metadata and install
+smoke tests verify it.
 
 Optional local Workbench: DotMatch also includes a desktop Workbench under
 `apps/workbench` for local AssaySpec design, inference, planning, running, and
@@ -262,7 +268,9 @@ EOF
   --ambiguous discard
 ```
 
-Use `--metric hamming` for one-mismatch/no-indel guide-counter-style counting.
+Use `--metric hamming` for one-mismatch/no-indel guide-counter-style counting;
+use `--ambiguity-policy best` when intentionally matching guide-counter's
+compatibility semantics.
 Use `--metric levenshtein --indel-window 1` when one-base insertions and
 deletions around the guide window should be considered. Ambiguous reads are not
 added to guide counts unless you explicitly request diagnostic reporting.
@@ -271,6 +279,55 @@ A small worked example is available in
 [examples/crispr_guides](examples/crispr_guides/README.md), and a step-by-step
 fixture walkthrough is in
 [docs/tutorials/crispr-count-first-run.md](docs/tutorials/crispr-count-first-run.md).
+The public Sanson/Brunello paper-data lane used by guide-counter is available
+in [examples/crispr_sanson_brunello](examples/crispr_sanson_brunello/README.md).
+The reproducible DotMatch-vs-guide-counter comparison report is in
+[docs/benchmarks/crispr_comparison](docs/benchmarks/crispr_comparison/README.md).
+
+![CRISPR guide-counting throughput comparison](benchmarks/figures/crispr_comparison_throughput.svg)
+
+## GuideCounter-Compatible Counting
+
+DotMatch also has a GuideCounter-compatible command shape for labs that already
+have `guide-counter count` scripts. The wrapper delegates assignment to
+DotMatch's deterministic CPU count engine and rewrites the result into
+GuideCounter-style output files.
+
+```bash
+dotmatch guide-counter count \
+  --input plasmid.fastq.gz treatment.fastq.gz \
+  --samples plasmid treatment \
+  --library guides.tsv \
+  --output guide_counts
+```
+
+Supported entrypoints are `dotmatch guide-counter count`,
+`dotmatch guide-counter-count`, and `dotmatch guide-count`. The wrapper accepts
+GuideCounter-style flags including `--input/-i`, `--samples/-s`,
+`--library/-l`, `--output/-o`, `--exact-match/-x`,
+`--offset-sample-size/-N`, `--offset-min-fraction/-f`,
+`--essential-genes/-e`, `--nonessential-genes/-n`, `--control-guides/-c`, and
+`--control-pattern/-C`.
+
+By default this mode uses GuideCounter-compatible counting semantics: Hamming
+matching, one mismatch, no indels, best-distance assignment, automatic
+multi-offset guide-window detection, `--offset-sample-size 100000`, and
+`--offset-min-fraction 0.0025`. Add `--exact-match` for exact-only counting.
+When `--samples` is omitted, sample labels are inferred from input FASTQ file
+names.
+
+For `--output guide_counts`, the wrapper writes:
+
+- `guide_counts.counts.txt`: `guide`, `gene`, then one count column per sample;
+- `guide_counts.extended-counts.txt`: the same counts with a `guide_type`
+  column derived from essential, nonessential, control-guide, or control-pattern
+  annotations;
+- `guide_counts.stats.txt`: per-sample totals, mapped reads, mapped fraction,
+  mean reads by guide class, and zero-read guide counts.
+
+This compatibility mode is an input/output and policy bridge. DotMatch
+assignment remains deterministic and CPU-authoritative. GPU benchmark rows and
+backend optimizer recommendations do not change which guide is counted.
 
 ## General FASTQ Counting
 

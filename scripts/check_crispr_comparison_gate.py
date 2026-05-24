@@ -122,7 +122,8 @@ def full_depth_rate(rows: list[dict[str, str]], dataset: str) -> float | None:
 
 def repeated_gate(rows: list[dict[str, str]], min_records: int, min_repeats: int,
                   require_full: bool, require_mageck: bool, require_guide_counter: bool, failures: list[str],
-                  min_guide_counter_speedup: float = 0.0) -> None:
+                  min_guide_counter_speedup: float = 0.0,
+                  required_full_guide_counter_datasets: list[str] | None = None) -> None:
     ok = [r for r in rows if r.get("exit_code") == "0"]
     require(bool(ok), "crispr_comparison_repeated.csv has no successful rows", failures)
     required_tools = ["dotmatch_exact_k0", "dotmatch_hamming_k1", "dotmatch_levenshtein_k1"]
@@ -161,6 +162,15 @@ def repeated_gate(rows: list[dict[str, str]], min_records: int, min_repeats: int
                             f"{dataset}:{tool} full FASTQ row has too few reads: "
                             f"max_n_reads={max_reads}; need >= {min_full_reads}",
                             failures)
+        if dataset in set(required_full_guide_counter_datasets or []):
+            for tool in ["dotmatch_hamming_k1", "guide_counter_one_mismatch"]:
+                full_group = full_rows_for(ok, dataset, tool)
+                require(has_full_depth_evidence(full_group, dataset),
+                        f"{dataset}:{tool} needs a full FASTQ guide-counter comparison row", failures)
+                rate = full_depth_rate(full_group, dataset)
+                require(rate is not None and rate > 0.0,
+                        f"{dataset}:{tool} full FASTQ guide-counter comparison row needs a positive read rate",
+                        failures)
 
     for row in ok:
         if row.get("tool") == "dotmatch_levenshtein_k1" and row.get("verified_per_read"):
@@ -240,6 +250,9 @@ def main() -> None:
     parser.add_argument("--no-mageck", action="store_false", dest="require_mageck")
     parser.add_argument("--require-guide-counter", action="store_true", default=True)
     parser.add_argument("--no-guide-counter", action="store_false", dest="require_guide_counter")
+    parser.add_argument("--require-full-guide-counter", action="append", default=[],
+                        metavar="DATASET",
+                        help="require full-depth DotMatch hamming and guide-counter rows for DATASET")
     parser.add_argument("--min-guide-counter-speedup", type=float, default=0.0,
                         help="retained for compatibility; speed ratios are reported but not release-gated")
     parser.add_argument("--skip-count-agreement", action="store_true")
@@ -257,7 +270,7 @@ def main() -> None:
     failures: list[str] = []
     repeated_gate(read_rows(Path(args.repeated)), args.min_records, args.min_repeats,
                   args.require_full, args.require_mageck, args.require_guide_counter, failures,
-                  args.min_guide_counter_speedup)
+                  args.min_guide_counter_speedup, args.require_full_guide_counter)
     validation_gate(read_rows(Path(args.validation)), args.min_edlib_checked, failures)
     if not args.skip_count_agreement:
         agreement_gate(read_rows(Path(args.count_agreement)), args.require_guide_counter, failures, args.min_records)

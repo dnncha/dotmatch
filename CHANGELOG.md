@@ -2,6 +2,21 @@
 
 All notable user-facing changes are tracked here. Public statements in release notes must stay aligned with `docs/scientific-claims.md`.
 
+## 0.1.5 - 2026-05-24
+
+### Added
+
+- Added a GuideCounter-compatible `dotmatch guide-counter count` entrypoint that
+  accepts GuideCounter-style count flags and writes counts, extended-counts, and
+  stats outputs.
+
+### Changed
+
+- Release and packaging metadata are aligned for the next `0.1.5` patch
+  release.
+- Bioconda recipe readiness now includes the GuideCounter-compatible CLI smoke
+  surface and keeps the new-version build number at `0`.
+
 ## 0.1.4 - 2026-05-23
 
 ### Changed

@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import csv
+import html
+import json
 import math
 import os
 import statistics
@@ -20,6 +22,9 @@ ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "benchmarks" / "raw"
 OUT_DIR = ROOT / "docs" / "benchmarks" / "crispr_comparison"
 FIG_DIR = ROOT / "benchmarks" / "figures"
+OPTIMIZER_ARTIFACTS = {
+    "sanson_brunello": RAW / "crispr_sanson_brunello_backend_optimization_atlas_latest_dotmatch.json",
+}
 
 
 def read_rows(path: Path) -> list[dict[str, str]]:
@@ -146,6 +151,26 @@ def markdown_table(rows: list[dict[str, str]], cols: list[str]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def optimizer_rows() -> list[dict[str, str]]:
+    out: list[dict[str, str]] = []
+    for dataset, path in sorted(OPTIMIZER_ARTIFACTS.items()):
+        if not path.exists():
+            continue
+        with path.open() as fh:
+            data = json.load(fh)
+        out.append({
+            "dataset": dataset,
+            "optimizer": str(data.get("optimizer", "")),
+            "authority": str(data.get("authority", "")),
+            "selected_backend": str(data.get("selected_backend", "")),
+            "candidate_backend": str(data.get("candidate_backend", "")),
+            "recommendation": str(data.get("recommendation", "")),
+            "expected_speedup_band": str(data.get("expected_speedup_band", "")),
+            "estimated_total_speedup": str(data.get("estimated_total_speedup", "")),
+        })
+    return out
+
+
 def full_hamming_ratio_rows(stats: list[dict[str, str]]) -> list[dict[str, str]]:
     by_key = {(r.get("dataset", ""), r.get("tool", ""), r.get("records_per_sample", "")): r for r in stats}
     datasets = sorted({r.get("dataset", "") for r in stats if r.get("records_per_sample") == "full"})
@@ -169,11 +194,48 @@ def full_hamming_ratio_rows(stats: list[dict[str, str]]) -> list[dict[str, str]]
     return out
 
 
+def guide_counter_style_rows(stats: list[dict[str, str]], agreement: list[dict[str, str]]) -> list[dict[str, str]]:
+    by_key = {(r.get("dataset", ""), r.get("tool", ""), r.get("records_per_sample", "")): r for r in stats}
+    agreement_by_dataset: dict[str, dict[str, str]] = {}
+    for row in agreement:
+        if row.get("comparison", "").endswith("dotmatch_hamming_vs_guide_counter"):
+            agreement_by_dataset[row.get("dataset", "")] = row
+
+    keys = sorted(
+        (dataset, records)
+        for dataset, tool, records in by_key
+        if tool == "dotmatch_hamming_k1" and (dataset, "guide_counter_one_mismatch", records) in by_key
+    )
+    out: list[dict[str, str]] = []
+    for dataset, records in keys:
+        dotmatch = by_key[(dataset, "dotmatch_hamming_k1", records)]
+        guide_counter = by_key[(dataset, "guide_counter_one_mismatch", records)]
+        dm_rps = fnum(dotmatch.get("mean_reads_per_sec"))
+        gc_rps = fnum(guide_counter.get("mean_reads_per_sec"))
+        speedup = dm_rps / gc_rps if dm_rps > 0.0 and gc_rps > 0.0 else 0.0
+        agreement_row = agreement_by_dataset.get(dataset, {})
+        out.append({
+            "dataset": dataset,
+            "records_per_sample": records,
+            "dotmatch_hamming_reads_per_sec": f"{dm_rps:.1f}",
+            "guide_counter_reads_per_sec": f"{gc_rps:.1f}",
+            "speedup": f"{speedup:.2f}" if speedup else "",
+            "count_agreement_status": agreement_row.get("status", ""),
+            "count_total_delta": agreement_row.get("total_delta", ""),
+            "semantics": "one mismatch, no indels",
+        })
+    return out
+
+
 def svg_bars(stats: list[dict[str, str]], path: Path) -> None:
-    selected = [r for r in stats if r["records_per_sample"] != "full"]
+    selected = [r for r in stats if fnum(r.get("mean_reads_per_sec")) > 0.0]
     if not selected:
         return
-    labels = [f"{r['dataset']} {r['tool']} {r['records_per_sample']}" for r in selected]
+    labels = [
+        f"{r['dataset']} {r['tool']} {r['records_per_sample']}"
+        + (" FASTQs" if r["records_per_sample"] == "full" else "")
+        for r in selected
+    ]
     values = [fnum(r["mean_reads_per_sec"]) for r in selected]
     width = 1220
     row_h = 28
@@ -182,15 +244,16 @@ def svg_bars(stats: list[dict[str, str]], path: Path) -> None:
     max_v = max(values) or 1.0
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
-        '<style>text{font-family:Arial,sans-serif;font-size:12px}.title{font-size:18px;font-weight:700}.axis{fill:#444}.bar{fill:#2f7d68}</style>',
-        '<text class="title" x="20" y="28">CRISPR comparison repeated real-data throughput</text>',
-        '<text class="axis" x="20" y="50">Mean reads/s; rows are separated by dataset, tool, and records/sample</text>',
+        '<style>text{font-family:Arial,sans-serif;font-size:12px}.title{font-size:18px;font-weight:700}.axis{fill:#444}.bar{fill:#2f7d68}.bar-full{fill:#8b5e34}</style>',
+        '<text class="title" x="20" y="28">CRISPR guide-counting throughput comparison</text>',
+        '<text class="axis" x="20" y="50">Mean reads/s; includes repeated subsamples and available full FASTQ paper-data rows</text>',
     ]
-    for i, (label, value) in enumerate(zip(labels, values)):
+    for i, (row, label, value) in enumerate(zip(selected, labels, values)):
         y = 75 + i * row_h
         w = max(1, int((width - left - 120) * value / max_v))
-        parts.append(f'<text x="20" y="{y + 14}">{label}</text>')
-        parts.append(f'<rect class="bar" x="{left}" y="{y}" width="{w}" height="18" rx="2"/>')
+        klass = "bar-full" if row["records_per_sample"] == "full" else "bar"
+        parts.append(f'<text x="20" y="{y + 14}">{html.escape(label)}</text>')
+        parts.append(f'<rect class="{klass}" x="{left}" y="{y}" width="{w}" height="18" rx="2"/>')
         parts.append(f'<text x="{left + w + 8}" y="{y + 14}">{value:.1f}</text>')
     parts.append("</svg>")
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -244,11 +307,30 @@ def main() -> None:
             "mean_seconds", "max_peak_rss_mb", "mean_verified_per_read",
         ]),
         "",
+        "## Guide-Counter-Style Public Paper-Data Lane",
+        "",
+        "DotMatch `dotmatch_hamming_k1` versus `guide_counter_one_mismatch` on the public paper-data inputs. This lane uses best-distance Hamming assignment with guide-counter's offset threshold, is limited to one mismatch and no indels, and keeps Levenshtein rows as a separate DotMatch capability lane.",
+        "",
+        markdown_table(guide_counter_style_rows(stats, agreement), [
+            "dataset", "records_per_sample", "dotmatch_hamming_reads_per_sec",
+            "guide_counter_reads_per_sec", "speedup", "count_agreement_status",
+            "count_total_delta", "semantics",
+        ]),
+        "",
         "## Full Hamming Guide-Counter Ratio",
         "",
         markdown_table(full_hamming_ratio_rows(stats), [
             "dataset", "dotmatch_hamming_reads_per_sec", "guide_counter_reads_per_sec",
             "speedup", "status",
+        ]),
+        "",
+        "## Backend Optimizer",
+        "",
+        "The optimizer is advisory and CPU-authoritative: it records the fastest eligible candidate backend, but speed claims still require CPU checksum agreement.",
+        "",
+        markdown_table(optimizer_rows(), [
+            "dataset", "optimizer", "authority", "selected_backend", "candidate_backend",
+            "recommendation", "expected_speedup_band", "estimated_total_speedup",
         ]),
         "",
         "## Edlib Oracle Validation",
@@ -270,8 +352,10 @@ def main() -> None:
         "## Raw Inputs",
         "",
         "- `benchmarks/raw/crispr_comparison_repeated.csv`",
+        "- `benchmarks/raw/crispr_comparison_full_sanson_atlas_latest_dotmatch.csv`",
         "- `benchmarks/raw/crispr_comparison_edlib_validation.csv`",
         "- `benchmarks/raw/crispr_comparison_count_agreement_summary.csv`",
+        "- `benchmarks/raw/crispr_sanson_brunello_backend_optimization_atlas_latest_dotmatch.json`",
     ]
     (OUT_DIR / "README.md").write_text("\n".join(content) + "\n", encoding="utf-8")
     print(OUT_DIR / "README.md")

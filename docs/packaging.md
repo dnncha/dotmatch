@@ -58,7 +58,9 @@ The recipe needs:
 - runtime tests for `dotmatch --version`, `dotmatch dist ACGT AGGT`,
   `dotmatch leq 1 ACGT AGGT`, Python import/native discovery, installed C
   artifacts, namespace help for `dotmatch assay`, `dotmatch barcode`, and
-  `dotmatch panel`, and tiny installed-package workflow smoke tests.
+  `dotmatch panel`, tiny installed-package workflow smoke tests, and a
+  GuideCounter-compatible `dotmatch guide-counter count` smoke test that writes
+  counts, extended counts, and stats outputs.
 
 The native CLI exposes `dotmatch --version`, so the Bioconda recipe and
 post-release Bioconda install verifier should check version output as well as
@@ -107,7 +109,7 @@ This checks that the release version is visible on PyPI as a source distribution
 `linux_x86_64` PyPI wheels, installs with `pip install dotmatch==<version>` in a clean virtual environment, imports the Python package, runs the installed
 `dotmatch` CLI, is available in Bioconda metadata, installs with
 `conda create -p <env> -c conda-forge -c bioconda dotmatch=<version>` or
-`micromamba`, runs the Bioconda `--version`/CLI smoke tests, has a matching BioContainers
+`micromamba`, runs the Bioconda `--version`/CLI and GuideCounter-compatible smoke tests, has a matching BioContainers
 tag such as `quay.io/biocontainers/dotmatch:<version>--<build>` that runs CLI
 distance and threshold smoke tests, is published as
 `ghcr.io/dnncha/dotmatch:vX.Y.Z`, runs with

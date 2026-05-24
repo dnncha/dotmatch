@@ -325,3 +325,64 @@ def test_repeated_gate_accepts_full_hamming_slower_than_full_guide_counter_when_
                        require_mageck=False, require_guide_counter=True, failures=failures)
 
     assert not any("guide-counter" in f for f in failures)
+
+
+def test_repeated_gate_requires_named_full_guide_counter_dataset_only():
+    gate = _load_gate()
+    rows = []
+    for dataset in gate.DATASETS:
+        rows.extend([
+            _speed_row(dataset, "dotmatch_exact_k0", "100.0"),
+            _speed_row(dataset, "dotmatch_hamming_k1", "200.0"),
+            _speed_row(dataset, "dotmatch_levenshtein_k1", "50.0"),
+            _speed_row(dataset, "guide_counter_one_mismatch", "100.0"),
+        ])
+    rows.extend([
+        _full_row("sanson_brunello", "dotmatch_hamming_k1", gate.FULL_FASTQ_MIN_READS["sanson_brunello"]),
+        _full_row("sanson_brunello", "guide_counter_one_mismatch", gate.FULL_FASTQ_MIN_READS["sanson_brunello"]),
+    ])
+    for row in rows:
+        if row["requested_records_per_sample"] == "full":
+            row["reads_per_sec"] = "100.0"
+            row["seconds"] = "1.0"
+    failures = []
+
+    gate.repeated_gate(
+        rows,
+        min_records=1,
+        min_repeats=1,
+        require_full=False,
+        require_mageck=False,
+        require_guide_counter=True,
+        failures=failures,
+        required_full_guide_counter_datasets=["sanson_brunello"],
+    )
+
+    assert not failures
+
+
+def test_repeated_gate_rejects_missing_named_full_guide_counter_dataset():
+    gate = _load_gate()
+    rows = []
+    for dataset in gate.DATASETS:
+        rows.extend([
+            _speed_row(dataset, "dotmatch_exact_k0", "100.0"),
+            _speed_row(dataset, "dotmatch_hamming_k1", "200.0"),
+            _speed_row(dataset, "dotmatch_levenshtein_k1", "50.0"),
+            _speed_row(dataset, "guide_counter_one_mismatch", "100.0"),
+        ])
+    failures = []
+
+    gate.repeated_gate(
+        rows,
+        min_records=1,
+        min_repeats=1,
+        require_full=False,
+        require_mageck=False,
+        require_guide_counter=True,
+        failures=failures,
+        required_full_guide_counter_datasets=["sanson_brunello"],
+    )
+
+    assert any("sanson_brunello:dotmatch_hamming_k1 needs a full FASTQ guide-counter comparison row" in f for f in failures)
+    assert any("sanson_brunello:guide_counter_one_mismatch needs a full FASTQ guide-counter comparison row" in f for f in failures)

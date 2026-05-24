@@ -904,6 +904,20 @@ grep '^g_control	CTRL_SAFE	1$' "$TMPDIR/gc_exact.counts.txt" >/dev/null
 grep '^g_other	GENE_OTHER	1$' "$TMPDIR/gc_exact.counts.txt" >/dev/null
 grep "^$TMPDIR/gc_sample.fastq	explicit_sample	3	5	3	0.6000	1.00" "$TMPDIR/gc_exact.stats.txt" >/dev/null
 
+"$DOTMATCH_BIN" guide-count \
+  --input "$TMPDIR/gc_sample.fastq" \
+  --samples short_alias \
+  --library "$TMPDIR/gc_library.tsv" \
+  --exact-match \
+  --offset-sample-size 5 \
+  --offset-min-fraction 0.1 \
+  --output "$TMPDIR/gc_short_alias"
+
+grep '^guide	gene	short_alias$' "$TMPDIR/gc_short_alias.counts.txt" >/dev/null
+grep '^g_exact	GENE_ESS	1$' "$TMPDIR/gc_short_alias.counts.txt" >/dev/null
+grep '^g_control	CTRL_SAFE	1$' "$TMPDIR/gc_short_alias.counts.txt" >/dev/null
+grep '^g_other	GENE_OTHER	1$' "$TMPDIR/gc_short_alias.counts.txt" >/dev/null
+
 "$DOTMATCH_BIN" count \
   --targets "$TMPDIR/targets.csv" \
   --reads "$TMPDIR/reads.fastq.gz" \

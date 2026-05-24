@@ -1,0 +1,46 @@
+schema_version = 1
+status = "ready"
+mode = "count"
+assay_type = "crispr"
+targets = "data/broadgpp-brunello-library-corrected.txt"
+
+[[samples]]
+id = "plasmid"
+fastq = "data/plasmid.fastq.gz"
+
+[[samples]]
+id = "RepA"
+fastq = "data/RepA.fastq.gz"
+
+[[samples]]
+id = "RepB"
+fastq = "data/RepB.fastq.gz"
+
+[[samples]]
+id = "RepC"
+fastq = "data/RepC.fastq.gz"
+
+[run]
+out_dir = "output/assay_full"
+threads = 4
+
+[extract]
+start = 20
+length = 20
+auto_offset = 20
+auto_offset_sample = 100000
+offset_mode = "multi"
+offset_min_fraction = 0.0025
+
+[assignment]
+k = 1
+metric = "hamming"
+ambiguity_policy = "best"
+ambiguous = "discard"
+
+[outputs]
+format = "mageck"
+
+[backend]
+mode = "auto"
+allow_gpu = true

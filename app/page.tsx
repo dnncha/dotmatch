@@ -17,6 +17,7 @@ const biocondaUrl = "https://anaconda.org/bioconda/dotmatch";
 
 const proof = [
   ["Guide counts", "screen reads", "FASTQ to guide-by-sample counts."],
+  ["GuideCounter mode", "compatible files", "Same command shape, DotMatch CPU assignment."],
   ["Barcode splits", "inline barcodes", "Split reads, then inspect what did not split."],
   ["Panel checks", "barcode panels", "Keep the collision check with the panel."],
   ["No guessing", "ambiguous stays ambiguous", "A read that fits two targets is not forced into one."]
@@ -58,6 +59,7 @@ const decisionCards = [
 const translations = [
   ["known targets", "a fixed guide, barcode, primer, whitelist, or panel sequence list"],
   ["Hamming k=1", "allow one mismatch, no indels"],
+  ["GuideCounter mode", "one-mismatch Hamming by default, exact-only with --exact-match"],
   ["Levenshtein k=1", "allow one substitution, insertion, or deletion"],
   ["ambiguous", "reads that match multiple targets are reported, not forced into a guide or barcode"],
   ["peak RSS", "peak memory use"],
@@ -137,6 +139,10 @@ const commands = [
   {
     surface: "Native CLI or Python install",
     command: "dotmatch crispr-count --library guides.csv --samples samples.tsv --guide-start 23 --guide-length 19 --k 1 --metric levenshtein --indel-window 1 --out counts.mageck.tsv --summary qc.json"
+  },
+  {
+    surface: "Native CLI",
+    command: "dotmatch guide-counter count --input sample.fastq.gz --library guides.tsv --output guide_counts"
   },
   {
     surface: "Python workflow install",
@@ -409,7 +415,7 @@ export default function Home() {
         </div>
         <div className="hero-panel" aria-label="DotMatch benchmark summary">
           <div className="panel-topline">
-            <span>v0.1.3</span>
+            <span>v0.1.5 release candidate</span>
             <span>known-target assignment</span>
           </div>
           <figure className="hero-visual">
@@ -695,12 +701,16 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
 
           <article className="benchmark-card">
             <div className="chart-copy">
-              <span className="card-label">Public CRISPR example</span>
-              <h3>CRISPR guide counting.</h3>
+              <span className="card-label">GuideCounter-compatible lane</span>
+              <h3>CRISPR guide counting with a compatibility bridge.</h3>
               <p>
                 Repeated public rows compare DotMatch exact against MAGeCK
                 exact, DotMatch Hamming k=1 against guide-counter one-mismatch,
-                and DotMatch Levenshtein k=1 as its own indel-rescue lane.
+                and DotMatch Levenshtein k=1 as its own indel-rescue lane. The
+                compatibility command writes <code>counts.txt</code>,{" "}
+                <code>extended-counts.txt</code>, and <code>stats.txt</code>{" "}
+                while keeping DotMatch's deterministic CPU assignment as the
+                authority.
               </p>
             </div>
             <div className="link-stack compact">
@@ -797,7 +807,9 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
         <div className="section-heading">
           <h2>One CRISPR run, from FASTQ to QC.</h2>
           <p>
-            Reads in. Guide library in. Counts and QC out.
+            Reads in. Guide library in. Counts and QC out. Use
+            <code>guide-counter count</code> compatibility when existing
+            scripts expect GuideCounter-style files.
           </p>
         </div>
         <div className="example-layout">
@@ -823,6 +835,27 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
               <span>archived run report</span>
             </div>
           </article>
+          <article className="example-card">
+            <span className="card-label">GuideCounter-compatible</span>
+            <pre><code>{`dotmatch guide-counter count \\
+  --input plasmid.fastq.gz treatment.fastq.gz \\
+  --samples plasmid treatment \\
+  --library guides.tsv \\
+  --output guide_counts`}</code></pre>
+            <div className="output-list" aria-label="GuideCounter-compatible outputs">
+              <code>guide_counts.counts.txt</code>
+              <span>guide x sample count matrix</span>
+              <code>guide_counts.extended-counts.txt</code>
+              <span>guide_type plus counts</span>
+              <code>guide_counts.stats.txt</code>
+              <span>mapped fraction and guide-class means</span>
+            </div>
+            <p className="boundary-note">
+              Defaults match the one-mismatch/no-indel Hamming lane with
+              automatic multi-offset detection. Add <code>--exact-match</code>{" "}
+              for exact-only counting.
+            </p>
+          </article>
           <article className="ambiguity-example">
             <span className="card-label">Why ambiguity is explicit</span>
             <pre><code>{`Read:    ACGTACGT
@@ -841,19 +874,19 @@ DotMatch reports: ambiguous`}</code></pre>
 
       <section id="install" className="section launch-section">
         <div className="section-heading">
-          <h2>Install the native CLI from Bioconda.</h2>
+          <h2>Install from Bioconda, or build the next release from source.</h2>
           <p>
-            Bioconda provides the native `dotmatch` command plus C
-            header/library artifacts on published platforms. Use a source
-            Python install, or PyPI after the tagged release is visible, for
-            `dotmatch assay`, `dotmatch barcode`, and `dotmatch panel` workflow
-            commands.
+            Bioconda has published DotMatch 0.1.2 and provides the `dotmatch`
+            command, Python imports/workflow namespaces, and C header/library
+            artifacts on platforms visible in repodata. Newer release features
+            in this branch should be installed from source until the matching
+            package version passes public channel smoke tests.
           </p>
         </div>
         <div className="launch-grid">
           <article className="launch-card">
-            <span className="card-label">Native CLI</span>
-            <h3>Create a Bioconda env.</h3>
+            <span className="card-label">Published Bioconda package</span>
+            <h3>Create a verified 0.1.2 env.</h3>
             <pre><code>{`conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.2
 conda activate dotmatch
 dotmatch --version
@@ -867,12 +900,13 @@ dotmatch dist ACGT AGGT`}</code></pre>
           </article>
 
           <article className="launch-card">
-            <span className="card-label">Python workflow layer</span>
-            <h3>Use source installs, then PyPI after release verification.</h3>
+            <span className="card-label">Pre-release checkout</span>
+            <h3>Use source installs for branch-only features.</h3>
             <p>
-              The workflow namespaces for assay specs, barcode autopsy, panel
-              design, HTML reports, and Workbench-backed runs are not part of
-              the native Bioconda package.
+              GuideCounter-compatible mode, new evidence reports, and release
+              candidate packaging should be treated as source-checkout features
+              until PyPI, Bioconda, container, and DOI checks verify the tagged
+              release.
             </p>
             <div className="link-stack">
               <a href={packagingUrl}>Read package boundaries</a>
