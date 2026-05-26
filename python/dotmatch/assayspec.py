@@ -5,13 +5,17 @@ import csv
 import gzip
 import html
 import json
+import math
+import re
 import shlex
 import subprocess
 import sys
+from importlib import resources as importlib_resources
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Sequence
+from urllib.parse import quote
 
 from .core import MATCH_AMBIGUOUS, MATCH_NONE, MATCH_UNIQUE, Matcher
 from .native import find_native_cli
@@ -34,6 +38,68 @@ AUTOPSY_THRESHOLDS = {
     "no_match_rate_max": 0.15,
     "invalid_rate_max": 0.02,
 }
+RELIABILITY_PROFILES = {"production", "exploratory"}
+BACKEND_MODES = {"auto", "cpu", "gpu-metal-experimental"}
+RELIABILITY_DEFAULTS: dict[str, Any] = {
+    "profile": "production",
+    "fail_on_unsafe_targets": True,
+    "fail_on_draft_inference": True,
+    "min_assignment_rate": AUTOPSY_THRESHOLDS["assignment_rate_min"],
+    "max_ambiguous_rate": AUTOPSY_THRESHOLDS["ambiguous_rate_max"],
+    "max_unmatched_rate": AUTOPSY_THRESHOLDS["no_match_rate_max"],
+    "max_invalid_rate": AUTOPSY_THRESHOLDS["invalid_rate_max"],
+    "require_public_evidence_boundary": True,
+}
+BACKEND_DEFAULTS: dict[str, Any] = {
+    "mode": "auto",
+    "allow_gpu": True,
+}
+GPU_BENCHMARK_PRIORS = [
+    {
+        "workload": "public_crispr_yusa_hamming",
+        "mode": "count",
+        "assay_type": "crispr",
+        "target_count": 87437,
+        "target_length": 19,
+        "total_speedup": 1.92,
+    },
+    {
+        "workload": "synthetic_hamming_737_targets",
+        "mode": "count",
+        "assay_type": "generic",
+        "target_count": 737,
+        "target_length": 20,
+        "total_speedup": 13.50,
+    },
+    {
+        "workload": "synthetic_hamming_4096_targets",
+        "mode": "count",
+        "assay_type": "generic",
+        "target_count": 4096,
+        "target_length": 20,
+        "total_speedup": 10.05,
+    },
+]
+RELIABILITY_FINDING_COLUMNS = [
+    "finding_id",
+    "severity",
+    "stage",
+    "sample_id",
+    "metric",
+    "observed",
+    "threshold",
+    "message",
+    "recommended_action",
+    "source_artifact",
+]
+ASSAY_EVIDENCE_IDS = {
+    "crispr": "crispr_guide_counting",
+    "feature_barcode": "feature_barcode",
+    "inline_barcode": "inline_barcode",
+    "amplicon_panel": "amplicon_panel",
+    "oligo_adapter": "oligo_adapter",
+    "generic": "paired_combinatorial",
+}
 TEMPLATES = {
     "crispr",
     "feature-barcode",
@@ -43,6 +109,7 @@ TEMPLATES = {
     "oligo-adapter",
     "pair-count",
 }
+SAMPLE_ID_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 
 class AssaySpecError(ValueError):
@@ -64,7 +131,12 @@ class AssaySpec:
 
     @property
     def out_dir(self) -> Path:
-        return _path_from_spec(self.path, str(_table(self.data, "run").get("out_dir", "dotmatch_assay_out")))
+        return _path_from_spec(
+            self.path,
+            str(_table(self.data, "run").get("out_dir", "dotmatch_assay_out")),
+            allow_absolute=True,
+            name="run.out_dir",
+        )
 
     @property
     def k(self) -> int:
@@ -73,6 +145,18 @@ class AssaySpec:
     @property
     def status(self) -> str:
         return str(self.data.get("status", "ready"))
+
+    @property
+    def reliability(self) -> dict[str, Any]:
+        config = dict(RELIABILITY_DEFAULTS)
+        config.update(_table(self.data, "reliability"))
+        return config
+
+    @property
+    def backend(self) -> dict[str, Any]:
+        config = dict(BACKEND_DEFAULTS)
+        config.update(_table(self.data, "backend"))
+        return config
 
 
 @dataclass(frozen=True)
@@ -115,10 +199,26 @@ def validate_assay_spec(assay: AssaySpec) -> None:
     if "k" in assignment:
         _require_int_range(assignment["k"], 0, 2, "assignment.k")
     _require_enum(assignment.get("metric", "levenshtein"), METRICS, "assignment.metric")
-    _require_enum(assignment.get("ambiguity_policy", "best"), AMBIGUITY_POLICIES, "assignment.ambiguity_policy")
+    _require_enum(assignment.get("ambiguity_policy", "radius"), AMBIGUITY_POLICIES, "assignment.ambiguity_policy")
     _require_enum(assignment.get("ambiguous", "discard"), AMBIGUOUS_OUTPUT, "assignment.ambiguous")
     if int(assignment.get("k", 1)) == 2 and assignment.get("metric", "levenshtein") == "hamming":
         raise AssaySpecError("assignment.k=2 is only valid with assignment.metric='levenshtein'")
+
+    reliability = _table(data, "reliability")
+    if "profile" in reliability:
+        _require_enum(reliability["profile"], RELIABILITY_PROFILES, "reliability.profile")
+    for key in ["fail_on_unsafe_targets", "fail_on_draft_inference", "require_public_evidence_boundary"]:
+        if key in reliability:
+            _require_bool(reliability[key], f"reliability.{key}")
+    for key in ["min_assignment_rate", "max_ambiguous_rate", "max_unmatched_rate", "max_invalid_rate"]:
+        if key in reliability:
+            _require_float_range(reliability[key], 0.0, 1.0, f"reliability.{key}")
+
+    backend = _table(data, "backend")
+    if "mode" in backend:
+        _require_enum(backend["mode"], BACKEND_MODES, "backend.mode")
+    if "allow_gpu" in backend:
+        _require_bool(backend["allow_gpu"], "backend.allow_gpu")
 
     mode = str(data["mode"])
     if mode == "count":
@@ -131,6 +231,7 @@ def validate_assay_spec(assay: AssaySpec) -> None:
                 raise AssaySpecError(f"samples[{i}] must be a table")
             if not sample.get("id"):
                 raise AssaySpecError(f"samples[{i}].id is required")
+            _require_safe_identifier(sample.get("id"), f"samples[{i}].id")
             _require_existing_path(assay, sample.get("fastq"), f"samples[{i}].fastq")
         _require_extract(data, "extract")
     elif mode == "demux":
@@ -153,6 +254,11 @@ def compile_assay_plan(assay: AssaySpec) -> AssayPlan:
         "manifest_summary": out_dir / "assay_manifest.summary.tsv",
         "assay_report": out_dir / "assay_report.html",
         "normalized_spec": out_dir / "assay.normalized.json",
+        "reliability_summary": out_dir / "reliability_summary.json",
+        "reliability_findings": out_dir / "reliability_findings.tsv",
+        "reliability_report": out_dir / "reliability_report.html",
+        "reliability_manifest_summary": out_dir / "reliability_manifest.summary.tsv",
+        "backend_optimization": out_dir / "backend_optimization.json",
     }
     steps: list[PlanStep] = []
 
@@ -181,32 +287,73 @@ def compile_assay_plan(assay: AssaySpec) -> AssayPlan:
 
 
 def format_plan(plan: AssayPlan) -> str:
-    return "\n".join(shlex.join(step.argv) for step in plan.steps) + "\n"
+    lines = [shlex.join(step.argv) for step in plan.steps]
+    lines.extend(
+        [
+            "# Reliability artifacts",
+            f"# reliability_summary: {plan.artifacts['reliability_summary']}",
+            f"# reliability_findings: {plan.artifacts['reliability_findings']}",
+            f"# reliability_report: {plan.artifacts['reliability_report']}",
+            f"# reliability_manifest_summary: {plan.artifacts['reliability_manifest_summary']}",
+        ]
+    )
+    return "\n".join(lines) + "\n"
 
 
 def run_assay_plan(plan: AssayPlan) -> int:
-    native = find_native_cli()
     out_dir = plan.spec.out_dir
     out_dir.mkdir(parents=True, exist_ok=True)
     _write_generated_files(plan)
     _write_normalized_spec(plan)
-
     manifest: dict[str, Any] = {
         "schema_version": 1,
         "mode": plan.spec.mode,
         "assay_type": plan.spec.assay_type,
         "status": plan.spec.status,
         "spec_path": str(plan.spec.path),
-        "native_cli": str(native),
+        "native_cli": "",
         "commands": [],
         "artifacts": {key: str(value) for key, value in plan.artifacts.items()},
         "inference_report": str(plan.spec.data.get("inference_report", "")),
         "autopsy_triggered": False,
-        "autopsy_thresholds": AUTOPSY_THRESHOLDS,
+        "autopsy_thresholds": _reliability_thresholds(plan.spec),
         "autopsy_artifacts": {},
         "production_warnings": [],
         "warnings": [],
     }
+    try:
+        native = find_native_cli()
+    except FileNotFoundError as exc:
+        manifest["native_cli"] = ""
+        manifest["production_warnings"].append(str(exc))
+        reliability = _build_reliability_summary(plan, stage="preflight", manifest=manifest)
+        reliability["findings"].append(
+            _finding(
+                "native_cli_missing",
+                "blocked",
+                "preflight",
+                "",
+                "native_cli",
+                "missing",
+                "executable",
+                str(exc),
+                "Build with make dotmatch, install a wheel with the bundled native executable, or set DOTMATCH_NATIVE_CLI.",
+                "",
+            )
+        )
+        reliability["finding_counts"] = _finding_counts(reliability["findings"])
+        reliability["overall_status"] = _overall_reliability_status(reliability["finding_counts"])
+        manifest["reliability"] = {
+            "overall_status": reliability["overall_status"],
+            "finding_counts": reliability["finding_counts"],
+            "summary": str(plan.artifacts["reliability_summary"]),
+            "report": str(plan.artifacts["reliability_report"]),
+        }
+        _write_reliability_artifacts(plan, reliability)
+        _write_manifest(plan, manifest)
+        print(f"dotmatch assay: {exc}", file=sys.stderr)
+        return 2
+    manifest["native_cli"] = str(native)
     version = subprocess.run([str(native), "--version"], check=False, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     manifest["native_version"] = version.stdout.strip() if version.returncode == 0 else ""
 
@@ -225,7 +372,29 @@ def run_assay_plan(plan: AssayPlan) -> int:
         manifest["commands"].append(command_record)
         if step.name.startswith("audit") and result.returncode == 0:
             _append_audit_warnings(plan, step, manifest)
+            if _audit_step_unsafe(plan, step) and _blocks_on_unsafe_targets(plan.spec):
+                message = f"{step.name}: unsafe target audit at k={plan.spec.k}; blocked by production reliability profile"
+                manifest["production_warnings"].append(message)
+                reliability = _build_reliability_summary(plan, stage="preflight", manifest=manifest)
+                manifest["reliability"] = {
+                    "overall_status": reliability["overall_status"],
+                    "finding_counts": reliability["finding_counts"],
+                    "summary": str(plan.artifacts["reliability_summary"]),
+                    "report": str(plan.artifacts["reliability_report"]),
+                }
+                _write_reliability_artifacts(plan, reliability)
+                _write_manifest(plan, manifest)
+                print(f"dotmatch assay: {message}", file=sys.stderr)
+                return 2
         if result.returncode != 0:
+            reliability = _build_reliability_summary(plan, stage="postrun", manifest=manifest)
+            manifest["reliability"] = {
+                "overall_status": reliability["overall_status"],
+                "finding_counts": reliability["finding_counts"],
+                "summary": str(plan.artifacts["reliability_summary"]),
+                "report": str(plan.artifacts["reliability_report"]),
+            }
+            _write_reliability_artifacts(plan, reliability)
             _write_manifest(plan, manifest)
             sys.stderr.write(result.stderr)
             return int(result.returncode)
@@ -238,6 +407,14 @@ def run_assay_plan(plan: AssayPlan) -> int:
         manifest["autopsy_artifacts"] = {key: str(value) for key, value in autopsy_result.items()}
         manifest["production_warnings"].extend(autopsy_reasons)
 
+    reliability = _build_reliability_summary(plan, stage="postrun", manifest=manifest)
+    manifest["reliability"] = {
+        "overall_status": reliability["overall_status"],
+        "finding_counts": reliability["finding_counts"],
+        "summary": str(plan.artifacts["reliability_summary"]),
+        "report": str(plan.artifacts["reliability_report"]),
+    }
+    _write_reliability_artifacts(plan, reliability)
     _write_manifest(plan, manifest)
     return 0
 
@@ -269,8 +446,14 @@ def command_assay(argv: Sequence[str]) -> int:
     autopsy.add_argument("spec")
     autopsy.add_argument("--out-dir", required=True)
 
-    for name in ["check", "plan", "run"]:
-        child = sub.add_parser(name)
+    workflow_help = {
+        "check": "validate an AssaySpec and write preflight reliability artifacts",
+        "optimize": "write a benchmark-informed CPU/GPU backend recommendation",
+        "plan": "print the native commands and outputs for an AssaySpec",
+        "run": "run an AssaySpec workflow and write reports, manifests, and outputs",
+    }
+    for name, help_text in workflow_help.items():
+        child = sub.add_parser(name, help=help_text)
         child.add_argument("spec")
 
     args = parser.parse_args(list(argv))
@@ -284,9 +467,20 @@ def command_assay(argv: Sequence[str]) -> int:
             run_autopsy(assay, Path(args.out_dir))
             return 0
         if args.command == "check":
+            plan = compile_assay_plan(assay)
+            _write_preflight_reliability(plan)
             print(f"{assay.path}: ok")
             return 0
-        if args.command == "run" and assay.status == "draft":
+        if args.command == "optimize":
+            plan = compile_assay_plan(assay)
+            optimization = optimize_assay_backend(assay)
+            _write_backend_optimization(plan, optimization)
+            print(_format_backend_optimization(optimization), end="")
+            return 0
+        if args.command == "run" and assay.status == "draft" and _blocks_on_draft_inference(assay):
+            plan = compile_assay_plan(assay)
+            reliability = _build_reliability_summary(plan, stage="preflight")
+            _write_reliability_artifacts(plan, reliability)
             raise AssaySpecError("refusing to run draft AssaySpec; review inference report and promote status to 'ready'")
         plan = compile_assay_plan(assay)
         if args.command == "plan":
@@ -572,22 +766,23 @@ def _choose_candidate(candidates: list[dict[str, Any]]) -> tuple[dict[str, Any],
 
 def _write_inferred_count_spec(out: Path, status: str, assay_type: str, targets: Path, reads: Path, sample_id: str,
                                chosen: Mapping[str, Any]) -> None:
+    _require_safe_identifier(sample_id, "sample_id")
     format_name = "mageck" if assay_type == "crispr" else "dotmatch"
     command = "crispr" if assay_type == "crispr" else assay_type
     _write_text_file(
         out,
         f"""schema_version = 1
-status = "{status}"
+status = {_toml_string(status)}
 mode = "count"
-assay_type = "{assay_type}"
-targets = "{targets}"
+assay_type = {_toml_string(assay_type)}
+targets = {_toml_string(str(targets))}
 
 [[samples]]
-id = "{sample_id}"
-fastq = "{reads}"
+id = {_toml_string(sample_id)}
+fastq = {_toml_string(str(reads))}
 
 [run]
-out_dir = "{out.with_suffix('').name}_out"
+out_dir = {_toml_string(f"{out.with_suffix('').name}_out")}
 threads = 1
 
 [extract]
@@ -597,6 +792,7 @@ length = {chosen["length"]}
 [assignment]
 k = 1
 metric = "hamming"
+ambiguity_policy = "radius"
 ambiguous = "discard"
 
 [outputs]
@@ -614,14 +810,14 @@ def _write_inferred_demux_spec(out: Path, status: str, assay_type: str, barcodes
     _write_text_file(
         out,
         f"""schema_version = 1
-status = "{status}"
+status = {_toml_string(status)}
 mode = "demux"
-assay_type = "{assay_type}"
-barcodes = "{barcodes}"
-reads = "{reads}"
+assay_type = {_toml_string(assay_type)}
+barcodes = {_toml_string(str(barcodes))}
+reads = {_toml_string(str(reads))}
 
 [run]
-out_dir = "{out.with_suffix('').name}_out"
+out_dir = {_toml_string(f"{out.with_suffix('').name}_out")}
 
 [extract]
 start = {chosen["start"]}
@@ -630,6 +826,7 @@ length = {chosen["length"]}
 [assignment]
 k = 1
 metric = "hamming"
+ambiguity_policy = "radius"
 
 [outputs]
 assignments = true
@@ -644,15 +841,15 @@ def _write_inferred_pair_spec(out: Path, status: str, assay_type: str, left_targ
     _write_text_file(
         out,
         f"""schema_version = 1
-status = "{status}"
+status = {_toml_string(status)}
 mode = "pair-count"
-assay_type = "{assay_type}"
-left_targets = "{left_targets}"
-right_targets = "{right_targets}"
-reads = "{reads}"
+assay_type = {_toml_string(assay_type)}
+left_targets = {_toml_string(str(left_targets))}
+right_targets = {_toml_string(str(right_targets))}
+reads = {_toml_string(str(reads))}
 
 [run]
-out_dir = "{out.with_suffix('').name}_out"
+out_dir = {_toml_string(f"{out.with_suffix('').name}_out")}
 
 [left]
 start = {left["start"]}
@@ -665,6 +862,7 @@ length = {right["length"]}
 [assignment]
 k = 1
 metric = "hamming"
+ambiguity_policy = "radius"
 
 [outputs]
 assignments = true
@@ -675,6 +873,10 @@ assignments = true
 def _write_text_file(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
+
+
+def _toml_string(value: str) -> str:
+    return json.dumps(value, ensure_ascii=False)
 
 
 def _write_candidates_tsv(path: Path, report_data: Mapping[str, Any]) -> None:
@@ -713,7 +915,7 @@ def _autopsy_count(assay: AssaySpec, native: Path, out_dir: Path, findings: list
             "--targets",
             str(_spec_path(assay, "targets")),
             "--reads",
-            str(_path_from_spec(assay.path, str(sample["fastq"]))),
+            str(_path_from_spec(assay.path, str(sample["fastq"]), allow_absolute=True, name="samples.fastq")),
             "--target-start",
             str(extract["start"]),
             "--target-length",
@@ -835,11 +1037,17 @@ def _add_top_unmatched_findings(top_path: Path, findings: list[dict[str, str]], 
 def _write_findings(path: Path, findings: Sequence[Mapping[str, str]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as fh:
-        fh.write("sample\tfinding\tseverity\tevidence\tartifact\n")
+        writer = csv.writer(fh, delimiter="\t", lineterminator="\n")
+        writer.writerow(["sample", "finding", "severity", "evidence", "artifact"])
         for finding in findings:
-            fh.write(
-                f"{finding['sample']}\t{finding['finding']}\t{finding['severity']}\t"
-                f"{finding['evidence']}\t{finding['artifact']}\n"
+            writer.writerow(
+                [
+                    finding["sample"],
+                    finding["finding"],
+                    finding["severity"],
+                    finding["evidence"],
+                    finding["artifact"],
+                ]
             )
 
 
@@ -850,18 +1058,25 @@ def _autopsy_trigger_reasons(plan: AssayPlan) -> list[str]:
     if sample_qc is None or not sample_qc.exists():
         return []
     reasons: list[str] = []
+    thresholds = _reliability_thresholds(plan.spec)
     with sample_qc.open("r", encoding="utf-8") as fh:
         reader = csv.DictReader(fh, delimiter="\t")
         for row in reader:
             sample = row.get("sample_id", "")
-            total = _float(row.get("total_reads"))
-            invalid = _float(row.get("invalid_reads"))
+            try:
+                total = _required_float(row, "total_reads")
+                invalid = _required_float(row, "invalid_reads")
+                assignment_rate = _required_float(row, "assignment_rate")
+                ambiguous_rate = _required_float(row, "ambiguous_rate")
+                no_match_rate = _required_float(row, "no_match_rate")
+            except AssaySpecError:
+                continue
             invalid_rate = invalid / total if total else 0.0
             checks = [
-                ("assignment_rate", _float(row.get("assignment_rate")), "<", AUTOPSY_THRESHOLDS["assignment_rate_min"]),
-                ("ambiguous_rate", _float(row.get("ambiguous_rate")), ">", AUTOPSY_THRESHOLDS["ambiguous_rate_max"]),
-                ("no_match_rate", _float(row.get("no_match_rate")), ">", AUTOPSY_THRESHOLDS["no_match_rate_max"]),
-                ("invalid_rate", invalid_rate, ">", AUTOPSY_THRESHOLDS["invalid_rate_max"]),
+                ("assignment_rate", assignment_rate, "<", thresholds["min_assignment_rate"]),
+                ("ambiguous_rate", ambiguous_rate, ">", thresholds["max_ambiguous_rate"]),
+                ("no_match_rate", no_match_rate, ">", thresholds["max_unmatched_rate"]),
+                ("invalid_rate", invalid_rate, ">", thresholds["max_invalid_rate"]),
             ]
             for metric, value, op, threshold in checks:
                 if (op == "<" and value < threshold) or (op == ">" and value > threshold):
@@ -874,6 +1089,16 @@ def _float(value: Any) -> float:
         return float(value)
     except (TypeError, ValueError):
         return 0.0
+
+
+def _required_float(row: Mapping[str, Any], key: str) -> float:
+    value = row.get(key)
+    if value is None or value == "":
+        raise AssaySpecError(f"sample_qc missing {key}")
+    try:
+        return float(value)
+    except (TypeError, ValueError) as exc:
+        raise AssaySpecError(f"sample_qc has invalid {key}: {value!r}") from exc
 
 
 def _compile_count(assay: AssaySpec, steps: list[PlanStep], artifacts: dict[str, Path], samples_path: Path) -> None:
@@ -976,7 +1201,7 @@ def _compile_count(assay: AssaySpec, steps: list[PlanStep], artifacts: dict[str,
         "--targets",
         str(_spec_path(assay, "targets")),
         "--reads",
-        str(_path_from_spec(assay.path, str(first_sample["fastq"]))),
+        str(_path_from_spec(assay.path, str(first_sample["fastq"]), allow_absolute=True, name="samples.fastq")),
         "--target-start",
         str(extract["start"]),
         "--target-length",
@@ -1020,7 +1245,7 @@ def _compile_demux(assay: AssaySpec, steps: list[PlanStep], artifacts: dict[str,
         "--summary",
         str(artifacts["summary"]),
     ]
-    _add_assignment_options(cmd, assignment, include_ambiguity_policy=False)
+    _add_assignment_options(cmd, assignment)
     if outputs.get("assignments"):
         artifacts["assignments"] = out_dir / "assignments.tsv"
         cmd.extend(["--assignments", str(artifacts["assignments"])])
@@ -1067,6 +1292,7 @@ def _compile_pair(assay: AssaySpec, steps: list[PlanStep], artifacts: dict[str, 
         "--summary",
         str(artifacts["pair_summary"]),
     ]
+    cmd.extend(["--ambiguity-policy", str(assignment.get("ambiguity_policy", "radius"))])
     if outputs.get("assignments"):
         artifacts["pair_assignments"] = out_dir / "pair_assignments.tsv"
         cmd.extend(["--assignments", str(artifacts["pair_assignments"])])
@@ -1078,8 +1304,8 @@ def _audit_cmd(targets: Path, out_dir: Path, k: int) -> list[str]:
 
 
 def _add_assignment_options(cmd: list[str], assignment: Mapping[str, Any], *, include_ambiguity_policy: bool = True) -> None:
-    if include_ambiguity_policy and "ambiguity_policy" in assignment:
-        cmd.extend(["--ambiguity-policy", str(assignment["ambiguity_policy"])])
+    if include_ambiguity_policy:
+        cmd.extend(["--ambiguity-policy", str(assignment.get("ambiguity_policy", "radius"))])
     if "indel_window" in assignment:
         cmd.extend(["--indel-window", str(assignment["indel_window"])])
     if "max_correction_qual" in assignment:
@@ -1094,9 +1320,15 @@ def _write_generated_files(plan: AssayPlan) -> None:
         return
     samples_path.parent.mkdir(parents=True, exist_ok=True)
     with samples_path.open("w", encoding="utf-8") as fh:
-        fh.write("sample_id\tfastq\n")
+        writer = csv.writer(fh, delimiter="\t", lineterminator="\n")
+        writer.writerow(["sample_id", "fastq"])
         for sample in _samples(plan.spec.data):
-            fh.write(f"{sample['id']}\t{_path_from_spec(plan.spec.path, str(sample['fastq']))}\n")
+            writer.writerow(
+                [
+                    sample["id"],
+                    _path_from_spec(plan.spec.path, str(sample["fastq"]), allow_absolute=True, name="samples.fastq"),
+                ]
+            )
 
 
 def _write_normalized_spec(plan: AssayPlan) -> None:
@@ -1115,6 +1347,841 @@ def _write_manifest(plan: AssayPlan, manifest: Mapping[str, Any]) -> None:
         fh.write("\n")
     _write_manifest_summary(plan, manifest)
     _write_assay_report(plan, manifest)
+
+
+def _write_preflight_reliability(plan: AssayPlan) -> dict[str, Any]:
+    summary = _build_reliability_summary(plan, stage="preflight")
+    _write_reliability_artifacts(plan, summary)
+    return summary
+
+
+def _build_reliability_summary(plan: AssayPlan, *, stage: str, manifest: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    findings: list[dict[str, str]] = []
+    findings.extend(_base_reliability_findings(plan, stage))
+    if manifest is not None or stage != "preflight":
+        findings.extend(_audit_reliability_findings(plan, stage))
+    if manifest is not None:
+        findings.extend(_command_reliability_findings(manifest, stage))
+        findings.extend(_sample_qc_reliability_findings(plan, stage))
+        findings.extend(_autopsy_reliability_findings(manifest, stage))
+    if stage == "preflight":
+        findings.append(
+            _finding(
+                "read_qc_unavailable",
+                "info",
+                "preflight",
+                "",
+                "sample_qc",
+                "unavailable",
+                "",
+                "Read-dependent QC is unavailable during assay check.",
+                "Run dotmatch assay run to evaluate assignment, ambiguous, unmatched, and invalid read rates.",
+                "",
+            )
+        )
+    counts = _finding_counts(findings)
+    summary = {
+        "schema_version": 1,
+        "stage": stage,
+        "overall_status": _overall_reliability_status(counts),
+        "mode": plan.spec.mode,
+        "assay_type": plan.spec.assay_type,
+        "spec_status": plan.spec.status,
+        "profile": str(plan.spec.reliability["profile"]),
+        "thresholds": _reliability_thresholds(plan.spec),
+        "backend": _backend_summary(plan.spec),
+        "backend_optimizer": optimize_assay_backend(plan.spec),
+        "evidence_boundary": _evidence_boundary(plan.spec),
+        "findings": findings,
+        "finding_counts": counts,
+        "artifacts": {key: str(value) for key, value in plan.artifacts.items()},
+        "commands": list((manifest or {}).get("commands", []) or []),
+    }
+    return summary
+
+
+def _command_reliability_findings(manifest: Mapping[str, Any], stage: str) -> list[dict[str, str]]:
+    findings: list[dict[str, str]] = []
+    for command in manifest.get("commands", []) or []:
+        if not isinstance(command, dict):
+            continue
+        exit_code = command.get("exit_code")
+        if exit_code not in (0, None):
+            findings.append(
+                _finding(
+                    "command_failed",
+                    "error",
+                    stage,
+                    "",
+                    str(command.get("name", "command")),
+                    str(exit_code),
+                    "0",
+                    "A native command failed during the assay run.",
+                    "Inspect command stderr/stdout in assay_manifest.json before trusting outputs.",
+                    str(manifest.get("artifacts", {}).get("manifest", "")),
+                )
+            )
+    return findings
+
+
+def _sample_qc_reliability_findings(plan: AssayPlan, stage: str) -> list[dict[str, str]]:
+    sample_qc = plan.artifacts.get("sample_qc")
+    if sample_qc is None or not sample_qc.exists():
+        return [
+            _finding(
+                "read_qc_unavailable",
+                "info",
+                stage,
+                "",
+                "sample_qc",
+                "unavailable",
+                "",
+                "Read-dependent QC was not available for this assay mode.",
+                "Use a count workflow with sample_qc.tsv to evaluate read-level reliability thresholds.",
+                "",
+            )
+        ]
+    findings: list[dict[str, str]] = []
+    thresholds = _reliability_thresholds(plan.spec)
+    severity = _threshold_severity(plan.spec)
+    with sample_qc.open("r", encoding="utf-8") as fh:
+        reader = csv.DictReader(fh, delimiter="\t")
+        required = {"sample_id", "assignment_rate", "ambiguous_rate", "no_match_rate", "total_reads", "invalid_reads"}
+        missing = sorted(required - set(reader.fieldnames or []))
+        if missing:
+            return [
+                _finding(
+                    "sample_qc_malformed",
+                    "error",
+                    stage,
+                    "",
+                    "sample_qc",
+                    f"missing columns: {', '.join(missing)}",
+                    "required columns present",
+                    "sample_qc.tsv is missing required reliability columns.",
+                    "Regenerate assay outputs before trusting reliability metrics.",
+                    str(sample_qc),
+                )
+            ]
+        for row in reader:
+            sample = row.get("sample_id", "")
+            try:
+                total = _required_float(row, "total_reads")
+                invalid = _required_float(row, "invalid_reads")
+                assignment_rate = _required_float(row, "assignment_rate")
+                ambiguous_rate = _required_float(row, "ambiguous_rate")
+                no_match_rate = _required_float(row, "no_match_rate")
+            except AssaySpecError as exc:
+                findings.append(
+                    _finding(
+                        "sample_qc_malformed",
+                        "error",
+                        stage,
+                        sample,
+                        "sample_qc",
+                        str(exc),
+                        "numeric reliability metrics",
+                        "sample_qc.tsv contains malformed reliability data.",
+                        "Regenerate assay outputs before trusting reliability metrics.",
+                        str(sample_qc),
+                    )
+                )
+                continue
+            invalid_rate = invalid / total if total else 0.0
+            checks = [
+                ("assignment_rate_below_min", "assignment_rate", assignment_rate, "<", thresholds["min_assignment_rate"]),
+                ("ambiguous_rate_above_max", "ambiguous_rate", ambiguous_rate, ">", thresholds["max_ambiguous_rate"]),
+                ("unmatched_rate_above_max", "no_match_rate", no_match_rate, ">", thresholds["max_unmatched_rate"]),
+                ("invalid_rate_above_max", "invalid_rate", invalid_rate, ">", thresholds["max_invalid_rate"]),
+            ]
+            for finding_id, metric, observed, op, threshold in checks:
+                failed = observed < threshold if op == "<" else observed > threshold
+                if not failed:
+                    continue
+                findings.append(
+                    _finding(
+                        finding_id,
+                        severity,
+                        stage,
+                        sample,
+                        metric,
+                        f"{observed:.8f}",
+                        f"{threshold:.8f}",
+                        f"{sample or 'sample'} has {metric} {op} configured reliability threshold.",
+                        "Review the assay window, target set, correction radius, and autopsy outputs before using counts.",
+                        str(sample_qc),
+                    )
+                )
+    return findings
+
+
+def _audit_reliability_findings(plan: AssayPlan, stage: str) -> list[dict[str, str]]:
+    findings: list[dict[str, str]] = []
+    for key in ["audit", "left_audit", "right_audit"]:
+        audit_dir = plan.artifacts.get(key)
+        if audit_dir is None:
+            continue
+        summary = Path(audit_dir) / "audit_summary.json"
+        if not summary.exists():
+            continue
+        try:
+            data = json.loads(summary.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            findings.append(
+                _finding(
+                    "audit_summary_malformed",
+                    "error",
+                    stage,
+                    "",
+                    key,
+                    "malformed",
+                    "valid JSON",
+                    "Target audit summary could not be parsed.",
+                    "Re-run assay audit and inspect audit_summary.json.",
+                    str(summary),
+                )
+            )
+            continue
+        safe_key = f"safe_at_k{plan.spec.k}"
+        if data.get(safe_key) is False:
+            severity = "blocked" if _blocks_on_unsafe_targets(plan.spec) else _threshold_severity(plan.spec)
+            findings.append(
+                _finding(
+                    "unsafe_targets",
+                    severity,
+                    stage,
+                    "",
+                    safe_key,
+                    "false",
+                    "true",
+                    f"Target audit reports {safe_key}=false for {key}.",
+                    "Lower correction radius, use k=0, or redesign/fix colliding targets before production use.",
+                    str(summary),
+                )
+            )
+    return findings
+
+
+def _blocks_on_unsafe_targets(assay: AssaySpec) -> bool:
+    reliability = assay.reliability
+    return str(reliability["profile"]) == "production" and bool(reliability["fail_on_unsafe_targets"])
+
+
+def _blocks_on_draft_inference(assay: AssaySpec) -> bool:
+    reliability = assay.reliability
+    return str(reliability["profile"]) == "production" and bool(reliability["fail_on_draft_inference"])
+
+
+def _audit_step_unsafe(plan: AssayPlan, step: PlanStep) -> bool:
+    summary = Path(step.argv[-1]) / "audit_summary.json"
+    if not summary.exists():
+        return False
+    try:
+        data = json.loads(summary.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return False
+    return data.get(f"safe_at_k{plan.spec.k}") is False
+
+
+def _autopsy_reliability_findings(manifest: Mapping[str, Any], stage: str) -> list[dict[str, str]]:
+    if not manifest.get("autopsy_triggered"):
+        return []
+    findings = [
+        _finding(
+            "autopsy_triggered",
+            "warning",
+            stage,
+            "",
+            "autopsy",
+            "triggered",
+            "not_triggered",
+            "Automatic autopsy was triggered by conservative assay QC thresholds.",
+            "Review autopsy findings before using the run for downstream interpretation.",
+            str((manifest.get("autopsy_artifacts", {}) or {}).get("findings", "")),
+        )
+    ]
+    autopsy_findings = (manifest.get("autopsy_artifacts", {}) or {}).get("findings")
+    if autopsy_findings and Path(str(autopsy_findings)).exists():
+        with Path(str(autopsy_findings)).open("r", encoding="utf-8") as fh:
+            reader = csv.DictReader(fh, delimiter="\t")
+            for row in reader:
+                findings.append(
+                    _finding(
+                        f"autopsy_{row.get('finding', 'finding')}",
+                        str(row.get("severity", "warning") or "warning"),
+                        stage,
+                        str(row.get("sample", "")),
+                        "autopsy",
+                        str(row.get("finding", "")),
+                        "",
+                        str(row.get("evidence", "")),
+                        "Review the linked autopsy artifact before using the run.",
+                        str(row.get("artifact", autopsy_findings)),
+                    )
+                )
+    return findings
+
+
+def _threshold_severity(assay: AssaySpec) -> str:
+    return "error" if str(assay.reliability["profile"]) == "production" else "warning"
+
+
+def _base_reliability_findings(plan: AssayPlan, stage: str) -> list[dict[str, str]]:
+    findings: list[dict[str, str]] = []
+    reliability = plan.spec.reliability
+    if plan.spec.status == "draft":
+        severity = "blocked" if _blocks_on_draft_inference(plan.spec) else _threshold_severity(plan.spec)
+        findings.append(
+            _finding(
+                "draft_assayspec",
+                severity,
+                stage,
+                "",
+                "status",
+                plan.spec.status,
+                "ready",
+                "Production reliability profile refuses draft inferred AssaySpec files.",
+                "Review the inference report and promote status to ready before production runs.",
+                str(plan.spec.path),
+            )
+        )
+    evidence = _evidence_boundary(plan.spec)
+    if reliability["require_public_evidence_boundary"] and evidence["status"] == "missing":
+        findings.append(
+            _finding(
+                "evidence_boundary_missing",
+                "error",
+                stage,
+                "",
+                "assay_type",
+                plan.spec.assay_type,
+                "documented public evidence boundary",
+                "No assay evidence boundary is recorded for this assay type.",
+                "Add assay evidence metadata before making public claims for this workflow.",
+                "docs/assay-evidence.json",
+            )
+        )
+    elif reliability["require_public_evidence_boundary"] and evidence["status"] != "supported":
+        findings.append(
+            _finding(
+                "evidence_boundary_not_supported",
+                _threshold_severity(plan.spec),
+                stage,
+                "",
+                "assay_type",
+                plan.spec.assay_type,
+                "supported public evidence boundary",
+                f"Assay evidence boundary is {evidence['status']!r}, not supported.",
+                "Treat this run as smoke or gated evidence until public comparator validation is recorded.",
+                "docs/assay-evidence.json",
+            )
+        )
+    backend = _backend_summary(plan.spec)
+    if backend["mode"] == "gpu-metal-experimental":
+        findings.append(
+            _finding(
+                "experimental_gpu_forced",
+                "warning",
+                stage,
+                "",
+                "backend.mode",
+                "gpu-metal-experimental",
+                "cpu or auto for production",
+                "The Metal GPU backend is experimental and CPU remains the assignment authority.",
+                "Use backend.mode = \"auto\" or \"cpu\" for production evidence until assay-specific GPU gates are promoted.",
+                "",
+            )
+        )
+    return findings
+
+
+def _reliability_thresholds(assay: AssaySpec) -> dict[str, float]:
+    reliability = assay.reliability
+    return {
+        "min_assignment_rate": float(reliability["min_assignment_rate"]),
+        "max_ambiguous_rate": float(reliability["max_ambiguous_rate"]),
+        "max_unmatched_rate": float(reliability["max_unmatched_rate"]),
+        "max_invalid_rate": float(reliability["max_invalid_rate"]),
+    }
+
+
+def _backend_summary(assay: AssaySpec) -> dict[str, str]:
+    backend = assay.backend
+    mode = str(backend["mode"])
+    if mode == "cpu":
+        gpu_status = "disabled_by_mode"
+    elif not bool(backend["allow_gpu"]):
+        gpu_status = "disabled_by_config"
+    elif _gpu_eligible(assay) and _gpu_public_evidence_validated(assay):
+        gpu_status = "eligible_but_not_used"
+    elif _gpu_eligible(assay):
+        gpu_status = "compute_compatible_no_public_gpu_gate"
+    else:
+        gpu_status = "not_eligible"
+    return {
+        "mode": mode,
+        "authority": "cpu",
+        "selected": "cpu",
+        "gpu_status": gpu_status,
+    }
+
+
+def optimize_assay_backend(assay: AssaySpec) -> dict[str, Any]:
+    features, reason_codes = _backend_optimizer_features(assay)
+    speed_model = _gpu_speed_model(features)
+    compute_compatible = not any(code.endswith("_not_gpu_supported") or code.endswith("_not_gpu_packable") for code in reason_codes)
+    public_gate = _gpu_public_evidence_validated(assay)
+    backend = assay.backend
+    allow_gpu = bool(backend["allow_gpu"]) and str(backend["mode"]) != "cpu"
+    cpu_strategy, route_reasons = _cpu_route_strategy(features, reason_codes)
+    benchmark_confidence = _benchmark_confidence(features, reason_codes, compute_compatible, public_gate, allow_gpu)
+
+    if not allow_gpu:
+        candidate_backend = "cpu"
+        recommendation = "cpu_required"
+        expected_speedup_band = "1x"
+        if str(backend["mode"]) == "cpu":
+            reason_codes.append("gpu_disabled_by_mode")
+            route_reasons.append("gpu_disabled_by_mode")
+        else:
+            reason_codes.append("gpu_disabled_by_config")
+            route_reasons.append("gpu_disabled_by_config")
+    elif compute_compatible and public_gate:
+        candidate_backend = "gpu-metal-experimental"
+        recommendation = "gpu_candidate_requires_cpu_validation"
+        expected_speedup_band = _gpu_expected_speedup_band(speed_model["estimated_total_speedup"])
+        reason_codes.append("public_gpu_gate_validated")
+        route_reasons.append("gpu_candidate_public_gate")
+    elif compute_compatible:
+        candidate_backend = "gpu-metal-experimental"
+        recommendation = "gpu_candidate_gated"
+        expected_speedup_band = "unknown_until_public_gate"
+        reason_codes.append("compute_compatible_no_public_gpu_gate")
+        route_reasons.append("gpu_candidate_without_public_gate")
+    else:
+        candidate_backend = "cpu"
+        recommendation = "cpu_required"
+        expected_speedup_band = "1x"
+        route_reasons.append("gpu_ineligible_cpu_only")
+
+    accuracy_gates = [
+        "cpu_assignment_authority",
+        "cpu_count_checksum_required",
+        "zero_mismatch_required_before_speed_claim",
+    ]
+    diagnostic_constraints = [
+        "cpu_remains_assignment_authority",
+        "cpu_count_checksum_required",
+        "gpu_candidate_requires_zero_mismatch_diagnostic",
+        "benchmark_priors_are_route_metadata_only",
+    ]
+    return {
+        "schema_version": 1,
+        "optimizer": "local_benchmark_informed_scorer_v1",
+        "authority": "cpu",
+        "selected_backend": "cpu",
+        "candidate_backend": candidate_backend,
+        "recommendation": recommendation,
+        "expected_speedup_band": expected_speedup_band,
+        "estimated_total_speedup": speed_model["estimated_total_speedup"],
+        "speed_model": speed_model,
+        "cpu_strategy": cpu_strategy,
+        "thread_hint": _thread_hint(assay, features),
+        "benchmark_prior_count": int(speed_model["training_rows"]),
+        "benchmark_confidence": benchmark_confidence,
+        "diagnostic_constraints": diagnostic_constraints,
+        "route_reasons": sorted(dict.fromkeys(route_reasons)),
+        "reason_codes": sorted(dict.fromkeys(reason_codes)),
+        "accuracy_gates": accuracy_gates,
+        "workload_features": features,
+    }
+
+
+def _cpu_route_strategy(features: Mapping[str, Any], reason_codes: Sequence[str]) -> tuple[str, list[str]]:
+    metric = str(features.get("metric", "levenshtein"))
+    reasons = [str(code) for code in reason_codes]
+    fixed_length = bool(features.get("uniform_target_length")) and features.get("target_length") is not None
+    acgt_packable = bool(features.get("acgt_packable"))
+
+    if metric == "levenshtein":
+        return "cpu_levenshtein_indexed", reasons + ["levenshtein_indexed_cpu"]
+
+    if metric == "hamming":
+        hamming_reasons = ["hamming_distance_cpu"]
+        if fixed_length and acgt_packable:
+            hamming_reasons.extend(["hamming_seed_index_available", "fixed_length_acgt_targets"])
+            return "cpu_hamming_seed_index", reasons + hamming_reasons
+        if not acgt_packable:
+            hamming_reasons.append("non_acgt_targets_cpu_only")
+        if not fixed_length:
+            hamming_reasons.append("variable_length_targets_cpu_only")
+        return "cpu_hamming_indexed", reasons + hamming_reasons
+
+    return "cpu_generic_assignment", reasons + ["generic_cpu_assignment"]
+
+
+def _benchmark_confidence(
+    features: Mapping[str, Any],
+    reason_codes: Sequence[str],
+    compute_compatible: bool,
+    public_gate: bool,
+    allow_gpu: bool,
+) -> str:
+    if not allow_gpu:
+        return "gpu_disabled"
+    if not compute_compatible:
+        return "unsupported_route"
+    if public_gate and bool(features.get("public_gpu_evidence_validated")):
+        return "public_prior"
+    if reason_codes:
+        return "nearest_prior_with_constraints"
+    return "nearest_prior"
+
+
+def _thread_hint(assay: AssaySpec, features: Mapping[str, Any]) -> dict[str, Any]:
+    configured = _table(assay.data, "run").get("threads")
+    configured_threads = configured if isinstance(configured, int) and configured > 0 else None
+    max_threads = configured_threads or 4
+    target_count = int(features.get("target_count") or 0)
+    target_length = int(features.get("target_length") or 0)
+    reasons: list[str] = []
+
+    if configured_threads is not None:
+        reasons.append("configured_threads_cap")
+    else:
+        reasons.append("default_threads_cap")
+
+    if target_count <= 1024 or target_length <= 8:
+        recommended = 1
+        reasons.append("small_target_set")
+    elif target_count <= 10000:
+        recommended = min(4, max_threads)
+        reasons.append("moderate_target_set")
+    else:
+        recommended = min(8, max_threads)
+        reasons.append("large_target_set")
+
+    recommended = max(1, min(recommended, max_threads))
+    return {
+        "recommended_threads": recommended,
+        "max_threads": max_threads,
+        "reason_codes": sorted(dict.fromkeys(reasons)),
+    }
+
+
+def _backend_optimizer_features(assay: AssaySpec) -> tuple[dict[str, Any], list[str]]:
+    assignment = _table(assay.data, "assignment")
+    metric = str(assignment.get("metric", "levenshtein"))
+    k = int(assignment.get("k", 1))
+    reason_codes: list[str] = []
+    target_key = ""
+    extract: Mapping[str, Any] = {}
+
+    if assay.mode == "count":
+        target_key = "targets"
+        extract = _table(assay.data, "extract")
+    elif assay.mode == "demux":
+        target_key = "barcodes"
+        extract = _table(assay.data, "extract")
+    else:
+        reason_codes.append("pair_count_not_gpu_supported")
+
+    length = extract.get("length")
+    target_count = 0
+    target_lengths: list[int] = []
+    acgt_packable = False
+    uniform_target_length = False
+    if target_key:
+        try:
+            target_set = _read_target_sequences(_spec_path(assay, target_key))
+        except AssaySpecError:
+            target_set = TargetSet(sequences=[], lengths=[])
+            reason_codes.append("target_table_unreadable")
+        target_count = len(target_set.sequences)
+        target_lengths = target_set.lengths
+        uniform_target_length = len(target_lengths) == 1
+        acgt_packable = bool(target_set.sequences) and all(set(seq) <= {"A", "C", "G", "T"} for seq in target_set.sequences)
+    if metric != "hamming":
+        reason_codes.append("metric_not_gpu_supported")
+    if k != 1:
+        reason_codes.append("edit_radius_not_gpu_supported")
+    if not isinstance(length, int) or not 1 <= length <= 32:
+        reason_codes.append("target_length_not_gpu_supported")
+    if target_lengths and target_lengths != [length]:
+        reason_codes.append("variable_target_length_not_gpu_supported")
+    if not uniform_target_length and target_key:
+        reason_codes.append("variable_target_length_not_gpu_supported")
+    if not acgt_packable and target_key:
+        reason_codes.append("target_alphabet_not_gpu_packable")
+
+    features = {
+        "mode": assay.mode,
+        "assay_type": assay.assay_type,
+        "backend_mode": str(assay.backend["mode"]),
+        "allow_gpu": bool(assay.backend["allow_gpu"]),
+        "metric": metric,
+        "k": k,
+        "target_count": target_count,
+        "target_length": int(length) if isinstance(length, int) else None,
+        "target_lengths": target_lengths,
+        "acgt_packable": acgt_packable,
+        "uniform_target_length": uniform_target_length,
+        "public_gpu_evidence_validated": _gpu_public_evidence_validated(assay),
+    }
+    return features, reason_codes
+
+
+def _gpu_speed_model(features: Mapping[str, Any]) -> dict[str, Any]:
+    target_count = max(int(features.get("target_count") or 0), 1)
+    target_length = int(features.get("target_length") or 0)
+    mode = str(features.get("mode", ""))
+    assay_type = str(features.get("assay_type", ""))
+    if mode == "count" and assay_type == "crispr" and bool(features.get("public_gpu_evidence_validated")):
+        nearest = GPU_BENCHMARK_PRIORS[0]
+        return {
+            "model": "nearest_neighbor_benchmark_priors_v1",
+            "training_rows": len(GPU_BENCHMARK_PRIORS),
+            "estimated_total_speedup": round(float(nearest["total_speedup"]), 2),
+            "nearest_workload": str(nearest["workload"]),
+            "nearest_total_speedup": float(nearest["total_speedup"]),
+        }
+    ranked = []
+    for row in GPU_BENCHMARK_PRIORS:
+        target_penalty = abs(math.log10(target_count) - math.log10(int(row["target_count"])))
+        length_penalty = abs(target_length - int(row["target_length"])) / 10.0
+        mode_penalty = 0.0 if mode == row["mode"] else 1.0
+        assay_penalty = 0.0 if assay_type == row["assay_type"] else 0.4
+        distance = target_penalty + length_penalty + mode_penalty + assay_penalty
+        ranked.append((distance, row))
+    ranked.sort(key=lambda item: item[0])
+    nearest = ranked[0][1]
+    estimated = float(nearest["total_speedup"])
+    return {
+        "model": "nearest_neighbor_benchmark_priors_v1",
+        "training_rows": len(GPU_BENCHMARK_PRIORS),
+        "estimated_total_speedup": round(estimated, 2),
+        "nearest_workload": str(nearest["workload"]),
+        "nearest_total_speedup": float(nearest["total_speedup"]),
+    }
+
+
+def _gpu_expected_speedup_band(estimated_total_speedup: float) -> str:
+    if estimated_total_speedup < 1.25:
+        return "1x"
+    if estimated_total_speedup < 3.0:
+        return "1.5-3x"
+    if estimated_total_speedup < 8.0:
+        return "3-8x"
+    return "8-15x"
+
+
+def _write_backend_optimization(plan: AssayPlan, optimization: Mapping[str, Any]) -> None:
+    path = plan.artifacts["backend_optimization"]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(optimization, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _format_backend_optimization(optimization: Mapping[str, Any]) -> str:
+    reason_codes = ", ".join(str(code) for code in optimization.get("reason_codes", []) or [])
+    accuracy_gates = ", ".join(str(gate) for gate in optimization.get("accuracy_gates", []) or [])
+    return "\n".join(
+        [
+            "DotMatch backend optimizer",
+            f"authority: {optimization.get('authority', '')}",
+            f"selected_backend: {optimization.get('selected_backend', '')}",
+            f"candidate_backend: {optimization.get('candidate_backend', '')}",
+            f"recommendation: {optimization.get('recommendation', '')}",
+            f"expected_speedup_band: {optimization.get('expected_speedup_band', '')}",
+            f"reason_codes: {reason_codes}",
+            f"accuracy_gates: {accuracy_gates}",
+        ]
+    ) + "\n"
+
+
+def _gpu_eligible(assay: AssaySpec) -> bool:
+    assignment = _table(assay.data, "assignment")
+    if int(assignment.get("k", 1)) != 1 or str(assignment.get("metric", "levenshtein")) != "hamming":
+        return False
+    extract: Mapping[str, Any]
+    if assay.mode == "count":
+        extract = _table(assay.data, "extract")
+        target_key = "targets"
+    elif assay.mode == "demux":
+        extract = _table(assay.data, "extract")
+        target_key = "barcodes"
+    elif assay.mode == "pair-count":
+        return False
+    else:
+        return False
+    length = extract.get("length")
+    if not isinstance(length, int) or not 1 <= length <= 32:
+        return False
+    try:
+        target_set = _read_target_sequences(_spec_path(assay, target_key))
+    except AssaySpecError:
+        return False
+    return target_set.lengths == [length] and all(set(seq) <= {"A", "C", "G", "T"} for seq in target_set.sequences)
+
+
+def _gpu_public_evidence_validated(assay: AssaySpec) -> bool:
+    return assay.mode == "count" and assay.assay_type == "crispr"
+
+
+def _evidence_boundary(assay: AssaySpec) -> dict[str, str]:
+    evidence_id = ASSAY_EVIDENCE_IDS.get(assay.assay_type, "")
+    try:
+        data = json.loads(importlib_resources.files("dotmatch").joinpath("data", "assay-evidence.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, ModuleNotFoundError, AttributeError):
+        path = Path(__file__).resolve().parents[2] / "docs" / "assay-evidence.json"
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return _missing_evidence_boundary(evidence_id)
+    for row in data.get("assays", []):
+        if isinstance(row, dict) and row.get("id") == evidence_id:
+            return {
+                "id": str(row.get("id", "")),
+                "status": str(row.get("status", "")),
+                "label": str(row.get("label", "")),
+                "claim_boundary": str(row.get("claim_boundary", "")),
+                "biological_unit": str(row.get("biological_unit", "")),
+                "unsupported_claims": "; ".join(str(item) for item in row.get("unsupported_claims", []) if item),
+                "minimum_public_evidence": "; ".join(str(item) for item in row.get("minimum_public_evidence", []) if item),
+            }
+    return _missing_evidence_boundary(evidence_id)
+
+
+def _missing_evidence_boundary(evidence_id: str) -> dict[str, str]:
+    return {
+        "id": evidence_id,
+        "status": "missing",
+        "label": "",
+        "claim_boundary": "",
+        "biological_unit": "",
+        "unsupported_claims": "",
+        "minimum_public_evidence": "",
+    }
+
+
+def _finding(
+    finding_id: str,
+    severity: str,
+    stage: str,
+    sample_id: str,
+    metric: str,
+    observed: str,
+    threshold: str,
+    message: str,
+    recommended_action: str,
+    source_artifact: str,
+) -> dict[str, str]:
+    return {
+        "finding_id": finding_id,
+        "severity": severity,
+        "stage": stage,
+        "sample_id": sample_id,
+        "metric": metric,
+        "observed": observed,
+        "threshold": threshold,
+        "message": message,
+        "recommended_action": recommended_action,
+        "source_artifact": source_artifact,
+    }
+
+
+def _finding_counts(findings: Sequence[Mapping[str, str]]) -> dict[str, int]:
+    counts = {"blocked": 0, "error": 0, "warning": 0, "info": 0}
+    for finding in findings:
+        severity = str(finding.get("severity", "info"))
+        counts[severity] = counts.get(severity, 0) + 1
+    return counts
+
+
+def _overall_reliability_status(counts: Mapping[str, int]) -> str:
+    if int(counts.get("blocked", 0)) > 0:
+        return "blocked"
+    if int(counts.get("error", 0)) > 0:
+        return "failed"
+    if int(counts.get("warning", 0)) > 0:
+        return "needs_review"
+    return "passed"
+
+
+def _write_reliability_artifacts(plan: AssayPlan, summary: Mapping[str, Any]) -> None:
+    path = plan.artifacts["reliability_summary"]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    _write_reliability_findings(plan.artifacts["reliability_findings"], summary.get("findings", []) or [])
+    _write_reliability_manifest_summary(plan.artifacts["reliability_manifest_summary"], summary)
+    _write_reliability_report(plan.artifacts["reliability_report"], summary)
+
+
+def _write_reliability_findings(path: Path, findings: Sequence[Mapping[str, str]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=RELIABILITY_FINDING_COLUMNS, delimiter="\t", lineterminator="\n")
+        writer.writeheader()
+        for finding in findings:
+            writer.writerow({field: str(finding.get(field, "")) for field in RELIABILITY_FINDING_COLUMNS})
+
+
+def _write_reliability_manifest_summary(path: Path, summary: Mapping[str, Any]) -> None:
+    counts = summary.get("finding_counts", {}) or {}
+    header = ["overall_status", "profile", "finding_count", "blocked_count", "error_count", "warning_count", "report"]
+    row = [
+        str(summary.get("overall_status", "")),
+        str(summary.get("profile", "")),
+        str(len(summary.get("findings", []) or [])),
+        str(counts.get("blocked", 0)),
+        str(counts.get("error", 0)),
+        str(counts.get("warning", 0)),
+        str(summary.get("artifacts", {}).get("reliability_report", "")),
+    ]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.writer(fh, delimiter="\t", lineterminator="\n")
+        writer.writerow(header)
+        writer.writerow(row)
+
+
+def _write_reliability_report(path: Path, summary: Mapping[str, Any]) -> None:
+    evidence = summary.get("evidence_boundary", {}) or {}
+    backend = summary.get("backend", {}) or {}
+    sections = [
+        "<!doctype html>",
+        "<html><head><meta charset=\"utf-8\"><title>DotMatch Reliability Report</title>",
+        "<style>body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;margin:32px;color:#18212f}"
+        "table{border-collapse:collapse;width:100%;margin:12px 0}th,td{border:1px solid #d8dee4;padding:7px 9px;text-align:left;vertical-align:top}"
+        "th{background:#eef2f7}.ok{color:#1a7f37}.warn{color:#9a6700}.bad{color:#cf222e}code{background:#eef2f7;padding:2px 4px;border-radius:4px}</style>",
+        "</head><body>",
+        "<h1>DotMatch Reliability Report</h1>",
+        f"<p>Status: <strong>{html.escape(str(summary.get('overall_status', '')))}</strong></p>",
+        "<h2>Backend</h2>",
+        _mapping_table(backend),
+        "<h2>Evidence Boundary</h2>",
+        _mapping_table(evidence),
+        "<h2>Findings</h2>",
+        _html_findings_table(summary.get("findings", []) or []),
+        "</body></html>\n",
+    ]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(sections), encoding="utf-8")
+
+
+def _html_findings_table(findings: Sequence[Mapping[str, str]]) -> str:
+    if not findings:
+        return "<p class=\"ok\">No reliability findings were recorded.</p>"
+    rows = ["<table><tr>"]
+    for column in RELIABILITY_FINDING_COLUMNS:
+        rows.append(f"<th>{html.escape(column)}</th>")
+    rows.append("</tr>")
+    for finding in findings:
+        rows.append("<tr>")
+        for column in RELIABILITY_FINDING_COLUMNS:
+            rows.append(f"<td>{html.escape(str(finding.get(column, '')))}</td>")
+        rows.append("</tr>")
+    rows.append("</table>")
+    return "".join(rows)
 
 
 def _write_manifest_summary(plan: AssayPlan, manifest: Mapping[str, Any]) -> None:
@@ -1188,6 +2255,8 @@ def _write_assay_report(plan: AssayPlan, manifest: Mapping[str, Any]) -> None:
         "</div>",
         "<h2>Inputs</h2>",
         _samples_table(plan.spec),
+        "<h2>Reliability</h2>",
+        _reliability_html(plan, path.parent),
         "<h2>Sample QC</h2>",
         _sample_qc_table(plan.artifacts.get("sample_qc")),
         "<h2>Warnings</h2>",
@@ -1195,11 +2264,11 @@ def _write_assay_report(plan: AssayPlan, manifest: Mapping[str, Any]) -> None:
         "<h2>Library Audit</h2>",
         _audit_html(plan),
         "<h2>Autopsy</h2>",
-        _autopsy_html(autopsy_artifacts),
+        _autopsy_html(autopsy_artifacts, path.parent),
         "<h2>Artifacts</h2>",
-        _mapping_table(artifacts),
+        _mapping_table(artifacts, path.parent),
         "<h2>Native Commands</h2>",
-        _commands_table(manifest.get("commands", []) or []),
+        _commands_table(manifest.get("commands", []) or [], path.parent),
         "</main></body></html>\n",
     ]
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1224,7 +2293,7 @@ def _samples_table(assay: AssaySpec) -> str:
             rows.append(
                 "<tr><td>{}</td><td>{}</td></tr>".format(
                     html.escape(str(sample.get("id", ""))),
-                    html.escape(str(_path_from_spec(assay.path, str(sample.get("fastq", ""))))),
+                    html.escape(Path(str(sample.get("fastq", ""))).name),
                 )
             )
     else:
@@ -1232,7 +2301,7 @@ def _samples_table(assay: AssaySpec) -> str:
         rows.append(
             "<tr><td>{}</td><td>{}</td></tr>".format(
                 html.escape(assay.mode),
-                html.escape(str(_path_from_spec(assay.path, str(assay.data.get(reads_key, ""))))),
+                html.escape(Path(str(assay.data.get(reads_key, ""))).name),
             )
         )
     rows.append("</table>")
@@ -1243,6 +2312,20 @@ def _sample_qc_table(path: Path | None) -> str:
     if path is None or not path.exists():
         return "<p class=\"empty\">No sample QC table was produced for this mode.</p>"
     return _tsv_preview_table(path, 12)
+
+
+def _reliability_html(plan: AssayPlan, report_dir: Path) -> str:
+    artifacts = {
+        "reliability_summary": plan.artifacts.get("reliability_summary", ""),
+        "reliability_findings": plan.artifacts.get("reliability_findings", ""),
+        "reliability_report": plan.artifacts.get("reliability_report", ""),
+        "reliability_manifest_summary": plan.artifacts.get("reliability_manifest_summary", ""),
+    }
+    parts = [_mapping_table({key: str(value) for key, value in artifacts.items() if value}, report_dir)]
+    summary = plan.artifacts.get("reliability_manifest_summary")
+    if summary is not None and summary.exists():
+        parts.append(_tsv_preview_table(summary, 4))
+    return "".join(parts)
 
 
 def _audit_html(plan: AssayPlan) -> str:
@@ -1258,11 +2341,11 @@ def _audit_html(plan: AssayPlan) -> str:
     return "".join(blocks) if blocks else "<p class=\"empty\">No audit summary was available.</p>"
 
 
-def _autopsy_html(artifacts: Mapping[str, str]) -> str:
+def _autopsy_html(artifacts: Mapping[str, str], report_dir: Path) -> str:
     if not artifacts:
         return "<p class=\"empty\">Autopsy was not triggered for this run.</p>"
     findings = artifacts.get("findings")
-    parts = [_mapping_table(artifacts)]
+    parts = [_mapping_table(artifacts, report_dir)]
     if findings and Path(findings).exists():
         parts.append(_tsv_preview_table(Path(findings), 40))
     return "".join(parts)
@@ -1275,23 +2358,23 @@ def _warnings_html(warnings: Sequence[str]) -> str:
     return f"<ul class=\"warn\">{items}</ul>"
 
 
-def _mapping_table(mapping: Mapping[str, Any]) -> str:
+def _mapping_table(mapping: Mapping[str, Any], report_dir: Path | None = None) -> str:
     if not mapping:
         return "<p class=\"empty\">No artifacts recorded.</p>"
     rows = ["<table><tr><th>Name</th><th>Path</th></tr>"]
     for key in sorted(mapping):
         value = str(mapping[key])
-        rows.append(f"<tr><td>{html.escape(str(key))}</td><td>{_artifact_link(value)}</td></tr>")
+        rows.append(f"<tr><td>{html.escape(str(key))}</td><td>{_artifact_link(value, report_dir)}</td></tr>")
     rows.append("</table>")
     return "".join(rows)
 
 
-def _commands_table(commands: Sequence[Mapping[str, Any]]) -> str:
+def _commands_table(commands: Sequence[Mapping[str, Any]], report_dir: Path) -> str:
     if not commands:
         return "<p class=\"empty\">No native commands were recorded.</p>"
     rows = ["<table><tr><th>Step</th><th>Exit</th><th>Command</th></tr>"]
     for command in commands:
-        argv = " ".join(shlex.quote(str(part)) for part in command.get("argv", []))
+        argv = " ".join(shlex.quote(_report_path_label(str(part), report_dir)) for part in command.get("argv", []))
         rows.append(
             "<tr><td>{}</td><td>{}</td><td><code>{}</code></td></tr>".format(
                 html.escape(str(command.get("name", ""))),
@@ -1313,16 +2396,41 @@ def _tsv_preview_table(path: Path, max_rows: int) -> str:
     rows = ["<table>"]
     for row_index, line in enumerate(lines[:max_rows]):
         tag = "th" if row_index == 0 else "td"
-        cells = "".join(f"<{tag}>{html.escape(cell)}</{tag}>" for cell in line.split("\t"))
+        cells = "".join(f"<{tag}>{html.escape(_html_table_cell(cell))}</{tag}>" for cell in line.split("\t"))
         rows.append(f"<tr>{cells}</tr>")
     rows.append("</table>")
     return "".join(rows)
 
 
-def _artifact_link(value: str) -> str:
-    escaped = html.escape(value)
-    name = html.escape(Path(value).name or value)
-    return f"<a href=\"{escaped}\">{name}</a><br><code>{escaped}</code>"
+def _html_table_cell(value: str) -> str:
+    path = Path(value)
+    if path.is_absolute():
+        return path.name
+    return value
+
+
+def _artifact_link(value: str, report_dir: Path | None = None) -> str:
+    path = Path(value)
+    if report_dir is not None:
+        try:
+            relative = path.resolve(strict=False).relative_to(report_dir.resolve(strict=False))
+        except (OSError, ValueError):
+            return f"<code>{html.escape(path.name or '[external path]')}</code>"
+        href = quote(relative.as_posix())
+        label = html.escape(relative.as_posix())
+        return f"<a href=\"{href}\">{label}</a>"
+    escaped = html.escape(path.name or value)
+    return f"<code>{escaped}</code>"
+
+
+def _report_path_label(value: str, report_dir: Path) -> str:
+    path = Path(value)
+    if not path.is_absolute():
+        return value
+    try:
+        return path.resolve(strict=False).relative_to(report_dir.resolve(strict=False)).as_posix()
+    except (OSError, ValueError):
+        return path.name or "[external path]"
 
 
 def _append_audit_warnings(plan: AssayPlan, step: PlanStep, manifest: dict[str, Any]) -> None:
@@ -1480,6 +2588,16 @@ def _require_int_range(value: Any, low: int, high: int, name: str) -> None:
         raise AssaySpecError(f"{name} must be an integer from {low} to {high}")
 
 
+def _require_float_range(value: Any, low: float, high: float, name: str) -> None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not low <= float(value) <= high:
+        raise AssaySpecError(f"{name} must be a number from {low} to {high}")
+
+
+def _require_bool(value: Any, name: str) -> None:
+    if not isinstance(value, bool):
+        raise AssaySpecError(f"{name} must be a boolean")
+
+
 def _require_extract(data: Mapping[str, Any], name: str, *, allow_auto: bool = False) -> None:
     table = _table(data, name)
     if "start" not in table:
@@ -1498,17 +2616,31 @@ def _require_path(assay: AssaySpec, key: str) -> None:
 def _require_existing_path(assay: AssaySpec, value: Any, name: str) -> None:
     if not isinstance(value, str) or not value:
         raise AssaySpecError(f"{name} is required")
-    path = _path_from_spec(assay.path, value)
+    path = _path_from_spec(assay.path, value, allow_absolute=True, name=name)
     if not path.exists():
         raise AssaySpecError(f"{name} does not exist: {path}")
 
 
 def _spec_path(assay: AssaySpec, key: str) -> Path:
-    return _path_from_spec(assay.path, str(assay.data[key]))
+    return _path_from_spec(assay.path, str(assay.data[key]), allow_absolute=True, name=key)
 
 
-def _path_from_spec(spec_path: Path, value: str) -> Path:
+def _path_from_spec(spec_path: Path, value: str, *, allow_absolute: bool = False, name: str = "path") -> Path:
     path = Path(value)
     if path.is_absolute():
+        if not allow_absolute:
+            raise AssaySpecError(f"{name} must be relative to the AssaySpec")
         return path
-    return spec_path.parent / path
+    base = spec_path.parent.resolve()
+    resolved = (base / path).resolve(strict=False)
+    try:
+        resolved.relative_to(base)
+    except ValueError as exc:
+        raise AssaySpecError(f"{name} must stay inside the AssaySpec directory: {value}") from exc
+    return resolved
+
+
+def _require_safe_identifier(value: Any, name: str) -> None:
+    text = str(value)
+    if not SAMPLE_ID_RE.fullmatch(text):
+        raise AssaySpecError(f"{name} must contain only letters, digits, '.', '_' or '-'")

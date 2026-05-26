@@ -19,7 +19,6 @@ if (sample_rows.isEmpty()) {
 process DOTMATCH_CRISPR_COUNT {
     tag "dotmatch_crispr_count"
     publishDir params.outdir, mode: 'copy', overwrite: true
-    conda 'bioconda::dotmatch=0.1.2'
 
     input:
     path library
@@ -46,18 +45,18 @@ process DOTMATCH_CRISPR_COUNT {
       --guide-length ${params.guide_length} \
       --k ${params.k} \
       --metric ${params.metric} \
+      --ambiguity-policy ${params.ambiguity_policy} \
       ${indelArg} \
       --out counts.mageck.tsv \
       --summary summary.json \
       --sample-qc sample_qc.tsv \
-      --ambiguous discard
+      --ambiguous ${params.ambiguous}
     """
 }
 
 process DOTMATCH_ASSAY_RUN {
     tag "dotmatch_assay_run"
     publishDir params.outdir, mode: 'copy', overwrite: true
-    conda 'bioconda::dotmatch=0.1.2'
 
     input:
     path library
@@ -103,7 +102,8 @@ fastq = "${fastqs[i].name}"
     [assignment]
     k = ${params.k}
     metric = "${params.metric}"
-    ambiguous = "discard"
+    ambiguity_policy = "${params.ambiguity_policy}"
+    ambiguous = "${params.ambiguous}"
     ${indelLine}
 
     [outputs]

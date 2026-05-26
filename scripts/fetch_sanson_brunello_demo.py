@@ -262,7 +262,7 @@ def main() -> None:
         "auto_offset": 20,
         "auto_offset_sample": 100000,
         "offset_mode": "multi",
-        "offset_min_fraction": 0.005,
+        "offset_min_fraction": 0.0025,
         "mageck_trim5": 0,
         "samples": sample_rows,
         "runs": run_rows,
@@ -270,6 +270,7 @@ def main() -> None:
             "Guide-counter documents this Sanson/Brunello benchmark using plasmid, RepA, RepB, and RepC samples.",
             "The biological RepA/RepB/RepC FASTQs are concatenations of two SRA runs each to match the documented sample sizes.",
             "DotMatch benchmarks use automatic offset detection because the Sanson protocol searches vector flank CACCG and extracts the following 20 nt guide.",
+            "The offset-min-fraction value matches guide-counter 0.1.3's count-command default.",
         ],
     }
     manifest_path = args.out / "manifest.json"

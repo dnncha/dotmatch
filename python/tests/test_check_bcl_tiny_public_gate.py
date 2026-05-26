@@ -57,6 +57,21 @@ def _bcl2fastq_row(**overrides) -> dict[str, str]:
     return row
 
 
+def _bcl2fastq_unavailable_row(**overrides) -> dict[str, str]:
+    row = {
+        "tool": "bcl2fastq",
+        "version": "not_installed",
+        "workflow": "public_10x_tiny_bcl",
+        "format": "classic_bcl_or_cbcl",
+        "clusters": "2136539",
+        "total_clusters": "2136539",
+        "exit_code": "127",
+        "command": "bcl2fastq not-run",
+    }
+    row.update(overrides)
+    return row
+
+
 def _write_rows(path: Path, rows: list[dict[str, str]]) -> None:
     fields = sorted({key for row in rows for key in row})
     with path.open("w", newline="", encoding="utf-8") as fh:
@@ -79,7 +94,18 @@ def test_bcl_tiny_public_gate_accepts_public_dotmatch_and_validated_bcl2fastq_ro
     assert failures == []
 
 
-def test_bcl_tiny_public_gate_rejects_missing_validated_comparator(tmp_path):
+def test_bcl_tiny_public_gate_accepts_explicitly_unavailable_bcl2fastq(tmp_path):
+    gate = _load_gate()
+    csv_path = tmp_path / "bcl_demux.csv"
+    _write_rows(csv_path, [_dotmatch_row(), _bcl2fastq_unavailable_row()])
+
+    failures = []
+    gate.row_gate(gate.read_rows(csv_path), failures)
+
+    assert failures == []
+
+
+def test_bcl_tiny_public_gate_rejects_installed_but_invalid_comparator(tmp_path):
     gate = _load_gate()
     csv_path = tmp_path / "bcl_demux.csv"
     _write_rows(csv_path, [_dotmatch_row(), _bcl2fastq_row(validation_mismatches="2")])

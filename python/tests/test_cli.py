@@ -34,6 +34,27 @@ def test_cli_reports_package_version():
     assert rc.stderr == ""
 
 
+def test_cli_top_level_help_lists_python_namespaces():
+    rc = subprocess.run(
+        [sys.executable, "-m", "dotmatch.cli", "--help"],
+        check=False,
+        env=LEGACY_ENV,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    assert rc.returncode == 0, rc.stderr
+    assert rc.stderr == ""
+    assert f"DotMatch {_pyproject_version()}" in rc.stdout
+    assert "Workflow namespaces:" in rc.stdout
+    assert "  assay" in rc.stdout
+    assert "  barcode" in rc.stdout
+    assert "  panel" in rc.stdout
+    assert "Hamming k=2/k=3 safety" in rc.stdout
+    assert "Packaging note:" not in rc.stdout
+
+
 def _write_fixture_files(tmp_path: Path):
     targets = tmp_path / "targets.tsv"
     targets.write_text(
@@ -399,9 +420,9 @@ def test_crispr_qc_writes_count_qc_report(tmp_path):
     assert report["library"]["collision_radius_audited"] == 1
     assert report["library"]["safe_for_audited_radius"] is False
     assert report["library"]["safe_for_k"] is False
-    assert report["samples"]["sample_a"]["assignment_rate"] == 0.33333333
+    assert report["samples"]["sample_a"]["assignment_rate"] == 0.0
     assert report["samples"]["sample_a"]["invalid_rate"] == 0.25
-    assert report["samples"]["sample_a"]["zero_count_fraction"] == 2 / 3
+    assert report["samples"]["sample_a"]["zero_count_fraction"] == 1.0
     assert report["samples"]["sample_a"]["gini_index"] >= 0
     assert report["samples"]["sample_a"]["qc_status"] == "review"
     assert report["sample_correlations"][0]["sample_a"] == "sample_a"
@@ -415,6 +436,23 @@ def test_crispr_qc_writes_count_qc_report(tmp_path):
     html = out_html.read_text(encoding="utf-8")
     assert "<title>DotMatch CRISPR QC Report</title>" in html
     assert "Guide Library Audit" in html
+
+
+def test_crispr_library_reader_accepts_common_header_aliases(tmp_path):
+    from dotmatch.cli import _read_crispr_library
+
+    library = tmp_path / "library.csv"
+    library.write_text(
+        "sgRNA,sgRNA_sequence,gene_symbol\n"
+        "guide_a,ACGT,GENEA\n",
+        encoding="utf-8",
+    )
+
+    targets = _read_crispr_library(library)
+
+    assert targets[0].target_id == "guide_a"
+    assert targets[0].seq == "ACGT"
+    assert targets[0].gene == "GENEA"
 
 
 def test_crispr_qc_k2_library_safety_is_not_overclaimed(tmp_path):

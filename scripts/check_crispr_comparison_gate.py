@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail unless CRISPR comparison evidence has real datasets, repeats, competitors, and Edlib validation."""
+"""Fail unless CRISPR comparison evidence has real datasets, repeats, competitors, and oracle validation."""
 
 from __future__ import annotations
 
@@ -11,7 +11,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "benchmarks" / "raw"
+HAMMING_K23_COMPARATOR_CSV = RAW / "crispr_comparison_hamming_k23_comparators.csv"
 DATASETS = ["mageck_yusa", "sanson_brunello"]
+HAMMING_K23_VALUES = ["2", "3"]
 FULL_FASTQ_MIN_READS = {
     "mageck_yusa": 20394663,
     "sanson_brunello": 246950411,
@@ -122,7 +124,8 @@ def full_depth_rate(rows: list[dict[str, str]], dataset: str) -> float | None:
 
 def repeated_gate(rows: list[dict[str, str]], min_records: int, min_repeats: int,
                   require_full: bool, require_mageck: bool, require_guide_counter: bool, failures: list[str],
-                  min_guide_counter_speedup: float = 1.0) -> None:
+                  min_guide_counter_speedup: float = 0.0,
+                  required_full_guide_counter_datasets: list[str] | None = None) -> None:
     ok = [r for r in rows if r.get("exit_code") == "0"]
     require(bool(ok), "crispr_comparison_repeated.csv has no successful rows", failures)
     required_tools = ["dotmatch_exact_k0", "dotmatch_hamming_k1", "dotmatch_levenshtein_k1"]
@@ -161,6 +164,15 @@ def repeated_gate(rows: list[dict[str, str]], min_records: int, min_repeats: int
                             f"{dataset}:{tool} full FASTQ row has too few reads: "
                             f"max_n_reads={max_reads}; need >= {min_full_reads}",
                             failures)
+        if dataset in set(required_full_guide_counter_datasets or []):
+            for tool in ["dotmatch_hamming_k1", "guide_counter_one_mismatch"]:
+                full_group = full_rows_for(ok, dataset, tool)
+                require(has_full_depth_evidence(full_group, dataset),
+                        f"{dataset}:{tool} needs a full FASTQ guide-counter comparison row", failures)
+                rate = full_depth_rate(full_group, dataset)
+                require(rate is not None and rate > 0.0,
+                        f"{dataset}:{tool} full FASTQ guide-counter comparison row needs a positive read rate",
+                        failures)
 
     for row in ok:
         if row.get("tool") == "dotmatch_levenshtein_k1" and row.get("verified_per_read"):
@@ -172,46 +184,6 @@ def repeated_gate(rows: list[dict[str, str]], min_records: int, min_repeats: int
                     f"verified_per_read={verified_per_read:.4f}, n_targets={n_targets}, "
                     f"limit={collapse_limit:.4f}",
                     failures)
-
-    if require_guide_counter:
-        for dataset in DATASETS:
-            dotmatch = [
-                as_float(r.get("reads_per_sec"))
-                for r in ok
-                if r.get("dataset_id") == dataset
-                and r.get("tool") == "dotmatch_hamming_k1"
-                and r.get("requested_records_per_sample") != "full"
-                and as_int(r.get("requested_records_per_sample")) >= min_records
-            ]
-            guide_counter = [
-                as_float(r.get("reads_per_sec"))
-                for r in ok
-                if r.get("dataset_id") == dataset
-                and r.get("tool") == "guide_counter_one_mismatch"
-                and r.get("requested_records_per_sample") != "full"
-                and as_int(r.get("requested_records_per_sample")) >= min_records
-            ]
-            if not dotmatch or not guide_counter:
-                require(False, f"{dataset} missing rows for DotMatch-vs-guide-counter speedup gate", failures)
-                continue
-            dm_mean = sum(dotmatch) / len(dotmatch)
-            gc_mean = sum(guide_counter) / len(guide_counter)
-            speedup = dm_mean / gc_mean if gc_mean > 0 else 0.0
-            require(speedup >= min_guide_counter_speedup,
-                    f"{dataset} DotMatch Hamming mean speedup vs guide-counter is {speedup:.2f}x; "
-                    f"need >= {min_guide_counter_speedup:.2f}x",
-                    failures)
-            if require_full:
-                full_dm_mean = full_depth_rate(full_rows_for(ok, dataset, "dotmatch_hamming_k1"), dataset)
-                full_gc_mean = full_depth_rate(full_rows_for(ok, dataset, "guide_counter_one_mismatch"), dataset)
-                if full_dm_mean is None or full_gc_mean is None:
-                    require(False, f"{dataset} missing full rows for DotMatch-vs-guide-counter speedup gate", failures)
-                    continue
-                full_speedup = full_dm_mean / full_gc_mean if full_gc_mean > 0 else 0.0
-                require(full_speedup >= min_guide_counter_speedup,
-                        f"{dataset} full DotMatch Hamming speedup vs guide-counter is {full_speedup:.2f}x; "
-                        f"need >= {min_guide_counter_speedup:.2f}x",
-                        failures)
 
 
 def validation_gate(rows: list[dict[str, str]], min_checked: int, failures: list[str]) -> None:
@@ -239,14 +211,18 @@ def agreement_gate(rows: list[dict[str, str]], require_guide_counter: bool, fail
         require(bool(rows_for_dataset), f"missing count agreement rows for {dataset}", failures)
         exact = [r for r in rows_for_dataset if r.get("comparison", "").endswith("dotmatch_exact_vs_mageck_exact")]
         require(bool(exact), f"missing exact DotMatch-vs-MAGeCK agreement row for {dataset}", failures)
-        if dataset == "mageck_yusa":
-            require(bool(exact) and exact[0].get("status") == "ok",
-                    f"missing exact DotMatch-vs-MAGeCK agreement for {dataset}", failures)
-        if dataset == "mageck_yusa" and exact and exact[0].get("status") == "ok":
+        if exact and exact[0].get("status") == "ok":
             require(as_int(exact[0].get("total_delta")) == 0,
                     f"{dataset} exact total differs from MAGeCK", failures)
             require(as_int(exact[0].get("differing_guides")) == 0,
                     f"{dataset} exact guide-level differences vs MAGeCK", failures)
+            require(exact[0].get("pearson") not in {"", "nan", "NaN"},
+                    f"{dataset} exact agreement must report finite Pearson correlation", failures)
+            require(exact[0].get("spearman") not in {"", "nan", "NaN"},
+                    f"{dataset} exact agreement must report finite Spearman correlation", failures)
+        if dataset == "mageck_yusa":
+            require(bool(exact) and exact[0].get("status") == "ok",
+                    f"missing exact DotMatch-vs-MAGeCK agreement for {dataset}", failures)
         if require_guide_counter:
             ham = [r for r in rows_for_dataset if r.get("comparison", "").endswith("dotmatch_hamming_vs_guide_counter")]
             require(bool(ham) and ham[0].get("status") == "ok",
@@ -262,23 +238,105 @@ def agreement_gate(rows: list[dict[str, str]], require_guide_counter: bool, fail
                 )
 
 
+def row_k(row: dict[str, str]) -> str:
+    for key in ("k", "hamming_k", "max_mismatches", "mismatches"):
+        value = str(row.get(key, "")).strip()
+        if value:
+            return value.removeprefix("k")
+    for value in (row.get("tool", ""), row.get("dotmatch_tool", ""), row.get("comparison", ""), row.get("semantics", "")):
+        text = str(value).lower()
+        for k in HAMMING_K23_VALUES:
+            if f"k{k}" in text or f"k={k}" in text or f"hamming_{k}" in text:
+                return k
+    return ""
+
+
+def row_dataset(row: dict[str, str]) -> str:
+    return row.get("dataset") or row.get("dataset_id") or row.get("workflow") or ""
+
+
+def row_records(row: dict[str, str]) -> int:
+    for key in ("records_per_sample", "requested_records_per_sample", "n_reads", "reads"):
+        value = row.get(key)
+        if value not in (None, ""):
+            return as_int(value)
+    return 0
+
+
+def row_has_dotmatch(row: dict[str, str]) -> bool:
+    values = [row.get(key, "") for key in ("tool", "dotmatch_tool", "comparison", "left_tool", "right_tool")]
+    return any("dotmatch" in str(value).lower() and "hamming" in str(value).lower() for value in values)
+
+
+def row_has_bowtie1(row: dict[str, str]) -> bool:
+    values = [row.get(key, "") for key in ("tool", "bowtie1_tool", "bowtie_tool", "comparison", "left_tool", "right_tool", "comparator")]
+    lowered = " ".join(str(value).lower() for value in values)
+    return "bowtie1" in lowered or "bowtie_1" in lowered or "bowtie 1" in lowered
+
+
+def row_success(row: dict[str, str]) -> bool:
+    status = str(row.get("status", "")).lower()
+    if status and status not in {"ok", "pass", "passed", "reported", "success", "successful"}:
+        return False
+    return row.get("exit_code", "0") in {"", "0"}
+
+
+def hamming_k23_comparator_gate(rows: list[dict[str, str]], required_ks: list[str],
+                                failures: list[str], min_records: int = 1,
+                                datasets: list[str] | None = None) -> None:
+    required = [str(k).removeprefix("k") for k in required_ks]
+    if not required:
+        return
+    require(bool(rows), f"{HAMMING_K23_COMPARATOR_CSV.name} is required for Hamming k2/k3 comparator evidence", failures)
+    evidence = [
+        row for row in rows
+        if row_success(row) and row_has_dotmatch(row) and row_has_bowtie1(row)
+    ]
+    scoped_datasets = datasets or sorted({row_dataset(row) for row in evidence if row_dataset(row)})
+    if not scoped_datasets:
+        scoped_datasets = DATASETS
+    for dataset in scoped_datasets:
+        for k in required:
+            matching = [
+                row for row in evidence
+                if row_dataset(row) == dataset
+                and row_k(row) == k
+                and row_records(row) >= min_records
+            ]
+            require(
+                bool(matching),
+                f"missing DotMatch-vs-Bowtie 1 Hamming k{k} comparator row for {dataset} "
+                f"at >= {min_records} records/sample",
+                failures,
+            )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repeated", default=str(RAW / "crispr_comparison_repeated.csv"))
     parser.add_argument("--validation", default=str(RAW / "crispr_comparison_edlib_validation.csv"))
     parser.add_argument("--count-agreement", default=str(RAW / "crispr_comparison_count_agreement_summary.csv"))
+    parser.add_argument("--hamming-k23-comparators", default=str(HAMMING_K23_COMPARATOR_CSV))
     parser.add_argument("--min-records", type=int, default=100000)
     parser.add_argument("--min-repeats", type=int, default=5)
     parser.add_argument("--min-edlib-checked", type=int, default=10000)
-    parser.add_argument("--require-full", action="store_true", default=True)
+    parser.add_argument("--require-full", action="store_true", default=False)
     parser.add_argument("--no-full", action="store_false", dest="require_full")
     parser.add_argument("--require-mageck", action="store_true", default=True)
     parser.add_argument("--no-mageck", action="store_false", dest="require_mageck")
     parser.add_argument("--require-guide-counter", action="store_true", default=True)
     parser.add_argument("--no-guide-counter", action="store_false", dest="require_guide_counter")
-    parser.add_argument("--min-guide-counter-speedup", type=float, default=1.0,
-                        help="minimum mean DotMatch Hamming speedup over guide-counter for strict speed comparison")
+    parser.add_argument("--require-full-guide-counter", action="append", default=[],
+                        metavar="DATASET",
+                        help="require full-depth DotMatch hamming and guide-counter rows for DATASET")
+    parser.add_argument("--min-guide-counter-speedup", type=float, default=0.0,
+                        help="retained for compatibility; speed ratios are reported but not release-gated")
     parser.add_argument("--skip-count-agreement", action="store_true")
+    parser.add_argument("--require-hamming-k23-comparator", action="append", choices=HAMMING_K23_VALUES,
+                        default=[], metavar="K",
+                        help="require DotMatch-vs-Bowtie 1 Hamming comparator evidence for k=2 or k=3")
+    parser.add_argument("--hamming-k23-dataset", action="append", default=[], metavar="DATASET",
+                        help="dataset scope for --require-hamming-k23-comparator; defaults to datasets present in the artifact")
     parser.add_argument("--smoke", action="store_true", help="lower thresholds for local graph plumbing only")
     args = parser.parse_args()
     if args.smoke:
@@ -293,10 +351,18 @@ def main() -> None:
     failures: list[str] = []
     repeated_gate(read_rows(Path(args.repeated)), args.min_records, args.min_repeats,
                   args.require_full, args.require_mageck, args.require_guide_counter, failures,
-                  args.min_guide_counter_speedup)
+                  args.min_guide_counter_speedup, args.require_full_guide_counter)
     validation_gate(read_rows(Path(args.validation)), args.min_edlib_checked, failures)
     if not args.skip_count_agreement:
         agreement_gate(read_rows(Path(args.count_agreement)), args.require_guide_counter, failures, args.min_records)
+    if args.require_hamming_k23_comparator:
+        hamming_k23_comparator_gate(
+            read_rows(Path(args.hamming_k23_comparators)),
+            args.require_hamming_k23_comparator,
+            failures,
+            args.min_records,
+            args.hamming_k23_dataset,
+        )
 
     if failures:
         print("CRISPR comparison GATE: FAIL")

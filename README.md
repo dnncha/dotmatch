@@ -14,29 +14,14 @@ amplicon-panel starts, whitelist-style assays, and barcode panel design for
 known-target assignment. It is not a genome aligner, a basecaller, a UMI entropy
 generator, or a replacement for downstream screen statistics.
 
+Package scope: the published Bioconda package installs the `dotmatch` command,
+Python imports/workflow namespaces, and C header/library artifacts. The
+Workbench desktop app is a separate local application and is not part of the
+Bioconda recipe. New release features are only described as available from a
+public package after the matching package version has passed the install smoke
+tests in [Packaging Notes](docs/packaging.md).
+
 ![DotMatch workflow: FASTQ reads and a known target table are sliced at the same read position, assigned to known short DNA targets, and written to counts, split FASTQs, QC tables, and reports.](public/dotmatch-read-assignment.svg)
-
-## Install
-
-DotMatch is available from Bioconda for `linux-64` and `osx-64`:
-
-```bash
-mamba create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.2
-conda activate dotmatch
-
-dotmatch --version
-dotmatch dist ACGT AGGT
-dotmatch leq 1 ACGT AGGT
-```
-
-In an existing Conda environment with Bioconda and conda-forge configured:
-
-```bash
-conda install -c conda-forge -c bioconda dotmatch
-```
-
-Apple Silicon Conda environments are not published by Bioconda for this first
-release; build from source on `osx-arm64`.
 
 ## The Basic Idea
 
@@ -79,8 +64,7 @@ dotmatch barcode autopsy \
 
 Open `autopsy/report.html` first. The TSV and JSON files beside it are there for
 pipelines and lab handoff: `findings.tsv`, `offset_scan.tsv`,
-`correction_safety.tsv`, `top_unmatched.tsv`, and `provenance.json` with the
-commands and settings used for the run.
+`correction_safety.tsv`, `top_unmatched.tsv`, and `provenance.json`.
 
 Speed is useful only after the assignment rules are clear. The checked barcode
 example documents the exact comparator settings in
@@ -88,11 +72,11 @@ example documents the exact comparator settings in
 
 ## Barcode Panel Design
 
-DotMatch can design and certify barcode panels for the same assignment rules
-used later by demux and counting. The point is not just to emit sequences. A
-designed panel is shipped with a machine-checkable safety certificate, per-target
-safety rows, collision tables, ambiguous-variant examples, plate layout, lab
-exports, and a report.
+DotMatch can design barcode panels and check their assignment-collision risk
+for the same semantics used later by demux and counting. The point is not just
+to emit sequences. A designed panel is shipped with a machine-checkable
+assignment report, per-target collision-risk rows, collision tables,
+ambiguous-variant examples, plate layout, lab exports, and a report.
 
 ```bash
 dotmatch panel design \
@@ -119,11 +103,11 @@ dotmatch panel layout barcodes.tsv --plate 96 --out plate_layout.tsv
 dotmatch panel export barcodes.tsv --format illumina-samplesheet --out-dir sample_sheet_templates/
 ```
 
-The certificate preserves DotMatch outcomes: `unique`, `ambiguous`, `none`, and
-`invalid`. It fails a configured edit distance if any possible barcode variant
-inside that distance can map ambiguously or silently to the wrong barcode. The
-current certificate checks all variants up to `k=2`; larger edit distances are
-refused rather than partially certified.
+The assignment report preserves DotMatch outcomes: `unique`, `ambiguous`, `none`, and
+`invalid`. It fails a configured correction radius if any query in that radius
+can map ambiguously or silently to the wrong barcode. The current exact
+report enumerates configured error spheres up to `k=2`; larger radii are
+refused rather than partially checked.
 
 Outputs include `barcodes.tsv`, `design_report.json`, `design_trace.tsv`,
 `panel_check/panel_summary.json`, `target_safety.tsv`, `collision_pairs.tsv`,
@@ -131,8 +115,8 @@ Outputs include `barcodes.tsv`, `design_report.json`, `design_trace.tsv`,
 `sample_sheet_templates/SampleSheet.csv`, `report.html`, and
 `README_FOR_LAB.md`.
 
-See [Barcode Panel Design](docs/barcode-panel-design.md) and the checked example
-in
+See [Barcode Panel Design](docs/barcode-panel-design.md) and the checked smoke
+gate in
 [docs/benchmarks/barcode_panel_design](docs/benchmarks/barcode_panel_design/README.md).
 
 ## When To Use DotMatch
@@ -147,20 +131,20 @@ Common uses include:
 - fixed-position barcode demultiplexing from FASTQ/FASTQ.gz;
 - per-read assignment of 10x guide-capture or feature-barcode windows;
 - primer-start, amplicon-panel, adapter-prefix, or whitelist-style assays;
-- designing, optimizing, certifying, simulating, and exporting barcode panels;
+- designing, optimizing, checking, simulating, and exporting barcode panels;
 - target-library audits before allowing one-edit correction;
-- validating a fast assignment run against a full target-by-target scan or Edlib.
+- validating an indexed assignment run against an exhaustive scan or Edlib.
 
 DotMatch is not a genome aligner or basecaller. It does not produce SAM/BAM,
 CIGAR strings, variant calls, cell/UMI quantification, UMI entropy designs,
 expression matrices, or screen-level hit-calling statistics. It works on
 extracted short windows and known target lists.
 
-## Source And Package Status
+## Installation
 
-Source builds and local Python package installs work on Linux and macOS. You
-need a C compiler, `make`, Python 3.9 or newer for the Python package, and zlib
-for FASTQ.gz support.
+DotMatch currently supports source builds and local Python package installs on
+Linux and macOS. You need a C compiler, `make`, Python 3.9 or newer for the
+Python package, and zlib for FASTQ.gz support.
 
 ```bash
 git clone https://github.com/dnncha/dotmatch.git
@@ -186,16 +170,38 @@ docker build -t dotmatch:dev .
 docker run --rm -v "$PWD:/work" dotmatch:dev dist ACGT AGGT
 ```
 
+Bioconda install for the published package on platforms visible in Bioconda
+repodata. The release recipe opts into `osx-arm64` builds for Apple Silicon,
+but only treat that platform as available for a release after Bioconda metadata
+and install smoke tests verify it:
+
+```bash
+conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.4
+conda activate dotmatch
+dotmatch --version
+```
+
 Package status for PyPI, Bioconda, containers, and release archives is tracked
 in [Packaging Notes](docs/packaging.md), the
 [Release Process](docs/release-process.md), and the machine-readable
-[Distribution Status](docs/distribution-release.json). Bioconda is public for
-0.1.2; PyPI is not public yet.
+[Distribution Status](docs/distribution-release.json). Only claim a channel as
+available for a release after `make distribution-channels` verifies public
+metadata and install smoke tests.
 
-The release workflow builds and checks the files that will go to PyPI: a source
-distribution, a macOS wheel, and Linux wheels that follow PyPI's manylinux and
-musllinux rules. PyPI trusted publishing is configured for those files. We will
-only describe PyPI availability after the tagged release is visible on PyPI.
+The release workflow builds and smoke-tests the source distribution, the native
+macOS wheel, and repaired Linux wheels. PyPI trusted publishing is configured
+for those artifacts. We will only describe PyPI wheel availability after the
+tagged release is visible on PyPI. For Linux wheels, the GitHub release workflow
+builds and smoke-tests repaired manylinux/musllinux wheel artifacts before any
+wheel is considered for PyPI.
+
+Bioconda provides the `dotmatch` command-line tool, Python workflow namespaces,
+Python imports, and C header/library artifacts for the published package
+version. The installed `dotmatch` console script exposes the native assignment
+commands plus `dotmatch assay ...`, `dotmatch barcode ...`, and
+`dotmatch panel ...`. The next release is packaging-ready in this repository,
+but do not cite a newer Bioconda version until the channel metadata and install
+smoke tests verify it.
 
 Optional local Workbench: DotMatch also includes a desktop Workbench under
 `apps/workbench` for local AssaySpec design, inference, planning, running, and
@@ -228,13 +234,16 @@ Expected output:
 
 ```text
 mode	read_id	read_seq	target_index	target_seq	distance	status	match_count	second_best_distance
-assign	r0	ACGT	0	ACGT	0	unique	3	1
+assign	r0	ACGT	0	ACGT	0	ambiguous	3	1
 assign	r1	ACGC	0	ACGT	1	ambiguous	2	-1
 assign	r2	TTTT	-1		-1	none	0	-1
 ```
 
-`r1` is deliberately ambiguous: it is within one edit of more than one target,
-so DotMatch reports the ambiguity instead of choosing a target.
+`r0` is an exact match to `bc0`, but two other targets are also within the
+configured one-edit radius. DotMatch's default `radius` ambiguity policy
+therefore reports it as ambiguous instead of forcing an assignment. Use
+`--ambiguity-policy best` or Python `policy="best"` only when best-distance
+assignment is the intended compatibility mode.
 
 ## CRISPR Guide Counting
 
@@ -255,12 +264,15 @@ EOF
   --guide-length 20 \
   --k 1 \
   --metric hamming \
+  --ambiguity-policy radius \
   --out counts.mageck.tsv \
   --summary qc.json \
   --ambiguous discard
 ```
 
-Use `--metric hamming` for one-mismatch/no-indel guide-counter-style counting.
+Use `--metric hamming` for one-mismatch/no-indel guide-counter-style counting;
+use `--ambiguity-policy best` when intentionally matching guide-counter's
+compatibility semantics.
 Use `--metric levenshtein --indel-window 1` when one-base insertions and
 deletions around the guide window should be considered. Ambiguous reads are not
 added to guide counts unless you explicitly request diagnostic reporting.
@@ -269,6 +281,57 @@ A small worked example is available in
 [examples/crispr_guides](examples/crispr_guides/README.md), and a step-by-step
 fixture walkthrough is in
 [docs/tutorials/crispr-count-first-run.md](docs/tutorials/crispr-count-first-run.md).
+The public Sanson/Brunello paper-data lane used by guide-counter is available
+in [examples/crispr_sanson_brunello](examples/crispr_sanson_brunello/README.md).
+The reproducible DotMatch-vs-guide-counter comparison report is in
+[docs/benchmarks/crispr_comparison](docs/benchmarks/crispr_comparison/README.md).
+
+![CRISPR guide-counting throughput comparison](benchmarks/figures/crispr_comparison_throughput.svg)
+
+![CRISPR Hamming k2/k3 Bowtie 1 comparison](benchmarks/figures/crispr_hamming_k23_comparison.svg)
+
+## GuideCounter-Compatible Counting
+
+DotMatch also has a GuideCounter-compatible command shape for labs that already
+have `guide-counter count` scripts. The wrapper delegates assignment to
+DotMatch's deterministic CPU count engine and rewrites the result into
+GuideCounter-style output files.
+
+```bash
+dotmatch guide-counter count \
+  --input plasmid.fastq.gz treatment.fastq.gz \
+  --samples plasmid treatment \
+  --library guides.tsv \
+  --output guide_counts
+```
+
+Supported entrypoints are `dotmatch guide-counter count`,
+`dotmatch guide-counter-count`, and `dotmatch guide-count`. The wrapper accepts
+GuideCounter-style flags including `--input/-i`, `--samples/-s`,
+`--library/-l`, `--output/-o`, `--exact-match/-x`,
+`--offset-sample-size/-N`, `--offset-min-fraction/-f`,
+`--essential-genes/-e`, `--nonessential-genes/-n`, `--control-guides/-c`, and
+`--control-pattern/-C`.
+
+By default this mode uses GuideCounter-compatible counting semantics: Hamming
+matching, one mismatch, no indels, best-distance assignment, automatic
+multi-offset guide-window detection, `--offset-sample-size 100000`, and
+`--offset-min-fraction 0.0025`. Add `--exact-match` for exact-only counting.
+When `--samples` is omitted, sample labels are inferred from input FASTQ file
+names.
+
+For `--output guide_counts`, the wrapper writes:
+
+- `guide_counts.counts.txt`: `guide`, `gene`, then one count column per sample;
+- `guide_counts.extended-counts.txt`: the same counts with a `guide_type`
+  column derived from essential, nonessential, control-guide, or control-pattern
+  annotations;
+- `guide_counts.stats.txt`: per-sample totals, mapped reads, mapped fraction,
+  mean reads by guide class, and zero-read guide counts.
+
+This compatibility mode is an input/output and policy bridge. DotMatch
+assignment remains deterministic and CPU-authoritative. GPU benchmark rows and
+backend optimizer recommendations do not change which guide is counted.
 
 ## General FASTQ Counting
 
@@ -285,7 +348,7 @@ more FASTQ/FASTQ.gz inputs.
   --k 1 \
   --metric levenshtein \
   --indel-window 1 \
-  --ambiguity-policy best \
+  --ambiguity-policy radius \
   --out counts.tsv \
   --target-counts-long target_counts.long.tsv \
   --sample-qc sample_qc.tsv \
@@ -314,6 +377,7 @@ assigned barcode and can optionally retain ambiguous and unmatched reads.
   --barcode-length 8 \
   --k 1 \
   --metric hamming \
+  --ambiguity-policy radius \
   --max-correction-qual 20 \
   --out-dir demuxed \
   --summary demux.qc.json \
@@ -332,8 +396,21 @@ part of the current BCL scope.
 
 ## Target Library Audit
 
-Before enabling one-edit correction, audit the target set for collisions and
-near neighbors.
+Before enabling correction, audit the target set for collisions and near
+neighbors. For Hamming guide-counting at `k=2` or `k=3`, exact audit reports
+whether any same-length target pair is close enough for error spheres to overlap
+(`distance <= 2k`). Fast audit keeps the conservative one-edit report and marks
+larger Hamming safety fields as not computed.
+
+```bash
+./dotmatch audit \
+  --targets guides.tsv \
+  --k 3 \
+  --audit-mode exact \
+  --out-dir audit/
+```
+
+Use `--audit-mode exact` when you need Hamming `k=2`/`k=3` safety fields.
 
 ```bash
 ./dotmatch audit \
@@ -345,11 +422,13 @@ near neighbors.
 
 The audit output includes duplicate targets, nearby target pairs, collision
 clusters, per-target safety, and example query variants that would be ambiguous
-at `k=1`.
+at `k=1`. In exact mode, `audit_summary.tsv` and `audit_summary.json` also
+include `safe_at_hamming_k2`, `safe_at_hamming_k3`,
+`risk_pairs_for_hamming_k2`, and `risk_pairs_for_hamming_k3`.
 
 ## Python API
 
-The Python package calls the compiled DotMatch library directly.
+The Python package loads the native library through `ctypes`.
 
 ```python
 import dotmatch
@@ -364,6 +443,10 @@ matcher = dotmatch.Matcher(["ACGT", "AGGT", "ACGA"])
 results, stats = matcher.assign_with_stats(["ACGT", "ACGC"], k=1)
 ```
 
+The Python API also defaults to radius-safe assignment. Pass `policy="best"` to
+`assign`, `Matcher.assign`, or `Matcher.assign_with_stats` only for explicit
+best-distance compatibility.
+
 When working from a source checkout, build the shared library first:
 
 ```bash
@@ -373,22 +456,26 @@ DOTMATCH_LIB=$PWD/libdotmatch.dylib PYTHONPATH=$PWD/python python3
 
 On Linux, use `libdotmatch.so` instead of `libdotmatch.dylib`.
 
-The older `quickdna` Python package, `quickdna` console script, and `qda`
-command remain as compatibility aliases. New workflows should use `dotmatch`.
+The historical `quickdna` Python package, `quickdna` console script, and `qda`
+native CLI target remain as compatibility aliases. New workflows should use
+`dotmatch`.
 
-## Matching Rules
+## Matching Semantics
 
-DotMatch treats DNA letters literally. `A`, `C`, `G`, `T`, `N`, and IUPAC
-ambiguity symbols are ordinary characters; `N` and IUPAC codes are not expanded
-as wildcards.
+DotMatch uses literal-byte DNA matching. `A`, `C`, `G`, `T`, `N`, and IUPAC
+ambiguity symbols are ordinary byte symbols; `N` and IUPAC codes are not
+expanded as wildcards.
 
 Supported assignment modes include:
 
 - exact matching (`k=0`);
 - Hamming matching for fixed-length one-substitution workflows;
 - global Levenshtein matching for substitutions, insertions, and deletions;
-- fixed-window `k=2` correction by checking every target;
-- explicit ambiguity policies for best-target and whole-radius assignment.
+- fixed-window `k=2` Levenshtein correction with packed A/C/G/T hash-neighborhood
+  pruning for windows up to 32 bases and exhaustive fallback for unsupported
+  cases;
+- radius-safe ambiguity by default, with explicit `best` policy available for
+  best-target compatibility.
 
 The public policy string reported by the C and Python APIs is:
 
@@ -398,9 +485,9 @@ literal-byte; A/C/G/T/N/IUPAC symbols are ordinary byte symbols; no wildcard exp
 
 ## Checked Examples And Benchmarks
 
-The repository includes C tests, command-line fixture tests, Python tests,
-randomized checks against an independent edit-distance implementation, and
-optional Edlib validation for assignment runs.
+The repository includes native C tests, CLI fixture tests, Python tests,
+deterministic fuzz checks against a dynamic-programming oracle, and optional
+Edlib validation for assignment runs.
 
 Useful local checks:
 
@@ -413,10 +500,9 @@ make python-package-test
 
 Reports with data sources, commands, comparator settings, and checked outputs:
 
-- [Why DotMatch / usability comparison](docs/usability-comparison.md)
 - [Evidence gallery](docs/evidence-gallery/README.md)
 - [Benchmark overview](docs/benchmarks/README.md)
-- [Edlib assignment report](docs/benchmarks/native/README.md)
+- [Native Edlib assignment report](docs/benchmarks/native/README.md)
 - [Public CRISPR guide-counting report](docs/benchmarks/public_crispr/README.md)
 - [Barcode demultiplexing report](docs/benchmarks/barcode_demux/README.md)
 - [Feature-barcode assignment report](docs/benchmarks/feature_barcode/README.md)

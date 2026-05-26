@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1220" height="178" viewBox="0 0 1220 178">
+<style>text{font-family:Arial,sans-serif;font-size:12px}.title{font-size:18px;font-weight:700}.axis{fill:#444}.dotmatch{fill:#2f7d68}.bowtie{fill:#5b6f95}</style>
+<text class="title" x="20" y="28">Hamming k2/k3 fixed-window comparator throughput</text>
+<text class="axis" x="20" y="50">Reads/s on extracted guide-window semantics; Bowtie 1 uses -v K --best --strata --norc -a</text>
+<text x="20" y="89">sanson_brunello k2 1000000 DotMatch</text>
+<rect class="dotmatch" x="420" y="75" width="680" height="17" rx="2"/>
+<text x="1108" y="88">132272.5</text>
+<text x="20" y="115">sanson_brunello k2 1000000 Bowtie 1</text>
+<rect class="bowtie" x="420" y="101" width="70" height="17" rx="2"/>
+<text x="498" y="114">13622.2</text>
+<text x="20" y="141">sanson_brunello k3 1000000 DotMatch</text>
+<rect class="dotmatch" x="420" y="127" width="61" height="17" rx="2"/>
+<text x="489" y="140">11900.7</text>
+<text x="20" y="167">sanson_brunello k3 1000000 Bowtie 1</text>
+<rect class="bowtie" x="420" y="153" width="25" height="17" rx="2"/>
+<text x="453" y="166">5046.7</text>
+</svg>

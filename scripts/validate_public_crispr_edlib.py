@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate public CRISPR DotMatch assignments against Edlib."""
+"""Validate public CRISPR DotMatch assignments against the native Edlib oracle."""
 
 from __future__ import annotations
 

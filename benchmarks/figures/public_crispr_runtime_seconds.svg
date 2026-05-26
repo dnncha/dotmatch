@@ -3,24 +3,24 @@
 <text class="title" x="20" y="28">Public CRISPR end-to-end runtime</text>
 <text class="axis" x="20" y="50">Small real MAGeCK/Yusa FASTQ subset; lower is better</text>
 <text x="20" y="93">dotmatch_exact_k0</text>
-<rect class="bar" x="310" y="78" width="23" height="20" rx="2"/>
-<text x="341" y="93">0.36 s</text>
+<rect class="bar" x="310" y="78" width="7" height="20" rx="2"/>
+<text x="325" y="93">0.11 s</text>
 <text x="20" y="127">dotmatch_levenshtein_k1</text>
-<rect class="bar" x="310" y="112" width="28" height="20" rx="2"/>
-<text x="346" y="127">0.44 s</text>
+<rect class="bar" x="310" y="112" width="216" height="20" rx="2"/>
+<text x="534" y="127">3.40 s</text>
 <text x="20" y="161">dotmatch_hamming_k1</text>
-<rect class="bar" x="310" y="146" width="8" height="20" rx="2"/>
-<text x="326" y="161">0.13 s</text>
+<rect class="bar" x="310" y="146" width="12" height="20" rx="2"/>
+<text x="330" y="161">0.20 s</text>
 <text x="20" y="195">mageck_count_exact</text>
-<rect class="bar" x="310" y="180" width="67" height="20" rx="2"/>
-<text x="385" y="195">1.05 s</text>
+<rect class="bar" x="310" y="180" width="69" height="20" rx="2"/>
+<text x="387" y="195">1.10 s</text>
 <text x="20" y="229">guide_counter_one_mismatch</text>
-<rect class="bar" x="310" y="214" width="60" height="20" rx="2"/>
-<text x="378" y="229">0.95 s</text>
+<rect class="bar" x="310" y="214" width="74" height="20" rx="2"/>
+<text x="392" y="229">1.17 s</text>
 <text x="20" y="263">external_competitors_ERR376998.fastq.gz</text>
 <rect class="bar" x="310" y="248" width="645" height="20" rx="2"/>
-<text x="963" y="263">10.07 s</text>
+<text x="963" y="263">10.16 s</text>
 <text x="20" y="297">external_competitors_ERR376999.fastq.gz</text>
-<rect class="bar" x="310" y="282" width="614" height="20" rx="2"/>
-<text x="932" y="297">9.59 s</text>
+<rect class="bar" x="310" y="282" width="565" height="20" rx="2"/>
+<text x="883" y="297">8.91 s</text>
 </svg>

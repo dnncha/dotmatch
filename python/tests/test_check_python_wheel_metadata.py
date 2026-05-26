@@ -158,3 +158,12 @@ def test_build_and_verify_sdist_builds_sdist_without_wheel(tmp_path, monkeypatch
         "metadata:dotmatch-0.1.0.tar.gz:0.1.0",
         "install:dotmatch-0.1.0.tar.gz:0.1.0",
     ]
+
+
+def test_existing_wheel_clean_install_skips_unsupported_linux_libc_tags(monkeypatch):
+    checker = _load_checker()
+    monkeypatch.setattr(checker.platform, "system", lambda: "Linux")
+    monkeypatch.setattr(checker.platform, "libc_ver", lambda: ("glibc", "2.39"))
+
+    assert checker.wheel_supported_by_current_platform(Path("dotmatch-0.1.0-py3-none-manylinux_2_28_x86_64.whl"))
+    assert not checker.wheel_supported_by_current_platform(Path("dotmatch-0.1.0-py3-none-musllinux_1_2_x86_64.whl"))

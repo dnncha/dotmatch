@@ -4,7 +4,7 @@ DotMatch CRISPR QC evaluates guide-counting and representation diagnostics for
 a pooled CRISPR screen. It does not replace MAGeCK, BAGEL, drugZ, CERES,
 CRISPResso2, or other downstream screen/editing analysis methods. Its job is
 narrower: help detect likely FASTQ-to-guide counting configuration problems,
-show guide representation issues, and make suspicious samples visible before
+surface guide representation issues, and make suspicious samples visible before
 downstream statistics.
 
 ## Command
@@ -19,7 +19,7 @@ dotmatch crispr qc \
   --report crispr_qc.html
 ```
 
-`dotmatch assay run` writes these CRISPR QC files automatically for
+`dotmatch assay run` writes these CRISPR QC artifacts automatically for
 `mode = "count"` and `assay_type = "crispr"`.
 
 The legacy-compatible alias `dotmatch crispr-qc` runs the same QC command.
@@ -37,8 +37,8 @@ dotmatch crispr plan assay.toml
 dotmatch crispr run assay.toml
 ```
 
-These commands use the same AssaySpec runner underneath, so the CRISPR-specific
-commands and the general assay workflow produce the same files and checks.
+These commands are thin wrappers over AssaySpec so the CRISPR interface and the
+general workflow layer produce the same artifacts and validation behavior.
 
 ## Metrics
 
@@ -64,8 +64,10 @@ evaluated and the report records a review warning.
 
 For `--k 2` or higher, CRISPR QC still reports duplicate/one-edit guide
 collisions only and records `safe_for_k = null` in the library summary. Use
-`dotmatch audit-targets` for a full target-collision audit at larger edit
-radii.
+`dotmatch audit --audit-mode exact` for target-collision auditing at larger
+radii. Exact audit reports `safe_at_hamming_k2` and `safe_at_hamming_k3` for
+same-length Hamming guide-count libraries; fast audit reports those fields as
+not computed.
 
 ## Conservative Review Thresholds
 

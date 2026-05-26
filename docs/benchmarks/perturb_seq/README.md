@@ -2,9 +2,9 @@
 
 This report covers perturb-seq-adjacent guide assignment evidence for DotMatch's known-target counting layer.
 
-The synthetic lane checks fixed-window guide plus feature-barcode pair assignment through `pair-count`. The public lane uses a 10x Genomics CRISPR Guide Capture R2 subsample and validates DotMatch k=0 against a simple exact-slice comparison over the observed fixed guide window.
+The synthetic lane checks fixed-window guide plus feature-barcode pair assignment through `pair-count`. The public lane uses a 10x Genomics CRISPR Guide Capture R2 subsample and validates DotMatch k=0 against a transparent exact-slice hash baseline over the observed fixed guide window.
 
-Current status: public guide-capture assignment evidence only. This is not single-cell expression quantification or Cell Ranger perturbation-effect validation.
+Current status: public single-guide guide-capture extraction evidence only. The public target set has one observed guide, so it validates fixed-window extraction and exact-slice counting, not useful multi-guide assignment, single-cell expression quantification, or Cell Ranger perturbation-effect validation.
 
 ## Synthetic Command
 
@@ -16,22 +16,22 @@ dotmatch pair-count --left-targets benchmarks/work/perturb_seq/perturb_guides.ts
 
 | tool | workflow | guides | features | reads | k | metric | assigned pairs | ambiguous | left unmatched | right unmatched | invalid | validation mismatches |
 | --- | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| dotmatch_pair_count | synthetic_perturb_seq_fixture | 3 | 2 | 7 | 1 | hamming | 3 | 1 | 1 | 1 | 1 | 0 |
+| dotmatch_pair_count | synthetic_perturb_seq_fixture | 3 | 2 | 7 | 1 | hamming | 1 | 4 | 1 | 1 | 1 | 0 |
 
 ## Public CRISPR Guide-Capture Rows
 
 | tool | workflow | status | guides | reads | start | length | k | metric | assigned | exact | corrected | unmatched | validation mismatches |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: |
-| dotmatch_count | public_10x_crispr_guide_capture | supported | 1 | 20000 | 63 | 19 | 0 | hamming | 15979 | 15979 | 0 | 4021 | 0 |
-| dotmatch_count | public_10x_crispr_guide_capture | supported | 1 | 20000 | 63 | 19 | 1 | hamming | 16582 | 15979 | 603 | 3418 | 0 |
-| exact_slice_hash | public_10x_crispr_guide_capture | supported | 1 | 20000 | 63 | 19 | 0 | exact | 15979 | 15979 | 0 | 4021 | 0 |
+| dotmatch_count | public_10x_crispr_guide_capture | gated | 1 | 20000 | 63 | 19 | 0 | hamming | 15979 | 15979 | 0 | 4021 | 0 |
+| dotmatch_count | public_10x_crispr_guide_capture | gated | 1 | 20000 | 63 | 19 | 1 | hamming | 16582 | 15979 | 603 | 3418 | 0 |
+| exact_slice_hash | public_10x_crispr_guide_capture | gated | 1 | 20000 | 63 | 19 | 0 | exact | 15979 | 15979 | 0 | 4021 | 0 |
 
 ## Public Dataset
 
 - Dataset: 10x Genomics 1k A375 Cells Transduced with Non-Target and Target sgRNA, Chromium GEM-X Single Cell 5'.
 - Source page: https://www.10xgenomics.com/datasets/1k-CRISPR-5p-gemx
-- Fixture rules: the fetcher selects the observed fixed-window CRISPR Guide Capture group with the most exact assignments in the copied R2 prefix.
-- Comparison settings: the exact-slice check counts reads whose fixed R2 substring exactly matches the selected guide sequence. It validates per-read guide assignment rules, not Cell Ranger cell/UMI quantification or perturbation effects.
+- Fixture semantics: the fetcher selects the observed fixed-window CRISPR Guide Capture group with the most exact assignments in the copied R2 prefix.
+- Comparator semantics: the exact-slice baseline counts reads whose fixed R2 substring exactly matches the selected guide sequence. It validates per-read guide assignment semantics, not Cell Ranger cell/UMI quantification or perturbation effects.
 
 ## Public Commands
 
@@ -50,4 +50,4 @@ python3 scripts/bench_perturb_seq.py --include-public --metadata examples/pertur
 
 ## Evidence Boundary
 
-Use these lanes to verify fixed-window guide/feature pair assignment, side-level diagnostics, and narrow public CRISPR guide-capture per-read assignment. Broader Perturb-seq comparisons require public cell barcode and UMI handling, guide-per-cell calls, expression or perturbation-effect comparison output, exact commands, validation files, and a passing check.
+Use these lanes to verify fixed-window guide/feature pair assignment, side-level diagnostics, and narrow public CRISPR guide-capture fixed-window extraction. Broader Perturb-seq comparisons require a multi-guide public target set, public cell barcode and UMI handling, guide-per-cell calls, expression or perturbation-effect comparator output, exact commands, validation artifacts, and a passing gate.

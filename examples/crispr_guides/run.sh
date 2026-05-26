@@ -25,6 +25,7 @@ TARGETS="$DATA/yusa_library.csv"
   --k 1 \
   --metric levenshtein \
   --indel-window 1 \
+  --ambiguity-policy radius \
   --out "$OUT/counts.tsv" \
   --assignments "$OUT/assignments.tsv" \
   --summary "$OUT/summary.json" \
@@ -42,6 +43,7 @@ TARGETS="$DATA/yusa_library.csv"
   --k 1 \
   --metric levenshtein \
   --indel-window 1 \
+  --ambiguity-policy radius \
   --format mageck \
   --out "$OUT/counts.mageck.tsv"
 

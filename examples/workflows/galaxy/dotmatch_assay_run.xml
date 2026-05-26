@@ -30,6 +30,7 @@ length = $guide_length
 [assignment]
 k = $k
 metric = "$metric"
+ambiguity_policy = "radius"
 ambiguous = "$ambiguous"
 #if str($metric) == 'levenshtein' and int($indel_window) > 0
 indel_window = $indel_window
@@ -117,8 +118,8 @@ dotmatch assay run assay.toml
 DotMatch AssaySpec is the declarative workflow layer for fixed-window
 known-target assays. This example wrapper builds a reviewed `status = "ready"`
 count AssaySpec from Galaxy-staged inputs, then exposes the human-readable assay
-report, run manifest, manifest summary, sample QC, CRISPR QC, counts, and
-DotMatch summary.
+report, provenance manifest, manifest summary, sample QC, CRISPR QC, counts,
+and native summary.
 
 This wrapper is intended for local Galaxy installations and workflow testing.
     ]]></help>

@@ -81,14 +81,22 @@ def _check_meta(meta: str, result: AuditResult) -> None:
             "Bioconda recipe must use the immutable GitHub release tarball URL",
         ),
         ("sha256: {{ sha256 }}", "Bioconda recipe must wire source sha256 through the Jinja sha256 variable"),
+        ("number: 0", "Bioconda recipe build number must reset to 0 for a new upstream version"),
         ('{{ pin_subpackage("dotmatch", max_pin="x.x") }}', "Bioconda recipe must export a compatible shared-library runtime pin"),
-        ("skip: true  # [win]", "Bioconda recipe must skip unsupported Windows builds"),
+        ("skip: true  # [win or py<39]", "Bioconda recipe must skip unsupported Windows and Python builds"),
         ("{{ compiler('c') }}", "Bioconda recipe must request the C compiler"),
         ("{{ stdlib('c') }}", "Bioconda recipe must request the C standard library"),
         ("- make", "Bioconda recipe must include make in build requirements"),
-        ("- zlib", "Bioconda recipe must include host zlib"),
+        ("- python >=3.9", "Bioconda recipe must include Python >=3.9"),
+        ("- pip", "Bioconda recipe must include pip in host requirements"),
+        ("- setuptools >=77", "Bioconda recipe must include setuptools >=77 in host requirements"),
+        ("- wheel", "Bioconda recipe must include wheel in host requirements"),
+        ("- zlib", "Bioconda recipe must include host zlib for native CLI linkage"),
+        ("- tomli  # [py<311]", "Bioconda recipe must include tomli for Python <3.11"),
         ("license: Apache-2.0", "Bioconda recipe must declare Apache-2.0 license"),
         ("license_file: LICENSE", "Bioconda recipe must install and declare LICENSE"),
+        ("additional-platforms:", "Bioconda recipe must opt into additional platform builds"),
+        ("- osx-arm64", "Bioconda recipe must opt into osx-arm64 / Apple Silicon builds"),
         ("recipe-maintainers:", "Bioconda recipe must declare recipe maintainers"),
         ("- dnncha", "Bioconda recipe must list dnncha as recipe maintainer"),
     ]
@@ -97,11 +105,41 @@ def _check_meta(meta: str, result: AuditResult) -> None:
 
     if SHA_PLACEHOLDER not in meta:
         result.failures.append("Bioconda recipe must retain SHA256 placeholder until copying into bioconda-recipes")
+    if meta.count("- zlib") != 1:
+        result.failures.append("Bioconda recipe must include zlib exactly once in host requirements")
+    run_block = re.search(r"  run:\n(?P<body>(?:    - .+\n)+)", meta)
+    if run_block and "    - zlib\n" in run_block.group("body"):
+        result.failures.append("Bioconda recipe must not duplicate zlib in run requirements; host zlib exports libzlib")
 
     for command in [
         "dotmatch --version",
         "dotmatch dist ACGT AGGT",
         "dotmatch leq 1 ACGT AGGT",
+        "dotmatch --help",
+        "dotmatch count --help",
+        "dotmatch crispr-count --help",
+        "dotmatch audit --help",
+        "dotmatch assay --help",
+        "dotmatch barcode --help",
+        "dotmatch panel --help",
+        "dotmatch assay init",
+        "dotmatch audit --targets audit_targets.tsv --k 3 --audit-mode exact",
+        "dotmatch barcode infer",
+        "dotmatch panel design",
+        "chmod -R a+rwX panel_out",
+        "from dotmatch.native import find_native_cli",
+        "dotmatch count --targets targets.tsv",
+        "dotmatch crispr-count --library crispr_guides.csv",
+        "safe_at_hamming_k3",
+        "crispr_sample_qc.tsv",
+        "dotmatch guide-counter count --input reads.fastq",
+        "gc_out.counts.txt",
+        "gc_out.extended-counts.txt",
+        "gc_out.stats.txt",
+        "test -f \"${PREFIX}/include/qdalign.h\"",
+        "test -f \"${PREFIX}/lib/libdotmatch.a\"",
+        "libdotmatch.so",
+        "libdotmatch.dylib",
     ]:
         if command not in meta:
             result.failures.append(f"Bioconda recipe test commands must include {command}")
@@ -110,15 +148,16 @@ def _check_meta(meta: str, result: AuditResult) -> None:
 def _check_build(build: str, result: AuditResult) -> None:
     required_fragments = [
         ("set -euo pipefail", "Bioconda build.sh must fail fast with set -euo pipefail"),
+        ('DOTMATCH_VERSION="${PKG_VERSION}"', "Bioconda build.sh must pass PKG_VERSION into the native build"),
         ('CC="${CC}"', "Bioconda build.sh must use Conda's C compiler"),
         ("CPPFLAGS", "Bioconda build.sh must include Conda preprocessor flags"),
         ("LDFLAGS", "Bioconda build.sh must include Conda linker flags"),
-        ("dotmatch libdotmatch.a shared", "Bioconda build.sh must build CLI, static library, and shared library"),
+        ("libdotmatch.a shared", "Bioconda build.sh must build static and shared libraries"),
+        ('${PYTHON} -m pip install . -vv --no-deps --no-build-isolation', "Bioconda build.sh must install the Python console script"),
         ('"${PREFIX}/bin"', "Bioconda build.sh must create the bin install directory"),
         ('"${PREFIX}/include"', "Bioconda build.sh must create the include install directory"),
         ('"${PREFIX}/lib"', "Bioconda build.sh must create the lib install directory"),
         ('"${PREFIX}/share/${PKG_NAME}"', "Bioconda build.sh must create the package share directory"),
-        ('install -m 755 dotmatch "${PREFIX}/bin/dotmatch"', "Bioconda build.sh must install dotmatch"),
         ('install -m 644 include/qdalign.h "${PREFIX}/include/qdalign.h"', "Bioconda build.sh must install qdalign.h"),
         ('install -m 644 libdotmatch.a "${PREFIX}/lib/libdotmatch.a"', "Bioconda build.sh must install libdotmatch.a"),
         ('install -m 644 LICENSE "${PREFIX}/share/${PKG_NAME}/LICENSE"', "Bioconda build.sh must install LICENSE"),
@@ -127,6 +166,8 @@ def _check_build(build: str, result: AuditResult) -> None:
     ]
     for fragment, message in required_fragments:
         _require(build, fragment, message, result)
+    if 'install -m 755 dotmatch "${PREFIX}/bin/dotmatch"' in build:
+        result.failures.append("Bioconda build.sh must let the Python console script own ${PREFIX}/bin/dotmatch")
     if "uname -s" not in build or "Darwin" not in build:
         result.failures.append("Bioconda build.sh must branch shared-library install by platform")
 

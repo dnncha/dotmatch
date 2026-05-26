@@ -5,7 +5,7 @@
 A curated map of committed DotMatch benchmark reports, public-data examples, and diagnostic report patterns.
 
 Start here when you want to see what DotMatch does on real or deliberately diagnostic data.
-Each row links to the exact report, raw files, command records, and a short interpretation.
+Each row links to the exact report, raw artifacts, command records, and a short interpretation.
 
 ## Gallery
 
@@ -17,7 +17,7 @@ Each row links to the exact report, raw files, command records, and a short inte
 | [Barcode failure fixture: wrong offset and invalid windows](scenarios/barcode_wrong_offset_fixture.md) | Report zoo | Committed barcode failure-mode FASTQ fixture | Deliberately constructed reads show wrong offset, invalid window, reverse-complement candidate, and low-complexity failure modes. | [report](../../examples/barcode_autopsy/failure_modes/README.md) |
 | [Barcode failure fixture: unsafe one-edit correction](scenarios/barcode_unsafe_correction.md) | Report zoo | Committed barcode failure-mode FASTQ fixture | Observed barcode sequences are within one edit of multiple targets, so k=1 rescue is unsafe. | [report](../../examples/barcode_autopsy/failure_modes/README.md) |
 | [Feature barcode assignment: 10x TotalSeq-B public lane](scenarios/feature_barcode_10x.md) | Public data | 10x Genomics TotalSeq-B antibody Feature Barcode R2 sample | Per-read fixed-window feature-barcode assignment with exact-slice baseline agreement. | [report](../benchmarks/feature_barcode/README.md) |
-| [CRISPR guide capture assignment: 10x GEM-X public lane](scenarios/perturb_seq_10x_guide_capture.md) | Public data | 10x GEM-X A375 CRISPR Guide Capture R2 sample | Per-read fixed-window guide-capture assignment with exact-slice baseline agreement. | [report](../benchmarks/perturb_seq/README.md) |
+| [CRISPR guide capture extraction: 10x GEM-X public lane](scenarios/perturb_seq_10x_guide_capture.md) | Public data | 10x GEM-X A375 CRISPR Guide Capture R2 sample | Single-guide fixed-window guide-capture extraction with exact-slice baseline agreement. | [report](../benchmarks/perturb_seq/README.md) |
 | [Amplicon primer-start assignment: ARTIC V3 public lane](scenarios/amplicon_artic_primer_start.md) | Public data | nf-core viralrecon ARTIC V3 Illumina R1 sample | Fixed-window primer-start assignment with exact-prefix baseline agreement. | [report](../benchmarks/amplicon_panel/README.md) |
 | [Oligo/adapter prefix assignment: TruSeq R1 public lane](scenarios/oligo_adapter_truseq_prefix.md) | Public data | fast-adapter-trimming TruSeq R1 fixed-window sample | Fixed-window adapter-prefix assignment with exact-slice baseline agreement. | [report](../benchmarks/oligo_adapter/README.md) |
 | [Classic BCL parser milestone: 10x tiny-BCL lane](scenarios/bcl_tiny_classic.md) | Gated parser milestone | 10x Genomics Cell Ranger tiny-BCL demo run folder | Classic per-cycle BCL output count-total validation against an available bcl2fastq row. | [report](../benchmarks/bcl_demux/README.md) |
@@ -29,5 +29,5 @@ Each row links to the exact report, raw files, command records, and a short inte
 ## How To Read These Pages
 
 - Each scenario separates the observed result from what it does not establish.
-- Comparison settings are part of the evidence. Changing them changes the meaning of the result.
+- Comparator settings are part of the evidence. Changing them changes the meaning of the result.
 - HTML, TSV, JSON, FASTQ, and raw CSV files are linked directly when they are committed.

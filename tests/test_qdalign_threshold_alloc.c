@@ -44,7 +44,34 @@ static void assert_k1_leq_no_heap(const char *a, size_t a_len, const char *b, si
     assert(test_free_calls == 0);
 }
 
+static void packed_hamming_tests(void) {
+    uint64_t a = 0;
+    uint64_t b = 0;
+
+    assert(dna2_code("ACGTACGT", 8, &a) == 1);
+    assert(dna2_code("ACGTTCGA", 8, &b) == 1);
+    assert(code_hamming_distance_qd(a, b, 8) == 2);
+    assert(same_length_hamming_distance_within_k("ACGTACGTACGTACGT",
+                                                 "ACGTACGTACGTACGA", 16, 1) == 1);
+    assert(same_length_hamming_distance_within_k("ACGTACGTACGTACGT",
+                                                 "TCGTACGTACGTACGA", 16, 1) == -1);
+}
+
+static void hamming_seed_index_build_tests(void) {
+    const char *targets[] = {"ACGTACGT", "ACGTTCGT", "A", "NNNN"};
+    size_t target_lens[] = {8, 8, 1, 4};
+    qdaln_index *idx = qdaln_index_build(targets, target_lens, 4);
+
+    assert(idx != NULL);
+    assert(idx->hamming_seed_ready == 1);
+    assert(idx->n_hamming_seeds == 27);
+    assert(idx->hamming_seed_hash_cap >= 8);
+    qdaln_index_free(idx);
+}
+
 int main(void) {
+    packed_hamming_tests();
+    hamming_seed_index_build_tests();
     assert_k1_leq_no_heap("ACGT", 4, "ACGT", 4, 1);
     assert_k1_leq_no_heap("ACGT", 4, "ACGA", 4, 1);
     assert_k1_leq_no_heap("ACGT", 4, "ACGTT", 5, 1);

@@ -1,7 +1,7 @@
 # Snakemake CRISPR Counting Example
 
 This example includes two small Snakemake rules. `dotmatch_crispr_count` runs
-the DotMatch CRISPR counting command. `dotmatch_assay_run` runs an AssaySpec and
+the native CRISPR counting command. `dotmatch_assay_run` runs an AssaySpec and
 emits the assay report and manifest summary. It is intended as an integration
 pattern for labs that already run Snakemake, not as benchmark evidence.
 
@@ -20,12 +20,6 @@ snakemake \
   --cores 1
 ```
 
-Rules that execute DotMatch declare
-`examples/workflows/snakemake/envs/dotmatch.yaml`, which pins
-`dotmatch=0.1.2` from Bioconda. Add `--use-conda` on supported Bioconda
-platforms (`linux-64` or `osx-64`) when you want Snakemake to create the rule
-environment; otherwise install DotMatch on `PATH` before running the workflow.
-
 Outputs are written under `examples/workflows/snakemake/output/`:
 
 - `samples.tsv`: sample sheet generated from `config.json`;
@@ -37,7 +31,7 @@ Outputs are written under `examples/workflows/snakemake/output/`:
   `assay/crispr_qc.summary.tsv`: CRISPR guide-count QC report, structured
   report, and workflow summary;
 - `assay/assay_report.html`: primary human-readable AssaySpec report;
-- `assay/assay_manifest.json`: full run record and command manifest;
+- `assay/assay_manifest.json`: full run provenance and command manifest;
 - `assay/assay_manifest.summary.tsv`: manifest summary for MultiQC custom
   content.
 
@@ -45,3 +39,9 @@ The default config uses the same Yusa/MAGeCK fixture paths as
 `examples/crispr_guides/README.md`: `ERR376998.fastq.gz`,
 `ERR376999.fastq.gz`, `yusa_library.csv`, `guide_start=23`, and
 `guide_length=19`.
+
+`config.json` keeps `metric`, `k`, `ambiguity_policy`, and `ambiguous`
+explicit so production pipelines do not inherit changed defaults silently. For
+fixed-length guides where you want larger mismatch radii, run an exact library
+audit first and then switch the config to `metric: "hamming"` with `k: 2` or
+`k: 3` only when the audit reports the corresponding Hamming radius as safe.

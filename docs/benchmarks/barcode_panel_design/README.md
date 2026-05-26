@@ -1,6 +1,6 @@
 # Barcode Panel Design Benchmark
 
-Smoke benchmark for DotMatch barcode panel design and machine-checkable safety certificates.
+Smoke benchmark for DotMatch barcode panel design and machine-checkable assignment-collision reports.
 
 - Raw data: `benchmarks/raw/barcode_panel_design.csv`
 - Panel status: `warn`

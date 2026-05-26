@@ -18,6 +18,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLE = ROOT / "examples" / "crispr_guides"
+GUIDE_COUNTER_OFFSET_MIN_FRACTION = "0.0025"
+
+
+def guide_counter_hamming_policy_args() -> list[str]:
+    return ["--ambiguity-policy", "best"]
+
+
+def guide_counter_offset_args() -> list[str]:
+    return ["--offset-min-fraction", GUIDE_COUNTER_OFFSET_MIN_FRACTION]
 
 
 def public_text(value: str | Path) -> str:
@@ -32,7 +41,7 @@ def public_text(value: str | Path) -> str:
     dotmatch_tmp = "/" + "tmp/dotmatch"
     text = text.replace(private_tmp, tmp_root)
     text = re.sub(re.escape(var_folders) + r'[^,\s"]*/([^/,\s"]+)', r"<tmp>/\1", text)
-    text = re.sub(re.escape(dotmatch_tmp) + r'[^,\s"]*/([^/,\s"]+)', r"<tmp>/\1", text)
+    text = re.sub(re.escape(dotmatch_tmp) + r'[^,\s"]*', r"<tmp>/dotmatch", text)
     return text
 
 
@@ -334,10 +343,12 @@ def main() -> None:
             "1",
             "--metric",
             "hamming",
+            *guide_counter_hamming_policy_args(),
             "--auto-offset",
             "5",
             "--auto-offset-sample",
             str(min(100000, max(1, n_reads // 2))),
+            *guide_counter_offset_args(),
             "--format",
             "mageck",
             "--out",

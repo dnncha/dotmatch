@@ -32,7 +32,7 @@ def test_bioconda_recipe_tracks_release_metadata() -> None:
     assert "recipe-maintainers:" in text
 
 
-def test_bioconda_recipe_builds_native_cli_and_smoke_tests() -> None:
+def test_bioconda_recipe_builds_python_console_script_and_smoke_tests() -> None:
     recipe = (ROOT / "packaging" / "bioconda" / "meta.yaml").read_text(encoding="utf-8")
     build = (ROOT / "packaging" / "bioconda" / "build.sh").read_text(encoding="utf-8")
 
@@ -40,13 +40,27 @@ def test_bioconda_recipe_builds_native_cli_and_smoke_tests() -> None:
     assert "- {{ stdlib('c') }}" in recipe
     assert "{{ pin_subpackage(\"dotmatch\", max_pin=\"x.x\") }}" in recipe
     assert "- make" in recipe
-    assert "- zlib" in recipe
+    assert "- python >=3.9" in recipe
+    assert "- pip" in recipe
+    assert "- setuptools >=77" in recipe
+    assert recipe.count("- zlib") == 1
     assert "dotmatch dist ACGT AGGT | grep '^1$'" in recipe
     assert "dotmatch leq 1 ACGT AGGT | grep '^true$'" in recipe
-    assert "dotmatch count --help" not in recipe
+    assert "dotmatch assay --help" in recipe
+    assert "dotmatch barcode --help" in recipe
+    assert "dotmatch panel --help" in recipe
+    assert "dotmatch assay init" in recipe
+    assert "dotmatch barcode infer" in recipe
+    assert "dotmatch panel design" in recipe
+    assert "dotmatch count --help | grep 'Hamming supports k=0..3'" in recipe
+    assert "dotmatch crispr-count --help | grep 'MAGeCK-ready'" in recipe
+    assert "dotmatch audit --help | grep 'safe_at_hamming_k3'" in recipe
+    assert "dotmatch audit --targets audit_targets.tsv --k 3 --audit-mode exact" in recipe
+    assert "dotmatch crispr-count --library crispr_guides.csv" in recipe
     assert 'CC="${CC}"' in build
-    assert "dotmatch libdotmatch.a shared" in build
-    assert 'install -m 755 dotmatch "${PREFIX}/bin/dotmatch"' in build
+    assert "libdotmatch.a shared" in build
+    assert "${PYTHON} -m pip install . -vv --no-deps --no-build-isolation" in build
+    assert 'install -m 755 dotmatch "${PREFIX}/bin/dotmatch"' not in build
     assert 'install -m 644 include/qdalign.h "${PREFIX}/include/qdalign.h"' in build
 
 
@@ -99,8 +113,12 @@ def test_codemeta_is_included_in_source_distribution_manifest() -> None:
 
     assert "include CITATION.cff" in manifest
     assert "include codemeta.json" in manifest
+    assert "include docs/assay-evidence.json" in manifest
     assert "/CITATION.cff" in verifier
     assert "/codemeta.json" in verifier
+    assert "/docs/assay-evidence.json" in verifier
+    assert "dotmatch/data/assay-evidence.json" in verifier
+    assert "evidence_boundary" in verifier
 
 
 def test_python_package_verifier_checks_installed_cli_version() -> None:
@@ -124,6 +142,7 @@ def test_python_package_build_bundles_native_cli() -> None:
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 
     assert "dotmatch-native" in setup
+    assert "assay-evidence.json" in setup
     assert "src/qda.c" in setup
     assert "DOTMATCH_VERSION" in setup
     assert 'tomli; python_version < \\"3.11\\"' in pyproject

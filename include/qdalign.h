@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#define QDALN_VERSION "0.1.0-dev"
+#define QDALN_VERSION "0.1.5"
 #define QDALN_ALPHABET_POLICY "literal-byte; A/C/G/T/N/IUPAC symbols are ordinary byte symbols; no wildcard expansion"
 
 enum qdaln_match_status {
@@ -157,7 +157,7 @@ int qdaln_index_assign_status_stats(const qdaln_index *index, const char *const 
 
 /*
  * Hamming-distance indexed assignment for equal-length known-target workflows.
- * Supports k=0 and k=1. Unlike Levenshtein assignment, this does not consider
+ * Supports k=0..3. Unlike Levenshtein assignment, this does not consider
  * insertion/deletion neighbors, which is the fair mode for one-mismatch guide
  * counters.
  */

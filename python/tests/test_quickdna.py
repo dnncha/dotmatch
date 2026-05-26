@@ -16,7 +16,7 @@ def test_alphabet_policy_alias():
 def test_assign_unique_ambiguous_none():
     results = quickdna.assign(["ACGT", "ACGC", "TTTT"], ["ACGT", "AGGT", "ACGA"], k=1)
 
-    assert results[0].status == quickdna.MATCH_UNIQUE
+    assert results[0].status == quickdna.MATCH_AMBIGUOUS
     assert results[0].target_index == 0
     assert results[0].best_distance == 0
     assert results[0].match_count == 3
@@ -27,6 +27,14 @@ def test_assign_unique_ambiguous_none():
 
     assert results[2].status == quickdna.MATCH_NONE
     assert results[2].target_index == -1
+
+
+def test_assign_best_policy_keeps_legacy_winner():
+    result = quickdna.assign(["ACGT"], ["ACGT", "AGGT", "ACGA"], k=1, policy="best")[0]
+
+    assert result.status == quickdna.MATCH_UNIQUE
+    assert result.target_index == 0
+    assert result.match_count == 3
 
 
 def test_assign_rejects_negative_k():

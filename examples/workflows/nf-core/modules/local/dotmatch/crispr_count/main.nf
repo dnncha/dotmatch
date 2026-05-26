@@ -1,7 +1,6 @@
 process DOTMATCH_CRISPR_COUNT {
     tag "$meta.id"
     label 'process_low'
-    conda "bioconda::dotmatch=0.1.2"
 
     input:
     tuple val(meta), path(reads), path(library)
@@ -30,6 +29,7 @@ process DOTMATCH_CRISPR_COUNT {
       --guide-length ${guide_length} \\
       --k ${k} \\
       --metric ${metric} \\
+      --ambiguity-policy radius \\
       --out ${prefix}.counts.mageck.tsv \\
       --summary ${prefix}.summary.json \\
       --sample-qc ${prefix}.sample_qc.tsv \\

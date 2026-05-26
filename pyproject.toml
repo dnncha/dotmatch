@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dotmatch"
-version = "0.1.2"
+version = "0.1.5"
 description = "Deterministic known-target short-DNA assignment for CRISPR guide counting, barcode demultiplexing, and FASTQ workflows"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -44,7 +44,6 @@ Homepage = "https://github.com/dnncha/dotmatch"
 Repository = "https://github.com/dnncha/dotmatch"
 Issues = "https://github.com/dnncha/dotmatch/issues"
 Documentation = "https://github.com/dnncha/dotmatch#readme"
-Bioconda = "https://anaconda.org/bioconda/dotmatch"
 
 [tool.setuptools]
 package-dir = {"" = "python"}

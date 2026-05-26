@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -50,29 +49,34 @@ def _require(text: str, needle: str, message: str, result: WorkflowAudit) -> Non
         result.failures.append(message)
 
 
-def _project_version(root: Path) -> str:
-    text = (root / "pyproject.toml").read_text(encoding="utf-8")
-    match = re.search(r'^version\s*=\s*"([^"]+)"', text, flags=re.MULTILINE)
-    return match.group(1) if match else ""
-
-
 def check_snakemake(root: Path, result: WorkflowAudit) -> None:
     config_path = root / "examples" / "workflows" / "snakemake" / "config.json"
     snakefile_path = root / "examples" / "workflows" / "snakemake" / "Snakefile"
-    project_version = _project_version(root)
-    conda_dep = f"dotmatch={project_version}" if project_version else "dotmatch="
     try:
         config = json.loads(_read(config_path, result))
     except json.JSONDecodeError as exc:
         result.failures.append(f"Snakemake config.json is invalid JSON: {exc}")
         return
 
-    required_keys = ["library", "samples", "guide_start", "guide_length", "metric", "outdir"]
+    required_keys = [
+        "library",
+        "samples",
+        "guide_start",
+        "guide_length",
+        "metric",
+        "ambiguity_policy",
+        "ambiguous",
+        "outdir",
+    ]
     for key in required_keys:
         if key not in config:
             result.failures.append(f"Snakemake config.json missing {key}")
     if config.get("metric") not in {"hamming", "levenshtein"}:
         result.failures.append("Snakemake config.json metric must be hamming or levenshtein")
+    if config.get("ambiguity_policy") not in {"radius", "best"}:
+        result.failures.append("Snakemake config.json ambiguity_policy must be radius or best")
+    if config.get("ambiguous") not in {"discard", "include", "separate"}:
+        result.failures.append("Snakemake config.json ambiguous must be discard, include, or separate")
     if not isinstance(config.get("samples"), dict) or not config.get("samples"):
         result.failures.append("Snakemake config.json must define at least one sample")
 
@@ -87,13 +91,12 @@ def check_snakemake(root: Path, result: WorkflowAudit) -> None:
     _require(snakefile, "crispr_qc.html", "Snakemake AssaySpec rule must expose crispr_qc.html", result)
     _require(snakefile, "crispr_qc.json", "Snakemake AssaySpec rule must expose crispr_qc.json", result)
     _require(snakefile, "crispr_qc.summary.tsv", "Snakemake AssaySpec rule must expose crispr_qc.summary.tsv", result)
-    _require(snakefile, "--ambiguous discard", "Snakemake Snakefile must keep ambiguity policy explicit", result)
+    _require(snakefile, "ambiguity_policy = config.get", "Snakemake Snakefile must read ambiguity policy from config", result)
+    _require(snakefile, "ambiguous = config.get", "Snakemake Snakefile must read ambiguous-output handling from config", result)
+    _require(snakefile, "--ambiguity-policy {params.ambiguity_policy}", "Snakemake Snakefile must keep assignment ambiguity policy explicit", result)
+    _require(snakefile, "--ambiguous {params.ambiguous}", "Snakemake Snakefile must keep ambiguous-output handling explicit", result)
     _require(snakefile, "--sample-qc", "Snakemake Snakefile must emit sample_qc.tsv for MultiQC", result)
     _require(snakefile, "sample_qc", "Snakemake Snakefile must declare sample_qc output", result)
-    _require(snakefile, "envs/dotmatch.yaml", "Snakemake DotMatch rules must declare the Bioconda environment", result)
-    conda_env = _read(root / "examples" / "workflows" / "snakemake" / "envs" / "dotmatch.yaml", result)
-    _require(conda_env, "bioconda", "Snakemake DotMatch environment must include the bioconda channel", result)
-    _require(conda_env, conda_dep, f"Snakemake DotMatch environment must pin {conda_dep}", result)
 
     if not any("Snakemake" in failure for failure in result.failures):
         result.passed.append("Snakemake CRISPR workflow example present")
@@ -102,15 +105,16 @@ def check_snakemake(root: Path, result: WorkflowAudit) -> None:
 def check_nextflow(root: Path, result: WorkflowAudit) -> None:
     config = _read(root / "examples" / "workflows" / "nextflow" / "nextflow.config", result)
     workflow = _read(root / "examples" / "workflows" / "nextflow" / "main.nf", result)
-    project_version = _project_version(root)
-    conda_spec = f"bioconda::dotmatch={project_version}" if project_version else "bioconda::dotmatch="
 
     for needle in [
         "library = 'examples/crispr_guides/data/yusa_library.csv'",
         "samples = 'examples/workflows/nextflow/samples.tsv'",
         "guide_start = 23",
         "guide_length = 19",
+        "k = 1",
         "metric = 'levenshtein'",
+        "ambiguity_policy = 'radius'",
+        "ambiguous = 'discard'",
         "outdir = 'examples/workflows/nextflow/output'",
     ]:
         _require(config, needle, f"Nextflow config missing {needle}", result)
@@ -126,11 +130,11 @@ def check_nextflow(root: Path, result: WorkflowAudit) -> None:
         ("path \"crispr_qc.html\", emit: assay_crispr_qc_report", "Nextflow AssaySpec workflow must emit crispr_qc.html"),
         ("path \"crispr_qc.json\", emit: assay_crispr_qc_json", "Nextflow AssaySpec workflow must emit crispr_qc.json"),
         ("path \"crispr_qc.summary.tsv\", emit: assay_crispr_qc_summary", "Nextflow AssaySpec workflow must emit crispr_qc.summary.tsv"),
-        ("--ambiguous discard", "Nextflow workflow must keep ambiguity policy explicit"),
+        ("--ambiguity-policy ${params.ambiguity_policy}", "Nextflow workflow must keep assignment ambiguity policy explicit"),
+        ("--ambiguous ${params.ambiguous}", "Nextflow workflow must keep ambiguous-output handling explicit"),
         ("--sample-qc", "Nextflow workflow must emit sample_qc.tsv for MultiQC"),
         ("path \"sample_qc.tsv\", emit: sample_qc", "Nextflow workflow must declare sample_qc output"),
         ("publishDir params.outdir", "Nextflow workflow must publish outputs to params.outdir"),
-        (conda_spec, f"Nextflow workflow must pin {conda_spec} through Bioconda"),
     ]:
         _require(workflow, needle, message, result)
 
@@ -140,8 +144,6 @@ def check_nextflow(root: Path, result: WorkflowAudit) -> None:
 
 def check_nfcore(root: Path, result: WorkflowAudit) -> None:
     base = root / "examples" / "workflows" / "nf-core"
-    project_version = _project_version(root)
-    conda_spec = f"bioconda::dotmatch={project_version}" if project_version else "bioconda::dotmatch="
     if not (base / "README.md").is_file():
         result.failures.append("nf-core README.md missing")
     module = _read(base / "modules" / "local" / "dotmatch" / "crispr_count" / "main.nf", result)
@@ -153,13 +155,13 @@ def check_nfcore(root: Path, result: WorkflowAudit) -> None:
         ("process DOTMATCH_CRISPR_COUNT", "nf-core module missing DOTMATCH_CRISPR_COUNT process"),
         ("tuple val(meta), path(reads), path(library)", "nf-core module missing expected input tuple"),
         ("dotmatch crispr-count", "nf-core module must run dotmatch crispr-count"),
-        ("--ambiguous discard", "nf-core module must keep ambiguity policy explicit"),
+        ("--ambiguity-policy radius", "nf-core module must keep assignment ambiguity policy explicit"),
+        ("--ambiguous discard", "nf-core module must keep ambiguous-output handling explicit"),
         ("--sample-qc", "nf-core module must emit sample_qc.tsv for MultiQC"),
         ("emit: sample_qc", "nf-core module must declare sample_qc output"),
         ("versions.yml", "nf-core module must emit versions.yml"),
         ("dotmatch --version", "nf-core module must record dotmatch --version"),
         ("task.ext.args", "nf-core module must expose task.ext.args"),
-        (conda_spec, f"nf-core module must pin {conda_spec} through Bioconda"),
     ]:
         _require(module, needle, message, result)
     for needle in [
@@ -205,7 +207,6 @@ def check_nfcore(root: Path, result: WorkflowAudit) -> None:
         ("emit: crispr_qc_json", "nf-core AssaySpec module must emit crispr_qc_json"),
         ("emit: crispr_qc_summary", "nf-core AssaySpec module must emit crispr_qc_summary"),
         ("versions.yml", "nf-core AssaySpec module must emit versions.yml"),
-        (conda_spec, f"nf-core AssaySpec module must pin {conda_spec} through Bioconda"),
     ]:
         _require(assay_module, needle, message, result)
     for needle in [
@@ -340,6 +341,7 @@ def check_galaxy(root: Path, result: WorkflowAudit) -> None:
         result.failures.append("Galaxy wrapper must be tool id dotmatch_crispr_count")
     command = wrapper.findtext("command") or ""
     _require(command, "dotmatch crispr-count", "Galaxy wrapper command must run dotmatch crispr-count", result)
+    _require(command, "--ambiguity-policy radius", "Galaxy wrapper command must keep assignment ambiguity policy explicit", result)
     _require(command, "--ambiguous", "Galaxy wrapper command must expose --ambiguous", result)
     _require(command, "--summary", "Galaxy wrapper command must include --summary", result)
     _require(command, "--sample-qc", "Galaxy wrapper command must include --sample-qc", result)
@@ -386,6 +388,7 @@ def check_galaxy(root: Path, result: WorkflowAudit) -> None:
             result.failures.append("Galaxy AssaySpec wrapper must be tool id dotmatch_assay_run")
         assay_command = assay_wrapper.findtext("command") or ""
         _require(assay_command, "cat > assay.toml", "Galaxy AssaySpec wrapper command must generate an AssaySpec from staged inputs", result)
+        _require(assay_command, 'ambiguity_policy = "radius"', "Galaxy AssaySpec wrapper command must keep assignment ambiguity policy explicit", result)
         _require(assay_command, "dotmatch assay run assay.toml", "Galaxy AssaySpec wrapper command must run dotmatch assay run", result)
         assay_input_names = {node.attrib.get("name", "") for node in assay_wrapper.findall("./inputs/param")}
         required_inputs = {"library", "sample1_fastq", "sample1_label", "sample2_fastq", "sample2_label", "guide_start", "guide_length", "k", "metric", "ambiguous"}
