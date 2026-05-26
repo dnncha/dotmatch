@@ -30,16 +30,22 @@ assignment searches.
 Bioconda packages DotMatch from a recipe in `bioconda-recipes`; DotMatch does
 not upload a Conda package directly.
 [bioconda/bioconda-recipes#65367](https://github.com/bioconda/bioconda-recipes/pull/65367)
-published DotMatch 0.1.2 as the first Bioconda package. Treat future Bioconda
-versions as available only after `https://anaconda.org/bioconda/dotmatch`,
-repodata, and `make distribution-channels` all verify the release version and
-install smoke tests.
+published DotMatch 0.1.2 as the first Bioconda package. The latest verified
+public Bioconda package before the 0.1.5 release is 0.1.4. Treat future
+Bioconda versions as available only after
+`https://anaconda.org/bioconda/dotmatch`, repodata, and
+`make distribution-channels` all verify the release version and install smoke
+tests.
 
 A release recipe template is kept under `packaging/bioconda/`. Before copying it
 to `bioconda-recipes`, replace `REPLACE_WITH_RELEASE_TARBALL_SHA256` with the
 SHA256 for the tagged GitHub release tarball. Run `make bioconda-recipe-ready`
 before that copy so the checked-in template stays aligned with the release
 version, native install steps, CLI smoke tests, and scope notes.
+The template also includes `extra.additional-platforms: [osx-arm64]` so the
+Bioconda update opts into Apple Silicon CI/build coverage. Keep that selector in
+the upstream recipe update unless Bioconda CI demonstrates a platform-specific
+blocker and the release notes clearly document that `osx-arm64` is unavailable.
 
 The current Bioconda recipe installs the Python `dotmatch` console script as
 the user-facing command, with the native executable bundled inside the Python
@@ -51,9 +57,9 @@ The recipe needs:
 
 - `make`;
 - `{{ compiler('c') }}` and `{{ stdlib('c') }}`;
-- host `python`, `pip`, `setuptools`, `wheel`, and `zlib`, with runtime library
-  dependencies inferred by Conda;
-- run `python`, plus `tomli` for Python versions before 3.11;
+- host `python`, `pip`, `setuptools`, `wheel`, and `zlib`;
+- run `python`, plus `tomli` for Python versions before 3.11. Do not duplicate
+  `zlib` in `run`: host `zlib` exports the linked `libzlib` runtime package;
 - `run_exports` because the package installs a header and shared library;
 - runtime tests for `dotmatch --version`, `dotmatch dist ACGT AGGT`,
   `dotmatch leq 1 ACGT AGGT`, Python import/native discovery, installed C
@@ -65,6 +71,24 @@ The recipe needs:
 The native CLI exposes `dotmatch --version`, so the Bioconda recipe and
 post-release Bioconda install verifier should check version output as well as
 functional CLI smoke tests.
+
+### Bioconda 0.1.5 PR changelog draft
+
+- Update DotMatch from 0.1.4 to 0.1.5.
+- Keep the Python console-script package scope introduced in 0.1.4: `dotmatch`
+  exposes the native commands plus `assay`, `barcode`, `panel`, and
+  GuideCounter-compatible CRISPR counting namespaces.
+- Add Hamming `k=2`/`k=3` guide-counting support and exact audit safety fields;
+  keep larger-radius claims bounded to same-length Hamming fixed-window
+  assignment.
+- Add installed-package smoke tests for `dotmatch count --help`,
+  `dotmatch crispr-count --help`, `dotmatch audit --help`, Hamming `k=2`
+  CRISPR counting, exact Hamming `k=3` audit summaries, GuideCounter-compatible
+  counts/extended-counts/stats files, barcode offset inference, and panel
+  design.
+- Opt into `osx-arm64` builds with `extra.additional-platforms`.
+- Keep host `zlib` for FASTQ.gz/native linkage and let Conda export `libzlib`
+  at runtime.
 
 ## Docker
 
@@ -95,8 +119,9 @@ While the first public release is still pending, this record must stay in
 For Bioconda, the blocker for the next release is submission, merge, and channel
 propagation of that release's recipe update. After publication, replace the
 expected links with verified public and evidence URLs, document the exact
-platforms visible in repodata, set channels to `verified`, and run the
-post-release gate. Do not imply `osx-arm64`, `linux-aarch64`, or other platform
+platforms visible in repodata, including whether `osx-arm64` propagated from the
+Apple Silicon recipe opt-in, set channels to `verified`, and run the
+post-release gate. Do not imply `linux-aarch64` or any other platform
 availability unless those Bioconda subdirs contain DotMatch for the release.
 
 After publishing a tag, run:

@@ -20,20 +20,24 @@ Record the backend optimizer recommendation for the full workload:
 PYTHONPATH=../../python python3 -m dotmatch.cli assay optimize assay.full.toml
 ```
 
-Use the GuideCounter-compatible command shape on local FASTQs:
+Use the GuideCounter-compatible command shape on the fetched subset:
 
 ```bash
 ../../dotmatch guide-counter count \
-  --input sample_a.fastq.gz sample_b.fastq.gz \
-  --samples sample_a sample_b \
-  --library data/brunello_library.tsv \
+  --input data/plasmid.subsample100000.fastq.gz data/RepA.subsample100000.fastq.gz \
+  --samples plasmid RepA \
+  --library data/broadgpp-brunello-library-corrected.txt \
   --output output/guide_counts
 ```
 
 Outputs are written under `output/`:
 
-- `counts.hamming.mageck.tsv`: MAGeCK-compatible guide count matrix;
-- `summary.hamming.json`: selected offsets, assignment counts, and timing;
+- `counts.hamming.mageck.tsv`: MAGeCK-ready `sgRNA`, `Gene`, then one count
+  column per sample;
+- `summary.hamming.json`: selected offsets, assignment counts, QC rates, and
+  timing;
+- `sample_qc.tsv`: per-sample totals, assignment/no-match/ambiguity rates,
+  guide coverage, zero-count guide counts, Gini index, and top-guide fraction;
 - `assay_full/backend_optimization.json`: CPU-authoritative optimizer plan for
   the full AssaySpec workload;
 - `guide_counts.counts.txt`, `guide_counts.extended-counts.txt`, and

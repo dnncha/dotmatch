@@ -95,8 +95,10 @@ Avoid:
 - Create a Zenodo archive and add the DOI to `CITATION.cff` when available.
 - Publish the PyPI source distribution, native macOS wheel, and repaired manylinux/musllinux wheels through trusted publishing; do not upload raw `linux_x86_64` wheels.
 - For Bioconda updates, submit or update the `bioconda-recipes` recipe after
-  `make bioconda-recipe-ready`. Replace the source SHA256 only in the upstream
-  recipe copy. After merge and channel propagation, verify with
+  `make bioconda-recipe-ready`. Keep the `osx-arm64` additional-platforms opt-in
+  in that recipe copy so Bioconda CI validates the Apple Silicon build. Replace
+  the source SHA256 only in the upstream recipe copy. After merge and channel
+  propagation, verify with
   `make distribution-channels` before announcing conda install instructions or
   BioContainers availability.
 - Confirm the GHCR image labels and tag after the source tag is immutable.

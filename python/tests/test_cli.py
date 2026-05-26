@@ -51,6 +51,7 @@ def test_cli_top_level_help_lists_python_namespaces():
     assert "  assay" in rc.stdout
     assert "  barcode" in rc.stdout
     assert "  panel" in rc.stdout
+    assert "Hamming k=2/k=3 safety" in rc.stdout
     assert "Packaging note:" not in rc.stdout
 
 
@@ -435,6 +436,23 @@ def test_crispr_qc_writes_count_qc_report(tmp_path):
     html = out_html.read_text(encoding="utf-8")
     assert "<title>DotMatch CRISPR QC Report</title>" in html
     assert "Guide Library Audit" in html
+
+
+def test_crispr_library_reader_accepts_common_header_aliases(tmp_path):
+    from dotmatch.cli import _read_crispr_library
+
+    library = tmp_path / "library.csv"
+    library.write_text(
+        "sgRNA,sgRNA_sequence,gene_symbol\n"
+        "guide_a,ACGT,GENEA\n",
+        encoding="utf-8",
+    )
+
+    targets = _read_crispr_library(library)
+
+    assert targets[0].target_id == "guide_a"
+    assert targets[0].seq == "ACGT"
+    assert targets[0].gene == "GENEA"
 
 
 def test_crispr_qc_k2_library_safety_is_not_overclaimed(tmp_path):

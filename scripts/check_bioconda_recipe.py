@@ -91,10 +91,12 @@ def _check_meta(meta: str, result: AuditResult) -> None:
         ("- pip", "Bioconda recipe must include pip in host requirements"),
         ("- setuptools >=77", "Bioconda recipe must include setuptools >=77 in host requirements"),
         ("- wheel", "Bioconda recipe must include wheel in host requirements"),
-        ("- zlib", "Bioconda recipe must include host zlib"),
+        ("- zlib", "Bioconda recipe must include host zlib for native CLI linkage"),
         ("- tomli  # [py<311]", "Bioconda recipe must include tomli for Python <3.11"),
         ("license: Apache-2.0", "Bioconda recipe must declare Apache-2.0 license"),
         ("license_file: LICENSE", "Bioconda recipe must install and declare LICENSE"),
+        ("additional-platforms:", "Bioconda recipe must opt into additional platform builds"),
+        ("- osx-arm64", "Bioconda recipe must opt into osx-arm64 / Apple Silicon builds"),
         ("recipe-maintainers:", "Bioconda recipe must declare recipe maintainers"),
         ("- dnncha", "Bioconda recipe must list dnncha as recipe maintainer"),
     ]
@@ -103,21 +105,33 @@ def _check_meta(meta: str, result: AuditResult) -> None:
 
     if SHA_PLACEHOLDER not in meta:
         result.failures.append("Bioconda recipe must retain SHA256 placeholder until copying into bioconda-recipes")
+    if meta.count("- zlib") != 1:
+        result.failures.append("Bioconda recipe must include zlib exactly once in host requirements")
+    run_block = re.search(r"  run:\n(?P<body>(?:    - .+\n)+)", meta)
+    if run_block and "    - zlib\n" in run_block.group("body"):
+        result.failures.append("Bioconda recipe must not duplicate zlib in run requirements; host zlib exports libzlib")
 
     for command in [
         "dotmatch --version",
         "dotmatch dist ACGT AGGT",
         "dotmatch leq 1 ACGT AGGT",
         "dotmatch --help",
+        "dotmatch count --help",
+        "dotmatch crispr-count --help",
+        "dotmatch audit --help",
         "dotmatch assay --help",
         "dotmatch barcode --help",
         "dotmatch panel --help",
         "dotmatch assay init",
+        "dotmatch audit --targets audit_targets.tsv --k 3 --audit-mode exact",
         "dotmatch barcode infer",
         "dotmatch panel design",
         "chmod -R a+rwX panel_out",
         "from dotmatch.native import find_native_cli",
         "dotmatch count --targets targets.tsv",
+        "dotmatch crispr-count --library crispr_guides.csv",
+        "safe_at_hamming_k3",
+        "crispr_sample_qc.tsv",
         "dotmatch guide-counter count --input reads.fastq",
         "gc_out.counts.txt",
         "gc_out.extended-counts.txt",

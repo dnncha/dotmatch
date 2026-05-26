@@ -5,34 +5,11 @@ This report is generated from raw CSV artifacts. It is intentionally stricter th
 ## Evidence Boundary
 
 - Hamming `k=1` rows are the fair guide-counter lane: one mismatch, no indels.
+- Hamming `k=2` and `k=3` external comparator rows are reported only from the separate DotMatch-vs-Bowtie 1 artifact when present.
 - Levenshtein `k=1` rows are the DotMatch differentiator lane: substitutions plus single-base insertions/deletions, with Edlib validation.
 - Full FASTQ rows are reported separately from repeated subsamples.
 - guide-counter speed ratios are reported when present; they are not universal replacement gates.
 - Broad comparisons require `make crispr-comparison-gate` to pass.
-
-## GuideCounter Compatibility Note
-
-The compatibility mode documented for this release is:
-
-```bash
-dotmatch guide-counter count \
-  --input sample.fastq.gz \
-  --library guides.tsv \
-  --output guide_counts
-```
-
-It also accepts the `guide-counter-count` and `guide-count` aliases. By default
-the wrapper uses Hamming `k=1`, no indels, best-distance assignment, automatic
-multi-offset guide-window detection, `--offset-sample-size 100000`, and
-`--offset-min-fraction 0.0025`; `--exact-match` switches the delegated count
-engine to exact matching. For an output prefix such as `guide_counts`, it writes
-`guide_counts.counts.txt`, `guide_counts.extended-counts.txt`, and
-`guide_counts.stats.txt`.
-
-This is a command-line and file-format compatibility bridge. The assignment and
-counting step remains DotMatch's deterministic CPU path. The GPU/backend
-optimizer row below is advisory evidence only and does not authorize unchecked
-production GPU assignment.
 
 ## Throughput Figure
 
@@ -86,11 +63,23 @@ DotMatch `dotmatch_hamming_k1` versus `guide_counter_one_mismatch` on the public
 |sanson_brunello|full|634950.2|473609.5|1.34|ok|-1190|one mismatch, no indels|
 
 
-## Full Hamming Guide-Counter Ratio
+## Full Hamming k1 Guide-Counter Ratio
 
 |dataset|dotmatch_hamming_reads_per_sec|guide_counter_reads_per_sec|speedup|status|
 |---|---|---|---|---|
 |sanson_brunello|634950.2|473609.5|1.34|reported|
+
+
+## Hamming k2/k3 External Comparator Rows
+
+DotMatch Hamming `k=2` and `k=3` evidence is kept separate from guide-counter claims. Rows in this table must come from `benchmarks/raw/crispr_comparison_hamming_k23_comparators.csv` and compare DotMatch directly with Bowtie 1.
+
+![Hamming k2/k3 comparator throughput](../../../benchmarks/figures/crispr_hamming_k23_comparison.svg)
+
+|dataset|k|records_per_sample|dotmatch_tool|bowtie1_tool|dotmatch_reads_per_sec|bowtie1_reads_per_sec|speedup|status|semantics|artifact|
+|---|---|---|---|---|---|---|---|---|---|---|
+|sanson_brunello|2|1000000|dotmatch_hamming_k2|bowtie1_crispr_hamming_k2|132272.5|13622.2|9.71|ok|Hamming k=2, no indels, same-strand fixed guide window|benchmarks/raw/crispr_hamming_k23_details/sanson_brunello_hamming_k2_1000000_bowtie1.csv|
+|sanson_brunello|3|1000000|dotmatch_hamming_k3|bowtie1_crispr_hamming_k3|11900.7|5046.7|2.36|ok|Hamming k=3, no indels, same-strand fixed guide window|benchmarks/raw/crispr_hamming_k23_details/sanson_brunello_hamming_k3_1000000_bowtie1.csv|
 
 
 ## Backend Optimizer
@@ -130,4 +119,5 @@ The optimizer is advisory and CPU-authoritative: it records the fastest eligible
 - `benchmarks/raw/crispr_comparison_full_sanson_atlas_latest_dotmatch.csv`
 - `benchmarks/raw/crispr_comparison_edlib_validation.csv`
 - `benchmarks/raw/crispr_comparison_count_agreement_summary.csv`
+- `benchmarks/raw/crispr_comparison_hamming_k23_comparators.csv`
 - `benchmarks/raw/crispr_sanson_brunello_backend_optimization_atlas_latest_dotmatch.json`

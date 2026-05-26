@@ -48,7 +48,8 @@ REPC="$DATA/RepC$SUFFIX"
   --format mageck \
   --threads "$THREADS" \
   --out "$OUT/counts.hamming.mageck.tsv" \
-  --summary "$OUT/summary.hamming.json"
+  --summary "$OUT/summary.hamming.json" \
+  --sample-qc "$OUT/sample_qc.tsv"
 
 if [ "${DOTMATCH_RUN_GUIDE_COUNTER:-0}" = "1" ] && command -v guide-counter >/dev/null 2>&1; then
   guide-counter count \

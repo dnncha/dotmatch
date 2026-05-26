@@ -20,9 +20,12 @@ def _write_workflow_repo(root: Path) -> None:
             '{"library": "examples/crispr_guides/data/yusa_library.csv", '
             '"samples": {"plasmid": "examples/crispr_guides/data/ERR376998.fastq.gz"}, '
             '"guide_start": 23, "guide_length": 19, "metric": "levenshtein", '
+            '"ambiguity_policy": "radius", "ambiguous": "discard", '
             '"outdir": "examples/workflows/snakemake/output"}\n'
         ),
         "examples/workflows/snakemake/Snakefile": (
+            "ambiguity_policy = config.get('ambiguity_policy', 'radius')\n"
+            "ambiguous = config.get('ambiguous', 'discard')\n"
             "rule all:\n"
             "    input: 'counts.tsv', 'assay_out/assay_report.html', 'assay_out/assay_manifest.summary.tsv', 'assay_out/crispr_qc.summary.tsv'\n"
             "rule dotmatch_assay_spec:\n"
@@ -34,7 +37,7 @@ def _write_workflow_repo(root: Path) -> None:
             "    shell: 'dotmatch assay run {input.spec}'\n"
             "rule dotmatch_crispr_count:\n"
             "    output: counts='counts.mageck.tsv', summary='summary.json', sample_qc='sample_qc.tsv'\n"
-            "    shell: 'dotmatch crispr-count --ambiguity-policy radius --ambiguous discard --summary {output.summary} --sample-qc {output.sample_qc}'\n"
+            "    shell: 'dotmatch crispr-count --ambiguity-policy {params.ambiguity_policy} --ambiguous {params.ambiguous} --summary {output.summary} --sample-qc {output.sample_qc}'\n"
         ),
         "examples/workflows/nextflow/nextflow.config": (
             "params {\n"
@@ -42,7 +45,10 @@ def _write_workflow_repo(root: Path) -> None:
             "  samples = 'examples/workflows/nextflow/samples.tsv'\n"
             "  guide_start = 23\n"
             "  guide_length = 19\n"
+            "  k = 1\n"
             "  metric = 'levenshtein'\n"
+            "  ambiguity_policy = 'radius'\n"
+            "  ambiguous = 'discard'\n"
             "  outdir = 'examples/workflows/nextflow/output'\n"
             "}\n"
         ),
@@ -54,7 +60,7 @@ def _write_workflow_repo(root: Path) -> None:
             "  path \"sample_qc.tsv\", emit: sample_qc\n"
             "  script:\n"
             "  \"\"\"\n"
-            "  dotmatch crispr-count --ambiguity-policy radius --ambiguous discard --summary summary.json --sample-qc sample_qc.tsv\n"
+            "  dotmatch crispr-count --ambiguity-policy ${params.ambiguity_policy} --ambiguous ${params.ambiguous} --summary summary.json --sample-qc sample_qc.tsv\n"
             "  \"\"\"\n"
             "}\n"
             "process DOTMATCH_ASSAY_RUN {\n"

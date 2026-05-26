@@ -2,20 +2,35 @@
 
 All notable user-facing changes are tracked here. Public statements in release notes must stay aligned with `docs/scientific-claims.md`.
 
-## 0.1.5 - 2026-05-24
+## 0.1.5 - 2026-05-26
 
 ### Added
 
 - Added a GuideCounter-compatible `dotmatch guide-counter count` entrypoint that
   accepts GuideCounter-style count flags and writes counts, extended-counts, and
   stats outputs.
+- Added Hamming `k=2` and `k=3` fixed-window guide-counting support, with exact
+  audit fields that tell users whether those larger Hamming radii are safe for a
+  target library.
+- Added DotMatch-vs-Bowtie 1 Hamming `k=2`/`k=3` comparator evidence for the
+  Sanson/Brunello public CRISPR lane. These rows are kept separate from
+  GuideCounter-compatible `k=1` claims.
 
 ### Changed
 
+- The top-level CLI help and counting help now make the supported Hamming
+  radius range and Hamming `k=2`/`k=3` audit expectations visible from
+  `--help`.
+- Bioconda recipe readiness now tests the Python console-script package, native
+  import discovery, workflow namespace help, Hamming `k=2` CRISPR counting,
+  exact Hamming `k=3` audit output, GuideCounter-compatible output files,
+  barcode inference, and panel design.
+- The Bioconda recipe opts into `osx-arm64` Apple Silicon builds and relies on
+  host `zlib` to export the linked `libzlib` runtime package instead of
+  duplicating `zlib` in run requirements.
 - Release and packaging metadata are aligned for the next `0.1.5` patch
-  release.
-- Bioconda recipe readiness now includes the GuideCounter-compatible CLI smoke
-  surface and keeps the new-version build number at `0`.
+  release, while public docs still point users to the latest verified Bioconda
+  package until `0.1.5` propagates.
 
 ## 0.1.4 - 2026-05-23
 

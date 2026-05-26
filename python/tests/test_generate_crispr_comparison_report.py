@@ -45,7 +45,7 @@ def test_crispr_comparison_report_uses_relative_figure_links(tmp_path, monkeypat
     text = (out_dir / "README.md").read_text(encoding="utf-8")
     assert "](../../../benchmarks/figures/crispr_comparison_throughput.svg)" in text
     assert "|dataset|sample|checked_reads|mismatches|oracle_strategy|edlib_alignments|bounded_windows|fallback_windows|" in text
-    assert "## Full Hamming Guide-Counter Ratio" in text
+    assert "## Full Hamming k1 Guide-Counter Ratio" in text
     assert "|mageck_yusa|50.0|100.0|0.50|reported|" in text
     assert str(root) not in text
 
@@ -121,7 +121,45 @@ def test_crispr_comparison_report_has_explicit_guide_counter_style_public_data_l
     assert "DotMatch `dotmatch_hamming_k1` versus `guide_counter_one_mismatch`" in text
     assert "|dataset|records_per_sample|dotmatch_hamming_reads_per_sec|guide_counter_reads_per_sec|speedup|count_agreement_status|count_total_delta|semantics|" in text
     assert "|mageck_yusa|100000|200.0|100.0|2.00|ok|1000|one mismatch, no indels|" in text
-    assert "dotmatch_levenshtein_k1" not in text.split("## Guide-Counter-Style Public Paper-Data Lane", 1)[1].split("## Full Hamming Guide-Counter Ratio", 1)[0]
+    assert "dotmatch_levenshtein_k1" not in text.split("## Guide-Counter-Style Public Paper-Data Lane", 1)[1].split("## Full Hamming k1 Guide-Counter Ratio", 1)[0]
+
+
+def test_crispr_comparison_report_keeps_hamming_k23_bowtie1_rows_separate(tmp_path, monkeypatch):
+    report = _load_report()
+    root = tmp_path / "repo"
+    raw = root / "benchmarks" / "raw"
+    out_dir = root / "docs" / "benchmarks" / "crispr_comparison"
+    fig_dir = root / "benchmarks" / "figures"
+    raw.mkdir(parents=True)
+    (raw / "crispr_comparison_repeated.csv").write_text(
+        "tool,dataset_id,requested_records_per_sample,exit_code,reads_per_sec,seconds,peak_rss_kb,verified_per_read\n"
+        "dotmatch_hamming_k1,mageck_yusa,100000,0,200,1,1024,1\n"
+        "guide_counter_one_mismatch,mageck_yusa,100000,0,100,1,2048,\n",
+        encoding="utf-8",
+    )
+    (raw / "crispr_comparison_edlib_validation.csv").write_text("dataset,sample,checked_reads,mismatches\n", encoding="utf-8")
+    (raw / "crispr_comparison_count_agreement_summary.csv").write_text("dataset,comparison,status\n", encoding="utf-8")
+    (raw / "crispr_comparison_hamming_k23_comparators.csv").write_text(
+        "dataset,k,records_per_sample,comparison,dotmatch_tool,bowtie1_tool,dotmatch_reads_per_sec,bowtie1_reads_per_sec,status,artifact\n"
+        "mageck_yusa,2,100000,dotmatch_hamming_k2_vs_bowtie1,dotmatch_hamming_k2,bowtie1,300,150,ok,benchmarks/raw/k2.csv\n"
+        "mageck_yusa,3,100000,dotmatch_hamming_k3_vs_bowtie1,dotmatch_hamming_k3,bowtie1,240,120,ok,benchmarks/raw/k3.csv\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(report, "ROOT", root)
+    monkeypatch.setattr(report, "RAW", raw)
+    monkeypatch.setattr(report, "HAMMING_K23_COMPARATOR_CSV", raw / "crispr_comparison_hamming_k23_comparators.csv")
+    monkeypatch.setattr(report, "OUT_DIR", out_dir)
+    monkeypatch.setattr(report, "FIG_DIR", fig_dir)
+
+    report.main()
+
+    text = (out_dir / "README.md").read_text(encoding="utf-8")
+    assert "## Hamming k2/k3 External Comparator Rows" in text
+    assert "|dataset|k|records_per_sample|dotmatch_tool|bowtie1_tool|dotmatch_reads_per_sec|bowtie1_reads_per_sec|speedup|status|semantics|artifact|" in text
+    assert "|mageck_yusa|2|100000|dotmatch_hamming_k2|bowtie1|300.0|150.0|2.00|ok|Hamming k=2, no indels|benchmarks/raw/k2.csv|" in text
+    k1_section = text.split("## Guide-Counter-Style Public Paper-Data Lane", 1)[1].split("## Full Hamming k1 Guide-Counter Ratio", 1)[0]
+    assert "dotmatch_hamming_k2" not in k1_section
 
 
 def test_crispr_comparison_report_includes_backend_optimizer_artifact(tmp_path, monkeypatch):

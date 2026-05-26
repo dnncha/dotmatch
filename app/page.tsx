@@ -12,7 +12,7 @@ const panelDesignUrl = `${repoUrl}/blob/main/docs/barcode-panel-design.md`;
 const panelBenchmarkUrl = `${repoUrl}/blob/main/docs/benchmarks/barcode_panel_design/README.md`;
 const nextflowExampleUrl = `${repoUrl}/tree/main/examples/workflows/nextflow`;
 const nfcoreExampleUrl = `${repoUrl}/tree/main/examples/workflows/nf-core`;
-const biocondaPrUrl = "https://github.com/bioconda/bioconda-recipes/pull/65367";
+const initialBiocondaPrUrl = "https://github.com/bioconda/bioconda-recipes/pull/65367";
 const biocondaUrl = "https://anaconda.org/bioconda/dotmatch";
 
 const proof = [
@@ -233,6 +233,14 @@ const benchmarkFigures = [
     image: `${basePath}/benchmarks/crispr_comparison_throughput.svg`,
     alt: "CRISPR comparison throughput graph for DotMatch, MAGeCK, and guide-counter public datasets",
     body: "Exact, Hamming, and Levenshtein lanes are separated so the chart compares the same biological question rather than mixing rescue rules.",
+    href: `${repoUrl}/blob/main/docs/benchmarks/crispr_comparison/README.md`
+  },
+  {
+    title: "Hamming k2/k3 comparator",
+    label: "Bowtie 1 comparison",
+    image: `${basePath}/benchmarks/crispr_hamming_k23_comparison.svg`,
+    alt: "Hamming k2 and k3 fixed-window CRISPR comparator graph comparing DotMatch with Bowtie 1",
+    body: "The k2 and k3 rows are kept separate from GuideCounter claims. Bowtie 1 is used here as a same-strand fixed-window Hamming comparator for larger mismatch radii.",
     href: `${repoUrl}/blob/main/docs/benchmarks/crispr_comparison/README.md`
   },
   {
@@ -650,7 +658,8 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
           <h2>Benchmarks you can read without guessing.</h2>
           <p>
             The repo includes public FASTQ examples, commands, raw tables,
-            generated graphs, and comparator notes. GPU results are shown as an
+            generated graphs, and comparator notes. Hamming k2/k3 rows are
+            separated from GuideCounter claims, and GPU results are shown as an
             experimental evidence lane with zero-mismatch gates, while CPU
             indexed assignment remains the production baseline.
           </p>
@@ -658,11 +667,11 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
         <div className="benchmark-reader-guide" aria-label="How to read DotMatch benchmarks">
           <article>
             <span>Compare like with like</span>
-            <p>Exact, Hamming k=1, and Levenshtein k=1 are separate lanes.</p>
+            <p>Exact, Hamming k=1, Hamming k=2/k=3, and Levenshtein k=1 are separate lanes.</p>
           </article>
           <article>
             <span>Check the comparator</span>
-            <p>MAGeCK exact, guide-counter one-mismatch, Cutadapt, Edlib, and hash baselines answer different questions.</p>
+            <p>MAGeCK exact, guide-counter one-mismatch, Bowtie 1 Hamming, Cutadapt, Edlib, and hash baselines answer different questions.</p>
           </article>
           <article>
             <span>Treat GPU as experimental</span>
@@ -876,7 +885,7 @@ DotMatch reports: ambiguous`}</code></pre>
         <div className="section-heading">
           <h2>Install from Bioconda, or build the next release from source.</h2>
           <p>
-            Bioconda has published DotMatch 0.1.2 and provides the `dotmatch`
+            Bioconda has published DotMatch 0.1.4 and provides the `dotmatch`
             command, Python imports/workflow namespaces, and C header/library
             artifacts on platforms visible in repodata. Newer release features
             in this branch should be installed from source until the matching
@@ -886,8 +895,8 @@ DotMatch reports: ambiguous`}</code></pre>
         <div className="launch-grid">
           <article className="launch-card">
             <span className="card-label">Published Bioconda package</span>
-            <h3>Create a verified 0.1.2 env.</h3>
-            <pre><code>{`conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.2
+            <h3>Create a verified 0.1.4 env.</h3>
+            <pre><code>{`conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.4
 conda activate dotmatch
 dotmatch --version
 dotmatch dist ACGT AGGT`}</code></pre>
@@ -895,7 +904,7 @@ dotmatch dist ACGT AGGT`}</code></pre>
               <a href={biocondaUrl}>Open Bioconda package</a>
               <a href={repoUrl}>Open GitHub</a>
               <a href={packagingUrl}>Packaging notes</a>
-              <a href={biocondaPrUrl}>Bioconda recipe PR</a>
+              <a href={initialBiocondaPrUrl}>Initial Bioconda PR</a>
             </div>
           </article>
 

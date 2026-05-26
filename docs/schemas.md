@@ -184,20 +184,30 @@ targets
 unique_sequences
 duplicate_sequences
 min_edit_distance
+min_hamming_distance
 safe_at_k0
 safe_at_k1
 safe_at_k2
+safe_at_hamming_k2
+safe_at_hamming_k3
 pairs_distance_0
 pairs_distance_1
 pairs_distance_2
 pairs_within_requested_k
 risk_pairs_for_k1
 risk_pairs_for_k2
+risk_pairs_for_hamming_k2
+risk_pairs_for_hamming_k3
 ambiguous_query_variants_k1
 recommended_k
 ```
 
-`audit_mode=exact` computes exhaustive pairwise distances. `audit_mode=fast` computes `k=1` safety through one-edit variant indexing and may report `not_computed` for `k=2` metrics.
+`audit_mode=exact` computes exhaustive pairwise distances. It also reports
+same-length Hamming `k=2` and `k=3` safety using the conservative overlap rule:
+a target pair is unsafe for Hamming radius `k` when its Hamming distance is
+`<= 2k`. `audit_mode=fast` computes `k=1` safety through one-edit variant
+indexing and reports `not_computed` for exact `k=2` and Hamming `k=2`/`k=3`
+metrics.
 
 ## `audit_summary.json`
 
@@ -212,15 +222,20 @@ targets
 unique_sequences
 duplicate_sequences
 min_edit_distance
+min_hamming_distance
 safe_at_k0
 safe_at_k1
 safe_at_k2
+safe_at_hamming_k2
+safe_at_hamming_k3
 pairs_distance_0
 pairs_distance_1
 pairs_distance_2
 pairs_within_requested_k
 risk_pairs_for_k1
 risk_pairs_for_k2
+risk_pairs_for_hamming_k2
+risk_pairs_for_hamming_k3
 ambiguous_query_variants_k1
 recommended_k
 ```
@@ -229,7 +244,12 @@ Rules:
 
 - safety fields are booleans when computed;
 - `safe_at_k2` and `risk_pairs_for_k2` are `null` in fast audit mode;
+- `safe_at_hamming_k2`, `safe_at_hamming_k3`,
+  `risk_pairs_for_hamming_k2`, and `risk_pairs_for_hamming_k3` are `null` in
+  fast audit mode;
 - `min_edit_distance` is numeric in exact mode and may be the string `">=3"` in fast mode.
+- `min_hamming_distance` is numeric in exact mode when same-length target pairs
+  exist and `null` when not computed.
 
 ## `collision_pairs.tsv`
 

@@ -58,6 +58,11 @@ def _write_release_repo(root: Path) -> None:
             '      org.opencontainers.image.version="0.1.0" \\\n'
             '      org.opencontainers.image.licenses="Apache-2.0"\n'
         ),
+        "README.md": (
+            "# DotMatch\n\n"
+            "The Bioconda recipe opts into osx-arm64 builds for Apple Silicon, "
+            "but only claim platform availability after metadata and install smoke tests pass.\n"
+        ),
         "packaging/bioconda/meta.yaml": (
             '{% set name = "dotmatch" %}\n'
             '{% set version = "0.1.0" %}\n'
@@ -67,6 +72,9 @@ def _write_release_repo(root: Path) -> None:
             "test:\n"
             "  commands:\n"
             "    - dotmatch dist ACGT AGGT | grep '^1$'\n"
+            "extra:\n"
+            "  additional-platforms:\n"
+            "    - osx-arm64\n"
         ),
         "packaging/bioconda/build.sh": "#!/usr/bin/env bash\nmake dotmatch libdotmatch.a shared\n",
         ".github/workflows/release.yml": (
@@ -151,6 +159,7 @@ def _write_release_repo(root: Path) -> None:
             "Raw `linux_x86_64` wheels are not uploaded to PyPI.\n"
             "Images are pushed to ghcr.io/dnncha/dotmatch with OCI labels.\n"
             "BioContainers images are checked at quay.io/biocontainers/dotmatch after Bioconda publication.\n"
+            "The Bioconda recipe opts into osx-arm64 builds so Apple Silicon packages are tested by Bioconda CI.\n"
             "Run make bioconda-recipe-ready before copying the recipe to bioconda-recipes.\n"
             "docs/distribution-release.json records the prepared public package channels before publication.\n"
         ),
@@ -297,6 +306,47 @@ def test_release_readiness_requires_verified_sdist_job(tmp_path):
     result = checker.audit(tmp_path)
 
     assert any("sdist job must verify the PyPI source distribution artifact" in failure for failure in result.failures)
+
+
+def test_release_readiness_requires_bioconda_osx_arm64_opt_in(tmp_path):
+    checker = _load_checker()
+    _write_release_repo(tmp_path)
+    meta = (tmp_path / "packaging" / "bioconda" / "meta.yaml").read_text(encoding="utf-8")
+    (tmp_path / "packaging" / "bioconda" / "meta.yaml").write_text(
+        meta.replace("extra:\n  additional-platforms:\n    - osx-arm64\n", ""),
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("osx-arm64" in failure for failure in result.failures)
+
+
+def test_release_readiness_requires_packaging_docs_to_describe_bioconda_osx_arm64(tmp_path):
+    checker = _load_checker()
+    _write_release_repo(tmp_path)
+    packaging = (tmp_path / "docs" / "packaging.md").read_text(encoding="utf-8")
+    (tmp_path / "docs" / "packaging.md").write_text(
+        packaging.replace(
+            "The Bioconda recipe opts into osx-arm64 builds so Apple Silicon packages are tested by Bioconda CI.\n",
+            "",
+        ),
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("docs/packaging.md" in failure and "osx-arm64" in failure for failure in result.failures)
+
+
+def test_release_readiness_requires_readme_to_describe_bioconda_osx_arm64(tmp_path):
+    checker = _load_checker()
+    _write_release_repo(tmp_path)
+    (tmp_path / "README.md").write_text("# DotMatch\n", encoding="utf-8")
+
+    result = checker.audit(tmp_path)
+
+    assert any("README.md" in failure and "osx-arm64" in failure for failure in result.failures)
 
 
 def test_release_readiness_requires_preflight_before_publish_jobs(tmp_path):

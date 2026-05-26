@@ -64,8 +64,10 @@ evaluated and the report records a review warning.
 
 For `--k 2` or higher, CRISPR QC still reports duplicate/one-edit guide
 collisions only and records `safe_for_k = null` in the library summary. Use
-`dotmatch audit-targets` for a full target-collision audit at larger edit
-radii.
+`dotmatch audit --audit-mode exact` for target-collision auditing at larger
+radii. Exact audit reports `safe_at_hamming_k2` and `safe_at_hamming_k3` for
+same-length Hamming guide-count libraries; fast audit reports those fields as
+not computed.
 
 ## Conservative Review Thresholds
 

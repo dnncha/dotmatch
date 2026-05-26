@@ -159,6 +159,7 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
     bioconda = _read(root / "packaging" / "bioconda" / "meta.yaml")
     packaging = _read(root / "docs" / "packaging.md")
     release_process = _read(root / "docs" / "release-process.md")
+    readme = _read(root / "README.md")
     makefile = _read(root / "Makefile")
 
     required_workflow_fragments = [
@@ -235,10 +236,16 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
         result.failures.append("Bioconda template must retain release SHA256 placeholder until copying into bioconda-recipes")
     if "dotmatch dist ACGT AGGT" not in bioconda:
         result.failures.append("Bioconda template must include native CLI smoke test")
+    if "additional-platforms:" not in bioconda or "- osx-arm64" not in bioconda:
+        result.failures.append("Bioconda template must opt into osx-arm64 / Apple Silicon builds")
 
     for label, text in [("docs/packaging.md", packaging), ("docs/release-process.md", release_process)]:
         if not text.strip():
             result.failures.append(f"{label} is empty")
+    if "osx-arm64" not in packaging or "Apple Silicon" not in packaging:
+        result.failures.append("docs/packaging.md must document Bioconda osx-arm64 / Apple Silicon support")
+    if "osx-arm64" not in readme or "Apple Silicon" not in readme:
+        result.failures.append("README.md must document Bioconda osx-arm64 / Apple Silicon support")
     pretag_block = _make_target_block(makefile, "pretag-ready")
     if not pretag_block:
         result.failures.append("Makefile must include pretag-ready target")

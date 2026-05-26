@@ -386,3 +386,65 @@ def test_repeated_gate_rejects_missing_named_full_guide_counter_dataset():
 
     assert any("sanson_brunello:dotmatch_hamming_k1 needs a full FASTQ guide-counter comparison row" in f for f in failures)
     assert any("sanson_brunello:guide_counter_one_mismatch needs a full FASTQ guide-counter comparison row" in f for f in failures)
+
+
+def test_hamming_k23_comparator_gate_rejects_missing_bowtie1_rows():
+    gate = _load_gate()
+    rows = [
+        {
+            "dataset": "mageck_yusa",
+            "k": "2",
+            "records_per_sample": "100000",
+            "comparison": "dotmatch_hamming_k2_vs_internal_baseline",
+            "status": "ok",
+        }
+    ]
+    failures = []
+
+    gate.hamming_k23_comparator_gate(
+        rows,
+        required_ks=["2", "3"],
+        failures=failures,
+        min_records=100000,
+        datasets=["mageck_yusa"],
+    )
+
+    assert any("missing DotMatch-vs-Bowtie 1 Hamming k2 comparator row for mageck_yusa" in f for f in failures)
+    assert any("missing DotMatch-vs-Bowtie 1 Hamming k3 comparator row for mageck_yusa" in f for f in failures)
+
+
+def test_hamming_k23_comparator_gate_accepts_minimal_passing_rows():
+    gate = _load_gate()
+    rows = [
+        {
+            "dataset": "mageck_yusa",
+            "k": "2",
+            "records_per_sample": "100000",
+            "comparison": "dotmatch_hamming_k2_vs_bowtie1",
+            "dotmatch_tool": "dotmatch_hamming_k2",
+            "bowtie1_tool": "bowtie1",
+            "status": "ok",
+            "exit_code": "0",
+        },
+        {
+            "dataset": "mageck_yusa",
+            "k": "3",
+            "records_per_sample": "100000",
+            "comparison": "dotmatch_hamming_k3_vs_bowtie1",
+            "dotmatch_tool": "dotmatch_hamming_k3",
+            "bowtie1_tool": "bowtie1",
+            "status": "ok",
+            "exit_code": "0",
+        },
+    ]
+    failures = []
+
+    gate.hamming_k23_comparator_gate(
+        rows,
+        required_ks=["2", "3"],
+        failures=failures,
+        min_records=100000,
+        datasets=["mageck_yusa"],
+    )
+
+    assert failures == []

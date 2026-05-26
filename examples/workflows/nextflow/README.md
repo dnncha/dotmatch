@@ -34,3 +34,9 @@ The default config uses the same Yusa/MAGeCK fixture paths as
 `examples/crispr_guides/README.md`: `ERR376998.fastq.gz`,
 `ERR376999.fastq.gz`, `yusa_library.csv`, `guide_start=23`, and
 `guide_length=19`.
+
+`nextflow.config` keeps `metric`, `k`, `ambiguity_policy`, and `ambiguous`
+explicit so production pipelines do not inherit changed defaults silently. For
+fixed-length guides where you want larger mismatch radii, run an exact library
+audit first and then switch the params to `metric = 'hamming'` with `k = 2` or
+`k = 3` only when the audit reports the corresponding Hamming radius as safe.

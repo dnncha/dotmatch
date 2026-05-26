@@ -62,11 +62,11 @@ static void usage(const char *argv0) {
     fprintf(stderr, "  %s demux --barcodes barcodes.tsv|barcodes.csv --reads reads.fastq[.gz] --barcode-start N --barcode-length L|auto --k 0|1|2 --metric hamming|levenshtein [--ambiguity-policy radius|best] [--max-correction-qual Q] --out-dir demux_dir [--summary qc.json]\n", argv0);
     fprintf(stderr, "  %s bcl-demux --run-folder RUN --sample-sheet SampleSheet.csv --out-dir demux_dir --barcode-mismatches 0|1|1,1 [--threads N] [--gzip-level 0..9] [--emit-index-fastqs] [--summary summary.json]\n", argv0);
     fprintf(stderr, "  %s bcl-validate --dotmatch-out DIR --truth-out DIR\n", argv0);
-    fprintf(stderr, "  %s count --targets targets.tsv|targets.csv --reads reads.fastq[.gz] [--reads more.fastq.gz] --sample-label labels --target-start N --target-length L --k 0|1|2 --metric hamming|levenshtein [--hamming-index auto|query|precompute] [--max-correction-qual Q] [--ambiguity-policy radius|best] --offset-mode best|multi --out counts.tsv [--format dotmatch|mageck]\n", argv0);
-    fprintf(stderr, "  %s crispr-count --library guides.tsv|guides.csv --samples samples.tsv --guide-start N --guide-length L --k 0|1|2 [--ambiguity-policy radius|best] --out counts.tsv [--summary qc.json]\n", argv0);
+    fprintf(stderr, "  %s count --targets targets.tsv|targets.csv --reads reads.fastq[.gz] [--reads more.fastq.gz] --sample-label labels --target-start N --target-length L --k 0|1|2|3 --metric hamming|levenshtein [--hamming-index auto|query|precompute] [--max-correction-qual Q] [--ambiguity-policy radius|best] --offset-mode best|multi --out counts.tsv [--format dotmatch|mageck]\n", argv0);
+    fprintf(stderr, "  %s crispr-count --library guides.tsv|guides.csv --samples samples.tsv|samples.csv --guide-start N --guide-length L --k 0|1|2|3 [--ambiguity-policy radius|best] --out counts.mageck.tsv [--summary qc.json] [--sample-qc sample_qc.tsv]\n", argv0);
     fprintf(stderr, "  %s guide-counter count --input reads.fastq[.gz]... --library guides.tsv|guides.csv --output prefix [--samples labels...] [--exact-match]\n", argv0);
     fprintf(stderr, "  %s inspect-unmatched --targets targets.tsv|targets.csv --reads reads.fastq[.gz] --target-start N --target-length L --k 0|1 --top N --out top_unmatched.tsv [--low-quality-threshold Q]\n", argv0);
-    fprintf(stderr, "  %s audit --targets targets.tsv|targets.csv --k 1 --out-dir audit_dir [--audit-mode auto|exact|fast]\n", argv0);
+    fprintf(stderr, "  %s audit --targets targets.tsv|targets.csv --k 0|1|2|3 --out-dir audit_dir [--audit-mode auto|exact|fast]\n", argv0);
     fprintf(stderr, "  %s validate --targets targets.tsv|targets.csv --reads reads.fastq[.gz] --target-start N --target-length L --k 0|1 [--metric hamming|levenshtein] [--indel-window 0|1] [--offset-mode best|multi] [--threads N] --oracle scan|edlib\n", argv0);
 }
 
@@ -97,11 +97,11 @@ static void help_manual(FILE *out, const char *argv0) {
     fprintf(out, "Counting and demultiplexing:\n");
     fprintf(out, "  count --targets targets.tsv|targets.csv --reads reads.fastq[.gz] \\\n");
     fprintf(out, "      --sample-label sample --target-start N --target-length L \\\n");
-    fprintf(out, "      --k 0|1|2 --metric hamming|levenshtein --out counts.tsv\n");
+    fprintf(out, "      --k 0|1|2|3 --metric hamming|levenshtein --out counts.tsv\n");
     fprintf(out, "      Count fixed-window target assignments. Add --format mageck for MAGeCK-style counts.\n");
-    fprintf(out, "  crispr-count --library guides.tsv|guides.csv --samples samples.tsv \\\n");
-    fprintf(out, "      --guide-start N --guide-length L --k 0|1|2 --out counts.tsv\n");
-    fprintf(out, "      Convenience wrapper for guide-counting sample sheets.\n");
+    fprintf(out, "  crispr-count --library guides.tsv|guides.csv --samples samples.tsv|samples.csv \\\n");
+    fprintf(out, "      --guide-start N --guide-length L --k 0|1|2|3 --out counts.mageck.tsv\n");
+    fprintf(out, "      MAGeCK-ready guide counts. Sample sheets may use sample_id/sample and fastq/fastq_path columns.\n");
     fprintf(out, "  guide-counter count --input reads.fastq[.gz]... --library guides.tsv|guides.csv \\\n");
     fprintf(out, "      --output prefix [--samples labels...] [--exact-match]\n");
     fprintf(out, "      GuideCounter-compatible count, extended-counts, and stats outputs.\n");
@@ -115,6 +115,7 @@ static void help_manual(FILE *out, const char *argv0) {
     fprintf(out, "Diagnostics and validation:\n");
     fprintf(out, "  audit --targets targets.tsv|targets.csv --k K --out-dir audit_dir\n");
     fprintf(out, "      Report nearby target pairs that make correction ambiguous or unsafe.\n");
+    fprintf(out, "      Exact audit includes Hamming k=2/k=3 safety fields; fast audit reports them as not_computed.\n");
     fprintf(out, "  inspect-unmatched --targets targets.tsv|targets.csv --reads reads.fastq[.gz] \\\n");
     fprintf(out, "      --target-start N --target-length L --k 0|1 --top N --out top_unmatched.tsv\n");
     fprintf(out, "      Summarize the most frequent unmatched read windows.\n");
@@ -134,7 +135,7 @@ static void help_manual(FILE *out, const char *argv0) {
     fprintf(out, "Defaults and conventions:\n");
     fprintf(out, "  --ambiguity-policy radius is the conservative default for assignment commands.\n");
     fprintf(out, "  --ambiguity-policy best is available only when best-distance compatibility is intended.\n");
-    fprintf(out, "  --metric levenshtein supports k=0,1,2 for count/demux fixed windows; hamming supports fixed-length comparisons.\n");
+    fprintf(out, "  --metric levenshtein supports k=0,1,2 for count/demux fixed windows; hamming supports k=0,1,2,3 fixed-length comparisons.\n");
     fprintf(out, "  N and IUPAC ambiguity symbols are treated as literal bytes, not wildcards.\n");
     fprintf(out, "\n");
     fprintf(out, "Examples:\n");
@@ -144,6 +145,88 @@ static void help_manual(FILE *out, const char *argv0) {
     fprintf(out, "      --target-start 23 --target-length 20 --k 1 --metric hamming --out counts.tsv\n");
     fprintf(out, "  %s demux --barcodes barcodes.tsv --reads pooled.fastq.gz \\\n", argv0);
     fprintf(out, "      --barcode-start 0 --barcode-length auto --k 0 --out-dir demuxed\n");
+}
+
+static int help_requested(int argc, char **argv) {
+    for (int i = 2; i < argc; ++i) {
+        if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) return 1;
+    }
+    return 0;
+}
+
+static void count_help_manual(FILE *out, const char *argv0, int crispr_mode) {
+    const char *cmd = crispr_mode ? "crispr-count" : "count";
+    fprintf(out, "DotMatch %s %s\n\n", DOTMATCH_VERSION, cmd);
+    if (crispr_mode) {
+        fprintf(out, "Usage:\n");
+        fprintf(out, "  %s crispr-count --library guides.tsv|guides.csv --samples samples.tsv|samples.csv \\\n", argv0);
+        fprintf(out, "      --guide-start N --guide-length L --k 0|1|2|3 --metric hamming|levenshtein \\\n");
+        fprintf(out, "      --out counts.mageck.tsv [--summary summary.json] [--sample-qc sample_qc.tsv]\n\n");
+        fprintf(out, "CRISPR guide counting wrapper. Outputs are MAGeCK-ready by default and include\n");
+        fprintf(out, "guide-level counts plus optional run and sample QC summaries.\n\n");
+        fprintf(out, "Required inputs:\n");
+        fprintf(out, "  --library PATH       Guide table. Common columns include id/sgRNA, sequence/guide_seq,\n");
+        fprintf(out, "                       and gene/Gene; CSV and TSV are accepted.\n");
+        fprintf(out, "  --samples PATH       Sample sheet with sample_id/sample and fastq/fastq_path columns.\n");
+        fprintf(out, "  --guide-start N      Zero-based start of the guide window in each read.\n");
+        fprintf(out, "  --guide-length L     Length of the guide window to extract.\n");
+        fprintf(out, "  --out PATH           Count matrix output.\n");
+    } else {
+        fprintf(out, "Usage:\n");
+        fprintf(out, "  %s count --targets targets.tsv|targets.csv --reads reads.fastq[.gz] [--reads more.fastq.gz] \\\n", argv0);
+        fprintf(out, "      --sample-label labels --target-start N --target-length L --k 0|1|2|3 \\\n");
+        fprintf(out, "      --metric hamming|levenshtein --out counts.tsv [--format dotmatch|mageck]\n\n");
+        fprintf(out, "General fixed-window known-target counting for guides, barcodes, primers, or panels.\n\n");
+        fprintf(out, "Required inputs:\n");
+        fprintf(out, "  --targets PATH       Target table with id and sequence columns; CSV and TSV accepted.\n");
+        fprintf(out, "  --reads PATH         FASTQ or FASTQ.GZ input. Repeat for multiple samples.\n");
+        fprintf(out, "  --sample-label LIST  Comma-separated sample names matching --reads order.\n");
+        fprintf(out, "  --target-start N     Zero-based start of the target window in each read.\n");
+        fprintf(out, "  --target-length L    Length of the target window to extract.\n");
+        fprintf(out, "  --out PATH           Count matrix output.\n");
+    }
+    fprintf(out, "\nAssignment options:\n");
+    fprintf(out, "  --k 0|1|2|3              Maximum correction radius. Levenshtein supports k=0..2;\n");
+    fprintf(out, "                           Hamming supports k=0..3 for fixed-length windows.\n");
+    fprintf(out, "  --metric NAME            hamming for substitutions only; levenshtein for short indels.\n");
+    fprintf(out, "  --ambiguity-policy NAME  radius keeps all targets within k; best keeps only nearest targets.\n");
+    fprintf(out, "  --ambiguous NAME         discard, include, or separate ambiguous counts.\n");
+    fprintf(out, "  --indel-window N         Levenshtein-only extraction slack for insertion/deletion rescue.\n");
+    fprintf(out, "  --hamming-index NAME     auto, query, or precompute for Hamming counting.\n");
+    fprintf(out, "\nOutputs:\n");
+    fprintf(out, "  --summary PATH       JSON run summary with assignment rates and command metadata.\n");
+    fprintf(out, "  --sample-qc PATH     Per-sample QC TSV for CRISPR/workflow use.\n");
+    fprintf(out, "  --format mageck      Emit sgRNA/Gene columns for MAGeCK-style downstream analysis.\n");
+    fprintf(out, "\nSafety:\n");
+    fprintf(out, "  Before production Hamming k=2 or k=3 runs, use:\n");
+    fprintf(out, "    %s audit --targets guides.tsv --k 3 --audit-mode exact --out-dir audit\n", argv0);
+    fprintf(out, "  Proceed only when safe_at_hamming_k2 or safe_at_hamming_k3 is true for the radius you use.\n");
+}
+
+static void audit_help_manual(FILE *out, const char *argv0) {
+    fprintf(out, "DotMatch %s audit\n\n", DOTMATCH_VERSION);
+    fprintf(out, "Usage:\n");
+    fprintf(out, "  %s audit --targets targets.tsv|targets.csv --k 0|1|2|3 --out-dir audit_dir \\\n", argv0);
+    fprintf(out, "      [--audit-mode auto|exact|fast]\n\n");
+    fprintf(out, "Audit a target library before correction-based assignment. The audit reports\n");
+    fprintf(out, "duplicate targets and nearby target pairs that can make reads ambiguous.\n\n");
+    fprintf(out, "Options:\n");
+    fprintf(out, "  --targets PATH       Guide, barcode, primer, or target table; CSV and TSV accepted.\n");
+    fprintf(out, "  --k 0|1|2|3          Radius to audit. Use k=3 to expose all Hamming k2/k3 fields.\n");
+    fprintf(out, "  --out-dir DIR        Directory for audit_summary.tsv/json and risk-pair tables.\n");
+    fprintf(out, "  --audit-mode exact   Pairwise exact audit. Required for Hamming k=2/k=3 safety fields.\n");
+    fprintf(out, "  --audit-mode fast    Scalable duplicate/k1-style audit; Hamming k2/k3 fields are not_computed.\n");
+    fprintf(out, "  --audit-mode auto    Exact for small libraries, fast for larger libraries.\n\n");
+    fprintf(out, "Important fields:\n");
+    fprintf(out, "  min_hamming_distance       Smallest fixed-length distance between any target pair.\n");
+    fprintf(out, "  safe_at_hamming_k2         true only when Hamming radius 2 correction is unambiguous.\n");
+    fprintf(out, "  safe_at_hamming_k3         true only when Hamming radius 3 correction is unambiguous.\n");
+    fprintf(out, "  risk_pairs_for_hamming_k2  Number of target pairs too close for Hamming k=2.\n");
+    fprintf(out, "  risk_pairs_for_hamming_k3  Number of target pairs too close for Hamming k=3.\n\n");
+    fprintf(out, "Rule of thumb:\n");
+    fprintf(out, "  Radius k is safe under radius-policy correction only when target pairs are\n");
+    fprintf(out, "  separated by at least 2k+1 substitutions. If exact audit says unsafe,\n");
+    fprintf(out, "  lower k, switch policy intentionally, or remove/merge conflicting targets.\n");
 }
 
 static char *xstrndup(const char *s, size_t n) {
@@ -377,13 +460,16 @@ static int read_target_table(const char *path, seq_table *table) {
         size_t nf = split_fields(buf, delim, fields, 16);
         if (first_data) {
             int maybe_id = find_column(fields, nf, "id", "target_id", "barcode_id");
-            if (maybe_id < 0) maybe_id = find_column(fields, nf, "guide", NULL, NULL);
+            if (maybe_id < 0) maybe_id = find_column(fields, nf, "guide", "sgRNA", "sgrna");
             if (maybe_id < 0) maybe_id = find_column(fields, nf, "sgRNAID", "sgrnaid", "guide_id");
+            if (maybe_id < 0) maybe_id = find_column(fields, nf, "sgRNA_ID", "sgrna_id", NULL);
             int maybe_seq = find_column(fields, nf, "gRNA.sequence", "target_seq", "sequence");
             if (maybe_seq < 0) maybe_seq = find_column(fields, nf, "bases", NULL, NULL);
             if (maybe_seq < 0) maybe_seq = find_column(fields, nf, "Seq", "seq", "barcode_seq");
             if (maybe_seq < 0) maybe_seq = find_column(fields, nf, "guide_seq", "sgRNA.sequence", "sgrna_sequence");
-            int maybe_gene = find_column(fields, nf, "Gene", "gene", NULL);
+            if (maybe_seq < 0) maybe_seq = find_column(fields, nf, "sgRNA_seq", "guide_sequence", "GuideSequence");
+            int maybe_gene = find_column(fields, nf, "Gene", "gene", "gene_symbol");
+            if (maybe_gene < 0) maybe_gene = find_column(fields, nf, "gene.symbol", "target_gene", NULL);
             if (maybe_id >= 0 && maybe_seq >= 0) {
                 id_col = maybe_id;
                 seq_col = maybe_seq;
@@ -811,25 +897,36 @@ static int read_samples_file(const char *path, string_list *labels, string_list 
     FILE *fp = fopen(path, "r");
     if (fp == NULL) return -1;
     char buf[8192];
-    size_t row = 0;
+    int sample_col = 0;
+    int reads_col = 1;
+    int first_data = 1;
     while (fgets(buf, sizeof(buf), fp) != NULL) {
         trim_line(buf);
         if (buf[0] == '\0' || buf[0] == '#') continue;
-        char *tab = strchr(buf, '\t');
-        if (tab == NULL) {
+
+        char delim = strchr(buf, ',') != NULL && strchr(buf, '\t') == NULL ? ',' : '\t';
+        char *fields[32];
+        size_t nf = split_fields(buf, delim, fields, sizeof(fields) / sizeof(fields[0]));
+        if (first_data) {
+            int maybe_sample = find_column(fields, nf, "sample_id", "sample", "label");
+            if (maybe_sample < 0) maybe_sample = find_column(fields, nf, "sample_name", "name", "id");
+            int maybe_reads = find_column(fields, nf, "fastq", "fastq_path", "reads");
+            if (maybe_reads < 0) maybe_reads = find_column(fields, nf, "read", "path", "file");
+            if (maybe_sample >= 0 && maybe_reads >= 0) {
+                sample_col = maybe_sample;
+                reads_col = maybe_reads;
+                first_data = 0;
+                continue;
+            }
+        }
+        first_data = 0;
+
+        if ((size_t)sample_col >= nf || (size_t)reads_col >= nf) {
             fclose(fp);
             return -1;
         }
-        *tab = '\0';
-        char *sample = buf;
-        char *path_field = tab + 1;
-        char *extra = strchr(path_field, '\t');
-        if (extra != NULL) *extra = '\0';
-        if (row == 0 &&
-            (strcmp(sample, "sample") == 0 || strcmp(sample, "sample_id") == 0 || strcmp(sample, "sample_id ") == 0)) {
-            ++row;
-            continue;
-        }
+        char *sample = fields[sample_col];
+        char *path_field = fields[reads_col];
         if (sample[0] == '\0' || path_field[0] == '\0') {
             fclose(fp);
             return -1;
@@ -838,7 +935,6 @@ static int read_samples_file(const char *path, string_list *labels, string_list 
             fclose(fp);
             return -1;
         }
-        ++row;
     }
     if (ferror(fp)) {
         fclose(fp);
@@ -2156,6 +2252,15 @@ static int hamming_distance_within_k_cli(const char *a, size_t a_len, const char
     int d = 0;
     for (size_t i = 0; i < a_len; ++i) {
         if (a[i] != b[i] && ++d > k) return -1;
+    }
+    return d;
+}
+
+static int hamming_distance_cli(const char *a, size_t a_len, const char *b, size_t b_len) {
+    if (a_len != b_len) return -1;
+    int d = 0;
+    for (size_t i = 0; i < a_len; ++i) {
+        if (a[i] != b[i]) ++d;
     }
     return d;
 }
@@ -3656,7 +3761,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
                 goto fail_args;
             }
         } else if (strcmp(arg, "--k") == 0 && i < argc) {
-            if (parse_int_value(argv[i++], &k) != 0 || k < 0 || k > 2) {
+            if (parse_int_value(argv[i++], &k) != 0 || k < 0 || k > 3) {
                 usage(argv0);
                 goto fail_args;
             }
@@ -3790,8 +3895,8 @@ static int run_count(const char *argv0, int argc, char **argv) {
         fprintf(stderr, "--indel-window is only valid with --metric levenshtein\n");
         goto fail_args;
     }
-    if (metric == COUNT_METRIC_HAMMING && k > 1) {
-        fprintf(stderr, "--k 2 is only valid with --metric levenshtein\n");
+    if (metric == COUNT_METRIC_LEVENSHTEIN && k > 2) {
+        fprintf(stderr, "--metric levenshtein supports --k up to 2\n");
         goto fail_args;
     }
     if (indel_window != 0 && k != 1) {
@@ -5121,11 +5226,13 @@ static size_t count_unique_target_sequences(const seq_table *targets) {
 
 static int write_audit_summary_json(const char *out_dir, const char *audit_mode, int k,
                                     size_t n_targets, size_t unique_sequences,
-                                    const char *min_edit_distance_json,
+                                    const char *min_edit_distance_json, const char *min_hamming_distance_json,
                                     int safe_at_k0, int safe_at_k1, const char *safe_at_k2_json,
+                                    const char *safe_at_hamming_k2_json, const char *safe_at_hamming_k3_json,
                                     unsigned long long pairs_d0, unsigned long long pairs_d1,
                                     unsigned long long pairs_d2, unsigned long long pairs_within_k,
                                     unsigned long long risk_pairs_k1, const char *risk_pairs_k2_json,
+                                    const char *risk_pairs_hamming_k2_json, const char *risk_pairs_hamming_k3_json,
                                     unsigned long long ambiguous_query_variants_k1, int recommended_k) {
     char path[4096];
     if (path_join(path, sizeof(path), out_dir, "audit_summary.json") != 0) return -1;
@@ -5139,21 +5246,29 @@ static int write_audit_summary_json(const char *out_dir, const char *audit_mode,
             "  \"unique_sequences\": %zu,\n"
             "  \"duplicate_sequences\": %zu,\n"
             "  \"min_edit_distance\": %s,\n"
+            "  \"min_hamming_distance\": %s,\n"
             "  \"safe_at_k0\": %s,\n"
             "  \"safe_at_k1\": %s,\n"
             "  \"safe_at_k2\": %s,\n"
+            "  \"safe_at_hamming_k2\": %s,\n"
+            "  \"safe_at_hamming_k3\": %s,\n"
             "  \"pairs_distance_0\": %llu,\n"
             "  \"pairs_distance_1\": %llu,\n"
             "  \"pairs_distance_2\": %llu,\n"
             "  \"pairs_within_requested_k\": %llu,\n"
             "  \"risk_pairs_for_k1\": %llu,\n"
             "  \"risk_pairs_for_k2\": %s,\n"
+            "  \"risk_pairs_for_hamming_k2\": %s,\n"
+            "  \"risk_pairs_for_hamming_k3\": %s,\n"
             "  \"ambiguous_query_variants_k1\": %llu,\n"
             "  \"recommended_k\": %d\n"
             "}\n",
-            audit_mode, k, n_targets, unique_sequences, n_targets - unique_sequences, min_edit_distance_json,
+            audit_mode, k, n_targets, unique_sequences, n_targets - unique_sequences,
+            min_edit_distance_json, min_hamming_distance_json,
             safe_at_k0 ? "true" : "false", safe_at_k1 ? "true" : "false", safe_at_k2_json,
+            safe_at_hamming_k2_json, safe_at_hamming_k3_json,
             pairs_d0, pairs_d1, pairs_d2, pairs_within_k, risk_pairs_k1, risk_pairs_k2_json,
+            risk_pairs_hamming_k2_json, risk_pairs_hamming_k3_json,
             ambiguous_query_variants_k1, recommended_k);
     if (fclose(out) != 0) return -1;
     return 0;
@@ -5327,20 +5442,27 @@ static int audit_fast_outputs(const seq_table *targets, const char *out_dir, int
     fprintf(summary, "safe_at_k0\t%s\n", pairs_d0 == 0 ? "yes" : "no");
     fprintf(summary, "safe_at_k1\t%s\n", risk_pairs_k1 == 0 ? "yes" : "no");
     fprintf(summary, "safe_at_k2\tnot_computed\n");
+    fprintf(summary, "safe_at_hamming_k2\tnot_computed\n");
+    fprintf(summary, "safe_at_hamming_k3\tnot_computed\n");
     fprintf(summary, "pairs_distance_0\t%llu\n", pairs_d0);
     fprintf(summary, "pairs_distance_1\t%llu\n", pairs_d1);
     fprintf(summary, "pairs_distance_2\t%llu\n", pairs_d2);
     fprintf(summary, "pairs_within_requested_k\t%llu\n", pairs_within_k);
     fprintf(summary, "risk_pairs_for_k1\t%llu\n", risk_pairs_k1);
     fprintf(summary, "risk_pairs_for_k2\tnot_computed\n");
+    fprintf(summary, "risk_pairs_for_hamming_k2\tnot_computed\n");
+    fprintf(summary, "risk_pairs_for_hamming_k3\tnot_computed\n");
     fprintf(summary, "ambiguous_query_variants_k1\t%llu\n", ambiguous_query_variants_k1);
     fprintf(summary, "recommended_k\t%d\n", pairs_d0 == 0 && (k == 0 || risk_pairs_k1 == 0) ? k : 0);
     fclose(summary);
     summary = NULL;
     if (write_audit_summary_json(out_dir, "fast", k, targets->count, unique_sequences,
                                  min_dist < 0 ? "\">=3\"" : (min_dist == 0 ? "0" : (min_dist == 1 ? "1" : "2")),
+                                 "null",
                                  pairs_d0 == 0, risk_pairs_k1 == 0, "null",
+                                 "null", "null",
                                  pairs_d0, pairs_d1, pairs_d2, pairs_within_k, risk_pairs_k1, "null",
+                                 "null", "null",
                                  ambiguous_query_variants_k1,
                                  pairs_d0 == 0 && (k == 0 || risk_pairs_k1 == 0) ? k : 0) != 0) {
         goto done;
@@ -5375,7 +5497,7 @@ static int run_audit(const char *argv0, int argc, char **argv) {
         if ((strcmp(arg, "--targets") == 0 || strcmp(arg, "--library") == 0) && i < argc) {
             targets_path = argv[i++];
         } else if (strcmp(arg, "--k") == 0 && i < argc) {
-            if (parse_int_value(argv[i++], &k) != 0 || k < 0 || k > 2) {
+            if (parse_int_value(argv[i++], &k) != 0 || k < 0 || k > 3) {
                 usage(argv0);
                 return 2;
             }
@@ -5406,6 +5528,9 @@ static int run_audit(const char *argv0, int argc, char **argv) {
     unsigned long long pairs_within_k = 0;
     unsigned long long risk_pairs_k1 = 0;
     unsigned long long risk_pairs_k2 = 0;
+    unsigned long long risk_pairs_hamming_k2 = 0;
+    unsigned long long risk_pairs_hamming_k3 = 0;
+    int min_hamming_dist = -1;
     int *nearest_dist = NULL;
     size_t *nearest_idx = NULL;
     unsigned long long *near_k1 = NULL;
@@ -5477,6 +5602,13 @@ static int run_audit(const char *argv0, int argc, char **argv) {
                 uf_union(parent, i, j);
             }
             if (d <= 4) ++risk_pairs_k2;
+            int hd = hamming_distance_cli(targets.records[i].seq, targets.records[i].len,
+                                          targets.records[j].seq, targets.records[j].len);
+            if (hd >= 0) {
+                if (min_hamming_dist < 0 || hd < min_hamming_dist) min_hamming_dist = hd;
+                if (hd <= 4) ++risk_pairs_hamming_k2;
+                if (hd <= 6) ++risk_pairs_hamming_k3;
+            }
             if (d <= 2 || d <= 2 * k) {
                 const char *example = d == 0 ? targets.records[i].seq : "";
                 fprintf(pairs, "%s\t%s\t%s\t%s\t%d\t%s\t%s\t%s\n",
@@ -5564,28 +5696,47 @@ static int run_audit(const char *argv0, int argc, char **argv) {
     fprintf(summary, "unique_sequences\t%zu\n", unique_sequences);
     fprintf(summary, "duplicate_sequences\t%zu\n", targets.count - unique_sequences);
     fprintf(summary, "min_edit_distance\t%d\n", min_dist);
+    if (min_hamming_dist >= 0) {
+        fprintf(summary, "min_hamming_distance\t%d\n", min_hamming_dist);
+    } else {
+        fprintf(summary, "min_hamming_distance\tnot_computed\n");
+    }
     fprintf(summary, "safe_at_k0\t%s\n", pairs_d0 == 0 ? "yes" : "no");
     fprintf(summary, "safe_at_k1\t%s\n", risk_pairs_k1 == 0 ? "yes" : "no");
     fprintf(summary, "safe_at_k2\t%s\n", risk_pairs_k2 == 0 ? "yes" : "no");
+    fprintf(summary, "safe_at_hamming_k2\t%s\n", risk_pairs_hamming_k2 == 0 ? "yes" : "no");
+    fprintf(summary, "safe_at_hamming_k3\t%s\n", risk_pairs_hamming_k3 == 0 ? "yes" : "no");
     fprintf(summary, "pairs_distance_0\t%llu\n", pairs_d0);
     fprintf(summary, "pairs_distance_1\t%llu\n", pairs_d1);
     fprintf(summary, "pairs_distance_2\t%llu\n", pairs_d2);
     fprintf(summary, "pairs_within_requested_k\t%llu\n", pairs_within_k);
     fprintf(summary, "risk_pairs_for_k1\t%llu\n", risk_pairs_k1);
     fprintf(summary, "risk_pairs_for_k2\t%llu\n", risk_pairs_k2);
+    fprintf(summary, "risk_pairs_for_hamming_k2\t%llu\n", risk_pairs_hamming_k2);
+    fprintf(summary, "risk_pairs_for_hamming_k3\t%llu\n", risk_pairs_hamming_k3);
     fprintf(summary, "ambiguous_query_variants_k1\t%llu\n", ambiguous_query_variants_k1);
     fprintf(summary, "recommended_k\t%d\n", pairs_d0 == 0 && (k == 0 || risk_pairs_k1 == 0) ? k : 0);
     fclose(summary);
     summary = NULL;
     char min_dist_json[32];
+    char min_hamming_dist_json[32];
     char risk_pairs_k2_json[32];
+    char risk_pairs_hamming_k2_json[32];
+    char risk_pairs_hamming_k3_json[32];
     snprintf(min_dist_json, sizeof(min_dist_json), "%d", min_dist);
+    snprintf(min_hamming_dist_json, sizeof(min_hamming_dist_json), "%d", min_hamming_dist);
     snprintf(risk_pairs_k2_json, sizeof(risk_pairs_k2_json), "%llu", risk_pairs_k2);
+    snprintf(risk_pairs_hamming_k2_json, sizeof(risk_pairs_hamming_k2_json), "%llu", risk_pairs_hamming_k2);
+    snprintf(risk_pairs_hamming_k3_json, sizeof(risk_pairs_hamming_k3_json), "%llu", risk_pairs_hamming_k3);
     if (write_audit_summary_json(out_dir, "exact", k, targets.count, unique_sequences,
-                                 min_dist_json, pairs_d0 == 0, risk_pairs_k1 == 0,
+                                 min_dist_json, min_hamming_dist >= 0 ? min_hamming_dist_json : "null",
+                                 pairs_d0 == 0, risk_pairs_k1 == 0,
                                  risk_pairs_k2 == 0 ? "true" : "false",
+                                 risk_pairs_hamming_k2 == 0 ? "true" : "false",
+                                 risk_pairs_hamming_k3 == 0 ? "true" : "false",
                                  pairs_d0, pairs_d1, pairs_d2, pairs_within_k, risk_pairs_k1,
-                                 risk_pairs_k2_json, ambiguous_query_variants_k1,
+                                 risk_pairs_k2_json, risk_pairs_hamming_k2_json, risk_pairs_hamming_k3_json,
+                                 ambiguous_query_variants_k1,
                                  pairs_d0 == 0 && (k == 0 || risk_pairs_k1 == 0) ? k : 0) != 0) {
         goto done;
     }
@@ -8068,6 +8219,10 @@ int main(int argc, char **argv) {
     }
 
     if (strcmp(argv[1], "count") == 0 || strcmp(argv[1], "crispr-count") == 0) {
+        if (help_requested(argc, argv)) {
+            count_help_manual(stdout, argv[0], strcmp(argv[1], "crispr-count") == 0);
+            return 0;
+        }
         return run_count(argv[0], argc, argv);
     }
 
@@ -8081,6 +8236,10 @@ int main(int argc, char **argv) {
     }
 
     if (strcmp(argv[1], "audit") == 0 || strcmp(argv[1], "audit-targets") == 0) {
+        if (help_requested(argc, argv)) {
+            audit_help_manual(stdout, argv[0]);
+            return 0;
+        }
         return run_audit(argv[0], argc, argv);
     }
 

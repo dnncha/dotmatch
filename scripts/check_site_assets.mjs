@@ -13,6 +13,7 @@ const requiredFiles = [
   "../public/benchmarks/gpu_metal_speedup.svg",
   "../public/benchmarks/gpu_crispr_metal_speedup.svg",
   "../public/benchmarks/crispr_comparison_throughput.svg",
+  "../public/benchmarks/crispr_hamming_k23_comparison.svg",
   "../public/benchmarks/barcode_demux_throughput.svg",
   "../public/benchmarks/barcode_demux_peak_memory.svg",
   "../public/benchmarks/public_crispr_repeated_throughput.svg",
@@ -87,6 +88,7 @@ if (!nextConfig.includes("devIndicators: false")) {
 
 for (const phrase of [
   "experimental evidence lane",
+  "Hamming k2/k3 rows are separated from GuideCounter claims",
   "CPU indexed assignment remains the production baseline",
   "DotMatch Hamming k=1 against guide-counter one-mismatch",
   "Single-guide fixed-window check only"

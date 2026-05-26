@@ -19,9 +19,14 @@ DOTMATCH_EXAMPLE_FULL=1 ./run.sh
 Outputs are written under `output/`:
 
 - `counts.tsv`: detailed DotMatch count table;
-- `counts.mageck.tsv`: MAGeCK-compatible `sgRNA Gene sample...` table;
-- `summary.json`: assignment summary;
+- `counts.mageck.tsv`: MAGeCK-ready `sgRNA`, `Gene`, then one count column per
+  sample;
+- `summary.json`: selected counting settings and per-sample assignment summary;
 - `assignments.tsv`: per-read diagnostics for the fixture/full run.
+
+DotMatch reads common guide-library headers including `sgRNA`, `sgRNAID`,
+`guide_id`, `gRNA.sequence`, `sgRNA_sequence`, `guide_seq`, `sequence`, `Gene`,
+and `gene_symbol`.
 
 The tiny fixture outputs are tracked under `expected_output/`, and `make cli-test` checks them. Set `DOTMATCH_EXAMPLE_DATA_DIR` and `DOTMATCH_EXAMPLE_OUT_DIR` to run the example against alternate local paths.
 

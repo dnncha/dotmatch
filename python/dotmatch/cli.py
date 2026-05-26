@@ -2054,6 +2054,8 @@ Workflow namespaces:
 Diagnostics and validation:
   audit --targets targets.tsv|targets.csv --k K --out-dir audit_dir
       Report nearby target pairs that make correction ambiguous or unsafe.
+      Hamming k=2/k=3 safety is computed by exact native audit; fast audit
+      reports those fields as not_computed.
   inspect-unmatched --targets targets.tsv|targets.csv --reads reads.fastq[.gz] \\
       --target-start N --target-length L --k 0|1 --top N --out top_unmatched.tsv
       Summarize the most frequent unmatched read windows.

@@ -171,10 +171,12 @@ docker run --rm -v "$PWD:/work" dotmatch:dev dist ACGT AGGT
 ```
 
 Bioconda install for the published package on platforms visible in Bioconda
-repodata:
+repodata. The release recipe opts into `osx-arm64` builds for Apple Silicon,
+but only treat that platform as available for a release after Bioconda metadata
+and install smoke tests verify it:
 
 ```bash
-conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.2
+conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.4
 conda activate dotmatch
 dotmatch --version
 ```
@@ -286,6 +288,8 @@ The reproducible DotMatch-vs-guide-counter comparison report is in
 
 ![CRISPR guide-counting throughput comparison](benchmarks/figures/crispr_comparison_throughput.svg)
 
+![CRISPR Hamming k2/k3 Bowtie 1 comparison](benchmarks/figures/crispr_hamming_k23_comparison.svg)
+
 ## GuideCounter-Compatible Counting
 
 DotMatch also has a GuideCounter-compatible command shape for labs that already
@@ -392,8 +396,21 @@ part of the current BCL scope.
 
 ## Target Library Audit
 
-Before enabling one-edit correction, audit the target set for collisions and
-near neighbors.
+Before enabling correction, audit the target set for collisions and near
+neighbors. For Hamming guide-counting at `k=2` or `k=3`, exact audit reports
+whether any same-length target pair is close enough for error spheres to overlap
+(`distance <= 2k`). Fast audit keeps the conservative one-edit report and marks
+larger Hamming safety fields as not computed.
+
+```bash
+./dotmatch audit \
+  --targets guides.tsv \
+  --k 3 \
+  --audit-mode exact \
+  --out-dir audit/
+```
+
+Use `--audit-mode exact` when you need Hamming `k=2`/`k=3` safety fields.
 
 ```bash
 ./dotmatch audit \
@@ -405,7 +422,9 @@ near neighbors.
 
 The audit output includes duplicate targets, nearby target pairs, collision
 clusters, per-target safety, and example query variants that would be ambiguous
-at `k=1`.
+at `k=1`. In exact mode, `audit_summary.tsv` and `audit_summary.json` also
+include `safe_at_hamming_k2`, `safe_at_hamming_k3`,
+`risk_pairs_for_hamming_k2`, and `risk_pairs_for_hamming_k3`.
 
 ## Python API
 

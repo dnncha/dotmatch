@@ -54,6 +54,9 @@ def _meta(version: str = "0.1.0") -> str:
         "    - dotmatch dist ACGT AGGT | grep '^1$'\n"
         "    - dotmatch leq 1 ACGT AGGT | grep '^true$'\n"
         "    - dotmatch --help | grep 'Workflow namespaces'\n"
+        "    - dotmatch count --help | grep 'Hamming supports k=0..3'\n"
+        "    - dotmatch crispr-count --help | grep 'MAGeCK-ready'\n"
+        "    - dotmatch audit --help | grep 'safe_at_hamming_k3'\n"
         "    - dotmatch assay --help | grep 'dotmatch assay'\n"
         "    - dotmatch barcode --help | grep 'dotmatch barcode'\n"
         "    - dotmatch panel --help | grep 'dotmatch panel'\n"
@@ -66,6 +69,15 @@ def _meta(version: str = "0.1.0") -> str:
         "    - printf '@r0\\nACGT\\n+\\nIIII\\n' > reads.fastq\n"
         "    - dotmatch count --targets targets.tsv --reads reads.fastq --sample-label sample --target-start 0 --target-length 4 --k 0 --metric hamming --out counts.tsv\n"
         "    - awk -F '\\t' 'NR==2 { exit !($1==\"bc0\" && $2==\"ACGT\" && $3==\"\" && $4==\"0\" && $5==\"1\" && $10==\"1\") }' counts.tsv\n\n"
+        "    - printf 'target_id\\ttarget_seq\\na\\tAAAAAAAA\\nb\\tCCCCCCCC\\n' > audit_targets.tsv\n"
+        "    - dotmatch audit --targets audit_targets.tsv --k 3 --audit-mode exact --out-dir audit_out\n"
+        "    - awk -F '\\t' '$1==\"safe_at_hamming_k2\" { exit !($2==\"yes\") }' audit_out/audit_summary.tsv\n"
+        "    - awk -F '\\t' '$1==\"safe_at_hamming_k3\" { exit !($2==\"yes\") }' audit_out/audit_summary.tsv\n"
+        "    - printf 'fastq_path,sample\\nreads.fastq,treated\\n' > samples.csv\n"
+        "    - printf 'sgRNA,sgRNA_sequence,gene_symbol\\ng0,ACGT,GENE0\\n' > crispr_guides.csv\n"
+        "    - dotmatch crispr-count --library crispr_guides.csv --samples samples.csv --guide-start 0 --guide-length 4 --k 2 --metric hamming --ambiguity-policy best --out crispr_counts.tsv --summary crispr_summary.json --sample-qc crispr_sample_qc.tsv\n"
+        "    - awk -F '\\t' 'NR==2 { exit !($1==\"g0\" && $2==\"GENE0\" && $3==\"1\") }' crispr_counts.tsv\n"
+        "    - awk -F '\\t' 'NR==2 { exit !($1==\"treated\" && $2==\"reads.fastq\" && $3==\"1\" && $4==\"1\" && $5==\"1\" && $6==\"1\") }' crispr_sample_qc.tsv\n\n"
         "    - printf 'guide\\tbases\\tgene\\ng0\\tACGT\\tGENE0\\n' > guides.tsv\n"
         "    - dotmatch guide-counter count --input reads.fastq --samples sample --library guides.tsv --offset-sample-size 1 --offset-min-fraction 0.1 --output gc_out\n"
         "    - awk -F '\\t' 'NR==2 { exit !($1==\"g0\" && $2==\"GENE0\" && $3==\"1\") }' gc_out.counts.txt\n"
@@ -90,6 +102,8 @@ def _meta(version: str = "0.1.0") -> str:
         "  dev_url: https://github.com/dnncha/dotmatch\n"
         "  doc_url: https://github.com/dnncha/dotmatch#readme\n\n"
         "extra:\n"
+        "  additional-platforms:\n"
+        "    - osx-arm64\n"
         "  recipe-maintainers:\n"
         "    - dnncha\n"
     )
@@ -175,6 +189,26 @@ def test_bioconda_recipe_rejects_resolved_sha_before_release_tarball(tmp_path):
     assert any("SHA256 placeholder" in failure for failure in result.failures)
 
 
+def test_bioconda_recipe_requires_osx_arm64_build_opt_in(tmp_path):
+    checker = _load_checker()
+    meta = _meta().replace("  additional-platforms:\n    - osx-arm64\n", "")
+    _write_repo(tmp_path, meta=meta)
+
+    result = checker.audit(tmp_path)
+
+    assert any("osx-arm64" in failure for failure in result.failures)
+
+
+def test_bioconda_recipe_rejects_duplicate_runtime_zlib(tmp_path):
+    checker = _load_checker()
+    meta = _meta().replace("  run:\n    - python >=3.9\n", "  run:\n    - python >=3.9\n    - zlib\n")
+    _write_repo(tmp_path, meta=meta)
+
+    result = checker.audit(tmp_path)
+
+    assert any("not duplicate zlib in run" in failure for failure in result.failures)
+
+
 def test_bioconda_recipe_requires_cli_smoke_commands(tmp_path):
     checker = _load_checker()
     meta = (
@@ -188,6 +222,23 @@ def test_bioconda_recipe_requires_cli_smoke_commands(tmp_path):
 
     assert any("dotmatch dist ACGT AGGT" in failure for failure in result.failures)
     assert any("dotmatch leq 1 ACGT AGGT" in failure for failure in result.failures)
+
+
+def test_bioconda_recipe_requires_current_release_smoke_commands(tmp_path):
+    checker = _load_checker()
+    meta = (
+        _meta()
+        .replace("    - dotmatch crispr-count --help | grep 'MAGeCK-ready'\n", "")
+        .replace("    - dotmatch audit --targets audit_targets.tsv --k 3 --audit-mode exact --out-dir audit_out\n", "")
+        .replace("    - dotmatch crispr-count --library crispr_guides.csv --samples samples.csv --guide-start 0 --guide-length 4 --k 2 --metric hamming --ambiguity-policy best --out crispr_counts.tsv --summary crispr_summary.json --sample-qc crispr_sample_qc.tsv\n", "")
+    )
+    _write_repo(tmp_path, meta=meta)
+
+    result = checker.audit(tmp_path)
+
+    assert any("dotmatch crispr-count --help" in failure for failure in result.failures)
+    assert any("dotmatch audit --targets audit_targets.tsv --k 3 --audit-mode exact" in failure for failure in result.failures)
+    assert any("dotmatch crispr-count --library crispr_guides.csv" in failure for failure in result.failures)
 
 
 def test_bioconda_recipe_requires_native_install_steps(tmp_path):

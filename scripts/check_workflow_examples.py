@@ -58,12 +58,25 @@ def check_snakemake(root: Path, result: WorkflowAudit) -> None:
         result.failures.append(f"Snakemake config.json is invalid JSON: {exc}")
         return
 
-    required_keys = ["library", "samples", "guide_start", "guide_length", "metric", "outdir"]
+    required_keys = [
+        "library",
+        "samples",
+        "guide_start",
+        "guide_length",
+        "metric",
+        "ambiguity_policy",
+        "ambiguous",
+        "outdir",
+    ]
     for key in required_keys:
         if key not in config:
             result.failures.append(f"Snakemake config.json missing {key}")
     if config.get("metric") not in {"hamming", "levenshtein"}:
         result.failures.append("Snakemake config.json metric must be hamming or levenshtein")
+    if config.get("ambiguity_policy") not in {"radius", "best"}:
+        result.failures.append("Snakemake config.json ambiguity_policy must be radius or best")
+    if config.get("ambiguous") not in {"discard", "include", "separate"}:
+        result.failures.append("Snakemake config.json ambiguous must be discard, include, or separate")
     if not isinstance(config.get("samples"), dict) or not config.get("samples"):
         result.failures.append("Snakemake config.json must define at least one sample")
 
@@ -78,8 +91,10 @@ def check_snakemake(root: Path, result: WorkflowAudit) -> None:
     _require(snakefile, "crispr_qc.html", "Snakemake AssaySpec rule must expose crispr_qc.html", result)
     _require(snakefile, "crispr_qc.json", "Snakemake AssaySpec rule must expose crispr_qc.json", result)
     _require(snakefile, "crispr_qc.summary.tsv", "Snakemake AssaySpec rule must expose crispr_qc.summary.tsv", result)
-    _require(snakefile, "--ambiguity-policy radius", "Snakemake Snakefile must keep assignment ambiguity policy explicit", result)
-    _require(snakefile, "--ambiguous discard", "Snakemake Snakefile must keep ambiguous-output handling explicit", result)
+    _require(snakefile, "ambiguity_policy = config.get", "Snakemake Snakefile must read ambiguity policy from config", result)
+    _require(snakefile, "ambiguous = config.get", "Snakemake Snakefile must read ambiguous-output handling from config", result)
+    _require(snakefile, "--ambiguity-policy {params.ambiguity_policy}", "Snakemake Snakefile must keep assignment ambiguity policy explicit", result)
+    _require(snakefile, "--ambiguous {params.ambiguous}", "Snakemake Snakefile must keep ambiguous-output handling explicit", result)
     _require(snakefile, "--sample-qc", "Snakemake Snakefile must emit sample_qc.tsv for MultiQC", result)
     _require(snakefile, "sample_qc", "Snakemake Snakefile must declare sample_qc output", result)
 
@@ -96,7 +111,10 @@ def check_nextflow(root: Path, result: WorkflowAudit) -> None:
         "samples = 'examples/workflows/nextflow/samples.tsv'",
         "guide_start = 23",
         "guide_length = 19",
+        "k = 1",
         "metric = 'levenshtein'",
+        "ambiguity_policy = 'radius'",
+        "ambiguous = 'discard'",
         "outdir = 'examples/workflows/nextflow/output'",
     ]:
         _require(config, needle, f"Nextflow config missing {needle}", result)
@@ -112,8 +130,8 @@ def check_nextflow(root: Path, result: WorkflowAudit) -> None:
         ("path \"crispr_qc.html\", emit: assay_crispr_qc_report", "Nextflow AssaySpec workflow must emit crispr_qc.html"),
         ("path \"crispr_qc.json\", emit: assay_crispr_qc_json", "Nextflow AssaySpec workflow must emit crispr_qc.json"),
         ("path \"crispr_qc.summary.tsv\", emit: assay_crispr_qc_summary", "Nextflow AssaySpec workflow must emit crispr_qc.summary.tsv"),
-        ("--ambiguity-policy radius", "Nextflow workflow must keep assignment ambiguity policy explicit"),
-        ("--ambiguous discard", "Nextflow workflow must keep ambiguous-output handling explicit"),
+        ("--ambiguity-policy ${params.ambiguity_policy}", "Nextflow workflow must keep assignment ambiguity policy explicit"),
+        ("--ambiguous ${params.ambiguous}", "Nextflow workflow must keep ambiguous-output handling explicit"),
         ("--sample-qc", "Nextflow workflow must emit sample_qc.tsv for MultiQC"),
         ("path \"sample_qc.tsv\", emit: sample_qc", "Nextflow workflow must declare sample_qc output"),
         ("publishDir params.outdir", "Nextflow workflow must publish outputs to params.outdir"),

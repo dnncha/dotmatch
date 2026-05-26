@@ -3,6 +3,8 @@ configfile: "examples/workflows/snakemake/config.json"
 outdir = config.get("outdir", "examples/workflows/snakemake/output")
 samples = config["samples"]
 metric = config.get("metric", "levenshtein")
+ambiguity_policy = config.get("ambiguity_policy", "radius")
+ambiguous = config.get("ambiguous", "discard")
 indel_window = int(config.get("indel_window", 0))
 indel_window_arg = f"--indel-window {indel_window}" if metric == "levenshtein" and indel_window > 0 else ""
 
@@ -43,6 +45,8 @@ rule dotmatch_crispr_count:
         guide_length=config["guide_length"],
         k=config.get("k", 1),
         metric=metric,
+        ambiguity_policy=ambiguity_policy,
+        ambiguous=ambiguous,
         indel_window_arg=indel_window_arg,
     shell:
         """
@@ -53,12 +57,12 @@ rule dotmatch_crispr_count:
           --guide-length {params.guide_length} \
           --k {params.k} \
           --metric {params.metric} \
-          --ambiguity-policy radius \
+          --ambiguity-policy {params.ambiguity_policy} \
           {params.indel_window_arg} \
           --out {output.counts} \
           --summary {output.summary} \
           --sample-qc {output.sample_qc} \
-          --ambiguous discard
+          --ambiguous {params.ambiguous}
         """
 
 
@@ -92,8 +96,8 @@ rule dotmatch_assay_spec:
             handle.write("[assignment]\n")
             handle.write(f"k = {config.get('k', 1)}\n")
             handle.write(f'metric = "{metric}"\n')
-            handle.write('ambiguity_policy = "radius"\n')
-            handle.write('ambiguous = "discard"\n')
+            handle.write(f'ambiguity_policy = "{ambiguity_policy}"\n')
+            handle.write(f'ambiguous = "{ambiguous}"\n')
             if metric == "levenshtein" and indel_window > 0:
                 handle.write(f"indel_window = {indel_window}\n")
             handle.write("\n[outputs]\n")

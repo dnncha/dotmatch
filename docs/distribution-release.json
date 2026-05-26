@@ -16,10 +16,11 @@
       "id": "bioconda",
       "status": "prepared",
       "expected_url": "https://anaconda.org/bioconda/dotmatch",
-      "recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/65367",
+      "latest_published_version": "0.1.4",
+      "initial_recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/65367",
       "verification_command": "make distribution-channels",
-      "blocker": "The public Bioconda channel currently carries DotMatch 0.1.2. The 0.1.5 recipe update has not been submitted, merged, and propagated yet.",
-      "next_action": "After tagging v0.1.5, copy the recipe template to bioconda-recipes, replace the source SHA256, keep the Python console-script package scope and GuideCounter-compatible CLI smoke test, and rerun make distribution-channels after channel propagation."
+      "blocker": "The public Bioconda channel currently carries DotMatch 0.1.4 as the latest release. The 0.1.5 recipe update has not been submitted, merged, and propagated yet.",
+      "next_action": "After tagging v0.1.5, copy the recipe template to bioconda-recipes, replace the source SHA256, keep the Python console-script package scope, osx-arm64 opt-in, host zlib/runtime libzlib dependency shape, and GuideCounter-compatible CLI smoke tests, then rerun make distribution-channels after channel propagation."
     },
     {
       "id": "ghcr",

@@ -45,12 +45,12 @@ process DOTMATCH_CRISPR_COUNT {
       --guide-length ${params.guide_length} \
       --k ${params.k} \
       --metric ${params.metric} \
-      --ambiguity-policy radius \
+      --ambiguity-policy ${params.ambiguity_policy} \
       ${indelArg} \
       --out counts.mageck.tsv \
       --summary summary.json \
       --sample-qc sample_qc.tsv \
-      --ambiguous discard
+      --ambiguous ${params.ambiguous}
     """
 }
 
@@ -102,8 +102,8 @@ fastq = "${fastqs[i].name}"
     [assignment]
     k = ${params.k}
     metric = "${params.metric}"
-    ambiguity_policy = "radius"
-    ambiguous = "discard"
+    ambiguity_policy = "${params.ambiguity_policy}"
+    ambiguous = "${params.ambiguous}"
     ${indelLine}
 
     [outputs]

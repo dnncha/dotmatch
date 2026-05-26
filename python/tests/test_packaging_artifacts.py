@@ -43,7 +43,7 @@ def test_bioconda_recipe_builds_python_console_script_and_smoke_tests() -> None:
     assert "- python >=3.9" in recipe
     assert "- pip" in recipe
     assert "- setuptools >=77" in recipe
-    assert "- zlib" in recipe
+    assert recipe.count("- zlib") == 1
     assert "dotmatch dist ACGT AGGT | grep '^1$'" in recipe
     assert "dotmatch leq 1 ACGT AGGT | grep '^true$'" in recipe
     assert "dotmatch assay --help" in recipe
@@ -52,7 +52,11 @@ def test_bioconda_recipe_builds_python_console_script_and_smoke_tests() -> None:
     assert "dotmatch assay init" in recipe
     assert "dotmatch barcode infer" in recipe
     assert "dotmatch panel design" in recipe
-    assert "dotmatch count --help" not in recipe
+    assert "dotmatch count --help | grep 'Hamming supports k=0..3'" in recipe
+    assert "dotmatch crispr-count --help | grep 'MAGeCK-ready'" in recipe
+    assert "dotmatch audit --help | grep 'safe_at_hamming_k3'" in recipe
+    assert "dotmatch audit --targets audit_targets.tsv --k 3 --audit-mode exact" in recipe
+    assert "dotmatch crispr-count --library crispr_guides.csv" in recipe
     assert 'CC="${CC}"' in build
     assert "libdotmatch.a shared" in build
     assert "${PYTHON} -m pip install . -vv --no-deps --no-build-isolation" in build

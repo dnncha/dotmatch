@@ -240,6 +240,74 @@ BARCODEHEADER
 grep '^s1	ACGT		0	1	0	0	0	0	1$' "$TMPDIR/barcode_header_counts.tsv" >/dev/null
 grep '"n_targets": 2' "$TMPDIR/barcode_header_summary.json" >/dev/null
 
+cat > "$TMPDIR/k3_targets.tsv" <<'K3TARGETS'
+only	ACGT
+K3TARGETS
+
+cat > "$TMPDIR/k3_reads.fastq" <<'K3FASTQ'
+@exact
+ACGT
++
+IIII
+@two_mismatch
+AGGA
++
+IIII
+@three_mismatch
+TGGA
++
+IIII
+@four_mismatch
+TGCA
++
+IIII
+K3FASTQ
+
+"$DOTMATCH_BIN" count \
+  --targets "$TMPDIR/k3_targets.tsv" \
+  --reads "$TMPDIR/k3_reads.fastq" \
+  --sample-label k3 \
+  --target-start 0 \
+  --target-length 4 \
+  --k 2 \
+  --metric hamming \
+  --ambiguity-policy best \
+  --out "$TMPDIR/k2_hamming_counts.tsv" \
+  --summary "$TMPDIR/k2_hamming_summary.json"
+
+grep '^only	ACGT		0	1	0	0	0	1	2$' "$TMPDIR/k2_hamming_counts.tsv" >/dev/null
+grep '"k": 2' "$TMPDIR/k2_hamming_summary.json" >/dev/null
+grep '"metric": "hamming"' "$TMPDIR/k2_hamming_summary.json" >/dev/null
+
+"$DOTMATCH_BIN" count \
+  --targets "$TMPDIR/k3_targets.tsv" \
+  --reads "$TMPDIR/k3_reads.fastq" \
+  --sample-label k3 \
+  --target-start 0 \
+  --target-length 4 \
+  --k 3 \
+  --metric hamming \
+  --ambiguity-policy best \
+  --out "$TMPDIR/k3_hamming_counts.tsv" \
+  --summary "$TMPDIR/k3_hamming_summary.json"
+
+grep '^only	ACGT		0	1	0	0	0	2	3$' "$TMPDIR/k3_hamming_counts.tsv" >/dev/null
+grep '"k": 3' "$TMPDIR/k3_hamming_summary.json" >/dev/null
+grep '"metric": "hamming"' "$TMPDIR/k3_hamming_summary.json" >/dev/null
+
+if "$DOTMATCH_BIN" count \
+  --targets "$TMPDIR/k3_targets.tsv" \
+  --reads "$TMPDIR/k3_reads.fastq" \
+  --sample-label k3 \
+  --target-start 0 \
+  --target-length 4 \
+  --k 3 \
+  --metric levenshtein \
+  --out "$TMPDIR/bad_levenshtein_k3.tsv" 2>/dev/null; then
+  echo "Levenshtein k=3 should fail for count" >&2
+  exit 1
+fi
+
 if "$DOTMATCH_BIN" fastq-assign \
   --barcodes "$TMPDIR/barcodes.tsv" \
   --reads "$TMPDIR/reads.fastq" \
@@ -1398,6 +1466,42 @@ diff -u "$TMPDIR/expected_mageck.tsv" "$TMPDIR/crispr_mageck.tsv"
 grep '"k1_rescued_reads": 1' "$TMPDIR/crispr_qc.json" >/dev/null
 grep '"percent_rescued_by_k1": 25.000000' "$TMPDIR/crispr_qc.json" >/dev/null
 
+"$DOTMATCH_BIN" crispr-count --help > "$TMPDIR/crispr_count_help.txt"
+grep '^DotMatch .* crispr-count$' "$TMPDIR/crispr_count_help.txt" >/dev/null
+grep 'MAGeCK-ready' "$TMPDIR/crispr_count_help.txt" >/dev/null
+grep 'Hamming supports k=0..3' "$TMPDIR/crispr_count_help.txt" >/dev/null
+
+"$DOTMATCH_BIN" audit --help > "$TMPDIR/audit_help.txt"
+grep '^DotMatch .* audit$' "$TMPDIR/audit_help.txt" >/dev/null
+grep 'safe_at_hamming_k3' "$TMPDIR/audit_help.txt" >/dev/null
+grep '2k+1 substitutions' "$TMPDIR/audit_help.txt" >/dev/null
+
+cat > "$TMPDIR/samples_reordered.csv" <<SAMPLES
+fastq_path,sample
+$TMPDIR/reads.fastq,plasmid
+$TMPDIR/reads.fastq.gz,esc
+SAMPLES
+
+cat > "$TMPDIR/library_aliases.csv" <<'LIBRARYALIASES'
+sgRNA,sgRNA_sequence,gene_symbol
+bc0,ACGT,G0
+bc1,AGGT,G1
+bc2,ACGA,G2
+bc3,TTTT,G3
+LIBRARYALIASES
+
+"$DOTMATCH_BIN" crispr-count \
+  --library "$TMPDIR/library_aliases.csv" \
+  --samples "$TMPDIR/samples_reordered.csv" \
+  --guide-start 0 \
+  --guide-length 4 \
+  --k 1 \
+  --metric hamming \
+  --ambiguity-policy best \
+  --out "$TMPDIR/crispr_mageck_reordered.tsv"
+
+diff -u "$TMPDIR/expected_mageck.tsv" "$TMPDIR/crispr_mageck_reordered.tsv"
+
 "$DOTMATCH_BIN" audit \
   --targets "$TMPDIR/targets.csv" \
   --k 1 \
@@ -1405,12 +1509,20 @@ grep '"percent_rescued_by_k1": 25.000000' "$TMPDIR/crispr_qc.json" >/dev/null
 
 grep '^targets	4$' "$TMPDIR/audit/audit_summary.tsv" >/dev/null
 grep '^safe_at_k1	no$' "$TMPDIR/audit/audit_summary.tsv" >/dev/null
+grep '^safe_at_hamming_k2	no$' "$TMPDIR/audit/audit_summary.tsv" >/dev/null
+grep '^safe_at_hamming_k3	no$' "$TMPDIR/audit/audit_summary.tsv" >/dev/null
 grep '^risk_pairs_for_k1	3$' "$TMPDIR/audit/audit_summary.tsv" >/dev/null
+grep '^risk_pairs_for_hamming_k2	6$' "$TMPDIR/audit/audit_summary.tsv" >/dev/null
+grep '^risk_pairs_for_hamming_k3	6$' "$TMPDIR/audit/audit_summary.tsv" >/dev/null
 grep '^ambiguous_query_variants_k1	14$' "$TMPDIR/audit/audit_summary.tsv" >/dev/null
 grep '"audit_mode": "exact"' "$TMPDIR/audit/audit_summary.json" >/dev/null
 grep '"k": 1' "$TMPDIR/audit/audit_summary.json" >/dev/null
 grep '"safe_at_k1": false' "$TMPDIR/audit/audit_summary.json" >/dev/null
+grep '"safe_at_hamming_k2": false' "$TMPDIR/audit/audit_summary.json" >/dev/null
+grep '"safe_at_hamming_k3": false' "$TMPDIR/audit/audit_summary.json" >/dev/null
 grep '"risk_pairs_for_k1": 3' "$TMPDIR/audit/audit_summary.json" >/dev/null
+grep '"risk_pairs_for_hamming_k2": 6' "$TMPDIR/audit/audit_summary.json" >/dev/null
+grep '"risk_pairs_for_hamming_k3": 6' "$TMPDIR/audit/audit_summary.json" >/dev/null
 grep '^bc0	bc1	ACGT	AGGT	1	yes	yes	$' "$TMPDIR/audit/collision_pairs.tsv" >/dev/null
 grep '^bc0	ACGT	bc1	1	no	no	2$' "$TMPDIR/audit/target_safety.tsv" >/dev/null
 grep '^ACG	2$' "$TMPDIR/audit/ambiguous_variants.tsv" >/dev/null
@@ -1424,12 +1536,20 @@ grep '^ACG	2$' "$TMPDIR/audit/ambiguous_variants.tsv" >/dev/null
 grep '^audit_mode	fast$' "$TMPDIR/audit_fast/audit_summary.tsv" >/dev/null
 grep '^targets	4$' "$TMPDIR/audit_fast/audit_summary.tsv" >/dev/null
 grep '^safe_at_k1	no$' "$TMPDIR/audit_fast/audit_summary.tsv" >/dev/null
+grep '^safe_at_hamming_k2	not_computed$' "$TMPDIR/audit_fast/audit_summary.tsv" >/dev/null
+grep '^safe_at_hamming_k3	not_computed$' "$TMPDIR/audit_fast/audit_summary.tsv" >/dev/null
 grep '^risk_pairs_for_k1	3$' "$TMPDIR/audit_fast/audit_summary.tsv" >/dev/null
+grep '^risk_pairs_for_hamming_k2	not_computed$' "$TMPDIR/audit_fast/audit_summary.tsv" >/dev/null
+grep '^risk_pairs_for_hamming_k3	not_computed$' "$TMPDIR/audit_fast/audit_summary.tsv" >/dev/null
 grep '^ambiguous_query_variants_k1	14$' "$TMPDIR/audit_fast/audit_summary.tsv" >/dev/null
 grep '"audit_mode": "fast"' "$TMPDIR/audit_fast/audit_summary.json" >/dev/null
 grep '"safe_at_k1": false' "$TMPDIR/audit_fast/audit_summary.json" >/dev/null
+grep '"safe_at_hamming_k2": null' "$TMPDIR/audit_fast/audit_summary.json" >/dev/null
+grep '"safe_at_hamming_k3": null' "$TMPDIR/audit_fast/audit_summary.json" >/dev/null
 grep '"safe_at_k2": null' "$TMPDIR/audit_fast/audit_summary.json" >/dev/null
 grep '"risk_pairs_for_k2": null' "$TMPDIR/audit_fast/audit_summary.json" >/dev/null
+grep '"risk_pairs_for_hamming_k2": null' "$TMPDIR/audit_fast/audit_summary.json" >/dev/null
+grep '"risk_pairs_for_hamming_k3": null' "$TMPDIR/audit_fast/audit_summary.json" >/dev/null
 grep '^ACG	2$' "$TMPDIR/audit_fast/ambiguous_variants.tsv" >/dev/null
 
 "$DOTMATCH_BIN" count \

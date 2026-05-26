@@ -20,6 +20,7 @@ from check_crispr_comparison_gate import FULL_FASTQ_SAMPLE_READS
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "benchmarks" / "raw"
+HAMMING_K23_COMPARATOR_CSV = RAW / "crispr_comparison_hamming_k23_comparators.csv"
 OUT_DIR = ROOT / "docs" / "benchmarks" / "crispr_comparison"
 FIG_DIR = ROOT / "benchmarks" / "figures"
 OPTIMIZER_ARTIFACTS = {
@@ -41,6 +42,37 @@ def fnum(value: str | None) -> float:
         return float(value)
     except ValueError:
         return 0.0
+
+
+def first_value(row: dict[str, str], keys: list[str]) -> str:
+    for key in keys:
+        value = row.get(key, "")
+        if value not in (None, ""):
+            return str(value)
+    return ""
+
+
+def row_k(row: dict[str, str]) -> str:
+    for key in ("k", "hamming_k", "max_mismatches", "mismatches"):
+        value = first_value(row, [key]).strip()
+        if value:
+            return value.removeprefix("k")
+    for key in ("comparison", "dotmatch_tool", "tool", "semantics"):
+        text = str(row.get(key, "")).lower()
+        for k in ("2", "3"):
+            if f"k{k}" in text or f"k={k}" in text or f"hamming_{k}" in text:
+                return k
+    return ""
+
+
+def has_dotmatch_hamming(row: dict[str, str]) -> bool:
+    text = " ".join(str(row.get(key, "")) for key in ("comparison", "dotmatch_tool", "tool", "left_tool", "right_tool")).lower()
+    return "dotmatch" in text and "hamming" in text
+
+
+def has_bowtie1(row: dict[str, str]) -> bool:
+    text = " ".join(str(row.get(key, "")) for key in ("comparison", "bowtie1_tool", "bowtie_tool", "tool", "left_tool", "right_tool", "comparator")).lower()
+    return "bowtie1" in text or "bowtie_1" in text or "bowtie 1" in text
 
 
 def aggregate_full_sample_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
@@ -194,6 +226,34 @@ def full_hamming_ratio_rows(stats: list[dict[str, str]]) -> list[dict[str, str]]
     return out
 
 
+def hamming_k23_comparator_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    out: list[dict[str, str]] = []
+    for row in rows:
+        k = row_k(row)
+        if k not in {"2", "3"}:
+            continue
+        if not (has_dotmatch_hamming(row) and has_bowtie1(row)):
+            continue
+        dotmatch_rps = fnum(first_value(row, ["dotmatch_reads_per_sec", "dotmatch_mean_reads_per_sec", "left_reads_per_sec"]))
+        bowtie_rps = fnum(first_value(row, ["bowtie1_reads_per_sec", "bowtie_reads_per_sec", "bowtie1_mean_reads_per_sec", "right_reads_per_sec"]))
+        speedup_value = first_value(row, ["speedup", "dotmatch_vs_bowtie1_speedup"])
+        speedup = fnum(speedup_value) if speedup_value else (dotmatch_rps / bowtie_rps if dotmatch_rps > 0 and bowtie_rps > 0 else 0.0)
+        out.append({
+            "dataset": first_value(row, ["dataset", "dataset_id", "workflow"]),
+            "k": k,
+            "records_per_sample": first_value(row, ["records_per_sample", "requested_records_per_sample", "n_reads"]),
+            "dotmatch_tool": first_value(row, ["dotmatch_tool", "left_tool"]) or f"dotmatch_hamming_k{k}",
+            "bowtie1_tool": first_value(row, ["bowtie1_tool", "bowtie_tool", "right_tool"]) or "bowtie1",
+            "dotmatch_reads_per_sec": f"{dotmatch_rps:.1f}" if dotmatch_rps else "",
+            "bowtie1_reads_per_sec": f"{bowtie_rps:.1f}" if bowtie_rps else "",
+            "speedup": f"{speedup:.2f}" if speedup else "",
+            "status": first_value(row, ["status"]) or ("reported" if dotmatch_rps and bowtie_rps else ""),
+            "semantics": first_value(row, ["semantics"]) or f"Hamming k={k}, no indels",
+            "artifact": first_value(row, ["artifact", "source_artifact"]),
+        })
+    return sorted(out, key=lambda r: (r["dataset"], r["k"], r["records_per_sample"]))
+
+
 def guide_counter_style_rows(stats: list[dict[str, str]], agreement: list[dict[str, str]]) -> list[dict[str, str]]:
     by_key = {(r.get("dataset", ""), r.get("tool", ""), r.get("records_per_sample", "")): r for r in stats}
     agreement_by_dataset: dict[str, dict[str, str]] = {}
@@ -260,6 +320,38 @@ def svg_bars(stats: list[dict[str, str]], path: Path) -> None:
     path.write_text("\n".join(parts), encoding="utf-8")
 
 
+def svg_hamming_k23_comparators(rows: list[dict[str, str]], path: Path) -> None:
+    selected = [r for r in rows if fnum(r.get("dotmatch_reads_per_sec")) > 0.0 and fnum(r.get("bowtie1_reads_per_sec")) > 0.0]
+    if not selected:
+        return
+    values: list[tuple[str, str, float]] = []
+    for row in selected:
+        label = f"{row['dataset']} k{row['k']} {row['records_per_sample']}"
+        values.append((label, "DotMatch", fnum(row["dotmatch_reads_per_sec"])))
+        values.append((label, "Bowtie 1", fnum(row["bowtie1_reads_per_sec"])))
+    width = 1220
+    row_h = 26
+    left = 420
+    height = 74 + row_h * len(values)
+    max_v = max(value for _, _, value in values) or 1.0
+    parts = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
+        '<style>text{font-family:Arial,sans-serif;font-size:12px}.title{font-size:18px;font-weight:700}.axis{fill:#444}.dotmatch{fill:#2f7d68}.bowtie{fill:#5b6f95}</style>',
+        '<text class="title" x="20" y="28">Hamming k2/k3 fixed-window comparator throughput</text>',
+        '<text class="axis" x="20" y="50">Reads/s on extracted guide-window semantics; Bowtie 1 uses -v K --best --strata --norc -a</text>',
+    ]
+    for i, (label, tool, value) in enumerate(values):
+        y = 75 + i * row_h
+        w = max(1, int((width - left - 120) * value / max_v))
+        klass = "dotmatch" if tool == "DotMatch" else "bowtie"
+        parts.append(f'<text x="20" y="{y + 14}">{html.escape(label)} {tool}</text>')
+        parts.append(f'<rect class="{klass}" x="{left}" y="{y}" width="{w}" height="17" rx="2"/>')
+        parts.append(f'<text x="{left + w + 8}" y="{y + 13}">{value:.1f}</text>')
+    parts.append("</svg>")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(parts), encoding="utf-8")
+
+
 def markdown_link_path(target: Path, base: Path) -> str:
     return Path(os.path.relpath(target, start=base)).as_posix()
 
@@ -268,9 +360,12 @@ def main() -> None:
     repeated = read_rows(RAW / "crispr_comparison_repeated.csv")
     validation = read_rows(RAW / "crispr_comparison_edlib_validation.csv")
     agreement = read_rows(RAW / "crispr_comparison_count_agreement_summary.csv")
+    hamming_k23_comparators = read_rows(HAMMING_K23_COMPARATOR_CSV)
     stats = repeated_stats(repeated)
+    hamming_k23_rows = hamming_k23_comparator_rows(hamming_k23_comparators)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     svg_bars(stats, FIG_DIR / "crispr_comparison_throughput.svg")
+    svg_hamming_k23_comparators(hamming_k23_rows, FIG_DIR / "crispr_hamming_k23_comparison.svg")
 
     full_rows = [r for r in stats if r["records_per_sample"] == "full"]
     subsample_rows = [r for r in stats if r["records_per_sample"] != "full"]
@@ -282,6 +377,7 @@ def main() -> None:
         "## Evidence Boundary",
         "",
         "- Hamming `k=1` rows are the fair guide-counter lane: one mismatch, no indels.",
+        "- Hamming `k=2` and `k=3` external comparator rows are reported only from the separate DotMatch-vs-Bowtie 1 artifact when present.",
         "- Levenshtein `k=1` rows are the DotMatch differentiator lane: substitutions plus single-base insertions/deletions, with Edlib validation.",
         "- Full FASTQ rows are reported separately from repeated subsamples.",
         "- guide-counter speed ratios are reported when present; they are not universal replacement gates.",
@@ -317,11 +413,24 @@ def main() -> None:
             "count_total_delta", "semantics",
         ]),
         "",
-        "## Full Hamming Guide-Counter Ratio",
+        "## Full Hamming k1 Guide-Counter Ratio",
         "",
         markdown_table(full_hamming_ratio_rows(stats), [
             "dataset", "dotmatch_hamming_reads_per_sec", "guide_counter_reads_per_sec",
             "speedup", "status",
+        ]),
+        "",
+        "## Hamming k2/k3 External Comparator Rows",
+        "",
+        "DotMatch Hamming `k=2` and `k=3` evidence is kept separate from guide-counter claims. Rows in this table must come from `benchmarks/raw/crispr_comparison_hamming_k23_comparators.csv` and compare DotMatch directly with Bowtie 1.",
+        "",
+        "![Hamming k2/k3 comparator throughput](" +
+        markdown_link_path(FIG_DIR / "crispr_hamming_k23_comparison.svg", OUT_DIR) + ")",
+        "",
+        markdown_table(hamming_k23_rows, [
+            "dataset", "k", "records_per_sample", "dotmatch_tool", "bowtie1_tool",
+            "dotmatch_reads_per_sec", "bowtie1_reads_per_sec", "speedup", "status",
+            "semantics", "artifact",
         ]),
         "",
         "## Backend Optimizer",
@@ -355,6 +464,7 @@ def main() -> None:
         "- `benchmarks/raw/crispr_comparison_full_sanson_atlas_latest_dotmatch.csv`",
         "- `benchmarks/raw/crispr_comparison_edlib_validation.csv`",
         "- `benchmarks/raw/crispr_comparison_count_agreement_summary.csv`",
+        "- `benchmarks/raw/crispr_comparison_hamming_k23_comparators.csv`",
         "- `benchmarks/raw/crispr_sanson_brunello_backend_optimization_atlas_latest_dotmatch.json`",
     ]
     (OUT_DIR / "README.md").write_text("\n".join(content) + "\n", encoding="utf-8")

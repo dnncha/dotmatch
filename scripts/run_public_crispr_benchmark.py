@@ -41,7 +41,7 @@ def public_text(value: str | Path) -> str:
     dotmatch_tmp = "/" + "tmp/dotmatch"
     text = text.replace(private_tmp, tmp_root)
     text = re.sub(re.escape(var_folders) + r'[^,\s"]*/([^/,\s"]+)', r"<tmp>/\1", text)
-    text = re.sub(re.escape(dotmatch_tmp) + r'[^,\s"]*/([^/,\s"]+)', r"<tmp>/\1", text)
+    text = re.sub(re.escape(dotmatch_tmp) + r'[^,\s"]*', r"<tmp>/dotmatch", text)
     return text
 
 
