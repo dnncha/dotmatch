@@ -21,6 +21,10 @@ def _agreement_row(dataset, comparison, status="ok", total_left="200000", total_
         "status": status,
         "total_left": total_left,
         "total_right": total_right,
+        "total_delta": "0",
+        "differing_guides": "0",
+        "pearson": "1.00000000",
+        "spearman": "1.00000000",
     }
 
 
@@ -37,6 +41,28 @@ def test_strict_gate_rejects_shallow_guide_counter_count_agreement():
     gate.agreement_gate(rows, require_guide_counter=True, failures=failures)
 
     assert any("sanson_brunello Hamming count agreement is below evidence threshold" in f for f in failures)
+
+
+def test_agreement_gate_rejects_ok_exact_rows_with_deltas_or_nan():
+    gate = _load_gate()
+    rows = [
+        _agreement_row("mageck_yusa", "dotmatch_exact_vs_mageck_exact"),
+        _agreement_row("mageck_yusa", "dotmatch_hamming_vs_guide_counter"),
+        _agreement_row(
+            "sanson_brunello",
+            "dotmatch_exact_vs_mageck_exact",
+            total_left="321536",
+            total_right="0",
+        ) | {"total_delta": "321536", "differing_guides": "67253", "pearson": "nan", "spearman": "nan"},
+        _agreement_row("sanson_brunello", "dotmatch_hamming_vs_guide_counter"),
+    ]
+    failures = []
+
+    gate.agreement_gate(rows, require_guide_counter=False, failures=failures)
+
+    assert any("sanson_brunello exact total differs" in f for f in failures)
+    assert any("sanson_brunello exact guide-level differences" in f for f in failures)
+    assert any("finite Pearson" in f for f in failures)
 
 
 def _repeated_row(dataset, tool, verified_per_read=""):
@@ -109,7 +135,7 @@ def _speed_row(dataset, tool, reads_per_sec):
     return row
 
 
-def test_repeated_gate_accepts_hamming_speedup_that_beats_guide_counter():
+def test_repeated_gate_accepts_guide_counter_rows_without_speed_superiority_claim():
     gate = _load_gate()
     rows = []
     for dataset in gate.DATASETS:
@@ -124,10 +150,10 @@ def test_repeated_gate_accepts_hamming_speedup_that_beats_guide_counter():
     gate.repeated_gate(rows, min_records=100000, min_repeats=1, require_full=False,
                        require_mageck=False, require_guide_counter=True, failures=failures)
 
-    assert not any("speedup vs guide-counter" in f for f in failures)
+    assert not any("guide-counter" in f for f in failures)
 
 
-def test_repeated_gate_rejects_hamming_slower_than_guide_counter():
+def test_repeated_gate_still_requires_guide_counter_when_requested():
     gate = _load_gate()
     rows = []
     for dataset in gate.DATASETS:
@@ -135,14 +161,13 @@ def test_repeated_gate_rejects_hamming_slower_than_guide_counter():
             _repeated_row(dataset, "dotmatch_exact_k0"),
             _speed_row(dataset, "dotmatch_hamming_k1", "99.0"),
             _repeated_row(dataset, "dotmatch_levenshtein_k1", verified_per_read="1.0"),
-            _speed_row(dataset, "guide_counter_one_mismatch", "100.0"),
         ])
     failures = []
 
     gate.repeated_gate(rows, min_records=100000, min_repeats=1, require_full=False,
                        require_mageck=False, require_guide_counter=True, failures=failures)
 
-    assert any("speedup vs guide-counter" in f for f in failures)
+    assert any("guide_counter_one_mismatch needs >= 1 repeats" in f for f in failures)
 
 
 def test_repeated_gate_no_full_speedup_ignores_full_rows():
@@ -264,7 +289,7 @@ def test_repeated_gate_rejects_incomplete_full_sample_rows():
     assert any("sanson_brunello:dotmatch_exact_k0 needs at least one full FASTQ timing row" in f for f in failures)
 
 
-def test_repeated_gate_rejects_full_hamming_slower_than_full_guide_counter():
+def test_repeated_gate_accepts_full_hamming_slower_than_full_guide_counter_when_full_rows_exist():
     gate = _load_gate()
     rows = []
     for dataset in gate.DATASETS:
@@ -299,4 +324,127 @@ def test_repeated_gate_rejects_full_hamming_slower_than_full_guide_counter():
     gate.repeated_gate(rows, min_records=1, min_repeats=1, require_full=True,
                        require_mageck=False, require_guide_counter=True, failures=failures)
 
-    assert any("mageck_yusa full DotMatch Hamming speedup vs guide-counter" in f for f in failures)
+    assert not any("guide-counter" in f for f in failures)
+
+
+def test_repeated_gate_requires_named_full_guide_counter_dataset_only():
+    gate = _load_gate()
+    rows = []
+    for dataset in gate.DATASETS:
+        rows.extend([
+            _speed_row(dataset, "dotmatch_exact_k0", "100.0"),
+            _speed_row(dataset, "dotmatch_hamming_k1", "200.0"),
+            _speed_row(dataset, "dotmatch_levenshtein_k1", "50.0"),
+            _speed_row(dataset, "guide_counter_one_mismatch", "100.0"),
+        ])
+    rows.extend([
+        _full_row("sanson_brunello", "dotmatch_hamming_k1", gate.FULL_FASTQ_MIN_READS["sanson_brunello"]),
+        _full_row("sanson_brunello", "guide_counter_one_mismatch", gate.FULL_FASTQ_MIN_READS["sanson_brunello"]),
+    ])
+    for row in rows:
+        if row["requested_records_per_sample"] == "full":
+            row["reads_per_sec"] = "100.0"
+            row["seconds"] = "1.0"
+    failures = []
+
+    gate.repeated_gate(
+        rows,
+        min_records=1,
+        min_repeats=1,
+        require_full=False,
+        require_mageck=False,
+        require_guide_counter=True,
+        failures=failures,
+        required_full_guide_counter_datasets=["sanson_brunello"],
+    )
+
+    assert not failures
+
+
+def test_repeated_gate_rejects_missing_named_full_guide_counter_dataset():
+    gate = _load_gate()
+    rows = []
+    for dataset in gate.DATASETS:
+        rows.extend([
+            _speed_row(dataset, "dotmatch_exact_k0", "100.0"),
+            _speed_row(dataset, "dotmatch_hamming_k1", "200.0"),
+            _speed_row(dataset, "dotmatch_levenshtein_k1", "50.0"),
+            _speed_row(dataset, "guide_counter_one_mismatch", "100.0"),
+        ])
+    failures = []
+
+    gate.repeated_gate(
+        rows,
+        min_records=1,
+        min_repeats=1,
+        require_full=False,
+        require_mageck=False,
+        require_guide_counter=True,
+        failures=failures,
+        required_full_guide_counter_datasets=["sanson_brunello"],
+    )
+
+    assert any("sanson_brunello:dotmatch_hamming_k1 needs a full FASTQ guide-counter comparison row" in f for f in failures)
+    assert any("sanson_brunello:guide_counter_one_mismatch needs a full FASTQ guide-counter comparison row" in f for f in failures)
+
+
+def test_hamming_k23_comparator_gate_rejects_missing_bowtie1_rows():
+    gate = _load_gate()
+    rows = [
+        {
+            "dataset": "mageck_yusa",
+            "k": "2",
+            "records_per_sample": "100000",
+            "comparison": "dotmatch_hamming_k2_vs_internal_baseline",
+            "status": "ok",
+        }
+    ]
+    failures = []
+
+    gate.hamming_k23_comparator_gate(
+        rows,
+        required_ks=["2", "3"],
+        failures=failures,
+        min_records=100000,
+        datasets=["mageck_yusa"],
+    )
+
+    assert any("missing DotMatch-vs-Bowtie 1 Hamming k2 comparator row for mageck_yusa" in f for f in failures)
+    assert any("missing DotMatch-vs-Bowtie 1 Hamming k3 comparator row for mageck_yusa" in f for f in failures)
+
+
+def test_hamming_k23_comparator_gate_accepts_minimal_passing_rows():
+    gate = _load_gate()
+    rows = [
+        {
+            "dataset": "mageck_yusa",
+            "k": "2",
+            "records_per_sample": "100000",
+            "comparison": "dotmatch_hamming_k2_vs_bowtie1",
+            "dotmatch_tool": "dotmatch_hamming_k2",
+            "bowtie1_tool": "bowtie1",
+            "status": "ok",
+            "exit_code": "0",
+        },
+        {
+            "dataset": "mageck_yusa",
+            "k": "3",
+            "records_per_sample": "100000",
+            "comparison": "dotmatch_hamming_k3_vs_bowtie1",
+            "dotmatch_tool": "dotmatch_hamming_k3",
+            "bowtie1_tool": "bowtie1",
+            "status": "ok",
+            "exit_code": "0",
+        },
+    ]
+    failures = []
+
+    gate.hamming_k23_comparator_gate(
+        rows,
+        required_ks=["2", "3"],
+        failures=failures,
+        min_records=100000,
+        datasets=["mageck_yusa"],
+    )
+
+    assert failures == []

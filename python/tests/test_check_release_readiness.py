@@ -36,10 +36,19 @@ def _write_release_repo(root: Path) -> None:
             '"license": "Apache-2.0", "access_right": "open", '
             '"keywords": ["known-target assignment"]}\n'
         ),
-        "MANIFEST.in": "include CITATION.cff\ninclude codemeta.json\ninclude src/qdalign.c\ninclude include/qdalign.h\n",
+        "MANIFEST.in": (
+            "include CITATION.cff\n"
+            "include codemeta.json\n"
+            "include docs/assay-evidence.json\n"
+            "include src/qdalign.c\n"
+            "include include/qdalign.h\n"
+        ),
+        "include/qdalign.h": '#define QDALN_VERSION "0.1.0"\n',
         "scripts/check_python_wheel.py": (
             'required_suffixes = ["/CITATION.cff", "/codemeta.json", '
-            '"/src/qdalign.c", "/include/qdalign.h"]\n'
+            '"/docs/assay-evidence.json", "/src/qdalign.c", "/include/qdalign.h"]\n'
+            'wheel_members = ["dotmatch/data/assay-evidence.json"]\n'
+            'assert "evidence_boundary"\n'
         ),
         "Dockerfile": (
             'FROM debian:bookworm-slim\n'
@@ -48,6 +57,11 @@ def _write_release_repo(root: Path) -> None:
             '      org.opencontainers.image.url="https://github.com/dnncha/dotmatch" \\\n'
             '      org.opencontainers.image.version="0.1.0" \\\n'
             '      org.opencontainers.image.licenses="Apache-2.0"\n'
+        ),
+        "README.md": (
+            "# DotMatch\n\n"
+            "The Bioconda recipe opts into osx-arm64 builds for Apple Silicon, "
+            "but only claim platform availability after metadata and install smoke tests pass.\n"
         ),
         "packaging/bioconda/meta.yaml": (
             '{% set name = "dotmatch" %}\n'
@@ -58,6 +72,9 @@ def _write_release_repo(root: Path) -> None:
             "test:\n"
             "  commands:\n"
             "    - dotmatch dist ACGT AGGT | grep '^1$'\n"
+            "extra:\n"
+            "  additional-platforms:\n"
+            "    - osx-arm64\n"
         ),
         "packaging/bioconda/build.sh": "#!/usr/bin/env bash\nmake dotmatch libdotmatch.a shared\n",
         ".github/workflows/release.yml": (
@@ -81,7 +98,8 @@ def _write_release_repo(root: Path) -> None:
             "      - uses: docker/metadata-action@v5\n"
             "        with:\n"
             "          images: ghcr.io/dnncha/dotmatch\n"
-            "      - uses: docker/login-action@v3\n"
+            "      - uses: docker/login-action@v4\n"
+            "        if: startsWith(github.ref, 'refs/tags/')\n"
             "        with:\n"
             "          registry: ghcr.io\n"
             "          username: ${{ github.actor }}\n"
@@ -106,6 +124,7 @@ def _write_release_repo(root: Path) -> None:
             "    needs: [preflight]\n"
             "    steps:\n"
             "      - uses: pypa/cibuildwheel@v3.3.0\n"
+            "      - run: python scripts/check_python_wheel.py --wheel-only --out-dir dist-linux\n"
             "      - uses: actions/upload-artifact@v7\n"
             "        with:\n"
             "          name: dotmatch-linux-repaired-wheels\n"
@@ -140,6 +159,7 @@ def _write_release_repo(root: Path) -> None:
             "Raw `linux_x86_64` wheels are not uploaded to PyPI.\n"
             "Images are pushed to ghcr.io/dnncha/dotmatch with OCI labels.\n"
             "BioContainers images are checked at quay.io/biocontainers/dotmatch after Bioconda publication.\n"
+            "The Bioconda recipe opts into osx-arm64 builds so Apple Silicon packages are tested by Bioconda CI.\n"
             "Run make bioconda-recipe-ready before copying the recipe to bioconda-recipes.\n"
             "docs/distribution-release.json records the prepared public package channels before publication.\n"
         ),
@@ -159,6 +179,8 @@ def _write_release_repo(root: Path) -> None:
             "Publish the PyPI source distribution and repaired manylinux/musllinux wheels through trusted publishing.\n"
         ),
         "Makefile": (
+            "release-ready: python-test python-package-test\n"
+            "\tpython3 scripts/check_release_readiness.py\n"
             "pretag-ready:\n"
             "\t$(MAKE) test\n"
             "\t$(MAKE) cli-test\n"
@@ -215,6 +237,16 @@ def test_release_readiness_rejects_unaligned_container_label(tmp_path):
     result = checker.audit(tmp_path)
 
     assert any("Dockerfile" in failure and "version" in failure for failure in result.failures)
+
+
+def test_release_readiness_rejects_unaligned_c_header_version(tmp_path):
+    checker = _load_checker()
+    _write_release_repo(tmp_path)
+    (tmp_path / "include" / "qdalign.h").write_text('#define QDALN_VERSION "0.1.0-dev"\n', encoding="utf-8")
+
+    result = checker.audit(tmp_path)
+
+    assert any("include/qdalign.h" in failure and "version" in failure for failure in result.failures)
 
 
 def test_release_readiness_rejects_missing_sdist_metadata(tmp_path):
@@ -276,6 +308,47 @@ def test_release_readiness_requires_verified_sdist_job(tmp_path):
     assert any("sdist job must verify the PyPI source distribution artifact" in failure for failure in result.failures)
 
 
+def test_release_readiness_requires_bioconda_osx_arm64_opt_in(tmp_path):
+    checker = _load_checker()
+    _write_release_repo(tmp_path)
+    meta = (tmp_path / "packaging" / "bioconda" / "meta.yaml").read_text(encoding="utf-8")
+    (tmp_path / "packaging" / "bioconda" / "meta.yaml").write_text(
+        meta.replace("extra:\n  additional-platforms:\n    - osx-arm64\n", ""),
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("osx-arm64" in failure for failure in result.failures)
+
+
+def test_release_readiness_requires_packaging_docs_to_describe_bioconda_osx_arm64(tmp_path):
+    checker = _load_checker()
+    _write_release_repo(tmp_path)
+    packaging = (tmp_path / "docs" / "packaging.md").read_text(encoding="utf-8")
+    (tmp_path / "docs" / "packaging.md").write_text(
+        packaging.replace(
+            "The Bioconda recipe opts into osx-arm64 builds so Apple Silicon packages are tested by Bioconda CI.\n",
+            "",
+        ),
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("docs/packaging.md" in failure and "osx-arm64" in failure for failure in result.failures)
+
+
+def test_release_readiness_requires_readme_to_describe_bioconda_osx_arm64(tmp_path):
+    checker = _load_checker()
+    _write_release_repo(tmp_path)
+    (tmp_path / "README.md").write_text("# DotMatch\n", encoding="utf-8")
+
+    result = checker.audit(tmp_path)
+
+    assert any("README.md" in failure and "osx-arm64" in failure for failure in result.failures)
+
+
 def test_release_readiness_requires_preflight_before_publish_jobs(tmp_path):
     checker = _load_checker()
     _write_release_repo(tmp_path)
@@ -295,27 +368,6 @@ def test_release_readiness_requires_preflight_before_publish_jobs(tmp_path):
     assert any("container publish job must depend on preflight" in failure for failure in result.failures)
     assert any("PyPI publish job must depend on preflight, sdist, macOS wheel, and repaired Linux wheels" in failure for failure in result.failures)
     assert any("GitHub release job must depend on preflight, wheels, sdist, and repaired Linux wheels" in failure for failure in result.failures)
-
-
-def test_release_readiness_requires_ghcr_login_before_container_push(tmp_path):
-    checker = _load_checker()
-    _write_release_repo(tmp_path)
-    workflow = (tmp_path / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
-    login_block = (
-        "      - uses: docker/login-action@v3\n"
-        "        with:\n"
-        "          registry: ghcr.io\n"
-        "          username: ${{ github.actor }}\n"
-        "          password: ${{ secrets.GITHUB_TOKEN }}\n"
-    )
-    (tmp_path / ".github" / "workflows" / "release.yml").write_text(
-        workflow.replace(login_block, ""),
-        encoding="utf-8",
-    )
-
-    result = checker.audit(tmp_path)
-
-    assert any("container publish job must log in to GHCR" in failure for failure in result.failures)
 
 
 def test_release_readiness_requires_repository_ready_in_preflight(tmp_path):

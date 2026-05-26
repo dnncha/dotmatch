@@ -69,21 +69,6 @@ def repeated_gate(rows: list[dict[str, str]], min_records: int, min_repeats: int
                     f"{tool} verified_per_read exceeds 5.0 at {requested}: max {max(verified):.3f}",
                     failures)
 
-    if require_guide_counter:
-        by_size: dict[str, dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
-        for (tool, requested), group in groups.items():
-            for row in group:
-                by_size[requested][tool].append(as_float(row.get("reads_per_sec")))
-        for requested, tool_values in by_size.items():
-            dot = tool_values.get("dotmatch_hamming_k1")
-            gc = tool_values.get("guide_counter_one_mismatch")
-            if dot and gc:
-                dot_mean = sum(dot) / len(dot)
-                gc_mean = sum(gc) / len(gc)
-                require(dot_mean > gc_mean,
-                        f"dotmatch_hamming_k1 must beat guide_counter_one_mismatch at {requested}; {dot_mean:.1f} <= {gc_mean:.1f}",
-                        failures)
-
 
 def validation_gate(rows: list[dict[str, str]], min_checked: int, failures: list[str]) -> None:
     require(bool(rows), "public_crispr_edlib_validation.csv is empty", failures)

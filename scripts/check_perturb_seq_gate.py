@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "benchmarks" / "raw" / "perturb_seq.csv"
 PUBLIC_WORKFLOW = "public_10x_crispr_guide_capture"
+PUBLIC_STATUSES = {"supported", "gated"}
 
 
 def read_rows(path: Path) -> list[dict[str, str]]:
@@ -59,7 +60,7 @@ def public_row_gate(rows: list[dict[str, str]], failures: list[str]) -> None:
             row for row in rows
             if row.get("tool") == "dotmatch_count"
             and row.get("workflow") == PUBLIC_WORKFLOW
-            and row.get("status") == "supported"
+            and row.get("status") in PUBLIC_STATUSES
             and row.get("k") == "0"
             and row.get("exit_code") == "0"
         ),
@@ -70,7 +71,7 @@ def public_row_gate(rows: list[dict[str, str]], failures: list[str]) -> None:
             row for row in rows
             if row.get("tool") == "dotmatch_count"
             and row.get("workflow") == PUBLIC_WORKFLOW
-            and row.get("status") == "supported"
+            and row.get("status") in PUBLIC_STATUSES
             and row.get("k") == "1"
             and row.get("exit_code") == "0"
         ),
@@ -81,7 +82,7 @@ def public_row_gate(rows: list[dict[str, str]], failures: list[str]) -> None:
             row for row in rows
             if row.get("tool") == "exact_slice_hash"
             and row.get("workflow") == PUBLIC_WORKFLOW
-            and row.get("status") == "supported"
+            and row.get("status") in PUBLIC_STATUSES
             and row.get("k") == "0"
             and row.get("exit_code") == "0"
         ),
@@ -96,6 +97,8 @@ def public_row_gate(rows: list[dict[str, str]], failures: list[str]) -> None:
     if k0 is None or k1 is None or exact is None:
         return
     public_rows = [k0, k1, exact]
+    if any(as_int(row, "n_targets") < 2 and row.get("status") == "supported" for row in public_rows):
+        failures.append("single-guide public perturb-seq rows must be gated, not supported")
     if any(as_int(row, "validation_mismatches") != 0 for row in public_rows):
         failures.append("public perturb-seq rows require zero validation mismatches")
     if any(as_int(row, "assigned_unique") <= 0 for row in public_rows):

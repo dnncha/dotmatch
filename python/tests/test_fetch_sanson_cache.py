@@ -69,6 +69,7 @@ def test_sanson_fetcher_reuses_existing_subsample_fastqs(tmp_path, monkeypatch):
 
     manifest = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
     assert [sample["written_records"] for sample in manifest["samples"]] == [2, 2, 2, 2]
+    assert manifest["offset_min_fraction"] == 0.0025
 
 
 def test_sanson_full_fetch_streams_without_source_fastq_cache(tmp_path, monkeypatch):

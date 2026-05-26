@@ -1,7 +1,6 @@
 # DotMatch Barcode Panel Design
 
-DotMatch does not merely design barcodes. It designs barcode panels that come
-with a clear record of how they will behave during read assignment.
+DotMatch does not merely design barcodes. It designs barcode panels that come with proof of how they will behave during assignment.
 
 `dotmatch panel` is for barcode design for known-target assignment. It is not general genome alignment, not UMI entropy generation, not basecalling, and not a replacement for downstream biological interpretation.
 
@@ -30,19 +29,17 @@ Every designed panel includes a machine-checkable safety certificate:
 - `flanked_sequences.tsv`
 - `panel_report.html`
 
-## Safety Rules
+## Safety Semantics
 
-Panel safety is checked under DotMatch assignment outcomes: `unique`, `ambiguous`, `none`, and `invalid`.
+Panel safety is checked under DotMatch assignment outcomes: `unique`, `ambiguous`, `none`, and `invalid`, using the same default radius ambiguity policy as demux and counting.
 
-DotMatch never marks a panel safe for a configured edit distance when any
-possible barcode variant inside that distance maps ambiguously. It also reports
-silent assignment risk, where a possible error from one barcode would be
-assigned uniquely to another barcode.
+DotMatch never marks a panel safe for a configured correction radius when any query inside the checked error sphere maps ambiguously. If `ambiguity_policy = "best"` is selected for compatibility, the report also includes silent assignment risk: possible errors from one barcode that would be assigned uniquely to another barcode.
 
-The v1 certificate checks all configured barcode variants up to `k=2`. Requests
-above `k=2` are refused rather than downgraded to a partial proof.
+The v1 certificate exhaustively enumerates configured error spheres up to `k=2`. Requests above `k=2` are refused rather than downgraded to a partial proof.
 
 For Hamming distance, a minimum pairwise distance `d` gives substitution correction up to `floor((d - 1) / 2)` and detection up to `d - 1`. The certificate still matters because DotMatch checks the exact assignment rules that will later be used by demux/counting.
+
+Simulation is a stochastic stress test, not the certificate. The default source distribution is uniform across panel records and the simple error model uses explicit substitution, insertion, and deletion probabilities in `[0, 1]`. `simulation_summary.json` records the source distribution, the false-assignment confidence method, and a one-sided 95% upper bound; zero observed false assignments therefore still produce a positive upper bound rather than proving zero risk.
 
 ## Outputs From `panel design`
 
@@ -64,10 +61,7 @@ For Hamming distance, a minimum pairwise distance `d` gives substitution correct
 - `report.html`
 - `README_FOR_LAB.md`
 
-The barcode table is meant to be reviewable rather than just a two-column list.
-It includes GC, homopolymer length, nearest-neighbor distances,
-reverse-complement collision flags, self-complement score, status, warnings,
-and the DotMatch command that certified the panel.
+The barcode table is intentionally auditable rather than a two-column list. It includes GC, homopolymer length, nearest-neighbor distances, reverse-complement collision flags, self-complement score, status, warnings, and the certified DotMatch command.
 
 ## Presets
 

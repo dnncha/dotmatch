@@ -19,3 +19,10 @@ def test_single_sample_scope_sets_sample_id_for_full_chunk_rows():
 
     assert bench.sample_scope(["RepB"]) == "RepB"
     assert bench.sample_scope(["plasmid", "RepA"]) == ""
+
+
+def test_hamming_benchmark_uses_guide_counter_compatible_policy():
+    bench = _load_bench()
+
+    assert bench.guide_counter_hamming_policy_args() == ["--ambiguity-policy", "best"]
+    assert bench.guide_counter_offset_args() == ["--offset-min-fraction", "0.0025"]

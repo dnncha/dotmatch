@@ -44,6 +44,9 @@ k = 1
 metric = "hamming"
 ambiguous = "discard"
 
+[reliability]
+fail_on_unsafe_targets = false
+
 [outputs]
 format = "mageck"
 assignments = true
@@ -84,6 +87,9 @@ length = 4
 [assignment]
 k = 1
 metric = "hamming"
+
+[reliability]
+fail_on_unsafe_targets = false
 
 [outputs]
 assignments = true
@@ -201,6 +207,99 @@ format = "mageck"
     return spec
 
 
+def _write_unsafe_count_spec(tmp_path: Path, *, profile: str) -> Path:
+    targets = tmp_path / f"unsafe_targets_{profile}.tsv"
+    reads = tmp_path / f"unsafe_reads_{profile}.fastq"
+    out_dir = tmp_path / f"unsafe_{profile}_out"
+    targets.write_text("g0\tACGT\ng1\tACGA\n", encoding="utf-8")
+    reads.write_text(
+        "@u0\nACGTAAAA\n+\nIIIIIIII\n"
+        "@u1\nACGAAAAA\n+\nIIIIIIII\n",
+        encoding="utf-8",
+    )
+    spec = tmp_path / f"unsafe_{profile}.toml"
+    spec.write_text(
+        f"""
+schema_version = 1
+mode = "count"
+assay_type = "crispr"
+targets = "{targets}"
+
+[[samples]]
+id = "unsafe"
+fastq = "{reads}"
+
+[run]
+out_dir = "{out_dir}"
+threads = 1
+
+[extract]
+start = 0
+length = 4
+
+[assignment]
+k = 1
+metric = "hamming"
+ambiguous = "discard"
+
+[reliability]
+profile = "{profile}"
+fail_on_unsafe_targets = true
+
+[outputs]
+format = "mageck"
+assignments = true
+""".lstrip(),
+        encoding="utf-8",
+    )
+    return spec
+
+
+def _write_non_acgt_count_spec(tmp_path: Path) -> Path:
+    targets = tmp_path / "iupac_targets.tsv"
+    reads = tmp_path / "iupac_reads.fastq"
+    targets.write_text("g0\tACGN\ng1\tTTTT\n", encoding="utf-8")
+    reads.write_text(
+        "@n0\nACGNAAAA\n+\nIIIIIIII\n"
+        "@n1\nTTTTAAAA\n+\nIIIIIIII\n",
+        encoding="utf-8",
+    )
+    spec = tmp_path / "iupac_count.toml"
+    spec.write_text(
+        f"""
+schema_version = 1
+mode = "count"
+assay_type = "generic"
+targets = "{targets}"
+
+[[samples]]
+id = "iupac"
+fastq = "{reads}"
+
+[run]
+out_dir = "{tmp_path / 'iupac_out'}"
+threads = 8
+
+[extract]
+start = 0
+length = 4
+
+[assignment]
+k = 1
+metric = "hamming"
+ambiguous = "discard"
+
+[reliability]
+fail_on_unsafe_targets = false
+
+[outputs]
+assignments = true
+""".lstrip(),
+        encoding="utf-8",
+    )
+    return spec
+
+
 def _run_cli(args: list[str], *, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
     merged_env = os.environ.copy()
     if env:
@@ -226,10 +325,16 @@ def test_load_count_spec_and_compile_deterministic_plan(tmp_path: Path) -> None:
     assert plan.steps[0].argv[:3] == ["dotmatch-native", "audit", "--targets"]
     assert plan.steps[1].argv[:2] == ["dotmatch-native", "crispr-count"]
     assert plan.steps[2].argv[:2] == ["dotmatch", "crispr-qc"]
+    assert "--ambiguity-policy" in plan.steps[1].argv
+    assert "radius" in plan.steps[1].argv
     assert "--sample-qc" in plan.steps[1].argv
     assert "--target-counts-long" in plan.steps[1].argv
     assert "--format" not in plan.steps[1].argv
     assert plan.artifacts["counts"].name == "counts.mageck.tsv"
+    assert plan.artifacts["reliability_summary"].name == "reliability_summary.json"
+    assert plan.artifacts["reliability_findings"].name == "reliability_findings.tsv"
+    assert plan.artifacts["reliability_report"].name == "reliability_report.html"
+    assert plan.artifacts["reliability_manifest_summary"].name == "reliability_manifest.summary.tsv"
 
 
 def test_assay_check_rejects_invalid_enum(tmp_path: Path) -> None:
@@ -251,7 +356,53 @@ def test_assay_plan_prints_native_commands_without_creating_outputs(tmp_path: Pa
     assert rc.returncode == 0, rc.stderr
     assert "dotmatch-native audit --targets" in rc.stdout
     assert "dotmatch-native crispr-count --library" in rc.stdout
+    assert "# reliability_report:" in rc.stdout
     assert not (tmp_path / "assay_out").exists()
+
+
+def test_assay_check_writes_preflight_reliability_artifacts(tmp_path: Path) -> None:
+    spec = _write_count_spec(tmp_path)
+
+    rc = _run_cli(["assay", "check", str(spec)])
+
+    assert rc.returncode == 0, rc.stderr
+    out_dir = tmp_path / "assay_out"
+    summary = json.loads((out_dir / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert summary["stage"] == "preflight"
+    assert summary["overall_status"] == "passed"
+    assert summary["profile"] == "production"
+    assert summary["backend"]["authority"] == "cpu"
+    assert summary["backend"]["gpu_status"] == "eligible_but_not_used"
+    assert summary["backend_optimizer"]["authority"] == "cpu"
+    assert summary["backend_optimizer"]["candidate_backend"] == "gpu-metal-experimental"
+    assert summary["evidence_boundary"]["status"] == "supported"
+    assert "checked public" in summary["evidence_boundary"]["claim_boundary"]
+    assert any(finding["finding_id"] == "read_qc_unavailable" for finding in summary["findings"])
+
+    findings = (out_dir / "reliability_findings.tsv").read_text(encoding="utf-8")
+    assert "finding_id\tseverity\tstage\tsample_id\tmetric\tobserved\tthreshold\tmessage\trecommended_action\tsource_artifact" in findings
+    assert "read_qc_unavailable" in findings
+
+    manifest_summary = (out_dir / "reliability_manifest.summary.tsv").read_text(encoding="utf-8")
+    assert "overall_status\tprofile\tfinding_count\tblocked_count\terror_count\twarning_count" in manifest_summary
+
+    report = (out_dir / "reliability_report.html").read_text(encoding="utf-8")
+    assert "<title>DotMatch Reliability Report</title>" in report
+    assert "Evidence Boundary" in report
+    assert "read_qc_unavailable" in report
+
+
+def test_assay_check_ignores_stale_audit_artifacts(tmp_path: Path) -> None:
+    spec = _write_count_spec(tmp_path)
+    stale_audit = tmp_path / "assay_out" / "audit" / "audit_summary.json"
+    stale_audit.parent.mkdir(parents=True)
+    stale_audit.write_text('{"safe_at_k1": false}\n', encoding="utf-8")
+
+    rc = _run_cli(["assay", "check", str(spec)])
+
+    assert rc.returncode == 0, rc.stderr
+    reliability = json.loads((tmp_path / "assay_out" / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert not any(finding["finding_id"] == "unsafe_targets" for finding in reliability["findings"])
 
 
 def test_assay_run_count_reproduces_existing_crispr_fixture(tmp_path: Path) -> None:
@@ -270,6 +421,10 @@ def test_assay_run_count_reproduces_existing_crispr_fixture(tmp_path: Path) -> N
     assert manifest["commands"][0]["name"] == "audit"
     assert manifest["commands"][-1]["name"] == "validate"
     assert manifest["commands"][-2]["name"] == "crispr-qc"
+    assert manifest["artifacts"]["reliability_summary"].endswith("reliability_summary.json")
+    assert manifest["artifacts"]["reliability_findings"].endswith("reliability_findings.tsv")
+    assert manifest["artifacts"]["reliability_report"].endswith("reliability_report.html")
+    assert manifest["artifacts"]["reliability_manifest_summary"].endswith("reliability_manifest.summary.tsv")
     assert (out_dir / "crispr_qc.json").exists()
     assert (out_dir / "crispr_qc.summary.tsv").exists()
     assert (out_dir / "crispr_qc.html").exists()
@@ -292,14 +447,51 @@ def test_assay_run_count_reproduces_existing_crispr_fixture(tmp_path: Path) -> N
         "manifest",
     ]
     assert summary_lines[1].split("\t")[1:4] == ["count", "crispr", "ready"]
+    reliability = json.loads((out_dir / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert reliability["stage"] == "postrun"
+    assert reliability["overall_status"] == "failed"
+    assert reliability["backend"]["authority"] == "cpu"
+    assert reliability["backend"]["gpu_status"] == "eligible_but_not_used"
+    assert reliability["evidence_boundary"]["status"] == "supported"
+    finding_ids = {finding["finding_id"] for finding in reliability["findings"]}
+    assert "assignment_rate_below_min" in finding_ids
+    assert "ambiguous_rate_above_max" in finding_ids
+    assert "unmatched_rate_above_max" in finding_ids
+    assert (out_dir / "reliability_findings.tsv").exists()
+    assert (out_dir / "reliability_report.html").exists()
+    assert (out_dir / "reliability_manifest.summary.tsv").exists()
     report = (out_dir / "assay_report.html").read_text(encoding="utf-8")
     assert "<title>DotMatch Assay Report</title>" in report
     assert "Run Status" in report
+    assert "Reliability" in report
     assert "Sample QC" in report
     assert "Library Audit" in report
     assert "Native Commands" in report
     assert "assay_manifest.json" in report
+    assert "reliability_report.html" in report
     assert "report.html" in report
+    assert str(tmp_path) not in report
+    assert str(ROOT) not in report
+    assert "sample_a.fastq" in report
+
+
+def test_assay_run_manifest_records_configured_reliability_thresholds(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_count_spec(tmp_path)
+    spec.write_text(
+        spec.read_text(encoding="utf-8").replace(
+            "fail_on_unsafe_targets = false",
+            "fail_on_unsafe_targets = false\nmin_assignment_rate = 0.25\nmax_unmatched_rate = 0.75",
+        ),
+        encoding="utf-8",
+    )
+
+    rc = _run_cli(["assay", "run", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+
+    assert rc.returncode == 0, rc.stderr
+    manifest = json.loads((tmp_path / "assay_out" / "assay_manifest.json").read_text(encoding="utf-8"))
+    assert manifest["autopsy_thresholds"]["min_assignment_rate"] == 0.25
+    assert manifest["autopsy_thresholds"]["max_unmatched_rate"] == 0.75
 
 
 def test_assay_run_demux_and_pair_count_specs(tmp_path: Path) -> None:
@@ -317,6 +509,113 @@ def test_assay_run_demux_and_pair_count_specs(tmp_path: Path) -> None:
     assert pair.returncode == 0, pair.stderr
     assert "L0\tR0\t1" in (tmp_path / "pair_out" / "pair_counts.tsv").read_text(encoding="utf-8")
     assert "L1\tR1\t1" in (tmp_path / "pair_out" / "pair_counts.tsv").read_text(encoding="utf-8")
+    pair_reliability = json.loads((tmp_path / "pair_out" / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert pair_reliability["evidence_boundary"]["status"] == "smoke"
+    assert any(finding["finding_id"] == "evidence_boundary_not_supported" for finding in pair_reliability["findings"])
+
+
+def test_demux_gpu_metadata_requires_public_gpu_gate(tmp_path: Path) -> None:
+    from dotmatch.assayspec import _backend_summary, load_assay_spec
+
+    assay = load_assay_spec(_write_demux_spec(tmp_path))
+
+    assert _backend_summary(assay)["gpu_status"] == "compute_compatible_no_public_gpu_gate"
+
+
+def test_backend_optimizer_recommends_gpu_candidate_for_public_crispr(tmp_path: Path) -> None:
+    from dotmatch.assayspec import load_assay_spec, optimize_assay_backend
+
+    assay = load_assay_spec(_write_count_spec(tmp_path))
+    plan = optimize_assay_backend(assay)
+
+    assert plan["authority"] == "cpu"
+    assert plan["selected_backend"] == "cpu"
+    assert plan["candidate_backend"] == "gpu-metal-experimental"
+    assert plan["recommendation"] == "gpu_candidate_requires_cpu_validation"
+    assert plan["expected_speedup_band"] == "1.5-3x"
+    assert "public_gpu_gate_validated" in plan["reason_codes"]
+    assert "cpu_count_checksum_required" in plan["accuracy_gates"]
+    assert plan["cpu_strategy"] == "cpu_hamming_seed_index"
+    assert plan["benchmark_prior_count"] == 3
+    assert plan["benchmark_confidence"] == "public_prior"
+    assert plan["thread_hint"]["recommended_threads"] == 1
+    assert "configured_threads_cap" in plan["thread_hint"]["reason_codes"]
+    assert "cpu_remains_assignment_authority" in plan["diagnostic_constraints"]
+    assert "hamming_seed_index_available" in plan["route_reasons"]
+    assert "fixed_length_acgt_targets" in plan["route_reasons"]
+    assert "gpu_candidate_public_gate" in plan["route_reasons"]
+
+
+def test_backend_optimizer_gates_compute_compatible_demux_without_public_gpu_gate(tmp_path: Path) -> None:
+    from dotmatch.assayspec import load_assay_spec, optimize_assay_backend
+
+    assay = load_assay_spec(_write_demux_spec(tmp_path))
+    plan = optimize_assay_backend(assay)
+
+    assert plan["selected_backend"] == "cpu"
+    assert plan["candidate_backend"] == "gpu-metal-experimental"
+    assert plan["recommendation"] == "gpu_candidate_gated"
+    assert "compute_compatible_no_public_gpu_gate" in plan["reason_codes"]
+    assert plan["cpu_strategy"] == "cpu_hamming_seed_index"
+    assert plan["benchmark_prior_count"] == 3
+    assert plan["benchmark_confidence"] == "nearest_prior"
+    assert "hamming_seed_index_available" in plan["route_reasons"]
+    assert "gpu_candidate_without_public_gate" in plan["route_reasons"]
+    assert plan["thread_hint"]["recommended_threads"] >= 1
+    assert "small_target_set" in plan["thread_hint"]["reason_codes"]
+
+
+def test_backend_optimizer_requires_cpu_for_levenshtein(tmp_path: Path) -> None:
+    from dotmatch.assayspec import load_assay_spec, optimize_assay_backend
+
+    spec = _write_count_spec(tmp_path)
+    spec.write_text(
+        spec.read_text(encoding="utf-8").replace('metric = "hamming"', 'metric = "levenshtein"'),
+        encoding="utf-8",
+    )
+    assay = load_assay_spec(spec)
+    plan = optimize_assay_backend(assay)
+
+    assert plan["candidate_backend"] == "cpu"
+    assert plan["recommendation"] == "cpu_required"
+    assert "metric_not_gpu_supported" in plan["reason_codes"]
+    assert plan["cpu_strategy"] == "cpu_levenshtein_indexed"
+    assert plan["benchmark_confidence"] == "unsupported_route"
+    assert "levenshtein_indexed_cpu" in plan["route_reasons"]
+    assert "metric_not_gpu_supported" in plan["route_reasons"]
+    assert "gpu_candidate_requires_zero_mismatch_diagnostic" in plan["diagnostic_constraints"]
+
+
+def test_backend_optimizer_routes_non_acgt_hamming_to_cpu_only(tmp_path: Path) -> None:
+    from dotmatch.assayspec import load_assay_spec, optimize_assay_backend
+
+    assay = load_assay_spec(_write_non_acgt_count_spec(tmp_path))
+    plan = optimize_assay_backend(assay)
+
+    assert plan["selected_backend"] == "cpu"
+    assert plan["candidate_backend"] == "cpu"
+    assert plan["recommendation"] == "cpu_required"
+    assert plan["cpu_strategy"] == "cpu_hamming_indexed"
+    assert plan["benchmark_prior_count"] == 3
+    assert plan["benchmark_confidence"] == "unsupported_route"
+    assert "target_alphabet_not_gpu_packable" in plan["reason_codes"]
+    assert "non_acgt_targets_cpu_only" in plan["route_reasons"]
+    assert "gpu_ineligible_cpu_only" in plan["route_reasons"]
+    assert plan["thread_hint"]["recommended_threads"] <= plan["thread_hint"]["max_threads"]
+    assert "small_target_set" in plan["thread_hint"]["reason_codes"]
+
+
+def test_assay_optimize_writes_backend_optimization_artifact(tmp_path: Path) -> None:
+    spec = _write_count_spec(tmp_path)
+
+    rc = _run_cli(["assay", "optimize", str(spec)])
+
+    assert rc.returncode == 0, rc.stderr
+    assert "gpu-metal-experimental" in rc.stdout
+    artifact = tmp_path / "assay_out" / "backend_optimization.json"
+    data = json.loads(artifact.read_text(encoding="utf-8"))
+    assert data["authority"] == "cpu"
+    assert data["candidate_backend"] == "gpu-metal-experimental"
 
 
 def test_assay_init_writes_requested_template(tmp_path: Path) -> None:
@@ -409,6 +708,75 @@ def test_assay_infer_accepts_gzipped_fastq(tmp_path: Path) -> None:
     assert data["chosen"]["assignment_rate"] == 1.0
 
 
+def test_assay_infer_rejects_sample_id_toml_injection(tmp_path: Path) -> None:
+    targets = _write_inference_targets(tmp_path)
+    reads = _write_inference_reads(tmp_path)
+    spec = tmp_path / "injected.toml"
+    report = tmp_path / "injected_report.json"
+
+    rc = _run_cli(
+        [
+            "assay",
+            "infer",
+            "--mode",
+            "count",
+            "--assay-type",
+            "crispr",
+            "--targets",
+            str(targets),
+            "--reads",
+            str(reads),
+            "--sample-id",
+            'x"\n[run]\nout_dir="/tmp/pwn"',
+            "--out",
+            str(spec),
+            "--report",
+            str(report),
+        ]
+    )
+
+    assert rc.returncode == 2
+    assert not spec.exists()
+
+
+def test_assay_infer_escapes_quoted_paths(tmp_path: Path) -> None:
+    try:
+        import tomllib
+    except ModuleNotFoundError:
+        import tomli as tomllib
+
+    targets = tmp_path / 'targets"quoted.tsv'
+    reads = tmp_path / 'reads"quoted.fastq'
+    targets.write_text("guide_a\tACGT\tGENEA\nguide_b\tTTTT\tGENEB\n", encoding="utf-8")
+    reads.write_text("@r0\nNNACGTAAAA\n+\nIIIIIIIIII\n@r1\nNNTTTTAAAA\n+\nIIIIIIIIII\n", encoding="utf-8")
+    spec = tmp_path / "quoted.toml"
+    report = tmp_path / "quoted_report.json"
+
+    rc = _run_cli(
+        [
+            "assay",
+            "infer",
+            "--mode",
+            "count",
+            "--assay-type",
+            "crispr",
+            "--targets",
+            str(targets),
+            "--reads",
+            str(reads),
+            "--out",
+            str(spec),
+            "--report",
+            str(report),
+        ]
+    )
+
+    assert rc.returncode == 0, rc.stderr
+    data = tomllib.loads(spec.read_text(encoding="utf-8"))
+    assert data["targets"] == str(targets)
+    assert data["samples"][0]["fastq"] == str(reads)
+
+
 def test_assay_infer_low_confidence_writes_draft_spec(tmp_path: Path) -> None:
     targets = _write_inference_targets(tmp_path)
     reads = _write_inference_reads(tmp_path, good=False)
@@ -451,6 +819,144 @@ def test_assay_run_refuses_draft_specs(tmp_path: Path) -> None:
 
     assert rc.returncode == 2
     assert "draft" in rc.stderr
+    reliability = json.loads((tmp_path / "assay_out" / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert reliability["overall_status"] == "blocked"
+    assert any(finding["finding_id"] == "draft_assayspec" for finding in reliability["findings"])
+
+
+def test_assay_run_allows_draft_when_reliability_policy_allows_it(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_count_spec(tmp_path)
+    spec.write_text(
+        'status = "draft"\n'
+        + spec.read_text(encoding="utf-8").replace("fail_on_unsafe_targets = false", "fail_on_unsafe_targets = false\nfail_on_draft_inference = false"),
+        encoding="utf-8",
+    )
+
+    rc = _run_cli(["assay", "run", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+
+    assert rc.returncode == 0, rc.stderr
+    reliability = json.loads((tmp_path / "assay_out" / "reliability_summary.json").read_text(encoding="utf-8"))
+    draft_findings = [finding for finding in reliability["findings"] if finding["finding_id"] == "draft_assayspec"]
+    assert draft_findings and draft_findings[0]["severity"] == "error"
+
+
+def test_assay_run_records_exploratory_draft_without_blocking(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_count_spec(tmp_path)
+    spec.write_text(
+        'status = "draft"\n'
+        + spec.read_text(encoding="utf-8").replace("fail_on_unsafe_targets = false", 'profile = "exploratory"\nfail_on_unsafe_targets = false'),
+        encoding="utf-8",
+    )
+
+    rc = _run_cli(["assay", "run", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+
+    assert rc.returncode == 0, rc.stderr
+    reliability = json.loads((tmp_path / "assay_out" / "reliability_summary.json").read_text(encoding="utf-8"))
+    draft_findings = [finding for finding in reliability["findings"] if finding["finding_id"] == "draft_assayspec"]
+    assert draft_findings and draft_findings[0]["severity"] == "warning"
+
+
+def test_assay_run_writes_reliability_artifacts_when_native_command_fails(tmp_path: Path) -> None:
+    native = tmp_path / "dotmatch-native"
+    native.write_text(
+        "#!/bin/sh\n"
+        "if [ \"$1\" = '--version' ]; then echo 'dotmatch 0.test'; exit 0; fi\n"
+        "if [ \"$1\" = 'audit' ]; then mkdir -p \"$6\"; printf '{\"safe_at_k1\": true}\\n' > \"$6/audit_summary.json\"; printf 'metric\\tvalue\\n' > \"$6/audit_summary.tsv\"; exit 0; fi\n"
+        "echo forced failure >&2\n"
+        "exit 9\n",
+        encoding="utf-8",
+    )
+    native.chmod(0o755)
+    spec = _write_count_spec(tmp_path)
+
+    rc = _run_cli(["assay", "run", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(native)})
+
+    assert rc.returncode == 9
+    out_dir = tmp_path / "assay_out"
+    reliability = json.loads((out_dir / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert reliability["overall_status"] == "failed"
+    assert any(finding["finding_id"] == "command_failed" and finding["observed"] == "9" for finding in reliability["findings"])
+    assert (out_dir / "reliability_report.html").exists()
+
+
+def test_assay_run_writes_reliability_artifacts_when_native_cli_missing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import dotmatch.assayspec as assayspec
+
+    spec = _write_count_spec(tmp_path)
+    plan = assayspec.compile_assay_plan(assayspec.load_assay_spec(spec))
+
+    def missing_native() -> Path:
+        raise FileNotFoundError("missing native")
+
+    monkeypatch.setattr(assayspec, "find_native_cli", missing_native)
+
+    rc = assayspec.run_assay_plan(plan)
+
+    assert rc == 2
+    reliability = json.loads((tmp_path / "assay_out" / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert reliability["overall_status"] == "blocked"
+    assert any(finding["finding_id"] == "native_cli_missing" for finding in reliability["findings"])
+
+
+def test_assay_rejects_parent_traversal_paths(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    outside = tmp_path / "targets.tsv"
+    outside.write_text("guide_a\tACGT\tGENEA\n", encoding="utf-8")
+    reads = workspace / "reads.fastq"
+    reads.write_text("@r0\nACGTAAAA\n+\nIIIIIIII\n", encoding="utf-8")
+    spec = workspace / "escape.toml"
+    spec.write_text(
+        """
+schema_version = 1
+mode = "count"
+assay_type = "crispr"
+targets = "../targets.tsv"
+
+[[samples]]
+id = "sample"
+fastq = "reads.fastq"
+
+[run]
+out_dir = "assay_out"
+
+[extract]
+start = 0
+length = 4
+
+[assignment]
+k = 1
+metric = "hamming"
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    rc = _run_cli(["assay", "check", str(spec)])
+
+    assert rc.returncode == 2
+    assert "must stay inside" in rc.stderr
+    assert not (workspace / "assay_out").exists()
+
+
+def test_malformed_sample_qc_is_error_not_zeroed(tmp_path: Path) -> None:
+    import dotmatch.assayspec as assayspec
+
+    spec = _write_count_spec(tmp_path)
+    plan = assayspec.compile_assay_plan(assayspec.load_assay_spec(spec))
+    out_dir = tmp_path / "assay_out"
+    out_dir.mkdir()
+    plan.artifacts["sample_qc"].write_text(
+        "sample_id\tassignment_rate\tambiguous_rate\tno_match_rate\ttotal_reads\tinvalid_reads\n"
+        "sample\tbad\t0\t0\t10\t0\n",
+        encoding="utf-8",
+    )
+
+    reliability = assayspec._build_reliability_summary(plan, stage="postrun", manifest={})
+
+    assert reliability["overall_status"] == "failed"
+    assert any(finding["finding_id"] == "sample_qc_malformed" for finding in reliability["findings"])
 
 
 def test_assay_autopsy_reports_wrong_offset_findings(tmp_path: Path) -> None:
@@ -486,7 +992,38 @@ def test_assay_run_auto_triggers_autopsy_on_bad_qc(tmp_path: Path) -> None:
     assert "\ttrue\t" in summary
 
 
-def test_assay_report_escapes_spec_values(tmp_path: Path) -> None:
+def test_assay_run_production_blocks_unsafe_targets_before_assignment(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_unsafe_count_spec(tmp_path, profile="production")
+
+    rc = _run_cli(["assay", "run", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+
+    assert rc.returncode == 2
+    assert "unsafe target" in rc.stderr.lower()
+    out_dir = tmp_path / "unsafe_production_out"
+    assert not (out_dir / "counts.mageck.tsv").exists()
+    manifest = json.loads((out_dir / "assay_manifest.json").read_text(encoding="utf-8"))
+    assert [command["name"] for command in manifest["commands"]] == ["audit"]
+    reliability = json.loads((out_dir / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert reliability["overall_status"] == "blocked"
+    assert any(finding["finding_id"] == "unsafe_targets" and finding["severity"] == "blocked" for finding in reliability["findings"])
+
+
+def test_assay_run_exploratory_records_unsafe_targets_without_preflight_block(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_unsafe_count_spec(tmp_path, profile="exploratory")
+
+    rc = _run_cli(["assay", "run", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+
+    assert rc.returncode == 0, rc.stderr
+    out_dir = tmp_path / "unsafe_exploratory_out"
+    assert (out_dir / "counts.mageck.tsv").exists()
+    reliability = json.loads((out_dir / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert reliability["profile"] == "exploratory"
+    assert any(finding["finding_id"] == "unsafe_targets" and finding["severity"] == "warning" for finding in reliability["findings"])
+
+
+def test_assay_rejects_sample_id_html_injection(tmp_path: Path) -> None:
     subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
     spec = _write_count_spec(tmp_path)
     spec.write_text(
@@ -496,10 +1033,8 @@ def test_assay_report_escapes_spec_values(tmp_path: Path) -> None:
 
     rc = _run_cli(["assay", "run", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
 
-    assert rc.returncode == 0, rc.stderr
-    report = (tmp_path / "assay_out" / "assay_report.html").read_text(encoding="utf-8")
-    assert "sample_<script>alert(1)</script>" not in report
-    assert "sample_&lt;script&gt;alert(1)&lt;/script&gt;" in report
+    assert rc.returncode == 2
+    assert "samples[0].id" in rc.stderr
 
 
 def test_assay_infer_demux_and_pair_reports_are_deterministic(tmp_path: Path) -> None:

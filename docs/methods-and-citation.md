@@ -6,6 +6,10 @@ DotMatch uses a literal-byte alphabet policy for known-target assignment:
 `N` and IUPAC ambiguity symbols are ordinary symbols and are not expanded as
 wildcards. This policy is reported by `qdaln_alphabet_policy()` and recorded in
 DotMatch count, demux, and pair-count summaries as `alphabet_policy`.
+User-facing assignment workflows default to the `radius` ambiguity policy:
+a read is `unique` only when exactly one target lies inside the configured
+edit-distance radius. The `best` policy is available as an explicit
+compatibility mode.
 
 ## Software Citation
 
@@ -13,21 +17,21 @@ If you use DotMatch, cite the software release through `CITATION.cff`. Add the Z
 
 Suggested citation before DOI assignment:
 
-> O'Toole D. DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning. Software release v0.1.0. https://github.com/dnncha/dotmatch
+> O'Toole D. DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning. Software release v0.1.5. https://github.com/dnncha/dotmatch
 
 ## Methods Sentence
 
 For CRISPR guide-counting workflows:
 
-> Reads were assigned to the guide library using DotMatch v0.1.0 with exact known-target assignment and deterministic `unique`, `ambiguous`, and `no-match` outcomes. Count matrices retained only uniquely assigned reads; ambiguous and unmatched reads were excluded from target counts and retained in diagnostic summaries.
+> Reads were assigned to the guide library using DotMatch v0.1.5 with known-target assignment, literal-byte sequence semantics, and the radius ambiguity policy. Count matrices retained only reads for which exactly one guide lay inside the configured edit-distance radius; ambiguous and unmatched reads were excluded from target counts and retained in diagnostic summaries.
 
 For one-edit Levenshtein rescue:
 
-> DotMatch used global Levenshtein distance <=1 over the extracted guide window, including one-base substitutions, insertions, and deletions. Assignments were retained only when the best target was unique under the configured ambiguity policy.
+> DotMatch used global Levenshtein distance <=1 over the extracted guide window, including one-base substitutions, insertions, and deletions. Assignments were retained only when exactly one target was inside the configured radius, unless an explicit best-distance compatibility policy was recorded in the run summary.
 
 For Hamming-only guide-counter-style comparisons:
 
-> DotMatch used Hamming distance <=1 over fixed-length extracted guide sequences so that the comparison matched one-substitution/no-indel guide-counting rules.
+> DotMatch used Hamming distance <=1 over fixed-length extracted guide sequences so that the comparison matched one-substitution/no-indel guide-counting semantics.
 
 ## Reproducibility Commands
 
@@ -44,44 +48,44 @@ make workflow-examples-ready
 make coverage
 ```
 
-Current CRISPR evidence checks:
+Current CRISPR evidence gates:
 
 ```bash
 make public-crispr-evidence-gate
 make crispr-comparison-gate
 ```
 
-Current inline-barcode evidence check:
+Current inline-barcode evidence gate:
 
 ```bash
 make barcode-comparison-gate
 ```
 
-Current feature-barcode assignment evidence check:
+Current feature-barcode assignment evidence gate:
 
 ```bash
 make feature-barcode-public-gate
 ```
 
-Current public CRISPR guide-capture assignment evidence check:
+Current public CRISPR guide-capture assignment evidence gate:
 
 ```bash
 make perturb-seq-public-gate
 ```
 
-Current amplicon/panel primer-start assignment evidence check:
+Current amplicon/panel primer-start assignment evidence gate:
 
 ```bash
 make amplicon-panel-public-gate
 ```
 
-Current public tiny-BCL milestone evidence check:
+Current public tiny-BCL milestone evidence gate:
 
 ```bash
 make bcl-tiny-public-gate
 ```
 
-Current oligo/adapter fixed-window public evidence check:
+Current oligo/adapter fixed-window public evidence gate:
 
 ```bash
 make oligo-adapter-public-gate
@@ -93,25 +97,25 @@ Blocked broader comparisons:
 make bcl-comparison-gate
 ```
 
-These checks are deliberately narrow. The barcode check is for the
-SRP009896/SRR391079 exact-prefix lane. The feature-barcode check is for the 10x
+These gates are deliberately narrow. The barcode gate is for the
+SRP009896/SRR391079 exact-prefix lane. The feature-barcode gate is for the 10x
 TotalSeq-B fixed-window per-read assignment lane, not Cell Ranger-style
-UMI/cell quantification. The perturb-seq public check is for the 10x CRISPR
+UMI/cell quantification. The perturb-seq public gate is for the 10x CRISPR
 Guide Capture fixed-window per-read assignment lane, not guide-per-cell calls,
 expression quantification, or perturbation-effect analysis. The amplicon/panel
-public check is for the nf-core ARTIC V3 R1 fixed-window primer-start assignment
+public gate is for the nf-core ARTIC V3 R1 fixed-window primer-start assignment
 lane, not consensus generation, primer trimming, variant calling, clinical
-panels, or diagnostic interpretation. The tiny-BCL public check is for the
+panels, or diagnostic interpretation. The tiny-BCL public gate is for the
 public 10x tiny-BCL classic per-cycle milestone, not production demultiplexing,
 CBCL/NovaSeq support, or broad BCL comparison evidence. The oligo/adapter public
-check is for the fast-adapter-trimming TruSeq R1 fixed-window adapter-prefix
+gate is for the fast-adapter-trimming TruSeq R1 fixed-window adapter-prefix
 assignment lane, not adapter trimming, primer removal, UMI grouping, read
 merging, or production adapter workflow evidence. Leave broader BCL comparison
 statements out until real-data comparator evidence is in the repository.
 
 ## Evidence Boundary
 
-Describe DotMatch v0.1.0 as a known-target short-DNA assignment engine. It is
+Describe DotMatch v0.1.5 as a known-target short-DNA assignment engine. It is
 not a genome aligner, general Edlib replacement, production Illumina
 demultiplexer, full Perturb-seq analysis pipeline, adapter trimmer, UMI grouper,
 read merger, or amplicon consensus/variant-calling workflow. Current public

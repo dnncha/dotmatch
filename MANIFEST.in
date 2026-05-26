@@ -1,6 +1,7 @@
 include LICENSE
 include CITATION.cff
 include codemeta.json
+include docs/assay-evidence.json
 include README.md
 include pyproject.toml
 include setup.py

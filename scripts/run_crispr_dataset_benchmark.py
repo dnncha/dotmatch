@@ -22,6 +22,8 @@ from run_public_crispr_benchmark import (
     count_fastq_gz,
     dotmatch_stats,
     guide_counter_stats,
+    guide_counter_hamming_policy_args,
+    guide_counter_offset_args,
     mageck_stats,
     make_row,
     n_targets,
@@ -170,6 +172,7 @@ def main() -> None:
         *common,
         "--k", "1",
         "--metric", "hamming",
+        *guide_counter_hamming_policy_args(),
         "--out", str(out_dir / "counts.hamming.mageck.tsv"),
         "--summary", str(ham_summary),
     ], reads)

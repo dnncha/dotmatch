@@ -8,6 +8,8 @@
   "guide_length": 19,
   "k": 1,
   "metric": "levenshtein",
+  "ambiguity_policy": "radius",
+  "ambiguous": "discard",
   "indel_window": 1,
   "outdir": "examples/workflows/snakemake/output"
 }

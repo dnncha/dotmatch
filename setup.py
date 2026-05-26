@@ -66,6 +66,12 @@ class build_py(_build_py):
         super().run()
         self.build_native_library()
         self.build_native_cli()
+        self.copy_assay_evidence()
+
+    def copy_assay_evidence(self) -> None:
+        out_dir = Path(self.build_lib) / "dotmatch" / "data"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        self.copy_file(str(ROOT / "docs" / "assay-evidence.json"), str(out_dir / "assay-evidence.json"))
 
     def build_native_library(self) -> None:
         system = platform.system()
@@ -92,7 +98,9 @@ class build_py(_build_py):
         out_path = out_dir / lib_name
 
         cc = shlex.split(os.environ.get("CC") or sysconfig.get_config_var("CC") or "cc")
+        cppflags = shlex.split(os.environ.get("CPPFLAGS", ""))
         cflags = shlex.split(os.environ.get("CFLAGS", ""))
+        ldflags = shlex.split(os.environ.get("LDFLAGS", ""))
         compile_cmd = [
             *cc,
             *arch_flags,
@@ -104,13 +112,14 @@ class build_py(_build_py):
             "-fPIC",
             "-I",
             str(ROOT / "include"),
+            *cppflags,
             *cflags,
             "-c",
             str(ROOT / "src" / "qdalign.c"),
             "-o",
             str(object_path),
         ]
-        link_cmd = [*cc, *arch_flags, *link_flags, str(object_path), "-o", str(out_path)]
+        link_cmd = [*cc, *arch_flags, *link_flags, str(object_path), "-o", str(out_path), *ldflags]
         subprocess.run(compile_cmd, check=True, env=build_env)
         subprocess.run(link_cmd, check=True, env=build_env)
 
@@ -134,7 +143,9 @@ class build_py(_build_py):
         out_path = out_dir / "dotmatch-native"
 
         cc = shlex.split(os.environ.get("CC") or sysconfig.get_config_var("CC") or "cc")
+        cppflags = shlex.split(os.environ.get("CPPFLAGS", ""))
         cflags = shlex.split(os.environ.get("CFLAGS", ""))
+        ldflags = shlex.split(os.environ.get("LDFLAGS", ""))
         compile_cmd = [
             *cc,
             *arch_flags,
@@ -146,11 +157,13 @@ class build_py(_build_py):
             "-I",
             str(ROOT / "include"),
             f'-DDOTMATCH_VERSION="{_project_version()}"',
+            *cppflags,
             *cflags,
             str(ROOT / "src/qda.c"),
             str(ROOT / "src/qdalign.c"),
             "-o",
             str(out_path),
+            *ldflags,
             "-lz",
             "-pthread",
         ]
@@ -171,5 +184,5 @@ class bdist_wheel(_bdist_wheel):
 setup(
     cmdclass={"build_py": build_py, "bdist_wheel": bdist_wheel},
     distclass=BinaryDistribution,
-    package_data={"dotmatch": ["libdotmatch.*", "dotmatch-native"]},
+    package_data={"dotmatch": ["libdotmatch.*", "dotmatch-native", "data/*.json"]},
 )

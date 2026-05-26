@@ -33,8 +33,8 @@ def test_make_fixture_includes_guide_feature_pairs_and_diagnostics(tmp_path):
     assert "@invalid_short\nACGT" in reads
     assert fixture.expected == {
         "total_reads": 7,
-        "assigned_pairs": 3,
-        "pair_ambiguous": 1,
+        "assigned_pairs": 1,
+        "pair_ambiguous": 4,
         "left_unmatched": 1,
         "right_unmatched": 1,
         "invalid": 1,
@@ -48,8 +48,8 @@ def test_validation_detects_perturb_seq_summary_mismatches(tmp_path):
         json.dumps(
             {
                 "total_reads": 7,
-                "assigned_pairs": 3,
-                "pair_ambiguous": 1,
+                "assigned_pairs": 1,
+                "pair_ambiguous": 4,
                 "left_unmatched": 1,
                 "right_unmatched": 1,
                 "invalid": 1,
@@ -58,9 +58,9 @@ def test_validation_detects_perturb_seq_summary_mismatches(tmp_path):
         encoding="utf-8",
     )
 
-    assert bench.validation_mismatches(summary, {"assigned_pairs": 3, "invalid": 1}) == []
+    assert bench.validation_mismatches(summary, {"assigned_pairs": 1, "invalid": 1}) == []
     assert bench.validation_mismatches(summary, {"assigned_pairs": 4, "invalid": 1}) == [
-        "assigned_pairs expected 4 observed 3"
+        "assigned_pairs expected 4 observed 1"
     ]
 
 

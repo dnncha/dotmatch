@@ -1,18 +1,13 @@
 # nf-core-style Module Candidate
 
 This directory contains local nf-core-style module candidates for running
-DotMatch from a Nextflow DSL2 workflow. `dotmatch_crispr_count` keeps the DotMatch
+DotMatch from a Nextflow DSL2 workflow. `dotmatch_crispr_count` keeps the native
 command path, while `dotmatch_assay_run` runs an AssaySpec and emits the assay
 report and manifest summary.
 
 These examples demonstrate workflow integration. They are not benchmark results.
 
-The local modules pin DotMatch with `conda "bioconda::dotmatch=0.1.2"`, so a
-workflow can run them with Nextflow `-with-conda` on supported Bioconda
-platforms (`linux-64` or `osx-64`). On other platforms, provide DotMatch through
-the workflow environment or container configuration.
-
-The CRISPR module emits a MAGeCK-compatible count matrix, JSON summary,
+The native module emits a MAGeCK-compatible count matrix, JSON summary,
 `sample_qc` table for MultiQC custom content, and `versions.yml`. The AssaySpec
 module emits `assay_report.html`, `assay_manifest.json`,
 `assay_manifest.summary.tsv`, `sample_qc.tsv`, CRISPR QC report files, counts,

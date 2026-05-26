@@ -1,4 +1,6 @@
+#ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200809L
+#endif
 
 #include "qdalign.h"
 
@@ -11,6 +13,7 @@
 #include <limits.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <regex.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/wait.h>
@@ -18,7 +21,7 @@
 #include <zlib.h>
 
 #ifndef DOTMATCH_VERSION
-#define DOTMATCH_VERSION "0.1.0"
+#define DOTMATCH_VERSION "0.1.5"
 #endif
 
 #define MAX_AUTO_OFFSET 1024
@@ -48,21 +51,182 @@ static double seconds_now(void) {
 
 static void usage(const char *argv0) {
     fprintf(stderr, "Usage:\n");
+    fprintf(stderr, "  %s --help\n", argv0);
     fprintf(stderr, "  %s --version\n", argv0);
     fprintf(stderr, "  %s dist SEQ1 SEQ2\n", argv0);
     fprintf(stderr, "  %s leq K SEQ1 SEQ2\n", argv0);
-    fprintf(stderr, "  %s assign K barcodes.txt reads.txt\n", argv0);
-    fprintf(stderr, "  %s match K targets.txt reads.txt\n", argv0);
-    fprintf(stderr, "  %s fastq-assign --barcodes barcodes.tsv --reads reads.fastq[.gz] --barcode-start N --barcode-length L --k 0|1 --out assignments.tsv\n", argv0);
-    fprintf(stderr, "  %s pair-count --left-targets left.tsv --right-targets right.tsv --reads reads.fastq[.gz] --left-start N --left-length L --right-start N --right-length L --k 0|1|2 --metric hamming|levenshtein --out pair_counts.tsv [--summary summary.json]\n", argv0);
-    fprintf(stderr, "  %s demux --barcodes barcodes.tsv|barcodes.csv --reads reads.fastq[.gz] --barcode-start N --barcode-length L|auto --k 0|1|2 --metric hamming|levenshtein [--max-correction-qual Q] --out-dir demux_dir [--summary qc.json]\n", argv0);
+    fprintf(stderr, "  %s assign K barcodes.txt reads.txt [--ambiguity-policy radius|best]\n", argv0);
+    fprintf(stderr, "  %s match K targets.txt reads.txt [--ambiguity-policy radius|best]\n", argv0);
+    fprintf(stderr, "  %s fastq-assign --barcodes barcodes.tsv --reads reads.fastq[.gz] --barcode-start N --barcode-length L --k 0|1 [--ambiguity-policy radius|best] --out assignments.tsv\n", argv0);
+    fprintf(stderr, "  %s pair-count --left-targets left.tsv --right-targets right.tsv --reads reads.fastq[.gz] --left-start N --left-length L --right-start N --right-length L --k 0|1|2 --metric hamming|levenshtein [--ambiguity-policy radius|best] --out pair_counts.tsv [--summary summary.json]\n", argv0);
+    fprintf(stderr, "  %s demux --barcodes barcodes.tsv|barcodes.csv --reads reads.fastq[.gz] --barcode-start N --barcode-length L|auto --k 0|1|2 --metric hamming|levenshtein [--ambiguity-policy radius|best] [--max-correction-qual Q] --out-dir demux_dir [--summary qc.json]\n", argv0);
     fprintf(stderr, "  %s bcl-demux --run-folder RUN --sample-sheet SampleSheet.csv --out-dir demux_dir --barcode-mismatches 0|1|1,1 [--threads N] [--gzip-level 0..9] [--emit-index-fastqs] [--summary summary.json]\n", argv0);
     fprintf(stderr, "  %s bcl-validate --dotmatch-out DIR --truth-out DIR\n", argv0);
-    fprintf(stderr, "  %s count --targets targets.tsv|targets.csv --reads reads.fastq[.gz] [--reads more.fastq.gz] --sample-label labels --target-start N --target-length L --k 0|1|2 --metric hamming|levenshtein [--hamming-index auto|query|precompute] [--max-correction-qual Q] --ambiguity-policy best|radius --offset-mode best|multi --out counts.tsv [--format dotmatch|mageck]\n", argv0);
-    fprintf(stderr, "  %s crispr-count --library guides.tsv|guides.csv --samples samples.tsv --guide-start N --guide-length L --k 0|1|2 --out counts.tsv [--summary qc.json]\n", argv0);
+    fprintf(stderr, "  %s count --targets targets.tsv|targets.csv --reads reads.fastq[.gz] [--reads more.fastq.gz] --sample-label labels --target-start N --target-length L --k 0|1|2|3 --metric hamming|levenshtein [--hamming-index auto|query|precompute] [--max-correction-qual Q] [--ambiguity-policy radius|best] --offset-mode best|multi --out counts.tsv [--format dotmatch|mageck]\n", argv0);
+    fprintf(stderr, "  %s crispr-count --library guides.tsv|guides.csv --samples samples.tsv|samples.csv --guide-start N --guide-length L --k 0|1|2|3 [--ambiguity-policy radius|best] --out counts.mageck.tsv [--summary qc.json] [--sample-qc sample_qc.tsv]\n", argv0);
+    fprintf(stderr, "  %s guide-counter count --input reads.fastq[.gz]... --library guides.tsv|guides.csv --output prefix [--samples labels...] [--exact-match]\n", argv0);
     fprintf(stderr, "  %s inspect-unmatched --targets targets.tsv|targets.csv --reads reads.fastq[.gz] --target-start N --target-length L --k 0|1 --top N --out top_unmatched.tsv [--low-quality-threshold Q]\n", argv0);
-    fprintf(stderr, "  %s audit --targets targets.tsv|targets.csv --k 1 --out-dir audit_dir [--audit-mode auto|exact|fast]\n", argv0);
+    fprintf(stderr, "  %s audit --targets targets.tsv|targets.csv --k 0|1|2|3 --out-dir audit_dir [--audit-mode auto|exact|fast]\n", argv0);
     fprintf(stderr, "  %s validate --targets targets.tsv|targets.csv --reads reads.fastq[.gz] --target-start N --target-length L --k 0|1 [--metric hamming|levenshtein] [--indel-window 0|1] [--offset-mode best|multi] [--threads N] --oracle scan|edlib\n", argv0);
+}
+
+static void help_manual(FILE *out, const char *argv0) {
+    fprintf(out, "DotMatch %s\n", DOTMATCH_VERSION);
+    fprintf(out, "\n");
+    fprintf(out, "Deterministic known-target short-DNA assignment for fixed read windows.\n");
+    fprintf(out, "DotMatch is for cases where the expected guides, barcodes, primers, or\n");
+    fprintf(out, "panel targets are already known. It is not a genome aligner, basecaller,\n");
+    fprintf(out, "variant caller, adapter trimmer, cell/UMI quantifier, or screen statistics tool.\n");
+    fprintf(out, "\n");
+    fprintf(out, "Usage:\n");
+    fprintf(out, "  %s --help\n", argv0);
+    fprintf(out, "  %s --version\n", argv0);
+    fprintf(out, "  %s <command> [options]\n", argv0);
+    fprintf(out, "\n");
+    fprintf(out, "Core commands:\n");
+    fprintf(out, "  dist SEQ1 SEQ2\n");
+    fprintf(out, "      Print the global edit distance between two short DNA strings.\n");
+    fprintf(out, "  leq K SEQ1 SEQ2\n");
+    fprintf(out, "      Print true when the edit distance is <= K, otherwise false.\n");
+    fprintf(out, "  assign K targets.tsv reads.tsv [--ambiguity-policy radius|best]\n");
+    fprintf(out, "      Assign tabular read sequences to known targets.\n");
+    fprintf(out, "  fastq-assign --barcodes barcodes.tsv --reads reads.fastq[.gz] \\\n");
+    fprintf(out, "      --barcode-start N --barcode-length L --k 0|1 --out assignments.tsv\n");
+    fprintf(out, "      Write per-read FASTQ barcode assignments.\n");
+    fprintf(out, "\n");
+    fprintf(out, "Counting and demultiplexing:\n");
+    fprintf(out, "  count --targets targets.tsv|targets.csv --reads reads.fastq[.gz] \\\n");
+    fprintf(out, "      --sample-label sample --target-start N --target-length L \\\n");
+    fprintf(out, "      --k 0|1|2|3 --metric hamming|levenshtein --out counts.tsv\n");
+    fprintf(out, "      Count fixed-window target assignments. Add --format mageck for MAGeCK-style counts.\n");
+    fprintf(out, "  crispr-count --library guides.tsv|guides.csv --samples samples.tsv|samples.csv \\\n");
+    fprintf(out, "      --guide-start N --guide-length L --k 0|1|2|3 --out counts.mageck.tsv\n");
+    fprintf(out, "      MAGeCK-ready guide counts. Sample sheets may use sample_id/sample and fastq/fastq_path columns.\n");
+    fprintf(out, "  guide-counter count --input reads.fastq[.gz]... --library guides.tsv|guides.csv \\\n");
+    fprintf(out, "      --output prefix [--samples labels...] [--exact-match]\n");
+    fprintf(out, "      GuideCounter-compatible count, extended-counts, and stats outputs.\n");
+    fprintf(out, "  demux --barcodes barcodes.tsv|barcodes.csv --reads reads.fastq[.gz] \\\n");
+    fprintf(out, "      --barcode-start N --barcode-length L|auto --k 0|1|2 --out-dir demux_dir\n");
+    fprintf(out, "      Split reads by fixed-position inline barcodes.\n");
+    fprintf(out, "  pair-count --left-targets left.tsv --right-targets right.tsv --reads reads.fastq[.gz] \\\n");
+    fprintf(out, "      --left-start N --left-length L --right-start N --right-length L --out pair_counts.tsv\n");
+    fprintf(out, "      Count pairs of independent fixed-window targets.\n");
+    fprintf(out, "\n");
+    fprintf(out, "Diagnostics and validation:\n");
+    fprintf(out, "  audit --targets targets.tsv|targets.csv --k K --out-dir audit_dir\n");
+    fprintf(out, "      Report nearby target pairs that make correction ambiguous or unsafe.\n");
+    fprintf(out, "      Exact audit includes Hamming k=2/k=3 safety fields; fast audit reports them as not_computed.\n");
+    fprintf(out, "  inspect-unmatched --targets targets.tsv|targets.csv --reads reads.fastq[.gz] \\\n");
+    fprintf(out, "      --target-start N --target-length L --k 0|1 --top N --out top_unmatched.tsv\n");
+    fprintf(out, "      Summarize the most frequent unmatched read windows.\n");
+    fprintf(out, "  validate --targets targets.tsv|targets.csv --reads reads.fastq[.gz] \\\n");
+    fprintf(out, "      --target-start N --target-length L --k 0|1 --oracle scan|edlib\n");
+    fprintf(out, "      Compare indexed assignment with a validation oracle. Installed packages should use --oracle scan.\n");
+    fprintf(out, "  bcl-demux --run-folder RUN --sample-sheet SampleSheet.csv --out-dir demux_dir \\\n");
+    fprintf(out, "      --barcode-mismatches 0|1|1,1 [--threads N] [--gzip-level 0..9]\n");
+    fprintf(out, "      Classic per-cycle BCL parser milestone; not a production CBCL/NovaSeq replacement.\n");
+    fprintf(out, "\n");
+    fprintf(out, "Assignment outcomes:\n");
+    fprintf(out, "  unique       exactly one target is compatible with the read window\n");
+    fprintf(out, "  ambiguous    more than one target is compatible; not silently forced\n");
+    fprintf(out, "  none         no target is close enough\n");
+    fprintf(out, "  invalid      the requested read window cannot be extracted\n");
+    fprintf(out, "\n");
+    fprintf(out, "Defaults and conventions:\n");
+    fprintf(out, "  --ambiguity-policy radius is the conservative default for assignment commands.\n");
+    fprintf(out, "  --ambiguity-policy best is available only when best-distance compatibility is intended.\n");
+    fprintf(out, "  --metric levenshtein supports k=0,1,2 for count/demux fixed windows; hamming supports k=0,1,2,3 fixed-length comparisons.\n");
+    fprintf(out, "  N and IUPAC ambiguity symbols are treated as literal bytes, not wildcards.\n");
+    fprintf(out, "\n");
+    fprintf(out, "Examples:\n");
+    fprintf(out, "  %s dist ACGT AGGT\n", argv0);
+    fprintf(out, "  %s leq 1 ACGT AGGT\n", argv0);
+    fprintf(out, "  %s count --targets guides.tsv --reads sample.fastq.gz --sample-label sample \\\n", argv0);
+    fprintf(out, "      --target-start 23 --target-length 20 --k 1 --metric hamming --out counts.tsv\n");
+    fprintf(out, "  %s demux --barcodes barcodes.tsv --reads pooled.fastq.gz \\\n", argv0);
+    fprintf(out, "      --barcode-start 0 --barcode-length auto --k 0 --out-dir demuxed\n");
+}
+
+static int help_requested(int argc, char **argv) {
+    for (int i = 2; i < argc; ++i) {
+        if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) return 1;
+    }
+    return 0;
+}
+
+static void count_help_manual(FILE *out, const char *argv0, int crispr_mode) {
+    const char *cmd = crispr_mode ? "crispr-count" : "count";
+    fprintf(out, "DotMatch %s %s\n\n", DOTMATCH_VERSION, cmd);
+    if (crispr_mode) {
+        fprintf(out, "Usage:\n");
+        fprintf(out, "  %s crispr-count --library guides.tsv|guides.csv --samples samples.tsv|samples.csv \\\n", argv0);
+        fprintf(out, "      --guide-start N --guide-length L --k 0|1|2|3 --metric hamming|levenshtein \\\n");
+        fprintf(out, "      --out counts.mageck.tsv [--summary summary.json] [--sample-qc sample_qc.tsv]\n\n");
+        fprintf(out, "CRISPR guide counting wrapper. Outputs are MAGeCK-ready by default and include\n");
+        fprintf(out, "guide-level counts plus optional run and sample QC summaries.\n\n");
+        fprintf(out, "Required inputs:\n");
+        fprintf(out, "  --library PATH       Guide table. Common columns include id/sgRNA, sequence/guide_seq,\n");
+        fprintf(out, "                       and gene/Gene; CSV and TSV are accepted.\n");
+        fprintf(out, "  --samples PATH       Sample sheet with sample_id/sample and fastq/fastq_path columns.\n");
+        fprintf(out, "  --guide-start N      Zero-based start of the guide window in each read.\n");
+        fprintf(out, "  --guide-length L     Length of the guide window to extract.\n");
+        fprintf(out, "  --out PATH           Count matrix output.\n");
+    } else {
+        fprintf(out, "Usage:\n");
+        fprintf(out, "  %s count --targets targets.tsv|targets.csv --reads reads.fastq[.gz] [--reads more.fastq.gz] \\\n", argv0);
+        fprintf(out, "      --sample-label labels --target-start N --target-length L --k 0|1|2|3 \\\n");
+        fprintf(out, "      --metric hamming|levenshtein --out counts.tsv [--format dotmatch|mageck]\n\n");
+        fprintf(out, "General fixed-window known-target counting for guides, barcodes, primers, or panels.\n\n");
+        fprintf(out, "Required inputs:\n");
+        fprintf(out, "  --targets PATH       Target table with id and sequence columns; CSV and TSV accepted.\n");
+        fprintf(out, "  --reads PATH         FASTQ or FASTQ.GZ input. Repeat for multiple samples.\n");
+        fprintf(out, "  --sample-label LIST  Comma-separated sample names matching --reads order.\n");
+        fprintf(out, "  --target-start N     Zero-based start of the target window in each read.\n");
+        fprintf(out, "  --target-length L    Length of the target window to extract.\n");
+        fprintf(out, "  --out PATH           Count matrix output.\n");
+    }
+    fprintf(out, "\nAssignment options:\n");
+    fprintf(out, "  --k 0|1|2|3              Maximum correction radius. Levenshtein supports k=0..2;\n");
+    fprintf(out, "                           Hamming supports k=0..3 for fixed-length windows.\n");
+    fprintf(out, "  --metric NAME            hamming for substitutions only; levenshtein for short indels.\n");
+    fprintf(out, "  --ambiguity-policy NAME  radius keeps all targets within k; best keeps only nearest targets.\n");
+    fprintf(out, "  --ambiguous NAME         discard, include, or separate ambiguous counts.\n");
+    fprintf(out, "  --indel-window N         Levenshtein-only extraction slack for insertion/deletion rescue.\n");
+    fprintf(out, "  --hamming-index NAME     auto, query, or precompute for Hamming counting.\n");
+    fprintf(out, "\nOutputs:\n");
+    fprintf(out, "  --summary PATH       JSON run summary with assignment rates and command metadata.\n");
+    fprintf(out, "  --sample-qc PATH     Per-sample QC TSV for CRISPR/workflow use.\n");
+    fprintf(out, "  --format mageck      Emit sgRNA/Gene columns for MAGeCK-style downstream analysis.\n");
+    fprintf(out, "\nSafety:\n");
+    fprintf(out, "  Before production Hamming k=2 or k=3 runs, use:\n");
+    fprintf(out, "    %s audit --targets guides.tsv --k 3 --audit-mode exact --out-dir audit\n", argv0);
+    fprintf(out, "  Proceed only when safe_at_hamming_k2 or safe_at_hamming_k3 is true for the radius you use.\n");
+}
+
+static void audit_help_manual(FILE *out, const char *argv0) {
+    fprintf(out, "DotMatch %s audit\n\n", DOTMATCH_VERSION);
+    fprintf(out, "Usage:\n");
+    fprintf(out, "  %s audit --targets targets.tsv|targets.csv --k 0|1|2|3 --out-dir audit_dir \\\n", argv0);
+    fprintf(out, "      [--audit-mode auto|exact|fast]\n\n");
+    fprintf(out, "Audit a target library before correction-based assignment. The audit reports\n");
+    fprintf(out, "duplicate targets and nearby target pairs that can make reads ambiguous.\n\n");
+    fprintf(out, "Options:\n");
+    fprintf(out, "  --targets PATH       Guide, barcode, primer, or target table; CSV and TSV accepted.\n");
+    fprintf(out, "  --k 0|1|2|3          Radius to audit. Use k=3 to expose all Hamming k2/k3 fields.\n");
+    fprintf(out, "  --out-dir DIR        Directory for audit_summary.tsv/json and risk-pair tables.\n");
+    fprintf(out, "  --audit-mode exact   Pairwise exact audit. Required for Hamming k=2/k=3 safety fields.\n");
+    fprintf(out, "  --audit-mode fast    Scalable duplicate/k1-style audit; Hamming k2/k3 fields are not_computed.\n");
+    fprintf(out, "  --audit-mode auto    Exact for small libraries, fast for larger libraries.\n\n");
+    fprintf(out, "Important fields:\n");
+    fprintf(out, "  min_hamming_distance       Smallest fixed-length distance between any target pair.\n");
+    fprintf(out, "  safe_at_hamming_k2         true only when Hamming radius 2 correction is unambiguous.\n");
+    fprintf(out, "  safe_at_hamming_k3         true only when Hamming radius 3 correction is unambiguous.\n");
+    fprintf(out, "  risk_pairs_for_hamming_k2  Number of target pairs too close for Hamming k=2.\n");
+    fprintf(out, "  risk_pairs_for_hamming_k3  Number of target pairs too close for Hamming k=3.\n\n");
+    fprintf(out, "Rule of thumb:\n");
+    fprintf(out, "  Radius k is safe under radius-policy correction only when target pairs are\n");
+    fprintf(out, "  separated by at least 2k+1 substitutions. If exact audit says unsafe,\n");
+    fprintf(out, "  lower k, switch policy intentionally, or remove/merge conflicting targets.\n");
 }
 
 static char *xstrndup(const char *s, size_t n) {
@@ -296,11 +460,16 @@ static int read_target_table(const char *path, seq_table *table) {
         size_t nf = split_fields(buf, delim, fields, 16);
         if (first_data) {
             int maybe_id = find_column(fields, nf, "id", "target_id", "barcode_id");
+            if (maybe_id < 0) maybe_id = find_column(fields, nf, "guide", "sgRNA", "sgrna");
             if (maybe_id < 0) maybe_id = find_column(fields, nf, "sgRNAID", "sgrnaid", "guide_id");
+            if (maybe_id < 0) maybe_id = find_column(fields, nf, "sgRNA_ID", "sgrna_id", NULL);
             int maybe_seq = find_column(fields, nf, "gRNA.sequence", "target_seq", "sequence");
+            if (maybe_seq < 0) maybe_seq = find_column(fields, nf, "bases", NULL, NULL);
             if (maybe_seq < 0) maybe_seq = find_column(fields, nf, "Seq", "seq", "barcode_seq");
             if (maybe_seq < 0) maybe_seq = find_column(fields, nf, "guide_seq", "sgRNA.sequence", "sgrna_sequence");
-            int maybe_gene = find_column(fields, nf, "Gene", "gene", NULL);
+            if (maybe_seq < 0) maybe_seq = find_column(fields, nf, "sgRNA_seq", "guide_sequence", "GuideSequence");
+            int maybe_gene = find_column(fields, nf, "Gene", "gene", "gene_symbol");
+            if (maybe_gene < 0) maybe_gene = find_column(fields, nf, "gene.symbol", "target_gene", NULL);
             if (maybe_id >= 0 && maybe_seq >= 0) {
                 id_col = maybe_id;
                 seq_col = maybe_seq;
@@ -354,7 +523,7 @@ static int read_target_table(const char *path, seq_table *table) {
 }
 
 static int run_batch(const char *argv0, int argc, char **argv, const char *mode) {
-    if (argc != 5) {
+    if (argc != 5 && argc != 7) {
         usage(argv0);
         return 2;
     }
@@ -363,6 +532,22 @@ static int run_batch(const char *argv0, int argc, char **argv, const char *mode)
     if (sscanf(argv[2], "%d", &k) != 1 || k < 0) {
         usage(argv0);
         return 2;
+    }
+
+    int radius_policy = 1;
+    if (argc == 7) {
+        if (strcmp(argv[5], "--ambiguity-policy") != 0) {
+            usage(argv0);
+            return 2;
+        }
+        if (strcmp(argv[6], "radius") == 0) {
+            radius_policy = 1;
+        } else if (strcmp(argv[6], "best") == 0) {
+            radius_policy = 0;
+        } else {
+            usage(argv0);
+            return 2;
+        }
     }
 
     seq_table targets = {0};
@@ -412,6 +597,9 @@ static int run_batch(const char *argv0, int argc, char **argv, const char *mode)
     printf("mode\tread_id\tread_seq\ttarget_index\ttarget_seq\tdistance\tstatus\tmatch_count\tsecond_best_distance\n");
     for (size_t i = 0; i < reads.count; ++i) {
         qdaln_match_result r = results[i];
+        if (radius_policy && r.status == QDALN_MATCH_UNIQUE && r.match_count > 1) {
+            r.status = QDALN_MATCH_AMBIGUOUS;
+        }
         const char *target_seq = r.target_index >= 0 ? targets.records[r.target_index].seq : "";
         printf("%s\t%s\t%s\t%d\t%s\t%d\t%s\t%d\t%d\n",
                mode, reads.records[i].id, reads.records[i].seq, r.target_index,
@@ -709,25 +897,36 @@ static int read_samples_file(const char *path, string_list *labels, string_list 
     FILE *fp = fopen(path, "r");
     if (fp == NULL) return -1;
     char buf[8192];
-    size_t row = 0;
+    int sample_col = 0;
+    int reads_col = 1;
+    int first_data = 1;
     while (fgets(buf, sizeof(buf), fp) != NULL) {
         trim_line(buf);
         if (buf[0] == '\0' || buf[0] == '#') continue;
-        char *tab = strchr(buf, '\t');
-        if (tab == NULL) {
+
+        char delim = strchr(buf, ',') != NULL && strchr(buf, '\t') == NULL ? ',' : '\t';
+        char *fields[32];
+        size_t nf = split_fields(buf, delim, fields, sizeof(fields) / sizeof(fields[0]));
+        if (first_data) {
+            int maybe_sample = find_column(fields, nf, "sample_id", "sample", "label");
+            if (maybe_sample < 0) maybe_sample = find_column(fields, nf, "sample_name", "name", "id");
+            int maybe_reads = find_column(fields, nf, "fastq", "fastq_path", "reads");
+            if (maybe_reads < 0) maybe_reads = find_column(fields, nf, "read", "path", "file");
+            if (maybe_sample >= 0 && maybe_reads >= 0) {
+                sample_col = maybe_sample;
+                reads_col = maybe_reads;
+                first_data = 0;
+                continue;
+            }
+        }
+        first_data = 0;
+
+        if ((size_t)sample_col >= nf || (size_t)reads_col >= nf) {
             fclose(fp);
             return -1;
         }
-        *tab = '\0';
-        char *sample = buf;
-        char *path_field = tab + 1;
-        char *extra = strchr(path_field, '\t');
-        if (extra != NULL) *extra = '\0';
-        if (row == 0 &&
-            (strcmp(sample, "sample") == 0 || strcmp(sample, "sample_id") == 0 || strcmp(sample, "sample_id ") == 0)) {
-            ++row;
-            continue;
-        }
+        char *sample = fields[sample_col];
+        char *path_field = fields[reads_col];
         if (sample[0] == '\0' || path_field[0] == '\0') {
             fclose(fp);
             return -1;
@@ -736,7 +935,6 @@ static int read_samples_file(const char *path, string_list *labels, string_list 
             fclose(fp);
             return -1;
         }
-        ++row;
     }
     if (ferror(fp)) {
         fclose(fp);
@@ -921,7 +1119,9 @@ static size_t seed_hash_local(uint64_t code, size_t len, unsigned char seed_id, 
 }
 
 static uint64_t code_low_mask_local(size_t len) {
-    return len == 0 ? 0 : ((1ULL << (2 * len)) - 1ULL);
+    if (len == 0) return 0;
+    if (len >= 32) return UINT64_MAX;
+    return (1ULL << (2 * len)) - 1ULL;
 }
 
 static uint64_t code_segment_local(uint64_t code, size_t start, size_t len) {
@@ -1524,6 +1724,19 @@ static int write_count_html_report(const char *path, const seq_table *targets, c
     return 0;
 }
 
+typedef struct count_dirty_slot {
+    size_t slot;
+    unsigned long long count;
+} count_dirty_slot;
+
+typedef struct count_dirty_slots {
+    count_dirty_slot *items;
+    size_t count;
+    size_t cap;
+    size_t *table;
+    size_t table_cap;
+} count_dirty_slots;
+
 typedef struct count_sample_job {
     const qdaln_index *index;
     const hamming_lookup *hlookup;
@@ -1555,6 +1768,7 @@ typedef struct count_sample_job {
     size_t read_threads;
     int max_correction_qual;
     int rc;
+    count_dirty_slots *dirty_slots;
 } count_sample_job;
 
 static void write_assignment_like_row(FILE *out, const seq_table *targets, const char *sample, const char *read_id,
@@ -2042,6 +2256,15 @@ static int hamming_distance_within_k_cli(const char *a, size_t a_len, const char
     return d;
 }
 
+static int hamming_distance_cli(const char *a, size_t a_len, const char *b, size_t b_len) {
+    if (a_len != b_len) return -1;
+    int d = 0;
+    for (size_t i = 0; i < a_len; ++i) {
+        if (a[i] != b[i]) ++d;
+    }
+    return d;
+}
+
 static int scan_assign_metric(const char *read, size_t read_len, const char *const *targets,
                               const size_t *target_lens, size_t n_targets, int k,
                               count_metric metric, qdaln_match_result *result) {
@@ -2376,6 +2599,84 @@ static void merge_count_stats(count_stats *dst, const count_stats *src) {
     dst->candidates_verified += src->candidates_verified;
 }
 
+static void free_count_dirty_slots(count_dirty_slots *dirty) {
+    if (dirty == NULL) return;
+    free(dirty->items);
+    free(dirty->table);
+    dirty->items = NULL;
+    dirty->table = NULL;
+    dirty->count = 0;
+    dirty->cap = 0;
+    dirty->table_cap = 0;
+}
+
+static size_t count_dirty_slot_hash(size_t slot) {
+    uint64_t x = (uint64_t)slot;
+    x ^= x >> 30;
+    x *= UINT64_C(0xbf58476d1ce4e5b9);
+    x ^= x >> 27;
+    x *= UINT64_C(0x94d049bb133111eb);
+    x ^= x >> 31;
+    return (size_t)x;
+}
+
+static int count_dirty_slots_rehash(count_dirty_slots *dirty, size_t min_cap) {
+    size_t cap = 32;
+    while (cap < min_cap) cap *= 2;
+    size_t *table = (size_t *)calloc(cap, sizeof(size_t));
+    if (table == NULL) return -1;
+
+    for (size_t i = 0; i < dirty->count; ++i) {
+        size_t mask = cap - 1;
+        size_t pos = count_dirty_slot_hash(dirty->items[i].slot) & mask;
+        while (table[pos] != 0) pos = (pos + 1) & mask;
+        table[pos] = i + 1;
+    }
+
+    free(dirty->table);
+    dirty->table = table;
+    dirty->table_cap = cap;
+    return 0;
+}
+
+static int mark_count_dirty_slot(count_dirty_slots *dirty, size_t slot) {
+    if (dirty == NULL) return 0;
+
+    if (dirty->table_cap == 0 || ((dirty->count + 1) * 2) > dirty->table_cap) {
+        if (count_dirty_slots_rehash(dirty, (dirty->count + 1) * 4) != 0) return -1;
+    }
+
+    size_t mask = dirty->table_cap - 1;
+    size_t pos = count_dirty_slot_hash(slot) & mask;
+    while (dirty->table[pos] != 0) {
+        count_dirty_slot *item = &dirty->items[dirty->table[pos] - 1];
+        if (item->slot == slot) {
+            ++item->count;
+            return 0;
+        }
+        pos = (pos + 1) & mask;
+    }
+
+    if (dirty->count == dirty->cap) {
+        size_t next_cap = dirty->cap == 0 ? 16 : dirty->cap * 2;
+        count_dirty_slot *next = (count_dirty_slot *)realloc(dirty->items, next_cap * sizeof(count_dirty_slot));
+        if (next == NULL) return -1;
+        dirty->items = next;
+        dirty->cap = next_cap;
+    }
+    dirty->items[dirty->count].slot = slot;
+    dirty->items[dirty->count].count = 1;
+    dirty->table[pos] = dirty->count + 1;
+    ++dirty->count;
+    return 0;
+}
+
+static int increment_count_slot(count_sample_job *job, size_t slot) {
+    if (job->dirty_slots != NULL) return mark_count_dirty_slot(job->dirty_slots, slot);
+    ++job->counts[slot];
+    return 0;
+}
+
 static void direct_hamming_visit_seed(const count_sample_job *job, unsigned char seed_id, uint64_t seed_code,
                                       uint64_t read_code, int *best_target, int *ambiguous) {
     const hamming_lookup *lookup = job->hlookup;
@@ -2548,7 +2849,9 @@ static int direct_hamming_count_seq(count_sample_job *job, const char *seq, size
             if (exact_ambiguous) {
                 ++job->stats->ambiguous;
             } else {
-                ++job->counts[((job->sample_index * job->targets->count + (size_t)exact_target) * 5) + 0];
+                if (increment_count_slot(job, ((job->sample_index * job->targets->count + (size_t)exact_target) * 5) + 0) != 0) {
+                    return -1;
+                }
                 ++job->stats->unique;
                 ++job->stats->exact;
             }
@@ -2595,7 +2898,9 @@ static int direct_hamming_count_seq(count_sample_job *job, const char *seq, size
             if (mismatch_ambiguous) {
                 ++job->stats->ambiguous;
             } else {
-                ++job->counts[((job->sample_index * job->targets->count + (size_t)mismatch_target) * 5) + 1];
+                if (increment_count_slot(job, ((job->sample_index * job->targets->count + (size_t)mismatch_target) * 5) + 1) != 0) {
+                    return -1;
+                }
                 ++job->stats->unique;
                 ++job->stats->corrected;
             }
@@ -2651,7 +2956,15 @@ static int direct_hamming_count_seq(count_sample_job *job, const char *seq, size
         if (exact_ambiguous) {
             ++job->stats->ambiguous;
         } else {
-            ++job->counts[((job->sample_index * job->targets->count + (size_t)exact_target) * 5) + 0];
+            if (increment_count_slot(job, ((job->sample_index * job->targets->count + (size_t)exact_target) * 5) + 0) != 0) {
+                if (codes != inline_codes) {
+                    free(codes);
+                    free(valid);
+                    free(invalid_counts);
+                    free(bad_positions);
+                }
+                return -1;
+            }
             ++job->stats->unique;
             ++job->stats->exact;
         }
@@ -2705,7 +3018,15 @@ static int direct_hamming_count_seq(count_sample_job *job, const char *seq, size
         if (mismatch_ambiguous) {
             ++job->stats->ambiguous;
         } else {
-            ++job->counts[((job->sample_index * job->targets->count + (size_t)mismatch_target) * 5) + 1];
+            if (increment_count_slot(job, ((job->sample_index * job->targets->count + (size_t)mismatch_target) * 5) + 1) != 0) {
+                if (codes != inline_codes) {
+                    free(codes);
+                    free(valid);
+                    free(invalid_counts);
+                    free(bad_positions);
+                }
+                return -1;
+            }
             ++job->stats->unique;
             ++job->stats->corrected;
         }
@@ -2730,16 +3051,16 @@ typedef struct direct_hamming_batch_job {
     size_t *lens;
     size_t start;
     size_t end;
-    unsigned long long *local_counts;
+    count_dirty_slots dirty_slots;
     count_stats local_stats;
     int rc;
 } direct_hamming_batch_job;
 
 static void *direct_hamming_batch_worker(void *arg) {
     direct_hamming_batch_job *batch = (direct_hamming_batch_job *)arg;
-    batch->job.counts = batch->local_counts;
     batch->job.sample_index = 0;
     batch->job.stats = &batch->local_stats;
+    batch->job.dirty_slots = &batch->dirty_slots;
     batch->rc = 0;
     for (size_t i = batch->start; i < batch->end; ++i) {
         if (direct_hamming_count_seq(&batch->job, batch->items[i], batch->lens[i]) != 0) {
@@ -2764,12 +3085,9 @@ static int process_direct_hamming_buffer(count_sample_job *job, const seq_buffer
     size_t target_slots = job->targets->count * 5;
     pthread_t *thread_ids = (pthread_t *)calloc(read_threads, sizeof(pthread_t));
     direct_hamming_batch_job *jobs = (direct_hamming_batch_job *)calloc(read_threads, sizeof(direct_hamming_batch_job));
-    unsigned long long *local_counts = (unsigned long long *)calloc(read_threads * (target_slots == 0 ? 1 : target_slots),
-                                                                    sizeof(unsigned long long));
-    if (thread_ids == NULL || jobs == NULL || local_counts == NULL) {
+    if (thread_ids == NULL || jobs == NULL) {
         free(thread_ids);
         free(jobs);
-        free(local_counts);
         return 1;
     }
 
@@ -2783,7 +3101,6 @@ static int process_direct_hamming_buffer(count_sample_job *job, const seq_buffer
         jobs[t].lens = buffer->lens;
         jobs[t].start = start;
         jobs[t].end = end;
-        jobs[t].local_counts = local_counts + t * target_slots;
         if (pthread_create(&thread_ids[t], NULL, direct_hamming_batch_worker, &jobs[t]) != 0) {
             rc = 1;
             break;
@@ -2799,15 +3116,16 @@ static int process_direct_hamming_buffer(count_sample_job *job, const seq_buffer
         size_t dst_offset = job->sample_index * target_slots;
         for (size_t t = 0; t < launched; ++t) {
             merge_count_stats(job->stats, &jobs[t].local_stats);
-            for (size_t slot = 0; slot < target_slots; ++slot) {
-                job->counts[dst_offset + slot] += jobs[t].local_counts[slot];
+            for (size_t i = 0; i < jobs[t].dirty_slots.count; ++i) {
+                size_t slot = jobs[t].dirty_slots.items[i].slot;
+                job->counts[dst_offset + slot] += jobs[t].dirty_slots.items[i].count;
             }
         }
     }
 
+    for (size_t t = 0; t < read_threads; ++t) free_count_dirty_slots(&jobs[t].dirty_slots);
     free(thread_ids);
     free(jobs);
-    free(local_counts);
     return rc;
 }
 
@@ -2991,7 +3309,7 @@ static int count_sample_sequence(count_sample_job *job, const char *seq, size_t 
         seq_record *target = &job->targets->records[result.target_index];
         int kind = correction_kind(observed, strlen(observed), target->seq, target->len, result.best_distance);
         size_t slot = ((job->sample_index * job->targets->count + (size_t)result.target_index) * 5) + (size_t)kind;
-        ++job->counts[slot];
+        if (increment_count_slot(job, slot) != 0) return -1;
         ++job->stats->unique;
         if (result.best_distance == 0) ++job->stats->exact;
         else ++job->stats->corrected;
@@ -3030,16 +3348,16 @@ typedef struct count_batch_job {
     size_t *lens;
     size_t start;
     size_t end;
-    unsigned long long *local_counts;
+    count_dirty_slots dirty_slots;
     count_stats local_stats;
     int rc;
 } count_batch_job;
 
 static void *count_batch_worker(void *arg) {
     count_batch_job *batch = (count_batch_job *)arg;
-    batch->job.counts = batch->local_counts;
     batch->job.sample_index = 0;
     batch->job.stats = &batch->local_stats;
+    batch->job.dirty_slots = &batch->dirty_slots;
     batch->job.assignments = NULL;
     batch->job.ambiguous_out = NULL;
     batch->job.unmatched_out = NULL;
@@ -3067,12 +3385,9 @@ static int process_count_buffer(count_sample_job *job, const seq_buffer *buffer)
     size_t target_slots = job->targets->count * 5;
     pthread_t *thread_ids = (pthread_t *)calloc(read_threads, sizeof(pthread_t));
     count_batch_job *jobs = (count_batch_job *)calloc(read_threads, sizeof(count_batch_job));
-    unsigned long long *local_counts = (unsigned long long *)calloc(read_threads * (target_slots == 0 ? 1 : target_slots),
-                                                                    sizeof(unsigned long long));
-    if (thread_ids == NULL || jobs == NULL || local_counts == NULL) {
+    if (thread_ids == NULL || jobs == NULL) {
         free(thread_ids);
         free(jobs);
-        free(local_counts);
         return 1;
     }
 
@@ -3086,7 +3401,6 @@ static int process_count_buffer(count_sample_job *job, const seq_buffer *buffer)
         jobs[t].lens = buffer->lens;
         jobs[t].start = start;
         jobs[t].end = end;
-        jobs[t].local_counts = local_counts + t * target_slots;
         if (pthread_create(&thread_ids[t], NULL, count_batch_worker, &jobs[t]) != 0) {
             rc = 1;
             break;
@@ -3102,15 +3416,16 @@ static int process_count_buffer(count_sample_job *job, const seq_buffer *buffer)
         size_t dst_offset = job->sample_index * target_slots;
         for (size_t t = 0; t < launched; ++t) {
             merge_count_stats(job->stats, &jobs[t].local_stats);
-            for (size_t slot = 0; slot < target_slots; ++slot) {
-                job->counts[dst_offset + slot] += jobs[t].local_counts[slot];
+            for (size_t i = 0; i < jobs[t].dirty_slots.count; ++i) {
+                size_t slot = jobs[t].dirty_slots.items[i].slot;
+                job->counts[dst_offset + slot] += jobs[t].dirty_slots.items[i].count;
             }
         }
     }
 
+    for (size_t t = 0; t < read_threads; ++t) free_count_dirty_slots(&jobs[t].dirty_slots);
     free(thread_ids);
     free(jobs);
-    free(local_counts);
     return rc;
 }
 
@@ -3402,7 +3717,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
     const int crispr_mode = strcmp(argv[1], "crispr-count") == 0;
     const char *format = crispr_mode ? "mageck" : "dotmatch";
     const char *ambiguous_policy = "discard";
-    ambiguity_policy assignment_policy = AMBIGUITY_POLICY_BEST;
+    ambiguity_policy assignment_policy = AMBIGUITY_POLICY_RADIUS;
     count_metric metric = COUNT_METRIC_LEVENSHTEIN;
     hamming_index_strategy hamming_strategy = HAMMING_INDEX_AUTO;
     size_t target_start = 0;
@@ -3446,7 +3761,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
                 goto fail_args;
             }
         } else if (strcmp(arg, "--k") == 0 && i < argc) {
-            if (parse_int_value(argv[i++], &k) != 0 || k < 0 || k > 2) {
+            if (parse_int_value(argv[i++], &k) != 0 || k < 0 || k > 3) {
                 usage(argv0);
                 goto fail_args;
             }
@@ -3580,8 +3895,8 @@ static int run_count(const char *argv0, int argc, char **argv) {
         fprintf(stderr, "--indel-window is only valid with --metric levenshtein\n");
         goto fail_args;
     }
-    if (metric == COUNT_METRIC_HAMMING && k > 1) {
-        fprintf(stderr, "--k 2 is only valid with --metric levenshtein\n");
+    if (metric == COUNT_METRIC_LEVENSHTEIN && k > 2) {
+        fprintf(stderr, "--metric levenshtein supports --k up to 2\n");
         goto fail_args;
     }
     if (indel_window != 0 && k != 1) {
@@ -3810,7 +4125,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
                 target_len, k, metric, indel_window, counts, &stats_by_sample[sample],
                 assignments, ambiguous_out, unmatched_out, ambiguous_policy, assignment_policy,
                 direct_hamming_counts, fused_offset_detection, target_start, auto_offset, auto_offset_sample,
-                offsets_mode, offset_min_fraction, effective_read_threads, max_correction_qual, 1
+                offsets_mode, offset_min_fraction, effective_read_threads, max_correction_qual, 1, NULL
             };
             count_sample_worker(&job);
             if (job.rc != 0) goto done;
@@ -3836,7 +4151,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
                     target_len, k, metric, indel_window, counts, &stats_by_sample[sample],
                     NULL, NULL, NULL, ambiguous_policy, assignment_policy,
                     direct_hamming_counts, fused_offset_detection, target_start, auto_offset, auto_offset_sample,
-                    offsets_mode, offset_min_fraction, 1, max_correction_qual, 1
+                    offsets_mode, offset_min_fraction, 1, max_correction_qual, 1, NULL
                 };
                 if (pthread_create(&thread_ids[i], NULL, count_sample_worker, &jobs[sample]) != 0) {
                     fprintf(stderr, "failed to create worker thread\n");
@@ -4065,10 +4380,508 @@ fail_args:
     return 2;
 }
 
+static int string_list_contains_exact(const string_list *list, const char *s) {
+    if (list == NULL || s == NULL) return 0;
+    for (size_t i = 0; i < list->count; ++i) {
+        if (strcmp(list->items[i], s) == 0) return 1;
+    }
+    return 0;
+}
+
+static int read_first_column_values(const char *path, string_list *values) {
+    if (path == NULL) return 0;
+    fastq_reader reader = {0};
+    if (fastq_reader_open(&reader, path) != 0) return -1;
+    char buf[8192];
+    size_t len = 0;
+    int rc = 0;
+    while ((rc = fastq_getline_len(&reader, buf, sizeof(buf), &len)) > 0) {
+        (void)len;
+        trim_line(buf);
+        if (buf[0] == '\0' || buf[0] == '#') continue;
+        char *tab = strchr(buf, '\t');
+        if (tab != NULL) *tab = '\0';
+        if (push_string(values, buf) != 0) {
+            fastq_reader_close(&reader);
+            return -1;
+        }
+    }
+    fastq_reader_close(&reader);
+    return rc < 0 ? -1 : 0;
+}
+
+static int guide_counter_push_sample_name(string_list *labels, const char *path, size_t idx) {
+    const char *base = path_basename(path);
+    char fallback[32];
+    if (base == NULL || base[0] == '\0') {
+        int n = snprintf(fallback, sizeof(fallback), "s%zu", idx + 1);
+        if (n < 0 || (size_t)n >= sizeof(fallback)) return -1;
+        return push_string(labels, fallback);
+    }
+    char *name = xstrndup(base, strlen(base));
+    if (name == NULL) return -1;
+    if (ends_with(name, ".gz")) name[strlen(name) - 3] = '\0';
+    if (ends_with(name, ".fastq")) {
+        name[strlen(name) - 6] = '\0';
+    } else if (ends_with(name, ".fq")) {
+        name[strlen(name) - 3] = '\0';
+    }
+    int rc = push_string(labels, name);
+    free(name);
+    return rc;
+}
+
+static const char *guide_counter_type_for_target(const seq_record *target, const string_list *essential_genes,
+                                                 const string_list *nonessential_genes,
+                                                 const string_list *control_guides,
+                                                 regex_t *control_re) {
+    if (string_list_contains_exact(essential_genes, target->gene)) return "Essential";
+    if (string_list_contains_exact(nonessential_genes, target->gene)) return "Nonessential";
+    if (string_list_contains_exact(control_guides, target->id)) return "Control";
+    if (control_re != NULL &&
+        (regexec(control_re, target->id, 0, NULL, 0) == 0 ||
+         regexec(control_re, target->gene, 0, NULL, 0) == 0)) {
+        return "Control";
+    }
+    return "Other";
+}
+
+static int parse_ull_value(const char *s, unsigned long long *out) {
+    char *end = NULL;
+    unsigned long long v = strtoull(s, &end, 10);
+    if (end == s || *end != '\0') return -1;
+    *out = v;
+    return 0;
+}
+
+static double round_positive_dp(double value, int places) {
+    double factor = 1.0;
+    for (int i = 0; i < places; ++i) factor *= 10.0;
+    unsigned long long scaled = (unsigned long long)(value * factor + 0.5);
+    return (double)scaled / factor;
+}
+
+static int guide_counter_write_outputs(const char *output_prefix, const char *tmp_counts_path,
+                                       const char *tmp_qc_path, const seq_table *targets,
+                                       const string_list *reads, const string_list *labels,
+                                       const string_list *essential_genes,
+                                       const string_list *nonessential_genes,
+                                       const string_list *control_guides, regex_t *control_re) {
+    char counts_path[4096];
+    char extended_path[4096];
+    char stats_path[4096];
+    int n = snprintf(counts_path, sizeof(counts_path), "%s.counts.txt", output_prefix);
+    if (n < 0 || (size_t)n >= sizeof(counts_path)) return -1;
+    n = snprintf(extended_path, sizeof(extended_path), "%s.extended-counts.txt", output_prefix);
+    if (n < 0 || (size_t)n >= sizeof(extended_path)) return -1;
+    n = snprintf(stats_path, sizeof(stats_path), "%s.stats.txt", output_prefix);
+    if (n < 0 || (size_t)n >= sizeof(stats_path)) return -1;
+
+    unsigned long long *matrix = (unsigned long long *)calloc(
+            (targets->count == 0 ? 1 : targets->count) * (labels->count == 0 ? 1 : labels->count),
+            sizeof(unsigned long long));
+    const char **types = (const char **)calloc(targets->count == 0 ? 1 : targets->count, sizeof(const char *));
+    if (matrix == NULL || types == NULL) {
+        free(matrix);
+        free(types);
+        return -1;
+    }
+    for (size_t t = 0; t < targets->count; ++t) {
+        types[t] = guide_counter_type_for_target(&targets->records[t], essential_genes, nonessential_genes,
+                                                 control_guides, control_re);
+    }
+
+    FILE *in = fopen(tmp_counts_path, "r");
+    FILE *counts = open_output_file(counts_path);
+    FILE *extended = open_output_file(extended_path);
+    if (in == NULL || counts == NULL || extended == NULL) {
+        if (in != NULL) fclose(in);
+        if (counts != NULL) fclose(counts);
+        if (extended != NULL) fclose(extended);
+        free(matrix);
+        free(types);
+        return -1;
+    }
+
+    fprintf(counts, "guide\tgene");
+    fprintf(extended, "guide\tgene\tguide_type");
+    for (size_t sample = 0; sample < labels->count; ++sample) {
+        fprintf(counts, "\t%s", labels->items[sample]);
+        fprintf(extended, "\t%s", labels->items[sample]);
+    }
+    fprintf(counts, "\n");
+    fprintf(extended, "\n");
+
+    char buf[65536];
+    size_t row = 0;
+    int first = 1;
+    while (fgets(buf, sizeof(buf), in) != NULL) {
+        trim_line(buf);
+        if (first) {
+            first = 0;
+            continue;
+        }
+        char *fields[1024];
+        size_t nf = split_fields(buf, '\t', fields, sizeof(fields) / sizeof(fields[0]));
+        if (nf < 2 + labels->count || row >= targets->count) {
+            fclose(in);
+            fclose(counts);
+            fclose(extended);
+            free(matrix);
+            free(types);
+            return -1;
+        }
+        fprintf(counts, "%s\t%s", targets->records[row].id, targets->records[row].gene);
+        fprintf(extended, "%s\t%s\t%s", targets->records[row].id, targets->records[row].gene, types[row]);
+        for (size_t sample = 0; sample < labels->count; ++sample) {
+            unsigned long long value = 0;
+            if (parse_ull_value(fields[2 + sample], &value) != 0) {
+                fclose(in);
+                fclose(counts);
+                fclose(extended);
+                free(matrix);
+                free(types);
+                return -1;
+            }
+            matrix[row * labels->count + sample] = value;
+            fprintf(counts, "\t%llu", value);
+            fprintf(extended, "\t%llu", value);
+        }
+        fprintf(counts, "\n");
+        fprintf(extended, "\n");
+        ++row;
+    }
+    int matrix_ok = !ferror(in) && row == targets->count;
+    fclose(in);
+    fclose(counts);
+    fclose(extended);
+    if (!matrix_ok) {
+        free(matrix);
+        free(types);
+        return -1;
+    }
+
+    unsigned long long *total_reads = (unsigned long long *)calloc(labels->count == 0 ? 1 : labels->count,
+                                                                   sizeof(unsigned long long));
+    if (total_reads == NULL) {
+        free(matrix);
+        free(types);
+        return -1;
+    }
+    FILE *qc = fopen(tmp_qc_path, "r");
+    if (qc == NULL) {
+        free(total_reads);
+        free(matrix);
+        free(types);
+        return -1;
+    }
+    int total_reads_col = -1;
+    size_t qc_row = 0;
+    first = 1;
+    while (fgets(buf, sizeof(buf), qc) != NULL) {
+        trim_line(buf);
+        char *fields[64];
+        size_t nf = split_fields(buf, '\t', fields, sizeof(fields) / sizeof(fields[0]));
+        if (first) {
+            total_reads_col = find_column(fields, nf, "total_reads", NULL, NULL);
+            first = 0;
+            continue;
+        }
+        if (total_reads_col < 0 || (size_t)total_reads_col >= nf || qc_row >= labels->count ||
+            parse_ull_value(fields[total_reads_col], &total_reads[qc_row]) != 0) {
+            fclose(qc);
+            free(total_reads);
+            free(matrix);
+            free(types);
+            return -1;
+        }
+        ++qc_row;
+    }
+    int qc_ok = !ferror(qc) && qc_row == labels->count;
+    fclose(qc);
+    if (!qc_ok) {
+        free(total_reads);
+        free(matrix);
+        free(types);
+        return -1;
+    }
+
+    FILE *stats = open_output_file(stats_path);
+    if (stats == NULL) {
+        free(total_reads);
+        free(matrix);
+        free(types);
+        return -1;
+    }
+    fprintf(stats, "file\tlabel\ttotal_guides\ttotal_reads\tmapped_reads\tfrac_mapped\tmean_reads_per_guide\tmean_reads_essential\tmean_reads_nonessential\tmean_reads_control\tmean_reads_other\tzero_read_guides\n");
+    for (size_t sample = 0; sample < labels->count; ++sample) {
+        unsigned long long mapped = 0;
+        unsigned long long zero = 0;
+        double essential_sum = 0.0;
+        double nonessential_sum = 0.0;
+        double control_sum = 0.0;
+        double other_sum = 0.0;
+        size_t essential_count = 0;
+        size_t nonessential_count = 0;
+        size_t control_count = 0;
+        size_t other_count = 0;
+        for (size_t t = 0; t < targets->count; ++t) {
+            unsigned long long value = matrix[t * labels->count + sample];
+            mapped += value;
+            if (value == 0) ++zero;
+            if (strcmp(types[t], "Essential") == 0) {
+                essential_sum += (double)value;
+                ++essential_count;
+            } else if (strcmp(types[t], "Nonessential") == 0) {
+                nonessential_sum += (double)value;
+                ++nonessential_count;
+            } else if (strcmp(types[t], "Control") == 0) {
+                control_sum += (double)value;
+                ++control_count;
+            } else {
+                other_sum += (double)value;
+                ++other_count;
+            }
+        }
+        double total = (double)total_reads[sample];
+        double frac = total == 0.0 ? 0.0 : round_positive_dp((double)mapped / total, 4);
+        double mean_all = targets->count == 0 ? 0.0 : round_positive_dp((double)mapped / (double)targets->count, 2);
+        double mean_essential = essential_count == 0 ? 0.0 : round_positive_dp(essential_sum / (double)essential_count, 2);
+        double mean_nonessential = nonessential_count == 0 ? 0.0 : round_positive_dp(nonessential_sum / (double)nonessential_count, 2);
+        double mean_control = control_count == 0 ? 0.0 : round_positive_dp(control_sum / (double)control_count, 2);
+        double mean_other = other_count == 0 ? 0.0 : round_positive_dp(other_sum / (double)other_count, 2);
+        fprintf(stats, "%s\t%s\t%zu\t%llu\t%llu\t%.4f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%llu\n",
+                reads->items[sample], labels->items[sample], targets->count, total_reads[sample], mapped,
+                frac, mean_all, mean_essential, mean_nonessential, mean_control, mean_other, zero);
+    }
+    fclose(stats);
+    free(total_reads);
+    free(matrix);
+    free(types);
+    return 0;
+}
+
+static int push_count_arg(string_list *args, const char *s) {
+    return push_string(args, s);
+}
+
+static int run_guide_counter_compatible(const char *argv0, int argc, char **argv) {
+    int start = 2;
+    if (strcmp(argv[1], "guide-counter") == 0) {
+        if (argc < 3 || strcmp(argv[2], "count") != 0) {
+            usage(argv0);
+            return 2;
+        }
+        start = 3;
+    }
+
+    const char *library_path = NULL;
+    const char *output_prefix = NULL;
+    const char *essential_path = NULL;
+    const char *nonessential_path = NULL;
+    const char *control_guides_path = NULL;
+    const char *control_pattern = NULL;
+    size_t offset_sample_size = 100000;
+    double offset_min_fraction = 0.0025;
+    int exact_match = 0;
+    string_list reads = {0};
+    string_list labels = {0};
+
+    int i = start;
+    while (i < argc) {
+        const char *arg = argv[i++];
+        if ((strcmp(arg, "--input") == 0 || strcmp(arg, "-i") == 0) && i < argc) {
+            while (i < argc && argv[i][0] != '-') {
+                if (push_string(&reads, argv[i++]) != 0) goto oom;
+            }
+        } else if ((strcmp(arg, "--samples") == 0 || strcmp(arg, "-s") == 0) && i < argc) {
+            while (i < argc && argv[i][0] != '-') {
+                if (push_string(&labels, argv[i++]) != 0) goto oom;
+            }
+        } else if ((strcmp(arg, "--library") == 0 || strcmp(arg, "-l") == 0) && i < argc) {
+            library_path = argv[i++];
+        } else if ((strcmp(arg, "--output") == 0 || strcmp(arg, "-o") == 0) && i < argc) {
+            output_prefix = argv[i++];
+        } else if ((strcmp(arg, "--essential-genes") == 0 || strcmp(arg, "-e") == 0) && i < argc) {
+            essential_path = argv[i++];
+        } else if ((strcmp(arg, "--nonessential-genes") == 0 || strcmp(arg, "-n") == 0) && i < argc) {
+            nonessential_path = argv[i++];
+        } else if ((strcmp(arg, "--control-guides") == 0 || strcmp(arg, "-c") == 0) && i < argc) {
+            control_guides_path = argv[i++];
+        } else if ((strcmp(arg, "--control-pattern") == 0 || strcmp(arg, "-C") == 0) && i < argc) {
+            control_pattern = argv[i++];
+        } else if ((strcmp(arg, "--offset-sample-size") == 0 || strcmp(arg, "-N") == 0) && i < argc) {
+            if (parse_size_value(argv[i++], &offset_sample_size) != 0 || offset_sample_size == 0) goto bad_args;
+        } else if ((strcmp(arg, "--offset-min-fraction") == 0 || strcmp(arg, "-f") == 0) && i < argc) {
+            if (parse_double_value(argv[i++], &offset_min_fraction) != 0 ||
+                offset_min_fraction < 0.0 || offset_min_fraction > 1.0) {
+                goto bad_args;
+            }
+        } else if (strcmp(arg, "--exact-match") == 0 || strcmp(arg, "-x") == 0) {
+            exact_match = 1;
+        } else if (strcmp(arg, "--help") == 0 || strcmp(arg, "-h") == 0) {
+            usage(argv0);
+            free_string_list(&reads);
+            free_string_list(&labels);
+            return 0;
+        } else {
+            goto bad_args;
+        }
+    }
+
+    if (library_path == NULL || output_prefix == NULL || reads.count == 0) goto bad_args;
+    if (labels.count == 0) {
+        for (size_t sample = 0; sample < reads.count; ++sample) {
+            if (guide_counter_push_sample_name(&labels, reads.items[sample], sample) != 0) goto oom;
+        }
+    }
+    if (labels.count != reads.count) {
+        fprintf(stderr, "--samples count must match --input count\n");
+        free_string_list(&reads);
+        free_string_list(&labels);
+        return 2;
+    }
+
+    seq_table targets = {0};
+    string_list essential_genes = {0};
+    string_list nonessential_genes = {0};
+    string_list control_guides = {0};
+    regex_t control_re;
+    int have_control_re = 0;
+    string_list count_args = {0};
+    int rc = 1;
+    char target_len_s[32];
+    char k_s[8];
+    char auto_offset_s[16];
+    char offset_sample_s[32];
+    char offset_min_s[64];
+    char label_csv[8192];
+    char tmp_counts_path[4096] = "";
+    char tmp_qc_path[4096] = "";
+
+    if (read_target_table(library_path, &targets) != 0 || targets.count == 0) {
+        fprintf(stderr, "failed to read guide library\n");
+        goto done;
+    }
+    size_t guide_len = targets.records[0].len;
+    for (size_t t = 1; t < targets.count; ++t) {
+        if (targets.records[t].len != guide_len) {
+            fprintf(stderr, "GuideCounter compatibility requires one guide length\n");
+            goto done;
+        }
+    }
+    if (read_first_column_values(essential_path, &essential_genes) != 0 ||
+        read_first_column_values(nonessential_path, &nonessential_genes) != 0 ||
+        read_first_column_values(control_guides_path, &control_guides) != 0) {
+        fprintf(stderr, "failed to read guide annotation files\n");
+        goto done;
+    }
+    if (control_pattern != NULL) {
+        if (regcomp(&control_re, control_pattern, REG_EXTENDED | REG_ICASE | REG_NOSUB) != 0) {
+            fprintf(stderr, "failed to compile --control-pattern\n");
+            goto done;
+        }
+        have_control_re = 1;
+    }
+
+    label_csv[0] = '\0';
+    for (size_t sample = 0; sample < labels.count; ++sample) {
+        size_t used = strlen(label_csv);
+        int n = snprintf(label_csv + used, sizeof(label_csv) - used, "%s%s",
+                         sample == 0 ? "" : ",", labels.items[sample]);
+        if (n < 0 || (size_t)n >= sizeof(label_csv) - used) {
+            fprintf(stderr, "too many sample labels for GuideCounter compatibility wrapper\n");
+            goto done;
+        }
+    }
+    int n = snprintf(tmp_counts_path, sizeof(tmp_counts_path), "%s.dotmatch-counts.tmp", output_prefix);
+    if (n < 0 || (size_t)n >= sizeof(tmp_counts_path)) goto done;
+    n = snprintf(tmp_qc_path, sizeof(tmp_qc_path), "%s.dotmatch-qc.tmp", output_prefix);
+    if (n < 0 || (size_t)n >= sizeof(tmp_qc_path)) goto done;
+    snprintf(target_len_s, sizeof(target_len_s), "%zu", guide_len);
+    snprintf(k_s, sizeof(k_s), "%d", exact_match ? 0 : 1);
+    snprintf(auto_offset_s, sizeof(auto_offset_s), "%d", 499);
+    snprintf(offset_sample_s, sizeof(offset_sample_s), "%zu", offset_sample_size);
+    snprintf(offset_min_s, sizeof(offset_min_s), "%.8g", offset_min_fraction);
+
+    if (push_count_arg(&count_args, argv0) != 0 ||
+        push_count_arg(&count_args, "count") != 0 ||
+        push_count_arg(&count_args, "--targets") != 0 ||
+        push_count_arg(&count_args, library_path) != 0) {
+        fprintf(stderr, "out of memory\n");
+        goto done;
+    }
+    for (size_t sample = 0; sample < reads.count; ++sample) {
+        if (push_count_arg(&count_args, "--reads") != 0 ||
+            push_count_arg(&count_args, reads.items[sample]) != 0) {
+            fprintf(stderr, "out of memory\n");
+            goto done;
+        }
+    }
+    const char *fixed_args[] = {
+        "--sample-label", label_csv,
+        "--target-start", "0",
+        "--target-length", target_len_s,
+        "--k", k_s,
+        "--metric", "hamming",
+        "--ambiguity-policy", "best",
+        "--format", "mageck",
+        "--auto-offset", auto_offset_s,
+        "--auto-offset-sample", offset_sample_s,
+        "--offset-mode", "multi",
+        "--offset-min-fraction", offset_min_s,
+        "--out", tmp_counts_path,
+        "--sample-qc", tmp_qc_path
+    };
+    for (size_t ai = 0; ai < sizeof(fixed_args) / sizeof(fixed_args[0]); ++ai) {
+        if (push_count_arg(&count_args, fixed_args[ai]) != 0) {
+            fprintf(stderr, "out of memory\n");
+            goto done;
+        }
+    }
+
+    rc = run_count(argv0, (int)count_args.count, count_args.items);
+    if (rc != 0) goto done;
+    if (guide_counter_write_outputs(output_prefix, tmp_counts_path, tmp_qc_path, &targets, &reads, &labels,
+                                    &essential_genes, &nonessential_genes, &control_guides,
+                                    have_control_re ? &control_re : NULL) != 0) {
+        fprintf(stderr, "failed to write GuideCounter-compatible outputs\n");
+        rc = 1;
+        goto done;
+    }
+    rc = 0;
+
+done:
+    if (have_control_re) regfree(&control_re);
+    unlink(tmp_counts_path);
+    unlink(tmp_qc_path);
+    free_string_list(&count_args);
+    free_string_list(&essential_genes);
+    free_string_list(&nonessential_genes);
+    free_string_list(&control_guides);
+    free_table(&targets);
+    free_string_list(&reads);
+    free_string_list(&labels);
+    return rc;
+
+oom:
+    fprintf(stderr, "out of memory\n");
+    free_string_list(&reads);
+    free_string_list(&labels);
+    return 1;
+
+bad_args:
+    usage(argv0);
+    free_string_list(&reads);
+    free_string_list(&labels);
+    return 2;
+}
+
 static int run_fastq_assign(const char *argv0, int argc, char **argv) {
     const char *barcodes_path = NULL;
     const char *reads_path = NULL;
     const char *out_path = NULL;
+    ambiguity_policy assignment_policy = AMBIGUITY_POLICY_RADIUS;
     size_t barcode_start = 0;
     size_t barcode_len = 0;
     int k = -1;
@@ -4092,6 +4905,16 @@ static int run_fastq_assign(const char *argv0, int argc, char **argv) {
             }
         } else if (strcmp(arg, "--k") == 0 && i < argc) {
             if (parse_int_value(argv[i++], &k) != 0 || (k != 0 && k != 1)) {
+                usage(argv0);
+                return 2;
+            }
+        } else if (strcmp(arg, "--ambiguity-policy") == 0 && i < argc) {
+            const char *value = argv[i++];
+            if (strcmp(value, "best") == 0) {
+                assignment_policy = AMBIGUITY_POLICY_BEST;
+            } else if (strcmp(value, "radius") == 0) {
+                assignment_policy = AMBIGUITY_POLICY_RADIUS;
+            } else {
                 usage(argv0);
                 return 2;
             }
@@ -4171,6 +4994,7 @@ static int run_fastq_assign(const char *argv0, int argc, char **argv) {
                 fprintf(stderr, "FASTQ assignment failed\n");
                 goto done;
             }
+            apply_ambiguity_policy(&result, assignment_policy);
         }
         print_fastq_row(out, &targets, read_id, observed, result);
     }
@@ -4402,11 +5226,13 @@ static size_t count_unique_target_sequences(const seq_table *targets) {
 
 static int write_audit_summary_json(const char *out_dir, const char *audit_mode, int k,
                                     size_t n_targets, size_t unique_sequences,
-                                    const char *min_edit_distance_json,
+                                    const char *min_edit_distance_json, const char *min_hamming_distance_json,
                                     int safe_at_k0, int safe_at_k1, const char *safe_at_k2_json,
+                                    const char *safe_at_hamming_k2_json, const char *safe_at_hamming_k3_json,
                                     unsigned long long pairs_d0, unsigned long long pairs_d1,
                                     unsigned long long pairs_d2, unsigned long long pairs_within_k,
                                     unsigned long long risk_pairs_k1, const char *risk_pairs_k2_json,
+                                    const char *risk_pairs_hamming_k2_json, const char *risk_pairs_hamming_k3_json,
                                     unsigned long long ambiguous_query_variants_k1, int recommended_k) {
     char path[4096];
     if (path_join(path, sizeof(path), out_dir, "audit_summary.json") != 0) return -1;
@@ -4420,21 +5246,29 @@ static int write_audit_summary_json(const char *out_dir, const char *audit_mode,
             "  \"unique_sequences\": %zu,\n"
             "  \"duplicate_sequences\": %zu,\n"
             "  \"min_edit_distance\": %s,\n"
+            "  \"min_hamming_distance\": %s,\n"
             "  \"safe_at_k0\": %s,\n"
             "  \"safe_at_k1\": %s,\n"
             "  \"safe_at_k2\": %s,\n"
+            "  \"safe_at_hamming_k2\": %s,\n"
+            "  \"safe_at_hamming_k3\": %s,\n"
             "  \"pairs_distance_0\": %llu,\n"
             "  \"pairs_distance_1\": %llu,\n"
             "  \"pairs_distance_2\": %llu,\n"
             "  \"pairs_within_requested_k\": %llu,\n"
             "  \"risk_pairs_for_k1\": %llu,\n"
             "  \"risk_pairs_for_k2\": %s,\n"
+            "  \"risk_pairs_for_hamming_k2\": %s,\n"
+            "  \"risk_pairs_for_hamming_k3\": %s,\n"
             "  \"ambiguous_query_variants_k1\": %llu,\n"
             "  \"recommended_k\": %d\n"
             "}\n",
-            audit_mode, k, n_targets, unique_sequences, n_targets - unique_sequences, min_edit_distance_json,
+            audit_mode, k, n_targets, unique_sequences, n_targets - unique_sequences,
+            min_edit_distance_json, min_hamming_distance_json,
             safe_at_k0 ? "true" : "false", safe_at_k1 ? "true" : "false", safe_at_k2_json,
+            safe_at_hamming_k2_json, safe_at_hamming_k3_json,
             pairs_d0, pairs_d1, pairs_d2, pairs_within_k, risk_pairs_k1, risk_pairs_k2_json,
+            risk_pairs_hamming_k2_json, risk_pairs_hamming_k3_json,
             ambiguous_query_variants_k1, recommended_k);
     if (fclose(out) != 0) return -1;
     return 0;
@@ -4608,20 +5442,27 @@ static int audit_fast_outputs(const seq_table *targets, const char *out_dir, int
     fprintf(summary, "safe_at_k0\t%s\n", pairs_d0 == 0 ? "yes" : "no");
     fprintf(summary, "safe_at_k1\t%s\n", risk_pairs_k1 == 0 ? "yes" : "no");
     fprintf(summary, "safe_at_k2\tnot_computed\n");
+    fprintf(summary, "safe_at_hamming_k2\tnot_computed\n");
+    fprintf(summary, "safe_at_hamming_k3\tnot_computed\n");
     fprintf(summary, "pairs_distance_0\t%llu\n", pairs_d0);
     fprintf(summary, "pairs_distance_1\t%llu\n", pairs_d1);
     fprintf(summary, "pairs_distance_2\t%llu\n", pairs_d2);
     fprintf(summary, "pairs_within_requested_k\t%llu\n", pairs_within_k);
     fprintf(summary, "risk_pairs_for_k1\t%llu\n", risk_pairs_k1);
     fprintf(summary, "risk_pairs_for_k2\tnot_computed\n");
+    fprintf(summary, "risk_pairs_for_hamming_k2\tnot_computed\n");
+    fprintf(summary, "risk_pairs_for_hamming_k3\tnot_computed\n");
     fprintf(summary, "ambiguous_query_variants_k1\t%llu\n", ambiguous_query_variants_k1);
     fprintf(summary, "recommended_k\t%d\n", pairs_d0 == 0 && (k == 0 || risk_pairs_k1 == 0) ? k : 0);
     fclose(summary);
     summary = NULL;
     if (write_audit_summary_json(out_dir, "fast", k, targets->count, unique_sequences,
                                  min_dist < 0 ? "\">=3\"" : (min_dist == 0 ? "0" : (min_dist == 1 ? "1" : "2")),
+                                 "null",
                                  pairs_d0 == 0, risk_pairs_k1 == 0, "null",
+                                 "null", "null",
                                  pairs_d0, pairs_d1, pairs_d2, pairs_within_k, risk_pairs_k1, "null",
+                                 "null", "null",
                                  ambiguous_query_variants_k1,
                                  pairs_d0 == 0 && (k == 0 || risk_pairs_k1 == 0) ? k : 0) != 0) {
         goto done;
@@ -4656,7 +5497,7 @@ static int run_audit(const char *argv0, int argc, char **argv) {
         if ((strcmp(arg, "--targets") == 0 || strcmp(arg, "--library") == 0) && i < argc) {
             targets_path = argv[i++];
         } else if (strcmp(arg, "--k") == 0 && i < argc) {
-            if (parse_int_value(argv[i++], &k) != 0 || k < 0 || k > 2) {
+            if (parse_int_value(argv[i++], &k) != 0 || k < 0 || k > 3) {
                 usage(argv0);
                 return 2;
             }
@@ -4687,6 +5528,9 @@ static int run_audit(const char *argv0, int argc, char **argv) {
     unsigned long long pairs_within_k = 0;
     unsigned long long risk_pairs_k1 = 0;
     unsigned long long risk_pairs_k2 = 0;
+    unsigned long long risk_pairs_hamming_k2 = 0;
+    unsigned long long risk_pairs_hamming_k3 = 0;
+    int min_hamming_dist = -1;
     int *nearest_dist = NULL;
     size_t *nearest_idx = NULL;
     unsigned long long *near_k1 = NULL;
@@ -4758,6 +5602,13 @@ static int run_audit(const char *argv0, int argc, char **argv) {
                 uf_union(parent, i, j);
             }
             if (d <= 4) ++risk_pairs_k2;
+            int hd = hamming_distance_cli(targets.records[i].seq, targets.records[i].len,
+                                          targets.records[j].seq, targets.records[j].len);
+            if (hd >= 0) {
+                if (min_hamming_dist < 0 || hd < min_hamming_dist) min_hamming_dist = hd;
+                if (hd <= 4) ++risk_pairs_hamming_k2;
+                if (hd <= 6) ++risk_pairs_hamming_k3;
+            }
             if (d <= 2 || d <= 2 * k) {
                 const char *example = d == 0 ? targets.records[i].seq : "";
                 fprintf(pairs, "%s\t%s\t%s\t%s\t%d\t%s\t%s\t%s\n",
@@ -4845,28 +5696,47 @@ static int run_audit(const char *argv0, int argc, char **argv) {
     fprintf(summary, "unique_sequences\t%zu\n", unique_sequences);
     fprintf(summary, "duplicate_sequences\t%zu\n", targets.count - unique_sequences);
     fprintf(summary, "min_edit_distance\t%d\n", min_dist);
+    if (min_hamming_dist >= 0) {
+        fprintf(summary, "min_hamming_distance\t%d\n", min_hamming_dist);
+    } else {
+        fprintf(summary, "min_hamming_distance\tnot_computed\n");
+    }
     fprintf(summary, "safe_at_k0\t%s\n", pairs_d0 == 0 ? "yes" : "no");
     fprintf(summary, "safe_at_k1\t%s\n", risk_pairs_k1 == 0 ? "yes" : "no");
     fprintf(summary, "safe_at_k2\t%s\n", risk_pairs_k2 == 0 ? "yes" : "no");
+    fprintf(summary, "safe_at_hamming_k2\t%s\n", risk_pairs_hamming_k2 == 0 ? "yes" : "no");
+    fprintf(summary, "safe_at_hamming_k3\t%s\n", risk_pairs_hamming_k3 == 0 ? "yes" : "no");
     fprintf(summary, "pairs_distance_0\t%llu\n", pairs_d0);
     fprintf(summary, "pairs_distance_1\t%llu\n", pairs_d1);
     fprintf(summary, "pairs_distance_2\t%llu\n", pairs_d2);
     fprintf(summary, "pairs_within_requested_k\t%llu\n", pairs_within_k);
     fprintf(summary, "risk_pairs_for_k1\t%llu\n", risk_pairs_k1);
     fprintf(summary, "risk_pairs_for_k2\t%llu\n", risk_pairs_k2);
+    fprintf(summary, "risk_pairs_for_hamming_k2\t%llu\n", risk_pairs_hamming_k2);
+    fprintf(summary, "risk_pairs_for_hamming_k3\t%llu\n", risk_pairs_hamming_k3);
     fprintf(summary, "ambiguous_query_variants_k1\t%llu\n", ambiguous_query_variants_k1);
     fprintf(summary, "recommended_k\t%d\n", pairs_d0 == 0 && (k == 0 || risk_pairs_k1 == 0) ? k : 0);
     fclose(summary);
     summary = NULL;
     char min_dist_json[32];
+    char min_hamming_dist_json[32];
     char risk_pairs_k2_json[32];
+    char risk_pairs_hamming_k2_json[32];
+    char risk_pairs_hamming_k3_json[32];
     snprintf(min_dist_json, sizeof(min_dist_json), "%d", min_dist);
+    snprintf(min_hamming_dist_json, sizeof(min_hamming_dist_json), "%d", min_hamming_dist);
     snprintf(risk_pairs_k2_json, sizeof(risk_pairs_k2_json), "%llu", risk_pairs_k2);
+    snprintf(risk_pairs_hamming_k2_json, sizeof(risk_pairs_hamming_k2_json), "%llu", risk_pairs_hamming_k2);
+    snprintf(risk_pairs_hamming_k3_json, sizeof(risk_pairs_hamming_k3_json), "%llu", risk_pairs_hamming_k3);
     if (write_audit_summary_json(out_dir, "exact", k, targets.count, unique_sequences,
-                                 min_dist_json, pairs_d0 == 0, risk_pairs_k1 == 0,
+                                 min_dist_json, min_hamming_dist >= 0 ? min_hamming_dist_json : "null",
+                                 pairs_d0 == 0, risk_pairs_k1 == 0,
                                  risk_pairs_k2 == 0 ? "true" : "false",
+                                 risk_pairs_hamming_k2 == 0 ? "true" : "false",
+                                 risk_pairs_hamming_k3 == 0 ? "true" : "false",
                                  pairs_d0, pairs_d1, pairs_d2, pairs_within_k, risk_pairs_k1,
-                                 risk_pairs_k2_json, ambiguous_query_variants_k1,
+                                 risk_pairs_k2_json, risk_pairs_hamming_k2_json, risk_pairs_hamming_k3_json,
+                                 ambiguous_query_variants_k1,
                                  pairs_d0 == 0 && (k == 0 || risk_pairs_k1 == 0) ? k : 0) != 0) {
         goto done;
     }
@@ -5302,6 +6172,7 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
     size_t right_len = 0;
     int k = -1;
     count_metric metric = COUNT_METRIC_LEVENSHTEIN;
+    ambiguity_policy assignment_policy = AMBIGUITY_POLICY_RADIUS;
 
     int i = 2;
     while (i < argc) {
@@ -5343,6 +6214,16 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
                 metric = COUNT_METRIC_HAMMING;
             } else if (strcmp(value, "levenshtein") == 0) {
                 metric = COUNT_METRIC_LEVENSHTEIN;
+            } else {
+                usage(argv0);
+                return 2;
+            }
+        } else if (strcmp(arg, "--ambiguity-policy") == 0 && i < argc) {
+            const char *value = argv[i++];
+            if (strcmp(value, "radius") == 0) {
+                assignment_policy = AMBIGUITY_POLICY_RADIUS;
+            } else if (strcmp(value, "best") == 0) {
+                assignment_policy = AMBIGUITY_POLICY_BEST;
             } else {
                 usage(argv0);
                 return 2;
@@ -5453,6 +6334,8 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
             fprintf(stderr, "FASTQ pair assignment failed\n");
             goto done;
         }
+        apply_ambiguity_policy(&left, assignment_policy);
+        apply_ambiguity_policy(&right, assignment_policy);
         stats.candidates_considered += left_stats.candidates_considered + right_stats.candidates_considered;
         stats.candidates_verified += left_stats.candidates_verified + right_stats.candidates_verified;
 
@@ -5499,8 +6382,8 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
             goto done;
         }
         fprintf(summary,
-                "{\n  \"workflow\": \"pair-count\",\n  \"k\": %d,\n  \"metric\": \"%s\",\n  \"alphabet_policy\": \"%s\",\n  \"left_start\": %zu,\n  \"left_length\": %zu,\n  \"right_start\": %zu,\n  \"right_length\": %zu,\n  \"n_left_targets\": %zu,\n  \"n_right_targets\": %zu,\n  \"total_reads\": %llu,\n  \"assigned_pairs\": %llu,\n  \"pair_ambiguous\": %llu,\n  \"left_unmatched\": %llu,\n  \"right_unmatched\": %llu,\n  \"invalid\": %llu,\n  \"candidates_considered\": %llu,\n  \"candidates_verified\": %llu\n}\n",
-                k, metric_name(metric), qdaln_alphabet_policy(), left_start, left_len, right_start, right_len,
+                "{\n  \"workflow\": \"pair-count\",\n  \"k\": %d,\n  \"metric\": \"%s\",\n  \"ambiguity_policy\": \"%s\",\n  \"alphabet_policy\": \"%s\",\n  \"left_start\": %zu,\n  \"left_length\": %zu,\n  \"right_start\": %zu,\n  \"right_length\": %zu,\n  \"n_left_targets\": %zu,\n  \"n_right_targets\": %zu,\n  \"total_reads\": %llu,\n  \"assigned_pairs\": %llu,\n  \"pair_ambiguous\": %llu,\n  \"left_unmatched\": %llu,\n  \"right_unmatched\": %llu,\n  \"invalid\": %llu,\n  \"candidates_considered\": %llu,\n  \"candidates_verified\": %llu\n}\n",
+                k, metric_name(metric), ambiguity_policy_name(assignment_policy), qdaln_alphabet_policy(), left_start, left_len, right_start, right_len,
                 left_targets.count, right_targets.count, stats.total_reads, stats.assigned_pairs,
                 stats.pair_ambiguous, stats.left_unmatched, stats.right_unmatched, stats.invalid,
                 stats.candidates_considered, stats.candidates_verified);
@@ -5551,6 +6434,7 @@ static int run_demux(const char *argv0, int argc, char **argv) {
     size_t indel_window = 0;
     int max_correction_qual = -1;
     int k = -1;
+    ambiguity_policy assignment_policy = AMBIGUITY_POLICY_RADIUS;
 
     int i = 2;
     while (i < argc) {
@@ -5584,6 +6468,16 @@ static int run_demux(const char *argv0, int argc, char **argv) {
                 metric = COUNT_METRIC_HAMMING;
             } else if (strcmp(value, "levenshtein") == 0) {
                 metric = COUNT_METRIC_LEVENSHTEIN;
+            } else {
+                usage(argv0);
+                return 2;
+            }
+        } else if (strcmp(arg, "--ambiguity-policy") == 0 && i < argc) {
+            const char *value = argv[i++];
+            if (strcmp(value, "radius") == 0) {
+                assignment_policy = AMBIGUITY_POLICY_RADIUS;
+            } else if (strcmp(value, "best") == 0) {
+                assignment_policy = AMBIGUITY_POLICY_BEST;
             } else {
                 usage(argv0);
                 return 2;
@@ -5738,6 +6632,7 @@ static int run_demux(const char *argv0, int argc, char **argv) {
             fprintf(stderr, "FASTQ assignment failed\n");
             goto done;
         }
+        apply_ambiguity_policy(&result, assignment_policy);
         if (result.status == QDALN_MATCH_UNIQUE && result.target_index >= 0 && result.best_distance > 0) {
             seq_record *target = &targets.records[result.target_index];
             offset_list barcode_offset = {0};
@@ -5804,8 +6699,8 @@ static int run_demux(const char *argv0, int argc, char **argv) {
             }
         }
         fprintf(summary,
-                "{\n  \"workflow\": \"demux\",\n  \"k\": %d,\n  \"metric\": \"%s\",\n  \"alphabet_policy\": \"%s\",\n  \"max_correction_qual\": ",
-                k, metric_name(metric), qdaln_alphabet_policy());
+                "{\n  \"workflow\": \"demux\",\n  \"k\": %d,\n  \"metric\": \"%s\",\n  \"ambiguity_policy\": \"%s\",\n  \"alphabet_policy\": \"%s\",\n  \"max_correction_qual\": ",
+                k, metric_name(metric), ambiguity_policy_name(assignment_policy), qdaln_alphabet_policy());
         if (max_correction_qual >= 0) {
             fprintf(summary, "%d", max_correction_qual);
         } else {
@@ -7254,6 +8149,15 @@ int main(int argc, char **argv) {
         return 2;
     }
 
+    if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "help") == 0) {
+        if (argc != 2) {
+            usage(argv[0]);
+            return 2;
+        }
+        help_manual(stdout, argv[0]);
+        return 0;
+    }
+
     if (strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "version") == 0) {
         if (argc != 2) {
             usage(argv[0]);
@@ -7315,7 +8219,16 @@ int main(int argc, char **argv) {
     }
 
     if (strcmp(argv[1], "count") == 0 || strcmp(argv[1], "crispr-count") == 0) {
+        if (help_requested(argc, argv)) {
+            count_help_manual(stdout, argv[0], strcmp(argv[1], "crispr-count") == 0);
+            return 0;
+        }
         return run_count(argv[0], argc, argv);
+    }
+
+    if (strcmp(argv[1], "guide-counter") == 0 || strcmp(argv[1], "guide-counter-count") == 0 ||
+        strcmp(argv[1], "guide-count") == 0) {
+        return run_guide_counter_compatible(argv[0], argc, argv);
     }
 
     if (strcmp(argv[1], "inspect-unmatched") == 0) {
@@ -7323,6 +8236,10 @@ int main(int argc, char **argv) {
     }
 
     if (strcmp(argv[1], "audit") == 0 || strcmp(argv[1], "audit-targets") == 0) {
+        if (help_requested(argc, argv)) {
+            audit_help_manual(stdout, argv[0]);
+            return 0;
+        }
         return run_audit(argv[0], argc, argv);
     }
 

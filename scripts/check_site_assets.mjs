@@ -6,7 +6,19 @@ const requiredFiles = [
   "../app/globals.css",
   "../next.config.ts",
   "../public/dotmatch-read-assignment.svg",
-  "../public/dotmatch-panel-computation.svg",
+  "../public/dotmatch-panel-certificate.png",
+  "../public/dotmatch-nfcore-artic-flow.png",
+  "../public/dotmatch-nextflow-crispr-flow.png",
+  "../public/dotmatch-10x-guide-capture-flow.png",
+  "../public/benchmarks/gpu_metal_speedup.svg",
+  "../public/benchmarks/gpu_crispr_metal_speedup.svg",
+  "../public/benchmarks/crispr_comparison_throughput.svg",
+  "../public/benchmarks/crispr_hamming_k23_comparison.svg",
+  "../public/benchmarks/barcode_demux_throughput.svg",
+  "../public/benchmarks/barcode_demux_peak_memory.svg",
+  "../public/benchmarks/public_crispr_repeated_throughput.svg",
+  "../public/benchmarks/public_crispr_repeated_peak_memory.svg",
+  "../public/benchmarks/public_crispr_repeated_verified_candidates.svg",
   "../public/dotmatch-og.png",
   "../public/dotmatch-twitter.png",
   "../scripts/render_social_images.py"
@@ -20,11 +32,12 @@ for (const path of requiredFiles) {
 }
 
 const page = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
+const normalizedPage = page.replace(/\s+/g, " ");
 const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
 const layout = readFileSync(new URL("../app/layout.tsx", import.meta.url), "utf8");
 const nextConfig = readFileSync(new URL("../next.config.ts", import.meta.url), "utf8");
 
-for (const anchor of ['id="top"', 'id="panel-design"', 'id="barcode-qc"', 'id="benchmarks"', 'id="install"', 'id="cite"', 'id="use-cases"']) {
+for (const anchor of ['id="top"', 'id="real-workflows"', 'id="panel-design"', 'id="barcode-qc"', 'id="benchmarks"', 'id="install"', 'id="cite"', 'id="use-cases"']) {
   if (!page.includes(anchor)) {
     console.error(`Missing site section anchor: ${anchor}`);
     process.exit(1);
@@ -34,12 +47,19 @@ for (const anchor of ['id="top"', 'id="panel-design"', 'id="barcode-qc"', 'id="b
 for (const selector of [
   ".hero",
   ".hero-visual",
+  ".hero-link-row",
+  ".mobile-header-actions",
+  ".real-workflows-section",
+  ".real-workflow-card",
   ".panel-design-layout",
   ".panel-output-grid",
   ".metric-grid",
   ".autopsy-layout",
   ".artifact-grid",
   ".report-table",
+  ".benchmark-reader-guide",
+  ".benchmark-figure-grid",
+  ".benchmark-figure",
   ".decision-grid",
   ".example-layout",
   ".status-table",
@@ -66,6 +86,19 @@ if (!nextConfig.includes("devIndicators: false")) {
   process.exit(1);
 }
 
+for (const phrase of [
+  "experimental evidence lane",
+  "Hamming k2/k3 rows are separated from GuideCounter claims",
+  "CPU indexed assignment remains the production baseline",
+  "DotMatch Hamming k=1 against guide-counter one-mismatch",
+  "Single-guide fixed-window check only"
+]) {
+  if (!normalizedPage.includes(phrase)) {
+    console.error(`Missing bounded marketing copy: ${phrase}`);
+    process.exit(1);
+  }
+}
+
 function readPngDimensions(imagePath) {
   const png = readFileSync(new URL(imagePath, import.meta.url));
   if (png.length < 24 || png.toString("ascii", 1, 4) !== "PNG") {
@@ -86,10 +119,8 @@ for (const imagePath of ["../public/dotmatch-og.png", "../public/dotmatch-twitte
   }
 }
 
-for (const imagePath of ["../public/dotmatch-read-assignment.svg", "../public/dotmatch-panel-computation.svg"]) {
-  const svg = readFileSync(new URL(imagePath, import.meta.url), "utf8");
-  if (!svg.startsWith("<svg ") || !svg.includes('role="img"') || !svg.includes("<title")) {
-    console.error(`${imagePath} should be a valid image asset with title metadata.`);
-    process.exit(1);
-  }
+const svg = readFileSync(new URL("../public/dotmatch-read-assignment.svg", import.meta.url), "utf8");
+if (!svg.startsWith("<svg ") || !svg.includes('role="img"') || !svg.includes("<title")) {
+  console.error("Workflow SVG should be a valid image asset with title metadata.");
+  process.exit(1);
 }

@@ -20,6 +20,8 @@ def test_snakemake_crispr_config_is_complete() -> None:
     assert config["guide_start"] == 23
     assert config["guide_length"] == 19
     assert config["metric"] in {"hamming", "levenshtein"}
+    assert config["ambiguity_policy"] == "radius"
+    assert config["ambiguous"] == "discard"
     assert config["outdir"] == "examples/workflows/snakemake/output"
 
 
@@ -30,7 +32,8 @@ def test_snakemake_example_runs_dotmatch_crispr_count() -> None:
     assert "rule dotmatch_crispr_count" in text
     assert "dotmatch crispr-count" in text
     assert "--format" not in text
-    assert "--ambiguous discard" in text
+    assert "ambiguous = config.get" in text
+    assert "--ambiguous {params.ambiguous}" in text
     assert "--sample-qc" in text
     assert "sample_qc" in text
 
@@ -44,6 +47,8 @@ def test_nextflow_crispr_config_is_complete() -> None:
     assert "guide_start = 23" in config
     assert "guide_length = 19" in config
     assert "metric = 'levenshtein'" in config
+    assert "ambiguity_policy = 'radius'" in config
+    assert "ambiguous = 'discard'" in config
     assert "outdir = 'examples/workflows/nextflow/output'" in config
 
 
@@ -54,7 +59,7 @@ def test_nextflow_example_runs_dotmatch_crispr_count() -> None:
     assert "nextflow.enable.dsl=2" in text
     assert "process DOTMATCH_CRISPR_COUNT" in text
     assert "dotmatch crispr-count" in text
-    assert "--ambiguous discard" in text
+    assert "--ambiguous ${params.ambiguous}" in text
     assert "--sample-qc" in text
     assert 'path "sample_qc.tsv", emit: sample_qc' in text
     assert "publishDir params.outdir" in text

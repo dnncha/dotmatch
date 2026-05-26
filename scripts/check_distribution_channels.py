@@ -181,6 +181,42 @@ def verify_bioconda_install(version: str) -> None:
         observed_threshold = run_checked([conda, "run", "-p", str(prefix), "dotmatch", "leq", "1", "ACGT", "AGGT"], cwd=root, env=env)
         if observed_threshold != "true":
             raise RuntimeError(f"Bioconda dotmatch leq smoke test reported {observed_threshold!r}, expected 'true'")
+        (root / "gc_library.tsv").write_text("guide\tbases\tgene\ng0\tACGT\tGENE0\n", encoding="utf-8")
+        (root / "gc_reads.fastq").write_text("@r0\nACGT\n+\nIIII\n", encoding="utf-8")
+        run_checked(
+            [
+                conda,
+                "run",
+                "-p",
+                str(prefix),
+                "dotmatch",
+                "guide-counter",
+                "count",
+                "--input",
+                "gc_reads.fastq",
+                "--samples",
+                "sample",
+                "--library",
+                "gc_library.tsv",
+                "--offset-sample-size",
+                "1",
+                "--offset-min-fraction",
+                "0.1",
+                "--output",
+                "gc_out",
+            ],
+            cwd=root,
+            env=env,
+        )
+        counts = (root / "gc_out.counts.txt").read_text(encoding="utf-8").splitlines()
+        extended = (root / "gc_out.extended-counts.txt").read_text(encoding="utf-8").splitlines()
+        stats = (root / "gc_out.stats.txt").read_text(encoding="utf-8").splitlines()
+        if counts != ["guide\tgene\tsample", "g0\tGENE0\t1"]:
+            raise RuntimeError("Bioconda guide-counter counts smoke test produced unexpected counts")
+        if not extended or extended[0] != "guide\tgene\tguide_type\tsample":
+            raise RuntimeError("Bioconda guide-counter extended-counts smoke test produced unexpected header")
+        if len(stats) < 2 or not stats[1].startswith("gc_reads.fastq\tsample\t1\t1\t1\t1.0000"):
+            raise RuntimeError("Bioconda guide-counter stats smoke test produced unexpected stats")
 
 
 def verify_biocontainers_run(image: str, version: str) -> None:
@@ -255,7 +291,9 @@ def check_bioconda(version: str, result: AuditResult) -> None:
     except Exception as exc:
         result.failures.append(ChannelMessage("bioconda-install", f"Bioconda one-command install failed for {version}: {exc}"))
         return
-    result.passed.append(ChannelMessage("bioconda-install", f"Bioconda install and CLI smoke tests pass for {version}"))
+    result.passed.append(
+        ChannelMessage("bioconda-install", f"Bioconda install, CLI, and GuideCounter-compatible smoke tests pass for {version}")
+    )
 
 
 def biocontainers_tags_for_version(version: str) -> list[str]:

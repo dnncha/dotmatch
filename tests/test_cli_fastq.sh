@@ -21,6 +21,21 @@ if [ "$("$DOTMATCH_BIN" --version)" != "dotmatch $EXPECTED_VERSION" ]; then
   echo "dotmatch --version must report pyproject version" >&2
   exit 1
 fi
+for help_arg in --help -h help; do
+  "$DOTMATCH_BIN" "$help_arg" > "$TMPDIR/help-$help_arg.txt" 2> "$TMPDIR/help-$help_arg.err"
+  if [ -s "$TMPDIR/help-$help_arg.err" ]; then
+    echo "dotmatch $help_arg must write help to stdout without stderr" >&2
+    exit 1
+  fi
+done
+cp "$TMPDIR/help---help.txt" "$TMPDIR/help.txt"
+grep "DotMatch $EXPECTED_VERSION" "$TMPDIR/help.txt" >/dev/null
+grep "Counting and demultiplexing:" "$TMPDIR/help.txt" >/dev/null
+grep "Assignment outcomes:" "$TMPDIR/help.txt" >/dev/null
+if grep "Packaging note:" "$TMPDIR/help.txt" >/dev/null; then
+  echo "native help must not include packaging policy notes" >&2
+  exit 1
+fi
 
 cat > "$TMPDIR/barcodes.tsv" <<'BARCODES'
 bc0	ACGT
@@ -48,6 +63,19 @@ AC
 II
 FASTQ
 
+cat > "$TMPDIR/assign_reads.tsv" <<'ASSIGNREADS'
+r0	ACGT
+r1	ACGC
+r2	TTTT
+ASSIGNREADS
+
+"$DOTMATCH_BIN" assign 1 "$TMPDIR/barcodes.tsv" "$TMPDIR/assign_reads.tsv" > "$TMPDIR/assign_radius.tsv"
+grep '^assign	r0	ACGT	0	ACGT	0	ambiguous	3	1$' "$TMPDIR/assign_radius.tsv" >/dev/null
+grep '^assign	r1	ACGC	0	ACGT	1	ambiguous	2	-1$' "$TMPDIR/assign_radius.tsv" >/dev/null
+
+"$DOTMATCH_BIN" assign 1 "$TMPDIR/barcodes.tsv" "$TMPDIR/assign_reads.tsv" --ambiguity-policy best > "$TMPDIR/assign_best.tsv"
+grep '^assign	r0	ACGT	0	ACGT	0	unique	3	1$' "$TMPDIR/assign_best.tsv" >/dev/null
+
 "$DOTMATCH_BIN" fastq-assign \
   --barcodes "$TMPDIR/barcodes.tsv" \
   --reads "$TMPDIR/reads.fastq" \
@@ -64,7 +92,26 @@ r2	GGGG	-1			-1	-1	0	none
 r3		-1			-1	-1	0	invalid
 EXPECTED
 
-diff -u "$TMPDIR/expected.tsv" "$TMPDIR/out.tsv"
+cat > "$TMPDIR/expected_radius.tsv" <<'EXPECTEDRADIUS'
+read_id	observed_barcode	target_index	target_id	target_seq	best_distance	second_best_distance	match_count	status
+r0	ACGT	0	bc0	ACGT	0	1	3	ambiguous
+r1	TTTG	3	bc3	TTTT	1	-1	1	unique
+r2	GGGG	-1			-1	-1	0	none
+r3		-1			-1	-1	0	invalid
+EXPECTEDRADIUS
+
+diff -u "$TMPDIR/expected_radius.tsv" "$TMPDIR/out.tsv"
+
+"$DOTMATCH_BIN" fastq-assign \
+  --barcodes "$TMPDIR/barcodes.tsv" \
+  --reads "$TMPDIR/reads.fastq" \
+  --barcode-start 0 \
+  --barcode-length 4 \
+  --k 1 \
+  --ambiguity-policy best \
+  --out "$TMPDIR/out_best.tsv"
+
+diff -u "$TMPDIR/expected.tsv" "$TMPDIR/out_best.tsv"
 
 "$DOTMATCH_BIN" fastq-assign \
   --barcodes "$TMPDIR/barcodes.tsv" \
@@ -193,6 +240,74 @@ BARCODEHEADER
 grep '^s1	ACGT		0	1	0	0	0	0	1$' "$TMPDIR/barcode_header_counts.tsv" >/dev/null
 grep '"n_targets": 2' "$TMPDIR/barcode_header_summary.json" >/dev/null
 
+cat > "$TMPDIR/k3_targets.tsv" <<'K3TARGETS'
+only	ACGT
+K3TARGETS
+
+cat > "$TMPDIR/k3_reads.fastq" <<'K3FASTQ'
+@exact
+ACGT
++
+IIII
+@two_mismatch
+AGGA
++
+IIII
+@three_mismatch
+TGGA
++
+IIII
+@four_mismatch
+TGCA
++
+IIII
+K3FASTQ
+
+"$DOTMATCH_BIN" count \
+  --targets "$TMPDIR/k3_targets.tsv" \
+  --reads "$TMPDIR/k3_reads.fastq" \
+  --sample-label k3 \
+  --target-start 0 \
+  --target-length 4 \
+  --k 2 \
+  --metric hamming \
+  --ambiguity-policy best \
+  --out "$TMPDIR/k2_hamming_counts.tsv" \
+  --summary "$TMPDIR/k2_hamming_summary.json"
+
+grep '^only	ACGT		0	1	0	0	0	1	2$' "$TMPDIR/k2_hamming_counts.tsv" >/dev/null
+grep '"k": 2' "$TMPDIR/k2_hamming_summary.json" >/dev/null
+grep '"metric": "hamming"' "$TMPDIR/k2_hamming_summary.json" >/dev/null
+
+"$DOTMATCH_BIN" count \
+  --targets "$TMPDIR/k3_targets.tsv" \
+  --reads "$TMPDIR/k3_reads.fastq" \
+  --sample-label k3 \
+  --target-start 0 \
+  --target-length 4 \
+  --k 3 \
+  --metric hamming \
+  --ambiguity-policy best \
+  --out "$TMPDIR/k3_hamming_counts.tsv" \
+  --summary "$TMPDIR/k3_hamming_summary.json"
+
+grep '^only	ACGT		0	1	0	0	0	2	3$' "$TMPDIR/k3_hamming_counts.tsv" >/dev/null
+grep '"k": 3' "$TMPDIR/k3_hamming_summary.json" >/dev/null
+grep '"metric": "hamming"' "$TMPDIR/k3_hamming_summary.json" >/dev/null
+
+if "$DOTMATCH_BIN" count \
+  --targets "$TMPDIR/k3_targets.tsv" \
+  --reads "$TMPDIR/k3_reads.fastq" \
+  --sample-label k3 \
+  --target-start 0 \
+  --target-length 4 \
+  --k 3 \
+  --metric levenshtein \
+  --out "$TMPDIR/bad_levenshtein_k3.tsv" 2>/dev/null; then
+  echo "Levenshtein k=3 should fail for count" >&2
+  exit 1
+fi
+
 if "$DOTMATCH_BIN" fastq-assign \
   --barcodes "$TMPDIR/barcodes.tsv" \
   --reads "$TMPDIR/reads.fastq" \
@@ -252,6 +367,7 @@ mkdir "$TMPDIR/demux"
   --barcode-length 4 \
   --k 1 \
   --metric hamming \
+  --ambiguity-policy best \
   --out-dir "$TMPDIR/demux" \
   --summary "$TMPDIR/demux_summary.json" \
   --assignments "$TMPDIR/demux_assignments.tsv" \
@@ -270,6 +386,23 @@ grep '"ambiguous": 1' "$TMPDIR/demux_summary.json" >/dev/null
 grep '"unmatched": 1' "$TMPDIR/demux_summary.json" >/dev/null
 grep '"invalid": 1' "$TMPDIR/demux_summary.json" >/dev/null
 grep '^d2	AGGA	1	bc1	AGGT	1	-1	2	ambiguous$' "$TMPDIR/demux_assignments.tsv" >/dev/null
+
+mkdir "$TMPDIR/demux_radius_default"
+"$DOTMATCH_BIN" demux \
+  --barcodes "$TMPDIR/barcodes.tsv" \
+  --reads "$TMPDIR/demux_reads.fastq" \
+  --barcode-start 0 \
+  --barcode-length 4 \
+  --k 1 \
+  --metric hamming \
+  --out-dir "$TMPDIR/demux_radius_default" \
+  --summary "$TMPDIR/demux_radius_default_summary.json" \
+  --assignments "$TMPDIR/demux_radius_default_assignments.tsv" \
+  --ambiguous-out "$TMPDIR/demux_radius_default_ambiguous.fastq"
+
+grep '"ambiguity_policy": "radius"' "$TMPDIR/demux_radius_default_summary.json" >/dev/null
+grep '^@d0$' "$TMPDIR/demux_radius_default_ambiguous.fastq" >/dev/null
+grep '^d0	ACGT	0	bc0	ACGT	0	1	3	ambiguous$' "$TMPDIR/demux_radius_default_assignments.tsv" >/dev/null
 
 cat > "$TMPDIR/demux_quality.fastq" <<'DEMUXQUAL'
 @dq_exact
@@ -598,6 +731,7 @@ TARGETS
   --target-start 0 \
   --target-length 4 \
   --k 1 \
+  --ambiguity-policy best \
   --out "$TMPDIR/counts.tsv" \
   --assignments "$TMPDIR/assignments.tsv" \
   --summary "$TMPDIR/summary.json" \
@@ -717,6 +851,7 @@ grep '^k2	k2_none	TTTT	-1			-1	-1	0	none	none$' "$TMPDIR/k2_unmatched.tsv" >/dev
   --target-length 4 \
   --k 1 \
   --metric levenshtein \
+  --ambiguity-policy best \
   --format mageck \
   --out "$TMPDIR/counts_lev.tsv" \
   --summary "$TMPDIR/summary_lev.json"
@@ -729,6 +864,7 @@ grep '^k2	k2_none	TTTT	-1			-1	-1	0	none	none$' "$TMPDIR/k2_unmatched.tsv" >/dev
   --target-length 4 \
   --k 1 \
   --metric levenshtein \
+  --ambiguity-policy best \
   --format mageck \
   --threads 2 \
   --out "$TMPDIR/counts_lev_threads.tsv" \
@@ -745,6 +881,7 @@ grep '"read_threads": 2' "$TMPDIR/summary_lev_threads.json" >/dev/null
   --target-length 4 \
   --k 1 \
   --metric hamming \
+  --ambiguity-policy best \
   --format mageck \
   --out "$TMPDIR/counts_hamming.tsv" \
   --summary "$TMPDIR/summary_hamming.json"
@@ -752,6 +889,102 @@ grep '"read_threads": 2' "$TMPDIR/summary_lev_threads.json" >/dev/null
 grep '^bc0	G0	1$' "$TMPDIR/counts_hamming.tsv" >/dev/null
 grep '^bc3	G3	1$' "$TMPDIR/counts_hamming.tsv" >/dev/null
 grep '"count_engine": "hamming_lookup_direct_single_offset"' "$TMPDIR/summary_hamming.json" >/dev/null
+
+cat > "$TMPDIR/gc_library.tsv" <<'GCLIB'
+guide	bases	gene
+g_exact	ACGT	GENE_ESS
+g_control	TTTT	CTRL_SAFE
+g_other	GGCC	GENE_OTHER
+GCLIB
+
+cat > "$TMPDIR/gc_essential.tsv" <<'GCESS'
+GENE_ESS
+GCESS
+
+cat > "$TMPDIR/gc_nonessential.tsv" <<'GCNON'
+GENE_OTHER
+GCNON
+
+cat > "$TMPDIR/gc_control.tsv" <<'GCCTRL'
+g_control
+GCCTRL
+
+cat > "$TMPDIR/gc_sample.fastq" <<'GCFASTQ'
+@gc0
+NNACGTAA
++
+IIIIIIII
+@gc1
+NNTTTTAA
++
+IIIIIIII
+@gc2
+NNACGAAA
++
+IIIIIIII
+@gc3
+NNGGCCAA
++
+IIIIIIII
+@gc4
+NNAAAAAA
++
+IIIIIIII
+GCFASTQ
+
+"$DOTMATCH_BIN" guide-counter count \
+  --input "$TMPDIR/gc_sample.fastq" \
+  --library "$TMPDIR/gc_library.tsv" \
+  --essential-genes "$TMPDIR/gc_essential.tsv" \
+  --nonessential-genes "$TMPDIR/gc_nonessential.tsv" \
+  --control-guides "$TMPDIR/gc_control.tsv" \
+  --control-pattern ctrl \
+  --offset-sample-size 5 \
+  --offset-min-fraction 0.1 \
+  --output "$TMPDIR/gc_out"
+
+cat > "$TMPDIR/gc_expected_counts.tsv" <<'GCCOUNTS'
+guide	gene	gc_sample
+g_exact	GENE_ESS	2
+g_control	CTRL_SAFE	1
+g_other	GENE_OTHER	1
+GCCOUNTS
+diff -u "$TMPDIR/gc_expected_counts.tsv" "$TMPDIR/gc_out.counts.txt"
+grep '^guide	gene	guide_type	gc_sample$' "$TMPDIR/gc_out.extended-counts.txt" >/dev/null
+grep '^g_exact	GENE_ESS	Essential	2$' "$TMPDIR/gc_out.extended-counts.txt" >/dev/null
+grep '^g_control	CTRL_SAFE	Control	1$' "$TMPDIR/gc_out.extended-counts.txt" >/dev/null
+grep '^g_other	GENE_OTHER	Nonessential	1$' "$TMPDIR/gc_out.extended-counts.txt" >/dev/null
+grep '^file	label	total_guides	total_reads	mapped_reads	frac_mapped	mean_reads_per_guide	mean_reads_essential	mean_reads_nonessential	mean_reads_control	mean_reads_other	zero_read_guides$' "$TMPDIR/gc_out.stats.txt" >/dev/null
+grep "^$TMPDIR/gc_sample.fastq	gc_sample	3	5	4	0.8000	1.33	2.00	1.00	1.00	0.00	0$" "$TMPDIR/gc_out.stats.txt" >/dev/null
+
+"$DOTMATCH_BIN" guide-counter-count \
+  --input "$TMPDIR/gc_sample.fastq" \
+  --samples explicit_sample \
+  --library "$TMPDIR/gc_library.tsv" \
+  --exact-match \
+  --offset-sample-size 5 \
+  --offset-min-fraction 0.1 \
+  --output "$TMPDIR/gc_exact"
+
+grep '^guide	gene	explicit_sample$' "$TMPDIR/gc_exact.counts.txt" >/dev/null
+grep '^g_exact	GENE_ESS	1$' "$TMPDIR/gc_exact.counts.txt" >/dev/null
+grep '^g_control	CTRL_SAFE	1$' "$TMPDIR/gc_exact.counts.txt" >/dev/null
+grep '^g_other	GENE_OTHER	1$' "$TMPDIR/gc_exact.counts.txt" >/dev/null
+grep "^$TMPDIR/gc_sample.fastq	explicit_sample	3	5	3	0.6000	1.00" "$TMPDIR/gc_exact.stats.txt" >/dev/null
+
+"$DOTMATCH_BIN" guide-count \
+  --input "$TMPDIR/gc_sample.fastq" \
+  --samples short_alias \
+  --library "$TMPDIR/gc_library.tsv" \
+  --exact-match \
+  --offset-sample-size 5 \
+  --offset-min-fraction 0.1 \
+  --output "$TMPDIR/gc_short_alias"
+
+grep '^guide	gene	short_alias$' "$TMPDIR/gc_short_alias.counts.txt" >/dev/null
+grep '^g_exact	GENE_ESS	1$' "$TMPDIR/gc_short_alias.counts.txt" >/dev/null
+grep '^g_control	CTRL_SAFE	1$' "$TMPDIR/gc_short_alias.counts.txt" >/dev/null
+grep '^g_other	GENE_OTHER	1$' "$TMPDIR/gc_short_alias.counts.txt" >/dev/null
 
 "$DOTMATCH_BIN" count \
   --targets "$TMPDIR/targets.csv" \
@@ -761,6 +994,7 @@ grep '"count_engine": "hamming_lookup_direct_single_offset"' "$TMPDIR/summary_ha
   --target-length 4 \
   --k 1 \
   --metric hamming \
+  --ambiguity-policy best \
   --format mageck \
   --threads 2 \
   --out "$TMPDIR/counts_hamming_threads.tsv" \
@@ -768,6 +1002,70 @@ grep '"count_engine": "hamming_lookup_direct_single_offset"' "$TMPDIR/summary_ha
 
 diff -u "$TMPDIR/counts_hamming.tsv" "$TMPDIR/counts_hamming_threads.tsv"
 grep '"read_threads": 2' "$TMPDIR/summary_hamming_threads.json" >/dev/null
+
+python3 - "$TMPDIR/sparse_targets.tsv" "$TMPDIR/sparse_reads.fastq" <<'PY'
+import random
+import sys
+
+targets_path, reads_path = sys.argv[1:3]
+alphabet = "ACGT"
+rng = random.Random(7)
+targets = []
+
+while len(targets) < 2048:
+    seq = "".join(rng.choice(alphabet) for _ in range(12))
+    if any(sum(a != b for a, b in zip(seq, other)) < 3 for other in targets):
+        continue
+    targets.append(seq)
+
+with open(targets_path, "w", encoding="utf-8") as out:
+    for i, seq in enumerate(targets):
+        out.write(f"sparse_{i}\t{seq}\tG{i % 17}\n")
+
+touched = [targets[3], targets[701], targets[1777]]
+with open(reads_path, "w", encoding="utf-8") as out:
+    for i in range(4096):
+        seq = touched[i % len(touched)]
+        if i % 11 == 0:
+            repl = "A" if seq[0] != "A" else "C"
+            seq = repl + seq[1:]
+        elif i % 17 == 0:
+            seq = "N" + seq[1:]
+        elif i % 29 == 0:
+            seq = "TTTTTTTTTTTT"
+        out.write(f"@sparse_{i}\n{seq}AAAA\n+\n{'I' * 16}\n")
+PY
+
+"$DOTMATCH_BIN" count \
+  --targets "$TMPDIR/sparse_targets.tsv" \
+  --reads "$TMPDIR/sparse_reads.fastq" \
+  --sample-label sparse_hamming \
+  --target-start 0 \
+  --target-length 12 \
+  --k 1 \
+  --metric hamming \
+  --ambiguity-policy best \
+  --out "$TMPDIR/sparse_counts_hamming.tsv" \
+  --summary "$TMPDIR/sparse_summary_hamming.json"
+
+"$DOTMATCH_BIN" count \
+  --targets "$TMPDIR/sparse_targets.tsv" \
+  --reads "$TMPDIR/sparse_reads.fastq" \
+  --sample-label sparse_hamming \
+  --target-start 0 \
+  --target-length 12 \
+  --k 1 \
+  --metric hamming \
+  --ambiguity-policy best \
+  --threads 4 \
+  --out "$TMPDIR/sparse_counts_hamming_threads.tsv" \
+  --summary "$TMPDIR/sparse_summary_hamming_threads.json"
+
+diff -u "$TMPDIR/sparse_counts_hamming.tsv" "$TMPDIR/sparse_counts_hamming_threads.tsv"
+grep '^sparse_3	' "$TMPDIR/sparse_counts_hamming_threads.tsv" | grep '	[1-9][0-9]*$' >/dev/null
+grep '^sparse_701	' "$TMPDIR/sparse_counts_hamming_threads.tsv" | grep '	[1-9][0-9]*$' >/dev/null
+grep '^sparse_1777	' "$TMPDIR/sparse_counts_hamming_threads.tsv" | grep '	[1-9][0-9]*$' >/dev/null
+grep '"read_threads": 4' "$TMPDIR/sparse_summary_hamming_threads.json" >/dev/null
 
 python3 - "$TMPDIR/long_header.fastq.gz" <<'PY'
 import gzip
@@ -788,6 +1086,7 @@ PY
   --target-length 4 \
   --k 1 \
   --metric hamming \
+  --ambiguity-policy best \
   --format mageck \
   --out "$TMPDIR/counts_long_header.tsv" \
   --summary "$TMPDIR/summary_long_header.json"
@@ -803,6 +1102,7 @@ grep '"total_reads": 1' "$TMPDIR/summary_long_header.json" >/dev/null
   --target-length 4 \
   --k 1 \
   --metric levenshtein \
+  --ambiguity-policy best \
   --format mageck \
   --out "$TMPDIR/counts_long_header_lev.tsv" \
   --summary "$TMPDIR/summary_long_header_lev.json"
@@ -970,6 +1270,7 @@ MULTIFASTQ
   --target-length 4 \
   --k 1 \
   --metric hamming \
+  --ambiguity-policy best \
   --hamming-index precompute \
   --auto-offset 6 \
   --auto-offset-sample 3 \
@@ -997,6 +1298,7 @@ grep '"selected_target_starts": \[0, 1, 2, 3, 4, 5, 6\]' "$TMPDIR/summary_multi_
   --target-length 4 \
   --k 1 \
   --metric hamming \
+  --ambiguity-policy best \
   --hamming-index precompute \
   --auto-offset 6 \
   --auto-offset-sample 3 \
@@ -1129,6 +1431,7 @@ fi
   --target-start 0 \
   --target-length 4 \
   --k 1 \
+  --ambiguity-policy best \
   --format mageck \
   --out "$TMPDIR/mageck.tsv"
 
@@ -1154,6 +1457,7 @@ SAMPLES
   --guide-length 4 \
   --k 1 \
   --metric levenshtein \
+  --ambiguity-policy best \
   --threads 2 \
   --out "$TMPDIR/crispr_mageck.tsv" \
   --summary "$TMPDIR/crispr_qc.json"
@@ -1162,6 +1466,42 @@ diff -u "$TMPDIR/expected_mageck.tsv" "$TMPDIR/crispr_mageck.tsv"
 grep '"k1_rescued_reads": 1' "$TMPDIR/crispr_qc.json" >/dev/null
 grep '"percent_rescued_by_k1": 25.000000' "$TMPDIR/crispr_qc.json" >/dev/null
 
+"$DOTMATCH_BIN" crispr-count --help > "$TMPDIR/crispr_count_help.txt"
+grep '^DotMatch .* crispr-count$' "$TMPDIR/crispr_count_help.txt" >/dev/null
+grep 'MAGeCK-ready' "$TMPDIR/crispr_count_help.txt" >/dev/null
+grep 'Hamming supports k=0..3' "$TMPDIR/crispr_count_help.txt" >/dev/null
+
+"$DOTMATCH_BIN" audit --help > "$TMPDIR/audit_help.txt"
+grep '^DotMatch .* audit$' "$TMPDIR/audit_help.txt" >/dev/null
+grep 'safe_at_hamming_k3' "$TMPDIR/audit_help.txt" >/dev/null
+grep '2k+1 substitutions' "$TMPDIR/audit_help.txt" >/dev/null
+
+cat > "$TMPDIR/samples_reordered.csv" <<SAMPLES
+fastq_path,sample
+$TMPDIR/reads.fastq,plasmid
+$TMPDIR/reads.fastq.gz,esc
+SAMPLES
+
+cat > "$TMPDIR/library_aliases.csv" <<'LIBRARYALIASES'
+sgRNA,sgRNA_sequence,gene_symbol
+bc0,ACGT,G0
+bc1,AGGT,G1
+bc2,ACGA,G2
+bc3,TTTT,G3
+LIBRARYALIASES
+
+"$DOTMATCH_BIN" crispr-count \
+  --library "$TMPDIR/library_aliases.csv" \
+  --samples "$TMPDIR/samples_reordered.csv" \
+  --guide-start 0 \
+  --guide-length 4 \
+  --k 1 \
+  --metric hamming \
+  --ambiguity-policy best \
+  --out "$TMPDIR/crispr_mageck_reordered.tsv"
+
+diff -u "$TMPDIR/expected_mageck.tsv" "$TMPDIR/crispr_mageck_reordered.tsv"
+
 "$DOTMATCH_BIN" audit \
   --targets "$TMPDIR/targets.csv" \
   --k 1 \
@@ -1169,12 +1509,20 @@ grep '"percent_rescued_by_k1": 25.000000' "$TMPDIR/crispr_qc.json" >/dev/null
 
 grep '^targets	4$' "$TMPDIR/audit/audit_summary.tsv" >/dev/null
 grep '^safe_at_k1	no$' "$TMPDIR/audit/audit_summary.tsv" >/dev/null
+grep '^safe_at_hamming_k2	no$' "$TMPDIR/audit/audit_summary.tsv" >/dev/null
+grep '^safe_at_hamming_k3	no$' "$TMPDIR/audit/audit_summary.tsv" >/dev/null
 grep '^risk_pairs_for_k1	3$' "$TMPDIR/audit/audit_summary.tsv" >/dev/null
+grep '^risk_pairs_for_hamming_k2	6$' "$TMPDIR/audit/audit_summary.tsv" >/dev/null
+grep '^risk_pairs_for_hamming_k3	6$' "$TMPDIR/audit/audit_summary.tsv" >/dev/null
 grep '^ambiguous_query_variants_k1	14$' "$TMPDIR/audit/audit_summary.tsv" >/dev/null
 grep '"audit_mode": "exact"' "$TMPDIR/audit/audit_summary.json" >/dev/null
 grep '"k": 1' "$TMPDIR/audit/audit_summary.json" >/dev/null
 grep '"safe_at_k1": false' "$TMPDIR/audit/audit_summary.json" >/dev/null
+grep '"safe_at_hamming_k2": false' "$TMPDIR/audit/audit_summary.json" >/dev/null
+grep '"safe_at_hamming_k3": false' "$TMPDIR/audit/audit_summary.json" >/dev/null
 grep '"risk_pairs_for_k1": 3' "$TMPDIR/audit/audit_summary.json" >/dev/null
+grep '"risk_pairs_for_hamming_k2": 6' "$TMPDIR/audit/audit_summary.json" >/dev/null
+grep '"risk_pairs_for_hamming_k3": 6' "$TMPDIR/audit/audit_summary.json" >/dev/null
 grep '^bc0	bc1	ACGT	AGGT	1	yes	yes	$' "$TMPDIR/audit/collision_pairs.tsv" >/dev/null
 grep '^bc0	ACGT	bc1	1	no	no	2$' "$TMPDIR/audit/target_safety.tsv" >/dev/null
 grep '^ACG	2$' "$TMPDIR/audit/ambiguous_variants.tsv" >/dev/null
@@ -1188,12 +1536,20 @@ grep '^ACG	2$' "$TMPDIR/audit/ambiguous_variants.tsv" >/dev/null
 grep '^audit_mode	fast$' "$TMPDIR/audit_fast/audit_summary.tsv" >/dev/null
 grep '^targets	4$' "$TMPDIR/audit_fast/audit_summary.tsv" >/dev/null
 grep '^safe_at_k1	no$' "$TMPDIR/audit_fast/audit_summary.tsv" >/dev/null
+grep '^safe_at_hamming_k2	not_computed$' "$TMPDIR/audit_fast/audit_summary.tsv" >/dev/null
+grep '^safe_at_hamming_k3	not_computed$' "$TMPDIR/audit_fast/audit_summary.tsv" >/dev/null
 grep '^risk_pairs_for_k1	3$' "$TMPDIR/audit_fast/audit_summary.tsv" >/dev/null
+grep '^risk_pairs_for_hamming_k2	not_computed$' "$TMPDIR/audit_fast/audit_summary.tsv" >/dev/null
+grep '^risk_pairs_for_hamming_k3	not_computed$' "$TMPDIR/audit_fast/audit_summary.tsv" >/dev/null
 grep '^ambiguous_query_variants_k1	14$' "$TMPDIR/audit_fast/audit_summary.tsv" >/dev/null
 grep '"audit_mode": "fast"' "$TMPDIR/audit_fast/audit_summary.json" >/dev/null
 grep '"safe_at_k1": false' "$TMPDIR/audit_fast/audit_summary.json" >/dev/null
+grep '"safe_at_hamming_k2": null' "$TMPDIR/audit_fast/audit_summary.json" >/dev/null
+grep '"safe_at_hamming_k3": null' "$TMPDIR/audit_fast/audit_summary.json" >/dev/null
 grep '"safe_at_k2": null' "$TMPDIR/audit_fast/audit_summary.json" >/dev/null
 grep '"risk_pairs_for_k2": null' "$TMPDIR/audit_fast/audit_summary.json" >/dev/null
+grep '"risk_pairs_for_hamming_k2": null' "$TMPDIR/audit_fast/audit_summary.json" >/dev/null
+grep '"risk_pairs_for_hamming_k3": null' "$TMPDIR/audit_fast/audit_summary.json" >/dev/null
 grep '^ACG	2$' "$TMPDIR/audit_fast/ambiguous_variants.tsv" >/dev/null
 
 "$DOTMATCH_BIN" count \

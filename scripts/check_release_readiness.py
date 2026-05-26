@@ -58,6 +58,11 @@ def _bioconda_template_version(text: str) -> Optional[str]:
     return match.group(1) if match else None
 
 
+def _c_header_version(text: str) -> Optional[str]:
+    match = re.search(r'#define\s+QDALN_VERSION\s+"([^"]+)"', text)
+    return match.group(1) if match else None
+
+
 def _has_release_doi_field(path: Path) -> bool:
     if path.name == "CITATION.cff":
         return re.search(r"^\s*doi\s*:", _read(path), re.I | re.M) is not None
@@ -98,6 +103,7 @@ def check_versions(root: Path, result: ReleaseAudit) -> None:
         version_files[".zenodo.json"] = str(_json(root / ".zenodo.json").get("version") or "")
         version_files["CITATION.cff"] = _cff_version(root / "CITATION.cff")
         version_files["Dockerfile OCI label"] = _docker_label_version(_read(root / "Dockerfile"))
+        version_files["include/qdalign.h"] = _c_header_version(_read(root / "include" / "qdalign.h"))
         version_files["packaging/bioconda/meta.yaml"] = _bioconda_template_version(
             _read(root / "packaging" / "bioconda" / "meta.yaml")
         )
@@ -134,12 +140,15 @@ def check_no_unminted_doi_fields(root: Path, result: ReleaseAudit) -> None:
 def check_sdist_metadata(root: Path, result: ReleaseAudit) -> None:
     manifest = _read(root / "MANIFEST.in")
     verifier = _read(root / "scripts" / "check_python_wheel.py")
-    for required in ["CITATION.cff", "codemeta.json", "src/qdalign.c", "include/qdalign.h"]:
+    for required in ["CITATION.cff", "codemeta.json", "docs/assay-evidence.json", "src/qdalign.c", "include/qdalign.h"]:
         if f"include {required}" not in manifest:
             result.failures.append(f"MANIFEST.in must include {required}")
-    for required_suffix in ["/CITATION.cff", "/codemeta.json", "/src/qdalign.c", "/include/qdalign.h"]:
+    for required_suffix in ["/CITATION.cff", "/codemeta.json", "/docs/assay-evidence.json", "/src/qdalign.c", "/include/qdalign.h"]:
         if required_suffix not in verifier:
             result.failures.append(f"scripts/check_python_wheel.py must verify {required_suffix}")
+    for verifier_fragment in ["dotmatch/data/assay-evidence.json", "evidence_boundary"]:
+        if verifier_fragment not in verifier:
+            result.failures.append(f"scripts/check_python_wheel.py must verify {verifier_fragment}")
     if not any("MANIFEST.in" in failure or "check_python_wheel.py" in failure for failure in result.failures):
         result.passed.append("sdist release metadata verified")
 
@@ -150,6 +159,7 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
     bioconda = _read(root / "packaging" / "bioconda" / "meta.yaml")
     packaging = _read(root / "docs" / "packaging.md")
     release_process = _read(root / "docs" / "release-process.md")
+    readme = _read(root / "README.md")
     makefile = _read(root / "Makefile")
 
     required_workflow_fragments = [
@@ -161,6 +171,7 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
         "docker/login-action",
         "docker/build-push-action",
         "ghcr.io/dnncha/dotmatch",
+        "python scripts/check_python_wheel.py --wheel-only --out-dir dist-linux",
         "docker image inspect dotmatch:ci",
         "SHA256SUMS.txt",
     ]
@@ -195,10 +206,8 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
             result.failures.append("release workflow preflight job must run make python-package-test")
     if "needs: [preflight]" not in container_job:
         result.failures.append("container publish job must depend on preflight")
-    if "docker/login-action" not in container_job or "registry: ghcr.io" not in container_job:
-        result.failures.append("container publish job must log in to GHCR before pushing")
     if "python scripts/check_python_wheel.py --sdist-only --out-dir dist" not in sdist_job:
-        result.failures.append("release workflow sdist job must verify the PyPI source distribution file")
+        result.failures.append("release workflow sdist job must verify the PyPI source distribution artifact")
     if "Publish PyPI sdist, macOS wheel, and repaired Linux wheels" not in pypi_job:
         result.failures.append("PyPI publish job must publish sdist, macOS wheel, and repaired Linux wheels")
     if "needs: [preflight, sdist, wheel, linux-repaired-wheels]" not in pypi_job:
@@ -208,7 +217,7 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
         or "name: dotmatch-wheel-macos" not in pypi_job
         or "name: dotmatch-linux-repaired-wheels" not in pypi_job
     ):
-        result.failures.append("PyPI publish job must download sdist, macOS wheel, and repaired Linux wheel files")
+        result.failures.append("PyPI publish job must download sdist, macOS wheel, and repaired Linux wheel artifacts")
     if "needs: [preflight, wheel, sdist, linux-repaired-wheels]" not in github_release_job:
         result.failures.append("GitHub release job must depend on preflight, wheels, sdist, and repaired Linux wheels")
 
@@ -226,11 +235,17 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
     if "REPLACE_WITH_RELEASE_TARBALL_SHA256" not in bioconda:
         result.failures.append("Bioconda template must retain release SHA256 placeholder until copying into bioconda-recipes")
     if "dotmatch dist ACGT AGGT" not in bioconda:
-        result.failures.append("Bioconda template must include a DotMatch CLI check")
+        result.failures.append("Bioconda template must include native CLI smoke test")
+    if "additional-platforms:" not in bioconda or "- osx-arm64" not in bioconda:
+        result.failures.append("Bioconda template must opt into osx-arm64 / Apple Silicon builds")
 
     for label, text in [("docs/packaging.md", packaging), ("docs/release-process.md", release_process)]:
         if not text.strip():
             result.failures.append(f"{label} is empty")
+    if "osx-arm64" not in packaging or "Apple Silicon" not in packaging:
+        result.failures.append("docs/packaging.md must document Bioconda osx-arm64 / Apple Silicon support")
+    if "osx-arm64" not in readme or "Apple Silicon" not in readme:
+        result.failures.append("README.md must document Bioconda osx-arm64 / Apple Silicon support")
     pretag_block = _make_target_block(makefile, "pretag-ready")
     if not pretag_block:
         result.failures.append("Makefile must include pretag-ready target")

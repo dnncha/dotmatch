@@ -1,18 +1,9 @@
 {
   "schema_version": 1,
-  "status": "ready",
-  "integrations": [
-    {
-      "id": "bioconda-dotmatch-0.1.2",
-      "type": "bioconda_recipe",
-      "name": "DotMatch 0.1.2 Bioconda package",
-      "status": "released",
-      "recorded_date": "2026-05-19",
-      "adoption_url": "https://anaconda.org/bioconda/dotmatch",
-      "evidence_url": "https://api.anaconda.org/package/bioconda/dotmatch",
-      "validation_notes": "Bioconda publishes DotMatch 0.1.2 for linux-64 and osx-64, enabling Conda-backed Nextflow, Snakemake, Galaxy, and HPC environment integration."
-    }
+  "status": "not_ready",
+  "integrations": [],
+  "blockers": [
+    "No external workflow-manager adoption record is listed yet. Bioconda package availability is distribution evidence, not workflow adoption evidence."
   ],
-  "blockers": [],
-  "next_action": ""
+  "next_action": "After a stable Galaxy, Nextflow, Snakemake, nf-core, MultiQC, or other external workflow record is public, add an integration entry with adoption and evidence URLs, then run make workflow-adoption-status."
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate CRISPR comparison datasets against Edlib."""
+"""Validate CRISPR comparison datasets against the native Edlib oracle."""
 
 from __future__ import annotations
 

@@ -109,6 +109,51 @@ static qdaln_match_result oracle_one(const char *read, size_t read_len,
     return r;
 }
 
+static int hamming_oracle_distance(const char *a, size_t a_len, const char *b, size_t b_len, int k) {
+    if (a_len != b_len) return -1;
+    int d = 0;
+    for (size_t i = 0; i < a_len; ++i) {
+        if (a[i] != b[i] && ++d > k) return -1;
+    }
+    return d;
+}
+
+static qdaln_match_result hamming_oracle_one(const char *read, size_t read_len,
+                                             const char *const *targets, const size_t *target_lens,
+                                             size_t n_targets, int k) {
+    qdaln_match_result r = {-1, -1, -1, 0, QDALN_MATCH_NONE};
+    if ((read == NULL && read_len != 0) || k < 0) {
+        r.status = QDALN_MATCH_INVALID;
+        return r;
+    }
+
+    int tie_best = 0;
+    for (size_t i = 0; i < n_targets; ++i) {
+        int d = hamming_oracle_distance(read, read_len, targets[i], target_lens[i], k);
+        if (d < 0) continue;
+        ++r.match_count;
+        if (r.best_distance < 0 || d < r.best_distance) {
+            r.second_best_distance = r.best_distance;
+            r.best_distance = d;
+            r.target_index = (int)i;
+            tie_best = 1;
+        } else if (d == r.best_distance) {
+            ++tie_best;
+        } else if (r.second_best_distance < 0 || d < r.second_best_distance) {
+            r.second_best_distance = d;
+        }
+    }
+
+    if (r.match_count == 0) {
+        r.status = QDALN_MATCH_NONE;
+    } else if (tie_best > 1) {
+        r.status = QDALN_MATCH_AMBIGUOUS;
+    } else {
+        r.status = QDALN_MATCH_UNIQUE;
+    }
+    return r;
+}
+
 static void assert_match_result(qdaln_match_result got, qdaln_match_result want) {
     assert(got.target_index == want.target_index);
     assert(got.best_distance == want.best_distance);
@@ -217,6 +262,37 @@ static void index_fixed_tests(void) {
     assert(qdaln_index_build(NULL, target_lens, 5) == NULL);
 }
 
+static void empty_index_tests(void) {
+    const char *reads[] = {"ACGT", ""};
+    size_t read_lens[] = {4, 0};
+    qdaln_match_result results[2];
+    qdaln_index_stats stats;
+
+    qdaln_index *idx = qdaln_index_build(NULL, NULL, 0);
+    assert(idx != NULL);
+
+    for (int k = 0; k <= 2; ++k) {
+        assert(qdaln_index_assign_stats(idx, reads, read_lens, 2, k, results, &stats) == 0);
+        assert(results[0].status == QDALN_MATCH_NONE);
+        assert(results[1].status == QDALN_MATCH_NONE);
+        assert(stats.candidates_considered == 0);
+        assert(stats.candidates_verified == 0);
+    }
+
+    assert(qdaln_index_assign_status_stats(idx, reads, read_lens, 2, 1, results, &stats) == 0);
+    assert(results[0].status == QDALN_MATCH_NONE);
+    assert(results[1].status == QDALN_MATCH_NONE);
+    assert(stats.candidates_considered == 0);
+    assert(stats.candidates_verified == 0);
+
+    assert(qdaln_index_assign_hamming_stats(idx, reads, read_lens, 2, 1, results, &stats) == 0);
+    assert(results[0].status == QDALN_MATCH_NONE);
+    assert(results[1].status == QDALN_MATCH_NONE);
+    assert(stats.candidates_considered == 0);
+    assert(stats.candidates_verified == 0);
+    qdaln_index_free(idx);
+}
+
 static void index_duplicate_exact_tests(void) {
     const char *targets[] = {"ACGT", "ACGT", "AGGT"};
     size_t target_lens[] = {4, 4, 4};
@@ -290,6 +366,44 @@ static void levenshtein_k1_avoids_false_deletion_seed_candidates_tests(void) {
     qdaln_index_free(idx);
 }
 
+static void levenshtein_k2_uses_index_without_full_scan_tests(void) {
+    const char *targets[] = {
+        "ACGTACGT",    /* exact */
+        "ACGTTCGA",    /* two substitutions */
+        "ACGTTACGT",   /* target has one inserted base */
+        "ACGTTTACGT",  /* target has two inserted bases */
+        "ACGACGT",     /* read has one inserted base */
+        "ACACGT",      /* read has two inserted bases */
+        "TTTTTTTT",
+        "CCCCCCCC",
+        "GGGGGGGG",
+        "TGTGTGTG",
+        "CACACACA",
+        "GATCGATC",
+        "TTAACCGG",
+        "CCGGTTAA",
+        "GGCCAATT",
+        "TCCGTCCG",
+    };
+    size_t target_lens[] = {8, 8, 9, 10, 7, 6, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8};
+    const char *reads[] = {"ACGTACGT"};
+    size_t read_lens[] = {8};
+    qdaln_match_result scan[1];
+    qdaln_match_result indexed[1];
+    qdaln_index_stats stats;
+
+    qdaln_index *idx = qdaln_index_build(targets, target_lens, 16);
+    assert(idx != NULL);
+    assert(qdaln_match_many(reads, read_lens, 1, targets, target_lens, 16, 2, scan) == 0);
+    assert(qdaln_index_assign_stats(idx, reads, read_lens, 1, 2, indexed, &stats) == 0);
+
+    assert(scan[0].match_count == 6);
+    assert_match_result(indexed[0], scan[0]);
+    assert(stats.candidates_verified < 16);
+    assert(stats.candidates_considered == stats.candidates_verified);
+    qdaln_index_free(idx);
+}
+
 static void hamming_single_unknown_uses_index_tests(void) {
     const char *targets[] = {"ACGT", "ACCT", "TTTT", "CCCC"};
     size_t target_lens[] = {4, 4, 4, 4};
@@ -311,6 +425,136 @@ static void hamming_single_unknown_uses_index_tests(void) {
     assert(indexed[1].status == QDALN_MATCH_NONE);
     assert(stats.candidates_verified < 4 * 2);
     assert(stats.candidates_considered == stats.candidates_verified);
+    qdaln_index_free(idx);
+}
+
+static void hamming_seed_index_semantics_tests(void) {
+    const char *targets[] = {
+        "ACGTACGT",
+        "ACGTACGT",
+        "ACGTACGA",
+        "TTTTTTTT",
+        "ACGTTCGT",
+        "CCCCCCCN",
+    };
+    size_t target_lens[] = {8, 8, 8, 8, 8, 8};
+    const char *reads[] = {"ACGTACGT", "ACGTACGC", "TTTTTTTA", "CCCCCCCC"};
+    size_t read_lens[] = {8, 8, 8, 8};
+    qdaln_match_result scan[4];
+    qdaln_match_result indexed[4];
+    qdaln_index_stats stats;
+
+    qdaln_index *idx = qdaln_index_build(targets, target_lens, 6);
+    assert(idx != NULL);
+    assert(qdaln_match_many(reads, read_lens, 4, targets, target_lens, 6, 1, scan) == 0);
+    assert(qdaln_index_assign_hamming_stats(idx, reads, read_lens, 4, 1, indexed, &stats) == 0);
+    for (size_t i = 0; i < 4; ++i) assert_match_result(indexed[i], scan[i]);
+    assert(indexed[0].status == QDALN_MATCH_AMBIGUOUS);
+    assert(indexed[0].best_distance == 0);
+    assert(indexed[0].second_best_distance == 1);
+    assert(indexed[0].match_count == 4);
+    assert(indexed[1].status == QDALN_MATCH_AMBIGUOUS);
+    assert(indexed[1].best_distance == 1);
+    assert(indexed[2].status == QDALN_MATCH_UNIQUE);
+    assert(indexed[3].status == QDALN_MATCH_UNIQUE);
+    assert(indexed[3].best_distance == 1);
+    assert(indexed[3].target_index == 5);
+    assert(stats.candidates_considered == stats.candidates_verified);
+    qdaln_index_free(idx);
+}
+
+static void hamming_k2_k3_seed_index_semantics_tests(void) {
+    char len32_read[33];
+    char len32_exact[33];
+    char len32_d2[33];
+    char len32_d3[33];
+    char len32_far[33];
+    memset(len32_read, 'A', 32);
+    len32_read[32] = '\0';
+    strcpy(len32_exact, len32_read);
+    strcpy(len32_d2, len32_read);
+    len32_d2[0] = 'C';
+    len32_d2[31] = 'G';
+    strcpy(len32_d3, len32_read);
+    len32_d3[0] = 'C';
+    len32_d3[15] = 'G';
+    len32_d3[31] = 'T';
+    strcpy(len32_far, len32_read);
+    len32_far[0] = 'C';
+    len32_far[8] = 'G';
+    len32_far[16] = 'T';
+    len32_far[24] = 'C';
+
+    const char *targets[] = {
+        "ACGT",                 /* length 4 exact */
+        "ACGA",                 /* length 4 distance 1 */
+        "TCGA",                 /* length 4 distance 2 */
+        "TTGA",                 /* length 4 distance 3 */
+        "TGCA",                 /* length 4 distance 4 */
+        "ACGTACGTACGTACGTACGT", /* length 20 exact */
+        "ACGTACGTACGTACGTACGT",
+        "TCGTACGTACGTACGTACGA", /* length 20 distance 2 */
+        "TCGTACGTACGTACGTTCGA", /* length 20 distance 3 */
+        "ACGTACGTACGTACGTACGN", /* non-ACGT target */
+        len32_exact,
+        len32_d2,
+        len32_d3,
+        len32_far,
+    };
+    size_t target_lens[] = {
+        4, 4, 4, 4, 4,
+        20, 20, 20, 20, 20,
+        32, 32, 32, 32,
+    };
+    const char *reads[] = {
+        "ACGT",                 /* exact plus duplicate/near ambiguity accounting */
+        "TCGT",                 /* k=2 ambiguous at distance 1 */
+        "NNNN",                 /* no match at k=2/k=3 */
+        "ACGTACGTACGTACGTACGT", /* length 20 duplicate exact */
+        "ACGTACGTACGTACGTACGA", /* length 20 k=3 candidates */
+        "ACGTACGTACGTACGTACNN", /* non-ACGT read fallback */
+        len32_read,
+        "NNNN",                 /* no match at k=3 */
+    };
+    size_t read_lens[] = {4, 4, 4, 20, 20, 20, 32, 4};
+    qdaln_match_result indexed[8];
+    qdaln_index_stats stats;
+
+    qdaln_index *idx = qdaln_index_build(targets, target_lens, sizeof(targets) / sizeof(targets[0]));
+    assert(idx != NULL);
+
+    assert(qdaln_index_assign_hamming_stats(idx, reads, read_lens, 8, 2, indexed, &stats) == 0);
+    for (size_t i = 0; i < 8; ++i) {
+        qdaln_match_result want = hamming_oracle_one(reads[i], read_lens[i], targets, target_lens,
+                                                     sizeof(targets) / sizeof(targets[0]), 2);
+        assert_match_result(indexed[i], want);
+    }
+    assert(indexed[0].status == QDALN_MATCH_UNIQUE);
+    assert(indexed[0].target_index == 0);
+    assert(indexed[0].match_count == 3);
+    assert(indexed[1].status == QDALN_MATCH_AMBIGUOUS);
+    assert(indexed[1].best_distance == 1);
+    assert(indexed[2].status == QDALN_MATCH_NONE);
+    assert(indexed[3].status == QDALN_MATCH_AMBIGUOUS);
+    assert(indexed[3].best_distance == 0);
+    assert(indexed[5].status == QDALN_MATCH_UNIQUE);
+    assert(indexed[5].target_index == 9);
+    assert(indexed[6].status == QDALN_MATCH_UNIQUE);
+    assert(indexed[6].match_count == 2);
+    assert(stats.candidates_considered == stats.candidates_verified);
+
+    assert(qdaln_index_assign_hamming_stats(idx, reads, read_lens, 8, 3, indexed, &stats) == 0);
+    for (size_t i = 0; i < 8; ++i) {
+        qdaln_match_result want = hamming_oracle_one(reads[i], read_lens[i], targets, target_lens,
+                                                     sizeof(targets) / sizeof(targets[0]), 3);
+        assert_match_result(indexed[i], want);
+    }
+    assert(indexed[0].match_count == 4);
+    assert(indexed[2].status == QDALN_MATCH_NONE);
+    assert(indexed[6].match_count == 3);
+    assert(indexed[7].status == QDALN_MATCH_NONE);
+    assert(stats.candidates_considered == stats.candidates_verified);
+
     qdaln_index_free(idx);
 }
 
@@ -610,10 +854,14 @@ int main(void) {
     batch_fixed_tests();
     assignment_contract_tests();
     index_fixed_tests();
+    empty_index_tests();
     index_duplicate_exact_tests();
     index_stats_pruning_tests();
     levenshtein_k1_avoids_false_deletion_seed_candidates_tests();
+    levenshtein_k2_uses_index_without_full_scan_tests();
     hamming_single_unknown_uses_index_tests();
+    hamming_seed_index_semantics_tests();
+    hamming_k2_k3_seed_index_semantics_tests();
     levenshtein_non_acgt_indel_uses_index_tests();
     index_status_shortcut_stops_after_ambiguity_tests();
     large_panel_oracle_tests();
