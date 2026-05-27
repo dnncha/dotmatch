@@ -157,12 +157,11 @@ static int code_hamming_distance_qd(uint64_t a, uint64_t b, size_t len) {
 }
 
 static int nonzero_bytes_u64(uint64_t x) {
-    int count = 0;
-    for (size_t i = 0; i < 8; ++i) {
-        count += (x & 0xffU) != 0;
-        x >>= 8;
-    }
-    return count;
+    x |= x >> 4;
+    x |= x >> 2;
+    x |= x >> 1;
+    x &= 0x0101010101010101ULL;
+    return popcount64_qd(x);
 }
 
 static int same_length_hamming_distance_within_k(const char *a, const char *b, size_t len, int k) {
@@ -270,6 +269,11 @@ int qdaln_edit_distance_myers64(const char *pattern, size_t pattern_len,
 int qdaln_edit_distance(const char *a, size_t a_len, const char *b, size_t b_len) {
     if ((a == NULL && a_len != 0) || (b == NULL && b_len != 0)) return -1;
 
+    if (a_len == b_len) {
+        int d = same_length_hamming_distance_within_k(a, b, a_len, 2);
+        if (d >= 0) return d;
+    }
+
     /* Levenshtein distance is symmetric. Put the shorter sequence in the
        Myers pattern slot when possible so more cases hit the fast path. */
     if (a_len <= 64) return qdaln_edit_distance_myers64(a, a_len, b, b_len);
@@ -318,6 +322,8 @@ int qdaln_edit_distance_leq(const char *a, size_t a_len, const char *b, size_t b
         if (b_len == a_len + 1) return one_delete_matches_qd(b, b_len, a, a_len);
         return 0;
     }
+
+    if (a_len == b_len && same_length_hamming_distance_within_k(a, b, a_len, k) >= 0) return 1;
 
     size_t min_len = a_len < b_len ? a_len : b_len;
     if (k >= 2 && min_len <= 64) {
@@ -426,6 +432,11 @@ static int candidate_distance_within_k(const char *read, size_t read_len,
             return one_delete_matches_qd(target, target_len, read, read_len) ? 1 : -1;
         }
         return -1;
+    }
+
+    if (read_len == target_len) {
+        int d = same_length_hamming_distance_within_k(read, target, read_len, k);
+        if (d >= 0 && d <= 2) return d;
     }
 
     size_t min_len = read_len < target_len ? read_len : target_len;

@@ -52,6 +52,7 @@ static void fixed_tests(void) {
     check_pair("GATTACA", "GCATGCU");
     check_pair("AAAAAAAAAAAAAAAA", "AAAAAAAAAAAAAAAT");
     check_pair("ACGTACGTACGTACGT", "TGCATGCATGCATGCA");
+    check_pair("ACG", "CGA");
 
     assert(qdaln_edit_distance_leq(NULL, 1, "A", 1, -1) == -1);
     assert(qdaln_edit_distance_leq("A", 1, NULL, 1, -1) == -1);
