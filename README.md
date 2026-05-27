@@ -1,6 +1,9 @@
 # DotMatch
 
 [![CI](https://github.com/dnncha/dotmatch/actions/workflows/ci.yml/badge.svg)](https://github.com/dnncha/dotmatch/actions/workflows/ci.yml)
+[![Bioconda](https://img.shields.io/conda/vn/bioconda/dotmatch?label=bioconda)](https://anaconda.org/bioconda/dotmatch)
+[![Bioconda downloads](https://img.shields.io/conda/dn/bioconda/dotmatch?label=downloads)](https://anaconda.org/bioconda/dotmatch)
+[![Bioconda platforms](https://img.shields.io/conda/pn/bioconda/dotmatch?label=platforms)](https://anaconda.org/bioconda/dotmatch)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Citation](https://img.shields.io/badge/cite-CITATION.cff-green.svg)](CITATION.cff)
 
