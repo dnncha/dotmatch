@@ -868,26 +868,84 @@ static int code_already_seen(const uint64_t *codes, size_t n_codes, uint64_t cod
 }
 
 struct candidate_seen {
-    size_t inline_ids[64];
+    size_t inline_ids[128];
     size_t *ids;
+    size_t *hash;
     size_t count;
     size_t cap;
+    size_t hash_cap;
 };
 
 static void candidate_seen_init(candidate_seen *seen) {
     seen->ids = seen->inline_ids;
+    seen->hash = NULL;
     seen->count = 0;
     seen->cap = sizeof(seen->inline_ids) / sizeof(seen->inline_ids[0]);
+    seen->hash_cap = 0;
 }
 
 static void candidate_seen_free(candidate_seen *seen) {
     if (seen->ids != seen->inline_ids) free(seen->ids);
+    free(seen->hash);
     candidate_seen_init(seen);
 }
 
-static int candidate_seen_add(candidate_seen *seen, size_t target_index) {
+static size_t candidate_seen_hash_value(size_t value) {
+    uint64_t x = (uint64_t)value;
+    x ^= x >> 30;
+    x *= UINT64_C(0xbf58476d1ce4e5b9);
+    x ^= x >> 27;
+    x *= UINT64_C(0x94d049bb133111eb);
+    x ^= x >> 31;
+    return (size_t)x;
+}
+
+static int candidate_seen_rehash(candidate_seen *seen, size_t min_cap) {
+    size_t cap = 128;
+    while (cap < min_cap) cap <<= 1;
+    size_t *hash = (size_t *)calloc(cap, sizeof(size_t));
+    if (hash == NULL) return -1;
+
     for (size_t i = 0; i < seen->count; ++i) {
-        if (seen->ids[i] == target_index) return 0;
+        size_t stored = seen->ids[i] + 1U;
+        size_t pos = candidate_seen_hash_value(seen->ids[i]) & (cap - 1U);
+        while (hash[pos] != 0) pos = (pos + 1U) & (cap - 1U);
+        hash[pos] = stored;
+    }
+
+    free(seen->hash);
+    seen->hash = hash;
+    seen->hash_cap = cap;
+    return 0;
+}
+
+static int candidate_seen_hash_add(candidate_seen *seen, size_t target_index) {
+    if (seen->hash_cap == 0 || ((seen->count + 1U) * 2U) > seen->hash_cap) {
+        if (candidate_seen_rehash(seen, (seen->count + 1U) * 4U) != 0) return -1;
+    }
+
+    size_t stored = target_index + 1U;
+    size_t pos = candidate_seen_hash_value(target_index) & (seen->hash_cap - 1U);
+    while (seen->hash[pos] != 0) {
+        if (seen->hash[pos] == stored) return 0;
+        pos = (pos + 1U) & (seen->hash_cap - 1U);
+    }
+    seen->hash[pos] = stored;
+    return 1;
+}
+
+static int candidate_seen_add(candidate_seen *seen, size_t target_index) {
+    if (seen->hash != NULL) {
+        int hash_rc = candidate_seen_hash_add(seen, target_index);
+        if (hash_rc <= 0) return hash_rc;
+    } else if (seen->count == seen->cap) {
+        if (candidate_seen_rehash(seen, seen->cap * 4U) != 0) return -1;
+        int hash_rc = candidate_seen_hash_add(seen, target_index);
+        if (hash_rc <= 0) return hash_rc;
+    } else {
+        for (size_t i = 0; i < seen->count; ++i) {
+            if (seen->ids[i] == target_index) return 0;
+        }
     }
     if (seen->count == seen->cap) {
         size_t next_cap = seen->cap * 2;

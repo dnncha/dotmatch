@@ -53,6 +53,7 @@ static void fixed_tests(void) {
     check_pair("AAAAAAAAAAAAAAAA", "AAAAAAAAAAAAAAAT");
     check_pair("ACGTACGTACGTACGT", "TGCATGCATGCATGCA");
     check_pair("ACG", "CGA");
+    check_pair("ABCDEFGHIJKLMNOPQ", "QBCDEFGHIJKLMNOPA");
 
     assert(qdaln_edit_distance_leq(NULL, 1, "A", 1, -1) == -1);
     assert(qdaln_edit_distance_leq("A", 1, NULL, 1, -1) == -1);
@@ -559,6 +560,42 @@ static void hamming_k2_k3_seed_index_semantics_tests(void) {
     qdaln_index_free(idx);
 }
 
+static void hamming_seed_seen_hash_semantics_tests(void) {
+    enum { N_TARGETS = 192, TARGET_LEN = 8 };
+    char target_buf[N_TARGETS][TARGET_LEN + 1];
+    const char *targets[N_TARGETS];
+    size_t target_lens[N_TARGETS];
+    const char *reads[] = {"AACCCCCC", "AAGGGGGG"};
+    size_t read_lens[] = {TARGET_LEN, TARGET_LEN};
+    qdaln_match_result indexed[2];
+    qdaln_index_stats stats;
+
+    for (size_t i = 0; i < N_TARGETS; ++i) {
+        target_buf[i][0] = 'A';
+        target_buf[i][1] = 'A';
+        size_t v = i;
+        for (size_t pos = 2; pos < TARGET_LEN; ++pos) {
+            target_buf[i][pos] = "ACGT"[v & 3U];
+            v >>= 2;
+        }
+        target_buf[i][TARGET_LEN] = '\0';
+        targets[i] = target_buf[i];
+        target_lens[i] = TARGET_LEN;
+    }
+
+    qdaln_index *idx = qdaln_index_build(targets, target_lens, N_TARGETS);
+    assert(idx != NULL);
+
+    assert(qdaln_index_assign_hamming_stats(idx, reads, read_lens, 2, 3, indexed, &stats) == 0);
+    for (size_t i = 0; i < 2; ++i) {
+        qdaln_match_result want = hamming_oracle_one(reads[i], read_lens[i], targets, target_lens, N_TARGETS, 3);
+        assert_match_result(indexed[i], want);
+    }
+    assert(stats.candidates_considered == stats.candidates_verified);
+
+    qdaln_index_free(idx);
+}
+
 static void levenshtein_non_acgt_indel_uses_index_tests(void) {
     const char *targets[] = {"ACGT", "TGCA"};
     size_t target_lens[] = {4, 4};
@@ -863,6 +900,7 @@ int main(void) {
     hamming_single_unknown_uses_index_tests();
     hamming_seed_index_semantics_tests();
     hamming_k2_k3_seed_index_semantics_tests();
+    hamming_seed_seen_hash_semantics_tests();
     levenshtein_non_acgt_indel_uses_index_tests();
     index_status_shortcut_stops_after_ambiguity_tests();
     large_panel_oracle_tests();
