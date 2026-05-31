@@ -79,8 +79,22 @@ ASSIGNREADS
 grep '^assign	r0	ACGT	0	ACGT	0	ambiguous	3	1$' "$TMPDIR/assign_radius.tsv" >/dev/null
 grep '^assign	r1	ACGC	0	ACGT	1	ambiguous	2	-1$' "$TMPDIR/assign_radius.tsv" >/dev/null
 
+if "$DOTMATCH_BIN" assign 1x "$TMPDIR/barcodes.tsv" "$TMPDIR/assign_reads.tsv" > "$TMPDIR/assign_bad_k.tsv" 2> "$TMPDIR/assign_bad_k.err"; then
+  echo "assign should reject malformed edit-distance radius values" >&2
+  exit 1
+fi
+grep 'assign K barcodes.txt reads.txt' "$TMPDIR/assign_bad_k.err" >/dev/null
+test ! -s "$TMPDIR/assign_bad_k.tsv"
+
 "$DOTMATCH_BIN" assign 1 "$TMPDIR/barcodes.tsv" "$TMPDIR/assign_reads.tsv" --ambiguity-policy best > "$TMPDIR/assign_best.tsv"
 grep '^assign	r0	ACGT	0	ACGT	0	unique	3	1$' "$TMPDIR/assign_best.tsv" >/dev/null
+
+if "$DOTMATCH_BIN" leq 1x ACGT AGGT > "$TMPDIR/leq_bad_k.txt" 2> "$TMPDIR/leq_bad_k.err"; then
+  echo "leq should reject malformed edit-distance radius values" >&2
+  exit 1
+fi
+grep 'leq K SEQ1 SEQ2' "$TMPDIR/leq_bad_k.err" >/dev/null
+test ! -s "$TMPDIR/leq_bad_k.txt"
 
 "$DOTMATCH_BIN" fastq-assign \
   --barcodes "$TMPDIR/barcodes.tsv" \
