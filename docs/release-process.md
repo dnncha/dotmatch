@@ -95,7 +95,7 @@ Avoid:
 ## Distribution Follow-Up
 
 - Create a Zenodo archive and add the DOI to `CITATION.cff` when available.
-- Publish the PyPI source distribution, native macOS wheel, and repaired manylinux/musllinux wheels through trusted publishing; do not upload raw `linux_x86_64` wheels.
+- Publish the PyPI source distribution, native macOS wheel, and repaired manylinux/musllinux wheels through trusted publishing; do not upload raw `linux_x86_64` wheels. The PyPI project must have a trusted publisher matching repository `dnncha/dotmatch`, workflow `.github/workflows/release.yml`, and environment `pypi`.
 - For Bioconda updates, submit or update the `bioconda-recipes` recipe after
   `make bioconda-recipe-ready`. Keep the `osx-arm64` additional-platforms opt-in
   in that recipe copy so Bioconda CI validates the Apple Silicon build. Replace
