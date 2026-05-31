@@ -7165,7 +7165,7 @@ static int xml_attr_value(const char *tag, const char *name, char *out, size_t o
 
 static int parse_run_info(const char *run_folder, bcl_run_info *info) {
     char path[4096];
-    snprintf(path, sizeof(path), "%s/RunInfo.xml", run_folder);
+    if (path_join(path, sizeof(path), run_folder, "RunInfo.xml") != 0) return -1;
     char *xml = read_text_file(path);
     if (xml == NULL) return -1;
     memset(info, 0, sizeof(*info));
