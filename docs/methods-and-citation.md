@@ -13,7 +13,9 @@ compatibility mode.
 
 ## Software Citation
 
-If you use DotMatch, cite the software release through `CITATION.cff`. Add the Zenodo DOI once a release DOI exists.
+If you use DotMatch, cite the software release through `CITATION.cff`.
+Installed packages also provide `dotmatch citation` for a copyable citation.
+Add the Zenodo DOI once a release DOI exists.
 
 Suggested citation before DOI assignment:
 

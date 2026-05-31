@@ -16,16 +16,16 @@ const initialBiocondaPrUrl = "https://github.com/bioconda/bioconda-recipes/pull/
 const biocondaUrl = "https://anaconda.org/bioconda/dotmatch";
 
 const proof = [
-  ["Guide counts", "screen reads", "FASTQ to guide-by-sample counts."],
-  ["GuideCounter mode", "compatible files", "Same command shape, DotMatch CPU assignment."],
-  ["Barcode splits", "inline barcodes", "Split reads, then inspect what did not split."],
-  ["Panel checks", "barcode panels", "Keep the collision check with the panel."],
-  ["No guessing", "ambiguous stays ambiguous", "A read that fits two targets is not forced into one."]
+  ["Guide counting", "screen FASTQs", "Guide-by-sample matrices with MAGeCK-style output."],
+  ["GuideCounter mode", "compatible files", "GuideCounter-shaped inputs and DotMatch assignment semantics."],
+  ["Barcode demux", "inline barcodes", "Assigned, ambiguous, and unmatched read classes are retained."],
+  ["Panel checks", "barcode panels", "Assignment-risk reports travel with the designed panel."],
+  ["Ambiguity model", "radius-safe assignment", "Multi-target-compatible reads remain explicit."]
 ];
 
 const decisionCards = [
   {
-    title: "Good for",
+    title: "Supported use cases",
     items: [
       "fixed-window barcode FASTQs",
       "CRISPR guide counts",
@@ -35,17 +35,17 @@ const decisionCards = [
     ]
   },
   {
-    title: "You get",
+    title: "Outputs",
     items: [
       "one assignment per read",
-      "ambiguous reads kept separate",
+      "ambiguity tables",
       "HTML reports",
       "TSV and JSON outputs",
-      "warnings for unsafe rescue"
+      "unsafe-rescue diagnostics"
     ]
   },
   {
-    title: "Not for",
+    title: "Out of scope",
     items: [
       "genome alignment",
       "variant calling",
@@ -61,7 +61,7 @@ const translations = [
   ["Hamming k=1", "allow one mismatch, no indels"],
   ["GuideCounter mode", "one-mismatch Hamming by default, exact-only with --exact-match"],
   ["Levenshtein k=1", "allow one substitution, insertion, or deletion"],
-  ["ambiguous", "reads that match multiple targets are reported, not forced into a guide or barcode"],
+  ["ambiguous", "reads compatible with multiple targets remain a separate assignment class"],
   ["peak RSS", "peak memory use"],
   ["Edlib validation", "checked against an independent edit-distance implementation"]
 ];
@@ -69,15 +69,15 @@ const translations = [
 const audienceCards = [
   {
     title: "Barcode assay owners",
-    body: "Find the barcode window, split reads, and see why reads were left out."
+    body: "Estimate barcode windows, demultiplex reads, and review ambiguous or unmatched classes."
   },
   {
     title: "Sequencing cores",
-    body: "Check shifted barcode windows, barcode collisions, and unsafe one-mismatch rescue."
+    body: "Audit shifted barcode windows, barcode collisions, and unsafe one-mismatch rescue."
   },
   {
     title: "Panel designers",
-    body: "Design barcode panels and keep the assignment checks with the panel files."
+    body: "Design barcode panels with assignment-collision checks and lab-ready exports."
   },
   {
     title: "CRISPR screen users",
@@ -85,25 +85,25 @@ const audienceCards = [
   },
   {
     title: "Methods reviewers",
-    body: "Check the commands, raw tables, and validation notes."
+    body: "Inspect commands, raw tables, comparator semantics, and validation notes."
   }
 ];
 
 const workflowStatusRows = [
-  ["Barcode panel design", "Good fit", "Design, check, simulate, and export barcode panels."],
-  ["CRISPR guide counting", "Good fit", "Guide-by-sample counts and MAGeCK-style output."],
-  ["Inline barcode demux", "Good fit", "Split FASTQs and report unmatched or ambiguous reads."],
-  ["Barcode troubleshooting", "Good fit", "Scan windows and show likely failure modes."],
-  ["Target-library audit", "Good fit", "Find duplicates and near-neighbors before rescue."],
+  ["Barcode panel design", "Supported", "Design, check, simulate, and export barcode panels."],
+  ["CRISPR guide counting", "Supported", "Guide-by-sample counts and MAGeCK-style output."],
+  ["Inline barcode demux", "Supported", "Split FASTQs and report unmatched or ambiguous reads."],
+  ["Barcode troubleshooting", "Supported", "Scan candidate windows and summarize failure modes."],
+  ["Target-library audit", "Supported", "Identify duplicates and near-neighbors before rescue."],
   ["Classic BCL demux", "Limited", "Use Illumina BCL Convert for production run-folder conversion."],
-  ["Genome alignment", "Use another tool", "DotMatch does not write SAM/BAM/CIGAR or call variants."]
+  ["Genome alignment", "Out of scope", "DotMatch does not write SAM/BAM/CIGAR or call variants."]
 ];
 
 const workflowChoiceRows = [
   ["Design or check a barcode panel", "DotMatch panel"],
   ["Count CRISPR guides from a fixed window", "DotMatch"],
   ["Split fixed-position inline barcodes", "DotMatch"],
-  ["Find why a barcode lane is mostly unassigned", "DotMatch barcode troubleshooting"],
+  ["Diagnose a low-assignment barcode lane", "DotMatch barcode troubleshooting"],
   ["Trim general adapters", "Cutadapt-style tools"],
   ["Map reads to a genome or transcriptome", "Bowtie2, BWA, or minimap2-style tools"],
   ["Analyze CRISPR screen phenotypes", "MAGeCK or another downstream analysis tool"]
@@ -155,8 +155,8 @@ const commands = [
 ];
 
 const autopsyArtifacts = [
-  ["report.html", "open this first"],
-  ["findings.tsv", "likely offset, rescue, and collision issues"],
+  ["report.html", "HTML summary"],
+  ["findings.tsv", "offset, rescue, and collision diagnostics"],
   ["offset_scan.tsv", "candidate barcode windows ranked by assignment rate"],
   ["correction_safety.tsv", "whether one-edit rescue can mix barcodes"],
   ["top_unmatched.tsv", "high-count unassigned barcode sequences"],
@@ -164,8 +164,8 @@ const autopsyArtifacts = [
 ];
 
 const autopsyFindings = [
-  ["wrong offset", "The barcode window may be shifted."],
-  ["unsafe correction", "One-mismatch rescue may mix samples."],
+  ["wrong offset", "Candidate barcode windows show a shifted assignment peak."],
+  ["unsafe correction", "One-mismatch rescue creates cross-barcode compatibility."],
   ["ambiguous collision", "A read fits more than one barcode."],
   ["unmatched classes", "Common no-match patterns are listed separately."]
 ];
@@ -188,9 +188,9 @@ const panelChecks = [
 
 const reportPreviewRows = [
   ["unique", "assigned to exactly one barcode or guide", "counted or split"],
-  ["ambiguous", "compatible with multiple targets", "reported, not forced"],
+  ["ambiguous", "compatible with multiple targets", "written to ambiguity output"],
   ["none", "outside the configured edit radius", "sent to unmatched diagnostics"],
-  ["invalid", "window could not be extracted", "kept visible in QC"]
+  ["invalid", "window could not be extracted", "recorded in QC"]
 ];
 
 const throughputRows = [
@@ -335,7 +335,7 @@ const realWorkflowExamples = [
   -c examples/workflows/nextflow/nextflow.config`,
     outputs: ["counts.mageck.tsv", "summary.json", "sample_qc.tsv", "assay_report.html"],
     boundary:
-      "This is a local module example. MAGeCK hit calling and biology interpretation come after.",
+      "Workflow integration only: DotMatch emits the count matrix and QC; MAGeCK, BAGEL, drugZ, or CERES handle screen-level inference.",
     links: [
       ["Nextflow example", nextflowExampleUrl],
       ["Public CRISPR benchmark", publicCrisprUrl]
@@ -578,11 +578,11 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
 
       <section id="barcode-qc" className="section autopsy-section">
         <div className="section-heading">
-          <h2>Find the barcode window before you trust the split.</h2>
+          <h2>Barcode-window inference before demultiplexing.</h2>
           <p>
-            If a split looks wrong, start with the window. DotMatch scans likely
-            starts, checks the barcode list, and shows the reads it could not
-            assign.
+            DotMatch scans candidate starts, audits the barcode list, and
+            reports unmatched and ambiguous read classes before demultiplexing
+            decisions are treated as assay output.
           </p>
         </div>
         <div className="autopsy-layout">
@@ -655,7 +655,7 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
 
       <section id="benchmarks" className="section proof-section">
         <div className="section-heading">
-          <h2>Benchmarks you can read without guessing.</h2>
+          <h2>Benchmarks with explicit comparator semantics.</h2>
           <p>
             The repo includes public FASTQ examples, commands, raw tables,
             generated graphs, and comparator notes. Hamming k2/k3 rows are
@@ -754,7 +754,7 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
           <article className="benchmark-card">
             <div className="chart-copy">
               <span className="card-label">Memory profile</span>
-              <h3>The CRISPR counter stays small.</h3>
+              <h3>CRISPR guide counting has low peak RSS.</h3>
               <p>
                 In the repeated Yusa runs, DotMatch exact and Hamming lanes sit
                 around 28.7 MB peak memory.
@@ -771,10 +771,10 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
           <article className="benchmark-card">
             <div className="chart-copy">
               <span className="card-label">Count agreement</span>
-              <h3>Counts are compared, not hand-waved.</h3>
+              <h3>Count agreement is benchmarked against scoped comparators.</h3>
               <p>
                 MAGeCK, guide-counter, exhaustive scan, and Edlib are used where
-                they answer the right question.
+                their semantics match the reported comparison.
               </p>
             </div>
             <AgreementChart rows={agreementRows} />
@@ -784,10 +784,11 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
 
       <section className="section decision-section" aria-label="DotMatch use guide">
         <div className="section-heading">
-          <h2>Use it for short known targets.</h2>
+          <h2>Use cases for short known-target assignment.</h2>
           <p>
-            Most jobs are just FASTQ plus a target table. The important part is
-            seeing exact, rescued, ambiguous, and unmatched reads separately.
+            DotMatch is for FASTQ records plus a known target table, with exact,
+            rescued, ambiguous, unmatched, and invalid read classes reported
+            separately.
           </p>
         </div>
         <div className="decision-grid">
@@ -937,8 +938,8 @@ dotmatch dist ACGT AGGT`}</code></pre>
           </article>
 
           <article className="launch-card">
-            <span className="card-label">Check the data</span>
-            <h3>Read the example before quoting numbers.</h3>
+            <span className="card-label">Benchmark evidence</span>
+            <h3>Use the report context when citing performance.</h3>
             <p>
               The public CRISPR benchmark is a Yusa guide-counting example with
               checked rows and validation notes.
@@ -954,10 +955,11 @@ dotmatch dist ACGT AGGT`}</code></pre>
 
       <section id="use-cases" className="section use-cases">
         <div className="section-heading">
-          <h2>Who uses it.</h2>
+          <h2>Primary users.</h2>
           <p>
-            For people who need short reads assigned to a known list, with the
-            uncertain reads left visible.
+            For groups assigning short read windows to known guide, barcode,
+            primer, feature, whitelist, or panel targets while retaining
+            ambiguous and unmatched read classes.
           </p>
         </div>
         <div className="usecase-grid">
@@ -1046,10 +1048,10 @@ dotmatch dist ACGT AGGT`}</code></pre>
       </section>
 
       <section className="section final-cta">
-        <h2>Use it when the uncertain reads matter.</h2>
+        <h2>Short-window assignment with explicit uncertainty.</h2>
         <p>
-          Fixed-window FASTQ assignment, with ambiguous and unmatched reads kept
-          in view.
+          Fixed-window FASTQ assignment with ambiguous, unmatched, and invalid
+          reads preserved in the output record.
         </p>
         <a className="button primary" href="#benchmarks">
           Read Examples

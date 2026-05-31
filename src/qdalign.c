@@ -157,12 +157,11 @@ static int code_hamming_distance_qd(uint64_t a, uint64_t b, size_t len) {
 }
 
 static int nonzero_bytes_u64(uint64_t x) {
-    int count = 0;
-    for (size_t i = 0; i < 8; ++i) {
-        count += (x & 0xffU) != 0;
-        x >>= 8;
-    }
-    return count;
+    x |= x >> 4;
+    x |= x >> 2;
+    x |= x >> 1;
+    x &= 0x0101010101010101ULL;
+    return popcount64_qd(x);
 }
 
 static int same_length_hamming_distance_within_k(const char *a, const char *b, size_t len, int k) {
@@ -270,6 +269,11 @@ int qdaln_edit_distance_myers64(const char *pattern, size_t pattern_len,
 int qdaln_edit_distance(const char *a, size_t a_len, const char *b, size_t b_len) {
     if ((a == NULL && a_len != 0) || (b == NULL && b_len != 0)) return -1;
 
+    if (a_len == b_len) {
+        int d = same_length_hamming_distance_within_k(a, b, a_len, 2);
+        if (d >= 0) return d;
+    }
+
     /* Levenshtein distance is symmetric. Put the shorter sequence in the
        Myers pattern slot when possible so more cases hit the fast path. */
     if (a_len <= 64) return qdaln_edit_distance_myers64(a, a_len, b, b_len);
@@ -318,6 +322,8 @@ int qdaln_edit_distance_leq(const char *a, size_t a_len, const char *b, size_t b
         if (b_len == a_len + 1) return one_delete_matches_qd(b, b_len, a, a_len);
         return 0;
     }
+
+    if (a_len == b_len && same_length_hamming_distance_within_k(a, b, a_len, k) >= 0) return 1;
 
     size_t min_len = a_len < b_len ? a_len : b_len;
     if (k >= 2 && min_len <= 64) {
@@ -426,6 +432,11 @@ static int candidate_distance_within_k(const char *read, size_t read_len,
             return one_delete_matches_qd(target, target_len, read, read_len) ? 1 : -1;
         }
         return -1;
+    }
+
+    if (read_len == target_len) {
+        int d = same_length_hamming_distance_within_k(read, target, read_len, k);
+        if (d >= 0 && d <= 2) return d;
     }
 
     size_t min_len = read_len < target_len ? read_len : target_len;
@@ -857,26 +868,84 @@ static int code_already_seen(const uint64_t *codes, size_t n_codes, uint64_t cod
 }
 
 struct candidate_seen {
-    size_t inline_ids[64];
+    size_t inline_ids[128];
     size_t *ids;
+    size_t *hash;
     size_t count;
     size_t cap;
+    size_t hash_cap;
 };
 
 static void candidate_seen_init(candidate_seen *seen) {
     seen->ids = seen->inline_ids;
+    seen->hash = NULL;
     seen->count = 0;
     seen->cap = sizeof(seen->inline_ids) / sizeof(seen->inline_ids[0]);
+    seen->hash_cap = 0;
 }
 
 static void candidate_seen_free(candidate_seen *seen) {
     if (seen->ids != seen->inline_ids) free(seen->ids);
+    free(seen->hash);
     candidate_seen_init(seen);
 }
 
-static int candidate_seen_add(candidate_seen *seen, size_t target_index) {
+static size_t candidate_seen_hash_value(size_t value) {
+    uint64_t x = (uint64_t)value;
+    x ^= x >> 30;
+    x *= UINT64_C(0xbf58476d1ce4e5b9);
+    x ^= x >> 27;
+    x *= UINT64_C(0x94d049bb133111eb);
+    x ^= x >> 31;
+    return (size_t)x;
+}
+
+static int candidate_seen_rehash(candidate_seen *seen, size_t min_cap) {
+    size_t cap = 128;
+    while (cap < min_cap) cap <<= 1;
+    size_t *hash = (size_t *)calloc(cap, sizeof(size_t));
+    if (hash == NULL) return -1;
+
     for (size_t i = 0; i < seen->count; ++i) {
-        if (seen->ids[i] == target_index) return 0;
+        size_t stored = seen->ids[i] + 1U;
+        size_t pos = candidate_seen_hash_value(seen->ids[i]) & (cap - 1U);
+        while (hash[pos] != 0) pos = (pos + 1U) & (cap - 1U);
+        hash[pos] = stored;
+    }
+
+    free(seen->hash);
+    seen->hash = hash;
+    seen->hash_cap = cap;
+    return 0;
+}
+
+static int candidate_seen_hash_add(candidate_seen *seen, size_t target_index) {
+    if (seen->hash_cap == 0 || ((seen->count + 1U) * 2U) > seen->hash_cap) {
+        if (candidate_seen_rehash(seen, (seen->count + 1U) * 4U) != 0) return -1;
+    }
+
+    size_t stored = target_index + 1U;
+    size_t pos = candidate_seen_hash_value(target_index) & (seen->hash_cap - 1U);
+    while (seen->hash[pos] != 0) {
+        if (seen->hash[pos] == stored) return 0;
+        pos = (pos + 1U) & (seen->hash_cap - 1U);
+    }
+    seen->hash[pos] = stored;
+    return 1;
+}
+
+static int candidate_seen_add(candidate_seen *seen, size_t target_index) {
+    if (seen->hash != NULL) {
+        int hash_rc = candidate_seen_hash_add(seen, target_index);
+        if (hash_rc <= 0) return hash_rc;
+    } else if (seen->count == seen->cap) {
+        if (candidate_seen_rehash(seen, seen->cap * 4U) != 0) return -1;
+        int hash_rc = candidate_seen_hash_add(seen, target_index);
+        if (hash_rc <= 0) return hash_rc;
+    } else {
+        for (size_t i = 0; i < seen->count; ++i) {
+            if (seen->ids[i] == target_index) return 0;
+        }
     }
     if (seen->count == seen->cap) {
         size_t next_cap = seen->cap * 2;

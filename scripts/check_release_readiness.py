@@ -196,6 +196,8 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
             result.failures.append("release workflow preflight job must run make test")
         if "make cli-test" not in preflight:
             result.failures.append("release workflow preflight job must run make cli-test")
+        if "make asan" not in preflight:
+            result.failures.append("release workflow preflight job must run make asan")
         if "make python-test" not in preflight:
             result.failures.append("release workflow preflight job must run make python-test")
         if "make repository-ready" not in preflight:
@@ -246,12 +248,20 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
         result.failures.append("docs/packaging.md must document Bioconda osx-arm64 / Apple Silicon support")
     if "osx-arm64" not in readme or "Apple Silicon" not in readme:
         result.failures.append("README.md must document Bioconda osx-arm64 / Apple Silicon support")
+    for release_process_fragment in [
+        "make asan",
+        "make scientific-readiness-ready",
+        "make pretag-ready",
+    ]:
+        if release_process_fragment not in release_process:
+            result.failures.append(f"docs/release-process.md must mention {release_process_fragment}")
     pretag_block = _make_target_block(makefile, "pretag-ready")
     if not pretag_block:
         result.failures.append("Makefile must include pretag-ready target")
     for pretag_fragment in [
         "$(MAKE) test",
         "$(MAKE) cli-test",
+        "$(MAKE) asan",
         "$(MAKE) python-test",
         "$(MAKE) python-package-test",
         "$(MAKE) repository-ready",

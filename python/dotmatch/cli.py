@@ -31,6 +31,7 @@ from .native import find_native_cli, run_native_cli
 
 
 DNA = "ACGT"
+SOFTWARE_TITLE = "DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning"
 CRISPR_QC_THRESHOLDS = {
     "assignment_rate_min": 0.80,
     "ambiguous_rate_max": 0.05,
@@ -2026,6 +2027,7 @@ variant caller, adapter trimmer, cell/UMI quantifier, or screen statistics tool.
 Usage:
   dotmatch --help
   dotmatch --version
+  dotmatch citation
   dotmatch <command> [options]
 
 Core commands:
@@ -2072,6 +2074,7 @@ Assignment outcomes:
 Examples:
   dotmatch dist ACGT AGGT
   dotmatch leq 1 ACGT AGGT
+  dotmatch citation
   dotmatch count --targets guides.tsv --reads sample.fastq.gz --sample-label sample \\
       --target-start 23 --target-length 20 --k 1 --metric hamming --out counts.tsv
   dotmatch assay check assay.toml
@@ -2081,10 +2084,27 @@ Examples:
     )
 
 
+def print_citation() -> None:
+    print(
+        f"""DotMatch citation
+Software release: v{__version__}
+Preferred citation before DOI assignment:
+O'Toole D. {SOFTWARE_TITLE}. Software release v{__version__}. https://github.com/dnncha/dotmatch
+Citation metadata: CITATION.cff
+DOI: not yet assigned; add the Zenodo DOI after an immutable release archive is minted."""
+    )
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     raw_args = list(sys.argv[1:] if argv is None else argv)
     if raw_args and raw_args[0] in {"-h", "--help", "help"}:
         print_top_level_help()
+        return 0
+    if raw_args and raw_args[0] in {"citation", "cite"}:
+        if len(raw_args) != 1:
+            print("usage: dotmatch citation", file=sys.stderr)
+            return 2
+        print_citation()
         return 0
     if raw_args and raw_args[0] == "assay":
         return command_assay(raw_args[1:])

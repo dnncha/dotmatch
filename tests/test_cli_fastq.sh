@@ -32,10 +32,16 @@ cp "$TMPDIR/help---help.txt" "$TMPDIR/help.txt"
 grep "DotMatch $EXPECTED_VERSION" "$TMPDIR/help.txt" >/dev/null
 grep "Counting and demultiplexing:" "$TMPDIR/help.txt" >/dev/null
 grep "Assignment outcomes:" "$TMPDIR/help.txt" >/dev/null
+grep "citation" "$TMPDIR/help.txt" >/dev/null
 if grep "Packaging note:" "$TMPDIR/help.txt" >/dev/null; then
   echo "native help must not include packaging policy notes" >&2
   exit 1
 fi
+"$DOTMATCH_BIN" citation > "$TMPDIR/citation.txt"
+grep "Software release: v$EXPECTED_VERSION" "$TMPDIR/citation.txt" >/dev/null
+grep "O'Toole D. DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning. Software release v$EXPECTED_VERSION." "$TMPDIR/citation.txt" >/dev/null
+grep "Citation metadata: CITATION.cff" "$TMPDIR/citation.txt" >/dev/null
+grep "DOI: not yet assigned" "$TMPDIR/citation.txt" >/dev/null
 
 cat > "$TMPDIR/barcodes.tsv" <<'BARCODES'
 bc0	ACGT
@@ -101,6 +107,43 @@ r3		-1			-1	-1	0	invalid
 EXPECTEDRADIUS
 
 diff -u "$TMPDIR/expected_radius.tsv" "$TMPDIR/out.tsv"
+
+cat > "$TMPDIR/duplicate_barcode_ids.tsv" <<'DUPBARCODES'
+dup	ACGT
+dup	TTTT
+DUPBARCODES
+
+if "$DOTMATCH_BIN" fastq-assign \
+  --barcodes "$TMPDIR/duplicate_barcode_ids.tsv" \
+  --reads "$TMPDIR/reads.fastq" \
+  --barcode-start 0 \
+  --barcode-length 4 \
+  --k 1 \
+  --out "$TMPDIR/duplicate_barcode_assignments.tsv" \
+  2> "$TMPDIR/duplicate_barcode_ids.err"; then
+  echo "fastq-assign should reject duplicate barcode IDs" >&2
+  exit 1
+fi
+grep 'barcode IDs must be unique; duplicate ID: "dup"' "$TMPDIR/duplicate_barcode_ids.err" >/dev/null
+test ! -e "$TMPDIR/duplicate_barcode_assignments.tsv"
+
+cat > "$TMPDIR/empty_barcode_id.tsv" <<'EMPTYBARCODEID'
+	ACGT
+EMPTYBARCODEID
+
+if "$DOTMATCH_BIN" fastq-assign \
+  --barcodes "$TMPDIR/empty_barcode_id.tsv" \
+  --reads "$TMPDIR/reads.fastq" \
+  --barcode-start 0 \
+  --barcode-length 4 \
+  --k 1 \
+  --out "$TMPDIR/empty_barcode_assignments.tsv" \
+  2> "$TMPDIR/empty_barcode_id.err"; then
+  echo "fastq-assign should reject empty barcode IDs" >&2
+  exit 1
+fi
+grep 'record ID and sequence must be non-empty' "$TMPDIR/empty_barcode_id.err" >/dev/null
+test ! -e "$TMPDIR/empty_barcode_assignments.tsv"
 
 "$DOTMATCH_BIN" fastq-assign \
   --barcodes "$TMPDIR/barcodes.tsv" \
@@ -199,6 +242,50 @@ grep '"right_unmatched": 1' "$TMPDIR/pair_summary.json" >/dev/null
 grep '"invalid": 1' "$TMPDIR/pair_summary.json" >/dev/null
 grep '^p5	AGGT	0	L0	ambiguous	1	GGAA	0	R0	unique	0	ambiguous$' "$TMPDIR/pair_assignments.tsv" >/dev/null
 grep '^p6		-1		invalid	-1		-1		invalid	-1	invalid$' "$TMPDIR/pair_assignments.tsv" >/dev/null
+
+cat > "$TMPDIR/pair_left_duplicate.tsv" <<'TARGETS'
+Ldup	ACGT
+Ldup	TTTT
+TARGETS
+
+if "$DOTMATCH_BIN" pair-count \
+  --left-targets "$TMPDIR/pair_left_duplicate.tsv" \
+  --right-targets "$TMPDIR/pair_right.tsv" \
+  --reads "$TMPDIR/pair_reads.fastq" \
+  --left-start 0 \
+  --left-length 4 \
+  --right-start 4 \
+  --right-length 4 \
+  --k 1 \
+  --metric hamming \
+  --out "$TMPDIR/pair_duplicate_left.tsv" 2> "$TMPDIR/pair_duplicate_left.err"; then
+  echo "pair-count accepted duplicate left target IDs" >&2
+  exit 1
+fi
+grep 'left target IDs must be unique; duplicate ID: "Ldup"' "$TMPDIR/pair_duplicate_left.err" >/dev/null
+test ! -s "$TMPDIR/pair_duplicate_left.tsv"
+
+cat > "$TMPDIR/pair_right_duplicate.tsv" <<'TARGETS'
+Rdup	GGAA
+Rdup	CCCC
+TARGETS
+
+if "$DOTMATCH_BIN" pair-count \
+  --left-targets "$TMPDIR/pair_left.tsv" \
+  --right-targets "$TMPDIR/pair_right_duplicate.tsv" \
+  --reads "$TMPDIR/pair_reads.fastq" \
+  --left-start 0 \
+  --left-length 4 \
+  --right-start 4 \
+  --right-length 4 \
+  --k 1 \
+  --metric hamming \
+  --out "$TMPDIR/pair_duplicate_right.tsv" 2> "$TMPDIR/pair_duplicate_right.err"; then
+  echo "pair-count accepted duplicate right target IDs" >&2
+  exit 1
+fi
+grep 'right target IDs must be unique; duplicate ID: "Rdup"' "$TMPDIR/pair_duplicate_right.err" >/dev/null
+test ! -s "$TMPDIR/pair_duplicate_right.tsv"
 
 cat > "$TMPDIR/mageck_seq_header.tsv" <<'TARGETS'
 sgRNAID	Seq	gene
@@ -403,6 +490,66 @@ mkdir "$TMPDIR/demux_radius_default"
 grep '"ambiguity_policy": "radius"' "$TMPDIR/demux_radius_default_summary.json" >/dev/null
 grep '^@d0$' "$TMPDIR/demux_radius_default_ambiguous.fastq" >/dev/null
 grep '^d0	ACGT	0	bc0	ACGT	0	1	3	ambiguous$' "$TMPDIR/demux_radius_default_assignments.tsv" >/dev/null
+
+cat > "$TMPDIR/demux_colliding_ids.tsv" <<'DEMUXCOLLIDE'
+a/b	ACGT
+a:b	TTTT
+DEMUXCOLLIDE
+
+if "$DOTMATCH_BIN" demux \
+  --barcodes "$TMPDIR/demux_colliding_ids.tsv" \
+  --reads "$TMPDIR/demux_reads.fastq" \
+  --barcode-start 0 \
+  --barcode-length 4 \
+  --k 0 \
+  --metric hamming \
+  --out-dir "$TMPDIR/demux_colliding_ids" \
+  2> "$TMPDIR/demux_colliding_ids.err"; then
+  echo "demux should reject barcode IDs that collide after filename sanitization" >&2
+  exit 1
+fi
+grep 'barcode IDs produce the same output filename after sanitization' "$TMPDIR/demux_colliding_ids.err" >/dev/null
+test ! -d "$TMPDIR/demux_colliding_ids"
+
+cat > "$TMPDIR/demux_duplicate_ids.tsv" <<'DEMUXDUP'
+dup	ACGT
+dup	TTTT
+DEMUXDUP
+
+if "$DOTMATCH_BIN" demux \
+  --barcodes "$TMPDIR/demux_duplicate_ids.tsv" \
+  --reads "$TMPDIR/demux_reads.fastq" \
+  --barcode-start 0 \
+  --barcode-length 4 \
+  --k 0 \
+  --metric hamming \
+  --out-dir "$TMPDIR/demux_duplicate_ids" \
+  2> "$TMPDIR/demux_duplicate_ids.err"; then
+  echo "demux should reject duplicate barcode IDs" >&2
+  exit 1
+fi
+grep 'barcode IDs must be unique; duplicate ID: "dup"' "$TMPDIR/demux_duplicate_ids.err" >/dev/null
+test ! -d "$TMPDIR/demux_duplicate_ids"
+
+cat > "$TMPDIR/demux_empty_id.tsv" <<'DEMUXEMPTY'
+barcode_id	barcode_seq
+	ACGT
+DEMUXEMPTY
+
+if "$DOTMATCH_BIN" demux \
+  --barcodes "$TMPDIR/demux_empty_id.tsv" \
+  --reads "$TMPDIR/demux_reads.fastq" \
+  --barcode-start 0 \
+  --barcode-length 4 \
+  --k 0 \
+  --metric hamming \
+  --out-dir "$TMPDIR/demux_empty_id" \
+  2> "$TMPDIR/demux_empty_id.err"; then
+  echo "demux should reject empty barcode IDs" >&2
+  exit 1
+fi
+grep 'target ID and sequence must be non-empty' "$TMPDIR/demux_empty_id.err" >/dev/null
+test ! -d "$TMPDIR/demux_empty_id"
 
 cat > "$TMPDIR/demux_quality.fastq" <<'DEMUXQUAL'
 @dq_exact
@@ -609,6 +756,46 @@ if "$DOTMATCH_BIN" bcl-demux \
   exit 1
 fi
 
+cat > "$TMPDIR/bcl_run/SampleSheet.empty-id.csv" <<'SHEET'
+[Header]
+IEMFileVersion,4
+[Data]
+Sample_ID,Sample_Name,index
+,Missing ID,ACGT
+SHEET
+
+if "$DOTMATCH_BIN" bcl-demux \
+  --run-folder "$TMPDIR/bcl_run" \
+  --sample-sheet "$TMPDIR/bcl_run/SampleSheet.empty-id.csv" \
+  --out-dir "$TMPDIR/bcl_empty_id_out" \
+  --barcode-mismatches 0 \
+  2> "$TMPDIR/bcl_empty_id.err"; then
+  echo "bcl-demux should reject empty Sample_ID values" >&2
+  exit 1
+fi
+grep 'BCL sample sheet Sample_ID and index must be non-empty' "$TMPDIR/bcl_empty_id.err" >/dev/null
+test ! -d "$TMPDIR/bcl_empty_id_out"
+
+cat > "$TMPDIR/bcl_run/SampleSheet.empty-index.csv" <<'SHEET'
+[Header]
+IEMFileVersion,4
+[Data]
+Sample_ID,Sample_Name,index
+s1,Missing Index,
+SHEET
+
+if "$DOTMATCH_BIN" bcl-demux \
+  --run-folder "$TMPDIR/bcl_run" \
+  --sample-sheet "$TMPDIR/bcl_run/SampleSheet.empty-index.csv" \
+  --out-dir "$TMPDIR/bcl_empty_index_out" \
+  --barcode-mismatches 0 \
+  2> "$TMPDIR/bcl_empty_index.err"; then
+  echo "bcl-demux should reject empty index values" >&2
+  exit 1
+fi
+grep 'BCL sample sheet Sample_ID and index must be non-empty' "$TMPDIR/bcl_empty_index.err" >/dev/null
+test ! -d "$TMPDIR/bcl_empty_index_out"
+
 "$DOTMATCH_BIN" bcl-validate \
   --dotmatch-out "$TMPDIR/bcl_out" \
   --truth-out "$TMPDIR/bcl_out" | grep '"mismatched_fastq_files": 0' >/dev/null
@@ -773,6 +960,96 @@ if [ "$REPORT_MODE" != "0o600" ]; then
   echo "HTML report mode should be 0600, got $REPORT_MODE" >&2
   exit 1
 fi
+
+if "$DOTMATCH_BIN" count \
+  --targets "$TMPDIR/targets.csv" \
+  --reads "$TMPDIR/reads.fastq.gz" \
+  --sample-label bad_numeric \
+  --target-start -1 \
+  --target-length 4 \
+  --k 1 \
+  --out "$TMPDIR/negative_target_start.tsv" 2> "$TMPDIR/negative_target_start.err"; then
+  echo "count should reject negative unsigned numeric arguments" >&2
+  exit 1
+fi
+grep 'count --targets targets.tsv|targets.csv --reads reads.fastq' "$TMPDIR/negative_target_start.err" >/dev/null
+test ! -e "$TMPDIR/negative_target_start.tsv"
+
+if "$DOTMATCH_BIN" count \
+  --targets "$TMPDIR/targets.csv" \
+  --reads "$TMPDIR/reads.fastq.gz" \
+  --sample-label bad_numeric \
+  --target-start 0 \
+  --target-length 4 \
+  --k 1 \
+  --auto-offset 1 \
+  --offset-min-fraction NaN \
+  --out "$TMPDIR/nan_offset_fraction.tsv" 2> "$TMPDIR/nan_offset_fraction.err"; then
+  echo "count should reject non-finite numeric arguments" >&2
+  exit 1
+fi
+grep 'count --targets targets.tsv|targets.csv --reads reads.fastq' "$TMPDIR/nan_offset_fraction.err" >/dev/null
+test ! -e "$TMPDIR/nan_offset_fraction.tsv"
+
+if "$DOTMATCH_BIN" count \
+  --targets "$TMPDIR/targets.csv" \
+  --reads "$TMPDIR/reads.fastq" \
+  --reads "$TMPDIR/reads.fastq.gz" \
+  --sample-label duplicate,duplicate \
+  --target-start 0 \
+  --target-length 4 \
+  --k 1 \
+  --metric hamming \
+  --out "$TMPDIR/duplicate_sample_counts.tsv" \
+  2> "$TMPDIR/duplicate_sample_labels.err"; then
+  echo "count should reject duplicate sample labels" >&2
+  exit 1
+fi
+grep 'duplicate sample label: "duplicate"' "$TMPDIR/duplicate_sample_labels.err" >/dev/null
+test ! -e "$TMPDIR/duplicate_sample_counts.tsv"
+
+cat > "$TMPDIR/duplicate_target_ids.tsv" <<'DUPTARGETS'
+target_id	target_seq	gene
+dup	ACGT	G0
+dup	TTTT	G1
+DUPTARGETS
+
+if "$DOTMATCH_BIN" count \
+  --targets "$TMPDIR/duplicate_target_ids.tsv" \
+  --reads "$TMPDIR/reads.fastq" \
+  --sample-label sample1 \
+  --target-start 0 \
+  --target-length 4 \
+  --k 1 \
+  --metric hamming \
+  --out "$TMPDIR/duplicate_target_counts.tsv" \
+  2> "$TMPDIR/duplicate_target_ids.err"; then
+  echo "count should reject duplicate target IDs" >&2
+  exit 1
+fi
+grep 'target IDs must be unique; duplicate ID: "dup"' "$TMPDIR/duplicate_target_ids.err" >/dev/null
+test ! -e "$TMPDIR/duplicate_target_counts.tsv"
+
+cat > "$TMPDIR/empty_target_id.tsv" <<'EMPTYTARGET'
+target_id	target_seq	gene
+	ACGT	G0
+EMPTYTARGET
+
+if "$DOTMATCH_BIN" count \
+  --targets "$TMPDIR/empty_target_id.tsv" \
+  --reads "$TMPDIR/reads.fastq" \
+  --sample-label sample1 \
+  --target-start 0 \
+  --target-length 4 \
+  --k 1 \
+  --metric hamming \
+  --out "$TMPDIR/empty_target_counts.tsv" \
+  2> "$TMPDIR/empty_target_id.err"; then
+  echo "count should reject empty target IDs" >&2
+  exit 1
+fi
+grep 'target ID and sequence must be non-empty' "$TMPDIR/empty_target_id.err" >/dev/null
+test ! -e "$TMPDIR/empty_target_counts.tsv"
 
 cat > "$TMPDIR/quality_reads.fastq" <<'QUALFASTQ'
 @q_exact
@@ -956,6 +1233,51 @@ grep '^g_control	CTRL_SAFE	Control	1$' "$TMPDIR/gc_out.extended-counts.txt" >/de
 grep '^g_other	GENE_OTHER	Nonessential	1$' "$TMPDIR/gc_out.extended-counts.txt" >/dev/null
 grep '^file	label	total_guides	total_reads	mapped_reads	frac_mapped	mean_reads_per_guide	mean_reads_essential	mean_reads_nonessential	mean_reads_control	mean_reads_other	zero_read_guides$' "$TMPDIR/gc_out.stats.txt" >/dev/null
 grep "^$TMPDIR/gc_sample.fastq	gc_sample	3	5	4	0.8000	1.33	2.00	1.00	1.00	0.00	0$" "$TMPDIR/gc_out.stats.txt" >/dev/null
+
+if "$DOTMATCH_BIN" guide-counter count \
+  --input "$TMPDIR/gc_sample.fastq" "$TMPDIR/gc_sample.fastq" \
+  --samples duplicate duplicate \
+  --library "$TMPDIR/gc_library.tsv" \
+  --output "$TMPDIR/gc_duplicate" \
+  2> "$TMPDIR/gc_duplicate.err"; then
+  echo "guide-counter compatibility mode should reject duplicate sample labels" >&2
+  exit 1
+fi
+grep 'duplicate sample label: "duplicate"' "$TMPDIR/gc_duplicate.err" >/dev/null
+test ! -e "$TMPDIR/gc_duplicate.counts.txt"
+
+cat > "$TMPDIR/gc_duplicate_guides.tsv" <<'GCDUPGUIDES'
+guide	bases	gene
+gdup	ACGT	GENE_ESS
+gdup	TTTT	CTRL_SAFE
+GCDUPGUIDES
+
+if "$DOTMATCH_BIN" guide-counter count \
+  --input "$TMPDIR/gc_sample.fastq" \
+  --library "$TMPDIR/gc_duplicate_guides.tsv" \
+  --output "$TMPDIR/gc_duplicate_guides" \
+  2> "$TMPDIR/gc_duplicate_guides.err"; then
+  echo "guide-counter compatibility mode should reject duplicate guide IDs" >&2
+  exit 1
+fi
+grep 'guide IDs must be unique; duplicate ID: "gdup"' "$TMPDIR/gc_duplicate_guides.err" >/dev/null
+test ! -e "$TMPDIR/gc_duplicate_guides.counts.txt"
+
+cat > "$TMPDIR/gc_empty_guide.tsv" <<'GCEMPTYGUIDE'
+guide	bases	gene
+	ACGT	GENE_ESS
+GCEMPTYGUIDE
+
+if "$DOTMATCH_BIN" guide-counter count \
+  --input "$TMPDIR/gc_sample.fastq" \
+  --library "$TMPDIR/gc_empty_guide.tsv" \
+  --output "$TMPDIR/gc_empty_guide" \
+  2> "$TMPDIR/gc_empty_guide.err"; then
+  echo "guide-counter compatibility mode should reject empty guide IDs" >&2
+  exit 1
+fi
+grep 'target ID and sequence must be non-empty' "$TMPDIR/gc_empty_guide.err" >/dev/null
+test ! -e "$TMPDIR/gc_empty_guide.counts.txt"
 
 "$DOTMATCH_BIN" guide-counter-count \
   --input "$TMPDIR/gc_sample.fastq" \
@@ -1449,6 +1771,68 @@ sample_id	fastq
 plasmid	$TMPDIR/reads.fastq
 esc	$TMPDIR/reads.fastq.gz
 SAMPLES
+
+cat > "$TMPDIR/duplicate_samples.tsv" <<SAMPLES
+sample_id	fastq
+plasmid	$TMPDIR/reads.fastq
+plasmid	$TMPDIR/reads.fastq.gz
+SAMPLES
+
+if "$DOTMATCH_BIN" crispr-count \
+  --library "$TMPDIR/targets.csv" \
+  --samples "$TMPDIR/duplicate_samples.tsv" \
+  --guide-start 0 \
+  --guide-length 4 \
+  --k 1 \
+  --metric levenshtein \
+  --out "$TMPDIR/duplicate_crispr.tsv" \
+  2> "$TMPDIR/duplicate_crispr.err"; then
+  echo "crispr-count should reject duplicate sample labels from sample sheets" >&2
+  exit 1
+fi
+grep 'duplicate sample label: "plasmid"' "$TMPDIR/duplicate_crispr.err" >/dev/null
+test ! -e "$TMPDIR/duplicate_crispr.tsv"
+
+cat > "$TMPDIR/duplicate_guides.csv" <<'GUIDEDUP'
+sgRNA,gRNA.sequence,Gene
+gdup,ACGT,G0
+gdup,TTTT,G1
+GUIDEDUP
+
+if "$DOTMATCH_BIN" crispr-count \
+  --library "$TMPDIR/duplicate_guides.csv" \
+  --samples "$TMPDIR/samples.tsv" \
+  --guide-start 0 \
+  --guide-length 4 \
+  --k 1 \
+  --metric levenshtein \
+  --out "$TMPDIR/duplicate_guides.tsv" \
+  2> "$TMPDIR/duplicate_guides.err"; then
+  echo "crispr-count should reject duplicate guide IDs" >&2
+  exit 1
+fi
+grep 'guide IDs must be unique; duplicate ID: "gdup"' "$TMPDIR/duplicate_guides.err" >/dev/null
+test ! -e "$TMPDIR/duplicate_guides.tsv"
+
+cat > "$TMPDIR/empty_guides.csv" <<'GUIDEEMPTY'
+sgRNA,gRNA.sequence,Gene
+,ACGT,G0
+GUIDEEMPTY
+
+if "$DOTMATCH_BIN" crispr-count \
+  --library "$TMPDIR/empty_guides.csv" \
+  --samples "$TMPDIR/samples.tsv" \
+  --guide-start 0 \
+  --guide-length 4 \
+  --k 1 \
+  --metric levenshtein \
+  --out "$TMPDIR/empty_guides.tsv" \
+  2> "$TMPDIR/empty_guides.err"; then
+  echo "crispr-count should reject empty guide IDs" >&2
+  exit 1
+fi
+grep 'target ID and sequence must be non-empty' "$TMPDIR/empty_guides.err" >/dev/null
+test ! -e "$TMPDIR/empty_guides.tsv"
 
 "$DOTMATCH_BIN" crispr-count \
   --library "$TMPDIR/targets.csv" \

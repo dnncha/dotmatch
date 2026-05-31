@@ -8,6 +8,8 @@
 - [ ] `make cli-test`
 - [ ] `make python-test`
 - [ ] `make pretag-ready` if release, packaging, benchmark evidence, workflow examples, or public docs changed.
+- [ ] `make asan` if native C code, memory ownership, parsing, indexing, or allocation behavior changed.
+- [ ] `make scientific-readiness-ready` if claims, gates, packaging, release process, or evidence boundaries changed.
 - [ ] Relevant benchmark/report gate, if claims or artifacts changed:
 
 ## Claim Boundary

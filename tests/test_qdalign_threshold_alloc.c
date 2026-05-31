@@ -36,12 +36,16 @@ static void reset_alloc_counts(void) {
     test_free_calls = 0;
 }
 
-static void assert_k1_leq_no_heap(const char *a, size_t a_len, const char *b, size_t b_len, int expected) {
+static void assert_leq_no_heap(const char *a, size_t a_len, const char *b, size_t b_len, int k, int expected) {
     reset_alloc_counts();
-    assert(qdaln_edit_distance_leq(a, a_len, b, b_len, 1) == expected);
+    assert(qdaln_edit_distance_leq(a, a_len, b, b_len, k) == expected);
     assert(test_malloc_calls == 0);
     assert(test_calloc_calls == 0);
     assert(test_free_calls == 0);
+}
+
+static void assert_k1_leq_no_heap(const char *a, size_t a_len, const char *b, size_t b_len, int expected) {
+    assert_leq_no_heap(a, a_len, b, b_len, 1, expected);
 }
 
 static void packed_hamming_tests(void) {
@@ -80,6 +84,9 @@ int main(void) {
     assert_k1_leq_no_heap("ACGT", 4, "ACGTTT", 6, 0);
     assert_k1_leq_no_heap("N", 1, "A", 1, 1);
     assert_k1_leq_no_heap("N", 1, "N", 1, 1);
+    assert_leq_no_heap("ACGTACGT", 8, "ACGTTCGA", 8, 2, 1);
+    assert_leq_no_heap("ACGTACGT", 8, "TCGTTCGA", 8, 3, 1);
+    assert_leq_no_heap("ACG", 3, "CGA", 3, 2, 1);
 
     puts("qdalign threshold allocation tests passed");
     return 0;
