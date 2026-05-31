@@ -30,8 +30,11 @@ assignment searches.
 Bioconda packages DotMatch from a recipe in `bioconda-recipes`; DotMatch does
 not upload a Conda package directly.
 [bioconda/bioconda-recipes#65367](https://github.com/bioconda/bioconda-recipes/pull/65367)
-published DotMatch 0.1.2 as the first Bioconda package. The latest verified
-public Bioconda package before the 0.1.5 release is 0.1.4. Treat future
+published DotMatch 0.1.2 as the first Bioconda package. As of 2026-05-31,
+the latest verified public Bioconda package before the 0.1.6 release is 0.1.4.
+The 0.1.5 recipe update is submitted and green in
+[bioconda/bioconda-recipes#65901](https://github.com/bioconda/bioconda-recipes/pull/65901),
+but it predates the current hardened main branch. Treat future
 Bioconda versions as available only after
 `https://anaconda.org/bioconda/dotmatch`, repodata, and
 `make distribution-channels` all verify the release version and install smoke
@@ -72,9 +75,11 @@ The native CLI exposes `dotmatch --version`, so the Bioconda recipe and
 post-release Bioconda install verifier should check version output as well as
 functional CLI smoke tests.
 
-### Bioconda 0.1.5 PR changelog draft
+### Bioconda 0.1.6 PR changelog draft
 
-- Update DotMatch from 0.1.4 to 0.1.5.
+- Update DotMatch from 0.1.4 to 0.1.6.
+- Supersede the 0.1.5 update with the hardened 0.1.6 release once the
+  immutable tag and tarball SHA256 are available.
 - Keep the Python console-script package scope introduced in 0.1.4: `dotmatch`
   exposes the native commands plus `assay`, `barcode`, `panel`, and
   GuideCounter-compatible CRISPR counting namespaces.

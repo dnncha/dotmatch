@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
   "status": "not_released",
-  "release_version": "0.1.5",
+  "release_version": "0.1.6",
   "post_release_gate": "make distribution-channels",
   "channels": [
     {
       "id": "pypi",
       "status": "prepared",
-      "expected_url": "https://pypi.org/project/dotmatch/0.1.5/",
+      "expected_url": "https://pypi.org/project/dotmatch/0.1.6/",
       "verification_command": "make distribution-channels",
-      "blocker": "The 0.1.5 source distribution, native macOS wheel, and repaired manylinux/musllinux wheels have not been published to PyPI yet.",
+      "blocker": "The 0.1.6 source distribution, native macOS wheel, and repaired manylinux/musllinux wheels have not been published to PyPI yet.",
       "next_action": "Publish the tagged source distribution, native macOS wheel, and repaired Linux wheels through PyPI trusted publishing, then rerun make distribution-channels."
     },
     {
@@ -18,16 +18,17 @@
       "expected_url": "https://anaconda.org/bioconda/dotmatch",
       "latest_published_version": "0.1.4",
       "initial_recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/65367",
+      "superseded_recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/65901",
       "verification_command": "make distribution-channels",
-      "blocker": "The public Bioconda channel currently carries DotMatch 0.1.4 as the latest release. The 0.1.5 recipe update has not been submitted, merged, and propagated yet.",
-      "next_action": "After tagging v0.1.5, copy the recipe template to bioconda-recipes, replace the source SHA256, keep the Python console-script package scope, osx-arm64 opt-in, host zlib/runtime libzlib dependency shape, and GuideCounter-compatible CLI smoke tests, then rerun make distribution-channels after channel propagation."
+      "blocker": "The public Bioconda channel currently carries DotMatch 0.1.4 as the latest release. The 0.1.5 recipe PR is submitted and green but does not include the current hardened main branch; a 0.1.6 recipe update cannot be submitted until v0.1.6 is tagged and the release tarball SHA256 is available.",
+      "next_action": "After tagging v0.1.6, update the bioconda-recipes PR from the recipe template, replace the source SHA256, keep the Python console-script package scope, osx-arm64 opt-in, host zlib/runtime libzlib dependency shape, and GuideCounter-compatible CLI smoke tests, then rerun make distribution-channels after channel propagation."
     },
     {
       "id": "ghcr",
       "status": "prepared",
       "expected_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "The GHCR image for version 0.1.5 has not been published from an immutable tag yet.",
+      "blocker": "The GHCR image for version 0.1.6 has not been published from an immutable tag yet.",
       "next_action": "Push the release tag, confirm the GHCR image label and runtime smoke tests, then rerun make distribution-channels."
     },
     {
@@ -35,8 +36,8 @@
       "status": "prepared",
       "expected_url": "https://quay.io/repository/biocontainers/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "The BioContainers image for version 0.1.5 is not available until the Bioconda package update is accepted.",
-      "next_action": "After Bioconda accepts 0.1.5, wait for BioContainers publication and rerun make distribution-channels."
+      "blocker": "The BioContainers image for version 0.1.6 is not available until the Bioconda package update is accepted.",
+      "next_action": "After Bioconda accepts 0.1.6, wait for BioContainers publication and rerun make distribution-channels."
     },
     {
       "id": "zenodo",
@@ -48,7 +49,7 @@
     }
   ],
   "blockers": [
-    "DotMatch 0.1.5 has not been executed across PyPI, Bioconda, GHCR/BioContainers, and Zenodo."
+    "DotMatch 0.1.6 has not been executed across PyPI, Bioconda, GHCR/BioContainers, and Zenodo."
   ],
-  "next_action": "Complete the 0.1.5 public release flow, replace expected URLs with verified public and evidence URLs, set channels to verified, and rerun make distribution-channels."
+  "next_action": "Complete the 0.1.6 public release flow, replace expected URLs with verified public and evidence URLs, set channels to verified, and rerun make distribution-channels."
 }
