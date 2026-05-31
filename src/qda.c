@@ -7787,7 +7787,13 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
         goto done;
     }
 
-    size_t output_file_count = (samples.count == 0 ? 1 : samples.count) * (run.read_count == 0 ? 1 : run.read_count);
+    size_t output_file_count = 0;
+    if (checked_mul_size(samples.count == 0 ? 1 : samples.count,
+                         run.read_count == 0 ? 1 : run.read_count,
+                         &output_file_count) != 0) {
+        fprintf(stderr, "BCL output file count overflow\n");
+        goto done;
+    }
     sample_fastqs = (gzFile *)calloc(output_file_count, sizeof(gzFile));
     undetermined_fastqs = (gzFile *)calloc(run.read_count == 0 ? 1 : run.read_count, sizeof(gzFile));
     if (sample_fastqs == NULL || undetermined_fastqs == NULL) {
