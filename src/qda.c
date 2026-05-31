@@ -7574,10 +7574,10 @@ static int process_bcl_block(const bcl_block_job *job) {
             continue;
         }
         ++result->passed_clusters;
-        char index1[512] = "";
-        char index2[512] = "";
-        char seqs[16][8192];
-        char quals[16][8192];
+        char index1[MAX_BCL_READ_CYCLES + 1] = "";
+        char index2[MAX_BCL_READ_CYCLES + 1] = "";
+        char seqs[16][MAX_BCL_READ_CYCLES + 1];
+        char quals[16][MAX_BCL_READ_CYCLES + 1];
         memset(seqs, 0, sizeof(seqs));
         memset(quals, 0, sizeof(quals));
         int indexed_seen = 0;
@@ -7594,8 +7594,13 @@ static int process_bcl_block(const bcl_block_job *job) {
             seq_out[ri->cycles] = '\0';
             qual_out[ri->cycles] = '\0';
             if (ri->indexed) {
-                if (indexed_seen == 0) snprintf(index1, sizeof(index1), "%s", seq_out);
-                else if (indexed_seen == 1) snprintf(index2, sizeof(index2), "%s", seq_out);
+                if (indexed_seen == 0) {
+                    int n = snprintf(index1, sizeof(index1), "%s", seq_out);
+                    if (n < 0 || (size_t)n >= sizeof(index1)) return -1;
+                } else if (indexed_seen == 1) {
+                    int n = snprintf(index2, sizeof(index2), "%s", seq_out);
+                    if (n < 0 || (size_t)n >= sizeof(index2)) return -1;
+                }
                 ++indexed_seen;
             }
         }
@@ -7607,23 +7612,28 @@ static int process_bcl_block(const bcl_block_job *job) {
             for (size_t r = 0; r < run->read_count; ++r) {
                 const bcl_read_info *ri = &run->reads[r];
                 if (!bcl_output_enabled(ri, job->emit_index_fastqs)) continue;
-                char header[1024];
-                snprintf(header, sizeof(header), "@DOTMATCH:1:%s:%zu %d:N:0:%s%s%s",
-                         job->tile, cluster + 1, bcl_output_number(run, r), index1, index2[0] ? "+" : "", index2);
+                char header[4096];
+                int n = snprintf(header, sizeof(header), "@DOTMATCH:1:%s:%zu %d:N:0:%s%s%s",
+                                 job->tile, cluster + 1, bcl_output_number(run, r),
+                                 index1, index2[0] ? "+" : "", index2);
+                if (n < 0 || (size_t)n >= sizeof(header)) return -1;
                 text_buffer *buf = &result->sample_buffers[out_i * run->read_count + r];
                 if (append_fastq_record(buf, header, seqs[r], quals[r]) != 0) return -1;
             }
             ++result->sample_assigned[out_i];
         } else {
-            char unknown_index[1024];
-            snprintf(unknown_index, sizeof(unknown_index), "%s%s%s", index1, index2[0] ? "+" : "", index2);
+            char unknown_index[(MAX_BCL_READ_CYCLES * 2) + 2];
+            int n = snprintf(unknown_index, sizeof(unknown_index), "%s%s%s", index1, index2[0] ? "+" : "", index2);
+            if (n < 0 || (size_t)n >= sizeof(unknown_index)) return -1;
             if (add_bcl_unknown(&result->unknowns, unknown_index) != 0) return -1;
             for (size_t r = 0; r < run->read_count; ++r) {
                 const bcl_read_info *ri = &run->reads[r];
                 if (!bcl_output_enabled(ri, job->emit_index_fastqs)) continue;
-                char header[1024];
-                snprintf(header, sizeof(header), "@DOTMATCH:1:%s:%zu %d:N:0:%s%s%s",
-                         job->tile, cluster + 1, bcl_output_number(run, r), index1, index2[0] ? "+" : "", index2);
+                char header[4096];
+                n = snprintf(header, sizeof(header), "@DOTMATCH:1:%s:%zu %d:N:0:%s%s%s",
+                             job->tile, cluster + 1, bcl_output_number(run, r),
+                             index1, index2[0] ? "+" : "", index2);
+                if (n < 0 || (size_t)n >= sizeof(header)) return -1;
                 if (append_fastq_record(&result->undetermined_buffers[r], header, seqs[r], quals[r]) != 0) return -1;
             }
             ++result->undetermined_reads;
