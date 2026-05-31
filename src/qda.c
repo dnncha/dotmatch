@@ -7177,17 +7177,23 @@ static int parse_run_info(const char *run_folder, bcl_run_info *info) {
                 free(xml);
                 return -1;
             }
-            char *cycles_end = NULL;
-            unsigned long parsed_cycles = strtoul(cycles, &cycles_end, 10);
-            if (cycles_end == cycles || *cycles_end != '\0' || parsed_cycles == 0 ||
+            int parsed_number = 0;
+            size_t parsed_cycles = 0;
+            if (parse_int_value(number, &parsed_number) != 0 || parsed_number < 1 ||
+                parse_size_value(cycles, &parsed_cycles) != 0 || parsed_cycles == 0 ||
                 parsed_cycles > MAX_BCL_READ_CYCLES ||
-                info->total_cycles > MAX_BCL_TOTAL_CYCLES - (size_t)parsed_cycles) {
+                info->total_cycles > MAX_BCL_TOTAL_CYCLES - parsed_cycles) {
+                free(xml);
+                return -1;
+            }
+            if (!(indexed[0] == 'Y' || indexed[0] == 'y' || indexed[0] == 'N' || indexed[0] == 'n') ||
+                indexed[1] != '\0') {
                 free(xml);
                 return -1;
             }
             bcl_read_info *r = &info->reads[info->read_count++];
-            r->number = atoi(number);
-            r->cycles = (size_t)parsed_cycles;
+            r->number = parsed_number;
+            r->cycles = parsed_cycles;
             r->indexed = indexed[0] == 'Y' || indexed[0] == 'y';
             r->start_cycle = info->total_cycles + 1;
             info->total_cycles += r->cycles;
@@ -7244,7 +7250,18 @@ static int read_bcl_sample_sheet(const char *path, bcl_sample_table *samples) {
         const char *name = (name_col >= 0 && (size_t)name_col < nf) ? fields[name_col] : fields[id_col];
         const char *index2 = (index2_col >= 0 && (size_t)index2_col < nf) ? fields[index2_col] : "";
         int lane = 0;
-        if (lane_col >= 0 && (size_t)lane_col < nf && fields[lane_col][0] != '\0') lane = atoi(fields[lane_col]);
+        if (lane_col >= 0 && (size_t)lane_col < nf && fields[lane_col][0] != '\0') {
+            if (parse_int_value(fields[lane_col], &lane) != 0 || lane < 1) {
+                fprintf(stderr, "%s:%zu: BCL sample sheet Lane must be a positive integer\n", path, row);
+                fclose(fp);
+                return -1;
+            }
+            if (lane != 1) {
+                fprintf(stderr, "%s:%zu: classic BCL demux currently supports sample-sheet Lane 1 only\n", path, row);
+                fclose(fp);
+                return -1;
+            }
+        }
         if (push_bcl_sample(samples, fields[id_col], name, fields[index_col], index2, lane) != 0) {
             fclose(fp);
             return -1;
@@ -7624,7 +7641,8 @@ static int write_bcl_block_result(const bcl_block_result *result, gzFile *sample
 static int parse_mismatches(const char *s, int *k1, int *k2) {
     char *comma = strchr(s, ',');
     if (comma == NULL) {
-        int k = atoi(s);
+        int k = 0;
+        if (parse_int_value(s, &k) != 0) return -1;
         if (k < 0 || k > 1) return -1;
         *k1 = k;
         *k2 = k;
@@ -7635,8 +7653,9 @@ static int parse_mismatches(const char *s, int *k1, int *k2) {
     if (n >= sizeof(left)) return -1;
     memcpy(left, s, n);
     left[n] = '\0';
-    int a = atoi(left);
-    int b = atoi(comma + 1);
+    int a = 0;
+    int b = 0;
+    if (parse_int_value(left, &a) != 0 || parse_int_value(comma + 1, &b) != 0) return -1;
     if (a < 0 || a > 1 || b < 0 || b > 1) return -1;
     *k1 = a;
     *k2 = b;
