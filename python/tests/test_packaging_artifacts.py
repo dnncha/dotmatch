@@ -160,6 +160,10 @@ def test_release_workflow_builds_and_smoke_tests_container() -> None:
     assert "docker run --rm dotmatch:ci dist ACGT AGGT | grep '^1$'" in workflow
     assert "docker image inspect dotmatch:ci" in workflow
     assert "org.opencontainers.image.version" in workflow
+    assert "org.opencontainers.image.title=DotMatch" in workflow
+    assert "org.opencontainers.image.licenses=Apache-2.0" in workflow
+    assert "org.opencontainers.image.documentation=https://github.com/dnncha/dotmatch#readme" in workflow
+    assert "org.opencontainers.image.authors=Donncha O'Toole" in workflow
 
 
 def test_dockerfile_has_release_aligned_oci_metadata() -> None:
