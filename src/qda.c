@@ -7932,7 +7932,7 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
     }
 
     char stats_path[4096];
-    snprintf(stats_path, sizeof(stats_path), "%s/Demultiplex_Stats.csv", out_dir);
+    if (path_join(stats_path, sizeof(stats_path), out_dir, "Demultiplex_Stats.csv") != 0) goto done;
     FILE *stats = open_output_file(stats_path);
     if (stats == NULL) goto done;
     fprintf(stats, "sample_id,assigned_reads");
@@ -7957,7 +7957,7 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
     if (unknowns.count > 0) {
         qsort(unknowns.items, unknowns.count, sizeof(unknowns.items[0]), cmp_bcl_unknown_desc);
         char unknown_path[4096];
-        snprintf(unknown_path, sizeof(unknown_path), "%s/Top_Unknown_Barcodes.csv", out_dir);
+        if (path_join(unknown_path, sizeof(unknown_path), out_dir, "Top_Unknown_Barcodes.csv") != 0) goto done;
         FILE *unknown = open_output_file(unknown_path);
         if (unknown == NULL) goto done;
         fprintf(unknown, "index,count\n");
@@ -7967,7 +7967,7 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
     }
 
     char normalized_path[4096];
-    snprintf(normalized_path, sizeof(normalized_path), "%s/SampleSheet.normalized.csv", out_dir);
+    if (path_join(normalized_path, sizeof(normalized_path), out_dir, "SampleSheet.normalized.csv") != 0) goto done;
     FILE *normalized = open_output_file(normalized_path);
     if (normalized != NULL) {
         fprintf(normalized, "sample_id,sample_name,lane,index,index2\n");
@@ -8077,8 +8077,12 @@ static int run_bcl_validate(const char *argv0, int argc, char **argv) {
         if (!ends_with(ent->d_name, ".fastq.gz")) continue;
         char truth_path[4096];
         char dotmatch_path[4096];
-        snprintf(truth_path, sizeof(truth_path), "%s/%s", truth_out, ent->d_name);
-        snprintf(dotmatch_path, sizeof(dotmatch_path), "%s/%s", dotmatch_out, ent->d_name);
+        if (path_join(truth_path, sizeof(truth_path), truth_out, ent->d_name) != 0 ||
+            path_join(dotmatch_path, sizeof(dotmatch_path), dotmatch_out, ent->d_name) != 0) {
+            closedir(dir);
+            fprintf(stderr, "BCL validation path is too long\n");
+            return 1;
+        }
         if (!path_exists(dotmatch_path)) {
             ++missing_files;
             continue;
