@@ -233,6 +233,17 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
     for label in required_labels:
         if label not in dockerfile:
             result.failures.append(f"Dockerfile missing OCI label {label}")
+    required_published_labels = [
+        "org.opencontainers.image.title=DotMatch",
+        "org.opencontainers.image.source=https://github.com/dnncha/dotmatch",
+        "org.opencontainers.image.url=https://github.com/dnncha/dotmatch",
+        "org.opencontainers.image.documentation=https://github.com/dnncha/dotmatch#readme",
+        "org.opencontainers.image.licenses=Apache-2.0",
+        "org.opencontainers.image.authors=Donncha O'Toole",
+    ]
+    for label in required_published_labels:
+        if label not in workflow:
+            result.failures.append(f"release workflow metadata-action missing published OCI label {label}")
 
     if "REPLACE_WITH_RELEASE_TARBALL_SHA256" not in bioconda:
         result.failures.append("Bioconda template must retain release SHA256 placeholder until copying into bioconda-recipes")
