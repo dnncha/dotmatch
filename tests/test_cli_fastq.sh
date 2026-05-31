@@ -756,6 +756,74 @@ if "$DOTMATCH_BIN" bcl-demux \
   exit 1
 fi
 
+cp -R "$TMPDIR/bcl_run" "$TMPDIR/bcl_bad_read_number_run"
+python3 - "$TMPDIR/bcl_bad_read_number_run/RunInfo.xml" <<'PY'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+path.write_text(text.replace('Read Number="1"', 'Read Number="not_a_read"', 1), encoding="utf-8")
+PY
+
+if "$DOTMATCH_BIN" bcl-demux \
+  --run-folder "$TMPDIR/bcl_bad_read_number_run" \
+  --sample-sheet "$TMPDIR/bcl_bad_read_number_run/SampleSheet.csv" \
+  --out-dir "$TMPDIR/bcl_bad_read_number_out" \
+  --barcode-mismatches 0 \
+  2> "$TMPDIR/bcl_bad_read_number.err"; then
+  echo "bcl-demux should reject malformed RunInfo read numbers" >&2
+  exit 1
+fi
+grep 'failed to parse RunInfo.xml' "$TMPDIR/bcl_bad_read_number.err" >/dev/null
+test ! -d "$TMPDIR/bcl_bad_read_number_out"
+
+cp -R "$TMPDIR/bcl_run" "$TMPDIR/bcl_bad_indexed_flag_run"
+python3 - "$TMPDIR/bcl_bad_indexed_flag_run/RunInfo.xml" <<'PY'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+path.write_text(text.replace('IsIndexedRead="Y"', 'IsIndexedRead="maybe"', 1), encoding="utf-8")
+PY
+
+if "$DOTMATCH_BIN" bcl-demux \
+  --run-folder "$TMPDIR/bcl_bad_indexed_flag_run" \
+  --sample-sheet "$TMPDIR/bcl_bad_indexed_flag_run/SampleSheet.csv" \
+  --out-dir "$TMPDIR/bcl_bad_indexed_flag_out" \
+  --barcode-mismatches 0 \
+  2> "$TMPDIR/bcl_bad_indexed_flag.err"; then
+  echo "bcl-demux should reject malformed RunInfo IsIndexedRead values" >&2
+  exit 1
+fi
+grep 'failed to parse RunInfo.xml' "$TMPDIR/bcl_bad_indexed_flag.err" >/dev/null
+test ! -d "$TMPDIR/bcl_bad_indexed_flag_out"
+
+if "$DOTMATCH_BIN" bcl-demux \
+  --run-folder "$TMPDIR/bcl_run" \
+  --sample-sheet "$TMPDIR/bcl_run/SampleSheet.csv" \
+  --out-dir "$TMPDIR/bcl_bad_mismatch_out" \
+  --barcode-mismatches x \
+  2> "$TMPDIR/bcl_bad_mismatch.err"; then
+  echo "bcl-demux should reject nonnumeric --barcode-mismatches values" >&2
+  exit 1
+fi
+grep 'bcl-demux --run-folder RUN --sample-sheet SampleSheet.csv' "$TMPDIR/bcl_bad_mismatch.err" >/dev/null
+test ! -d "$TMPDIR/bcl_bad_mismatch_out"
+
+if "$DOTMATCH_BIN" bcl-demux \
+  --run-folder "$TMPDIR/bcl_run" \
+  --sample-sheet "$TMPDIR/bcl_run/SampleSheet.csv" \
+  --out-dir "$TMPDIR/bcl_bad_dual_mismatch_out" \
+  --barcode-mismatches 1,x \
+  2> "$TMPDIR/bcl_bad_dual_mismatch.err"; then
+  echo "bcl-demux should reject malformed dual-index --barcode-mismatches values" >&2
+  exit 1
+fi
+grep 'bcl-demux --run-folder RUN --sample-sheet SampleSheet.csv' "$TMPDIR/bcl_bad_dual_mismatch.err" >/dev/null
+test ! -d "$TMPDIR/bcl_bad_dual_mismatch_out"
+
 cat > "$TMPDIR/bcl_run/SampleSheet.empty-id.csv" <<'SHEET'
 [Header]
 IEMFileVersion,4
@@ -795,6 +863,46 @@ if "$DOTMATCH_BIN" bcl-demux \
 fi
 grep 'BCL sample sheet Sample_ID and index must be non-empty' "$TMPDIR/bcl_empty_index.err" >/dev/null
 test ! -d "$TMPDIR/bcl_empty_index_out"
+
+cat > "$TMPDIR/bcl_run/SampleSheet.bad-lane.csv" <<'SHEET'
+[Header]
+IEMFileVersion,4
+[Data]
+Sample_ID,Sample_Name,index,Lane
+s1,Bad Lane,ACGT,not_a_lane
+SHEET
+
+if "$DOTMATCH_BIN" bcl-demux \
+  --run-folder "$TMPDIR/bcl_run" \
+  --sample-sheet "$TMPDIR/bcl_run/SampleSheet.bad-lane.csv" \
+  --out-dir "$TMPDIR/bcl_bad_sample_lane_out" \
+  --barcode-mismatches 0 \
+  2> "$TMPDIR/bcl_bad_sample_lane.err"; then
+  echo "bcl-demux should reject nonnumeric sample-sheet Lane values" >&2
+  exit 1
+fi
+grep 'BCL sample sheet Lane must be a positive integer' "$TMPDIR/bcl_bad_sample_lane.err" >/dev/null
+test ! -d "$TMPDIR/bcl_bad_sample_lane_out"
+
+cat > "$TMPDIR/bcl_run/SampleSheet.unsupported-lane.csv" <<'SHEET'
+[Header]
+IEMFileVersion,4
+[Data]
+Sample_ID,Sample_Name,index,Lane
+s1,Unsupported Lane,ACGT,2
+SHEET
+
+if "$DOTMATCH_BIN" bcl-demux \
+  --run-folder "$TMPDIR/bcl_run" \
+  --sample-sheet "$TMPDIR/bcl_run/SampleSheet.unsupported-lane.csv" \
+  --out-dir "$TMPDIR/bcl_unsupported_sample_lane_out" \
+  --barcode-mismatches 0 \
+  2> "$TMPDIR/bcl_unsupported_sample_lane.err"; then
+  echo "bcl-demux should reject unsupported sample-sheet Lane values" >&2
+  exit 1
+fi
+grep 'classic BCL demux currently supports sample-sheet Lane 1 only' "$TMPDIR/bcl_unsupported_sample_lane.err" >/dev/null
+test ! -d "$TMPDIR/bcl_unsupported_sample_lane_out"
 
 "$DOTMATCH_BIN" bcl-validate \
   --dotmatch-out "$TMPDIR/bcl_out" \
