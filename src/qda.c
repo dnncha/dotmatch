@@ -4553,9 +4553,11 @@ static const char *guide_counter_type_for_target(const seq_record *target, const
 }
 
 static int parse_ull_value(const char *s, unsigned long long *out) {
+    if (s == NULL || s[0] == '-' || s[0] == '\0') return -1;
     char *end = NULL;
+    errno = 0;
     unsigned long long v = strtoull(s, &end, 10);
-    if (end == s || *end != '\0') return -1;
+    if (errno == ERANGE || end == s || *end != '\0') return -1;
     *out = v;
     return 0;
 }
@@ -6588,9 +6590,11 @@ static FILE *open_demux_target_file(FILE **files, const seq_table *targets, size
     if (files[target_index] != NULL) return files[target_index];
     char safe_id[512];
     sanitize_filename(targets->records[target_index].id, safe_id, sizeof(safe_id));
+    char name[600];
+    int n = snprintf(name, sizeof(name), "%s.fastq", safe_id);
+    if (n < 0 || (size_t)n >= sizeof(name)) return NULL;
     char path[4096];
-    int n = snprintf(path, sizeof(path), "%s/%s.fastq", out_dir, safe_id);
-    if (n < 0 || (size_t)n >= sizeof(path)) return NULL;
+    if (path_join(path, sizeof(path), out_dir, name) != 0) return NULL;
     files[target_index] = open_output_file(path);
     return files[target_index];
 }
@@ -7163,7 +7167,7 @@ static int xml_attr_value(const char *tag, const char *name, char *out, size_t o
 
 static int parse_run_info(const char *run_folder, bcl_run_info *info) {
     char path[4096];
-    snprintf(path, sizeof(path), "%s/RunInfo.xml", run_folder);
+    if (path_join(path, sizeof(path), run_folder, "RunInfo.xml") != 0) return -1;
     char *xml = read_text_file(path);
     if (xml == NULL) return -1;
     memset(info, 0, sizeof(*info));
@@ -7465,10 +7469,12 @@ static gzFile open_bcl_fastq(const char *out_dir, const char *sample_id, size_t 
                              char read_kind, int read_number, int gzip_level) {
     char safe_id[512];
     sanitize_filename(sample_id, safe_id, sizeof(safe_id));
-    char path[4096];
-    int n = snprintf(path, sizeof(path), "%s/%s_S%zu_L%03d_%c%d_001.fastq.gz", out_dir, safe_id, sample_number,
+    char name[700];
+    int n = snprintf(name, sizeof(name), "%s_S%zu_L%03d_%c%d_001.fastq.gz", safe_id, sample_number,
                      lane, read_kind, read_number);
-    if (n < 0 || (size_t)n >= sizeof(path)) return NULL;
+    if (n < 0 || (size_t)n >= sizeof(name)) return NULL;
+    char path[4096];
+    if (path_join(path, sizeof(path), out_dir, name) != 0) return NULL;
     char mode[8];
     snprintf(mode, sizeof(mode), "wb%d", gzip_level);
     gzFile gz = gzopen(path, mode);
@@ -7568,10 +7574,10 @@ static int process_bcl_block(const bcl_block_job *job) {
             continue;
         }
         ++result->passed_clusters;
-        char index1[512] = "";
-        char index2[512] = "";
-        char seqs[16][8192];
-        char quals[16][8192];
+        char index1[MAX_BCL_READ_CYCLES + 1] = "";
+        char index2[MAX_BCL_READ_CYCLES + 1] = "";
+        char seqs[16][MAX_BCL_READ_CYCLES + 1];
+        char quals[16][MAX_BCL_READ_CYCLES + 1];
         memset(seqs, 0, sizeof(seqs));
         memset(quals, 0, sizeof(quals));
         int indexed_seen = 0;
@@ -7588,8 +7594,13 @@ static int process_bcl_block(const bcl_block_job *job) {
             seq_out[ri->cycles] = '\0';
             qual_out[ri->cycles] = '\0';
             if (ri->indexed) {
-                if (indexed_seen == 0) snprintf(index1, sizeof(index1), "%s", seq_out);
-                else if (indexed_seen == 1) snprintf(index2, sizeof(index2), "%s", seq_out);
+                if (indexed_seen == 0) {
+                    int n = snprintf(index1, sizeof(index1), "%s", seq_out);
+                    if (n < 0 || (size_t)n >= sizeof(index1)) return -1;
+                } else if (indexed_seen == 1) {
+                    int n = snprintf(index2, sizeof(index2), "%s", seq_out);
+                    if (n < 0 || (size_t)n >= sizeof(index2)) return -1;
+                }
                 ++indexed_seen;
             }
         }
@@ -7601,23 +7612,28 @@ static int process_bcl_block(const bcl_block_job *job) {
             for (size_t r = 0; r < run->read_count; ++r) {
                 const bcl_read_info *ri = &run->reads[r];
                 if (!bcl_output_enabled(ri, job->emit_index_fastqs)) continue;
-                char header[1024];
-                snprintf(header, sizeof(header), "@DOTMATCH:1:%s:%zu %d:N:0:%s%s%s",
-                         job->tile, cluster + 1, bcl_output_number(run, r), index1, index2[0] ? "+" : "", index2);
+                char header[4096];
+                int n = snprintf(header, sizeof(header), "@DOTMATCH:1:%s:%zu %d:N:0:%s%s%s",
+                                 job->tile, cluster + 1, bcl_output_number(run, r),
+                                 index1, index2[0] ? "+" : "", index2);
+                if (n < 0 || (size_t)n >= sizeof(header)) return -1;
                 text_buffer *buf = &result->sample_buffers[out_i * run->read_count + r];
                 if (append_fastq_record(buf, header, seqs[r], quals[r]) != 0) return -1;
             }
             ++result->sample_assigned[out_i];
         } else {
-            char unknown_index[1024];
-            snprintf(unknown_index, sizeof(unknown_index), "%s%s%s", index1, index2[0] ? "+" : "", index2);
+            char unknown_index[(MAX_BCL_READ_CYCLES * 2) + 2];
+            int n = snprintf(unknown_index, sizeof(unknown_index), "%s%s%s", index1, index2[0] ? "+" : "", index2);
+            if (n < 0 || (size_t)n >= sizeof(unknown_index)) return -1;
             if (add_bcl_unknown(&result->unknowns, unknown_index) != 0) return -1;
             for (size_t r = 0; r < run->read_count; ++r) {
                 const bcl_read_info *ri = &run->reads[r];
                 if (!bcl_output_enabled(ri, job->emit_index_fastqs)) continue;
-                char header[1024];
-                snprintf(header, sizeof(header), "@DOTMATCH:1:%s:%zu %d:N:0:%s%s%s",
-                         job->tile, cluster + 1, bcl_output_number(run, r), index1, index2[0] ? "+" : "", index2);
+                char header[4096];
+                n = snprintf(header, sizeof(header), "@DOTMATCH:1:%s:%zu %d:N:0:%s%s%s",
+                             job->tile, cluster + 1, bcl_output_number(run, r),
+                             index1, index2[0] ? "+" : "", index2);
+                if (n < 0 || (size_t)n >= sizeof(header)) return -1;
                 if (append_fastq_record(&result->undetermined_buffers[r], header, seqs[r], quals[r]) != 0) return -1;
             }
             ++result->undetermined_reads;
@@ -7771,7 +7787,13 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
         goto done;
     }
 
-    size_t output_file_count = (samples.count == 0 ? 1 : samples.count) * (run.read_count == 0 ? 1 : run.read_count);
+    size_t output_file_count = 0;
+    if (checked_mul_size(samples.count == 0 ? 1 : samples.count,
+                         run.read_count == 0 ? 1 : run.read_count,
+                         &output_file_count) != 0) {
+        fprintf(stderr, "BCL output file count overflow\n");
+        goto done;
+    }
     sample_fastqs = (gzFile *)calloc(output_file_count, sizeof(gzFile));
     undetermined_fastqs = (gzFile *)calloc(run.read_count == 0 ? 1 : run.read_count, sizeof(gzFile));
     if (sample_fastqs == NULL || undetermined_fastqs == NULL) {
@@ -7930,7 +7952,7 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
     }
 
     char stats_path[4096];
-    snprintf(stats_path, sizeof(stats_path), "%s/Demultiplex_Stats.csv", out_dir);
+    if (path_join(stats_path, sizeof(stats_path), out_dir, "Demultiplex_Stats.csv") != 0) goto done;
     FILE *stats = open_output_file(stats_path);
     if (stats == NULL) goto done;
     fprintf(stats, "sample_id,assigned_reads");
@@ -7955,7 +7977,7 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
     if (unknowns.count > 0) {
         qsort(unknowns.items, unknowns.count, sizeof(unknowns.items[0]), cmp_bcl_unknown_desc);
         char unknown_path[4096];
-        snprintf(unknown_path, sizeof(unknown_path), "%s/Top_Unknown_Barcodes.csv", out_dir);
+        if (path_join(unknown_path, sizeof(unknown_path), out_dir, "Top_Unknown_Barcodes.csv") != 0) goto done;
         FILE *unknown = open_output_file(unknown_path);
         if (unknown == NULL) goto done;
         fprintf(unknown, "index,count\n");
@@ -7965,7 +7987,7 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
     }
 
     char normalized_path[4096];
-    snprintf(normalized_path, sizeof(normalized_path), "%s/SampleSheet.normalized.csv", out_dir);
+    if (path_join(normalized_path, sizeof(normalized_path), out_dir, "SampleSheet.normalized.csv") != 0) goto done;
     FILE *normalized = open_output_file(normalized_path);
     if (normalized != NULL) {
         fprintf(normalized, "sample_id,sample_name,lane,index,index2\n");
@@ -8075,8 +8097,12 @@ static int run_bcl_validate(const char *argv0, int argc, char **argv) {
         if (!ends_with(ent->d_name, ".fastq.gz")) continue;
         char truth_path[4096];
         char dotmatch_path[4096];
-        snprintf(truth_path, sizeof(truth_path), "%s/%s", truth_out, ent->d_name);
-        snprintf(dotmatch_path, sizeof(dotmatch_path), "%s/%s", dotmatch_out, ent->d_name);
+        if (path_join(truth_path, sizeof(truth_path), truth_out, ent->d_name) != 0 ||
+            path_join(dotmatch_path, sizeof(dotmatch_path), dotmatch_out, ent->d_name) != 0) {
+            closedir(dir);
+            fprintf(stderr, "BCL validation path is too long\n");
+            return 1;
+        }
         if (!path_exists(dotmatch_path)) {
             ++missing_files;
             continue;

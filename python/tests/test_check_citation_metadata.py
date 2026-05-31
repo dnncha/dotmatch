@@ -117,6 +117,21 @@ def _write_repo(root: Path, *, version: str = "0.1.0") -> None:
             "Suggested citation before DOI assignment:\n\n"
             f"> O'Toole D. DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning. Software release v{version}. https://github.com/dnncha/dotmatch\n"
         ),
+        "docs/index.md": (
+            "# DotMatch Documentation\n\n"
+            "- Labs evaluating scientific claims should read [Trust, Scope, and Evidence](trust-and-scope.md).\n"
+            "- Methods text and citation guidance are in [Methods and Citation](methods-and-citation.md).\n"
+        ),
+        "docs/getting-started.md": (
+            "# Getting Started\n\n"
+            "Use [Methods and Citation](methods-and-citation.md) and `dotmatch citation` "
+            "when recording the software version. Release citation metadata is kept in `CITATION.cff`.\n"
+        ),
+        "docs/trust-and-scope.md": (
+            "# Trust, Scope, and Evidence\n\n"
+            "Use [Methods and Citation](methods-and-citation.md) for methods text that matches "
+            "the current assignment semantics.\n"
+        ),
     }
     for path, text in files.items():
         full = root / path
@@ -219,3 +234,17 @@ def test_citation_metadata_requires_user_facing_citation_surface(tmp_path):
     assert any("README.md must point users to CITATION.cff" in failure for failure in result.failures)
     assert any("README.md must mention the dotmatch citation command" in failure for failure in result.failures)
     assert any("methods-and-citation.md must include the current suggested citation" in failure for failure in result.failures)
+
+
+def test_citation_metadata_requires_public_docs_citation_surface(tmp_path):
+    checker = _load_checker()
+    _write_repo(tmp_path)
+    (tmp_path / "docs" / "getting-started.md").write_text("# Getting Started\n", encoding="utf-8")
+    (tmp_path / "docs" / "trust-and-scope.md").write_text("# Trust\n", encoding="utf-8")
+
+    result = checker.audit(tmp_path)
+
+    assert any("docs/getting-started.md must link to Methods and Citation" in failure for failure in result.failures)
+    assert any("docs/getting-started.md must mention the dotmatch citation command" in failure for failure in result.failures)
+    assert any("docs/getting-started.md must point users to CITATION.cff" in failure for failure in result.failures)
+    assert any("docs/trust-and-scope.md must link to Methods and Citation" in failure for failure in result.failures)

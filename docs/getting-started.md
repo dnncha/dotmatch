@@ -164,3 +164,6 @@ DotMatch.
   barcode panels.
 - Use [Public Schemas](schemas.md) when integrating DotMatch with Snakemake,
   Nextflow, MultiQC, notebooks, or LIMS exports.
+- Use [Methods and Citation](methods-and-citation.md) and `dotmatch citation`
+  when recording the software version in methods sections, reports, or workflow
+  provenance. Release citation metadata is kept in `CITATION.cff`.
