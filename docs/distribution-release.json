@@ -9,8 +9,8 @@
       "status": "prepared",
       "expected_url": "https://pypi.org/project/dotmatch/0.1.6/",
       "verification_command": "make distribution-channels",
-      "blocker": "The 0.1.6 source distribution, native macOS wheel, and repaired manylinux/musllinux wheels have not been published to PyPI yet.",
-      "next_action": "Publish the tagged source distribution, native macOS wheel, and repaired Linux wheels through PyPI trusted publishing, then rerun make distribution-channels."
+      "blocker": "The v0.1.6 release workflow built the source distribution, native macOS wheel, and repaired manylinux/musllinux wheels, but PyPI trusted publishing rejected the upload because PyPI has no publisher matching repo:dnncha/dotmatch:environment:pypi.",
+      "next_action": "Configure the PyPI dotmatch project trusted publisher for repository dnncha/dotmatch, workflow .github/workflows/release.yml, environment pypi, then rerun the failed PyPI publish job and make distribution-channels."
     },
     {
       "id": "bioconda",
@@ -18,18 +18,19 @@
       "expected_url": "https://anaconda.org/bioconda/dotmatch",
       "latest_published_version": "0.1.4",
       "initial_recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/65367",
-      "superseded_recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/65901",
+      "recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/65901",
+      "release_tarball_sha256": "4c265d3e741fd84b9d5096b4a1e47eacc44cb2949ec07da357f1833e3d0e84ae",
       "verification_command": "make distribution-channels",
-      "blocker": "The public Bioconda channel currently carries DotMatch 0.1.4 as the latest release. The 0.1.5 recipe PR is submitted and green but does not include the current hardened main branch; a 0.1.6 recipe update cannot be submitted until v0.1.6 is tagged and the release tarball SHA256 is available.",
-      "next_action": "After tagging v0.1.6, update the bioconda-recipes PR from the recipe template, replace the source SHA256, keep the Python console-script package scope, osx-arm64 opt-in, host zlib/runtime libzlib dependency shape, and GuideCounter-compatible CLI smoke tests, then rerun make distribution-channels after channel propagation."
+      "blocker": "The public Bioconda channel currently carries DotMatch 0.1.4 as the latest release. The v0.1.6 recipe update is submitted in bioconda/bioconda-recipes#65901, all Bioconda CI checks are green, and maintainer review/merge plus channel propagation are still pending.",
+      "next_action": "Wait for Bioconda maintainer review and merge of bioconda/bioconda-recipes#65901, then rerun make distribution-channels after channel propagation."
     },
     {
       "id": "ghcr",
       "status": "prepared",
       "expected_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "The GHCR image for version 0.1.6 has not been published from an immutable tag yet.",
-      "next_action": "Push the release tag, confirm the GHCR image label and runtime smoke tests, then rerun make distribution-channels."
+      "blocker": "The v0.1.6 container build job passed, but GHCR publication and runtime behavior have not been independently verified by make distribution-channels.",
+      "next_action": "Confirm the GHCR image label and runtime smoke tests with Docker or another OCI runtime, then rerun make distribution-channels."
     },
     {
       "id": "biocontainers",
@@ -49,7 +50,7 @@
     }
   ],
   "blockers": [
-    "DotMatch 0.1.6 has not been executed across PyPI, Bioconda, GHCR/BioContainers, and Zenodo."
+    "DotMatch 0.1.6 has not been fully verified across PyPI, Bioconda, GHCR/BioContainers, and Zenodo."
   ],
-  "next_action": "Complete the 0.1.6 public release flow, replace expected URLs with verified public and evidence URLs, set channels to verified, and rerun make distribution-channels."
+  "next_action": "Complete PyPI trusted-publisher setup, wait for Bioconda review/merge and BioContainers propagation, verify GHCR runtime behavior, mint the Zenodo DOI, replace expected URLs with verified public and evidence URLs, set channels to verified, and rerun make distribution-channels."
 }

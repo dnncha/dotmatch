@@ -18,7 +18,7 @@ The same verifier also builds the sdist, confirms it contains `src/qdalign.c` an
 
 For PyPI, upload the sdist plus the native macOS wheel built on GitHub Actions. Linux binary wheels should go to PyPI only after they are built or repaired as manylinux/musllinux wheels. The release workflow builds repaired Linux wheel artifacts with cibuildwheel for `manylinux_x86_64` and `musllinux_x86_64`, smoke-tests `import dotmatch`, the installed console script, and `dotmatch dist ACGT AGGT`, and uploads them as GitHub release artifacts. Do not upload a raw `linux_x86_64` wheel to PyPI.
 
-The release workflow is prepared for PyPI trusted publishing and publishes the source distribution, the native macOS wheel, and repaired manylinux/musllinux Linux wheels on tagged releases.
+The release workflow is prepared for PyPI trusted publishing and publishes the source distribution, the native macOS wheel, and repaired manylinux/musllinux Linux wheels on tagged releases. PyPI must have a trusted publisher configured for repository `dnncha/dotmatch`, workflow `.github/workflows/release.yml`, and environment `pypi`; otherwise the build artifacts are created but the publish job fails with `invalid-publisher`.
 Raw `linux_x86_64` wheels remain GitHub release artifacts only and are not uploaded to PyPI.
 `make citation-metadata-ready` also checks PyPI-facing `pyproject.toml`
 description, keywords, classifiers, and project URLs so the package page stays
@@ -32,10 +32,11 @@ not upload a Conda package directly.
 [bioconda/bioconda-recipes#65367](https://github.com/bioconda/bioconda-recipes/pull/65367)
 published DotMatch 0.1.2 as the first Bioconda package. As of 2026-05-31,
 the latest verified public Bioconda package before the 0.1.6 release is 0.1.4.
-The 0.1.5 recipe update is submitted and green in
+The 0.1.6 recipe update is submitted and green in
 [bioconda/bioconda-recipes#65901](https://github.com/bioconda/bioconda-recipes/pull/65901),
-but it predates the current hardened main branch. Treat future
-Bioconda versions as available only after
+with release tarball SHA256
+`4c265d3e741fd84b9d5096b4a1e47eacc44cb2949ec07da357f1833e3d0e84ae`.
+Treat future Bioconda versions as available only after
 `https://anaconda.org/bioconda/dotmatch`, repodata, and
 `make distribution-channels` all verify the release version and install smoke
 tests.
@@ -78,8 +79,8 @@ functional CLI smoke tests.
 ### Bioconda 0.1.6 PR changelog draft
 
 - Update DotMatch from 0.1.4 to 0.1.6.
-- Supersede the 0.1.5 update with the hardened 0.1.6 release once the
-  immutable tag and tarball SHA256 are available.
+- Use the immutable v0.1.6 tag and SHA256
+  `4c265d3e741fd84b9d5096b4a1e47eacc44cb2949ec07da357f1833e3d0e84ae`.
 - Keep the Python console-script package scope introduced in 0.1.4: `dotmatch`
   exposes the native commands plus `assay`, `barcode`, `panel`, and
   GuideCounter-compatible CRISPR counting namespaces.
