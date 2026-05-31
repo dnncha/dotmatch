@@ -22,7 +22,7 @@ jobs:
       - name: CLI test
         run: make cli-test
       - name: Python test dependencies
-        run: python3 -m pip install pytest
+        run: python3 -m pip install pytest -r docs/requirements.txt
       - name: Python tests
         run: make python-test
       - name: Python package build
