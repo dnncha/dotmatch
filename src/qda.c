@@ -564,7 +564,7 @@ static int run_batch(const char *argv0, int argc, char **argv, const char *mode)
     }
 
     int k = 0;
-    if (sscanf(argv[2], "%d", &k) != 1 || k < 0) {
+    if (parse_int_value(argv[2], &k) != 0 || k < 0) {
         usage(argv0);
         return 2;
     }
@@ -7058,6 +7058,18 @@ static int text_buffer_append(text_buffer *buf, const char *s, size_t n) {
     return 0;
 }
 
+static int gzwrite_all(gzFile gz, const char *data, size_t len) {
+    size_t written = 0;
+    while (written < len) {
+        size_t remaining = len - written;
+        unsigned int chunk = remaining > (size_t)UINT_MAX ? UINT_MAX : (unsigned int)remaining;
+        int rc = gzwrite(gz, data + written, chunk);
+        if (rc <= 0 || (unsigned int)rc != chunk) return -1;
+        written += (size_t)rc;
+    }
+    return 0;
+}
+
 static void free_bcl_samples(bcl_sample_table *table) {
     for (size_t i = 0; i < table->count; ++i) {
         free(table->items[i].id);
@@ -7627,13 +7639,13 @@ static int write_bcl_block_result(const bcl_block_result *result, gzFile *sample
             const text_buffer *buf = &result->sample_buffers[i * read_count + r];
             if (buf->len == 0) continue;
             gzFile gz = *bcl_output_slot(sample_fastqs, i, r, read_count);
-            if (gz != NULL && gzwrite(gz, buf->data, (unsigned int)buf->len) != (int)buf->len) return -1;
+            if (gz != NULL && gzwrite_all(gz, buf->data, buf->len) != 0) return -1;
         }
     }
     for (size_t r = 0; r < read_count; ++r) {
         const text_buffer *buf = &result->undetermined_buffers[r];
         if (buf->len == 0) continue;
-        if (undetermined_fastqs[r] != NULL && gzwrite(undetermined_fastqs[r], buf->data, (unsigned int)buf->len) != (int)buf->len) return -1;
+        if (undetermined_fastqs[r] != NULL && gzwrite_all(undetermined_fastqs[r], buf->data, buf->len) != 0) return -1;
     }
     return 0;
 }
@@ -8405,7 +8417,7 @@ int main(int argc, char **argv) {
             return 2;
         }
         int k = 0;
-        if (sscanf(argv[2], "%d", &k) != 1) {
+        if (parse_int_value(argv[2], &k) != 0 || k < 0) {
             usage(argv[0]);
             return 2;
         }
