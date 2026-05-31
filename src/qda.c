@@ -6590,9 +6590,11 @@ static FILE *open_demux_target_file(FILE **files, const seq_table *targets, size
     if (files[target_index] != NULL) return files[target_index];
     char safe_id[512];
     sanitize_filename(targets->records[target_index].id, safe_id, sizeof(safe_id));
+    char name[600];
+    int n = snprintf(name, sizeof(name), "%s.fastq", safe_id);
+    if (n < 0 || (size_t)n >= sizeof(name)) return NULL;
     char path[4096];
-    int n = snprintf(path, sizeof(path), "%s/%s.fastq", out_dir, safe_id);
-    if (n < 0 || (size_t)n >= sizeof(path)) return NULL;
+    if (path_join(path, sizeof(path), out_dir, name) != 0) return NULL;
     files[target_index] = open_output_file(path);
     return files[target_index];
 }
@@ -7467,10 +7469,12 @@ static gzFile open_bcl_fastq(const char *out_dir, const char *sample_id, size_t 
                              char read_kind, int read_number, int gzip_level) {
     char safe_id[512];
     sanitize_filename(sample_id, safe_id, sizeof(safe_id));
-    char path[4096];
-    int n = snprintf(path, sizeof(path), "%s/%s_S%zu_L%03d_%c%d_001.fastq.gz", out_dir, safe_id, sample_number,
+    char name[700];
+    int n = snprintf(name, sizeof(name), "%s_S%zu_L%03d_%c%d_001.fastq.gz", safe_id, sample_number,
                      lane, read_kind, read_number);
-    if (n < 0 || (size_t)n >= sizeof(path)) return NULL;
+    if (n < 0 || (size_t)n >= sizeof(name)) return NULL;
+    char path[4096];
+    if (path_join(path, sizeof(path), out_dir, name) != 0) return NULL;
     char mode[8];
     snprintf(mode, sizeof(mode), "wb%d", gzip_level);
     gzFile gz = gzopen(path, mode);
