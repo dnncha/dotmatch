@@ -21,6 +21,7 @@ __pycache__/
 .coverage
 htmlcov/
 dist/
+docs/_build/
 
 # Node / Next.js outputs
 node_modules/
