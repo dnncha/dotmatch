@@ -4553,9 +4553,11 @@ static const char *guide_counter_type_for_target(const seq_record *target, const
 }
 
 static int parse_ull_value(const char *s, unsigned long long *out) {
+    if (s == NULL || s[0] == '-' || s[0] == '\0') return -1;
     char *end = NULL;
+    errno = 0;
     unsigned long long v = strtoull(s, &end, 10);
-    if (end == s || *end != '\0') return -1;
+    if (errno == ERANGE || end == s || *end != '\0') return -1;
     *out = v;
     return 0;
 }
