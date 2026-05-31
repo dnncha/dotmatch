@@ -154,12 +154,26 @@ def _check_pyproject_discovery(root: Path, result: AuditResult) -> None:
 def _check_user_citation_surface(root: Path, version: str, title: str, result: AuditResult) -> None:
     readme = _read(root / "README.md")
     methods = _read(root / "docs" / "methods-and-citation.md")
+    docs_index = _read(root / "docs" / "index.md")
+    getting_started = _read(root / "docs" / "getting-started.md")
+    trust_scope = _read(root / "docs" / "trust-and-scope.md")
     citation_text = f"O'Toole D. {title}. Software release v{version}. {REPOSITORY_URL}"
     for source, text in [("README.md", readme), ("docs/methods-and-citation.md", methods)]:
         if "CITATION.cff" not in text:
             result.failures.append(f"{source} must point users to CITATION.cff")
         if "dotmatch citation" not in text:
             result.failures.append(f"{source} must mention the dotmatch citation command")
+    for source, text in [
+        ("docs/index.md", docs_index),
+        ("docs/getting-started.md", getting_started),
+        ("docs/trust-and-scope.md", trust_scope),
+    ]:
+        if "methods-and-citation" not in text:
+            result.failures.append(f"{source} must link to Methods and Citation")
+    if "dotmatch citation" not in getting_started:
+        result.failures.append("docs/getting-started.md must mention the dotmatch citation command")
+    if "CITATION.cff" not in getting_started:
+        result.failures.append("docs/getting-started.md must point users to CITATION.cff")
     if citation_text not in methods:
         result.failures.append("docs/methods-and-citation.md must include the current suggested citation")
 
