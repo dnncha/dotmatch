@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "status": "evidence_bounded",
+  "scope": "Deterministic fixed-window known-target short-DNA assignment and QC for the explicitly gated assay lanes.",
+  "not_validated_for": [
+    "clinical diagnostic decisions",
+    "regulated GxP production without site-specific validation",
+    "genome alignment or variant calling",
+    "cell-level single-cell quantification",
+    "statistical screen interpretation"
+  ],
+  "controls": [
+    {
+      "id": "input_integrity",
+      "status": "required",
+      "evidence": [
+        "tests/test_cli_fastq.sh",
+        "src/qda.c"
+      ],
+      "gates": [
+        "make cli-test"
+      ],
+      "acceptance": "Malformed FASTQ and malformed target, guide, barcode, and sample identifiers fail before producing scientific outputs."
+    },
+    {
+      "id": "memory_safety",
+      "status": "required",
+      "evidence": [
+        ".github/workflows/release.yml",
+        "Makefile",
+        "src/qda.c"
+      ],
+      "gates": [
+        "make asan"
+      ],
+      "acceptance": "Release and pre-tag gates run sanitizer builds, and large matrix allocations use checked size arithmetic."
+    },
+    {
+      "id": "oracle_validation",
+      "status": "required",
+      "evidence": [
+        "docs/benchmarks/public_crispr/README.md",
+        "docs/benchmarks/crispr_comparison/README.md",
+        "benchmarks/raw/public_crispr_edlib_validation.csv",
+        "benchmarks/raw/crispr_comparison_edlib_validation.csv"
+      ],
+      "gates": [
+        "make public-crispr-evidence-gate",
+        "make crispr-comparison-gate"
+      ],
+      "acceptance": "Public CRISPR assignment claims require zero mismatches against the native Edlib oracle."
+    },
+    {
+      "id": "public_assay_evidence",
+      "status": "required",
+      "evidence": [
+        "docs/assay-evidence.json",
+        "docs/scientific-claims.md"
+      ],
+      "gates": [
+        "make assay-evidence-ready",
+        "make barcode-comparison-gate",
+        "make feature-barcode-public-gate",
+        "make perturb-seq-public-gate",
+        "make amplicon-panel-public-gate",
+        "make oligo-adapter-public-gate",
+        "make bcl-tiny-public-gate"
+      ],
+      "acceptance": "README, website, and release claims must stay inside lanes with raw artifacts, command provenance, reports, validation notes, and passing gates."
+    },
+    {
+      "id": "distribution_reproducibility",
+      "status": "required",
+      "evidence": [
+        "packaging/bioconda/meta.yaml",
+        "docs/distribution-release.json",
+        "docs/packaging.md",
+        "scripts/check_python_wheel.py"
+      ],
+      "gates": [
+        "make python-package-test",
+        "make bioconda-recipe-ready",
+        "make distribution-record-ready"
+      ],
+      "acceptance": "Published artifacts must be version-aligned, install-smoke-tested, license-complete, and tied to immutable release sources."
+    },
+    {
+      "id": "release_governance",
+      "status": "required",
+      "evidence": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/release.yml",
+        "docs/release-process.md",
+        "scripts/check_release_readiness.py"
+      ],
+      "gates": [
+        "make repository-ready",
+        "make release-ready",
+        "make pretag-ready"
+      ],
+      "acceptance": "Release surfaces require native, CLI, Python, package, sanitizer, evidence, and site gates before tagging or publication."
+    }
+  ]
+}

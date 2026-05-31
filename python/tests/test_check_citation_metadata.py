@@ -104,6 +104,19 @@ def _write_repo(root: Path, *, version: str = "0.1.0") -> None:
             indent=2,
         )
         + "\n",
+        "README.md": (
+            "## Citation\n\n"
+            "If DotMatch is useful in your work, cite the software release using "
+            "[CITATION.cff](CITATION.cff). Installed packages also expose "
+            "`dotmatch citation` for a copyable release citation.\n"
+        ),
+        "docs/methods-and-citation.md": (
+            "# Methods and Citation Template\n\n"
+            "If you use DotMatch, cite the software release through `CITATION.cff`. "
+            "Installed packages also provide `dotmatch citation` for a copyable citation.\n\n"
+            "Suggested citation before DOI assignment:\n\n"
+            f"> O'Toole D. DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning. Software release v{version}. https://github.com/dnncha/dotmatch\n"
+        ),
     }
     for path, text in files.items():
         full = root / path
@@ -190,3 +203,19 @@ def test_citation_metadata_rejects_unminted_doi_field(tmp_path):
     result = checker.audit(tmp_path)
 
     assert any("has a DOI field before Zenodo release" in failure for failure in result.failures)
+
+
+def test_citation_metadata_requires_user_facing_citation_surface(tmp_path):
+    checker = _load_checker()
+    _write_repo(tmp_path)
+    (tmp_path / "README.md").write_text("## Citation\nUse the paper.\n", encoding="utf-8")
+    (tmp_path / "docs" / "methods-and-citation.md").write_text(
+        "If you use DotMatch, cite it somehow.\n",
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("README.md must point users to CITATION.cff" in failure for failure in result.failures)
+    assert any("README.md must mention the dotmatch citation command" in failure for failure in result.failures)
+    assert any("methods-and-citation.md must include the current suggested citation" in failure for failure in result.failures)

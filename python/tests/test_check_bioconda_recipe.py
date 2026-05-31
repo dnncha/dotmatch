@@ -53,6 +53,7 @@ def _meta(version: str = "0.1.0") -> str:
         "    - dotmatch --version | grep '^dotmatch {{ version }}$'\n"
         "    - dotmatch dist ACGT AGGT | grep '^1$'\n"
         "    - dotmatch leq 1 ACGT AGGT | grep '^true$'\n"
+        "    - dotmatch citation | grep 'Citation metadata: CITATION.cff'\n"
         "    - dotmatch --help | grep 'Workflow namespaces'\n"
         "    - dotmatch count --help | grep 'Hamming supports k=0..3'\n"
         "    - dotmatch crispr-count --help | grep 'MAGeCK-ready'\n"
@@ -73,6 +74,7 @@ def _meta(version: str = "0.1.0") -> str:
         "    - dotmatch audit --targets audit_targets.tsv --k 3 --audit-mode exact --out-dir audit_out\n"
         "    - awk -F '\\t' '$1==\"safe_at_hamming_k2\" { exit !($2==\"yes\") }' audit_out/audit_summary.tsv\n"
         "    - awk -F '\\t' '$1==\"safe_at_hamming_k3\" { exit !($2==\"yes\") }' audit_out/audit_summary.tsv\n"
+        "    - chmod -R a+rwX audit_out\n"
         "    - printf 'fastq_path,sample\\nreads.fastq,treated\\n' > samples.csv\n"
         "    - printf 'sgRNA,sgRNA_sequence,gene_symbol\\ng0,ACGT,GENE0\\n' > crispr_guides.csv\n"
         "    - dotmatch crispr-count --library crispr_guides.csv --samples samples.csv --guide-start 0 --guide-length 4 --k 2 --metric hamming --ambiguity-policy best --out crispr_counts.tsv --summary crispr_summary.json --sample-qc crispr_sample_qc.tsv\n"
@@ -215,6 +217,7 @@ def test_bioconda_recipe_requires_cli_smoke_commands(tmp_path):
         _meta()
         .replace("    - dotmatch dist ACGT AGGT | grep '^1$'\n", "")
         .replace("    - dotmatch leq 1 ACGT AGGT | grep '^true$'\n", "")
+        .replace("    - dotmatch citation | grep 'Citation metadata: CITATION.cff'\n", "")
     )
     _write_repo(tmp_path, meta=meta)
 
@@ -222,6 +225,7 @@ def test_bioconda_recipe_requires_cli_smoke_commands(tmp_path):
 
     assert any("dotmatch dist ACGT AGGT" in failure for failure in result.failures)
     assert any("dotmatch leq 1 ACGT AGGT" in failure for failure in result.failures)
+    assert any("dotmatch citation" in failure for failure in result.failures)
 
 
 def test_bioconda_recipe_requires_current_release_smoke_commands(tmp_path):

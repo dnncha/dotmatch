@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <stdint.h>
 #include <limits.h>
+#include <math.h>
 #include <fcntl.h>
 #include <dirent.h>
 #include <regex.h>
@@ -53,6 +54,7 @@ static void usage(const char *argv0) {
     fprintf(stderr, "Usage:\n");
     fprintf(stderr, "  %s --help\n", argv0);
     fprintf(stderr, "  %s --version\n", argv0);
+    fprintf(stderr, "  %s citation\n", argv0);
     fprintf(stderr, "  %s dist SEQ1 SEQ2\n", argv0);
     fprintf(stderr, "  %s leq K SEQ1 SEQ2\n", argv0);
     fprintf(stderr, "  %s assign K barcodes.txt reads.txt [--ambiguity-policy radius|best]\n", argv0);
@@ -81,6 +83,7 @@ static void help_manual(FILE *out, const char *argv0) {
     fprintf(out, "Usage:\n");
     fprintf(out, "  %s --help\n", argv0);
     fprintf(out, "  %s --version\n", argv0);
+    fprintf(out, "  %s citation\n", argv0);
     fprintf(out, "  %s <command> [options]\n", argv0);
     fprintf(out, "\n");
     fprintf(out, "Core commands:\n");
@@ -141,10 +144,20 @@ static void help_manual(FILE *out, const char *argv0) {
     fprintf(out, "Examples:\n");
     fprintf(out, "  %s dist ACGT AGGT\n", argv0);
     fprintf(out, "  %s leq 1 ACGT AGGT\n", argv0);
+    fprintf(out, "  %s citation\n", argv0);
     fprintf(out, "  %s count --targets guides.tsv --reads sample.fastq.gz --sample-label sample \\\n", argv0);
     fprintf(out, "      --target-start 23 --target-length 20 --k 1 --metric hamming --out counts.tsv\n");
     fprintf(out, "  %s demux --barcodes barcodes.tsv --reads pooled.fastq.gz \\\n", argv0);
     fprintf(out, "      --barcode-start 0 --barcode-length auto --k 0 --out-dir demuxed\n");
+}
+
+static void print_citation(FILE *out) {
+    fprintf(out, "DotMatch citation\n");
+    fprintf(out, "Software release: v%s\n", DOTMATCH_VERSION);
+    fprintf(out, "Preferred citation before DOI assignment:\n");
+    fprintf(out, "O'Toole D. DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning. Software release v%s. https://github.com/dnncha/dotmatch\n", DOTMATCH_VERSION);
+    fprintf(out, "Citation metadata: CITATION.cff\n");
+    fprintf(out, "DOI: not yet assigned; add the Zenodo DOI after an immutable release archive is minted.\n");
 }
 
 static int help_requested(int argc, char **argv) {
@@ -282,25 +295,31 @@ static const char *status_name(int status) {
 }
 
 static int parse_size_value(const char *s, size_t *out) {
+    if (s == NULL || s[0] == '-' || s[0] == '\0') return -1;
     char *end = NULL;
+    errno = 0;
     unsigned long v = strtoul(s, &end, 10);
-    if (end == s || *end != '\0') return -1;
+    if (errno == ERANGE || end == s || *end != '\0' || v > SIZE_MAX) return -1;
     *out = (size_t)v;
     return 0;
 }
 
 static int parse_int_value(const char *s, int *out) {
+    if (s == NULL || s[0] == '\0') return -1;
     char *end = NULL;
+    errno = 0;
     long v = strtol(s, &end, 10);
-    if (end == s || *end != '\0') return -1;
+    if (errno == ERANGE || end == s || *end != '\0' || v < INT_MIN || v > INT_MAX) return -1;
     *out = (int)v;
     return 0;
 }
 
 static int parse_double_value(const char *s, double *out) {
+    if (s == NULL || s[0] == '\0') return -1;
     char *end = NULL;
+    errno = 0;
     double v = strtod(s, &end);
-    if (end == s || *end != '\0') return -1;
+    if (errno == ERANGE || end == s || *end != '\0' || !isfinite(v)) return -1;
     *out = v;
     return 0;
 }
@@ -309,6 +328,16 @@ static int offset_count_for_range(size_t range, size_t *out) {
     if (range > MAX_AUTO_OFFSET || range > (SIZE_MAX - 1) / 2) return -1;
     *out = range * 2 + 1;
     return 0;
+}
+
+static int checked_mul_size(size_t a, size_t b, size_t *out) {
+    if (a != 0 && b > SIZE_MAX / a) return -1;
+    *out = a * b;
+    return 0;
+}
+
+static size_t alloc_count_or_one(size_t count) {
+    return count == 0 ? 1 : count;
 }
 
 static void free_table(seq_table *table) {
@@ -375,6 +404,11 @@ static int read_table(const char *path, seq_table *table) {
             id = buf;
             id_len = strlen(id);
             seq = tab + 1;
+            if (id_len == 0 || seq[0] == '\0') {
+                fprintf(stderr, "%s:%zu: record ID and sequence must be non-empty\n", path, row + 1);
+                fclose(fp);
+                return -1;
+            }
         } else {
             char id_buf[32];
             int n = snprintf(id_buf, sizeof(id_buf), "%zu", row);
@@ -503,7 +537,8 @@ static int read_target_table(const char *path, seq_table *table) {
             if (have_header && gene_col >= 0 && (size_t)gene_col < nf) gene = fields[gene_col];
             if (!have_header && nf > 2) gene = fields[2];
         }
-        if (seq[0] == '\0') {
+        if (id[0] == '\0' || seq[0] == '\0') {
+            fprintf(stderr, "%s:%zu: target ID and sequence must be non-empty\n", path, row + 1);
             fclose(fp);
             return -1;
         }
@@ -890,6 +925,63 @@ static int split_string_list(string_list *list, const char *s, char delim) {
         if (p == NULL) break;
         start = p + 1;
     }
+    return 0;
+}
+
+static int string_list_has_duplicates(const string_list *list, const char **first, const char **second) {
+    for (size_t i = 0; i < list->count; ++i) {
+        for (size_t j = i + 1; j < list->count; ++j) {
+            if (strcmp(list->items[i], list->items[j]) == 0) {
+                if (first != NULL) *first = list->items[i];
+                if (second != NULL) *second = list->items[j];
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+static int validate_unique_sample_labels(const string_list *labels, const char *option_name) {
+    const char *first = NULL;
+    const char *second = NULL;
+    if (!string_list_has_duplicates(labels, &first, &second)) return 0;
+    fprintf(stderr, "%s values must be unique; duplicate sample label: \"%s\"\n", option_name, first);
+    (void)second;
+    return -1;
+}
+
+typedef struct {
+    const char *id;
+    size_t index;
+} seq_id_entry;
+
+static int compare_seq_id_entry(const void *a, const void *b) {
+    const seq_id_entry *ea = (const seq_id_entry *)a;
+    const seq_id_entry *eb = (const seq_id_entry *)b;
+    int cmp = strcmp(ea->id, eb->id);
+    if (cmp != 0) return cmp;
+    if (ea->index < eb->index) return -1;
+    if (ea->index > eb->index) return 1;
+    return 0;
+}
+
+static int validate_unique_seq_ids(const seq_table *targets, const char *record_kind) {
+    if (targets->count < 2) return 0;
+    seq_id_entry *entries = (seq_id_entry *)malloc(targets->count * sizeof(seq_id_entry));
+    if (entries == NULL) return -1;
+    for (size_t i = 0; i < targets->count; ++i) {
+        entries[i].id = targets->records[i].id;
+        entries[i].index = i;
+    }
+    qsort(entries, targets->count, sizeof(seq_id_entry), compare_seq_id_entry);
+    for (size_t i = 1; i < targets->count; ++i) {
+        if (strcmp(entries[i - 1].id, entries[i].id) == 0) {
+            fprintf(stderr, "%s IDs must be unique; duplicate ID: \"%s\"\n", record_kind, entries[i].id);
+            free(entries);
+            return -2;
+        }
+    }
+    free(entries);
     return 0;
 }
 
@@ -3915,6 +4007,9 @@ static int run_count(const char *argv0, int argc, char **argv) {
         fprintf(stderr, "--sample-label count must match --reads count\n");
         goto fail_args;
     }
+    if (validate_unique_sample_labels(&labels, crispr_mode ? "--samples sample" : "--sample-label") != 0) {
+        goto fail_args;
+    }
     if (threads > 1 && (assignments_path != NULL || ambiguous_path != NULL || unmatched_path != NULL)) {
         fprintf(stderr, "--threads > 1 is not supported with row-level diagnostic outputs\n");
         goto fail_args;
@@ -3948,6 +4043,11 @@ static int run_count(const char *argv0, int argc, char **argv) {
     double phase_start_seconds = seconds_now();
     if (read_target_table(targets_path, &targets) != 0) {
         fprintf(stderr, "failed to read targets\n");
+        goto done;
+    }
+    int target_id_check = validate_unique_seq_ids(&targets, crispr_mode ? "guide" : "target");
+    if (target_id_check != 0) {
+        if (target_id_check == -1) fprintf(stderr, "out of memory\n");
         goto done;
     }
     if (metric == COUNT_METRIC_HAMMING && !all_targets_have_length(&targets, target_len)) {
@@ -4001,11 +4101,17 @@ static int run_count(const char *argv0, int argc, char **argv) {
         target_index_seconds += seconds_now() - phase_start_seconds;
     }
 
-    size_t total_slots = reads.count * targets.count * 5;
-    counts = (unsigned long long *)calloc(total_slots == 0 ? 1 : total_slots, sizeof(unsigned long long));
-    stats_by_sample = (count_stats *)calloc(reads.count == 0 ? 1 : reads.count, sizeof(count_stats));
-    ambiguous_nearby = (unsigned char *)calloc(targets.count == 0 ? 1 : targets.count, sizeof(unsigned char));
-    selected_offsets = (offset_list *)calloc(reads.count == 0 ? 1 : reads.count, sizeof(offset_list));
+    size_t sample_target_slots = 0;
+    size_t total_slots = 0;
+    if (checked_mul_size(reads.count, targets.count, &sample_target_slots) != 0 ||
+        checked_mul_size(sample_target_slots, 5, &total_slots) != 0) {
+        fprintf(stderr, "count matrix is too large\n");
+        goto done;
+    }
+    counts = (unsigned long long *)calloc(alloc_count_or_one(total_slots), sizeof(unsigned long long));
+    stats_by_sample = (count_stats *)calloc(alloc_count_or_one(reads.count), sizeof(count_stats));
+    ambiguous_nearby = (unsigned char *)calloc(alloc_count_or_one(targets.count), sizeof(unsigned char));
+    selected_offsets = (offset_list *)calloc(alloc_count_or_one(reads.count), sizeof(offset_list));
     if (counts == NULL || stats_by_sample == NULL || ambiguous_nearby == NULL || selected_offsets == NULL) {
         fprintf(stderr, "out of memory\n");
         goto done;
@@ -4477,10 +4583,11 @@ static int guide_counter_write_outputs(const char *output_prefix, const char *tm
     n = snprintf(stats_path, sizeof(stats_path), "%s.stats.txt", output_prefix);
     if (n < 0 || (size_t)n >= sizeof(stats_path)) return -1;
 
-    unsigned long long *matrix = (unsigned long long *)calloc(
-            (targets->count == 0 ? 1 : targets->count) * (labels->count == 0 ? 1 : labels->count),
-            sizeof(unsigned long long));
-    const char **types = (const char **)calloc(targets->count == 0 ? 1 : targets->count, sizeof(const char *));
+    size_t matrix_slots = 0;
+    if (checked_mul_size(targets->count, labels->count, &matrix_slots) != 0) return -1;
+    unsigned long long *matrix = (unsigned long long *)calloc(alloc_count_or_one(matrix_slots),
+                                                             sizeof(unsigned long long));
+    const char **types = (const char **)calloc(alloc_count_or_one(targets->count), sizeof(const char *));
     if (matrix == NULL || types == NULL) {
         free(matrix);
         free(types);
@@ -4561,7 +4668,7 @@ static int guide_counter_write_outputs(const char *output_prefix, const char *tm
         return -1;
     }
 
-    unsigned long long *total_reads = (unsigned long long *)calloc(labels->count == 0 ? 1 : labels->count,
+    unsigned long long *total_reads = (unsigned long long *)calloc(alloc_count_or_one(labels->count),
                                                                    sizeof(unsigned long long));
     if (total_reads == NULL) {
         free(matrix);
@@ -4741,6 +4848,11 @@ static int run_guide_counter_compatible(const char *argv0, int argc, char **argv
         free_string_list(&labels);
         return 2;
     }
+    if (validate_unique_sample_labels(&labels, "--samples") != 0) {
+        free_string_list(&reads);
+        free_string_list(&labels);
+        return 2;
+    }
 
     seq_table targets = {0};
     string_list essential_genes = {0};
@@ -4761,6 +4873,11 @@ static int run_guide_counter_compatible(const char *argv0, int argc, char **argv
 
     if (read_target_table(library_path, &targets) != 0 || targets.count == 0) {
         fprintf(stderr, "failed to read guide library\n");
+        goto done;
+    }
+    int guide_id_check = validate_unique_seq_ids(&targets, "guide");
+    if (guide_id_check != 0) {
+        if (guide_id_check == -1) fprintf(stderr, "out of memory\n");
         goto done;
     }
     size_t guide_len = targets.records[0].len;
@@ -4941,6 +5058,11 @@ static int run_fastq_assign(const char *argv0, int argc, char **argv) {
         fprintf(stderr, "failed to read barcode file\n");
         goto done;
     }
+    int barcode_id_check = validate_unique_seq_ids(&targets, "barcode");
+    if (barcode_id_check != 0) {
+        if (barcode_id_check == -1) fprintf(stderr, "out of memory\n");
+        goto done;
+    }
 
     const char **target_ptrs = (const char **)malloc(targets.count * sizeof(char *));
     size_t *target_lens = (size_t *)malloc(targets.count * sizeof(size_t));
@@ -5026,6 +5148,51 @@ static void sanitize_filename(const char *in, char *out, size_t out_cap) {
     }
     if (j == 0 && out_cap > 1) out[j++] = '_';
     out[j] = '\0';
+}
+
+typedef struct sanitized_name_entry {
+    char *name;
+    const char *id;
+} sanitized_name_entry;
+
+static int compare_sanitized_name_entry(const void *a, const void *b) {
+    const sanitized_name_entry *ea = (const sanitized_name_entry *)a;
+    const sanitized_name_entry *eb = (const sanitized_name_entry *)b;
+    return strcmp(ea->name, eb->name);
+}
+
+static int validate_unique_sanitized_filenames(const seq_table *targets) {
+    sanitized_name_entry *entries = (sanitized_name_entry *)calloc(targets->count == 0 ? 1 : targets->count,
+                                                                   sizeof(sanitized_name_entry));
+    if (entries == NULL) return -1;
+
+    int rc = 0;
+    for (size_t i = 0; i < targets->count; ++i) {
+        char safe_id[512];
+        sanitize_filename(targets->records[i].id, safe_id, sizeof(safe_id));
+        entries[i].name = xstrndup(safe_id, strlen(safe_id));
+        entries[i].id = targets->records[i].id;
+        if (entries[i].name == NULL) {
+            rc = -1;
+            goto done;
+        }
+    }
+
+    qsort(entries, targets->count, sizeof(entries[0]), compare_sanitized_name_entry);
+    for (size_t i = 1; i < targets->count; ++i) {
+        if (strcmp(entries[i - 1].name, entries[i].name) == 0) {
+            fprintf(stderr,
+                    "barcode IDs produce the same output filename after sanitization: \"%s\" and \"%s\" -> %s.fastq\n",
+                    entries[i - 1].id, entries[i].id, entries[i].name);
+            rc = -2;
+            goto done;
+        }
+    }
+
+done:
+    for (size_t i = 0; i < targets->count; ++i) free(entries[i].name);
+    free(entries);
+    return rc;
 }
 
 static int ensure_dir(const char *path) {
@@ -6270,6 +6437,12 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
         fprintf(stderr, "failed to read pair target tables\n");
         goto done;
     }
+    int left_id_check = validate_unique_seq_ids(&left_targets, "left target");
+    int right_id_check = validate_unique_seq_ids(&right_targets, "right target");
+    if (left_id_check != 0 || right_id_check != 0) {
+        if (left_id_check == -1 || right_id_check == -1) fprintf(stderr, "out of memory\n");
+        goto done;
+    }
     if (metric == COUNT_METRIC_HAMMING &&
         (!all_targets_have_length(&left_targets, left_len) || !all_targets_have_length(&right_targets, right_len))) {
         fprintf(stderr, "--metric hamming requires targets to match their configured window lengths\n");
@@ -6286,9 +6459,12 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
         fprintf(stderr, "failed to build pair target indexes\n");
         goto done;
     }
-    pair_counts = (unsigned long long *)calloc(left_targets.count * right_targets.count == 0 ? 1 :
-                                                      left_targets.count * right_targets.count,
-                                              sizeof(unsigned long long));
+    size_t pair_count_slots = 0;
+    if (checked_mul_size(left_targets.count, right_targets.count, &pair_count_slots) != 0) {
+        fprintf(stderr, "pair count matrix is too large\n");
+        goto done;
+    }
+    pair_counts = (unsigned long long *)calloc(alloc_count_or_one(pair_count_slots), sizeof(unsigned long long));
     if (pair_counts == NULL) {
         fprintf(stderr, "out of memory\n");
         goto done;
@@ -6550,6 +6726,11 @@ static int run_demux(const char *argv0, int argc, char **argv) {
         fprintf(stderr, "failed to read barcodes\n");
         goto done;
     }
+    int barcode_id_check = validate_unique_seq_ids(&targets, "barcode");
+    if (barcode_id_check != 0) {
+        if (barcode_id_check == -1) fprintf(stderr, "out of memory\n");
+        goto done;
+    }
     if (!auto_barcode_len && metric == COUNT_METRIC_HAMMING && !all_targets_have_length(&targets, barcode_len)) {
         fprintf(stderr, "--metric hamming requires every barcode to have --barcode-length bases\n");
         goto done;
@@ -6573,6 +6754,11 @@ static int run_demux(const char *argv0, int argc, char **argv) {
     index = qdaln_index_build(target_ptrs, target_lens, targets.count);
     if (index == NULL) {
         fprintf(stderr, "failed to build barcode index\n");
+        goto done;
+    }
+    int filename_check = validate_unique_sanitized_filenames(&targets);
+    if (filename_check != 0) {
+        if (filename_check == -1) fprintf(stderr, "out of memory\n");
         goto done;
     }
     if (ensure_dir(out_dir) != 0) {
@@ -7023,7 +7209,9 @@ static int read_bcl_sample_sheet(const char *path, bcl_sample_table *samples) {
     int index_col = -1;
     int index2_col = -1;
     int lane_col = -1;
+    size_t row = 0;
     while (fgets(buf, sizeof(buf), fp) != NULL) {
+        ++row;
         trim_line(buf);
         if (buf[0] == '\0') continue;
         if (buf[0] == '[') {
@@ -7049,7 +7237,9 @@ static int read_bcl_sample_sheet(const char *path, bcl_sample_table *samples) {
             continue;
         }
         if ((size_t)id_col >= nf || (size_t)index_col >= nf || fields[id_col][0] == '\0' || fields[index_col][0] == '\0') {
-            continue;
+            fprintf(stderr, "%s:%zu: BCL sample sheet Sample_ID and index must be non-empty\n", path, row);
+            fclose(fp);
+            return -1;
         }
         const char *name = (name_col >= 0 && (size_t)name_col < nf) ? fields[name_col] : fields[id_col];
         const char *index2 = (index2_col >= 0 && (size_t)index2_col < nf) ? fields[index2_col] : "";
@@ -7311,7 +7501,8 @@ typedef struct bcl_block_job {
 
 static void free_bcl_block_result(bcl_block_result *result, size_t sample_count, size_t read_count) {
     if (result->sample_buffers != NULL) {
-        size_t n = sample_count * read_count;
+        size_t n = 0;
+        if (checked_mul_size(sample_count, read_count, &n) != 0) n = 0;
         for (size_t i = 0; i < n; ++i) free_text_buffer(&result->sample_buffers[i]);
     }
     if (result->undetermined_buffers != NULL) {
@@ -7326,9 +7517,11 @@ static void free_bcl_block_result(bcl_block_result *result, size_t sample_count,
 
 static int init_bcl_block_result(bcl_block_result *result, size_t sample_count, size_t read_count) {
     memset(result, 0, sizeof(*result));
-    result->sample_buffers = (text_buffer *)calloc((sample_count == 0 ? 1 : sample_count) * (read_count == 0 ? 1 : read_count), sizeof(text_buffer));
-    result->undetermined_buffers = (text_buffer *)calloc(read_count == 0 ? 1 : read_count, sizeof(text_buffer));
-    result->sample_assigned = (unsigned long long *)calloc(sample_count == 0 ? 1 : sample_count, sizeof(unsigned long long));
+    size_t sample_read_slots = 0;
+    if (checked_mul_size(sample_count, read_count, &sample_read_slots) != 0) return -1;
+    result->sample_buffers = (text_buffer *)calloc(alloc_count_or_one(sample_read_slots), sizeof(text_buffer));
+    result->undetermined_buffers = (text_buffer *)calloc(alloc_count_or_one(read_count), sizeof(text_buffer));
+    result->sample_assigned = (unsigned long long *)calloc(alloc_count_or_one(sample_count), sizeof(unsigned long long));
     if (result->sample_buffers == NULL || result->undetermined_buffers == NULL || result->sample_assigned == NULL) {
         free_bcl_block_result(result, sample_count, read_count);
         return -1;
@@ -8164,6 +8357,15 @@ int main(int argc, char **argv) {
             return 2;
         }
         printf("dotmatch %s\n", DOTMATCH_VERSION);
+        return 0;
+    }
+
+    if (strcmp(argv[1], "citation") == 0 || strcmp(argv[1], "cite") == 0) {
+        if (argc != 2) {
+            usage(argv[0]);
+            return 2;
+        }
+        print_citation(stdout);
         return 0;
     }
 

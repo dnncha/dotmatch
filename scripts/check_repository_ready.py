@@ -38,6 +38,7 @@ REQUIRED_FILES = [
     ".github/ISSUE_TEMPLATE/benchmark_evidence.yml",
     ".zenodo.json",
     "docs/scientific-claims.md",
+    "docs/scientific-readiness.json",
     "docs/assay-evidence.json",
     "docs/distribution-release.json",
     "docs/workflow-adoption.json",
@@ -56,6 +57,7 @@ REQUIRED_FILES = [
     "packaging/bioconda/meta.yaml",
     "packaging/bioconda/build.sh",
     "scripts/check_assay_evidence.py",
+    "scripts/check_scientific_readiness.py",
     "scripts/check_alphabet_policy.py",
     "scripts/check_citation_metadata.py",
     "scripts/check_distribution_channels.py",
@@ -227,8 +229,9 @@ def check_release_versions(root: Path, result: AuditResult) -> None:
 
 def check_evidence_docs(root: Path, result: AuditResult) -> None:
     evidence_path = root / "docs" / "scientific-claims.md"
+    readiness_path = root / "docs" / "scientific-readiness.json"
     native_scope_path = root / "docs" / "native-comparator-scope.md"
-    for path in [evidence_path, native_scope_path, root / "docs" / "release-process.md"]:
+    for path in [evidence_path, readiness_path, native_scope_path, root / "docs" / "release-process.md"]:
         if not path.is_file():
             result.failures.append(f"{path.relative_to(root).as_posix()} missing")
         elif not path.read_text(encoding="utf-8").strip():
@@ -270,6 +273,10 @@ def check_pull_request_template(root: Path, result: AuditResult) -> None:
         result.failures.append("pull request template must require make python-test evidence")
     if "make pretag-ready" not in template:
         result.failures.append("pull request template must mention make pretag-ready for release-surface changes")
+    if "make asan" not in template:
+        result.failures.append("pull request template must mention make asan for native safety changes")
+    if "make scientific-readiness-ready" not in template:
+        result.failures.append("pull request template must mention make scientific-readiness-ready for claim/evidence changes")
     if not any("pull request template" in failure for failure in result.failures):
         result.passed.append("pull request template evidence checklist present")
 

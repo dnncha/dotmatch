@@ -51,8 +51,27 @@ def test_cli_top_level_help_lists_python_namespaces():
     assert "  assay" in rc.stdout
     assert "  barcode" in rc.stdout
     assert "  panel" in rc.stdout
+    assert "dotmatch citation" in rc.stdout
     assert "Hamming k=2/k=3 safety" in rc.stdout
     assert "Packaging note:" not in rc.stdout
+
+
+def test_cli_reports_citation_text():
+    rc = subprocess.run(
+        [sys.executable, "-m", "dotmatch.cli", "citation"],
+        check=False,
+        env=LEGACY_ENV,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    assert rc.returncode == 0, rc.stderr
+    assert rc.stderr == ""
+    assert f"Software release: v{_pyproject_version()}" in rc.stdout
+    assert "O'Toole D. DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning." in rc.stdout
+    assert "Citation metadata: CITATION.cff" in rc.stdout
+    assert "DOI: not yet assigned" in rc.stdout
 
 
 def _write_fixture_files(tmp_path: Path):

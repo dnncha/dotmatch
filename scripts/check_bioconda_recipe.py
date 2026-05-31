@@ -115,6 +115,7 @@ def _check_meta(meta: str, result: AuditResult) -> None:
         "dotmatch --version",
         "dotmatch dist ACGT AGGT",
         "dotmatch leq 1 ACGT AGGT",
+        "dotmatch citation",
         "dotmatch --help",
         "dotmatch count --help",
         "dotmatch crispr-count --help",

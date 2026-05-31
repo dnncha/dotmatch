@@ -151,6 +151,19 @@ def _check_pyproject_discovery(root: Path, result: AuditResult) -> None:
         result.failures.append("pyproject.toml project URLs must include Documentation")
 
 
+def _check_user_citation_surface(root: Path, version: str, title: str, result: AuditResult) -> None:
+    readme = _read(root / "README.md")
+    methods = _read(root / "docs" / "methods-and-citation.md")
+    citation_text = f"O'Toole D. {title}. Software release v{version}. {REPOSITORY_URL}"
+    for source, text in [("README.md", readme), ("docs/methods-and-citation.md", methods)]:
+        if "CITATION.cff" not in text:
+            result.failures.append(f"{source} must point users to CITATION.cff")
+        if "dotmatch citation" not in text:
+            result.failures.append(f"{source} must mention the dotmatch citation command")
+    if citation_text not in methods:
+        result.failures.append("docs/methods-and-citation.md must include the current suggested citation")
+
+
 def _check_versions(root: Path, citation: dict, codemeta: dict, zenodo: dict, result: AuditResult) -> None:
     versions = {
         "pyproject.toml": _project_version(root),
@@ -225,6 +238,7 @@ def audit(root: Path) -> AuditResult:
     _check_keywords("codemeta.json", [str(value) for value in codemeta.get("keywords") or []], result)
     _check_keywords(".zenodo.json", [str(value) for value in zenodo.get("keywords") or []], result)
     _check_pyproject_discovery(root, result)
+    _check_user_citation_surface(root, _project_version(root), cff_title, result)
 
     for path in [root / "CITATION.cff", root / "codemeta.json", root / ".zenodo.json"]:
         if _has_release_doi_field(path):

@@ -20,10 +20,12 @@ The target runs:
 ```bash
 make test
 make cli-test
+make asan
 make python-test
 make python-package-test
 make repository-ready
 make release-ready
+make scientific-readiness-ready
 make assay-evidence-ready
 make alphabet-policy-ready
 make citation-metadata-ready
@@ -58,7 +60,7 @@ git push origin v<version>
 ```
 
 Pushing `v*` tags runs `.github/workflows/release.yml`. The workflow starts
-with a preflight job that runs `make test`, `make cli-test`,
+with a preflight job that runs `make test`, `make cli-test`, `make asan`,
 `make python-test`, `make repository-ready`, `make release-ready`, and
 `make python-package-test`; artifact publication jobs depend on that preflight.
 The workflow builds:

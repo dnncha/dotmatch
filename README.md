@@ -26,12 +26,13 @@ tests in [Packaging Notes](docs/packaging.md).
 
 ![DotMatch workflow: FASTQ reads and a known target table are sliced at the same read position, assigned to known short DNA targets, and written to counts, split FASTQs, QC tables, and reports.](public/dotmatch-read-assignment.svg)
 
-## The Basic Idea
+## Assignment Model
 
-A fixed window means DotMatch looks at the same position in every read. For
-example, bases 24-43 might contain a CRISPR guide, or bases 1-8 might contain an
-inline barcode. DotMatch extracts that slice, compares it with your target
-table, and records the assignment result.
+DotMatch assigns short read windows against a known target table. Typical
+windows are a CRISPR guide segment, an inline sample barcode, a feature barcode,
+a primer prefix, or another fixed-position assay sequence. DotMatch extracts the
+configured slice, compares it with the target table under the selected edit
+model, and records the assignment state.
 
 For each read, DotMatch reports one outcome:
 
@@ -42,8 +43,9 @@ For each read, DotMatch reports one outcome:
 | `none` | no target is close enough | available for unmatched-read review |
 | `invalid` | the requested read window cannot be extracted | visible in QC instead of disappearing |
 
-This is the main design choice. If a read could belong to more than one guide or
-barcode, DotMatch reports the ambiguity instead of silently choosing a target.
+Ambiguity is part of the output contract. If a read is compatible with multiple
+targets under the configured radius, DotMatch reports the ambiguous assignment
+instead of assigning it to an arbitrary target.
 
 Typical outputs include count matrices or demultiplexed FASTQs, `sample_qc.tsv`,
 top-unmatched tables, target-library audit files, `summary.json`, and
@@ -75,11 +77,10 @@ example documents the exact comparator settings in
 
 ## Barcode Panel Design
 
-DotMatch can design barcode panels and check their assignment-collision risk
-for the same semantics used later by demux and counting. The point is not just
-to emit sequences. A designed panel is shipped with a machine-checkable
-assignment report, per-target collision-risk rows, collision tables,
-ambiguous-variant examples, plate layout, lab exports, and a report.
+DotMatch can design barcode panels and check assignment-collision risk under the
+same semantics used later by demux and counting. A designed panel includes a
+machine-checkable assignment report, per-target collision-risk rows, collision
+tables, ambiguous-variant examples, plate layout, lab exports, and a report.
 
 ```bash
 dotmatch panel design \
@@ -537,8 +538,9 @@ or pull requests.
 ## Citation
 
 If DotMatch is useful in your work, cite the software release using
-[CITATION.cff](CITATION.cff). Suggested methods text is provided in
-[docs/methods-and-citation.md](docs/methods-and-citation.md).
+[CITATION.cff](CITATION.cff). Installed packages also expose
+`dotmatch citation` for a copyable release citation. Suggested methods text is
+provided in [docs/methods-and-citation.md](docs/methods-and-citation.md).
 
 ## License
 

@@ -88,6 +88,7 @@ def _write_release_repo(root: Path) -> None:
             "      - run: python -m pip install build pytest\n"
             "      - run: make test\n"
             "      - run: make cli-test\n"
+            "      - run: make asan\n"
             "      - run: make python-test\n"
             "      - run: make repository-ready\n"
             "      - run: make release-ready\n"
@@ -166,7 +167,7 @@ def _write_release_repo(root: Path) -> None:
         "docs/release-process.md": (
             "# Release Process\n\n"
             "Run `make pretag-ready`, `make release-ready`, `make assay-evidence-ready`, "
-            "`make distribution-record-ready`, `make alphabet-policy-ready`, "
+            "`make scientific-readiness-ready`, `make distribution-record-ready`, `make alphabet-policy-ready`, "
             "`make bioconda-recipe-ready`, "
             "`make citation-metadata-ready`, `make native-comparator-scope-ready`, "
             "`make public-crispr-evidence-gate`, `make crispr-comparison-gate`, and "
@@ -177,6 +178,7 @@ def _write_release_repo(root: Path) -> None:
             "Keep `make distribution-channels`, `make workflow-adoption-status`, and "
             "`make bcl-comparison-gate` separate because they require external evidence.\n"
             "Publish the PyPI source distribution and repaired manylinux/musllinux wheels through trusted publishing.\n"
+            "The release preflight includes `make asan`.\n"
         ),
         "Makefile": (
             "release-ready: python-test python-package-test\n"
@@ -184,6 +186,7 @@ def _write_release_repo(root: Path) -> None:
             "pretag-ready:\n"
             "\t$(MAKE) test\n"
             "\t$(MAKE) cli-test\n"
+            "\t$(MAKE) asan\n"
             "\t$(MAKE) python-test\n"
             "\t$(MAKE) python-package-test\n"
             "\t$(MAKE) repository-ready\n"
@@ -273,6 +276,7 @@ def test_release_readiness_requires_pretag_ready_target(tmp_path):
     result = checker.audit(tmp_path)
 
     assert any("pretag-ready target must include $(MAKE) cli-test" in failure for failure in result.failures)
+    assert any("pretag-ready target must include $(MAKE) asan" in failure for failure in result.failures)
     assert any("pretag-ready target must include npm run lint" in failure for failure in result.failures)
     assert any("pretag-ready target must include NEXT_OUTPUT=export" in failure for failure in result.failures)
 
@@ -349,6 +353,23 @@ def test_release_readiness_requires_readme_to_describe_bioconda_osx_arm64(tmp_pa
     assert any("README.md" in failure and "osx-arm64" in failure for failure in result.failures)
 
 
+def test_release_readiness_requires_release_process_to_describe_safety_gates(tmp_path):
+    checker = _load_checker()
+    _write_release_repo(tmp_path)
+    release_process = (tmp_path / "docs" / "release-process.md").read_text(encoding="utf-8")
+    (tmp_path / "docs" / "release-process.md").write_text(
+        release_process
+        .replace("`make scientific-readiness-ready`, ", "")
+        .replace("The release preflight includes `make asan`.\n", ""),
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("docs/release-process.md" in failure and "make scientific-readiness-ready" in failure for failure in result.failures)
+    assert any("docs/release-process.md" in failure and "make asan" in failure for failure in result.failures)
+
+
 def test_release_readiness_requires_preflight_before_publish_jobs(tmp_path):
     checker = _load_checker()
     _write_release_repo(tmp_path)
@@ -392,6 +413,7 @@ def test_release_readiness_requires_tests_in_preflight(tmp_path):
         workflow
         .replace("      - run: make test\n", "")
         .replace("      - run: make cli-test\n", "")
+        .replace("      - run: make asan\n", "")
         .replace("      - run: make python-test\n", "")
         .replace("      - run: python -m pip install build pytest\n", "      - run: python -m pip install build\n"),
         encoding="utf-8",
@@ -402,4 +424,5 @@ def test_release_readiness_requires_tests_in_preflight(tmp_path):
     assert any("preflight job must install pytest" in failure for failure in result.failures)
     assert any("preflight job must run make test" in failure for failure in result.failures)
     assert any("preflight job must run make cli-test" in failure for failure in result.failures)
+    assert any("preflight job must run make asan" in failure for failure in result.failures)
     assert any("preflight job must run make python-test" in failure for failure in result.failures)

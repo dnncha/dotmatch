@@ -52,6 +52,8 @@ def _write_minimal_repo(root: Path) -> None:
             "- [ ] `make cli-test`\n"
             "- [ ] `make python-test`\n"
             "- [ ] `make pretag-ready` if release surfaces changed.\n"
+            "- [ ] `make asan` if native C code changed.\n"
+            "- [ ] `make scientific-readiness-ready` if claims or evidence changed.\n"
         ),
         ".github/ISSUE_TEMPLATE/bug_report.yml": "name: Bug report\n",
         ".github/ISSUE_TEMPLATE/feature_request.yml": "name: Feature request\n",
@@ -60,6 +62,7 @@ def _write_minimal_repo(root: Path) -> None:
             "# Evidence Notes\n\n"
             "`docs/assay-evidence.json` tracks assay lanes.\n"
         ),
+        "docs/scientific-readiness.json": '{"schema_version": 1, "status": "evidence_bounded", "controls": []}\n',
         "docs/assay-evidence.json": '{"schema_version": 1, "assays": []}\n',
         "docs/distribution-release.json": '{"schema_version": 1, "status": "not_released", "channels": []}\n',
         "docs/workflow-adoption.json": '{"schema_version": 1, "status": "not_ready", "integrations": []}\n',
@@ -81,6 +84,7 @@ def _write_minimal_repo(root: Path) -> None:
         "packaging/bioconda/meta.yaml": "package:\n  name: dotmatch\n",
         "packaging/bioconda/build.sh": "#!/usr/bin/env bash\n",
         "scripts/check_assay_evidence.py": "#!/usr/bin/env python3\n",
+        "scripts/check_scientific_readiness.py": "#!/usr/bin/env python3\n",
         "scripts/check_alphabet_policy.py": "#!/usr/bin/env python3\n",
         "scripts/check_citation_metadata.py": "#!/usr/bin/env python3\n",
         "scripts/check_distribution_channels.py": "#!/usr/bin/env python3\n",
@@ -149,6 +153,8 @@ def test_repository_ready_reports_incomplete_pull_request_template(tmp_path):
 
     assert any("make cli-test" in failure for failure in result.failures)
     assert any("make pretag-ready" in failure for failure in result.failures)
+    assert any("make asan" in failure for failure in result.failures)
+    assert any("make scientific-readiness-ready" in failure for failure in result.failures)
 
 
 def test_repository_ready_reports_missing_changelog(tmp_path):
