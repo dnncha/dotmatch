@@ -209,15 +209,15 @@ def test_citation_metadata_rejects_weak_pyproject_discovery_metadata(tmp_path):
     assert any("pyproject.toml project URLs must include Repository" in failure for failure in result.failures)
 
 
-def test_citation_metadata_rejects_unminted_doi_field(tmp_path):
+def test_citation_metadata_rejects_unresolved_doi_field(tmp_path):
     checker = _load_checker()
     _write_repo(tmp_path)
-    citation = (tmp_path / "CITATION.cff").read_text(encoding="utf-8") + "doi: 10.5281/zenodo.123\n"
+    citation = (tmp_path / "CITATION.cff").read_text(encoding="utf-8") + "doi: 10.5281/zenodo.999999999999\n"
     (tmp_path / "CITATION.cff").write_text(citation, encoding="utf-8")
 
     result = checker.audit(tmp_path)
 
-    assert any("has a DOI field before Zenodo release" in failure for failure in result.failures)
+    assert any("DOI does not resolve through doi.org" in failure for failure in result.failures)
 
 
 def test_citation_metadata_requires_user_facing_citation_surface(tmp_path):

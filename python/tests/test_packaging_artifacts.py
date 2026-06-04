@@ -72,7 +72,7 @@ def test_bioconda_recipe_gate_is_wired_into_release_ready() -> None:
     assert "python3 scripts/check_bioconda_recipe.py" in makefile
 
 
-def test_zenodo_metadata_is_release_ready_without_claiming_doi() -> None:
+def test_zenodo_metadata_tracks_minted_release_doi() -> None:
     metadata = json.loads((ROOT / ".zenodo.json").read_text(encoding="utf-8"))
 
     assert metadata["title"] == "DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning"
@@ -82,10 +82,11 @@ def test_zenodo_metadata_is_release_ready_without_claiming_doi() -> None:
     assert metadata["access_right"] == "open"
     assert metadata["creators"] == [{"name": "O'Toole, Donncha"}]
     assert "known-target assignment" in metadata["keywords"]
-    assert all("doi.org" not in str(value).lower() for value in metadata.values())
+    assert metadata["doi"] == "10.5281/zenodo.20541629"
+    assert metadata["conceptdoi"] == "10.5281/zenodo.20541628"
 
 
-def test_codemeta_tracks_package_citation_and_no_doi_claim() -> None:
+def test_codemeta_tracks_package_citation_and_minted_doi() -> None:
     codemeta = json.loads((ROOT / "codemeta.json").read_text(encoding="utf-8"))
     citation = (ROOT / "CITATION.cff").read_text(encoding="utf-8")
     zenodo = json.loads((ROOT / ".zenodo.json").read_text(encoding="utf-8"))
@@ -98,13 +99,13 @@ def test_codemeta_tracks_package_citation_and_no_doi_claim() -> None:
     assert codemeta["softwareVersion"] == _pyproject_version()
     assert codemeta["license"] == "https://spdx.org/licenses/Apache-2.0"
     assert codemeta["citation"].endswith("/CITATION.cff")
+    assert codemeta["identifier"] == "https://doi.org/10.5281/zenodo.20541629"
     assert codemeta["author"] == [{"@type": "Person", "givenName": "Donncha", "familyName": "O'Toole"}]
     assert f"version: \"{_pyproject_version()}\"" in citation
+    assert "doi: 10.5281/zenodo.20541629" in citation
     assert codemeta["softwareVersion"] == zenodo["version"]
     assert "known-target assignment" in codemeta["keywords"]
     assert "CRISPR" in codemeta["keywords"]
-    doi_claim_fields = {key: value for key, value in codemeta.items() if key != "@context"}
-    assert all("doi.org" not in json.dumps(value).lower() for value in doi_claim_fields.values())
 
 
 def test_codemeta_is_included_in_source_distribution_manifest() -> None:

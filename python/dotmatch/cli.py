@@ -32,6 +32,7 @@ from .native import find_native_cli, run_native_cli
 
 DNA = "ACGT"
 SOFTWARE_TITLE = "DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning"
+SOFTWARE_DOI = "10.5281/zenodo.20541629"
 CRISPR_QC_THRESHOLDS = {
     "assignment_rate_min": 0.80,
     "ambiguous_rate_max": 0.05,
@@ -2088,10 +2089,11 @@ def print_citation() -> None:
     print(
         f"""DotMatch citation
 Software release: v{__version__}
-Preferred citation before DOI assignment:
+Preferred citation:
 O'Toole D. {SOFTWARE_TITLE}. Software release v{__version__}. https://github.com/dnncha/dotmatch
 Citation metadata: CITATION.cff
-DOI: not yet assigned; add the Zenodo DOI after an immutable release archive is minted."""
+DOI: {SOFTWARE_DOI}
+DOI URL: https://doi.org/{SOFTWARE_DOI}"""
     )
 
 

@@ -71,7 +71,8 @@ def test_cli_reports_citation_text():
     assert f"Software release: v{_pyproject_version()}" in rc.stdout
     assert "O'Toole D. DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning." in rc.stdout
     assert "Citation metadata: CITATION.cff" in rc.stdout
-    assert "DOI: not yet assigned" in rc.stdout
+    assert "DOI: 10.5281/zenodo.20541629" in rc.stdout
+    assert "https://doi.org/10.5281/zenodo.20541629" in rc.stdout
 
 
 def _write_fixture_files(tmp_path: Path):

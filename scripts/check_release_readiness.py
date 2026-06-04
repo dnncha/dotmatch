@@ -3,6 +3,7 @@
 import argparse
 import json
 import re
+import urllib.request
 from pathlib import Path
 from typing import Optional
 
@@ -72,6 +73,29 @@ def _has_release_doi_field(path: Path) -> bool:
     return False
 
 
+def _doi_values(path: Path) -> list[str]:
+    if path.name == "CITATION.cff":
+        match = re.search(r'^\s*doi\s*:\s*["\']?([^"\'\s]+)', _read(path), flags=re.I | re.M)
+        return [match.group(1)] if match else []
+    if path.suffix == ".json":
+        data = _json(path)
+        values = []
+        for key in ["doi", "conceptdoi"]:
+            if data.get(key):
+                values.append(str(data[key]))
+        return values
+    return []
+
+
+def _doi_resolves(doi: str) -> bool:
+    request = urllib.request.Request(f"https://doi.org/{doi}", method="HEAD")
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            return 200 <= int(response.status) < 400
+    except Exception:
+        return False
+
+
 def _workflow_job_block(workflow: str, job_name: str) -> str:
     match = re.search(rf"^  {re.escape(job_name)}:\n", workflow, flags=re.M)
     if not match:
@@ -130,6 +154,14 @@ def check_no_unminted_doi_fields(root: Path, result: ReleaseAudit) -> None:
         root / ".zenodo.json",
         root / "codemeta.json",
     ]
+    observed = [doi for path in checked for doi in _doi_values(path)]
+    if observed:
+        for doi in observed:
+            if not _doi_resolves(doi):
+                result.failures.append(f"DOI does not resolve through doi.org: {doi}")
+        if not any("DOI" in failure for failure in result.failures):
+            result.passed.append("DOI fields resolve")
+        return
     for path in checked:
         if _has_release_doi_field(path):
             result.failures.append(f"{path.name} has a DOI field before an immutable release DOI is minted")

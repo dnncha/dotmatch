@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import urllib.request
 from pathlib import Path
 
 
@@ -111,6 +112,29 @@ def _has_release_doi_field(path: Path) -> bool:
         data = _read_json(path)
         return any(key in data for key in {"doi", "conceptdoi"})
     return False
+
+
+def _doi_values(path: Path) -> list[str]:
+    if path.name == "CITATION.cff":
+        doi = _cff_scalar(_read(path), "doi")
+        return [doi] if doi else []
+    if path.suffix == ".json":
+        data = _read_json(path)
+        values = []
+        for key in ["doi", "conceptdoi"]:
+            if data.get(key):
+                values.append(str(data[key]))
+        return values
+    return []
+
+
+def _doi_resolves(doi: str) -> bool:
+    request = urllib.request.Request(f"https://doi.org/{doi}", method="HEAD")
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            return 200 <= int(response.status) < 400
+    except Exception:
+        return False
 
 
 def _check_keywords(source: str, keywords: list[str], result: AuditResult) -> None:
@@ -254,9 +278,14 @@ def audit(root: Path) -> AuditResult:
     _check_pyproject_discovery(root, result)
     _check_user_citation_surface(root, _project_version(root), cff_title, result)
 
-    for path in [root / "CITATION.cff", root / "codemeta.json", root / ".zenodo.json"]:
-        if _has_release_doi_field(path):
-            result.failures.append(f"{path.name} has a DOI field before Zenodo release")
+    doi_paths = [root / "CITATION.cff", root / "codemeta.json", root / ".zenodo.json"]
+    doi_values = [doi for path in doi_paths for doi in _doi_values(path)]
+    if doi_values:
+        for doi in doi_values:
+            if not _doi_resolves(doi):
+                result.failures.append(f"DOI does not resolve through doi.org: {doi}")
+    else:
+        result.passed.append("DOI fields deferred until Zenodo release")
 
     if result.ok:
         result.passed.append("citation metadata aligned")
