@@ -5,6 +5,7 @@ This page tracks the short software-paper path for DotMatch. The draft lives in
 
 Public tracking issue: <https://github.com/dnncha/dotmatch/issues/43>.
 Reviewer guide: [JOSS Reviewer Guide](joss-reviewer-guide.md).
+Author confirmation: [JOSS Author Confirmation](joss-author-confirmation.md).
 
 ## Target
 
@@ -22,7 +23,9 @@ Rationale:
 
 ## Before Submission
 
-- Confirm the author affiliation and optional ORCID in `paper/paper.md`.
+- Confirm the author affiliation and optional ORCID in `paper/paper.md`; use
+  [JOSS Author Confirmation](joss-author-confirmation.md) as the account-side
+  checklist.
 - Decide whether to keep the current title or use the longer release title.
 - Review the AI usage disclosure for accuracy.
 - Make sure the public README points to the paper once submitted or accepted.
