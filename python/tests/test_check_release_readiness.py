@@ -86,6 +86,7 @@ def _write_release_repo(root: Path) -> None:
             "    name: Release preflight gates\n"
             "    steps:\n"
             "      - run: python -m pip install build pytest\n"
+            "      - run: python -m pip install -r docs/requirements.txt\n"
             "      - run: make test\n"
             "      - run: make cli-test\n"
             "      - run: make asan\n"
@@ -173,7 +174,7 @@ def _write_release_repo(root: Path) -> None:
         ),
         "docs/release-process.md": (
             "# Release Process\n\n"
-            "Run `make pretag-ready`, `make release-ready`, `make assay-evidence-ready`, "
+            "Run `make pretag-ready`, `make release-ready`, `make docs-ready`, `make assay-evidence-ready`, "
             "`make scientific-readiness-ready`, `make distribution-record-ready`, `make alphabet-policy-ready`, "
             "`make bioconda-recipe-ready`, "
             "`make citation-metadata-ready`, `make native-comparator-scope-ready`, "
@@ -188,8 +189,12 @@ def _write_release_repo(root: Path) -> None:
             "The release preflight includes `make asan`.\n"
         ),
         "Makefile": (
-            "release-ready: python-test python-package-test\n"
+            "repository-ready:\n"
+            "\t$(MAKE) docs-ready\n"
+            "release-ready: python-test python-package-test docs-ready\n"
             "\tpython3 scripts/check_release_readiness.py\n"
+            "docs-ready:\n"
+            "\tpython3 -m sphinx -W -b html docs docs/_build/html\n"
             "pretag-ready:\n"
             "\t$(MAKE) test\n"
             "\t$(MAKE) cli-test\n"
@@ -288,6 +293,42 @@ def test_release_readiness_requires_pretag_ready_target(tmp_path):
     assert any("pretag-ready target must include NEXT_OUTPUT=export" in failure for failure in result.failures)
 
 
+def test_release_readiness_requires_docs_ready_targets(tmp_path):
+    checker = _load_checker()
+    _write_release_repo(tmp_path)
+    makefile = (tmp_path / "Makefile").read_text(encoding="utf-8")
+    (tmp_path / "Makefile").write_text(
+        makefile
+        .replace("repository-ready:\n\t$(MAKE) docs-ready\n", "repository-ready:\n\tpython3 scripts/check_evidence_gallery.py\n")
+        .replace("release-ready: python-test python-package-test docs-ready\n", "release-ready: python-test python-package-test\n")
+        .replace("docs-ready:\n\tpython3 -m sphinx -W -b html docs docs/_build/html\n", ""),
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("Makefile must include docs-ready target" in failure for failure in result.failures)
+    assert any("Makefile release-ready target must include docs-ready" in failure for failure in result.failures)
+    assert any("Makefile repository-ready target must include $(MAKE) docs-ready" in failure for failure in result.failures)
+
+
+def test_release_readiness_requires_docs_ready_to_treat_warnings_as_errors(tmp_path):
+    checker = _load_checker()
+    _write_release_repo(tmp_path)
+    makefile = (tmp_path / "Makefile").read_text(encoding="utf-8")
+    (tmp_path / "Makefile").write_text(
+        makefile.replace(
+            "python3 -m sphinx -W -b html docs docs/_build/html",
+            "python3 -m sphinx -b html docs docs/_build/html",
+        ),
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("docs-ready target must build public docs with Sphinx warnings as errors" in failure for failure in result.failures)
+
+
 def test_release_readiness_rejects_post_release_gates_in_pretag_ready(tmp_path):
     checker = _load_checker()
     _write_release_repo(tmp_path)
@@ -366,6 +407,7 @@ def test_release_readiness_requires_release_process_to_describe_safety_gates(tmp
     release_process = (tmp_path / "docs" / "release-process.md").read_text(encoding="utf-8")
     (tmp_path / "docs" / "release-process.md").write_text(
         release_process
+        .replace("`make docs-ready`, ", "")
         .replace("`make scientific-readiness-ready`, ", "")
         .replace("The release preflight includes `make asan`.\n", ""),
         encoding="utf-8",
@@ -374,6 +416,7 @@ def test_release_readiness_requires_release_process_to_describe_safety_gates(tmp
     result = checker.audit(tmp_path)
 
     assert any("docs/release-process.md" in failure and "make scientific-readiness-ready" in failure for failure in result.failures)
+    assert any("docs/release-process.md" in failure and "make docs-ready" in failure for failure in result.failures)
     assert any("docs/release-process.md" in failure and "make asan" in failure for failure in result.failures)
 
 
@@ -433,3 +476,17 @@ def test_release_readiness_requires_tests_in_preflight(tmp_path):
     assert any("preflight job must run make cli-test" in failure for failure in result.failures)
     assert any("preflight job must run make asan" in failure for failure in result.failures)
     assert any("preflight job must run make python-test" in failure for failure in result.failures)
+
+
+def test_release_readiness_requires_docs_tooling_in_preflight(tmp_path):
+    checker = _load_checker()
+    _write_release_repo(tmp_path)
+    workflow = (tmp_path / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+    (tmp_path / ".github" / "workflows" / "release.yml").write_text(
+        workflow.replace("      - run: python -m pip install -r docs/requirements.txt\n", ""),
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("preflight job must install documentation tooling" in failure for failure in result.failures)

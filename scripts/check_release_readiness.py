@@ -107,7 +107,7 @@ def _workflow_job_block(workflow: str, job_name: str) -> str:
 
 
 def _make_target_block(makefile: str, target_name: str) -> str:
-    match = re.search(rf"^{re.escape(target_name)}:\n", makefile, flags=re.M)
+    match = re.search(rf"^{re.escape(target_name)}:(?:[^\n]*)\n", makefile, flags=re.M)
     if not match:
         return ""
     start = match.start()
@@ -224,6 +224,8 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
             result.failures.append("release workflow preflight job must be named Release preflight gates")
         if "python -m pip install build pytest" not in preflight:
             result.failures.append("release workflow preflight job must install pytest")
+        if "python -m pip install -r docs/requirements.txt" not in preflight:
+            result.failures.append("release workflow preflight job must install documentation tooling")
         if "make test" not in preflight:
             result.failures.append("release workflow preflight job must run make test")
         if "make cli-test" not in preflight:
@@ -293,11 +295,27 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
         result.failures.append("README.md must document Bioconda osx-arm64 / Apple Silicon support")
     for release_process_fragment in [
         "make asan",
+        "make docs-ready",
         "make scientific-readiness-ready",
         "make pretag-ready",
     ]:
         if release_process_fragment not in release_process:
             result.failures.append(f"docs/release-process.md must mention {release_process_fragment}")
+    docs_block = _make_target_block(makefile, "docs-ready")
+    if not docs_block:
+        result.failures.append("Makefile must include docs-ready target")
+    elif "python3 -m sphinx -W -b html docs docs/_build/html" not in docs_block:
+        result.failures.append("Makefile docs-ready target must build public docs with Sphinx warnings as errors")
+    release_block = _make_target_block(makefile, "release-ready")
+    if not release_block:
+        result.failures.append("Makefile must include release-ready target")
+    elif "docs-ready" not in release_block:
+        result.failures.append("Makefile release-ready target must include docs-ready")
+    repository_block = _make_target_block(makefile, "repository-ready")
+    if not repository_block:
+        result.failures.append("Makefile must include repository-ready target")
+    elif "$(MAKE) docs-ready" not in repository_block:
+        result.failures.append("Makefile repository-ready target must include $(MAKE) docs-ready")
     pretag_block = _make_target_block(makefile, "pretag-ready")
     if not pretag_block:
         result.failures.append("Makefile must include pretag-ready target")

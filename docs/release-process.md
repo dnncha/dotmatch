@@ -23,6 +23,7 @@ make cli-test
 make asan
 make python-test
 make python-package-test
+make docs-ready
 make repository-ready
 make release-ready
 make scientific-readiness-ready
@@ -61,8 +62,9 @@ git push origin v<version>
 
 Pushing `v*` tags runs `.github/workflows/release.yml`. The workflow starts
 with a preflight job that runs `make test`, `make cli-test`, `make asan`,
-`make python-test`, `make repository-ready`, `make release-ready`, and
-`make python-package-test`; artifact publication jobs depend on that preflight.
+`make python-test`, installs the public docs toolchain, `make repository-ready`,
+`make release-ready`, and `make python-package-test`; artifact publication jobs
+depend on that preflight.
 The workflow builds:
 
 - raw Linux wheel release artifact;
