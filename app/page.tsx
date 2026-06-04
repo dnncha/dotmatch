@@ -18,22 +18,22 @@ const initialBiocondaPrUrl = "https://github.com/bioconda/bioconda-recipes/pull/
 const biocondaUrl = "https://anaconda.org/bioconda/dotmatch";
 
 const proof = [
-  ["Guide counting", "screen FASTQs", "Guide-by-sample matrices with MAGeCK-style output."],
-  ["GuideCounter mode", "compatible files", "GuideCounter-shaped inputs and DotMatch assignment semantics."],
-  ["Barcode demux", "inline barcodes", "Assigned, ambiguous, and unmatched read classes are retained."],
-  ["Panel checks", "barcode panels", "Assignment-risk reports travel with the designed panel."],
-  ["Ambiguity model", "radius-safe assignment", "Multi-target-compatible reads remain explicit."]
+  ["CRISPR screens", "guide counts", "Count guides from FASTQ and write MAGeCK-style tables."],
+  ["Barcode demux", "inline barcodes", "Split reads and keep unmatched or ambiguous reads visible."],
+  ["Panel design", "barcode sets", "Design panels and check whether error correction is safe."],
+  ["QC reports", "HTML + tables", "Share run summaries without losing the raw TSV and JSON files."],
+  ["Fast paths", "benchmarked", "Public examples include commands, raw data, and graphs."]
 ];
 
 const decisionCards = [
   {
     title: "Supported use cases",
     items: [
-      "fixed-window barcode FASTQs",
-      "CRISPR guide counts",
+      "CRISPR guide counting",
+      "inline barcode demultiplexing",
       "barcode panel design",
       "primer or whitelist checks",
-      "feature-barcode windows"
+      "feature-barcode reads"
     ]
   },
   {
@@ -59,12 +59,12 @@ const decisionCards = [
 ];
 
 const translations = [
-  ["known targets", "a fixed guide, barcode, primer, whitelist, or panel sequence list"],
-  ["Hamming k=1", "allow one mismatch, no indels"],
+  ["Target list", "the guide, barcode, primer, or whitelist sequences you expect"],
+  ["One mismatch", "allow one substituted base, with no insertions or deletions"],
   ["GuideCounter mode", "one-mismatch Hamming by default, exact-only with --exact-match"],
-  ["Levenshtein k=1", "allow one substitution, insertion, or deletion"],
-  ["ambiguous", "reads compatible with multiple targets remain a separate assignment class"],
-  ["peak RSS", "peak memory use"],
+  ["One edit", "allow one substitution, insertion, or deletion"],
+  ["Ambiguous", "a read matches more than one target and is not forced into either one"],
+  ["Peak RSS", "peak memory use"],
   ["Edlib validation", "checked against an independent edit-distance implementation"]
 ];
 
@@ -79,7 +79,7 @@ const audienceCards = [
   },
   {
     title: "Panel designers",
-    body: "Design barcode panels with assignment-collision checks and lab-ready exports."
+    body: "Design barcode panels, check collision risk, and export lab-ready files."
   },
   {
     title: "CRISPR screen users",
@@ -87,7 +87,7 @@ const audienceCards = [
   },
   {
     title: "Methods reviewers",
-    body: "Inspect commands, raw tables, comparator semantics, and validation notes."
+    body: "Inspect commands, raw tables, comparison notes, and validation checks."
   }
 ];
 
@@ -105,15 +105,15 @@ const workflowChoiceRows = [
   ["Design or check a barcode panel", "DotMatch panel"],
   ["Count CRISPR guides from a fixed window", "DotMatch"],
   ["Split fixed-position inline barcodes", "DotMatch"],
-  ["Diagnose a low-assignment barcode lane", "DotMatch barcode troubleshooting"],
+  ["Diagnose a low-yield barcode lane", "DotMatch barcode troubleshooting"],
   ["Trim general adapters", "Cutadapt-style tools"],
   ["Map reads to a genome or transcriptome", "Bowtie2, BWA, or minimap2-style tools"],
   ["Analyze CRISPR screen phenotypes", "MAGeCK or another downstream analysis tool"]
 ];
 
 const evidenceNotes = [
-  ["Assignment rule", "index matches scan", "Checked against exhaustive scan for the same settings."],
-  ["Input", "known short targets", "Guides, barcodes, primers, panels, or whitelists."],
+  ["Matching rule", "index matches scan", "Checked against exhaustive scan for the same settings."],
+  ["Input", "known short sequences", "Guides, barcodes, primers, panels, or whitelists."],
   ["Repository", "C, CLI, Python", "Code, tests, reports, schemas, and benchmark tables."]
 ];
 
@@ -174,7 +174,7 @@ const autopsyFindings = [
 
 const panelOutputs = [
   ["barcodes.tsv", "barcode table"],
-  ["panel_summary.json", "assignment-risk summary"],
+  ["panel_summary.json", "collision-risk summary"],
   ["ambiguous_error_spheres.tsv", "ambiguous rescue examples"],
   ["target_safety.tsv", "nearest-neighbor checks"],
   ["plate_layout.tsv", "plate layout"],
@@ -242,7 +242,7 @@ const benchmarkFigures = [
     label: "Bowtie 1 comparison",
     image: `${basePath}/benchmarks/crispr_hamming_k23_comparison.svg`,
     alt: "Hamming k2 and k3 fixed-window CRISPR comparator graph comparing DotMatch with Bowtie 1",
-    body: "The k2 and k3 rows are kept separate from GuideCounter claims. Bowtie 1 is used here as a same-strand fixed-window Hamming comparator for larger mismatch radii.",
+    body: "The k2 and k3 rows are reported separately from GuideCounter-style runs. Bowtie 1 is used here for same-strand fixed-window Hamming comparisons.",
     href: `${repoUrl}/blob/main/docs/benchmarks/crispr_comparison/README.md`
   },
   {
@@ -266,7 +266,7 @@ const benchmarkFigures = [
     label: "Barcode comparison",
     image: `${basePath}/benchmarks/barcode_demux_throughput.svg`,
     alt: "Barcode demultiplexing throughput graph for DotMatch, Cutadapt, and exact hash splitter rows",
-    body: "The barcode graph is scoped to a public exact-prefix SRP009896 lane. It compares fixed-position assignment, anchored Cutadapt demux, and a transparent exact-prefix baseline.",
+    body: "The barcode graph uses a public exact-prefix SRP009896 lane. It compares fixed-position barcode matching, anchored Cutadapt demux, and a simple exact-prefix baseline.",
     href: barcodeBenchmarkUrl
   },
   {
@@ -349,7 +349,7 @@ const realWorkflowExamples = [
     image: guideCaptureImage,
     alt: "Workflow diagram showing a 10x CRISPR Guide Capture R2 read window assigned by DotMatch to guide targets with QC outputs",
     question: "Can the guide sequence window be checked before single-cell analysis?",
-    body: "A public 10x Guide Capture R2 file is checked at start 63, length 19. The evidence lane is a fixed-window single-guide extraction and count check.",
+    body: "A public 10x Guide Capture R2 file is checked at start 63, length 19. The example is a fixed-window single-guide extraction and count check.",
     command: `dotmatch count \\
   --targets examples/perturb_seq/data/crispr_guides.tsv \\
   --reads examples/perturb_seq/data/1k_CRISPR_5p_gemx_crispr_S1_L001_R2.subsample20000.fastq.gz \\
@@ -376,7 +376,7 @@ export default function Home() {
           DotMatch
         </a>
         <nav aria-label="Primary navigation">
-          <a href="#real-workflows">Examples</a>
+          <a href="#real-workflows">Workflows</a>
           <a href="#barcode-qc">Barcode QC</a>
           <a href="#panel-design">Panel design</a>
           <a href="#benchmarks">Benchmarks</a>
@@ -410,7 +410,7 @@ export default function Home() {
           </p>
           <div className="hero-actions">
             <a href="#real-workflows" className="button primary">
-              See Real Workflows
+              See workflows
             </a>
             <a href={repoUrl} className="button secondary">
               GitHub
@@ -426,7 +426,7 @@ export default function Home() {
         <div className="hero-panel" aria-label="DotMatch benchmark summary">
           <div className="panel-topline">
             <span>v0.1.7 release candidate</span>
-            <span>known-target assignment</span>
+            <span>FASTQ sequence matching</span>
           </div>
           <figure className="hero-visual">
             <img
@@ -436,14 +436,14 @@ export default function Home() {
               fetchPriority="high"
             />
             <figcaption>
-              Each read is unique, ambiguous, unmatched, or invalid. The report
-              stays next to the count or split files.
+              Every read gets a clear outcome. The report stays next to the count
+              or demultiplexed files.
             </figcaption>
           </figure>
           <div className="metric-grid">
             <div>
               <strong>4</strong>
-              <span>outcomes: unique, ambiguous, unmatched, invalid</span>
+              <span>read outcomes tracked in every run</span>
             </div>
             <div>
               <strong>8</strong>
@@ -455,7 +455,7 @@ export default function Home() {
             </div>
             <div>
               <strong>0</strong>
-              <span>forced calls for ambiguous reads</span>
+              <span>forced calls when two targets fit</span>
             </div>
           </div>
           <div className="sequence-rail" aria-hidden="true">
@@ -478,11 +478,10 @@ export default function Home() {
 
       <section id="real-workflows" className="section real-workflows-section">
         <div className="section-heading">
-          <h2>Real workflow examples.</h2>
+          <h2>Workflows you can actually run.</h2>
           <p>
-            Three examples from the repo. Each starts with FASTQ and a known
-            target list. DotMatch handles the fixed read window and writes files
-            a pipeline can pick up.
+            Each example starts with FASTQ and a target list. DotMatch handles the
+            read window, writes useful files, and leaves a report behind for QC.
           </p>
         </div>
         <div className="real-workflow-list">
@@ -518,11 +517,11 @@ export default function Home() {
 
       <section id="panel-design" className="section panel-design-section">
         <div className="section-heading">
-          <h2>Design barcodes, then check the rescue rules.</h2>
+          <h2>Design barcode panels with correction in mind.</h2>
           <p>
-            A barcode panel is only useful if correction will not mix samples.
-            DotMatch designs panels, checks nearest neighbors, and writes files
-            a lab or pipeline can keep.
+            A barcode set should stay reliable after sequencing errors. DotMatch
+            designs panels, checks nearest neighbors, and exports files a lab or
+            pipeline can use.
           </p>
         </div>
         <div className="panel-design-layout">
@@ -549,10 +548,9 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
   --metric hamming \\
   --out-dir panel_check`}</code></pre>
             <p>
-              The check records unique, ambiguous, unmatched, and invalid
-              outcomes. Exact error-sphere checks are supported through k=2.
-              Use a source Python install, or PyPI after the tagged release is
-              visible, for these panel commands.
+              The check shows whether one- or two-error correction could mix
+              samples. Use a source Python install, or PyPI after the tagged
+              release is visible, for these panel commands.
             </p>
             <div className="link-stack compact">
               <a href={panelDesignUrl}>Read panel design docs</a>
@@ -568,7 +566,7 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
             </article>
           ))}
         </div>
-        <div className="panel-check-grid" aria-label="Panel assignment-collision checks">
+        <div className="panel-check-grid" aria-label="Panel collision checks">
           {panelChecks.map(([name, detail]) => (
             <article key={name}>
               <span>{name}</span>
@@ -580,11 +578,10 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
 
       <section id="barcode-qc" className="section autopsy-section">
         <div className="section-heading">
-          <h2>Barcode-window inference before demultiplexing.</h2>
+          <h2>Find the barcode window before demultiplexing.</h2>
           <p>
-            DotMatch scans candidate starts, audits the barcode list, and
-            reports unmatched and ambiguous read classes before demultiplexing
-            decisions are treated as assay output.
+            DotMatch scans likely barcode positions, checks the barcode list, and
+            shows unmatched or ambiguous reads before you split the data.
           </p>
         </div>
         <div className="autopsy-layout">
@@ -597,10 +594,10 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
   --k-values 0,1 \\
   --out-dir autopsy`}</code></pre>
             <p>
-              One directory: report, window scan, correction-risk checks, top
-              unmatched, and provenance. Use a source Python install, or PyPI
-              after the tagged release is visible, for barcode troubleshooting
-              commands.
+              One directory contains the report, window scan, correction checks,
+              top unmatched sequences, and provenance. Use a source Python
+              install, or PyPI after the tagged release is visible, for barcode
+              troubleshooting commands.
             </p>
           </article>
           <div className="artifact-grid" aria-label="Barcode QC outputs">
@@ -624,18 +621,18 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
 
       <section className="section report-section">
         <div className="section-heading">
-          <h2>A report you can open during QC.</h2>
+          <h2>A QC report people can read.</h2>
           <p>
-            Open the HTML first. Keep the TSV and JSON files for the pipeline,
-            notebook, MultiQC page, or methods section.
+            Open the HTML report during review. Keep the TSV and JSON files for
+            the pipeline, notebook, MultiQC page, or methods section.
           </p>
         </div>
         <div className="report-preview" aria-label="DotMatch report outcome preview">
           <div className="report-copy">
-            <h3>Every read keeps a reason.</h3>
+            <h3>No silent guessing.</h3>
             <p>
-              Ambiguous rescue, wrong windows, invalid slices, and no-match
-              reads are separate. That makes the next decision clearer.
+              Ambiguous matches, wrong windows, invalid slices, and no-match reads
+              are separated so the next decision is obvious.
             </p>
           </div>
           <div className="report-table" role="table" aria-label="Assignment outcome meanings">
@@ -657,23 +654,22 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
 
       <section id="benchmarks" className="section proof-section">
         <div className="section-heading">
-          <h2>Benchmarks with explicit comparator semantics.</h2>
+          <h2>Benchmarks with the details included.</h2>
           <p>
             The repo includes public FASTQ examples, commands, raw tables,
-            generated graphs, and comparator notes. Hamming k2/k3 rows are
-            separated from GuideCounter claims, and GPU results are shown as an
-            experimental evidence lane with zero-mismatch gates, while CPU
-            indexed assignment remains the production baseline.
+            generated graphs, and notes on what each tool was asked to do. CPU
+            matching is the production baseline. GPU rows are experimental and
+            must match CPU output before speed matters.
           </p>
         </div>
         <div className="benchmark-reader-guide" aria-label="How to read DotMatch benchmarks">
           <article>
             <span>Compare like with like</span>
-            <p>Exact, Hamming k=1, Hamming k=2/k=3, and Levenshtein k=1 are separate lanes.</p>
+            <p>Exact matching, one-mismatch matching, deeper Hamming rescue, and one-edit rescue are reported separately.</p>
           </article>
           <article>
-            <span>Check the comparator</span>
-            <p>MAGeCK exact, guide-counter one-mismatch, Bowtie 1 Hamming, Cutadapt, Edlib, and hash baselines answer different questions.</p>
+            <span>Check the comparison</span>
+            <p>MAGeCK, guide-counter, Bowtie 1, Cutadapt, Edlib, and hash baselines are used only where their behavior matches the question.</p>
           </article>
           <article>
             <span>Treat GPU as experimental</span>
@@ -700,7 +696,7 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
               <span className="card-label">Evidence gallery</span>
               <h3>Clean runs. Suspicious runs. Same format.</h3>
               <p>
-                Public reports, autopsy HTML, findings tables, raw artifacts,
+                Public reports, troubleshooting HTML, findings tables, raw artifacts,
                 and the commands that made them.
               </p>
             </div>
@@ -713,15 +709,14 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
           <article className="benchmark-card">
             <div className="chart-copy">
               <span className="card-label">GuideCounter-compatible lane</span>
-              <h3>CRISPR guide counting with a compatibility bridge.</h3>
+              <h3>CRISPR guide counting with familiar output files.</h3>
               <p>
                 Repeated public rows compare DotMatch exact against MAGeCK
                 exact, DotMatch Hamming k=1 against guide-counter one-mismatch,
                 and DotMatch Levenshtein k=1 as its own indel-rescue lane. The
                 compatibility command writes <code>counts.txt</code>,{" "}
                 <code>extended-counts.txt</code>, and <code>stats.txt</code>{" "}
-                while keeping DotMatch's deterministic CPU assignment as the
-                authority.
+                for teams that already have GuideCounter-shaped downstream steps.
               </p>
             </div>
             <div className="link-stack compact">
@@ -739,7 +734,7 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
           <article className="benchmark-card">
             <div className="chart-copy">
               <span className="card-label">Candidate verification</span>
-              <h3>One-edit matching without scanning every guide.</h3>
+              <h3>One-edit matching without brute force.</h3>
               <p>
                 On the Yusa rows, one-edit Levenshtein checks about 2.8
                 candidate guides per read, not the whole 87,437-guide library.
@@ -756,7 +751,7 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
           <article className="benchmark-card">
             <div className="chart-copy">
               <span className="card-label">Memory profile</span>
-              <h3>CRISPR guide counting has low peak RSS.</h3>
+              <h3>CRISPR guide counting keeps memory low.</h3>
               <p>
                 In the repeated Yusa runs, DotMatch exact and Hamming lanes sit
                 around 28.7 MB peak memory.
@@ -765,7 +760,7 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
             <HorizontalBarChart
               rows={memoryRows}
               unit="MB"
-              axisLabel="Max peak RSS, lower is better"
+              axisLabel="Peak memory, lower is better"
               scale="linear"
             />
           </article>
@@ -773,10 +768,10 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
           <article className="benchmark-card">
             <div className="chart-copy">
               <span className="card-label">Count agreement</span>
-              <h3>Count agreement is benchmarked against scoped comparators.</h3>
+              <h3>Count agreement is checked against the right references.</h3>
               <p>
                 MAGeCK, guide-counter, exhaustive scan, and Edlib are used where
-                their semantics match the reported comparison.
+                their behavior matches the reported comparison.
               </p>
             </div>
             <AgreementChart rows={agreementRows} />
@@ -786,11 +781,10 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
 
       <section className="section decision-section" aria-label="DotMatch use guide">
         <div className="section-heading">
-          <h2>Use cases for short known-target assignment.</h2>
+          <h2>When DotMatch is the right tool.</h2>
           <p>
-            DotMatch is for FASTQ records plus a known target table, with exact,
-            rescued, ambiguous, unmatched, and invalid read classes reported
-            separately.
+            Use DotMatch when each read should be compared with a known list of
+            guides, barcodes, primers, features, or whitelist sequences.
           </p>
         </div>
         <div className="decision-grid">
@@ -805,7 +799,7 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
             </article>
           ))}
         </div>
-        <div className="translation-grid" aria-label="Biology translations for DotMatch terms">
+        <div className="translation-grid" aria-label="Plain-language glossary for DotMatch terms">
           {translations.map(([term, meaning]) => (
             <div key={term}>
               <span>{term}</span>
@@ -817,7 +811,7 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
 
       <section className="section example-section">
         <div className="section-heading">
-          <h2>One CRISPR run, from FASTQ to QC.</h2>
+          <h2>One CRISPR run, from FASTQ to counts.</h2>
           <p>
             Reads in. Guide library in. Counts and QC out. Use
             <code>guide-counter count</code> compatibility when existing
@@ -869,16 +863,16 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
             </p>
           </article>
           <article className="ambiguity-example">
-            <span className="card-label">Why ambiguity is explicit</span>
+            <span className="card-label">Why ambiguity matters</span>
             <pre><code>{`Read:    ACGTACGT
 Guide A: ACGTACGA   distance 1
 Guide B: ACGTACGC   distance 1
 
 Some tools may pick or double-count.
-DotMatch reports: ambiguous`}</code></pre>
+	DotMatch reports: ambiguous`}</code></pre>
             <p>
               Ambiguous reads are not counted into a guide or barcode. They stay
-              visible.
+              visible for review.
             </p>
           </article>
         </div>
@@ -886,13 +880,11 @@ DotMatch reports: ambiguous`}</code></pre>
 
       <section id="install" className="section launch-section">
         <div className="section-heading">
-          <h2>Install from Bioconda, or build the next release from source.</h2>
+          <h2>Install the stable package or try the release candidate.</h2>
           <p>
-            Bioconda has published DotMatch 0.1.4 and provides the `dotmatch`
-            command, Python imports/workflow namespaces, and C header/library
-            artifacts on platforms visible in repodata. Newer release features
-            in this branch should be installed from source until the matching
-            package version passes public channel smoke tests.
+            Bioconda currently publishes DotMatch 0.1.4. Newer features in this
+            branch should be installed from source until the matching package
+            version passes public channel smoke tests.
           </p>
         </div>
         <div className="launch-grid">
@@ -912,13 +904,13 @@ dotmatch dist ACGT AGGT`}</code></pre>
           </article>
 
           <article className="launch-card">
-            <span className="card-label">Pre-release checkout</span>
-            <h3>Use source installs for branch-only features.</h3>
+            <span className="card-label">Release candidate</span>
+            <h3>Use source installs for the newest workflows.</h3>
             <p>
               GuideCounter-compatible mode, new evidence reports, and release
-              candidate packaging should be treated as source-checkout features
-              until PyPI, Bioconda, container, and DOI checks verify the tagged
-              release.
+              candidate packaging require a source install until the tagged
+              release is verified across PyPI, Bioconda, containers, and DOI
+              metadata.
             </p>
             <div className="link-stack">
               <a href={packagingUrl}>Read package boundaries</a>
@@ -930,8 +922,8 @@ dotmatch dist ACGT AGGT`}</code></pre>
             <span className="card-label">Cite it</span>
             <h3>Cite the archived release.</h3>
             <p>
-              Zenodo DOI: <a href={doiUrl}>{doi}</a>. The methods note has short
-              text for CRISPR counting, Levenshtein rescue, and Hamming-only runs.
+              Zenodo DOI: <a href={doiUrl}>{doi}</a>. Use the citation file for
+              software metadata and the methods note for manuscript wording.
             </p>
             <div className="link-stack">
               <a href={doiUrl}>Open Zenodo DOI</a>
@@ -942,10 +934,10 @@ dotmatch dist ACGT AGGT`}</code></pre>
 
           <article className="launch-card">
             <span className="card-label">Benchmark evidence</span>
-            <h3>Use the report context when citing performance.</h3>
+            <h3>Cite performance with the benchmark context.</h3>
             <p>
-              The public CRISPR benchmark is a Yusa guide-counting example with
-              checked rows and validation notes.
+              The public CRISPR benchmark uses a Yusa guide-counting example with
+              checked rows, commands, and validation notes.
             </p>
             <div className="link-stack">
               <a href={publicCrisprUrl}>Public CRISPR benchmark report</a>
@@ -980,8 +972,8 @@ dotmatch dist ACGT AGGT`}</code></pre>
         <div className="section-heading">
           <h2>Where DotMatch fits.</h2>
           <p>
-            DotMatch is a small assignment tool. It works when the read window
-            and target sequences are known.
+            DotMatch is a focused FASTQ matching tool. It works when the read
+            window and expected sequences are known.
           </p>
         </div>
         <div className="scope-layout">
@@ -1030,9 +1022,9 @@ dotmatch dist ACGT AGGT`}</code></pre>
         <div className="workflow-copy">
           <h2>Command-line first.</h2>
           <p>
-            Native CLI commands cover fixed-window assignment and validation.
-            Python workflow installs add barcode autopsy, panel design, assay
-            specs, and HTML reports.
+            Native CLI commands cover fixed-window matching and validation.
+            Python workflow installs add barcode troubleshooting, panel design,
+            assay specs, and HTML reports.
           </p>
         </div>
         <div className="terminal" aria-label="DotMatch commands">
@@ -1051,10 +1043,10 @@ dotmatch dist ACGT AGGT`}</code></pre>
       </section>
 
       <section className="section final-cta">
-        <h2>Short-window assignment with explicit uncertainty.</h2>
+        <h2>Fast FASTQ matching with honest QC.</h2>
         <p>
-          Fixed-window FASTQ assignment with ambiguous, unmatched, and invalid
-          reads preserved in the output record.
+          Count guides, split barcodes, design panels, and keep ambiguous,
+          unmatched, and invalid reads visible in the output.
         </p>
         <a className="button primary" href="#benchmarks">
           Read Examples

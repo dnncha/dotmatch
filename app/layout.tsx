@@ -10,9 +10,9 @@ const socialImageAlt =
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: "DotMatch",
-  title: "DotMatch - Barcode Panels, Guide Counts, and Barcode QC",
+  title: "DotMatch - CRISPR Guide Counts and Barcode QC",
   description:
-    "DotMatch counts guides, checks barcode panels, and splits fixed-window barcode reads from FASTQ.",
+    "DotMatch counts CRISPR guides, splits barcode reads, designs barcode panels, and writes QC reports from FASTQ.",
   authors: [{ name: "DotMatch maintainers", url: "https://github.com/dnncha/dotmatch" }],
   creator: "DotMatch maintainers",
   publisher: "DotMatch",
@@ -29,12 +29,12 @@ export const metadata: Metadata = {
     "barcode panel design",
     "barcode troubleshooting",
     "edit distance",
-    "known-target assignment"
+    "FASTQ sequence matching"
   ],
   openGraph: {
-    title: "DotMatch - Barcode Panels, Guide Counts, and Barcode QC",
+    title: "DotMatch - CRISPR Guide Counts and Barcode QC",
     description:
-      "Guide counts, barcode checks, barcode splits, and QC reports for known short DNA targets.",
+      "Count guides, split barcodes, design panels, and review QC reports for known short DNA sequences.",
     type: "website",
     siteName: "DotMatch",
     locale: "en_US",
@@ -52,9 +52,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "DotMatch - Barcode Panels, Guide Counts, and Barcode QC",
+    title: "DotMatch - CRISPR Guide Counts and Barcode QC",
     description:
-      "Guide counts, barcode checks, barcode splits, and QC reports for known short DNA targets.",
+      "Count guides, split barcodes, design panels, and review QC reports for known short DNA sequences.",
     images: [
       {
         url: twitterImageUrl,
