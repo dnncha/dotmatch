@@ -6,7 +6,8 @@
   "conceptdoi": "10.5281/zenodo.20541628",
   "creators": [
     {
-      "name": "O'Toole, Donncha"
+      "name": "O'Toole, Donncha",
+      "affiliation": "Independent researcher"
     }
   ],
   "description": "DotMatch is a deterministic known-target short-DNA assignment engine for CRISPR guides, barcodes, primers, panels, and whitelist-style target sets.",
