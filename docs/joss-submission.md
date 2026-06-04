@@ -3,6 +3,8 @@
 This page tracks the short software-paper path for DotMatch. The draft lives in
 `paper/paper.md` with references in `paper/paper.bib`.
 
+Public tracking issue: <https://github.com/dnncha/dotmatch/issues/43>.
+
 ## Target
 
 Primary target: Journal of Open Source Software (JOSS).
