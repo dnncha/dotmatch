@@ -54,6 +54,7 @@ workbench
 
 schemas
 methods-and-citation
+joss-reviewer-guide
 joss-submission
 packaging
 release-process

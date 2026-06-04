@@ -4,6 +4,7 @@ This page tracks the short software-paper path for DotMatch. The draft lives in
 `paper/paper.md` with references in `paper/paper.bib`.
 
 Public tracking issue: <https://github.com/dnncha/dotmatch/issues/43>.
+Reviewer guide: [JOSS Reviewer Guide](joss-reviewer-guide.md).
 
 ## Target
 
@@ -82,6 +83,7 @@ Example usage | `README.md`, `examples/crispr_guides/`, `examples/workflows/`, a
 Functionality documentation | `README.md`, `docs/assayspec.md`, command help, and workflow docs
 Automated tests | `make test`, `make cli-test`, `make python-test`, `make python-package-test`, GitHub Actions `ci`
 Claim verification | `docs/scientific-claims.md`, `make assay-evidence-ready`, `make release-ready`
+Reviewer quick path | `docs/joss-reviewer-guide.md`
 Paper required sections | `make joss-paper-ready` checks metadata, sections, bibliography, DOI, and word count
 Paper PDF compilation | GitHub Actions `JOSS draft PDF` workflow builds `paper/paper.pdf`
 AI usage disclosure | `paper/paper.md#ai-usage-disclosure`
