@@ -6,6 +6,7 @@
 [![Bioconda platforms](https://img.shields.io/conda/pn/bioconda/dotmatch?label=platforms)](https://anaconda.org/bioconda/dotmatch)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Citation](https://img.shields.io/badge/cite-CITATION.cff-green.svg)](CITATION.cff)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20541629.svg)](https://doi.org/10.5281/zenodo.20541629)
 
 DotMatch is a command-line tool for a common sequencing job: you already know
 the short DNA sequences you expect, and you need to count or split reads by
@@ -541,6 +542,19 @@ If DotMatch is useful in your work, cite the software release using
 [CITATION.cff](CITATION.cff). Installed packages also expose
 `dotmatch citation` for a copyable release citation. Suggested methods text is
 provided in [docs/methods-and-citation.md](docs/methods-and-citation.md).
+A short JOSS software-paper draft is available in [paper/paper.md](paper/paper.md).
+
+```bibtex
+@software{dotmatch_zenodo_017,
+  author = {{O'Toole}, Donncha},
+  title = {{DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning}},
+  version = {0.1.7},
+  date = {2026-06-04},
+  publisher = {Zenodo},
+  doi = {10.5281/zenodo.20541629},
+  url = {https://doi.org/10.5281/zenodo.20541629}
+}
+```
 
 ## License
 

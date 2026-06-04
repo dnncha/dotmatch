@@ -54,6 +54,7 @@ workbench
 
 schemas
 methods-and-citation
+joss-submission
 packaging
 release-process
 ```

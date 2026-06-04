@@ -39,6 +39,7 @@ jobs:
           make repository-ready
           make release-ready
           make assay-evidence-ready
+          make joss-paper-ready
       - uses: actions/setup-node@v6
         if: runner.os == 'Linux'
         with:

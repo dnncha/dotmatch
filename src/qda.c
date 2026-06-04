@@ -154,10 +154,11 @@ static void help_manual(FILE *out, const char *argv0) {
 static void print_citation(FILE *out) {
     fprintf(out, "DotMatch citation\n");
     fprintf(out, "Software release: v%s\n", DOTMATCH_VERSION);
-    fprintf(out, "Preferred citation before DOI assignment:\n");
+    fprintf(out, "Preferred citation:\n");
     fprintf(out, "O'Toole D. DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning. Software release v%s. https://github.com/dnncha/dotmatch\n", DOTMATCH_VERSION);
     fprintf(out, "Citation metadata: CITATION.cff\n");
-    fprintf(out, "DOI: not yet assigned; add the Zenodo DOI after an immutable release archive is minted.\n");
+    fprintf(out, "DOI: 10.5281/zenodo.20541629\n");
+    fprintf(out, "DOI URL: https://doi.org/10.5281/zenodo.20541629\n");
 }
 
 static int help_requested(int argc, char **argv) {

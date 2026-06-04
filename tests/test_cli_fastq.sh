@@ -41,7 +41,8 @@ fi
 grep "Software release: v$EXPECTED_VERSION" "$TMPDIR/citation.txt" >/dev/null
 grep "O'Toole D. DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning. Software release v$EXPECTED_VERSION." "$TMPDIR/citation.txt" >/dev/null
 grep "Citation metadata: CITATION.cff" "$TMPDIR/citation.txt" >/dev/null
-grep "DOI: not yet assigned" "$TMPDIR/citation.txt" >/dev/null
+grep "DOI: 10.5281/zenodo.20541629" "$TMPDIR/citation.txt" >/dev/null
+grep "DOI URL: https://doi.org/10.5281/zenodo.20541629" "$TMPDIR/citation.txt" >/dev/null
 
 cat > "$TMPDIR/barcodes.tsv" <<'BARCODES'
 bc0	ACGT

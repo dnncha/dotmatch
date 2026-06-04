@@ -154,5 +154,5 @@ public publication has actually happened.
 ## Zenodo
 
 The repository includes `.zenodo.json` metadata for tagged software archives.
-Do not add a DOI to `CITATION.cff` until Zenodo has minted one for an immutable
-release archive.
+The v0.1.7 release is archived at Zenodo with version DOI
+`10.5281/zenodo.20541629` and concept DOI `10.5281/zenodo.20541628`.

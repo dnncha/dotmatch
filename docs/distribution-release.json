@@ -43,10 +43,10 @@
     {
       "id": "zenodo",
       "status": "blocked",
-      "expected_url": "https://zenodo.org/",
+      "expected_url": "https://zenodo.org/records/20541629",
       "verification_command": "make distribution-channels",
-      "blocker": "No immutable Zenodo DOI has been minted and added to CITATION.cff yet.",
-      "next_action": "Archive the tagged release on Zenodo, add the DOI to CITATION.cff and release metadata, then rerun make distribution-channels."
+      "blocker": "The v0.1.7 Zenodo DOI resolves, but the overall distribution record remains not_released until PyPI, Bioconda, GHCR, and BioContainers are also verified.",
+      "next_action": "Keep the v0.1.7 DOI in CITATION.cff and rerun make distribution-channels after the remaining public package channels are ready."
     }
   ],
   "blockers": [
