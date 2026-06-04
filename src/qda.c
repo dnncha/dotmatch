@@ -22,7 +22,7 @@
 #include <zlib.h>
 
 #ifndef DOTMATCH_VERSION
-#define DOTMATCH_VERSION "0.1.6"
+#define DOTMATCH_VERSION "0.1.7"
 #endif
 
 #define MAX_AUTO_OFFSET 1024

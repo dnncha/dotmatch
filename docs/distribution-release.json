@@ -1,16 +1,16 @@
 {
   "schema_version": 1,
   "status": "not_released",
-  "release_version": "0.1.6",
+  "release_version": "0.1.7",
   "post_release_gate": "make distribution-channels",
   "channels": [
     {
       "id": "pypi",
       "status": "prepared",
-      "expected_url": "https://pypi.org/project/dotmatch/0.1.6/",
+      "expected_url": "https://pypi.org/project/dotmatch/0.1.7/",
       "verification_command": "make distribution-channels",
-      "blocker": "The v0.1.6 release workflow built the source distribution, native macOS wheel, and repaired manylinux/musllinux wheels, but PyPI trusted publishing rejected the upload because PyPI has no publisher matching repo:dnncha/dotmatch:environment:pypi.",
-      "next_action": "Configure the PyPI dotmatch project trusted publisher for repository dnncha/dotmatch, workflow .github/workflows/release.yml, environment pypi, then rerun the failed PyPI publish job and make distribution-channels."
+      "blocker": "The v0.1.7 source distribution, native macOS wheel, and repaired manylinux/musllinux wheels have not been published to PyPI yet.",
+      "next_action": "Configure the PyPI dotmatch project trusted publisher for repository dnncha/dotmatch, workflow .github/workflows/release.yml, environment pypi, then publish the tagged source distribution, native macOS wheel, and repaired Linux wheels."
     },
     {
       "id": "bioconda",
@@ -21,24 +21,24 @@
       "recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/65901",
       "release_tarball_sha256": "4c265d3e741fd84b9d5096b4a1e47eacc44cb2949ec07da357f1833e3d0e84ae",
       "verification_command": "make distribution-channels",
-      "blocker": "The public Bioconda channel currently carries DotMatch 0.1.4 as the latest release. The v0.1.6 recipe update is submitted in bioconda/bioconda-recipes#65901, all Bioconda CI checks are green, and maintainer review/merge plus channel propagation are still pending.",
-      "next_action": "Wait for Bioconda maintainer review and merge of bioconda/bioconda-recipes#65901, then rerun make distribution-channels after channel propagation."
+      "blocker": "The public Bioconda channel currently carries DotMatch 0.1.4 as the latest release. The v0.1.6 recipe update is submitted in bioconda/bioconda-recipes#65901, all Bioconda CI checks are green, and maintainer review/merge plus channel propagation are still pending. No v0.1.7 recipe update has been submitted yet.",
+      "next_action": "Wait for Bioconda maintainer review and merge of bioconda/bioconda-recipes#65901 or submit a v0.1.7 recipe update after tagging, then rerun make distribution-channels after channel propagation."
     },
     {
       "id": "ghcr",
       "status": "prepared",
       "expected_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "The v0.1.6 container build job passed, but GHCR publication and runtime behavior have not been independently verified by make distribution-channels.",
-      "next_action": "Confirm the GHCR image label and runtime smoke tests with Docker or another OCI runtime, then rerun make distribution-channels."
+      "blocker": "The v0.1.7 GHCR image has not been published and independently verified by make distribution-channels yet.",
+      "next_action": "After the v0.1.7 tag workflow publishes the image, confirm the GHCR image label and runtime smoke tests with Docker or another OCI runtime, then rerun make distribution-channels."
     },
     {
       "id": "biocontainers",
       "status": "prepared",
       "expected_url": "https://quay.io/repository/biocontainers/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "The BioContainers image for version 0.1.6 is not available until the Bioconda package update is accepted.",
-      "next_action": "After Bioconda accepts 0.1.6, wait for BioContainers publication and rerun make distribution-channels."
+      "blocker": "The BioContainers image for version 0.1.7 is not available until the Bioconda package update is accepted.",
+      "next_action": "After Bioconda accepts a 0.1.7 package, wait for BioContainers publication and rerun make distribution-channels."
     },
     {
       "id": "zenodo",
@@ -50,7 +50,7 @@
     }
   ],
   "blockers": [
-    "DotMatch 0.1.6 has not been fully verified across PyPI, Bioconda, GHCR/BioContainers, and Zenodo."
+    "DotMatch 0.1.7 has not been fully verified across PyPI, Bioconda, GHCR/BioContainers, and Zenodo."
   ],
   "next_action": "Complete PyPI trusted-publisher setup, wait for Bioconda review/merge and BioContainers propagation, verify GHCR runtime behavior, mint the Zenodo DOI, replace expected URLs with verified public and evidence URLs, set channels to verified, and rerun make distribution-channels."
 }

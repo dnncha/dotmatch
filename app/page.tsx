@@ -423,7 +423,7 @@ export default function Home() {
         </div>
         <div className="hero-panel" aria-label="DotMatch benchmark summary">
           <div className="panel-topline">
-            <span>v0.1.5 release candidate</span>
+            <span>v0.1.7 release candidate</span>
             <span>known-target assignment</span>
           </div>
           <figure className="hero-visual">

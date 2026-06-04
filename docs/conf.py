@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 project = "DotMatch"
 author = "Donncha O'Toole"
 copyright = "2026, Donncha O'Toole"
-release = "0.1.6"
+release = "0.1.7"
 version = release
 
 extensions = [
