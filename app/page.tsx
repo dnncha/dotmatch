@@ -1,4 +1,6 @@
 const repoUrl = "https://github.com/dnncha/dotmatch";
+const doi = "10.5281/zenodo.20541629";
+const doiUrl = `https://doi.org/${doi}`;
 const citationUrl = `${repoUrl}/blob/main/CITATION.cff`;
 const methodsUrl = `${repoUrl}/blob/main/docs/methods-and-citation.md`;
 const packagingUrl = `${repoUrl}/blob/main/docs/packaging.md`;
@@ -926,12 +928,13 @@ dotmatch dist ACGT AGGT`}</code></pre>
 
           <article id="cite" className="launch-card">
             <span className="card-label">Cite it</span>
-            <h3>Cite the release.</h3>
+            <h3>Cite the archived release.</h3>
             <p>
-              The methods note has short text for CRISPR counting, Levenshtein
-              rescue, and Hamming-only runs.
+              Zenodo DOI: <a href={doiUrl}>{doi}</a>. The methods note has short
+              text for CRISPR counting, Levenshtein rescue, and Hamming-only runs.
             </p>
             <div className="link-stack">
+              <a href={doiUrl}>Open Zenodo DOI</a>
               <a href={citationUrl}>CITATION.cff</a>
               <a href={methodsUrl}>Methods and citation notes</a>
             </div>
