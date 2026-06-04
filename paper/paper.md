@@ -9,6 +9,7 @@ tags:
   - sequence analysis
 authors:
   - name: Donncha O'Toole
+    orcid: 0009-0003-5012-7229
     corresponding: true
     affiliation: 1
 affiliations:

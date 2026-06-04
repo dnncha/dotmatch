@@ -9,7 +9,7 @@ the submitting author rather than from repository automation.
 - Author name: `Donncha O'Toole`
 - Corresponding author: yes
 - Affiliation: `Independent researcher, Ireland`
-- ORCID: add one to `paper/paper.md` if it should appear in the submission.
+- ORCID: `0009-0003-5012-7229`
 - Email/contact: use the email associated with the JOSS submitter account.
 
 If the affiliation, ORCID, or author list changes, update `paper/paper.md` and

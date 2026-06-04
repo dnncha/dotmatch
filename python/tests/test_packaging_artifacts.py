@@ -81,7 +81,11 @@ def test_zenodo_metadata_tracks_minted_release_doi() -> None:
     assert metadata["license"] == "Apache-2.0"
     assert metadata["access_right"] == "open"
     assert metadata["creators"] == [
-        {"name": "O'Toole, Donncha", "affiliation": "Independent researcher"}
+        {
+            "name": "O'Toole, Donncha",
+            "orcid": "0009-0003-5012-7229",
+            "affiliation": "Independent researcher",
+        }
     ]
     assert "known-target assignment" in metadata["keywords"]
     assert metadata["doi"] == "10.5281/zenodo.20541629"
