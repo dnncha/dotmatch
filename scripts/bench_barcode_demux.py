@@ -117,6 +117,24 @@ def read_barcodes(path: Path) -> list[tuple[str, str]]:
     return rows
 
 
+def write_unique_barcode_table(rows: list[tuple[str, str]], out: Path) -> Path:
+    """Write a benchmark-local barcode table with stable unique IDs.
+
+    Some public sample sheets reuse labels such as "Blank" for different
+    barcode sequences. DotMatch intentionally requires unique output IDs, so
+    benchmark inputs normalize duplicate labels without changing sequences.
+    """
+    seen: dict[str, int] = {}
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with out.open("w", encoding="utf-8", newline="") as fh:
+        for name, seq in rows:
+            count = seen.get(name, 0) + 1
+            seen[name] = count
+            unique_name = name if count == 1 else f"{name}_{count}"
+            fh.write(f"{unique_name}\t{seq}\n")
+    return out
+
+
 def write_cutadapt_fasta(barcodes: Path, out: Path) -> None:
     with out.open("w") as fh:
         for name, seq in read_barcodes(barcodes):
@@ -328,6 +346,8 @@ def main() -> None:
 
     n_reads = count_fastq(reads)
     barcode_rows = read_barcodes(barcodes)
+    benchmark_barcodes = write_unique_barcode_table(barcode_rows, WORK / "barcodes.unique.tsv")
+    barcode_rows = read_barcodes(benchmark_barcodes)
     n_barcodes = len(barcode_rows)
     out_csv = Path(args.out)
     out_csv.parent.mkdir(parents=True, exist_ok=True)
@@ -340,7 +360,7 @@ def main() -> None:
         dotmatch_cmd = [
             str(ROOT / "dotmatch"),
             "demux",
-            "--barcodes", str(barcodes),
+            "--barcodes", str(benchmark_barcodes),
             "--reads", str(reads),
             "--barcode-start", str(args.barcode_start),
             "--barcode-length", barcode_length_arg,
@@ -373,7 +393,7 @@ def main() -> None:
             shutil.rmtree(cutadapt_out, ignore_errors=True)
             cutadapt_out.mkdir(parents=True, exist_ok=True)
             fasta = WORK / "cutadapt_barcodes.fasta"
-            write_cutadapt_fasta(barcodes, fasta)
+            write_cutadapt_fasta(benchmark_barcodes, fasta)
             error_rate = "0" if args.k == 0 else f"{(args.k / barcode_length_value):.8f}"
             cutadapt_cmd = [
                 "cutadapt",
@@ -414,7 +434,7 @@ def main() -> None:
             hash_cmd = [
                 "python3", "scripts/bench_barcode_demux.py",
                 "--reads", str(reads),
-                "--barcodes", str(barcodes),
+                "--barcodes", str(benchmark_barcodes),
                 "--barcode-start", str(args.barcode_start),
                 "--barcode-length", barcode_length_arg,
                 "--k", "0",

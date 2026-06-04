@@ -448,7 +448,7 @@ export default function Home() {
               <span>barcode and panel checks in the examples</span>
             </div>
             <div>
-              <strong>1.37M</strong>
+              <strong>2.4M</strong>
               <span>reads/s in the exact-prefix barcode example</span>
             </div>
             <div>

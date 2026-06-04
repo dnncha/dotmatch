@@ -15,61 +15,61 @@
 
 ![Native assignment throughput](native_assignment_throughput.svg)
 
-## Evidence Boundary
-
-These are native Edlib scan microbenchmarks for exact short-DNA assignment workloads, plus simple exact-hash and BK-tree baselines. The largest rows are useful for understanding algorithmic scaling against exhaustive scan, but they are not end-to-end workflow speed claims. Exact `k=0` lookup should be judged against hash-table baselines. For `k=1`, the indexed path is reported only when it has zero correctness disagreements against the exhaustive comparator. Levenshtein `k=2` has native hash-neighborhood pruning coverage for packed A/C/G/T windows up to 32 bases in this regenerated report; use only the recorded rows for `k=2` throughput statements, scoped to fixed-window short-DNA assignment.
-
-## Highest Observed Exhaustive-Scan Microbenchmark Speedups
+## Highest Observed Microbenchmark Speedups
 
 | n_targets | len | k | error_mode | err | reads_per_sec_dotmatch | reads_per_sec_edlib | verified_per_read | peak_rss_kb | speedup_vs_edlib_native |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 4096 | 16 | 0 | one_substitution | 0.030 | 6289306.30 | 387.70 | 0.00 | 10976 | 16222.10 |
-| 4096 | 16 | 0 | one_substitution | 0.010 | 6369425.50 | 395.40 | 0.00 | 7728 | 16212.08 |
-| 4096 | 16 | 0 | exact | 0.000 | 6211182.20 | 384.30 | 1.00 | 7488 | 16162.33 |
-| 4096 | 16 | 0 | one_substitution | 0.000 | 6289310.90 | 420.00 | 0.00 | 7728 | 15118.52 |
-| 4096 | 16 | 0 | one_substitution | 0.005 | 6369425.50 | 423.70 | 0.00 | 7728 | 15032.87 |
-| 4096 | 24 | 0 | exact | 0.000 | 4347826.00 | 365.20 | 1.00 | 13072 | 11378.76 |
-| 4096 | 24 | 0 | one_substitution | 0.000 | 4273505.80 | 386.00 | 0.00 | 13296 | 10778.07 |
-| 4096 | 24 | 0 | one_substitution | 0.005 | 4347826.00 | 423.40 | 0.00 | 14352 | 10180.98 |
-| 4096 | 24 | 0 | one_substitution | 0.010 | 4385965.10 | 437.20 | 0.00 | 14432 | 10031.94 |
-| 4096 | 24 | 0 | one_substitution | 0.030 | 4347826.00 | 437.80 | 0.00 | 14432 | 10018.19 |
-| 4096 | 32 | 0 | exact | 0.000 | 3344480.90 | 340.10 | 1.00 | 14560 | 9801.04 |
-| 4096 | 32 | 0 | one_substitution | 0.030 | 3344482.20 | 357.80 | 0.00 | 16336 | 9442.08 |
+| 4096 | 16 | 0 | one_substitution | 0.005 | 7874020.80 | 650.10 | 0.00 | 13680 | 18096.75 |
+| 4096 | 16 | 0 | one_substitution | 0.000 | 10526313.00 | 797.20 | 0.00 | 13680 | 14933.23 |
+| 4096 | 16 | 0 | exact | 0.000 | 11764696.90 | 828.70 | 1.00 | 10128 | 14196.57 |
+| 4096 | 16 | 0 | one_substitution | 0.010 | 11764696.90 | 852.00 | 0.00 | 13680 | 13972.73 |
+| 4096 | 16 | 0 | one_substitution | 0.030 | 11363640.00 | 855.90 | 0.00 | 13680 | 13276.83 |
+| 4096 | 24 | 0 | one_substitution | 0.010 | 7633590.70 | 640.00 | 0.00 | 22112 | 10698.80 |
+| 4096 | 32 | 0 | one_substitution | 0.000 | 6024097.00 | 613.70 | 0.00 | 23952 | 10445.26 |
+| 4096 | 24 | 0 | exact | 0.000 | 7194244.10 | 735.00 | 1.00 | 15280 | 10310.81 |
+| 4096 | 24 | 0 | one_substitution | 0.000 | 7407408.50 | 752.90 | 0.00 | 19040 | 10094.78 |
+| 4096 | 24 | 0 | one_substitution | 0.005 | 7812497.40 | 699.50 | 0.00 | 22112 | 10065.06 |
+| 4096 | 24 | 0 | one_substitution | 0.030 | 7462681.60 | 664.60 | 0.00 | 23152 | 9699.35 |
+| 4096 | 32 | 0 | exact | 0.000 | 6369430.20 | 695.70 | 1.00 | 23744 | 9394.78 |
 
 ## Median Speedup Summary
 
 | len | k | n_targets | error_mode | speedup_vs_edlib_native |
 | --- | --- | --- | --- | --- |
-| 16 | 0 | 4096 | exact | 16162.33 |
-| 16 | 0 | 4096 | one_substitution | 15365.43 |
-| 24 | 0 | 4096 | exact | 11378.76 |
-| 24 | 0 | 4096 | one_substitution | 10048.70 |
-| 32 | 0 | 4096 | exact | 9801.04 |
-| 32 | 0 | 4096 | one_substitution | 8133.79 |
-| 16 | 0 | 737 | exact | 3188.70 |
-| 16 | 0 | 737 | one_substitution | 2538.68 |
-| 24 | 0 | 737 | exact | 1872.99 |
-| 24 | 0 | 737 | one_substitution | 1852.02 |
-| 32 | 0 | 737 | exact | 1761.31 |
-| 32 | 0 | 737 | one_substitution | 1572.20 |
+| 16 | 0 | 4096 | one_substitution | 14452.98 |
+| 16 | 0 | 4096 | exact | 14196.57 |
+| 24 | 0 | 4096 | exact | 10310.81 |
+| 24 | 0 | 4096 | one_substitution | 10079.92 |
+| 32 | 0 | 4096 | exact | 9394.78 |
+| 32 | 0 | 4096 | one_substitution | 8284.86 |
+| 16 | 0 | 737 | exact | 3615.65 |
+| 16 | 0 | 737 | one_substitution | 2561.36 |
+| 24 | 0 | 737 | exact | 1975.52 |
+| 24 | 0 | 737 | one_substitution | 1848.80 |
+| 32 | 0 | 737 | exact | 1675.21 |
+| 32 | 0 | 737 | one_substitution | 1591.65 |
 
 ## Repeated-Run Statistics
 
 | tool | error_mode | n_targets | len | k | reads_per_sec_mean | reads_per_sec_p50 | reads_per_sec_p95 | reads_per_sec_cv | peak_rss_kb_max | mismatches_sum |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| dotmatch_indexed | exact | 96 | 16 | 0 | 10275655.60 | 10309286.50 | 10405936.87 | 0.02 | 1712 | 0 |
-| dotmatch_indexed | exact | 96 | 16 | 1 | 758549.83 | 761035.00 | 761035.00 | 0.01 | 1888 | 0 |
-| dotmatch_indexed | exact | 96 | 24 | 0 | 8074783.20 | 8695656.40 | 8764306.87 | 0.14 | 11936 | 0 |
-| dotmatch_indexed | exact | 96 | 24 | 1 | 353918.87 | 348432.10 | 371543.56 | 0.05 | 11968 | 0 |
-| dotmatch_indexed | exact | 96 | 32 | 0 | 5968578.10 | 6134970.80 | 6419948.06 | 0.10 | 14560 | 0 |
-| dotmatch_indexed | exact | 96 | 32 | 1 | 179151.83 | 189000.20 | 222565.97 | 0.29 | 14560 | 0 |
-| dotmatch_indexed | exact | 737 | 16 | 0 | 6714006.10 | 6756753.10 | 6840061.06 | 0.02 | 2704 | 0 |
-| dotmatch_indexed | exact | 737 | 16 | 1 | 483200.10 | 473484.80 | 502123.61 | 0.04 | 2800 | 0 |
-| dotmatch_indexed | exact | 737 | 24 | 0 | 4469156.17 | 4608294.50 | 4808656.64 | 0.10 | 12032 | 0 |
-| dotmatch_indexed | exact | 737 | 24 | 1 | 290842.07 | 303398.10 | 305400.96 | 0.08 | 12064 | 0 |
-| dotmatch_indexed | exact | 737 | 32 | 0 | 3645371.97 | 3663003.90 | 3663003.90 | 0.01 | 14560 | 0 |
-| dotmatch_indexed | exact | 737 | 32 | 1 | 178016.97 | 182681.80 | 184749.91 | 0.06 | 14560 | 0 |
-| dotmatch_indexed | exact | 4096 | 16 | 0 | 6224120.77 | 6211182.20 | 6246120.38 | 0.00 | 7488 | 0 |
-| dotmatch_indexed | exact | 4096 | 16 | 1 | 194791.67 | 175963.40 | 258173.72 | 0.33 | 11024 | 0 |
-| dotmatch_indexed | exact | 4096 | 24 | 0 | 4068141.47 | 4347826.00 | 4347826.00 | 0.12 | 13072 | 0 |
-| dotmatch_indexed | exact | 4096 | 24 | 1 | 201508.43 | 199481.30 | 206902.88 | 0.03 | 14432 | 0 |
+| dotmatch_indexed | exact | 96 | 16 | 0 | 15394023.83 | 12195133.00 | 21219516.25 | 0.38 | 1824 | 0 |
+| dotmatch_indexed | exact | 96 | 16 | 1 | 1119531.03 | 1414427.10 | 1463028.45 | 0.50 | 2016 | 0 |
+| dotmatch_indexed | exact | 96 | 24 | 0 | 14041685.13 | 14925363.20 | 15128892.35 | 0.12 | 14064 | 0 |
+| dotmatch_indexed | exact | 96 | 24 | 1 | 655481.13 | 645161.30 | 679690.43 | 0.04 | 14096 | 0 |
+| dotmatch_indexed | exact | 96 | 32 | 0 | 12736209.47 | 12499995.80 | 13412164.79 | 0.05 | 23344 | 0 |
+| dotmatch_indexed | exact | 96 | 32 | 1 | 394514.23 | 428632.70 | 451768.28 | 0.21 | 23344 | 0 |
+| dotmatch_indexed | exact | 737 | 16 | 0 | 9291860.43 | 9615386.70 | 11188814.67 | 0.24 | 3200 | 0 |
+| dotmatch_indexed | exact | 737 | 16 | 1 | 630874.47 | 664451.80 | 986690.59 | 0.65 | 3984 | 0 |
+| dotmatch_indexed | exact | 737 | 24 | 0 | 8314953.80 | 8333334.60 | 8525643.81 | 0.03 | 14208 | 0 |
+| dotmatch_indexed | exact | 737 | 24 | 1 | 528465.50 | 554939.00 | 573628.67 | 0.12 | 14208 | 0 |
+| dotmatch_indexed | exact | 737 | 32 | 0 | 6034443.80 | 6329117.00 | 7299573.59 | 0.26 | 23344 | 0 |
+| dotmatch_indexed | exact | 737 | 32 | 1 | 310177.47 | 340136.10 | 388344.33 | 0.33 | 23344 | 0 |
+| dotmatch_indexed | exact | 4096 | 16 | 0 | 10767109.50 | 11764696.90 | 11764696.90 | 0.16 | 10128 | 0 |
+| dotmatch_indexed | exact | 4096 | 16 | 1 | 454141.77 | 531349.70 | 554527.67 | 0.34 | 13680 | 0 |
+| dotmatch_indexed | exact | 4096 | 24 | 0 | 7383201.60 | 7194244.10 | 7750678.46 | 0.05 | 15280 | 0 |
+| dotmatch_indexed | exact | 4096 | 24 | 1 | 270206.53 | 331895.10 | 392470.95 | 0.62 | 23152 | 0 |
+
+## Evidence Boundary
+
+These are native Edlib scan microbenchmarks for exact short-DNA assignment workloads, plus simple exact-hash and BK-tree baselines. The largest rows are useful for understanding algorithmic scaling against exhaustive scan, but they are not end-to-end workflow speed claims. Exact `k=0` lookup should be judged against hash-table baselines. For `k=1`, the indexed path is reported only when it has zero correctness disagreements against the exhaustive comparator. Levenshtein `k=2` has native hash-neighborhood pruning coverage for packed A/C/G/T windows up to 32 bases in this regenerated report; use only the recorded rows for `k=2` throughput statements, scoped to fixed-window short-DNA assignment.

@@ -20,9 +20,9 @@ The benchmark script can also emit a simple `hash_splitter_exact` row. This is a
 
 | tool | workflow | semantics | repeats | reads | barcodes | k | metric | mean seconds | mean reads/sec | peak RSS KB | assigned | ambiguous | unmatched | verified/read | cv | exit |
 | --- | --- | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| cutadapt_demux | real_srp009896_inline_barcode | anchored_cutadapt_demux_no_indels | 5 | 100000 | 48 | 0 | hamming | 0.617890 | 162378.1 | 24640 | 658 |  | 99342 |  | 0.0638 | 0 |
-| dotmatch_demux | real_srp009896_inline_barcode | fixed_position_unique_ambiguous_nomatch | 5 | 100000 | 48 | 0 | hamming | 0.070503 | 1445795.6 | 5728 | 658 | 0 | 99342 | 0.0066 | 0.1430 | 0 |
-| hash_splitter_exact | real_srp009896_inline_barcode | longest_unique_exact_prefix_no_mismatch | 5 | 100000 | 48 | 0 | exact | 0.358435 | 281344.1 |  | 658 |  | 99342 |  | 0.1048 | 0 |
+| cutadapt_demux | real_srp009896_inline_barcode | anchored_cutadapt_demux_no_indels | 5 | 100000 | 48 | 0 | hamming | 0.432635 | 236536.9 | 19232 | 658 |  | 99342 |  | 0.1689 | 0 |
+| dotmatch_demux | real_srp009896_inline_barcode | fixed_position_unique_ambiguous_nomatch | 5 | 100000 | 48 | 0 | hamming | 0.041161 | 2459182.8 | 5808 | 658 | 0 | 99342 | 0.0066 | 0.1199 | 0 |
+| hash_splitter_exact | real_srp009896_inline_barcode | longest_unique_exact_prefix_no_mismatch | 5 | 100000 | 48 | 0 | exact | 0.187169 | 543476.3 |  | 658 |  | 99342 |  | 0.1444 | 0 |
 
 ## Comparison Evidence Gate
 
@@ -30,4 +30,4 @@ The benchmark script can also emit a simple `hash_splitter_exact` row. This is a
 
 Suggested real-data starting point: SRP009896 / SRR391079-SRR391082, a maize GBS dataset described in public Cutadapt demultiplexing examples as 5-prime inline barcode reads with 96 demultiplexed outputs. `scripts/fetch_srp009896_barcode_demo.py --use-public-example-barcodes` extracts the first-member barcode sheet from the public Google Drive example archive with a ranged request instead of downloading the full 7.4 GB ZIP, then filters rows to the requested accession when the run column is present.
 
-Important boundary: the SRP009896 barcode sheet contains variable-length barcodes (`4-8 bp`) and reused barcode sequences across run blocks. SRP009896 reads include a leading `N`, so the public-example benchmark should use `--barcode-start 1`, `--barcode-length auto`, and the exact-prefix `k=0` lane unless a separate fixed-length sheet is supplied.
+Important boundary: the SRP009896 barcode sheet contains variable-length barcodes (`4-8 bp`) and reused barcode sequences across run blocks. It also reuses labels such as `Blank` for distinct barcode sequences, so the benchmark writes a local barcode table with stable unique IDs before invoking tools that require unique output names. SRP009896 reads include a leading `N`, so the public-example benchmark should use `--barcode-start 1`, `--barcode-length auto`, and the exact-prefix `k=0` lane unless a separate fixed-length sheet is supplied.
