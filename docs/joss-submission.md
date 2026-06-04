@@ -25,8 +25,8 @@ Rationale:
 - Make sure the public README points to the paper once submitted or accepted.
 - Keep the Zenodo DOI badge and BibTeX block in the README aligned with the
   current archived release.
-- Run a JOSS PDF build with the Open Journals/Inara tool or the JOSS GitHub
-  Action.
+- Run the `JOSS draft PDF` GitHub Actions workflow and download its
+  `joss-paper` artifact.
 - Confirm `make joss-paper-ready`, `make citation-metadata-ready`, and
   `python3 -m pytest python/tests` pass after any paper-related metadata edits.
 
