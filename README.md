@@ -8,45 +8,43 @@
 [![Citation](https://img.shields.io/badge/cite-CITATION.cff-green.svg)](CITATION.cff)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20541629.svg)](https://doi.org/10.5281/zenodo.20541629)
 
-DotMatch is a command-line tool for a common sequencing job: you already know
-the short DNA sequences you expect, and you need to count or split reads by
-those sequences without hiding ambiguous cases.
+DotMatch counts CRISPR guides, splits inline barcodes, designs barcode panels,
+and writes QC reports from FASTQ. Use it when you already know the short DNA
+sequences you expect and need to see which reads matched, which did not, and
+which were ambiguous.
 
 It is built for CRISPR guide counting, inline barcode demultiplexing,
-fixed-window feature/barcode assignment, primer or adapter-prefix checks,
-amplicon-panel starts, whitelist-style assays, and barcode panel design for
-known-target assignment. It is not a genome aligner, a basecaller, a UMI entropy
-generator, or a replacement for downstream screen statistics.
+feature-barcode reads, primer or adapter-prefix checks, amplicon-panel starts,
+whitelist-style assays, and barcode panel design. It is not a genome aligner,
+basecaller, UMI tool, or downstream screen-analysis package.
 
 Package scope: the published Bioconda package installs the `dotmatch` command,
-Python imports/workflow namespaces, and C header/library artifacts. The
-Workbench desktop app is a separate local application and is not part of the
-Bioconda recipe. New release features are only described as available from a
-public package after the matching package version has passed the install smoke
-tests in [Packaging Notes](docs/packaging.md).
+Python imports, workflow namespaces, and C header/library artifacts. The
+Workbench desktop app is separate and is not part of the Bioconda recipe. New
+release features are only described as publicly available after the matching
+package version passes the install smoke tests in
+[Packaging Notes](docs/packaging.md).
 
 ![DotMatch workflow: FASTQ reads and a known target table are sliced at the same read position, assigned to known short DNA targets, and written to counts, split FASTQs, QC tables, and reports.](public/dotmatch-read-assignment.svg)
 
-## Assignment Model
+## How Matching Works
 
-DotMatch assigns short read windows against a known target table. Typical
-windows are a CRISPR guide segment, an inline sample barcode, a feature barcode,
-a primer prefix, or another fixed-position assay sequence. DotMatch extracts the
-configured slice, compares it with the target table under the selected edit
-model, and records the assignment state.
+DotMatch compares a short read window with a table of expected sequences. That
+window might be a CRISPR guide, an inline sample barcode, a feature barcode, a
+primer prefix, or another fixed-position assay sequence. DotMatch extracts the
+slice, checks it against the target table, and records the result.
 
 For each read, DotMatch reports one outcome:
 
 | Outcome | Meaning | Why it matters |
 | --- | --- | --- |
 | `unique` | exactly one target is compatible | counted or written to the matching FASTQ |
-| `ambiguous` | more than one target is compatible | kept out of forced assignments |
+| `ambiguous` | more than one target is compatible | kept out of forced calls |
 | `none` | no target is close enough | available for unmatched-read review |
 | `invalid` | the requested read window cannot be extracted | visible in QC instead of disappearing |
 
-Ambiguity is part of the output contract. If a read is compatible with multiple
-targets under the configured radius, DotMatch reports the ambiguous assignment
-instead of assigning it to an arbitrary target.
+Ambiguity is part of the output. If a read could belong to more than one target,
+DotMatch reports it as ambiguous instead of forcing a call.
 
 Typical outputs include count matrices or demultiplexed FASTQs, `sample_qc.tsv`,
 top-unmatched tables, target-library audit files, `summary.json`, and
@@ -54,10 +52,10 @@ self-contained HTML reports.
 
 ## Barcode Troubleshooting
 
-For barcode runs, DotMatch can inspect the common reasons reads fail assignment:
-wrong barcode position, wrong barcode length, duplicate barcodes, unsafe
-one-mismatch correction, ambiguous rescue, low-quality correction candidates,
-invalid read windows, and high-count unmatched sequences.
+For barcode runs, DotMatch can show why reads failed to demultiplex: wrong
+barcode position, wrong barcode length, duplicate barcodes, unsafe one-mismatch
+correction, ambiguous rescue, low-quality correction candidates, invalid read
+windows, and high-count unmatched sequences.
 
 ```bash
 dotmatch barcode autopsy \
@@ -72,16 +70,16 @@ Open `autopsy/report.html` first. The TSV and JSON files beside it are there for
 pipelines and lab handoff: `findings.tsv`, `offset_scan.tsv`,
 `correction_safety.tsv`, `top_unmatched.tsv`, and `provenance.json`.
 
-Speed is useful only after the assignment rules are clear. The checked barcode
-example documents the exact comparator settings in
+Speed is useful only when the matching rules are clear. The checked barcode
+example documents the comparison settings in
 [docs/benchmarks/barcode_demux](docs/benchmarks/barcode_demux/README.md).
 
 ## Barcode Panel Design
 
-DotMatch can design barcode panels and check assignment-collision risk under the
-same semantics used later by demux and counting. A designed panel includes a
-machine-checkable assignment report, per-target collision-risk rows, collision
-tables, ambiguous-variant examples, plate layout, lab exports, and a report.
+DotMatch can design barcode panels and check whether error correction could mix
+samples. A designed panel includes a machine-checkable report, per-target
+collision-risk rows, collision tables, ambiguous-variant examples, plate layout,
+lab exports, and an HTML report.
 
 ```bash
 dotmatch panel design \
@@ -108,11 +106,11 @@ dotmatch panel layout barcodes.tsv --plate 96 --out plate_layout.tsv
 dotmatch panel export barcodes.tsv --format illumina-samplesheet --out-dir sample_sheet_templates/
 ```
 
-The assignment report preserves DotMatch outcomes: `unique`, `ambiguous`, `none`, and
-`invalid`. It fails a configured correction radius if any query in that radius
-can map ambiguously or silently to the wrong barcode. The current exact
-report enumerates configured error spheres up to `k=2`; larger radii are
-refused rather than partially checked.
+The panel report uses the same outcomes as read matching: `unique`,
+`ambiguous`, `none`, and `invalid`. It fails a configured correction radius if
+any sequence in that radius can map ambiguously or silently to the wrong
+barcode. Exact checks enumerate configured error spheres up to `k=2`; larger
+radii are refused rather than partially checked.
 
 Outputs include `barcodes.tsv`, `design_report.json`, `design_trace.tsv`,
 `panel_check/panel_summary.json`, `target_safety.tsv`, `collision_pairs.tsv`,
@@ -127,23 +125,23 @@ gate in
 ## When To Use DotMatch
 
 DotMatch is a good fit when you have a table of expected short sequences and the
-biological question is "which known guide, barcode, primer, feature tag, or
-panel target did this read contain?"
+question is: which guide, barcode, primer, feature tag, or panel target did this
+read contain?
 
 Common uses include:
 
 - CRISPR pooled-screen guide counting with MAGeCK-compatible output;
 - fixed-position barcode demultiplexing from FASTQ/FASTQ.gz;
-- per-read assignment of 10x guide-capture or feature-barcode windows;
+- per-read matching of 10x guide-capture or feature-barcode windows;
 - primer-start, amplicon-panel, adapter-prefix, or whitelist-style assays;
 - designing, optimizing, checking, simulating, and exporting barcode panels;
 - target-library audits before allowing one-edit correction;
-- validating an indexed assignment run against an exhaustive scan or Edlib.
+- validating an indexed run against an exhaustive scan or Edlib.
 
 DotMatch is not a genome aligner or basecaller. It does not produce SAM/BAM,
-CIGAR strings, variant calls, cell/UMI quantification, UMI entropy designs,
-expression matrices, or screen-level hit-calling statistics. It works on
-extracted short windows and known target lists.
+CIGAR strings, variant calls, cell/UMI quantification, UMI designs, expression
+matrices, or screen-level hit-calling statistics. It works on extracted short
+windows and known target lists.
 
 ## Installation
 
@@ -195,10 +193,10 @@ metadata and install smoke tests.
 
 The release workflow builds and smoke-tests the source distribution, the native
 macOS wheel, and repaired Linux wheels. PyPI trusted publishing is configured
-for those artifacts. We will only describe PyPI wheel availability after the
+for those artifacts. PyPI wheel availability should only be described after the
 tagged release is visible on PyPI. For Linux wheels, the GitHub release workflow
-builds and smoke-tests repaired manylinux/musllinux wheel artifacts before any
-wheel is considered for PyPI.
+builds and smoke-tests repaired manylinux/musllinux artifacts before any wheel
+is considered for PyPI.
 
 Bioconda provides the `dotmatch` command-line tool, Python workflow namespaces,
 Python imports, and C header/library artifacts for the published package
@@ -216,8 +214,8 @@ barcode, spec, and output paths inside a user-selected local workspace. See
 
 ## Quick Example
 
-The core operation is many-read versus many-target assignment. Target files and
-read files can be simple TSVs with `id<TAB>sequence`.
+The core operation is many reads against many expected sequences. Target files
+and read files can be simple TSVs with `id<TAB>sequence`.
 
 ```bash
 cat > targets.tsv <<'EOF'
@@ -245,10 +243,10 @@ assign	r2	TTTT	-1		-1	none	0	-1
 ```
 
 `r0` is an exact match to `bc0`, but two other targets are also within the
-configured one-edit radius. DotMatch's default `radius` ambiguity policy
-therefore reports it as ambiguous instead of forcing an assignment. Use
-`--ambiguity-policy best` or Python `policy="best"` only when best-distance
-assignment is the intended compatibility mode.
+configured one-edit radius. DotMatch's default `radius` policy reports it as
+ambiguous instead of forcing a call. Use `--ambiguity-policy best` or Python
+`policy="best"` only when best-distance matching is the intended compatibility
+mode.
 
 ## CRISPR Guide Counting
 
@@ -277,7 +275,7 @@ EOF
 
 Use `--metric hamming` for one-mismatch/no-indel guide-counter-style counting;
 use `--ambiguity-policy best` when intentionally matching guide-counter's
-compatibility semantics.
+behavior.
 Use `--metric levenshtein --indel-window 1` when one-base insertions and
 deletions around the guide window should be considered. Ambiguous reads are not
 added to guide counts unless you explicitly request diagnostic reporting.
@@ -298,9 +296,8 @@ The reproducible DotMatch-vs-guide-counter comparison report is in
 ## GuideCounter-Compatible Counting
 
 DotMatch also has a GuideCounter-compatible command shape for labs that already
-have `guide-counter count` scripts. The wrapper delegates assignment to
-DotMatch's deterministic CPU count engine and rewrites the result into
-GuideCounter-style output files.
+have `guide-counter count` scripts. The wrapper uses DotMatch's CPU count engine
+and writes GuideCounter-style output files.
 
 ```bash
 dotmatch guide-counter count \
@@ -318,8 +315,8 @@ GuideCounter-style flags including `--input/-i`, `--samples/-s`,
 `--essential-genes/-e`, `--nonessential-genes/-n`, `--control-guides/-c`, and
 `--control-pattern/-C`.
 
-By default this mode uses GuideCounter-compatible counting semantics: Hamming
-matching, one mismatch, no indels, best-distance assignment, automatic
+By default this mode follows GuideCounter-compatible counting behavior: Hamming
+matching, one mismatch, no indels, best-distance matching, automatic
 multi-offset guide-window detection, `--offset-sample-size 100000`, and
 `--offset-min-fraction 0.0025`. Add `--exact-match` for exact-only counting.
 When `--samples` is omitted, sample labels are inferred from input FASTQ file
@@ -334,14 +331,13 @@ For `--output guide_counts`, the wrapper writes:
 - `guide_counts.stats.txt`: per-sample totals, mapped reads, mapped fraction,
   mean reads by guide class, and zero-read guide counts.
 
-This compatibility mode is an input/output and policy bridge. DotMatch
-assignment remains deterministic and CPU-authoritative. GPU benchmark rows and
-backend optimizer recommendations do not change which guide is counted.
+This compatibility mode is an input/output and policy bridge. GPU benchmark rows
+and backend optimizer recommendations do not change which guide is counted.
 
 ## General FASTQ Counting
 
-The lower-level `count` command works with arbitrary known targets and one or
-more FASTQ/FASTQ.gz inputs.
+The lower-level `count` command works with arbitrary expected sequences and one
+or more FASTQ/FASTQ.gz inputs.
 
 ```bash
 ./dotmatch count \
@@ -363,7 +359,7 @@ more FASTQ/FASTQ.gz inputs.
 
 The count table separates exact matches, one-substitution corrections,
 one-insertion corrections, one-deletion corrections, and other accepted
-corrections. `sample_qc.tsv` records assignment rate, rescue rate, ambiguous and
+corrections. `sample_qc.tsv` records match rate, rescue rate, ambiguous and
 unmatched fractions, target coverage, zero-count targets, Gini index, and the
 number of candidate targets checked after indexing.
 
@@ -372,7 +368,7 @@ Output schemas are documented in [Public Schemas](docs/schemas.md).
 ## Barcode Demultiplexing
 
 For fixed-position inline barcodes, `demux` writes one FASTQ per uniquely
-assigned barcode and can optionally retain ambiguous and unmatched reads.
+matched barcode and can optionally retain ambiguous and unmatched reads.
 
 ```bash
 ./dotmatch demux \
@@ -392,8 +388,8 @@ assigned barcode and can optionally retain ambiguous and unmatched reads.
 ```
 
 Use `--barcode-length auto` when the barcode sheet contains multiple lengths.
-Prefix-overlapping exact matches are reported as ambiguous rather than resolved
-by length.
+Prefix-overlapping exact matches are reported as ambiguous instead of being
+resolved by length.
 
 DotMatch also includes an early classic per-cycle BCL demultiplexing command for
 small RunInfo/SampleSheet/BCL workflows. CBCL and NovaSeq-style inputs are not
@@ -465,13 +461,13 @@ The historical `quickdna` Python package, `quickdna` console script, and `qda`
 native CLI target remain as compatibility aliases. New workflows should use
 `dotmatch`.
 
-## Matching Semantics
+## Matching Details
 
 DotMatch uses literal-byte DNA matching. `A`, `C`, `G`, `T`, `N`, and IUPAC
 ambiguity symbols are ordinary byte symbols; `N` and IUPAC codes are not
 expanded as wildcards.
 
-Supported assignment modes include:
+Supported matching modes include:
 
 - exact matching (`k=0`);
 - Hamming matching for fixed-length one-substitution workflows;
@@ -479,8 +475,8 @@ Supported assignment modes include:
 - fixed-window `k=2` Levenshtein correction with packed A/C/G/T hash-neighborhood
   pruning for windows up to 32 bases and exhaustive fallback for unsupported
   cases;
-- radius-safe ambiguity by default, with explicit `best` policy available for
-  best-target compatibility.
+- ambiguity-preserving matching by default, with explicit `best` policy available
+  for best-target compatibility.
 
 The public policy string reported by the C and Python APIs is:
 
@@ -503,7 +499,7 @@ make python-test
 make python-package-test
 ```
 
-Reports with data sources, commands, comparator settings, and checked outputs:
+Reports with data sources, commands, comparison settings, and checked outputs:
 
 - [Evidence gallery](docs/evidence-gallery/README.md)
 - [Benchmark overview](docs/benchmarks/README.md)
