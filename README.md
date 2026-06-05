@@ -1,6 +1,7 @@
 # DotMatch
 
 [![CI](https://github.com/dnncha/dotmatch/actions/workflows/ci.yml/badge.svg)](https://github.com/dnncha/dotmatch/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/dotmatch?label=pypi)](https://pypi.org/project/dotmatch/)
 [![Bioconda](https://img.shields.io/conda/vn/bioconda/dotmatch?label=bioconda)](https://anaconda.org/bioconda/dotmatch)
 [![Bioconda downloads](https://img.shields.io/conda/dn/bioconda/dotmatch?label=downloads)](https://anaconda.org/bioconda/dotmatch)
 [![Bioconda platforms](https://img.shields.io/conda/pn/bioconda/dotmatch?label=platforms)](https://anaconda.org/bioconda/dotmatch)
@@ -145,9 +146,18 @@ windows and known target lists.
 
 ## Installation
 
-DotMatch currently supports source builds and local Python package installs on
-Linux and macOS. You need a C compiler, `make`, Python 3.9 or newer for the
-Python package, and zlib for FASTQ.gz support.
+DotMatch is published on PyPI for Linux and macOS. The PyPI package includes the
+`dotmatch` command, Python imports, and the bundled native library.
+
+```bash
+python3 -m pip install dotmatch==0.1.7
+dotmatch --version
+dotmatch dist ACGT AGGT
+```
+
+Source builds are useful for development or for checking the native C target
+directly. You need a C compiler, `make`, Python 3.9 or newer for the Python
+package, and zlib for FASTQ.gz support.
 
 ```bash
 git clone https://github.com/dnncha/dotmatch.git
@@ -173,10 +183,11 @@ docker build -t dotmatch:dev .
 docker run --rm -v "$PWD:/work" dotmatch:dev dist ACGT AGGT
 ```
 
-Bioconda install for the published package on platforms visible in Bioconda
-repodata. The release recipe opts into `osx-arm64` builds for Apple Silicon,
-but only treat that platform as available for a release after Bioconda metadata
-and install smoke tests verify it:
+Bioconda currently publishes DotMatch 0.1.4 while the 0.1.7 recipe update is
+green and waiting for maintainer review. Use the pinned Bioconda command only
+when you specifically need the current Bioconda package. The 0.1.7 recipe opts
+into `osx-arm64` builds for Apple Silicon, but treat that platform as available
+only after Bioconda metadata and install smoke tests verify it:
 
 ```bash
 conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.4
@@ -191,12 +202,10 @@ in [Packaging Notes](docs/packaging.md), the
 available for a release after `make distribution-channels` verifies public
 metadata and install smoke tests.
 
-The release workflow builds and smoke-tests the source distribution, the native
-macOS wheel, and repaired Linux wheels. PyPI trusted publishing is configured
-for those artifacts. PyPI wheel availability should only be described after the
-tagged release is visible on PyPI. For Linux wheels, the GitHub release workflow
-builds and smoke-tests repaired manylinux/musllinux artifacts before any wheel
-is considered for PyPI.
+PyPI publishes the 0.1.7 source distribution, native macOS wheel, and repaired
+manylinux/musllinux Linux wheels. The release workflow builds and smoke-tests
+those artifacts through trusted publishing. Raw `linux_x86_64` wheels remain
+GitHub release artifacts only and are not uploaded to PyPI.
 
 Bioconda provides the `dotmatch` command-line tool, Python workflow namespaces,
 Python imports, and C header/library artifacts for the published package

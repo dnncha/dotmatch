@@ -7,10 +7,17 @@ adapter prefixes.
 
 ## Install
 
-For a published Bioconda release:
+For the current PyPI release:
 
 ```bash
-conda create -n dotmatch -c conda-forge -c bioconda dotmatch
+python3 -m pip install dotmatch==0.1.7
+dotmatch --version
+```
+
+For the currently published Bioconda package:
+
+```bash
+conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.4
 conda activate dotmatch
 dotmatch --version
 ```

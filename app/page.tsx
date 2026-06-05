@@ -16,6 +16,7 @@ const nextflowExampleUrl = `${repoUrl}/tree/main/examples/workflows/nextflow`;
 const nfcoreExampleUrl = `${repoUrl}/tree/main/examples/workflows/nf-core`;
 const initialBiocondaPrUrl = "https://github.com/bioconda/bioconda-recipes/pull/65367";
 const biocondaUrl = "https://anaconda.org/bioconda/dotmatch";
+const pypiUrl = "https://pypi.org/project/dotmatch/0.1.7/";
 
 const proof = [
   ["CRISPR screens", "guide counts", "Count guides from FASTQ and write MAGeCK-style tables."],
@@ -549,8 +550,8 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
   --out-dir panel_check`}</code></pre>
             <p>
               The check shows whether one- or two-error correction could mix
-              samples. Use a source Python install, or PyPI after the tagged
-              release is visible, for these panel commands.
+              samples. Install the current PyPI package for these panel
+              commands.
             </p>
             <div className="link-stack compact">
               <a href={panelDesignUrl}>Read panel design docs</a>
@@ -595,9 +596,8 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
   --out-dir autopsy`}</code></pre>
             <p>
               One directory contains the report, window scan, correction checks,
-              top unmatched sequences, and provenance. Use a source Python
-              install, or PyPI after the tagged release is visible, for barcode
-              troubleshooting commands.
+              top unmatched sequences, and provenance. Install the current PyPI
+              package for barcode troubleshooting commands.
             </p>
           </article>
           <div className="artifact-grid" aria-label="Barcode QC outputs">
@@ -881,14 +881,26 @@ Some tools may pick or double-count.
 
       <section id="install" className="section launch-section">
         <div className="section-heading">
-          <h2>Install the stable package or build the current release.</h2>
+          <h2>Install the current release.</h2>
           <p>
-            Bioconda currently publishes DotMatch 0.1.4. Newer features in this
-            branch should be installed from source until the matching package
-            version passes public channel smoke tests.
+            PyPI publishes DotMatch 0.1.7 with the command-line tool, Python
+            imports, and bundled native libraries. Bioconda is still on 0.1.4
+            while the 0.1.7 recipe waits for maintainer review.
           </p>
         </div>
         <div className="launch-grid">
+          <article className="launch-card">
+            <span className="card-label">Current PyPI release</span>
+            <h3>Install DotMatch 0.1.7.</h3>
+            <pre><code>{`python3 -m pip install dotmatch==0.1.7
+dotmatch --version
+dotmatch dist ACGT AGGT`}</code></pre>
+            <div className="link-stack">
+              <a href={pypiUrl}>Open PyPI package</a>
+              <a href={packagingUrl}>Packaging notes</a>
+            </div>
+          </article>
+
           <article className="launch-card">
             <span className="card-label">Published Bioconda package</span>
             <h3>Create a verified 0.1.4 env.</h3>
@@ -905,13 +917,12 @@ dotmatch dist ACGT AGGT`}</code></pre>
           </article>
 
           <article className="launch-card">
-            <span className="card-label">Release candidate</span>
-            <h3>Use source installs for the newest workflows.</h3>
+            <span className="card-label">Source checkout</span>
+            <h3>Build from source for development.</h3>
             <p>
-              GuideCounter-compatible mode, new evidence reports, and release
-              candidate packaging require a source install until the tagged
-              release is verified across PyPI, Bioconda, containers, and DOI
-              metadata.
+              Use a checkout when changing the native code, docs, benchmarks, or
+              local Workbench. Public installation should use PyPI unless you
+              specifically need the current Bioconda package.
             </p>
             <div className="link-stack">
               <a href={packagingUrl}>Read package boundaries</a>
