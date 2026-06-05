@@ -203,8 +203,10 @@ available for a release after `make distribution-channels` verifies public
 metadata and install smoke tests.
 
 PyPI publishes the 0.1.7 source distribution, native macOS wheel, and repaired
-manylinux/musllinux Linux wheels. The release workflow builds and smoke-tests
-those artifacts through trusted publishing. Raw `linux_x86_64` wheels remain
+manylinux/musllinux Linux wheels. PyPI trusted publishing is configured for the
+tagged release workflow. PyPI wheel availability is now visible on PyPI for
+0.1.7; the GitHub release workflow builds and smoke-tests repaired
+manylinux/musllinux wheels before upload. Raw `linux_x86_64` wheels remain
 GitHub release artifacts only and are not uploaded to PyPI.
 
 Bioconda provides the `dotmatch` command-line tool, Python workflow namespaces,

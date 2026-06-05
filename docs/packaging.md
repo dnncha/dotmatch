@@ -18,12 +18,7 @@ The same verifier also builds the sdist, confirms it contains `src/qdalign.c` an
 
 For PyPI, upload the sdist plus the native macOS wheel built on GitHub Actions. Linux binary wheels should go to PyPI only after they are built or repaired as manylinux/musllinux wheels. The release workflow builds repaired Linux wheel artifacts with cibuildwheel for `manylinux_x86_64` and `musllinux_x86_64`, smoke-tests `import dotmatch`, the installed console script, and `dotmatch dist ACGT AGGT`, and uploads them as GitHub release artifacts. Do not upload a raw `linux_x86_64` wheel to PyPI.
 
-DotMatch 0.1.7 is published on PyPI with the source distribution, the native
-macOS wheel, and repaired manylinux/musllinux Linux wheels. The release workflow
-uses PyPI trusted publishing from repository `dnncha/dotmatch`, workflow
-`.github/workflows/release.yml`, and environment `pypi`; if that publisher is
-missing or mismatched, the build artifacts are created but the publish job fails
-with `invalid-publisher`.
+DotMatch 0.1.7 is published on PyPI; the release workflow publishes the source distribution, the native macOS wheel, and repaired manylinux/musllinux Linux wheels. The release workflow uses PyPI trusted publishing from repository `dnncha/dotmatch`, workflow `.github/workflows/release.yml`, and environment `pypi`; if that publisher is missing or mismatched, the build artifacts are created but the publish job fails with `invalid-publisher`.
 Raw `linux_x86_64` wheels remain GitHub release artifacts only and are not uploaded to PyPI.
 `make citation-metadata-ready` also checks PyPI-facing `pyproject.toml`
 description, keywords, classifiers, and project URLs so the package page stays
