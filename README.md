@@ -470,7 +470,8 @@ expanded as wildcards.
 Supported matching modes include:
 
 - exact matching (`k=0`);
-- Hamming matching for fixed-length one-substitution workflows;
+- Hamming matching for fixed-length substitution-only workflows (`k=0..3` in
+  `count`; run exact target-library audit before production `k=2`/`k=3` use);
 - global Levenshtein matching for substitutions, insertions, and deletions;
 - fixed-window `k=2` Levenshtein correction with packed A/C/G/T hash-neighborhood
   pruning for windows up to 32 bases and exhaustive fallback for unsupported

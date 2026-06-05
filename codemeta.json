@@ -2,7 +2,7 @@
   "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
   "@type": "SoftwareSourceCode",
   "name": "DotMatch",
-  "description": "Fast exact short-DNA known-target assignment for CRISPR guides, barcodes, primers, panels, and whitelists.",
+  "description": "Deterministic short-DNA known-target matching and QC for CRISPR guides, barcodes, primers, panels, and whitelist-style target sets.",
   "applicationCategory": "Bioinformatics",
   "url": "https://github.com/dnncha/dotmatch",
   "codeRepository": "https://github.com/dnncha/dotmatch",

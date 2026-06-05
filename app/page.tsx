@@ -196,19 +196,19 @@ const reportPreviewRows = [
 ];
 
 const throughputRows = [
-  { label: "DotMatch exact k=0", value: 1143740, tone: "green" },
-  { label: "DotMatch Hamming k=1", value: 331494, tone: "green" },
-  { label: "guide-counter one mismatch", value: 194968, tone: "blue" },
-  { label: "MAGeCK exact count", value: 92761, tone: "gray" },
-  { label: "DotMatch Levenshtein k=1", value: 8836, tone: "green" }
+  { label: "DotMatch exact k=0", value: 887206.3, tone: "green" },
+  { label: "DotMatch Hamming k=1", value: 754902.5, tone: "green" },
+  { label: "guide-counter one mismatch", value: 184061.4, tone: "blue" },
+  { label: "MAGeCK exact count", value: 127848.7, tone: "gray" },
+  { label: "DotMatch Levenshtein k=1", value: 6635.0, tone: "green" }
 ] as const;
 
 const memoryRows = [
   { label: "guide-counter one mismatch", value: 528.7, tone: "blue" },
-  { label: "MAGeCK exact count", value: 158.9, tone: "gray" },
-  { label: "DotMatch exact k=0", value: 28.7, tone: "green" },
-  { label: "DotMatch Hamming k=1", value: 28.7, tone: "green" },
-  { label: "DotMatch Levenshtein k=1", value: 27.5, tone: "green" }
+  { label: "MAGeCK exact count", value: 152.9, tone: "gray" },
+  { label: "DotMatch exact k=0", value: 113.4, tone: "green" },
+  { label: "DotMatch Hamming k=1", value: 49.3, tone: "green" },
+  { label: "DotMatch Levenshtein k=1", value: 113.5, tone: "green" }
 ] as const;
 
 const candidateRows = [
@@ -242,7 +242,7 @@ const benchmarkFigures = [
     label: "Bowtie 1 comparison",
     image: `${basePath}/benchmarks/crispr_hamming_k23_comparison.svg`,
     alt: "Hamming k2 and k3 fixed-window CRISPR comparator graph comparing DotMatch with Bowtie 1",
-    body: "The k2 and k3 rows are reported separately from GuideCounter-style runs. Bowtie 1 is used here for same-strand fixed-window Hamming comparisons.",
+    body: "Hamming k2/k3 rows are separated from GuideCounter claims. Bowtie 1 is used here for same-strand fixed-window Hamming comparisons.",
     href: `${repoUrl}/blob/main/docs/benchmarks/crispr_comparison/README.md`
   },
   {
@@ -425,7 +425,7 @@ export default function Home() {
         </div>
         <div className="hero-panel" aria-label="DotMatch benchmark summary">
           <div className="panel-topline">
-            <span>v0.1.7 release candidate</span>
+            <span>v0.1.7 archived DOI</span>
             <span>FASTQ sequence matching</span>
           </div>
           <figure className="hero-visual">
@@ -658,8 +658,9 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
           <p>
             The repo includes public FASTQ examples, commands, raw tables,
             generated graphs, and notes on what each tool was asked to do. CPU
-            matching is the production baseline. GPU rows are experimental and
-            must match CPU output before speed matters.
+            indexed assignment remains the production baseline. GPU rows are an
+            experimental evidence lane and must match CPU output before speed
+            matters.
           </p>
         </div>
         <div className="benchmark-reader-guide" aria-label="How to read DotMatch benchmarks">
@@ -753,8 +754,8 @@ dotmatch panel check panel_96x16/barcodes.tsv \\
               <span className="card-label">Memory profile</span>
               <h3>CRISPR guide counting keeps memory low.</h3>
               <p>
-                In the repeated Yusa runs, DotMatch exact and Hamming lanes sit
-                around 28.7 MB peak memory.
+                In the repeated Yusa 100k rows, DotMatch Hamming sits around
+                49 MB peak memory; exact and Levenshtein sit around 113 MB.
               </p>
             </div>
             <HorizontalBarChart
@@ -880,7 +881,7 @@ Some tools may pick or double-count.
 
       <section id="install" className="section launch-section">
         <div className="section-heading">
-          <h2>Install the stable package or try the release candidate.</h2>
+          <h2>Install the stable package or build the current release.</h2>
           <p>
             Bioconda currently publishes DotMatch 0.1.4. Newer features in this
             branch should be installed from source until the matching package
