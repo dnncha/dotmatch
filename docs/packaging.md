@@ -30,14 +30,12 @@ assignment searches.
 Bioconda packages DotMatch from a recipe in `bioconda-recipes`; DotMatch does
 not upload a Conda package directly.
 [bioconda/bioconda-recipes#65367](https://github.com/bioconda/bioconda-recipes/pull/65367)
-published DotMatch 0.1.2 as the first Bioconda package. As of 2026-05-31,
-the latest verified public Bioconda package before the 0.1.7 release is 0.1.4.
-The 0.1.6 recipe update is submitted and green in
+published DotMatch 0.1.2 as the first Bioconda package. As of 2026-06-05,
+the latest verified public Bioconda package is 0.1.4.
+The 0.1.7 recipe update is submitted and green in
 [bioconda/bioconda-recipes#65901](https://github.com/bioconda/bioconda-recipes/pull/65901),
 with release tarball SHA256
-`4c265d3e741fd84b9d5096b4a1e47eacc44cb2949ec07da357f1833e3d0e84ae`.
-Submit a separate recipe update after tagging if 0.1.7 becomes the next
-Bioconda target.
+`eb68691651dc1c408aa0f94b2aff58ed6f9cf7f58a3b5ea4def0e4cd6c6279ac`.
 Treat future Bioconda versions as available only after
 `https://anaconda.org/bioconda/dotmatch`, repodata, and
 `make distribution-channels` all verify the release version and install smoke
