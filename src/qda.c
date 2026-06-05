@@ -1200,14 +1200,14 @@ static size_t next_pow2_local(size_t n) {
     return p < n ? n : p;
 }
 
-static size_t code_hash_local(uint64_t code, size_t len, size_t cap) {
+static inline size_t code_hash_local(uint64_t code, size_t len, size_t cap) {
     uint64_t x = code ^ ((uint64_t)len * 0x9e3779b97f4a7c15ULL);
     x *= 0x9e3779b97f4a7c15ULL;
     x ^= x >> 32;
     return (size_t)x & (cap - 1);
 }
 
-static size_t seed_hash_local(uint64_t code, size_t len, unsigned char seed_id, size_t cap) {
+static inline size_t seed_hash_local(uint64_t code, size_t len, unsigned char seed_id, size_t cap) {
     return code_hash_local(code ^ ((uint64_t)seed_id * 0x517cc1b727220a95ULL), len + seed_id * 37U, cap);
 }
 
@@ -1476,7 +1476,9 @@ static int build_hamming_lookup(const seq_table *targets, size_t target_len, ham
     }
 
     size_t exact_need = targets->count * 2 + 16;
-    size_t mismatch_need = targets->count * target_len * 4 + 16;
+    /* Tuned *3 (not *4) since exactly 3 mutations per position; smaller mismatch table
+       improves cache residency for hamming_lookup precompute k=1 guide/barcode counting. */
+    size_t mismatch_need = targets->count * target_len * 3 + 16;
     lookup->exact_cap = next_pow2_local(exact_need);
     lookup->mismatch_cap = next_pow2_local(mismatch_need);
     lookup->exact = alloc_hamming_table(lookup->exact_cap);
@@ -2775,17 +2777,26 @@ static void direct_hamming_visit_seed(const count_sample_job *job, unsigned char
     const hamming_lookup *lookup = job->hlookup;
     size_t seed_len = seed_id == 0 ? lookup->seed0_len : lookup->target_len - lookup->seed0_len;
     size_t slot = seed_hash_local(seed_code, seed_len, seed_id, lookup->seed_hash_cap);
-    for (int e = lookup->seed_heads[slot]; e >= 0; e = lookup->seeds[e].next) {
+    for (int e = lookup->seed_heads[slot]; e >= 0; ) {
+        int nexte = lookup->seeds[e].next;
         const hamming_seed_entry *entry = &lookup->seeds[e];
-        if (entry->seed_id != seed_id || entry->code != seed_code) continue;
+        if (entry->seed_id != seed_id || entry->code != seed_code) {
+            e = nexte;
+            continue;
+        }
         int target_index = entry->target_index;
-        if (target_index < 0) continue;
+        if (target_index < 0) {
+            e = nexte;
+            continue;
+        }
         job->stats->candidates_considered += 1;
         job->stats->candidates_verified += 1;
         if (hamming_code_distance_local(read_code, lookup->target_codes[target_index], lookup->target_len) > 1) {
+            e = nexte;
             continue;
         }
         direct_hamming_record_hit(target_index, 1, best_target, ambiguous);
+        e = nexte;
     }
 }
 

@@ -4,6 +4,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(__AVX2__)
+#include <immintrin.h>
+#elif defined(__aarch64__)
+#include <arm_neon.h>
+#endif
+
 typedef struct qdaln_hamming_seed_entry {
     uint64_t code;
     size_t target_index;
@@ -74,7 +80,7 @@ static size_t next_pow2_size(size_t n) {
     return x;
 }
 
-static size_t code_hash(uint64_t code, size_t len, size_t cap) {
+static inline size_t code_hash(uint64_t code, size_t len, size_t cap) {
     uint64_t x = code ^ ((uint64_t)len * 0x9e3779b97f4a7c15ULL);
     x ^= x >> 33;
     x *= 0xff51afd7ed558ccdULL;
@@ -82,7 +88,7 @@ static size_t code_hash(uint64_t code, size_t len, size_t cap) {
     return (size_t)x & (cap - 1);
 }
 
-static size_t hamming_seed_hash(uint64_t code, size_t seed_len, unsigned char seed_id, size_t cap) {
+static inline size_t hamming_seed_hash(uint64_t code, size_t seed_len, unsigned char seed_id, size_t cap) {
     return code_hash(code ^ ((uint64_t)seed_id * 0x517cc1b727220a95ULL),
                      seed_len + (size_t)seed_id * 37U, cap);
 }
@@ -150,12 +156,13 @@ static int popcount64_qd(uint64_t x) {
 
 static int code_hamming_distance_qd(uint64_t a, uint64_t b, size_t len) {
     uint64_t diff = a ^ b;
-    diff |= diff >> 1;
-    diff &= code_low_mask_qd(len);
-    diff &= 0x5555555555555555ULL;
+    diff |= (diff >> 1);
+    diff &= (code_low_mask_qd(len) & 0x5555555555555555ULL);
     return popcount64_qd(diff);
 }
 
+/* Optimized nonzero byte count for the 8-byte fast path (used by same_length hamming).
+   Keeps exact same semantics. */
 static int nonzero_bytes_u64(uint64_t x) {
     x |= x >> 4;
     x |= x >> 2;
@@ -164,7 +171,73 @@ static int nonzero_bytes_u64(uint64_t x) {
     return popcount64_qd(x);
 }
 
+/* SIMD-accelerated same-length Hamming (bytewise diff count) within k.
+   Uses 256-bit AVX2 on x86 (when __AVX2__ defined, e.g. -mavx2) or 128-bit NEON on AArch64.
+   Falls back to original 64-bit chunk + scalar for other/ tails.
+   Semantics identical to original: returns d if d<=k else -1, exact distances for tests/DP crosschecks. */
 static int same_length_hamming_distance_within_k(const char *a, const char *b, size_t len, int k) {
+#if defined(__AVX2__)
+    int d = 0;
+    size_t i = 0;
+    for (; i + 32 <= len; i += 32) {
+        __m256i va = _mm256_loadu_si256((const __m256i *)(a + i));
+        __m256i vb = _mm256_loadu_si256((const __m256i *)(b + i));
+        __m256i diff = _mm256_xor_si256(va, vb);
+        __m256i zero = _mm256_setzero_si256();
+        __m256i eq = _mm256_cmpeq_epi8(diff, zero); /* 0xff where bytes equal */
+        int eqmask = _mm256_movemask_epi8(eq);
+        unsigned eqm = (unsigned)eqmask & 0xFFFFFFFFU;
+        d += 32 - __builtin_popcount(eqm);
+        if (d > k) return -1;
+    }
+    /* 8-byte chunks for remainder before byte tail */
+    while (i + 8 <= len) {
+        uint64_t wa = 0;
+        uint64_t wb = 0;
+        memcpy(&wa, a + i, sizeof(wa));
+        memcpy(&wb, b + i, sizeof(wb));
+        uint64_t diff = wa ^ wb;
+        if (diff != 0) {
+            d += nonzero_bytes_u64(diff);
+            if (d > k) return -1;
+        }
+        i += 8;
+    }
+    for (; i < len; ++i) {
+        if (a[i] != b[i] && ++d > k) return -1;
+    }
+    return d;
+#elif defined(__aarch64__)
+    int d = 0;
+    size_t i = 0;
+    for (; i + 16 <= len; i += 16) {
+        uint8x16_t va = vld1q_u8((const uint8_t *)(a + i));
+        uint8x16_t vb = vld1q_u8((const uint8_t *)(b + i));
+        uint8x16_t diff = veorq_u8(va, vb);
+        uint8x16_t nz = vcgtq_u8(diff, vdupq_n_u8(0));
+        uint8x16_t one = vshrq_n_u8(nz, 7); /* 0 or 1 per byte lane */
+        d += (int)vaddvq_u8(one);
+        if (d > k) return -1;
+    }
+    /* 8-byte chunks for remainder */
+    while (i + 8 <= len) {
+        uint64_t wa = 0;
+        uint64_t wb = 0;
+        memcpy(&wa, a + i, sizeof(wa));
+        memcpy(&wb, b + i, sizeof(wb));
+        uint64_t diff = wa ^ wb;
+        if (diff != 0) {
+            d += nonzero_bytes_u64(diff);
+            if (d > k) return -1;
+        }
+        i += 8;
+    }
+    for (; i < len; ++i) {
+        if (a[i] != b[i] && ++d > k) return -1;
+    }
+    return d;
+#else
+    /* Scalar fallback (original impl) */
     int d = 0;
     size_t i = 0;
     while (i + sizeof(uint64_t) <= len) {
@@ -183,6 +256,7 @@ static int same_length_hamming_distance_within_k(const char *a, const char *b, s
         if (a[i] != b[i] && ++d > k) return -1;
     }
     return d;
+#endif
 }
 
 int qdaln_edit_distance_dp(const char *a, size_t a_len, const char *b, size_t b_len) {
@@ -796,10 +870,17 @@ static int index_visit_hamming_code_candidates(const qdaln_index *index, uint64_
                                                qdaln_match_result *result, int *best_tie_count,
                                                qdaln_index_stats *stats) {
     size_t slot = code_hash(code, len, index->hash_cap);
-    for (size_t j = index->hash_heads[slot]; j != SIZE_MAX; j = index->hash_next[j]) {
-        if (!index->encodable[j] || index->target_lens[j] != len || index->codes[j] != code) continue;
+    for (size_t j = index->hash_heads[slot]; j != SIZE_MAX; ) {
+        size_t nextj = index->hash_next[j];
+        if (!index->encodable[j] || index->target_lens[j] != len || index->codes[j] != code) {
+            j = nextj;
+            continue;
+        }
         if (seen != NULL) {
-            if (seen[j]) continue;
+            if (seen[j]) {
+                j = nextj;
+                continue;
+            }
             seen[j] = 1;
         }
         if (stats != NULL) {
@@ -807,6 +888,7 @@ static int index_visit_hamming_code_candidates(const qdaln_index *index, uint64_
             ++stats->candidates_verified;
         }
         index_update_verified(result, (int)j, distance, best_tie_count);
+        j = nextj;
     }
     return 0;
 }
@@ -1318,16 +1400,24 @@ static int index_visit_hamming_exact_seen_candidates(const qdaln_index *index, u
                                                      qdaln_match_result *result, int *best_tie_count,
                                                      qdaln_index_stats *stats) {
     size_t slot = code_hash(code, len, index->hash_cap);
-    for (size_t j = index->hash_heads[slot]; j != SIZE_MAX; j = index->hash_next[j]) {
-        if (!index->encodable[j] || index->target_lens[j] != len || index->codes[j] != code) continue;
+    for (size_t j = index->hash_heads[slot]; j != SIZE_MAX; ) {
+        size_t nextj = index->hash_next[j];
+        if (!index->encodable[j] || index->target_lens[j] != len || index->codes[j] != code) {
+            j = nextj;
+            continue;
+        }
         int seen_rc = candidate_seen_add(seen, j);
         if (seen_rc < 0) return -1;
-        if (seen_rc == 0) continue;
+        if (seen_rc == 0) {
+            j = nextj;
+            continue;
+        }
         if (stats != NULL) {
             ++stats->candidates_considered;
             ++stats->candidates_verified;
         }
         index_update_verified(result, (int)j, distance, best_tie_count);
+        j = nextj;
     }
     return 0;
 }
@@ -1339,21 +1429,30 @@ static int index_visit_hamming_seed_candidates(const qdaln_index *index, unsigne
                                                qdaln_index_stats *stats) {
     if (!index->hamming_seed_ready || index->hamming_seed_hash_cap == 0) return 0;
     size_t slot = hamming_seed_hash(seed_code, seed_len, seed_id, index->hamming_seed_hash_cap);
-    for (size_t e = index->hamming_seed_heads[slot]; e != SIZE_MAX; e = index->hamming_seeds[e].next) {
+    for (size_t e = index->hamming_seed_heads[slot]; e != SIZE_MAX; ) {
+        size_t nexte = index->hamming_seeds[e].next;
         const qdaln_hamming_seed_entry *entry = &index->hamming_seeds[e];
         size_t j = entry->target_index;
         if (entry->seed_id != seed_id || entry->seed_len != seed_len || entry->code != seed_code ||
             index->target_lens[j] != read_len) {
+            e = nexte;
             continue;
         }
         int seen_rc = candidate_seen_add(seen, j);
         if (seen_rc < 0) return -1;
-        if (seen_rc == 0) continue;
+        if (seen_rc == 0) {
+            e = nexte;
+            continue;
+        }
         if (stats != NULL) ++stats->candidates_considered;
         int d = code_hamming_distance_qd(read_code, index->codes[j], read_len);
         if (stats != NULL) ++stats->candidates_verified;
-        if (d > k) continue;
+        if (d > k) {
+            e = nexte;
+            continue;
+        }
         index_update_verified(result, (int)j, d, best_tie_count);
+        e = nexte;
     }
     return 0;
 }

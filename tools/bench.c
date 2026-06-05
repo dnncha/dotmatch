@@ -158,5 +158,60 @@ int main(void) {
             printf("\n");
         }
     }
+
+    /* Hamming-specific coverage for hot paths: same_length_hamming_distance_within_k (via leq/equal-len),
+       code_hamming_distance_qd + nonzero_bytes + seed hashing + index_visit_hamming_* (via index for k=1/2/3).
+       Used for guide counting at k=1,2,3 and barcodes. */
+    printf("hamming index/seed hotpaths (k=1,2,3; N=1024 targets, 20bp; exercises index hamming assign + code hamm + seeds)\n");
+    {
+        const size_t N = 1024;
+        const size_t L = 20;
+        const int hamm_ks[3] = {1,2,3};
+        const size_t n_queries = 100000;
+        char **targs = (char **)malloc(N * sizeof(char *));
+        size_t *tlens = (size_t *)malloc(N * sizeof(size_t));
+        char **reads = (char **)malloc(n_queries * sizeof(char *));
+        size_t *rlens = (size_t *)malloc(n_queries * sizeof(size_t));
+        if (!targs || !tlens || !reads || !rlens) { fprintf(stderr, "oom\n"); return 1; }
+        for (size_t i = 0; i < N; ++i) {
+            targs[i] = (char *)malloc(L + 1);
+            rand_seq(targs[i], L);
+            tlens[i] = L;
+        }
+        for (size_t i = 0; i < n_queries; ++i) {
+            reads[i] = (char *)malloc(L + 1);
+            /* mix exact, near, far */
+            if ((i % 3) == 0) {
+                size_t ti = (i / 3) % N;
+                memcpy(reads[i], targs[ti], L+1);
+            } else {
+                rand_seq(reads[i], L);
+                if ((i % 3) == 1) mutate_seq(reads[i], reads[i], L, 50); /* ~1 mut */
+            }
+            rlens[i] = L;
+        }
+        qdaln_index *idx = qdaln_index_build((const char *const *)targs, tlens, N);
+        if (!idx) { fprintf(stderr, "idx build fail\n"); return 1; }
+        for (size_t ki = 0; ki < 3; ++ki) {
+            int k = hamm_ks[ki];
+            qdaln_match_result *res = (qdaln_match_result *)malloc(n_queries * sizeof(qdaln_match_result));
+            qdaln_index_stats st = {0,0};
+            volatile int chksum = 0;
+            double t0 = seconds_now();
+            int rc = qdaln_index_assign_hamming_stats(idx, (const char *const *)reads, rlens, n_queries, k, res, &st);
+            double tel = seconds_now() - t0;
+            if (rc != 0) { fprintf(stderr, "assign fail k=%d\n", k); }
+            for (size_t q=0; q < n_queries; ++q) chksum += res[q].status;
+            double qps = (double)n_queries / tel;
+            printf("hamm_idx k=%d N=%zu Q=%zu q/s=%12.1f ns/q=%8.1f chksum=%d considered=%zu verified=%zu\n",
+                   k, N, n_queries, qps, 1e9/qps, chksum, st.candidates_considered, st.candidates_verified);
+            free(res);
+        }
+        qdaln_index_free(idx);
+        for (size_t i=0; i<N; ++i) free(targs[i]);
+        for (size_t i=0; i<n_queries; ++i) free(reads[i]);
+        free(targs); free(tlens); free(reads); free(rlens);
+    }
+    printf("\n");
     return 0;
 }
