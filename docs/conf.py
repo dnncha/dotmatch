@@ -20,7 +20,6 @@ exclude_patterns = [
     "_build",
     "Thumbs.db",
     ".DS_Store",
-    "superpowers/**",
 ]
 
 source_suffix = {

@@ -54,9 +54,6 @@ workbench
 
 schemas
 methods-and-citation
-joss-reviewer-guide
-joss-author-confirmation
-joss-submission
 packaging
 release-process
 ```
@@ -86,6 +83,7 @@ benchmarks/bcl_demux/README
 benchmarks/crispr_comparison/README
 benchmarks/feature_barcode/README
 benchmarks/gpu/README
+benchmarks/gpu/production_crispr_cpu_metal
 benchmarks/native/README
 benchmarks/oligo_adapter/README
 benchmarks/perturb_seq/README
