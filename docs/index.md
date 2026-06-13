@@ -1,5 +1,7 @@
 # DotMatch Documentation
 
+![Cinematic DotMatch workflow: sequencing reads flow through a precise known-target matching gate into count matrices, demultiplexed barcode lanes, QC panels, and visible ambiguity diagnostics.](_static/dotmatch-header-cinematic.png)
+
 DotMatch is a deterministic command-line and Python toolkit for known-target
 short-DNA assignment. It is designed for computational biologists and
 bioinformaticians who already have a table of expected sequences and need to

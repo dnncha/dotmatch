@@ -9,6 +9,8 @@
 [![Citation](https://img.shields.io/badge/cite-CITATION.cff-green.svg)](CITATION.cff)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20541629.svg)](https://doi.org/10.5281/zenodo.20541629)
 
+![Cinematic DotMatch workflow: sequencing reads flow through a precise known-target matching gate into count matrices, demultiplexed barcode lanes, QC panels, and visible ambiguity diagnostics.](public/dotmatch-header-cinematic.png)
+
 DotMatch counts CRISPR guides, splits inline barcodes, designs barcode panels,
 and writes QC reports from FASTQ. Use it when you already know the short DNA
 sequences you expect and need to see which reads matched, which did not, and
