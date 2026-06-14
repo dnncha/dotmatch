@@ -196,8 +196,9 @@ docker run --rm -v "$PWD:/work" dotmatch:dev dist ACGT AGGT
 Bioconda is the Conda-based bioinformatics install path. The checked-in recipe
 recipe update for DotMatch 0.1.8 is open in
 [bioconda/bioconda-recipes#66290](https://github.com/bioconda/bioconda-recipes/pull/66290);
-public Bioconda metadata may still show 0.1.7 until that PR merges and
-propagates. After propagation,
+that PR has passing Bioconda Lint, Linux, OSX-64, and ARM checks, but public
+Bioconda metadata may still show 0.1.7 until it is reviewed, merged, and
+propagated. After propagation,
 the package is expected on `linux-64`, `osx-64`, and `osx-arm64`, including
 Apple Silicon Macs:
 

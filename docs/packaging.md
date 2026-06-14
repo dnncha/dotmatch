@@ -42,6 +42,8 @@ Anaconda metadata lists DotMatch 0.1.7 as the latest Bioconda package on
 [bioconda/bioconda-recipes#66290](https://github.com/bioconda/bioconda-recipes/pull/66290),
 using immutable `v0.1.8` tarball SHA256
 `ec3819bc773431454910287559d0809aca6ec1d81959f29d3d522650edb74904`.
+The PR has passing Bioconda Lint, Linux, OSX-64, and ARM checks and is waiting
+for review/merge.
 Treat future Bioconda versions as available only after
 `https://anaconda.org/bioconda/dotmatch`, repodata, and the install smoke tests
 in `make distribution-channels` all verify the release version.
