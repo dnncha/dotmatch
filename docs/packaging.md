@@ -129,6 +129,27 @@ version, license, and authorship. The release workflow smoke-tests both CLI
 behavior and the `org.opencontainers.image.version` label before pushing tagged
 images to `ghcr.io/dnncha/dotmatch`.
 
+## BioContainers
+
+BioContainers images for DotMatch are generated from the accepted Bioconda
+recipe; there is no separate DotMatch Dockerfile to submit to BioContainers for
+the normal release path. After
+[bioconda/bioconda-recipes#66290](https://github.com/bioconda/bioconda-recipes/pull/66290)
+merges and the `dotmatch=0.1.8` package appears on Anaconda, wait for the
+corresponding `quay.io/biocontainers/dotmatch:0.1.8--<build>` tag to appear.
+Then verify it with:
+
+```bash
+python3 scripts/check_distribution_channels.py --version 0.1.8
+docker pull quay.io/biocontainers/dotmatch:0.1.8--<build>
+docker run --rm quay.io/biocontainers/dotmatch:0.1.8--<build> dotmatch dist ACGT AGGT
+docker run --rm quay.io/biocontainers/dotmatch:0.1.8--<build> dotmatch leq 1 ACGT AGGT
+```
+
+Do not publish a manual BioContainers image for DotMatch unless the Bioconda
+automation fails after the accepted recipe is visible in Anaconda metadata and
+the failure is documented in the release record.
+
 ## Post-Release Channel Verification
 
 The prepared channel state is recorded in `docs/distribution-release.json`.

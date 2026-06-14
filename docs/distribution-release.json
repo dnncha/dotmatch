@@ -41,8 +41,8 @@
       "status": "prepared",
       "expected_url": "https://quay.io/repository/biocontainers/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "The BioContainers image for version 0.1.8 is not available until the Bioconda package update is accepted.",
-      "next_action": "After Bioconda accepts a 0.1.8 package, wait for BioContainers publication and rerun make distribution-channels."
+      "blocker": "The BioContainers image for version 0.1.8 is generated from the accepted Bioconda recipe and is not available until the Bioconda package update is merged, uploaded to Anaconda, and converted into a quay.io/biocontainers/dotmatch tag.",
+      "next_action": "After Bioconda accepts a 0.1.8 package, wait for a quay.io/biocontainers/dotmatch:0.1.8--<build> tag and rerun make distribution-channels."
     },
     {
       "id": "zenodo",

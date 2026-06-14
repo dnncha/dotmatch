@@ -225,6 +225,11 @@ open until `make distribution-channels` verifies Bioconda, BioContainers, GHCR,
 and DOI evidence. Raw `linux_x86_64` wheels remain GitHub release artifacts only
 and are not uploaded to PyPI.
 
+BioContainers publication is expected through the Bioconda automation rather
+than a separate DotMatch container submission. After the Bioconda 0.1.8 recipe
+merges and Anaconda metadata updates, the expected image tag shape is
+`quay.io/biocontainers/dotmatch:0.1.8--<build>`.
+
 Bioconda provides the `dotmatch` command-line tool, Python workflow namespaces,
 Python imports, and C header/library artifacts for the published package
 version. The installed `dotmatch` console script exposes the native assignment
