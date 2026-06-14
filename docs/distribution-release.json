@@ -9,8 +9,10 @@
       "status": "prepared",
       "expected_url": "https://pypi.org/project/dotmatch/0.1.8/",
       "verification_command": "make distribution-channels",
-      "blocker": "PyPI has not yet been verified for the DotMatch 0.1.8 source distribution plus native macOS, manylinux, and musllinux repaired wheels.",
-      "next_action": "Publish the v0.1.8 tag so the release workflow can upload the source distribution and repaired wheels, then rerun make distribution-channels."
+      "public_url": "https://pypi.org/project/dotmatch/0.1.8/",
+      "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/27484079771",
+      "blocker": "PyPI publishes DotMatch 0.1.8 as a source distribution plus native macOS, manylinux, and musllinux repaired wheels, but the full distribution record remains not_released until Bioconda, BioContainers, GHCR runtime verification, and Zenodo evidence are all verified together.",
+      "next_action": "Rerun make distribution-channels after the remaining public channels are ready so the whole release record can be marked released."
     },
     {
       "id": "bioconda",
@@ -18,19 +20,21 @@
       "expected_url": "https://anaconda.org/bioconda/dotmatch",
       "latest_published_version": "0.1.7",
       "initial_recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/65367",
-      "recipe_pr_url": "",
-      "release_tarball_sha256": "",
+      "recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/66290",
+      "release_tarball_sha256": "ec3819bc773431454910287559d0809aca6ec1d81959f29d3d522650edb74904",
       "verification_command": "make distribution-channels",
-      "blocker": "The checked-in Bioconda recipe template is prepared for 0.1.8, but the upstream bioconda-recipes PR cannot be finalized until the immutable v0.1.8 tarball SHA256 is available.",
-      "next_action": "After publishing v0.1.8, compute the GitHub release tarball SHA256, open the bioconda-recipes update, wait for channel propagation, and rerun make distribution-channels."
+      "blocker": "The 0.1.8 Bioconda recipe PR is open, but public Anaconda metadata still lists 0.1.7 until the PR merges and propagates.",
+      "next_action": "Wait for bioconda/bioconda-recipes#66290 to pass CI and merge, then wait for channel propagation and rerun make distribution-channels."
     },
     {
       "id": "ghcr",
       "status": "prepared",
       "expected_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "The v0.1.8 GHCR image has not been published and independently verified by make distribution-channels yet.",
-      "next_action": "After the v0.1.8 tag workflow publishes the image, confirm the GHCR image label and runtime smoke tests with Docker or another OCI runtime, then rerun make distribution-channels."
+      "public_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
+      "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/27484079771",
+      "blocker": "The v0.1.8 GHCR image was published by the release workflow, but it has not yet been independently verified by make distribution-channels in the full post-release channel audit.",
+      "next_action": "Confirm the GHCR image label and runtime smoke tests with Docker or another OCI runtime, then rerun make distribution-channels."
     },
     {
       "id": "biocontainers",
@@ -50,7 +54,7 @@
     }
   ],
   "blockers": [
-    "DotMatch 0.1.8 has not yet been fully published and verified across PyPI, Bioconda, GHCR, BioContainers, and Zenodo."
+    "DotMatch 0.1.8 has not yet been fully verified across Bioconda, BioContainers, GHCR runtime smoke tests, and Zenodo."
   ],
-  "next_action": "Publish the v0.1.8 tag, complete the Bioconda handoff, verify PyPI/GHCR/BioContainers/Zenodo evidence, replace expected URLs with verified public and evidence URLs, set channels to verified when the full post-release gate passes, and rerun make distribution-channels."
+  "next_action": "Complete the Bioconda handoff in bioconda/bioconda-recipes#66290, verify GHCR runtime behavior, BioContainers propagation, and DOI evidence, replace expected URLs with verified public and evidence URLs, set channels to verified when the full post-release gate passes, and rerun make distribution-channels."
 }

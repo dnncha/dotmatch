@@ -18,8 +18,9 @@ The same verifier also builds the sdist, confirms it contains `src/qdalign.c` an
 
 For PyPI, upload the sdist plus the native macOS wheel built on GitHub Actions. Linux binary wheels should go to PyPI only after they are built or repaired as manylinux/musllinux wheels. The release workflow builds repaired Linux wheel artifacts with cibuildwheel for `manylinux_x86_64` and `musllinux_x86_64`, smoke-tests `import dotmatch`, the installed console script, and `dotmatch dist ACGT AGGT`, and uploads them as GitHub release artifacts. Do not upload a raw `linux_x86_64` wheel to PyPI.
 
-DotMatch 0.1.8 is prepared for PyPI publication; after the `v0.1.8` tag is
-published, the release workflow publishes the source distribution, the native macOS wheel, and repaired manylinux/musllinux Linux wheels. The release workflow
+DotMatch 0.1.8 is published on PyPI; the `v0.1.8` release workflow published
+the source distribution, the native macOS wheel, and repaired
+manylinux/musllinux Linux wheels. The release workflow
 uses PyPI trusted publishing from repository `dnncha/dotmatch`, workflow
 `.github/workflows/release.yml`, and environment `pypi`; if that publisher is
 missing or mismatched, the build artifacts are created but the publish job fails
@@ -35,18 +36,20 @@ assignment searches.
 Bioconda packages DotMatch from a recipe in `bioconda-recipes`; DotMatch does
 not upload a Conda package directly.
 [bioconda/bioconda-recipes#65367](https://github.com/bioconda/bioconda-recipes/pull/65367)
-published DotMatch 0.1.2 as the first Bioconda package. As of 2026-06-13,
+published DotMatch 0.1.2 as the first Bioconda package. As of 2026-06-14,
 Anaconda metadata lists DotMatch 0.1.7 as the latest Bioconda package on
-`linux-64`, `osx-64`, and `osx-arm64`. The 0.1.8 recipe template is prepared in
-this repository and should be copied to `bioconda-recipes` after the immutable
-`v0.1.8` tarball SHA256 is available.
+`linux-64`, `osx-64`, and `osx-arm64`. The 0.1.8 recipe update is open in
+[bioconda/bioconda-recipes#66290](https://github.com/bioconda/bioconda-recipes/pull/66290),
+using immutable `v0.1.8` tarball SHA256
+`ec3819bc773431454910287559d0809aca6ec1d81959f29d3d522650edb74904`.
 Treat future Bioconda versions as available only after
 `https://anaconda.org/bioconda/dotmatch`, repodata, and the install smoke tests
 in `make distribution-channels` all verify the release version.
 
 A release recipe template is kept under `packaging/bioconda/`. Before copying it
 to `bioconda-recipes`, replace `REPLACE_WITH_RELEASE_TARBALL_SHA256` with the
-SHA256 for the tagged GitHub release tarball. The checked-in
+SHA256 for the tagged GitHub release tarball. For 0.1.8 that SHA256 is
+`ec3819bc773431454910287559d0809aca6ec1d81959f29d3d522650edb74904`. The checked-in
 `docs/distribution-release.json` records the current channel state for the
 active Bioconda handoff. Run `make bioconda-recipe-ready` before that copy so the
 checked-in template stays aligned with the release version, native install

@@ -156,9 +156,8 @@ windows and known target lists.
 
 ## Installation
 
-DotMatch is prepared for PyPI publication on Linux and macOS. After the
-`v0.1.8` release workflow publishes, the PyPI package includes the `dotmatch`
-command, Python imports, and the bundled native library.
+DotMatch 0.1.8 is published on PyPI for Linux and macOS. The PyPI package
+includes the `dotmatch` command, Python imports, and the bundled native library.
 
 ```bash
 python3 -m pip install dotmatch==0.1.8
@@ -195,8 +194,10 @@ docker run --rm -v "$PWD:/work" dotmatch:dev dist ACGT AGGT
 ```
 
 Bioconda is the Conda-based bioinformatics install path. The checked-in recipe
-template is prepared for DotMatch 0.1.8; public Bioconda metadata may still show
-0.1.7 until the upstream recipe PR merges and propagates. After propagation,
+recipe update for DotMatch 0.1.8 is open in
+[bioconda/bioconda-recipes#66290](https://github.com/bioconda/bioconda-recipes/pull/66290);
+public Bioconda metadata may still show 0.1.7 until that PR merges and
+propagates. After propagation,
 the package is expected on `linux-64`, `osx-64`, and `osx-arm64`, including
 Apple Silicon Macs:
 
@@ -213,14 +214,14 @@ in [Packaging Notes](docs/packaging.md), the
 available for a release after `make distribution-channels` verifies public
 metadata and install smoke tests.
 
-The tagged release workflow publishes the 0.1.8 source distribution, native
+The tagged release workflow published the 0.1.8 source distribution, native
 macOS wheel, and repaired manylinux/musllinux Linux wheels. PyPI trusted
 publishing is configured for that workflow. The GitHub release workflow builds
-and smoke-tests repaired manylinux/musllinux wheels before upload. PyPI wheel
-availability should be treated as public only after the release files are
-visible on PyPI and `make distribution-channels` verifies the release. Raw
-`linux_x86_64` wheels remain GitHub release artifacts only and are not uploaded
-to PyPI.
+and smoke-tests repaired manylinux/musllinux wheels before upload. The 0.1.8
+release files are visible on PyPI; the full multi-channel release record remains
+open until `make distribution-channels` verifies Bioconda, BioContainers, GHCR,
+and DOI evidence. Raw `linux_x86_64` wheels remain GitHub release artifacts only
+and are not uploaded to PyPI.
 
 Bioconda provides the `dotmatch` command-line tool, Python workflow namespaces,
 Python imports, and C header/library artifacts for the published package
