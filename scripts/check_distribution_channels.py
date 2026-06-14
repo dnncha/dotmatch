@@ -23,6 +23,7 @@ from typing import Optional
 PYPI_URL = "https://pypi.org/pypi/dotmatch/{version}/json"
 BIOCONDA_URL = "https://api.anaconda.org/package/bioconda/dotmatch"
 GHCR_IMAGE = "ghcr.io/dnncha/dotmatch:v{version}"
+GHCR_TOKEN_URL = "https://ghcr.io/token?service=ghcr.io&scope=repository:{repository}:pull"
 BIOCONTAINERS_TAGS_URL = (
     "https://quay.io/api/v1/repository/biocontainers/dotmatch/tag/?onlyActiveTags=true&page={page}&limit=100"
 )
@@ -50,6 +51,32 @@ def fetch_json(url: str) -> dict:
     request = urllib.request.Request(url, headers={"User-Agent": "DotMatch distribution verifier"})
     with urllib.request.urlopen(request, timeout=30) as response:
         return json.loads(response.read().decode("utf-8"))
+
+
+def fetch_registry_manifest(image: str) -> tuple[dict, str]:
+    registry_repo, reference = image.rsplit(":", 1)
+    registry, repository = registry_repo.split("/", 1)
+    headers = {
+        "Accept": (
+            "application/vnd.oci.image.index.v1+json, "
+            "application/vnd.docker.distribution.manifest.list.v2+json, "
+            "application/vnd.oci.image.manifest.v1+json, "
+            "application/vnd.docker.distribution.manifest.v2+json"
+        ),
+        "User-Agent": "DotMatch distribution verifier",
+    }
+    if registry == "ghcr.io":
+        token_data = fetch_json(GHCR_TOKEN_URL.format(repository=repository))
+        token = str(token_data.get("token") or "")
+        if not token:
+            raise RuntimeError(f"GHCR did not return a pull token for {repository}")
+        headers["Authorization"] = f"Bearer {token}"
+
+    request = urllib.request.Request(f"https://{registry}/v2/{repository}/manifests/{reference}", headers=headers)
+    with urllib.request.urlopen(request, timeout=30) as response:
+        digest = str(response.headers.get("Docker-Content-Digest") or "")
+        data = json.loads(response.read().decode("utf-8"))
+    return data, digest
 
 
 def url_ok(url: str) -> bool:
@@ -157,6 +184,29 @@ def verify_ghcr_run(image: str, version: str) -> None:
     observed_distance = run_checked(["docker", "run", "--rm", image, "dist", "ACGT", "AGGT"], cwd=cwd, env=env)
     if observed_distance != "1":
         raise RuntimeError(f"docker image dist smoke test reported {observed_distance!r}, expected '1'")
+
+
+def verify_ghcr_manifest(image: str) -> str:
+    data, digest = fetch_registry_manifest(image)
+    if int(data.get("schemaVersion") or 0) != 2:
+        raise RuntimeError("GHCR manifest must use schemaVersion 2")
+    manifests = data.get("manifests") or []
+    if manifests:
+        linux_amd64 = [
+            item
+            for item in manifests
+            if isinstance(item, dict)
+            and isinstance(item.get("platform"), dict)
+            and item["platform"].get("os") == "linux"
+            and item["platform"].get("architecture") == "amd64"
+        ]
+        if not linux_amd64:
+            raise RuntimeError("GHCR manifest list must include linux/amd64")
+    if not digest:
+        digest = str(data.get("config", {}).get("digest") or "")
+    if not digest.startswith("sha256:"):
+        raise RuntimeError("GHCR manifest did not include a sha256 digest")
+    return digest
 
 
 def verify_bioconda_install(version: str) -> None:
@@ -355,24 +405,16 @@ def check_ghcr(version: str, result: AuditResult) -> None:
     channel = "ghcr"
     image = GHCR_IMAGE.format(version=version)
     try:
-        proc = subprocess.run(
-            ["docker", "manifest", "inspect", image],
-            check=False,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-    except FileNotFoundError:
-        result.failures.append(ChannelMessage(channel, "docker is required to verify the GHCR image manifest"))
+        digest = verify_ghcr_manifest(image)
+    except Exception as exc:
+        result.failures.append(ChannelMessage(channel, f"GHCR image tag {image} is not available: {exc}"))
         return
-    if proc.returncode != 0:
-        detail = (proc.stderr or "").strip() or (proc.stdout or "").strip()
-        suffix = f": {detail}" if detail else ""
-        result.failures.append(ChannelMessage(channel, f"GHCR image tag {image} is not available{suffix}"))
-        return
-    result.passed.append(ChannelMessage(channel, f"GHCR image tag is available: {image}"))
+    result.passed.append(ChannelMessage(channel, f"GHCR image tag is available: {image} ({digest})"))
     try:
         verify_ghcr_run(image, version)
+    except FileNotFoundError:
+        result.failures.append(ChannelMessage("ghcr-run", "docker is required to run GHCR image smoke tests"))
+        return
     except Exception as exc:
         result.failures.append(ChannelMessage("ghcr-run", f"GHCR image runtime smoke test failed for {image}: {exc}"))
         return
