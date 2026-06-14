@@ -124,6 +124,10 @@ def main() -> None:
                 "target_start": str(result.get("target_start", "23")),
                 "target_length": str(result.get("target_length", "19")),
                 "indel_window": str(result.get("indel_window", "1")),
+                "oracle_strategy": str(result.get("oracle_strategy", "")),
+                "edlib_alignments": str(result.get("edlib_alignments", "")),
+                "bounded_windows": str(result.get("bounded_windows", "")),
+                "fallback_windows": str(result.get("fallback_windows", "")),
             }
             row.update({f"stratum_{k}": str(v) for k, v in observed_strata.items()})
             rows.append(row)

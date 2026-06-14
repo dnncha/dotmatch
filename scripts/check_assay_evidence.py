@@ -18,6 +18,27 @@ REQUIRED_ASSAYS = [
     "oligo_adapter",
 ]
 VALID_STATUSES = {"supported", "gated", "smoke", "planned"}
+ASSAY_REQUIRED_CONTRACTS = {
+    "crispr_guide_counting": [
+        "benchmarks/raw/crispr_comparison_count_agreement_summary.csv",
+        "benchmarks/raw/crispr_comparison_hamming_k23_comparators.csv",
+        "DotMatch-vs-Bowtie 1 Hamming k=2/k=3",
+        "Hamming k=2 must clear >=8x vs Bowtie 1",
+        "Hamming k=3 must clear >=2x vs Bowtie 1",
+        "bounded Edlib",
+        "not universal CRISPR",
+    ],
+    "inline_barcode": [
+        "fixed 8 bp Hamming k=1",
+        "Hamming-radius splitter",
+        "real-data speed floors",
+        "k=0 must beat Cutadapt by >=5x",
+        "exact hash splitting by >=3x",
+        "fixed 8 bp Hamming k=1 must beat Cutadapt by >=5x",
+        "Hamming-radius splitter by >=12x",
+        "Levenshtein one-edit barcode lane remains synthetic fixture evidence",
+    ],
+}
 
 
 class AuditResult:
@@ -211,6 +232,10 @@ def check_assay_entries(root: Path, assays: list[dict], result: AuditResult) -> 
             _check_relative_path(root, "reports", str(value), result)
         for gate in gates:
             _check_gate(str(gate), make_targets, result)
+        contract_text = json.dumps(assay, sort_keys=True)
+        for fragment in ASSAY_REQUIRED_CONTRACTS.get(assay_id, []):
+            if fragment not in contract_text:
+                result.failures.append(f"{assay_id} must retain assay evidence contract fragment: {fragment}")
 
     if not any(
         marker in failure

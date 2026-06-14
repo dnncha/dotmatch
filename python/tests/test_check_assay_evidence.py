@@ -26,10 +26,12 @@ def _valid_manifest() -> dict:
                 "raw_artifacts": [
                     "benchmarks/raw/public_crispr_repeated.csv",
                     "benchmarks/raw/public_crispr_edlib_validation.csv",
+                    "benchmarks/raw/crispr_comparison_count_agreement_summary.csv",
+                    "benchmarks/raw/crispr_comparison_hamming_k23_comparators.csv",
                 ],
                 "reports": ["docs/benchmarks/public_crispr/README.md"],
                 "gates": ["make public-crispr-evidence-gate"],
-                "claim_boundary": "Public MAGeCK/Yusa rows only.",
+                "claim_boundary": "Public MAGeCK/Yusa rows only; not universal CRISPR superiority.",
                 "biological_unit": "per-read fixed-window guide assignment and per-sample guide counts",
                 "unsupported_claims": ["screen interpretation", "gene essentiality inference"],
                 "minimum_public_evidence": ["public FASTQ rows", "zero-mismatch assignment validation"],
@@ -37,8 +39,8 @@ def _valid_manifest() -> dict:
                     "make bench-public-crispr-repeated",
                     "make public-crispr-evidence-gate",
                 ],
-                "comparator_semantics": "MAGeCK exact-count agreement plus Edlib assignment validation.",
-                "validation": "Gate requires Edlib mismatches equal zero.",
+                "comparator_semantics": "MAGeCK exact-count agreement plus DotMatch-vs-Bowtie 1 Hamming k=2/k=3 rows and bounded Edlib assignment validation.",
+                "validation": "Gate requires bounded Edlib mismatches equal zero; Hamming k=2 must clear >=8x vs Bowtie 1 and Hamming k=3 must clear >=2x vs Bowtie 1. This is not universal CRISPR superiority evidence.",
             },
             {
                 "id": "inline_barcode",
@@ -47,14 +49,14 @@ def _valid_manifest() -> dict:
                 "raw_artifacts": ["benchmarks/raw/barcode_demux.csv"],
                 "reports": ["docs/benchmarks/barcode_demux/README.md"],
                 "gates": ["make barcode-comparison-gate"],
-                "claim_boundary": "Fixture rows cover workflow smoke evidence only.",
+                "claim_boundary": "Fixed 8 bp Hamming k=1 public lane plus exact-prefix public lane; Levenshtein one-edit barcode lane remains synthetic fixture evidence.",
                 "biological_unit": "per-read fixed-position barcode assignment",
                 "unsupported_claims": ["arbitrary adapter trimming", "BCL demultiplexing"],
-                "minimum_public_evidence": ["public barcode sheet", "exact-prefix comparator agreement"],
+                "minimum_public_evidence": ["public barcode sheet", "exact-prefix comparator agreement", "fixed 8 bp Hamming k=1 Hamming-radius splitter agreement"],
                 "next_public_evidence": "Add public barcode-sheet rows with comparator agreement.",
                 "commands": ["make bench-barcode-demux"],
-                "comparator_semantics": "Fixture rows record deterministic demux execution.",
-                "validation": "Smoke gate checks deterministic demux execution.",
+                "comparator_semantics": "Public exact-prefix lane plus fixed 8 bp Hamming k=1 lane with Hamming-radius splitter comparator.",
+                "validation": "Gate checks deterministic demux execution, Hamming-radius splitter agreement, and real-data speed floors: k=0 must beat Cutadapt by >=5x, exact hash splitting by >=3x, fixed 8 bp Hamming k=1 must beat Cutadapt by >=5x, and Hamming-radius splitter by >=12x.",
             },
             {
                 "id": "raw_bcl_demux",
@@ -161,6 +163,11 @@ def _write_assay_repo(root: Path, manifest=None) -> None:
             "dotmatch_hamming_k1,public_crispr_yusa,dotmatch count --targets guides.tsv,0\n"
         ),
         "benchmarks/raw/public_crispr_edlib_validation.csv": "sample,mismatches,checked_reads\nplasmid,0,100\n",
+        "benchmarks/raw/crispr_comparison_count_agreement_summary.csv": "comparison,status,total_delta,differing_guides\nexact,ok,0,0\n",
+        "benchmarks/raw/crispr_comparison_hamming_k23_comparators.csv": (
+            "dataset,k,comparison,status,n_targets,dotmatch_reads_per_sec,bowtie1_reads_per_sec,dotmatch_assigned_reads,bowtie1_assigned_reads\n"
+            "d,2,dotmatch_hamming_k2_vs_bowtie1,ok,50000,100,10,9,9\n"
+        ),
         "benchmarks/raw/barcode_demux.csv": (
             "tool,workflow,command,exit_code\n"
             "dotmatch_demux,real_public_inline_barcode,dotmatch demux --barcodes barcodes.tsv,0\n"
@@ -295,3 +302,21 @@ def test_assay_evidence_rejects_empty_raw_artifact(tmp_path):
     result = checker.audit(tmp_path)
 
     assert any("public_crispr_repeated.csv" in failure and "must contain at least one data row" in failure for failure in result.failures)
+
+
+def test_assay_evidence_rejects_missing_strong_contract_fragments(tmp_path):
+    checker = _load_checker()
+    manifest = _valid_manifest()
+    crispr = manifest["assays"][0]
+    crispr["raw_artifacts"] = [
+        artifact for artifact in crispr["raw_artifacts"]
+        if artifact != "benchmarks/raw/crispr_comparison_hamming_k23_comparators.csv"
+    ]
+    barcode = manifest["assays"][1]
+    barcode["validation"] = "Gate checks deterministic demux execution."
+    _write_assay_repo(tmp_path, manifest)
+
+    result = checker.audit(tmp_path)
+
+    assert any("crispr_guide_counting" in failure and "hamming_k23_comparators" in failure for failure in result.failures)
+    assert any("inline_barcode" in failure and "real-data speed floors" in failure for failure in result.failures)

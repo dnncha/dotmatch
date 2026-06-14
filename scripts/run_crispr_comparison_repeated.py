@@ -67,6 +67,7 @@ def expected_tools(args: argparse.Namespace) -> set[str]:
         tools.add("mageck_count_exact")
     if args.run_guide_counter:
         tools.add("guide_counter_one_mismatch")
+        tools.add("guide_counter_exact")
     return tools
 
 

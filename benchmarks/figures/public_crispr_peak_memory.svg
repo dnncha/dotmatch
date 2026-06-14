@@ -1,26 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1050" height="312" viewBox="0 0 1050 312">
+<svg xmlns="http://www.w3.org/2000/svg" width="1050" height="176" viewBox="0 0 1050 176">
 <style>text{font-family:Arial,sans-serif;font-size:13px}.title{font-size:18px;font-weight:700}.axis{fill:#444}.bar{fill:#a45f3f}</style>
 <text class="title" x="20" y="28">Public CRISPR peak RSS</text>
 <text class="axis" x="20" y="50">Measured per command with /usr/bin/time</text>
 <text x="20" y="93">dotmatch_exact_k0</text>
-<rect class="bar" x="310" y="78" width="67" height="20" rx="2"/>
-<text x="385" y="93">114448.00 KB</text>
-<text x="20" y="127">dotmatch_levenshtein_k1</text>
-<rect class="bar" x="310" y="112" width="69" height="20" rx="2"/>
-<text x="387" y="127">117168.00 KB</text>
+<rect class="bar" x="310" y="78" width="154" height="20" rx="2"/>
+<text x="472" y="93">120000.00 KB</text>
+<text x="20" y="127">guide_counter_exact</text>
+<rect class="bar" x="310" y="112" width="645" height="20" rx="2"/>
+<text x="963" y="127">500000.00 KB</text>
 <text x="20" y="161">dotmatch_hamming_k1</text>
-<rect class="bar" x="310" y="146" width="69" height="20" rx="2"/>
-<text x="387" y="161">118560.00 KB</text>
-<text x="20" y="195">mageck_count_exact</text>
-<rect class="bar" x="310" y="180" width="77" height="20" rx="2"/>
-<text x="395" y="195">130576.00 KB</text>
-<text x="20" y="229">guide_counter_one_mismatch</text>
-<rect class="bar" x="310" y="214" width="319" height="20" rx="2"/>
-<text x="637" y="229">541360.00 KB</text>
-<text x="20" y="263">external_competitors_ERR376998.fastq.gz</text>
-<rect class="bar" x="310" y="248" width="619" height="20" rx="2"/>
-<text x="937" y="263">1050160.00 KB</text>
-<text x="20" y="297">external_competitors_ERR376999.fastq.gz</text>
-<rect class="bar" x="310" y="282" width="645" height="20" rx="2"/>
-<text x="963" y="297">1093248.00 KB</text>
+<rect class="bar" x="310" y="146" width="141" height="20" rx="2"/>
+<text x="459" y="161">110000.00 KB</text>
 </svg>

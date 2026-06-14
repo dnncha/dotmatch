@@ -12,13 +12,21 @@ Python-enabled Bioconda recipe expose `dotmatch assay ...` through the standard
 ## Commands
 
 ```bash
-dotmatch assay init --template crispr --out assay.toml
-dotmatch assay infer --mode count --assay-type crispr --targets guides.csv --reads sample.fastq.gz --out assay.toml --report inference_report.json
+dotmatch assay new crispr --library guides.csv --reads-dir fastqs/ --out crispr_screen/
+dotmatch assay start assay.toml
 dotmatch assay check assay.toml
+dotmatch assay optimize assay.toml
 dotmatch assay plan assay.toml
 dotmatch assay run assay.toml
+dotmatch assay init --template crispr --out assay.toml
+dotmatch assay infer --mode count --assay-type crispr --targets guides.csv --reads sample.fastq.gz --out assay.toml --report inference_report.json
 dotmatch assay autopsy assay.toml --out-dir autopsy/
 ```
+
+`start` is the default production entrypoint: it runs `check`, then `run`, and
+prints the reliability verdict plus paths to `reliability_report.html` and
+`assay_fixes.tsv`. Exit codes follow the verdict: `0` for `passed`, `1` for
+`needs_review`, and `2` for `failed` or `blocked`.
 
 Templates are:
 
@@ -30,14 +38,23 @@ Templates are:
 - `oligo-adapter`
 - `pair-count`
 
-`plan` is a dry run: it prints deterministic native commands and does not create
-the output directory. The plan also lists the reliability artifacts that a run
-or check will write. `check` validates the spec and writes preflight reliability
+`optimize` reads the spec and writes a benchmark-informed CPU/GPU backend
+recommendation without changing the assignment authority. `plan` is a dry run:
+it prints deterministic native commands and does not create the output
+directory. The plan also lists the reliability artifacts that a run or check
+will write. `check` validates the spec and writes preflight reliability
 artifacts without running read assignment. `run` creates the output directory,
 writes generated files, runs target audit first, runs the compiled native
 workflow, and records command exit codes and warnings in `assay_manifest.json`.
 It also writes `assay_report.html` as the primary workflow report and
 `assay_manifest.summary.tsv` for workflow systems and MultiQC custom content.
+
+`new` scaffolds a reviewable project directory from a target or barcode table and
+a directory of FASTQ files. It stages inputs under `inputs/` and `reads/`,
+infers the extract window from the first sample, writes `assay.toml`,
+`inference_report.json`, `samples.generated.tsv`, `README.md`, and `run.sh`.
+Low-confidence inference writes `status = "draft"` until a scientist promotes
+the spec to `ready`.
 
 `infer` samples FASTQ reads, scores fixed-window candidates against the supplied
 target table, writes a candidate AssaySpec, and writes `inference_report.json`

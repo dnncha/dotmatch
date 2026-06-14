@@ -6,5 +6,8 @@ include README.md
 include pyproject.toml
 include setup.py
 include include/qdalign.h
+include include/qdmetal.h
 include src/qdalign.c
+include src/qdmetal_stub.c
+include src/qdmetal.mm
 include src/qda.c

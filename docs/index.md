@@ -18,9 +18,18 @@ windows and known target lists. That narrow scope is what makes its assignment
 contract easy to inspect: each read is reported as `unique`, `ambiguous`,
 `none`, or `invalid`.
 
+Evidence boundary: performance statements are scoped to the benchmark reports
+and readiness gates in [DotMatch Evidence Notes](scientific-claims.md).
+The strongest current evidence is native fixed-window indexed assignment,
+public CRISPR guide-counting comparisons, and checked public inline-barcode lanes;
+broader alignment, demultiplexing, screen-analysis, or BCL replacement claims
+need their own gates before they are public claims.
+
 ## Start Here
 
 - New users should begin with [Getting Started](getting-started.md).
+- Use [Command Reference](command-reference.md) when choosing the right
+  namespace or compatibility entrypoint.
 - CRISPR users can follow the [first-run CRISPR guide-counting tutorial](tutorials/crispr-count-first-run.md).
 - Labs evaluating scientific claims should read [Trust, Scope, and Evidence](trust-and-scope.md).
 - Workflow and pipeline authors should use the [public output schemas](schemas.md).
@@ -43,6 +52,7 @@ people and consumed by workflow systems.
 :caption: User Guide
 
 getting-started
+command-reference
 tutorials/crispr-count-first-run
 assayspec
 crispr-qc

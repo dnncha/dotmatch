@@ -143,3 +143,35 @@ def test_oligo_adapter_gate_rejects_public_rows_without_exact_agreement():
     gate.public_row_gate(rows, failures)
 
     assert any("exact-slice baseline" in failure for failure in failures)
+
+
+def test_oligo_adapter_report_gate_requires_boundary_text(tmp_path):
+    gate = _load_gate()
+    report = tmp_path / "README.md"
+    report.write_text("# Oligo\n\nAdapter benchmark.\n", encoding="utf-8")
+    failures = []
+
+    gate.report_gate(report, failures)
+
+    assert any("target-start 229" in failure for failure in failures)
+    assert any("not trimming correctness" in failure for failure in failures)
+    assert any("adapter-trimming workflows" in failure for failure in failures)
+
+
+def test_oligo_adapter_report_gate_accepts_boundary_text(tmp_path):
+    gate = _load_gate()
+    report = tmp_path / "README.md"
+    report.write_text(
+        "# Oligo\n\n"
+        "Fixed window: DotMatch uses `--target-start 229 --target-length 20` on R1.\n"
+        "The exact-slice hash baseline validates fixed-window assignment semantics, not trimming correctness.\n"
+        "These lanes verify fixed-window known-oligo/adapter assignment.\n"
+        "The public lane checks adapter-prefix assignment for the recorded R1 window.\n"
+        "Primer removal, UMI grouping, read merging, and adapter-trimming workflows need separate comparator records.\n",
+        encoding="utf-8",
+    )
+    failures = []
+
+    gate.report_gate(report, failures)
+
+    assert failures == []

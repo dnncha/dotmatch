@@ -164,3 +164,33 @@ def test_perturb_seq_public_gate_rejects_supported_single_guide_claim():
     gate.public_row_gate(rows, failures)
 
     assert any("single-guide" in failure and "gated" in failure for failure in failures)
+
+
+def test_perturb_seq_report_gate_requires_boundary_text(tmp_path):
+    gate = _load_gate()
+    report = tmp_path / "README.md"
+    report.write_text("# Perturb\n\nPublic row exists.\n", encoding="utf-8")
+    failures = []
+
+    gate.report_gate(report, failures)
+
+    assert any("single-guide" in failure for failure in failures)
+    assert any("multi-guide public target set" in failure for failure in failures)
+
+
+def test_perturb_seq_report_gate_accepts_boundary_text(tmp_path):
+    gate = _load_gate()
+    report = tmp_path / "README.md"
+    report.write_text(
+        "# Perturb\n\n"
+        "Current status: public single-guide guide-capture extraction evidence only.\n"
+        "The row is not useful multi-guide assignment and is not Cell Ranger cell/UMI quantification or perturbation effects.\n"
+        "Broader Perturb-seq comparisons require a multi-guide public target set, guide-per-cell calls, "
+        "and expression or perturbation-effect comparator output.\n",
+        encoding="utf-8",
+    )
+    failures = []
+
+    gate.report_gate(report, failures)
+
+    assert failures == []

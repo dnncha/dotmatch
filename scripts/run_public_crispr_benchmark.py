@@ -303,6 +303,7 @@ def main() -> None:
             "1",
             "--metric",
             "levenshtein",
+            *guide_counter_hamming_policy_args(),
             "--indel-window",
             "1",
             "--auto-offset",
@@ -394,6 +395,8 @@ def main() -> None:
         if guide_counter is None:
             rows.append(make_row("guide_counter_one_mismatch", "not_installed", workflow, "hamming_k1_no_indels_auto_offset",
                             n_reads, n_target_rows, 0.0, 127, 0, ["guide-counter", "count"]))
+            rows.append(make_row("guide_counter_exact", "not_installed", workflow, "exact_k0_no_errors",
+                            n_reads, n_target_rows, 0.0, 127, 0, ["guide-counter", "count"]))
         else:
             prefix = output / "guide_counter"
             cmd = [
@@ -416,6 +419,27 @@ def main() -> None:
             rows.append(make_row("guide_counter_one_mismatch", "0.1.3", workflow,
                             "hamming_k1_no_indels_auto_offset", n_reads, n_target_rows, seconds, rc, peak_rss_kb, cmd,
                             guide_counter_stats(output / "guide_counter.stats.txt")))
+
+            exact_prefix = output / "guide_counter_exact"
+            exact_cmd = [
+                guide_counter,
+                "count",
+                "--input",
+                str(reads[0]),
+                str(reads[1]),
+                "--samples",
+                "plasmid",
+                "ESC1",
+                "--library",
+                str(data / "yusa_library.csv"),
+                "--output",
+                str(exact_prefix),
+                "--exact-match",
+            ]
+            seconds, rc, peak_rss_kb = run(exact_cmd, cwd=output)
+            rows.append(make_row("guide_counter_exact", "0.1.3", workflow,
+                            "exact_k0_no_errors", n_reads, n_target_rows, seconds, rc, peak_rss_kb, exact_cmd,
+                            guide_counter_stats(output / "guide_counter_exact.stats.txt")))
 
     if args.run_cutadapt or args.run_bowtie2:
         tmp_targets = output / "targets.tsv"

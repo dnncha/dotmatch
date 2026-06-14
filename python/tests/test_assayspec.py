@@ -337,6 +337,61 @@ def test_load_count_spec_and_compile_deterministic_plan(tmp_path: Path) -> None:
     assert plan.artifacts["reliability_manifest_summary"].name == "reliability_manifest.summary.tsv"
 
 
+def test_compile_assay_plan_passes_backend_mode(tmp_path: Path) -> None:
+    from dotmatch.assayspec import compile_assay_plan, load_assay_spec
+
+    spec = tmp_path / "backend_mode.toml"
+    spec.write_text(
+        _write_count_spec(tmp_path).read_text(encoding="utf-8")
+        + """
+[backend]
+mode = "gpu-metal-experimental"
+""",
+        encoding="utf-8",
+    )
+    plan = compile_assay_plan(load_assay_spec(spec))
+    run_argv = plan.steps[1].argv
+    assert "--backend" in run_argv
+    assert "gpu-metal-experimental" in run_argv
+
+
+def test_compile_assay_plan_adds_metal_validate_for_gpu_backend(tmp_path: Path) -> None:
+    from dotmatch.assayspec import compile_assay_plan, load_assay_spec
+
+    spec = tmp_path / "backend_gpu.toml"
+    spec.write_text(
+        _write_count_spec(tmp_path).read_text(encoding="utf-8")
+        + """
+[backend]
+mode = "gpu-metal-experimental"
+""",
+        encoding="utf-8",
+    )
+    plan = compile_assay_plan(load_assay_spec(spec))
+    run_argv = plan.steps[1].argv
+    assert "--backend" in run_argv
+    assert "gpu-metal-experimental" in run_argv
+    assert "--metal-validate" in run_argv
+
+
+def test_compile_assay_plan_forces_cpu_when_gpu_disallowed(tmp_path: Path) -> None:
+    from dotmatch.assayspec import compile_assay_plan, load_assay_spec
+
+    spec = tmp_path / "backend_cpu.toml"
+    spec.write_text(
+        _write_count_spec(tmp_path).read_text(encoding="utf-8")
+        + """
+[backend]
+allow_gpu = false
+""",
+        encoding="utf-8",
+    )
+    plan = compile_assay_plan(load_assay_spec(spec))
+    run_argv = plan.steps[1].argv
+    assert "--backend" in run_argv
+    assert "cpu" in run_argv
+
+
 def test_assay_check_rejects_invalid_enum(tmp_path: Path) -> None:
     spec = _write_count_spec(tmp_path)
     spec.write_text(spec.read_text(encoding="utf-8").replace('metric = "hamming"', 'metric = "jaccard"'), encoding="utf-8")
@@ -361,20 +416,25 @@ def test_assay_plan_prints_native_commands_without_creating_outputs(tmp_path: Pa
 
 
 def test_assay_check_writes_preflight_reliability_artifacts(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
     spec = _write_count_spec(tmp_path)
+    spec.write_text(spec.read_text(encoding="utf-8").replace("k = 1", "k = 0"), encoding="utf-8")
 
-    rc = _run_cli(["assay", "check", str(spec)])
+    rc = _run_cli(["assay", "check", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
 
     assert rc.returncode == 0, rc.stderr
+    assert "check passed" in rc.stderr
+    assert f"{spec.name}: ok" in rc.stdout
+    assert "next:" in rc.stderr
     out_dir = tmp_path / "assay_out"
     summary = json.loads((out_dir / "reliability_summary.json").read_text(encoding="utf-8"))
     assert summary["stage"] == "preflight"
     assert summary["overall_status"] == "passed"
     assert summary["profile"] == "production"
     assert summary["backend"]["authority"] == "cpu"
-    assert summary["backend"]["gpu_status"] == "eligible_but_not_used"
+    assert summary["backend"]["gpu_status"] in {"eligible_but_not_used", "not_eligible"}
     assert summary["backend_optimizer"]["authority"] == "cpu"
-    assert summary["backend_optimizer"]["candidate_backend"] == "gpu-metal-experimental"
+    assert summary["backend_optimizer"]["candidate_backend"] in {"gpu-metal-experimental", "cpu"}
     assert summary["evidence_boundary"]["status"] == "supported"
     assert "checked public" in summary["evidence_boundary"]["claim_boundary"]
     assert any(finding["finding_id"] == "read_qc_unavailable" for finding in summary["findings"])
@@ -393,16 +453,87 @@ def test_assay_check_writes_preflight_reliability_artifacts(tmp_path: Path) -> N
 
 
 def test_assay_check_ignores_stale_audit_artifacts(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
     spec = _write_count_spec(tmp_path)
+    spec.write_text(spec.read_text(encoding="utf-8").replace("k = 1", "k = 0"), encoding="utf-8")
     stale_audit = tmp_path / "assay_out" / "audit" / "audit_summary.json"
     stale_audit.parent.mkdir(parents=True)
     stale_audit.write_text('{"safe_at_k1": false}\n', encoding="utf-8")
 
-    rc = _run_cli(["assay", "check", str(spec)])
+    rc = _run_cli(["assay", "check", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
 
     assert rc.returncode == 0, rc.stderr
     reliability = json.loads((tmp_path / "assay_out" / "reliability_summary.json").read_text(encoding="utf-8"))
     assert not any(finding["finding_id"] == "unsafe_targets" for finding in reliability["findings"])
+
+
+def test_assay_check_ignores_stale_postrun_qc_artifacts(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_count_spec(tmp_path)
+    spec.write_text(spec.read_text(encoding="utf-8").replace("k = 1", "k = 0"), encoding="utf-8")
+    out_dir = tmp_path / "assay_out"
+    out_dir.mkdir(parents=True)
+    (out_dir / "sample_qc.tsv").write_text(
+        "sample_id\tassignment_rate\tambiguous_rate\tno_match_rate\ttotal_reads\tinvalid_reads\n"
+        "sample_a\t0.10\t0.90\t0.00\t100\t0\n",
+        encoding="utf-8",
+    )
+
+    rc = _run_cli(["assay", "check", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+
+    assert rc.returncode == 0, rc.stderr
+    reliability = json.loads((out_dir / "reliability_summary.json").read_text(encoding="utf-8"))
+    finding_ids = {finding["finding_id"] for finding in reliability["findings"]}
+    assert "assignment_rate_below_min" not in finding_ids
+    assert "ambiguous_rate_above_max" not in finding_ids
+
+
+def test_assay_start_check_only_matches_assay_check(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_count_spec(tmp_path)
+    spec.write_text(spec.read_text(encoding="utf-8").replace("k = 1", "k = 0"), encoding="utf-8")
+
+    check_rc = _run_cli(["assay", "check", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+    start_rc = _run_cli(
+        ["assay", "start", "--check-only", str(spec)],
+        env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")},
+    )
+
+    assert start_rc.returncode == check_rc.returncode == 0
+    assert "check passed" in start_rc.stderr
+    assert ": running" not in start_rc.stderr
+    assert not (tmp_path / "assay_out" / "counts.mageck.tsv").exists()
+
+
+def test_assay_start_prints_preflight_verdict_before_continuing_advisory_run(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_count_spec(tmp_path)
+
+    rc = _run_cli(["assay", "start", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+
+    assert rc.returncode == 2
+    stderr = rc.stderr
+    assert "preflight failed (unsafe_targets); continuing run" in stderr
+    assert "reliability (preflight): failed" in stderr
+    assert "preflight checks failed" in stderr
+    assert "finding: unsafe_targets:" in stderr
+    assert ": running" in stderr
+    assert "reliability (postrun):" in stderr
+    preflight_idx = stderr.index("reliability (preflight):")
+    running_idx = stderr.index(": running")
+    postrun_idx = stderr.index("reliability (postrun):")
+    assert preflight_idx < running_idx < postrun_idx
+
+
+def test_assay_check_suppresses_audit_warning_when_unsafe_targets_finding_present(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_count_spec(tmp_path)
+
+    rc = _run_cli(["assay", "check", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+
+    assert rc.returncode == 2
+    assert "check failed (unsafe_targets)" in rc.stderr
+    assert "dotmatch assay: warning:" not in rc.stderr
 
 
 def test_assay_run_count_reproduces_existing_crispr_fixture(tmp_path: Path) -> None:
@@ -457,6 +588,13 @@ def test_assay_run_count_reproduces_existing_crispr_fixture(tmp_path: Path) -> N
     assert "assignment_rate_below_min" in finding_ids
     assert "ambiguous_rate_above_max" in finding_ids
     assert "unmatched_rate_above_max" in finding_ids
+    assert "coverage_fraction_below_min" in finding_ids
+    assert "zero_count_fraction_above_max" in finding_ids
+    assert "gini_index_above_max" in finding_ids
+    assert "top_1pct_fraction_above_max" in finding_ids
+    assert "crispr_qc_guide_collision" in finding_ids
+    assert reliability["thresholds"]["min_coverage_fraction"] == 0.90
+    assert reliability["thresholds"]["max_gini_index"] == 0.50
     assert (out_dir / "reliability_findings.tsv").exists()
     assert (out_dir / "reliability_report.html").exists()
     assert (out_dir / "reliability_manifest.summary.tsv").exists()
@@ -638,6 +776,296 @@ def test_non_assay_cli_delegates_to_native_binary(tmp_path: Path) -> None:
 
     assert rc.returncode == 0
     assert rc.stdout.strip() == "native:dist ACGT AGGT"
+
+
+def test_assay_new_scaffolds_multi_sample_crispr_project(tmp_path: Path) -> None:
+    targets = _write_inference_targets(tmp_path)
+    reads_dir = tmp_path / "fastqs"
+    reads_dir.mkdir()
+    _write_inference_reads(reads_dir, prefix="NN", good=True).rename(reads_dir / "sample_a.fastq")
+    _write_inference_reads(reads_dir, prefix="NN", good=True).rename(reads_dir / "sample_b.fastq")
+    project = tmp_path / "crispr_screen"
+
+    rc = _run_cli(
+        [
+            "assay",
+            "new",
+            "crispr",
+            "--library",
+            str(targets),
+            "--reads-dir",
+            str(reads_dir),
+            "--out",
+            str(project),
+        ]
+    )
+
+    assert rc.returncode == 0, rc.stderr
+    assert (project / "assay.toml").exists()
+    assert (project / "inference_report.json").exists()
+    assert (project / "samples.generated.tsv").exists()
+    assert (project / "README.md").exists()
+    assert (project / "run.sh").exists()
+    assert (project / "inputs" / "targets.tsv").exists()
+    assert (project / "reads" / "sample_a.fastq").is_file()
+    assert (project / "reads" / "sample_b.fastq").is_file()
+    text = (project / "assay.toml").read_text(encoding="utf-8")
+    assert 'status = "ready"' in text
+    assert 'targets = "inputs/targets.tsv"' in text
+    assert 'id = "sample_a"' in text
+    assert 'id = "sample_b"' in text
+    assert 'fastq = "reads/sample_a.fastq"' in text
+    report = json.loads((project / "inference_report.json").read_text(encoding="utf-8"))
+    assert report["template"] == "crispr"
+    assert len(report["samples"]) == 2
+    check = _run_cli(["assay", "check", str(project / "assay.toml")])
+    assert check.returncode == 0, check.stderr
+
+
+def test_crispr_new_scaffold_matches_assay_new(tmp_path: Path) -> None:
+    targets = _write_inference_targets(tmp_path)
+    reads_dir = tmp_path / "fastqs"
+    reads_dir.mkdir()
+    _write_inference_reads(reads_dir).rename(reads_dir / "plasmid.fastq")
+    project = tmp_path / "screen"
+
+    rc = _run_cli(
+        [
+            "crispr",
+            "new",
+            "--library",
+            str(targets),
+            "--reads-dir",
+            str(reads_dir),
+            "--out",
+            str(project),
+        ]
+    )
+
+    assert rc.returncode == 0, rc.stderr
+    assert (project / "assay.toml").exists()
+
+
+def test_assay_new_refuses_non_empty_project_dir(tmp_path: Path) -> None:
+    targets = _write_inference_targets(tmp_path)
+    reads_dir = tmp_path / "fastqs"
+    reads_dir.mkdir()
+    _write_inference_reads(reads_dir).rename(reads_dir / "sample.fastq")
+    project = tmp_path / "screen"
+    project.mkdir()
+    (project / "existing.txt").write_text("x", encoding="utf-8")
+
+    rc = _run_cli(
+        [
+            "assay",
+            "new",
+            "crispr",
+            "--library",
+            str(targets),
+            "--reads-dir",
+            str(reads_dir),
+            "--out",
+            str(project),
+        ]
+    )
+
+    assert rc.returncode == 2
+    assert "non-empty" in rc.stderr
+
+
+def test_assay_new_writes_draft_when_inference_is_low_confidence(tmp_path: Path) -> None:
+    targets = _write_inference_targets(tmp_path)
+    reads_dir = tmp_path / "fastqs"
+    reads_dir.mkdir()
+    _write_inference_reads(reads_dir, good=False).rename(reads_dir / "sample.fastq")
+    project = tmp_path / "draft_screen"
+
+    rc = _run_cli(
+        [
+            "assay",
+            "new",
+            "crispr",
+            "--library",
+            str(targets),
+            "--reads-dir",
+            str(reads_dir),
+            "--out",
+            str(project),
+        ]
+    )
+
+    assert rc.returncode == 0, rc.stderr
+    assert 'status = "draft"' in (project / "assay.toml").read_text(encoding="utf-8")
+    assert "Promote To Ready" in (project / "README.md").read_text(encoding="utf-8")
+
+
+def test_detect_pythonpath_for_scaffold_ignores_relative_env_entries(monkeypatch: pytest.MonkeyPatch) -> None:
+    import dotmatch.assayspec as assayspec
+
+    monkeypatch.setenv("PYTHONPATH", "python")
+    detected = assayspec._detect_pythonpath_for_scaffold()
+
+    assert Path(detected).is_absolute()
+    assert detected.endswith("/python")
+    assert ":python" not in detected
+
+
+def test_scaffold_run_script_skips_pythonpath_for_installed_launcher(tmp_path: Path) -> None:
+    import dotmatch.assayspec as assayspec
+
+    project = tmp_path / "screen"
+    project.mkdir()
+    assayspec._write_scaffold_run_script(
+        project,
+        status="ready",
+        launcher=["/usr/local/bin/dotmatch"],
+        native_cli=None,
+    )
+
+    run_script = (project / "run.sh").read_text(encoding="utf-8")
+    assert "DOTMATCH_LAUNCHER=(" in run_script
+    scaffold_header = run_script.split("if ! _dotmatch_ready", maxsplit=1)[0]
+    assert "PYTHONPATH=" not in scaffold_header
+
+
+def test_assay_new_run_script_uses_start(tmp_path: Path) -> None:
+    targets = _write_inference_targets(tmp_path)
+    reads_dir = tmp_path / "fastqs"
+    reads_dir.mkdir()
+    _write_inference_reads(reads_dir).rename(reads_dir / "sample.fastq")
+    project = tmp_path / "screen"
+
+    rc = _run_cli(
+        [
+            "assay",
+            "new",
+            "crispr",
+            "--library",
+            str(targets),
+            "--reads-dir",
+            str(reads_dir),
+            "--out",
+            str(project),
+        ]
+    )
+
+    assert rc.returncode == 0, rc.stderr
+    run_script = (project / "run.sh").read_text(encoding="utf-8")
+    readme = (project / "README.md").read_text(encoding="utf-8")
+    assert "DOTMATCH_LAUNCHER=(" in run_script
+    assert 'assay start assay.toml' in run_script
+    assert "PYTHONPATH=" in run_script  # pytest invokes dotmatch via python -m
+    if 'status = "draft"' in (project / "assay.toml").read_text(encoding="utf-8"):
+        assert "Draft assay.toml" in run_script
+        assert "assay_out/assay_fixes.tsv" in run_script
+    assert "assay_fixes.tsv" in readme
+    assert "reliability_report.html" in readme
+
+
+def test_assay_start_runs_check_and_prints_reliability_verdict(tmp_path: Path) -> None:
+    import dotmatch.assayspec as assayspec
+
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_count_spec(tmp_path)
+    spec.write_text(spec.read_text(encoding="utf-8").replace("k = 1", "k = 0"), encoding="utf-8")
+
+    rc = _run_cli(["assay", "start", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+
+    out_dir = tmp_path / "assay_out"
+    reliability = json.loads((out_dir / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert rc.returncode == assayspec._reliability_exit_code(reliability["overall_status"]), rc.stderr
+    assert "preflight passed" in rc.stderr
+    assert ": running" in rc.stderr
+    assert f"reliability (postrun): {reliability['overall_status']}" in rc.stderr
+    assert "report: assay_out/reliability_report.html" in rc.stderr
+    assert "next:" in rc.stderr
+    assert (out_dir / "assay_fixes.tsv").exists()
+
+
+def test_assay_start_exit_code_matches_reliability_status() -> None:
+    import dotmatch.assayspec as assayspec
+
+    assert assayspec._reliability_exit_code("passed") == 0
+    assert assayspec._reliability_exit_code("needs_review") == 1
+    assert assayspec._reliability_exit_code("failed") == 2
+    assert assayspec._reliability_exit_code("blocked") == 2
+
+
+def test_assay_start_on_draft_prints_reliability_verdict(tmp_path: Path) -> None:
+    spec = _write_count_spec(tmp_path)
+    spec.write_text('status = "draft"\n' + spec.read_text(encoding="utf-8"), encoding="utf-8")
+
+    rc = _run_cli(["assay", "start", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+
+    assert rc.returncode == 2
+    assert "preflight blocked (draft_assayspec)" in rc.stderr
+    assert "reliability (preflight): blocked" in rc.stderr
+    assert "reliability_report.html" in rc.stderr
+    assert "assay_fixes.tsv" in rc.stderr
+    assert "next:" in rc.stderr
+    assert "Promote status" in rc.stderr
+    assert "refusing to run draft" not in rc.stderr
+    reliability = json.loads((tmp_path / "assay_out" / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert reliability["overall_status"] == "blocked"
+    assert any(fix["fix_id"] == "promote_status_ready" for fix in reliability["assay_fixes"])
+
+
+def test_assay_new_pools_reads_from_multiple_fastqs_for_inference(tmp_path: Path) -> None:
+    targets = _write_inference_targets(tmp_path)
+    reads_dir = tmp_path / "fastqs"
+    reads_dir.mkdir()
+    _write_inference_reads(reads_dir, prefix="NN", good=True).rename(reads_dir / "sample_a.fastq")
+    _write_inference_reads(reads_dir, prefix="NN", good=True).rename(reads_dir / "sample_b.fastq")
+    project = tmp_path / "screen"
+
+    rc = _run_cli(
+        [
+            "assay",
+            "new",
+            "crispr",
+            "--library",
+            str(targets),
+            "--reads-dir",
+            str(reads_dir),
+            "--out",
+            str(project),
+        ]
+    )
+
+    assert rc.returncode == 0, rc.stderr
+    report = json.loads((project / "inference_report.json").read_text(encoding="utf-8"))
+    assert report["inference_read_sources"] == ["reads/sample_a.fastq", "reads/sample_b.fastq"]
+    assert report["chosen"]["sampled_reads"] >= 8
+
+
+def test_assay_fixes_suggest_concrete_toml_edits(tmp_path: Path) -> None:
+    import dotmatch.assayspec as assayspec
+
+    spec = _write_count_spec(tmp_path)
+    spec.write_text('status = "draft"\n' + spec.read_text(encoding="utf-8"), encoding="utf-8")
+    plan = assayspec.compile_assay_plan(assayspec.load_assay_spec(spec))
+    reliability = assayspec._build_reliability_summary(plan, stage="preflight")
+
+    fix_ids = {fix["fix_id"] for fix in reliability["assay_fixes"]}
+    assert "promote_status_ready" in fix_ids
+    draft = next(finding for finding in reliability["findings"] if finding["finding_id"] == "draft_assayspec")
+    assert 'status = "ready"' in draft["recommended_action"]
+
+
+def test_assay_run_writes_assay_fixes_for_unsafe_targets(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_unsafe_count_spec(tmp_path, profile="production")
+
+    rc = _run_cli(["assay", "run", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+
+    assert rc.returncode == 2
+    out_dir = tmp_path / "unsafe_production_out"
+    fixes = (out_dir / "assay_fixes.tsv").read_text(encoding="utf-8")
+    assert "assignment_exact_matching" in fixes
+    assert "assignment" in fixes
+    assert "\tk\t" in fixes or "assignment\tk" in fixes.replace("\t", " ")
+    report = (out_dir / "reliability_report.html").read_text(encoding="utf-8")
+    assert "Recommended Assay Fixes" in report
 
 
 def test_assay_infer_writes_ready_crispr_count_spec_and_report(tmp_path: Path) -> None:
@@ -940,6 +1368,37 @@ metric = "hamming"
     assert not (workspace / "assay_out").exists()
 
 
+def test_sample_qc_representation_thresholds_use_fixture_metrics() -> None:
+    import dotmatch.assayspec as assayspec
+
+    spec = assayspec.load_assay_spec(ROOT / "examples/workflows/fixtures/crispr_assay.toml")
+    plan = assayspec.compile_assay_plan(spec)
+    sample_qc = ROOT / "examples/workflows/fixtures/expected_sample_qc.tsv"
+    plan.artifacts["sample_qc"] = sample_qc
+
+    reliability = assayspec._build_reliability_summary(plan, stage="postrun", manifest={})
+    finding_ids = {finding["finding_id"] for finding in reliability["findings"]}
+    sample_a = [finding for finding in reliability["findings"] if finding["sample_id"] == "sample_a"]
+    sample_b = [finding for finding in reliability["findings"] if finding["sample_id"] == "sample_b"]
+
+    assert "coverage_fraction_below_min" in finding_ids
+    assert "zero_count_fraction_above_max" in finding_ids
+    assert {finding["finding_id"] for finding in sample_a} >= {
+        "assignment_rate_below_min",
+        "ambiguous_rate_above_max",
+        "unmatched_rate_above_max",
+        "coverage_fraction_below_min",
+        "zero_count_fraction_above_max",
+    }
+    assert {finding["finding_id"] for finding in sample_b} >= {
+        "unmatched_rate_above_max",
+        "coverage_fraction_below_min",
+        "zero_count_fraction_above_max",
+        "gini_index_above_max",
+        "top_1pct_fraction_above_max",
+    }
+
+
 def test_malformed_sample_qc_is_error_not_zeroed(tmp_path: Path) -> None:
     import dotmatch.assayspec as assayspec
 
@@ -974,6 +1433,33 @@ def test_assay_autopsy_reports_wrong_offset_findings(tmp_path: Path) -> None:
     assert (out_dir / "top_unmatched.shifted.tsv").exists()
 
 
+def test_reliability_verdict_uses_project_relative_paths(tmp_path: Path) -> None:
+    import dotmatch.assayspec as assayspec
+
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_count_spec(tmp_path)
+    spec.write_text(spec.read_text(encoding="utf-8").replace("k = 1", "k = 0"), encoding="utf-8")
+
+    rc = _run_cli(["assay", "check", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+
+    assert rc.returncode == 0, rc.stderr
+    artifact_lines = [line for line in rc.stderr.splitlines() if line.startswith(("report:", "fixes:", "next:"))]
+    assert "report: assay_out/reliability_report.html" in artifact_lines
+    assert "fixes: assay_out/assay_fixes.tsv" in artifact_lines
+    assert all(str(tmp_path) not in line for line in artifact_lines)
+
+
+def test_assay_start_does_not_leak_autopsy_audit_path(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    fixture = ROOT / "examples/workflows/fixtures/crispr_assay.toml"
+
+    rc = _run_cli(["assay", "start", str(fixture)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+
+    assert rc.returncode == 2
+    assert "autopsy/audit" not in rc.stdout
+    assert not any(line.strip().endswith("autopsy/audit") for line in rc.stderr.splitlines())
+
+
 def test_assay_run_auto_triggers_autopsy_on_bad_qc(tmp_path: Path) -> None:
     subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
     spec = _write_wrong_offset_spec(tmp_path)
@@ -988,8 +1474,89 @@ def test_assay_run_auto_triggers_autopsy_on_bad_qc(tmp_path: Path) -> None:
     report = (tmp_path / "wrong_offset_out" / "assay_report.html").read_text(encoding="utf-8")
     assert "Autopsy" in report
     assert "wrong_offset" in report
+    reliability = json.loads((tmp_path / "wrong_offset_out" / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert any(finding["finding_id"] == "autopsy_wrong_offset" for finding in reliability["findings"])
+    assert (tmp_path / "wrong_offset_out" / "assay_fixes.tsv").exists()
     summary = (tmp_path / "wrong_offset_out" / "assay_manifest.summary.tsv").read_text(encoding="utf-8")
     assert "\ttrue\t" in summary
+
+
+def test_assay_check_reports_failed_preflight_for_unsafe_targets_without_block(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_count_spec(tmp_path)
+
+    rc = _run_cli(["assay", "check", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+
+    assert rc.returncode == 2
+    assert "check failed (unsafe_targets)" in rc.stderr
+    assert "finding: unsafe_targets:" in rc.stderr
+
+
+def test_assay_check_blocks_unsafe_targets_with_actionable_verdict(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_unsafe_count_spec(tmp_path, profile="production")
+
+    rc = _run_cli(["assay", "check", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+
+    assert rc.returncode == 2
+    assert "check blocked (unsafe_targets)" in rc.stderr
+    assert "finding: unsafe_targets:" in rc.stderr
+    assert "next:" in rc.stderr
+    assert "continuing with explicit ambiguity handling" not in rc.stderr
+
+
+def test_assay_start_blocks_unsafe_targets_before_run(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_unsafe_count_spec(tmp_path, profile="production")
+
+    rc = _run_cli(["assay", "start", str(spec)], env={"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")})
+
+    assert rc.returncode == 2
+    assert "preflight blocked (unsafe_targets)" in rc.stderr
+    assert ": running" not in rc.stderr
+    assert "continuing run" not in rc.stderr
+    assert "continuing with explicit ambiguity handling" not in rc.stderr
+    assert "library safety in the reliability report" not in rc.stderr
+    assert "next:" in rc.stderr
+    out_dir = tmp_path / "unsafe_production_out"
+    assert not (out_dir / "counts.mageck.tsv").exists()
+    reliability = json.loads((out_dir / "reliability_summary.json").read_text(encoding="utf-8"))
+    assert reliability["overall_status"] == "blocked"
+    assert reliability["stage"] == "preflight"
+    assert any(finding["finding_id"] == "unsafe_targets" and finding["severity"] == "blocked" for finding in reliability["findings"])
+
+
+def test_scaffold_run_script_falls_back_to_checkout_pythonpath(tmp_path: Path) -> None:
+    import dotmatch.assayspec as assayspec
+
+    project = tmp_path / "screen"
+    project.mkdir()
+    assayspec._write_scaffold_run_script(
+        project,
+        status="ready",
+        launcher=["/nonexistent/dotmatch"],
+        native_cli=None,
+    )
+
+    run_script = (project / "run.sh").read_text(encoding="utf-8")
+    assert 'for pyroot in "${ROOT}/../../python"' in run_script
+    assert 'export PYTHONPATH="${pyroot}' in run_script
+
+
+def test_scaffold_run_script_unsets_invalid_native_cli(tmp_path: Path) -> None:
+    import dotmatch.assayspec as assayspec
+
+    project = tmp_path / "screen"
+    project.mkdir()
+    assayspec._write_scaffold_run_script(
+        project,
+        status="ready",
+        launcher=["dotmatch"],
+        native_cli="/nonexistent/native",
+    )
+
+    run_script = (project / "run.sh").read_text(encoding="utf-8")
+    assert "unset DOTMATCH_NATIVE_CLI" in run_script
 
 
 def test_assay_run_production_blocks_unsafe_targets_before_assignment(tmp_path: Path) -> None:

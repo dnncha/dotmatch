@@ -3,9 +3,9 @@ FROM debian:bookworm-slim
 LABEL org.opencontainers.image.title="DotMatch" \
       org.opencontainers.image.description="Deterministic known-target short-DNA assignment for CRISPR guides, barcodes, panels, and whitelist-style target sets." \
       org.opencontainers.image.source="https://github.com/dnncha/dotmatch" \
-      org.opencontainers.image.url="https://github.com/dnncha/dotmatch" \
-      org.opencontainers.image.documentation="https://github.com/dnncha/dotmatch#readme" \
-      org.opencontainers.image.version="0.1.7" \
+      org.opencontainers.image.url="https://dotmatch.readthedocs.io/" \
+      org.opencontainers.image.documentation="https://dotmatch.readthedocs.io/" \
+      org.opencontainers.image.version="0.1.8" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.authors="Donncha O'Toole"
 

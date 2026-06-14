@@ -424,6 +424,8 @@ def main() -> None:
         "",
         "DotMatch Hamming `k=2` and `k=3` evidence is kept separate from guide-counter claims. Rows in this table must come from `benchmarks/raw/crispr_comparison_hamming_k23_comparators.csv` and compare DotMatch directly with Bowtie 1.",
         "",
+        "Hamming k=2 must clear >=8x vs Bowtie 1; Hamming k=3 must clear >=2x vs Bowtie 1.",
+        "",
         "![Hamming k2/k3 comparator throughput](" +
         markdown_link_path(FIG_DIR / "crispr_hamming_k23_comparison.svg", OUT_DIR) + ")",
         "",

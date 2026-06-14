@@ -39,6 +39,30 @@ def run_text(cmd: list[str], *, cwd: Path | None = None, env: dict[str, str] | N
     return result.stdout.strip()
 
 
+def run_expect_exit(
+    cmd: list[str],
+    expected_returncode: int,
+    *,
+    cwd: Path | None = None,
+    env: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
+    result = subprocess.run(
+        cmd,
+        cwd=cwd,
+        env=env,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    if result.returncode != expected_returncode:
+        raise SystemExit(
+            f"{cmd!r} returned {result.returncode}, expected {expected_returncode}\n"
+            f"stdout:\n{result.stdout}\n"
+            f"stderr:\n{result.stderr}"
+        )
+    return result
+
+
 def project_version() -> str:
     text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     match = re.search(r'^version\s*=\s*"([^"]+)"', text, flags=re.MULTILINE)
@@ -69,8 +93,10 @@ def wheel_assay_evidence_members(wheel: Path) -> list[str]:
 def check_sdist_members(sdist: Path) -> None:
     required_suffixes = [
         "/src/qdalign.c",
+        "/src/qdmetal_stub.c",
         "/src/qda.c",
         "/include/qdalign.h",
+        "/include/qdmetal.h",
         "/setup.py",
         "/pyproject.toml",
         "/README.md",
@@ -233,8 +259,20 @@ def verify_clean_install(artifact: Path, install_root: Path, expected_version: s
     targets = probe_dir / "targets.tsv"
     reads = probe_dir / "reads.fastq"
     spec = probe_dir / "assay.toml"
-    targets.write_text("guide_a\tACGT\tGENEA\n", encoding="utf-8")
-    reads.write_text("@r0\nACGT\n+\nIIII\n", encoding="utf-8")
+    targets.write_text(
+        "g1\tACGT\tG1\n"
+        "g2\tAGGT\tG2\n"
+        "g3\tATGT\tG3\n"
+        "g4\tACGG\tG4\n",
+        encoding="utf-8",
+    )
+    reads.write_text(
+        "@r0\nACGT\n+\nIIII\n"
+        "@r1\nAGGT\n+\nIIII\n"
+        "@r2\nATGT\n+\nIIII\n"
+        "@r3\nACGG\n+\nIIII\n",
+        encoding="utf-8",
+    )
     spec.write_text(
         f"""
 schema_version = 1
@@ -254,7 +292,7 @@ start = 0
 length = 4
 
 [assignment]
-k = 1
+k = 0
 metric = "hamming"
 """.lstrip(),
         encoding="utf-8",
@@ -364,7 +402,14 @@ metric = "hamming"
         cwd=probe_dir,
         env=env,
     )
-    run([str(venv_script(env_dir, "dotmatch")), "assay", "check", str(inferred)], cwd=probe_dir, env=env)
+    check_result = run_expect_exit(
+        [str(venv_script(env_dir, "dotmatch")), "assay", "check", str(inferred)],
+        2,
+        cwd=probe_dir,
+        env=env,
+    )
+    if "draft_assayspec" not in f"{check_result.stdout}\n{check_result.stderr}":
+        raise SystemExit("inferred draft assay check did not report the draft_assayspec blocker")
     run(
         [
             str(venv_script(env_dir, "dotmatch")),

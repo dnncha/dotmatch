@@ -34,6 +34,7 @@ make native-comparator-scope-ready
 make distribution-record-ready
 make bioconda-recipe-ready
 make coverage
+make native-exact-gate
 make public-crispr-evidence-gate
 make crispr-comparison-gate
 make barcode-comparison-gate

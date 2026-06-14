@@ -7,7 +7,7 @@ keywords:
   - known-target assignment
 tools:
   - dotmatch:
-      description: Fast exact matching for short DNA reads against known targets.
+      description: Deterministic short-DNA assignment against known targets.
       homepage: https://github.com/Dnncha/dotmatch
       licence:
         - Apache-2.0

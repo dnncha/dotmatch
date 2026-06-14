@@ -29,6 +29,10 @@ def test_resume_completeness_requires_all_requested_successful_tools():
 
     rows.append({"dataset_id": "sanson_brunello", "requested_records_per_sample": "100000", "repeat": "1", "run_level": "subsample", "tool": "guide_counter_one_mismatch", "exit_code": "0"})
 
+    assert not runner.run_complete(rows, "sanson_brunello", "100000", 1, "subsample", runner.expected_tools(args))
+
+    rows.append({"dataset_id": "sanson_brunello", "requested_records_per_sample": "100000", "repeat": "1", "run_level": "subsample", "tool": "guide_counter_exact", "exit_code": "0"})
+
     assert runner.run_complete(rows, "sanson_brunello", "100000", 1, "subsample", runner.expected_tools(args))
 
 

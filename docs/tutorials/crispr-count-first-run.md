@@ -2,7 +2,7 @@
 
 This tutorial uses the tiny checked workflow fixtures under
 `examples/workflows/fixtures/`. It does not download public data. The goal is to
-show the full CRISPR-facing command, the MAGeCK-compatible count matrix, and the
+show the production assay path, the MAGeCK-compatible count matrix, and the
 sample QC table in a few commands.
 
 ## 1. Build DotMatch
@@ -11,7 +11,46 @@ sample QC table in a few commands.
 make
 ```
 
-## 2. Create a sample sheet
+## 2. Recommended: scaffold or start an assay project
+
+The production path is `dotmatch assay new` followed by `dotmatch assay start`
+(or `./run.sh` inside a scaffolded project). That runs preflight `check`, counts
+guides, runs CRISPR QC, and writes a reliability report with suggested
+`assay_fixes.tsv` edits when thresholds fail.
+
+From the checked fixture:
+
+```bash
+cd examples/workflows/fixtures
+../../dotmatch assay start crispr_assay.toml
+```
+
+To scaffold a fresh project from your own FASTQs:
+
+```bash
+dotmatch assay new crispr \
+  --library guides.csv \
+  --reads-dir fastqs/ \
+  --out crispr_screen/
+
+cd crispr_screen
+./run.sh
+```
+
+Key outputs under the configured `out_dir`:
+
+- `counts.mageck.tsv` — MAGeCK-style count matrix
+- `sample_qc.tsv` — per-sample assignment and representation QC
+- `summary.json` — run metadata and assignment rates
+- `reliability_report.html` — evidence-bounded preflight/postrun review
+- `crispr_qc.json` — guide-level QC summary
+
+CPU remains the assignment authority. GPU Metal is opt-in via `[backend]` in the
+assay spec and requires `--metal-validate` when enabled.
+
+## 3. Direct `crispr-count` (single command)
+
+For a minimal single command without the full assay wrapper:
 
 ```bash
 mkdir -p tmp/crispr-first-run
@@ -39,8 +78,6 @@ Guide libraries may be TSV or CSV. DotMatch detects common CRISPR headers such
 as `sgRNA`, `sgRNAID`, `guide_id`, `gRNA.sequence`, `sgRNA_sequence`,
 `guide_seq`, `sequence`, `Gene`, and `gene_symbol`.
 
-## 3. Count guides
-
 ```bash
 ./dotmatch crispr-count \
   --library examples/workflows/fixtures/crispr_library.csv \
@@ -52,9 +89,11 @@ as `sgRNA`, `sgRNAID`, `guide_id`, `gRNA.sequence`, `sgRNA_sequence`,
   --ambiguity-policy radius \
   --out tmp/crispr-first-run/counts.mageck.tsv \
   --summary tmp/crispr-first-run/qc.json \
-  --sample-qc tmp/crispr-first-run/sample_qc.tsv \
   --ambiguous discard
 ```
+
+`sample_qc.tsv` is written automatically beside `--out`. Progress and QC review
+warnings go to stderr on long runs.
 
 ## 4. Inspect the count matrix
 

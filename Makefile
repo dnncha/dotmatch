@@ -12,6 +12,11 @@ COVERAGE_MIN ?= 75
 LLVM_PROFDATA ?= $(shell command -v llvm-profdata 2>/dev/null || xcrun --find llvm-profdata 2>/dev/null)
 LLVM_COV ?= $(shell command -v llvm-cov 2>/dev/null || xcrun --find llvm-cov 2>/dev/null)
 UNAME_S := $(shell uname -s)
+UNAME_M := $(shell uname -m)
+ifeq ($(UNAME_M),x86_64)
+CFLAGS += -mavx2
+CXXFLAGS += -mavx2
+endif
 ifeq ($(UNAME_S),Darwin)
 SHARED_EXT := dylib
 DOTMATCH_SHARED_FLAGS := -dynamiclib -install_name @rpath/libdotmatch.dylib
@@ -22,7 +27,7 @@ DOTMATCH_SHARED_FLAGS := -shared
 QDALIGN_SHARED_FLAGS := -shared
 endif
 
-.PHONY: all clean test cli-test coverage bench bench-batch bench-small bench-native-matrix figures bench-real-report bench-gpu gpu-report gpu-evidence-gate bench-barcode-demux bench-barcode-panel-design bench-barcode-demux-competitors bench-barcode-comparison barcode-autopsy-demo barcode-panel-design-gate barcode-validation-ready barcode-comparison-report barcode-comparison-gate barcode-demux-report barcode-competitor-env fetch-barcode-demo fetch-barcode-demo-claim fetch-sanson-crispr fetch-10x-bcl-demo bench-bcl-small bench-bcl-10x bench-bcl-real bench-bcl-real-repeated bcl-figures bcl-competitor-env bcl-linux-env bcl-tiny-public-gate bcl-comparison-gate fetch-oligo-adapter-demo bench-oligo-adapter bench-oligo-adapter-public oligo-adapter-smoke-gate oligo-adapter-public-gate fetch-amplicon-panel-demo bench-amplicon-panel bench-amplicon-panel-public amplicon-panel-smoke-gate amplicon-panel-public-gate fetch-feature-barcode-demo bench-feature-barcode bench-feature-barcode-public feature-barcode-smoke-gate feature-barcode-public-gate fetch-perturb-seq-demo bench-perturb-seq bench-perturb-seq-public perturb-seq-smoke-gate perturb-seq-public-gate bench-public-crispr-small bench-public-crispr bench-public-crispr-competitors bench-public-crispr-repeated bench-public-crispr-scaling bench-real-competitors bench-crispr-comparison bench-crispr-hamming-k23 crispr-comparison-report crispr-comparison-gate count-agreement count-agreement-comparison validate-public-crispr-edlib validate-crispr-comparison-edlib public-crispr-report public-crispr-evidence-gate public-crispr-smoke-gate competitor-env edlib edlib-tools bench-edlib-native benchmark-report benchmark-report-native evidence-gallery evidence-gallery-ready asan shared python-test python-package-test docs-ready repository-ready release-ready pretag-ready assay-evidence-ready scientific-readiness-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready workflow-adoption-status distribution-record-ready bioconda-recipe-ready distribution-channels joss-paper-ready
+.PHONY: all clean test cli-test coverage bench bench-batch bench-small bench-native-matrix figures bench-real-report bench-gpu gpu-report gpu-evidence-gate bench-barcode-demux bench-barcode-panel-design bench-barcode-demux-competitors bench-barcode-comparison barcode-autopsy-demo barcode-panel-design-gate barcode-validation-ready barcode-comparison-report barcode-comparison-gate barcode-demux-report barcode-competitor-env fetch-barcode-demo fetch-barcode-demo-claim fetch-sanson-crispr fetch-10x-bcl-demo bench-bcl-small bench-bcl-10x bench-bcl-real bench-bcl-real-repeated bcl-figures bcl-competitor-env bcl-linux-env bcl-tiny-public-gate bcl-comparison-gate fetch-oligo-adapter-demo bench-oligo-adapter bench-oligo-adapter-public oligo-adapter-smoke-gate oligo-adapter-public-gate fetch-amplicon-panel-demo bench-amplicon-panel bench-amplicon-panel-public amplicon-panel-smoke-gate amplicon-panel-public-gate fetch-feature-barcode-demo bench-feature-barcode bench-feature-barcode-public feature-barcode-smoke-gate feature-barcode-public-gate fetch-perturb-seq-demo bench-perturb-seq bench-perturb-seq-public perturb-seq-smoke-gate perturb-seq-public-gate bench-public-crispr-small bench-public-crispr bench-public-crispr-competitors bench-public-crispr-repeated bench-public-crispr-scaling bench-real-competitors bench-crispr-comparison bench-crispr-hamming-k23 crispr-comparison-report crispr-comparison-gate count-agreement count-agreement-comparison validate-public-crispr-edlib validate-crispr-comparison-edlib public-crispr-report public-crispr-evidence-gate public-crispr-smoke-gate competitor-env edlib edlib-tools bench-edlib-native benchmark-report benchmark-report-native native-exact-gate evidence-gallery evidence-gallery-ready asan shared python-test python-package-test docs-ready repository-ready release-ready pretag-ready assay-evidence-ready scientific-readiness-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready workflow-adoption-status distribution-record-ready bioconda-recipe-ready distribution-channels joss-paper-ready
 
 all: dotmatch libdotmatch.a qda libqdalign.a
 
@@ -49,11 +54,40 @@ libqdalign.$(SHARED_EXT): build/qdalign.pic.o
 
 shared: libdotmatch.$(SHARED_EXT) libqdalign.$(SHARED_EXT)
 
-dotmatch: src/qda.c build/qdalign.o include/qdalign.h Makefile
-	$(CC) $(CFLAGS) $(DOTMATCH_VERSION_CFLAGS) src/qda.c build/qdalign.o -o $@ $(LDFLAGS) $(ZLIB_LIBS) $(PTHREAD_LIBS)
+ifeq ($(UNAME_S),Darwin)
+METAL_OBJ = build/qdmetal.o
+METAL_LIBS = -framework Foundation -framework Metal
+build/qdmetal.o: src/qdmetal.mm include/qdmetal.h | build
+	$(CXX) $(CXXFLAGS) -std=c++11 -c src/qdmetal.mm -o $@
+else
+METAL_OBJ = build/qdmetal_stub.o
+METAL_LIBS =
+build/qdmetal_stub.o: src/qdmetal_stub.c include/qdmetal.h | build
+	$(CC) $(CFLAGS) -c src/qdmetal_stub.c -o $@
+endif
 
-qda: src/qda.c build/qdalign.o include/qdalign.h Makefile
-	$(CC) $(CFLAGS) $(DOTMATCH_VERSION_CFLAGS) src/qda.c build/qdalign.o -o $@ $(LDFLAGS) $(ZLIB_LIBS) $(PTHREAD_LIBS)
+METAL_CXX_LIBS = $(if $(filter Darwin,$(UNAME_S)),-lc++,)
+
+ifeq ($(UNAME_S),Darwin)
+COVERAGE_METAL_OBJ = build/coverage/qdmetal.o
+else
+COVERAGE_METAL_OBJ = build/coverage/qdmetal_stub.o
+endif
+
+build/coverage/qdmetal.o: src/qdmetal.mm include/qdmetal.h | build/coverage
+	$(CXX) $(CXXFLAGS) -O0 -g -std=c++11 -fprofile-instr-generate -fcoverage-mapping -c src/qdmetal.mm -o $@
+
+build/coverage/qdmetal_stub.o: src/qdmetal_stub.c include/qdmetal.h | build/coverage
+	$(COVERAGE_CC) -O0 -g -std=c11 -Wall -Wextra -Wpedantic -Iinclude -fprofile-instr-generate -fcoverage-mapping -c src/qdmetal_stub.c -o $@
+
+build/coverage:
+	mkdir -p build/coverage
+
+dotmatch: src/qda.c build/qdalign.o $(METAL_OBJ) include/qdalign.h include/qdmetal.h Makefile
+	$(CC) $(CFLAGS) $(DOTMATCH_VERSION_CFLAGS) src/qda.c build/qdalign.o $(METAL_OBJ) -o $@ $(LDFLAGS) $(ZLIB_LIBS) $(PTHREAD_LIBS) $(METAL_LIBS) $(METAL_CXX_LIBS)
+
+qda: src/qda.c build/qdalign.o $(METAL_OBJ) include/qdalign.h include/qdmetal.h Makefile
+	$(CC) $(CFLAGS) $(DOTMATCH_VERSION_CFLAGS) src/qda.c build/qdalign.o $(METAL_OBJ) -o $@ $(LDFLAGS) $(ZLIB_LIBS) $(PTHREAD_LIBS) $(METAL_LIBS) $(METAL_CXX_LIBS)
 
 build/test_qdalign: tests/test_qdalign.c build/qdalign.o include/qdalign.h | build
 	$(CC) $(CFLAGS) tests/test_qdalign.c build/qdalign.o -o $@ $(LDFLAGS)
@@ -77,7 +111,8 @@ coverage:
 	$(COVERAGE_CC) -O0 -g -std=c11 -Wall -Wextra -Wpedantic -Iinclude -fprofile-instr-generate -fcoverage-mapping -c src/qdalign.c -o build/coverage/qdalign.o
 	$(COVERAGE_CC) -O0 -g -std=c11 -Wall -Wextra -Wpedantic -Iinclude -fprofile-instr-generate -fcoverage-mapping tests/test_qdalign.c build/coverage/qdalign.o -o build/coverage/test_qdalign
 	LLVM_PROFILE_FILE=build/coverage/test-%p.profraw ./build/coverage/test_qdalign
-	$(COVERAGE_CC) -O0 -g -std=c11 -Wall -Wextra -Wpedantic -Iinclude $(DOTMATCH_VERSION_CFLAGS) -fprofile-instr-generate -fcoverage-mapping src/qda.c src/qdalign.c -o build/coverage/dotmatch $(ZLIB_LIBS) $(PTHREAD_LIBS)
+	$(MAKE) $(COVERAGE_METAL_OBJ)
+	$(COVERAGE_CC) -O0 -g -std=c11 -Wall -Wextra -Wpedantic -Iinclude $(DOTMATCH_VERSION_CFLAGS) -fprofile-instr-generate -fcoverage-mapping src/qda.c build/coverage/qdalign.o $(COVERAGE_METAL_OBJ) -o build/coverage/dotmatch $(ZLIB_LIBS) $(PTHREAD_LIBS) $(METAL_LIBS) $(METAL_CXX_LIBS)
 	LLVM_PROFILE_FILE=build/coverage/cli-%p.profraw DOTMATCH_BIN="$(CURDIR)/build/coverage/dotmatch" sh tests/test_cli_fastq.sh
 	$(LLVM_PROFDATA) merge -sparse build/coverage/*.profraw -o build/coverage/coverage.profdata
 	$(LLVM_COV) report build/coverage/test_qdalign -object build/coverage/dotmatch -instr-profile=build/coverage/coverage.profdata --sources src/qdalign.c --sources src/qda.c --show-branch-summary | tee build/coverage/coverage.txt
@@ -121,6 +156,12 @@ bench-gpu: build/bench_gpu_metal build/bench_gpu_crispr_metal
 gpu-report:
 	python3 scripts/generate_gpu_report.py
 
+bench-crispr-cpu-metal: dotmatch
+	DOTMATCH_NATIVE_CLI="$(CURDIR)/dotmatch" python3 scripts/bench_crispr_cpu_metal.py
+
+crispr-cpu-metal-report:
+	python3 scripts/generate_crispr_cpu_metal_report.py
+
 gpu-evidence-gate:
 	python3 scripts/check_gpu_evidence_gate.py
 
@@ -154,6 +195,7 @@ bench-real-report: dotmatch build/bench_real_edlib
 
 bench-barcode-demux: dotmatch
 	python3 scripts/bench_barcode_demux.py --run-hash-splitter
+	python3 scripts/bench_barcode_demux.py --fixture-kind levenshtein --barcode-length 8 --k 1 --metric levenshtein --workflow-name synthetic_levenshtein_one_edit_fixture --run-levenshtein-splitter --append
 	python3 scripts/generate_barcode_demux_report.py
 
 bench-barcode-panel-design:
@@ -177,6 +219,10 @@ fetch-barcode-demo-claim:
 
 bench-barcode-comparison: dotmatch barcode-competitor-env fetch-barcode-demo-claim
 	PATH="$(CURDIR)/build/barcode-competitors/bin:$$PATH" python3 scripts/bench_barcode_demux.py --reads "$$(python3 -c 'import json;print(json.load(open("examples/barcode_demux/data/metadata.json"))["runs"][0]["local_fastq"])')" --barcodes "$$(python3 -c 'import json;print(json.load(open("examples/barcode_demux/data/metadata.json"))["barcodes"])')" --barcode-start "$${DOTMATCH_BARCODE_START:-1}" --barcode-length "$$(python3 -c 'import json;m=json.load(open("examples/barcode_demux/data/metadata.json"));print(m.get("barcode_length") or ("auto" if m.get("barcode_length_mode") == "auto" else 8))')" --k "$${DOTMATCH_BARCODE_K:-0}" --metric "$${DOTMATCH_BARCODE_METRIC:-hamming}" --workflow-name real_srp009896_inline_barcode --run-cutadapt --run-hash-splitter --repeats "$${DOTMATCH_BARCODE_REPEATS:-5}"
+	mkdir -p benchmarks/work/barcode_demux
+	python3 -c 'import json; p=json.load(open("examples/barcode_demux/data/metadata.json"))["barcodes"]; out="benchmarks/work/barcode_demux/barcodes.length8.tsv"; open(out,"w").write("".join(line for line in open(p) if len((line.rstrip("\n").split("\t") if "\t" in line else line.rstrip("\n").split(","))[1]) == 8)); print(out)'
+	PATH="$(CURDIR)/build/barcode-competitors/bin:$$PATH" python3 scripts/bench_barcode_demux.py --reads "$$(python3 -c 'import json;print(json.load(open("examples/barcode_demux/data/metadata.json"))["runs"][0]["local_fastq"])')" --barcodes benchmarks/work/barcode_demux/barcodes.length8.tsv --barcode-start "$${DOTMATCH_BARCODE_START:-1}" --barcode-length 8 --k 1 --metric hamming --workflow-name real_srp009896_inline_barcode_fixed8_k1 --run-cutadapt --run-hamming-splitter --repeats "$${DOTMATCH_BARCODE_REPEATS:-5}" --append
+	python3 scripts/bench_barcode_demux.py --fixture-kind levenshtein --barcode-length 8 --k 1 --metric levenshtein --records "$${DOTMATCH_BARCODE_LEVENSHTEIN_RECORDS:-20000}" --workflow-name synthetic_levenshtein_one_edit_fixture --run-levenshtein-splitter --repeats "$${DOTMATCH_BARCODE_REPEATS:-5}" --append
 	python3 scripts/generate_barcode_demux_report.py
 
 barcode-autopsy-demo: dotmatch
@@ -323,6 +369,10 @@ bench-real-competitors: dotmatch competitor-env
 	python3 scripts/generate_public_crispr_report.py
 	python3 scripts/check_public_crispr_claim_gate.py
 	PATH="$(CURDIR)/build/competitor-env/bin:$$PATH" python3 scripts/bench_barcode_demux.py --reads examples/barcode_demux/data/SRR391079.subsample100000.fastq.gz --barcodes examples/barcode_demux/data/barcodes.tsv --barcode-start 1 --barcode-length auto --k 0 --metric hamming --workflow-name real_srp009896_inline_barcode --run-cutadapt --run-hash-splitter --repeats "$${DOTMATCH_BARCODE_REPEATS:-5}"
+	mkdir -p benchmarks/work/barcode_demux
+	python3 -c 'out="benchmarks/work/barcode_demux/barcodes.length8.tsv"; open(out,"w").write("".join(line for line in open("examples/barcode_demux/data/barcodes.tsv") if len((line.rstrip("\n").split("\t") if "\t" in line else line.rstrip("\n").split(","))[1]) == 8)); print(out)'
+	PATH="$(CURDIR)/build/competitor-env/bin:$$PATH" python3 scripts/bench_barcode_demux.py --reads examples/barcode_demux/data/SRR391079.subsample100000.fastq.gz --barcodes benchmarks/work/barcode_demux/barcodes.length8.tsv --barcode-start 1 --barcode-length 8 --k 1 --metric hamming --workflow-name real_srp009896_inline_barcode_fixed8_k1 --run-cutadapt --run-hamming-splitter --repeats "$${DOTMATCH_BARCODE_REPEATS:-5}" --append
+	python3 scripts/bench_barcode_demux.py --fixture-kind levenshtein --barcode-length 8 --k 1 --metric levenshtein --records "$${DOTMATCH_BARCODE_LEVENSHTEIN_RECORDS:-20000}" --workflow-name synthetic_levenshtein_one_edit_fixture --run-levenshtein-splitter --repeats "$${DOTMATCH_BARCODE_REPEATS:-5}" --append
 	python3 scripts/generate_barcode_demux_report.py
 	python3 scripts/check_barcode_comparison_gate.py
 
@@ -348,7 +398,7 @@ crispr-comparison-report:
 	python3 scripts/generate_crispr_comparison_report.py
 
 crispr-comparison-gate:
-	python3 scripts/check_crispr_comparison_gate.py
+	python3 scripts/check_crispr_comparison_gate.py --require-hamming-k23-comparator 2 --require-hamming-k23-comparator 3
 
 public-crispr-report:
 	python3 scripts/generate_public_crispr_report.py
@@ -364,6 +414,9 @@ benchmark-report: shared build/bench_batch
 
 benchmark-report-native: build/bench_edlib_native
 	python3 scripts/generate_native_benchmark_report.py
+
+native-exact-gate:
+	python3 scripts/check_native_exact_gate.py
 
 evidence-gallery:
 	python3 scripts/generate_evidence_gallery.py
@@ -398,7 +451,7 @@ repository-ready:
 	python3 scripts/check_evidence_gallery.py
 	$(MAKE) docs-ready
 
-release-ready: python-test python-package-test docs-ready scientific-readiness-ready assay-evidence-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready evidence-gallery-ready distribution-record-ready bioconda-recipe-ready gpu-evidence-gate public-crispr-evidence-gate crispr-comparison-gate barcode-comparison-gate feature-barcode-public-gate perturb-seq-public-gate amplicon-panel-public-gate bcl-tiny-public-gate oligo-adapter-public-gate
+release-ready: python-test python-package-test docs-ready scientific-readiness-ready assay-evidence-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready evidence-gallery-ready distribution-record-ready bioconda-recipe-ready gpu-evidence-gate native-exact-gate public-crispr-evidence-gate crispr-comparison-gate barcode-comparison-gate feature-barcode-public-gate perturb-seq-public-gate amplicon-panel-public-gate bcl-tiny-public-gate oligo-adapter-public-gate
 	python3 scripts/check_release_readiness.py
 
 pretag-ready:

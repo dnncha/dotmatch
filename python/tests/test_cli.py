@@ -52,8 +52,45 @@ def test_cli_top_level_help_lists_python_namespaces():
     assert "  barcode" in rc.stdout
     assert "  panel" in rc.stdout
     assert "dotmatch citation" in rc.stdout
+    assert "dotmatch manual" in rc.stdout
     assert "Hamming k=2/k=3 safety" in rc.stdout
     assert "Packaging note:" not in rc.stdout
+
+
+def test_cli_manual_prints_terminal_reference():
+    rc = subprocess.run(
+        [sys.executable, "-m", "dotmatch.cli", "manual"],
+        check=False,
+        env=LEGACY_ENV,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    assert rc.returncode == 0, rc.stderr
+    assert rc.stderr == ""
+    assert "DotMatch Manual" in rc.stdout
+    assert f"Version: {_pyproject_version()}" in rc.stdout
+    assert "SYNOPSIS" in rc.stdout
+    assert "COMMAND GROUPS" in rc.stdout
+    assert "ASSIGNMENT MODEL" in rc.stdout
+    assert "barcode autopsy" in rc.stdout
+    assert "dotmatch <command> --help" in rc.stdout
+
+
+def test_cli_manual_rejects_extra_args():
+    rc = subprocess.run(
+        [sys.executable, "-m", "dotmatch.cli", "manual", "count"],
+        check=False,
+        env=LEGACY_ENV,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    assert rc.returncode == 2
+    assert rc.stdout == ""
+    assert rc.stderr.strip() == "usage: dotmatch manual"
 
 
 def test_cli_reports_citation_text():

@@ -32,7 +32,7 @@ def _write_repo(root: Path, *, version: str = "0.1.0") -> None:
             'Homepage = "https://github.com/dnncha/dotmatch"\n'
             'Repository = "https://github.com/dnncha/dotmatch"\n'
             'Issues = "https://github.com/dnncha/dotmatch/issues"\n'
-            'Documentation = "https://github.com/dnncha/dotmatch#readme"\n'
+            'Documentation = "https://dotmatch.readthedocs.io/"\n'
         ),
         "CITATION.cff": (
             "cff-version: 1.2.0\n"

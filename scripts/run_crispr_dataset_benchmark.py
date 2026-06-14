@@ -81,8 +81,8 @@ def command_with_reads(base: list[str], reads: list[Path]) -> list[str]:
 
 
 def guide_counter_command(exe: str, reads: list[Path], labels: list[str], library: Path, prefix: Path,
-                          offset_sample: int) -> list[str]:
-    return [
+                          offset_sample: int, exact: bool = False) -> list[str]:
+    cmd = [
         exe,
         "count",
         "--input",
@@ -96,6 +96,9 @@ def guide_counter_command(exe: str, reads: list[Path], labels: list[str], librar
         "--offset-sample-size",
         str(offset_sample),
     ]
+    if exact:
+        cmd.append("--exact-match")
+    return cmd
 
 
 def main() -> None:
@@ -186,6 +189,7 @@ def main() -> None:
             *common,
             "--k", "1",
             "--metric", "levenshtein",
+            *guide_counter_hamming_policy_args(),
             "--indel-window", "1",
             "--out", str(out_dir / "counts.levenshtein.mageck.tsv"),
             "--summary", str(lev_summary),
@@ -223,6 +227,9 @@ def main() -> None:
             rows.append(make_row("guide_counter_one_mismatch", "not_installed", workflow,
                                  "hamming_k1_no_indels_auto_offset", n_reads, n_target_rows,
                                  0.0, 127, 0, ["guide-counter", "count"]))
+            rows.append(make_row("guide_counter_exact", "not_installed", workflow,
+                                 "exact_k0_no_errors", n_reads, n_target_rows,
+                                 0.0, 127, 0, ["guide-counter", "count"]))
         else:
             prefix = out_dir / "guide_counter"
             cmd = guide_counter_command(gc, reads, labels, library, prefix, auto_offset_sample)
@@ -231,6 +238,14 @@ def main() -> None:
                                  "hamming_k1_no_indels_auto_offset",
                                  n_reads, n_target_rows, seconds, rc, rss, cmd,
                                  guide_counter_stats(out_dir / "guide_counter.stats.txt")))
+
+            exact_prefix = out_dir / "guide_counter_exact"
+            exact_cmd = guide_counter_command(gc, reads, labels, library, exact_prefix, auto_offset_sample, exact=True)
+            seconds, rc, rss = run(exact_cmd, cwd=out_dir)
+            rows.append(make_row("guide_counter_exact", "0.1.3", workflow,
+                                 "exact_k0_no_errors",
+                                 n_reads, n_target_rows, seconds, rc, rss, exact_cmd,
+                                 guide_counter_stats(out_dir / "guide_counter_exact.stats.txt")))
 
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)

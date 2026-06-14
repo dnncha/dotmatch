@@ -173,6 +173,37 @@ def make_fixture(work: Path, records: int) -> tuple[Path, Path, str]:
     return reads, barcodes, "synthetic_inline_barcode_fixture"
 
 
+def make_levenshtein_fixture(work: Path, records: int) -> tuple[Path, Path, str]:
+    work.mkdir(parents=True, exist_ok=True)
+    barcodes = work / "levenshtein_fixture_barcodes.tsv"
+    reads = work / "levenshtein_fixture_reads.fastq.gz"
+    barcode_rows = [
+        ("lev_A", "ACGTACGT"),
+        ("lev_B", "TTGGAACC"),
+        ("lev_C", "GATCTAGC"),
+        ("lev_D", "CCGTAATG"),
+    ]
+    with barcodes.open("w") as fh:
+        for name, seq in barcode_rows:
+            fh.write(f"{name}\t{seq}\n")
+    patterns = ("exact", "substitution", "deletion", "insertion", "unmatched")
+    with gzip.open(reads, "wt") as fh:
+        for i in range(records):
+            name, seq = barcode_rows[i % len(barcode_rows)]
+            kind = patterns[i % len(patterns)]
+            observed = seq
+            if kind == "substitution":
+                observed = seq[:-1] + ("A" if seq[-1] != "A" else "C")
+            elif kind == "deletion":
+                observed = seq[:3] + seq[4:]
+            elif kind == "insertion":
+                observed = seq[:3] + ("A" if seq[3] != "A" else "C") + seq[3:]
+            elif kind == "unmatched":
+                observed = "NNNNNNNN"
+            fh.write(f"@lev_fixture_{i}_{name}_{kind}\n{observed}\n+\n{'I' * len(observed)}\n")
+    return reads, barcodes, "synthetic_levenshtein_one_edit_fixture"
+
+
 def write_fastq_record(out, header: str, seq: str, plus: str, qual: str) -> None:
     out.write(header)
     out.write(seq)
@@ -230,6 +261,175 @@ def hash_splitter_exact(
     return {"assigned_reads": str(assigned), "unmatched_reads": str(unmatched)}
 
 
+def hamming_distance(a: str, b: str) -> int:
+    return sum(1 for x, y in zip(a, b) if x != y)
+
+
+def hamming_radius_splitter(
+    reads: Path,
+    barcodes: list[tuple[str, str]],
+    out_dir: Path,
+    barcode_start: int = 0,
+    barcode_length: int = 0,
+    k: int = 1,
+) -> dict[str, str]:
+    if barcode_length <= 0:
+        raise ValueError("hamming_radius_splitter requires a fixed barcode length")
+    fixed = [(name, seq) for name, seq in barcodes if len(seq) == barcode_length]
+    out_dir.mkdir(parents=True, exist_ok=True)
+    handles = {}
+    assigned = 0
+    exact = 0
+    corrected = 0
+    ambiguous = 0
+    unmatched = 0
+    opener = gzip.open if reads.suffix == ".gz" else open
+    try:
+        unknown = (out_dir / "unknown.fastq").open("w", encoding="utf-8")
+        ambig = (out_dir / "ambiguous.fastq").open("w", encoding="utf-8")
+        handles["__unknown__"] = unknown
+        handles["__ambiguous__"] = ambig
+        with opener(reads, "rt", encoding="utf-8") as fh:
+            while True:
+                header = fh.readline()
+                if not header:
+                    break
+                seq = fh.readline()
+                plus = fh.readline()
+                qual = fh.readline()
+                if not seq or not plus or not qual:
+                    raise RuntimeError("FASTQ ended mid-record")
+                stripped = seq.rstrip("\n")
+                if barcode_start > len(stripped) or barcode_length > len(stripped) - barcode_start:
+                    unmatched += 1
+                    write_fastq_record(unknown, header, seq, plus, qual)
+                    continue
+                observed = stripped[barcode_start:barcode_start + barcode_length].upper()
+                hits = [(name, dist) for name, target in fixed
+                        if (dist := hamming_distance(observed, target)) <= k]
+                if len(hits) != 1:
+                    if hits:
+                        ambiguous += 1
+                        write_fastq_record(ambig, header, seq, plus, qual)
+                    else:
+                        unmatched += 1
+                        write_fastq_record(unknown, header, seq, plus, qual)
+                    continue
+                sample, dist = hits[0]
+                assigned += 1
+                if dist == 0:
+                    exact += 1
+                else:
+                    corrected += 1
+                if sample not in handles:
+                    handles[sample] = (out_dir / f"{safe_filename(sample)}.fastq").open("w", encoding="utf-8")
+                write_fastq_record(handles[sample], header, seq, plus, qual)
+    finally:
+        for handle in handles.values():
+            handle.close()
+    return {
+        "assigned_reads": str(assigned),
+        "exact_reads": str(exact),
+        "corrected_reads": str(corrected),
+        "ambiguous_reads": str(ambiguous),
+        "unmatched_reads": str(unmatched),
+    }
+
+
+def edit_distance_bounded(a: str, b: str, max_distance: int) -> int:
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, start=1):
+        curr = [i] + [0] * len(b)
+        row_min = curr[0]
+        for j, cb in enumerate(b, start=1):
+            cost = 0 if ca == cb else 1
+            curr[j] = min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost)
+            row_min = min(row_min, curr[j])
+        if row_min > max_distance:
+            return max_distance + 1
+        prev = curr
+    return prev[-1]
+
+
+def levenshtein_radius_splitter(
+    reads: Path,
+    barcodes: list[tuple[str, str]],
+    out_dir: Path,
+    barcode_start: int = 0,
+    barcode_length: int = 0,
+    k: int = 1,
+) -> dict[str, str]:
+    if barcode_length <= 0:
+        raise ValueError("levenshtein_radius_splitter requires a fixed barcode length")
+    fixed = [(name, seq) for name, seq in barcodes if len(seq) == barcode_length]
+    out_dir.mkdir(parents=True, exist_ok=True)
+    handles = {}
+    assigned = 0
+    exact = 0
+    corrected = 0
+    ambiguous = 0
+    unmatched = 0
+    opener = gzip.open if reads.suffix == ".gz" else open
+    try:
+        unknown = (out_dir / "unknown.fastq").open("w", encoding="utf-8")
+        ambig = (out_dir / "ambiguous.fastq").open("w", encoding="utf-8")
+        handles["__unknown__"] = unknown
+        handles["__ambiguous__"] = ambig
+        with opener(reads, "rt", encoding="utf-8") as fh:
+            while True:
+                header = fh.readline()
+                if not header:
+                    break
+                seq = fh.readline()
+                plus = fh.readline()
+                qual = fh.readline()
+                if not seq or not plus or not qual:
+                    raise RuntimeError("FASTQ ended mid-record")
+                stripped = seq.rstrip("\n")
+                if barcode_start > len(stripped):
+                    unmatched += 1
+                    write_fastq_record(unknown, header, seq, plus, qual)
+                    continue
+                candidates = []
+                for length in (barcode_length, barcode_length - 1, barcode_length + 1):
+                    if length <= 0 or length > len(stripped) - barcode_start:
+                        continue
+                    observed = stripped[barcode_start:barcode_start + length].upper()
+                    for name, target in fixed:
+                        distance = edit_distance_bounded(observed, target, k)
+                        if distance <= k:
+                            candidates.append((name, distance))
+                if not candidates:
+                    unmatched += 1
+                    write_fastq_record(unknown, header, seq, plus, qual)
+                    continue
+                best = min(distance for _, distance in candidates)
+                best_names = sorted({name for name, distance in candidates if distance == best})
+                if len(best_names) != 1:
+                    ambiguous += 1
+                    write_fastq_record(ambig, header, seq, plus, qual)
+                    continue
+                sample = best_names[0]
+                assigned += 1
+                if best == 0:
+                    exact += 1
+                else:
+                    corrected += 1
+                if sample not in handles:
+                    handles[sample] = (out_dir / f"{safe_filename(sample)}.fastq").open("w", encoding="utf-8")
+                write_fastq_record(handles[sample], header, seq, plus, qual)
+    finally:
+        for handle in handles.values():
+            handle.close()
+    return {
+        "assigned_reads": str(assigned),
+        "exact_reads": str(exact),
+        "corrected_reads": str(corrected),
+        "ambiguous_reads": str(ambiguous),
+        "unmatched_reads": str(unmatched),
+    }
+
+
 def command_text(cmd: list[str]) -> str:
     return " ".join(public_text(arg) for arg in cmd)
 
@@ -261,6 +461,7 @@ def dotmatch_stats(path: Path) -> dict[str, str]:
         "ambiguous_reads": str(data.get("ambiguous", "")),
         "unmatched_reads": str(int(data.get("unmatched", 0)) + int(data.get("invalid", 0))),
         "verified_per_read": f"{verified / total:.4f}" if total else "",
+        "assignment_engine": str(data.get("assignment_engine", "")),
     }
 
 
@@ -296,6 +497,7 @@ def make_row(tool: str, version: str, workflow: str, semantics: str, reads: int,
         "ambiguous_reads": "",
         "unmatched_reads": "",
         "verified_per_read": "",
+        "assignment_engine": "",
         "exit_code": str(rc),
         "command": command_text(command),
     }
@@ -316,8 +518,12 @@ def main() -> None:
     parser.add_argument("--workflow-name", default="")
     parser.add_argument("--run-cutadapt", action="store_true")
     parser.add_argument("--run-hash-splitter", action="store_true")
+    parser.add_argument("--run-hamming-splitter", action="store_true")
+    parser.add_argument("--run-levenshtein-splitter", action="store_true")
+    parser.add_argument("--fixture-kind", choices=["default", "levenshtein"], default="default")
     parser.add_argument("--repeats", type=int, default=int(os.environ.get("DOTMATCH_BARCODE_REPEATS", "1")))
     parser.add_argument("--out", default=str(RAW))
+    parser.add_argument("--append", action="store_true")
     args = parser.parse_args()
     if args.repeats < 1:
         raise SystemExit("--repeats must be >= 1")
@@ -334,6 +540,8 @@ def main() -> None:
         barcode_length_value = 0
     if auto_barcode_length and args.run_cutadapt and args.k != 0:
         raise SystemExit("--barcode-length auto with Cutadapt is only supported for --k 0 exact-prefix comparisons")
+    if auto_barcode_length and args.run_levenshtein_splitter:
+        raise SystemExit("--run-levenshtein-splitter requires a fixed --barcode-length")
 
     subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True, stdout=subprocess.DEVNULL)
     WORK.mkdir(parents=True, exist_ok=True)
@@ -341,6 +549,8 @@ def main() -> None:
         reads = Path(args.reads).resolve()
         barcodes = Path(args.barcodes).resolve()
         workflow = args.workflow_name or "real_inline_barcode_user_supplied"
+    elif args.fixture_kind == "levenshtein":
+        reads, barcodes, workflow = make_levenshtein_fixture(WORK, args.records)
     else:
         reads, barcodes, workflow = make_fixture(WORK, args.records)
 
@@ -366,9 +576,13 @@ def main() -> None:
             "--barcode-length", barcode_length_arg,
             "--k", str(args.k),
             "--metric", args.metric,
+        ]
+        if args.metric == "levenshtein":
+            dotmatch_cmd.extend(["--indel-window", "1", "--ambiguity-policy", "best"])
+        dotmatch_cmd.extend([
             "--out-dir", str(dotmatch_out),
             "--summary", str(dotmatch_summary),
-        ]
+        ])
         seconds, rc, peak_rss_kb = run(dotmatch_cmd)
         rows.append(make_row(
             "dotmatch_demux",
@@ -465,14 +679,101 @@ def main() -> None:
             row["peak_rss_kb"] = ""
             rows.append(row)
 
+        if args.run_hamming_splitter:
+            if auto_barcode_length:
+                raise SystemExit("--run-hamming-splitter requires a fixed --barcode-length")
+            hamming_out = WORK / f"hamming_splitter_out_r{repeat}"
+            shutil.rmtree(hamming_out, ignore_errors=True)
+            hamming_cmd = [
+                "python3", "scripts/bench_barcode_demux.py",
+                "--reads", str(reads),
+                "--barcodes", str(benchmark_barcodes),
+                "--barcode-start", str(args.barcode_start),
+                "--barcode-length", barcode_length_arg,
+                "--k", str(args.k),
+                "--metric", "hamming",
+                "--run-hamming-splitter",
+                "--repeats", "1",
+            ]
+            start = time.perf_counter()
+            hamming_stats = hamming_radius_splitter(
+                reads, barcode_rows, hamming_out, args.barcode_start, barcode_length_value, args.k
+            )
+            seconds = time.perf_counter() - start
+            row = make_row(
+                "hamming_radius_splitter",
+                "python_local",
+                workflow,
+                "transparent_hamming_radius_unique_demux",
+                n_reads,
+                n_barcodes,
+                barcode_length_arg,
+                args.k,
+                "hamming",
+                seconds,
+                0,
+                0,
+                hamming_cmd,
+                repeat,
+                hamming_stats,
+            )
+            row["peak_rss_kb"] = ""
+            rows.append(row)
+
+        if args.run_levenshtein_splitter:
+            if auto_barcode_length:
+                raise SystemExit("--run-levenshtein-splitter requires a fixed --barcode-length")
+            lev_out = WORK / f"levenshtein_splitter_out_r{repeat}"
+            shutil.rmtree(lev_out, ignore_errors=True)
+            lev_cmd = [
+                "python3", "scripts/bench_barcode_demux.py",
+                "--reads", str(reads),
+                "--barcodes", str(benchmark_barcodes),
+                "--barcode-start", str(args.barcode_start),
+                "--barcode-length", barcode_length_arg,
+                "--k", str(args.k),
+                "--metric", "levenshtein",
+                "--run-levenshtein-splitter",
+                "--repeats", "1",
+            ]
+            start = time.perf_counter()
+            lev_stats = levenshtein_radius_splitter(
+                reads, barcode_rows, lev_out, args.barcode_start, barcode_length_value, args.k
+            )
+            seconds = time.perf_counter() - start
+            row = make_row(
+                "levenshtein_radius_splitter",
+                "python_local",
+                workflow,
+                "transparent_levenshtein_radius_unique_demux",
+                n_reads,
+                n_barcodes,
+                barcode_length_arg,
+                args.k,
+                "levenshtein",
+                seconds,
+                0,
+                0,
+                lev_cmd,
+                repeat,
+                lev_stats,
+            )
+            row["peak_rss_kb"] = ""
+            rows.append(row)
+
     fields = [
         "tool", "version", "workflow", "semantics", "repeat", "n_reads", "n_barcodes", "barcode_length", "k", "metric",
         "seconds", "reads_per_sec", "peak_rss_kb", "assigned_reads", "exact_reads", "corrected_reads",
-        "ambiguous_reads", "unmatched_reads", "verified_per_read", "exit_code", "command",
+        "ambiguous_reads", "unmatched_reads", "verified_per_read", "assignment_engine", "exit_code", "command",
     ]
+    existing_rows: list[dict[str, str]] = []
+    if args.append and out_csv.exists():
+        with out_csv.open(newline="") as fh:
+            existing_rows = list(csv.DictReader(fh))
     with out_csv.open("w", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=fields)
         writer.writeheader()
+        writer.writerows(existing_rows)
         writer.writerows(rows)
     print(out_csv)
 

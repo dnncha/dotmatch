@@ -388,6 +388,57 @@ def test_repeated_gate_rejects_missing_named_full_guide_counter_dataset():
     assert any("sanson_brunello:guide_counter_one_mismatch needs a full FASTQ guide-counter comparison row" in f for f in failures)
 
 
+def _validation_row(dataset, sample, **overrides):
+    row = {
+        "dataset": dataset,
+        "sample": sample,
+        "checked_reads": "1000",
+        "mismatches": "0",
+        "oracle_strategy": "bounded_edlib_candidates",
+        "edlib_alignments": "12000",
+        "bounded_windows": "3000",
+        "fallback_windows": "50",
+    }
+    row.update({key: str(value) for key, value in overrides.items()})
+    return row
+
+
+def test_validation_gate_accepts_bounded_edlib_oracle_rows():
+    gate = _load_gate()
+    rows = [
+        _validation_row("mageck_yusa", "plasmid"),
+        _validation_row("sanson_brunello", "RepA"),
+    ]
+    failures = []
+
+    gate.validation_gate(rows, min_checked=1000, failures=failures)
+
+    assert failures == []
+
+
+def test_validation_gate_rejects_weak_oracle_metadata():
+    gate = _load_gate()
+    rows = [
+        _validation_row(
+            "mageck_yusa",
+            "plasmid",
+            oracle_strategy="full_edlib_scan",
+            edlib_alignments="0",
+            bounded_windows="0",
+            fallback_windows="51",
+        ),
+        _validation_row("sanson_brunello", "RepA"),
+    ]
+    failures = []
+
+    gate.validation_gate(rows, min_checked=1000, failures=failures)
+
+    assert any("bounded_edlib_candidates" in f for f in failures)
+    assert any("edlib_alignments missing" in f for f in failures)
+    assert any("bounded_windows missing" in f for f in failures)
+    assert any("fallback_windows exceeds 5%" in f for f in failures)
+
+
 def test_hamming_k23_comparator_gate_rejects_missing_bowtie1_rows():
     gate = _load_gate()
     rows = [
@@ -425,6 +476,13 @@ def test_hamming_k23_comparator_gate_accepts_minimal_passing_rows():
             "bowtie1_tool": "bowtie1",
             "status": "ok",
             "exit_code": "0",
+            "semantics": "Hamming k=2, no indels, same-strand fixed guide window",
+            "n_targets": "77441",
+            "dotmatch_reads_per_sec": "120000.0",
+            "bowtie1_reads_per_sec": "10000.0",
+            "speedup": "12.0",
+            "dotmatch_assigned_reads": "5000",
+            "bowtie1_assigned_reads": "5000",
         },
         {
             "dataset": "mageck_yusa",
@@ -435,6 +493,13 @@ def test_hamming_k23_comparator_gate_accepts_minimal_passing_rows():
             "bowtie1_tool": "bowtie1",
             "status": "ok",
             "exit_code": "0",
+            "semantics": "Hamming k=3, no indels, same-strand fixed guide window",
+            "n_targets": "77441",
+            "dotmatch_reads_per_sec": "12000.0",
+            "bowtie1_reads_per_sec": "5000.0",
+            "speedup": "2.4",
+            "dotmatch_assigned_reads": "17000",
+            "bowtie1_assigned_reads": "17000",
         },
     ]
     failures = []
@@ -446,5 +511,116 @@ def test_hamming_k23_comparator_gate_accepts_minimal_passing_rows():
         min_records=100000,
         datasets=["mageck_yusa"],
     )
+
+    assert failures == []
+
+
+def test_hamming_k23_comparator_gate_rejects_weak_speed_or_disagreement():
+    gate = _load_gate()
+    rows = [
+        {
+            "dataset": "mageck_yusa",
+            "k": "2",
+            "records_per_sample": "100000",
+            "comparison": "dotmatch_hamming_k2_vs_bowtie1",
+            "dotmatch_tool": "dotmatch_hamming_k2",
+            "bowtie1_tool": "bowtie1",
+            "status": "ok",
+            "exit_code": "0",
+            "semantics": "Hamming k=2, no indels, same-strand fixed guide window",
+            "n_targets": "1000",
+            "dotmatch_reads_per_sec": "11000.0",
+            "bowtie1_reads_per_sec": "10000.0",
+            "speedup": "1.1",
+            "dotmatch_assigned_reads": "41",
+            "bowtie1_assigned_reads": "40",
+        }
+    ]
+    failures = []
+
+    gate.hamming_k23_comparator_gate(
+        rows,
+        required_ks=["2"],
+        failures=failures,
+        min_records=100000,
+        datasets=["mageck_yusa"],
+    )
+
+    assert any("speedup below" in f for f in failures)
+    assert any("target library is too small" in f for f in failures)
+    assert any("assigned reads differ" in f for f in failures)
+
+
+def test_crispr_report_gate_requires_hamming_k23_rows(tmp_path):
+    gate = _load_gate()
+    failures = []
+    report = tmp_path / "README.md"
+    report.write_text(
+        "# CRISPR\n\n"
+        "Broad comparisons require `make crispr-comparison-gate` to pass.\n\n"
+        "## Hamming k2/k3 External Comparator Rows\n\n"
+        "compare DotMatch directly with Bowtie 1\n\n"
+        "Hamming k=2 must clear >=8x vs Bowtie 1; Hamming k=3 must clear >=2x vs Bowtie 1.\n\n"
+        "|dataset|k|records_per_sample|dotmatch_tool|bowtie1_tool|dotmatch_reads_per_sec|bowtie1_reads_per_sec|speedup|status|semantics|artifact|\n"
+        "|---|---|---|---|---|---|---|---|---|---|---|\n"
+        "## Edlib Oracle Validation\n\n"
+        "bounded_edlib_candidates\n",
+        encoding="utf-8",
+    )
+    rows = [
+        {
+            "dataset": "mageck_yusa",
+            "k": "2",
+            "records_per_sample": "100000",
+            "dotmatch_tool": "dotmatch_hamming_k2",
+            "bowtie1_tool": "bowtie1",
+            "dotmatch_reads_per_sec": "300.0",
+            "bowtie1_reads_per_sec": "150.0",
+            "speedup": "2.00",
+            "status": "ok",
+            "semantics": "Hamming k=2, no indels",
+            "artifact": "benchmarks/raw/k2.csv",
+        }
+    ]
+
+    gate.report_gate(report, rows, failures)
+
+    assert any("Hamming k2 comparator row" in failure for failure in failures)
+
+
+def test_crispr_report_gate_accepts_matching_hamming_k23_rows(tmp_path):
+    gate = _load_gate()
+    failures = []
+    report = tmp_path / "README.md"
+    report.write_text(
+        "# CRISPR\n\n"
+        "Broad comparisons require `make crispr-comparison-gate` to pass.\n\n"
+        "## Hamming k2/k3 External Comparator Rows\n\n"
+        "compare DotMatch directly with Bowtie 1\n\n"
+        "Hamming k=2 must clear >=8x vs Bowtie 1; Hamming k=3 must clear >=2x vs Bowtie 1.\n\n"
+        "|dataset|k|records_per_sample|dotmatch_tool|bowtie1_tool|dotmatch_reads_per_sec|bowtie1_reads_per_sec|speedup|status|semantics|artifact|\n"
+        "|---|---|---|---|---|---|---|---|---|---|---|\n"
+        "|mageck_yusa|2|100000|dotmatch_hamming_k2|bowtie1|300.0|150.0|2.00|ok|Hamming k=2, no indels|benchmarks/raw/k2.csv|\n\n"
+        "## Edlib Oracle Validation\n\n"
+        "bounded_edlib_candidates\n",
+        encoding="utf-8",
+    )
+    rows = [
+        {
+            "dataset": "mageck_yusa",
+            "k": "2",
+            "records_per_sample": "100000",
+            "dotmatch_tool": "dotmatch_hamming_k2",
+            "bowtie1_tool": "bowtie1",
+            "dotmatch_reads_per_sec": "300.0",
+            "bowtie1_reads_per_sec": "150.0",
+            "speedup": "2.00",
+            "status": "ok",
+            "semantics": "Hamming k=2, no indels",
+            "artifact": "benchmarks/raw/k2.csv",
+        }
+    ]
+
+    gate.report_gate(report, rows, failures)
 
     assert failures == []

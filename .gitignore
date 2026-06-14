@@ -55,6 +55,7 @@ python/tests/test_check_paper_readiness.py
 # Workflow manager local state and example outputs
 .snakemake/
 work/
+**/assay_out/
 examples/workflows/multiqc/output/
 examples/workflows/nextflow/output/
 examples/workflows/snakemake/output/

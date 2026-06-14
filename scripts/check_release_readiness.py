@@ -172,10 +172,26 @@ def check_no_unminted_doi_fields(root: Path, result: ReleaseAudit) -> None:
 def check_sdist_metadata(root: Path, result: ReleaseAudit) -> None:
     manifest = _read(root / "MANIFEST.in")
     verifier = _read(root / "scripts" / "check_python_wheel.py")
-    for required in ["CITATION.cff", "codemeta.json", "docs/assay-evidence.json", "src/qdalign.c", "include/qdalign.h"]:
+    for required in [
+        "CITATION.cff",
+        "codemeta.json",
+        "docs/assay-evidence.json",
+        "src/qdalign.c",
+        "src/qdmetal_stub.c",
+        "include/qdalign.h",
+        "include/qdmetal.h",
+    ]:
         if f"include {required}" not in manifest:
             result.failures.append(f"MANIFEST.in must include {required}")
-    for required_suffix in ["/CITATION.cff", "/codemeta.json", "/docs/assay-evidence.json", "/src/qdalign.c", "/include/qdalign.h"]:
+    for required_suffix in [
+        "/CITATION.cff",
+        "/codemeta.json",
+        "/docs/assay-evidence.json",
+        "/src/qdalign.c",
+        "/src/qdmetal_stub.c",
+        "/include/qdalign.h",
+        "/include/qdmetal.h",
+    ]:
         if required_suffix not in verifier:
             result.failures.append(f"scripts/check_python_wheel.py must verify {required_suffix}")
     for verifier_fragment in ["dotmatch/data/assay-evidence.json", "evidence_boundary"]:
@@ -270,8 +286,8 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
     required_published_labels = [
         "org.opencontainers.image.title=DotMatch",
         "org.opencontainers.image.source=https://github.com/dnncha/dotmatch",
-        "org.opencontainers.image.url=https://github.com/dnncha/dotmatch",
-        "org.opencontainers.image.documentation=https://github.com/dnncha/dotmatch#readme",
+        "org.opencontainers.image.url=https://dotmatch.readthedocs.io/",
+        "org.opencontainers.image.documentation=https://dotmatch.readthedocs.io/",
         "org.opencontainers.image.licenses=Apache-2.0",
         "org.opencontainers.image.authors=Donncha O'Toole",
     ]
@@ -297,6 +313,7 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
         "make asan",
         "make docs-ready",
         "make scientific-readiness-ready",
+        "make native-exact-gate",
         "make pretag-ready",
     ]:
         if release_process_fragment not in release_process:
@@ -311,6 +328,16 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
         result.failures.append("Makefile must include release-ready target")
     elif "docs-ready" not in release_block:
         result.failures.append("Makefile release-ready target must include docs-ready")
+    elif "native-exact-gate" not in release_block:
+        result.failures.append("Makefile release-ready target must include native-exact-gate")
+    crispr_block = _make_target_block(makefile, "crispr-comparison-gate")
+    if not crispr_block:
+        result.failures.append("Makefile must include crispr-comparison-gate target")
+    else:
+        for required_k in ["2", "3"]:
+            fragment = f"--require-hamming-k23-comparator {required_k}"
+            if fragment not in crispr_block:
+                result.failures.append(f"Makefile crispr-comparison-gate target must include {fragment}")
     repository_block = _make_target_block(makefile, "repository-ready")
     if not repository_block:
         result.failures.append("Makefile must include repository-ready target")

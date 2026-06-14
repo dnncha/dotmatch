@@ -85,7 +85,18 @@ def test_bcl_tiny_public_gate_accepts_public_dotmatch_and_validated_bcl2fastq_ro
     csv_path = tmp_path / "bcl_demux.csv"
     report = tmp_path / "README.md"
     _write_rows(csv_path, [_dotmatch_row(), _bcl2fastq_row()])
-    report.write_text("# BCL benchmark report\n", encoding="utf-8")
+    report.write_text(
+        "# BCL benchmark report\n\n"
+        "Current status: DotMatch supports a first lane-1 classic per-cycle BCL milestone. "
+        "CBCL/NovaSeq-style input and broader multi-lane BCL operation are still gated as future work.\n"
+        "Rows with exit code `127` are environment records for missing competitors, not runtime comparisons.\n"
+        "Run `make bcl-tiny-public-gate` to verify the narrow public 10x tiny-BCL classic per-cycle milestone. "
+        "This gate checks bcl2fastq count-total validation when bcl2fastq is available; "
+        "an explicit `not_installed` environment row keeps the boundary visible without turning it into a false comparison.\n"
+        "Broader raw-BCL evaluation needs real classic-BCL and CBCL run-folder rows, a successful DotMatch CBCL row, "
+        "and `dotmatch bcl-validate` zero-mismatch evidence.\n",
+        encoding="utf-8",
+    )
 
     failures = []
     gate.row_gate(gate.read_rows(csv_path), failures)
@@ -136,3 +147,16 @@ def test_bcl_tiny_public_gate_rejects_empty_report(tmp_path):
     gate.report_gate(report, failures)
 
     assert any("empty BCL benchmark report" in failure for failure in failures)
+
+
+def test_bcl_tiny_public_gate_rejects_report_without_boundary(tmp_path):
+    gate = _load_gate()
+    report = tmp_path / "README.md"
+    report.write_text("# BCL benchmark report\n\nFast BCL demux.\n", encoding="utf-8")
+
+    failures = []
+    gate.report_gate(report, failures)
+
+    assert any("classic per-cycle BCL milestone" in failure for failure in failures)
+    assert any("not runtime comparisons" in failure for failure in failures)
+    assert any("DotMatch CBCL row" in failure for failure in failures)

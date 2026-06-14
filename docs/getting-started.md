@@ -7,17 +7,17 @@ adapter prefixes.
 
 ## Install
 
-For the current PyPI release:
+After the v0.1.8 release workflow publishes to PyPI:
 
 ```bash
-python3 -m pip install dotmatch==0.1.7
+python3 -m pip install dotmatch==0.1.8
 dotmatch --version
 ```
 
-For the currently published Bioconda package:
+After the v0.1.8 Bioconda recipe merges and propagates:
 
 ```bash
-conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.4
+conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.8
 conda activate dotmatch
 dotmatch --version
 ```
@@ -34,6 +34,42 @@ dotmatch --version
 
 The source build needs a C compiler, `make`, Python 3.9 or newer, and zlib for
 FASTQ.gz support.
+
+Bioconda metadata may still list 0.1.7 until the v0.1.8 upstream recipe PR
+merges and propagates. PyPI remains the simplest cross-platform Python install
+path; Bioconda is the preferred package-manager path for Conda-based
+bioinformatics environments.
+
+## Recommended Workflow: Assay Project
+
+The default scientist path is scaffold → check → run → open the reliability
+report. Start from a guide or target table plus a directory of FASTQ files:
+
+```bash
+dotmatch assay new crispr \
+  --library guides.tsv \
+  --reads-dir fastqs/ \
+  --out crispr_screen/
+```
+
+Review `crispr_screen/inference_report.json`, then run the project:
+
+```bash
+cd crispr_screen
+./run.sh
+```
+
+`run.sh` calls `dotmatch assay start assay.toml`, which runs preflight `check`,
+executes the assay, and prints the reliability verdict. Open
+`assay_out/reliability_report.html` first. If the verdict is not `passed`, apply
+the suggested edits in `assay_out/assay_fixes.tsv` and rerun `./run.sh`.
+
+The CRISPR namespace exposes the same scaffold:
+
+```bash
+dotmatch crispr new --library guides.tsv --reads-dir fastqs/ --out crispr_screen/
+dotmatch crispr start crispr_screen/assay.toml
+```
 
 ## Prepare Targets
 
@@ -165,7 +201,9 @@ DotMatch.
 
 ## Next Steps
 
-- Use [AssaySpec](assayspec.md) for declarative, reproducible workflow runs.
+- Use [AssaySpec](assayspec.md) for the full `assay new`, `start`, `check`, and
+  `run` command reference.
+- Use [Command Reference](command-reference.md) for the current command map.
 - Use [CRISPR Count QC](crispr-qc.md) before downstream screen statistics.
 - Use [Barcode Panel Design](barcode-panel-design.md) when creating or checking
   barcode panels.

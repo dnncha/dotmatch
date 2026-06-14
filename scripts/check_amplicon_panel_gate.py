@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "benchmarks" / "raw" / "amplicon_panel.csv"
+REPORT = ROOT / "docs" / "benchmarks" / "amplicon_panel" / "README.md"
 PUBLIC_WORKFLOW = "public_nfcore_artic_v3_amplicon_primer"
 
 
@@ -112,9 +113,29 @@ def public_row_gate(rows: list[dict[str, str]], failures: list[str]) -> None:
         failures.append("public amplicon/panel rows must record metadata path")
 
 
+def report_gate(report: Path, failures: list[str]) -> None:
+    if not report.exists():
+        failures.append(f"missing amplicon/panel report: {report}")
+        return
+    text = report.read_text(encoding="utf-8")
+    for required in [
+        "Current status: public primer-start assignment evidence only.",
+        "not amplicon consensus, variant calling, primer trimming, or clinical validation evidence",
+        "validates per-read known-primer assignment semantics",
+        "not consensus generation, primer trimming, variant calling, or clinical interpretation",
+        "narrow public ARTIC primer-start per-read assignment",
+        "Broader amplicon/panel benchmarks require public full-assay comparator semantics",
+        "consensus or variant-call validation where relevant",
+    ]:
+        if required not in text:
+            failures.append(f"amplicon/panel report must retain evidence boundary: {required}")
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--csv", default=str(RAW))
+    parser.add_argument("--report", default=str(REPORT))
+    parser.add_argument("--skip-report", action="store_true")
     parser.add_argument("--public", action="store_true", help="require public nf-core ARTIC amplicon rows")
     args = parser.parse_args(argv)
 
@@ -123,6 +144,8 @@ def main(argv=None) -> int:
     row_gate(rows, failures)
     if args.public:
         public_row_gate(rows, failures)
+    if not args.skip_report:
+        report_gate(Path(args.report), failures)
     if failures:
         for failure in failures:
             print(f"FAIL: {failure}")

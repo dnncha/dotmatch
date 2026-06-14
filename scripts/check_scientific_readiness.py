@@ -11,9 +11,71 @@ REQUIRED_CONTROLS = {
     "memory_safety",
     "oracle_validation",
     "public_assay_evidence",
+    "public_claim_wording",
     "distribution_reproducibility",
     "release_governance",
 }
+
+PUBLIC_CLAIM_FILES = [
+    "README.md",
+    "pyproject.toml",
+    "codemeta.json",
+    ".zenodo.json",
+    "packaging/bioconda/meta.yaml",
+    "examples/workflows/nf-core/modules/local/dotmatch/crispr_count/meta.yml",
+    "examples/workflows/nf-core/modules/local/dotmatch/assay_run/meta.yml",
+]
+
+FORBIDDEN_PUBLIC_CLAIM_PATTERNS = [
+    (
+        re.compile(r"\bfast exact short-dna known-target assignment\b", re.IGNORECASE),
+        "use deterministic/evidence-bounded assignment language instead of broad fast-exact positioning",
+    ),
+    (
+        re.compile(r"\b(?:sota|state[- ]of[- ]the[- ]art)\b", re.IGNORECASE),
+        "SOTA language requires a scoped benchmark report and must not appear in broad public metadata",
+    ),
+]
+
+SCIENTIFIC_CLAIMS_REQUIRED_FRAGMENTS = [
+    "## Strongest Scoped Performance Evidence",
+    "global short-read",
+    "all demultiplexing tasks",
+    "`make native-exact-gate`",
+    "large-library fixed-length `k=2` substitution rows",
+    "Levenshtein `k=2` insertion/deletion rows",
+    "`make crispr-comparison-gate` requires two real public",
+    "DotMatch-vs-Bowtie 1 Hamming `k=2`/`k=3`",
+    "fair guide-counter compatibility lane is Hamming `k=1`, no indels",
+    "`make public-crispr-evidence-gate`",
+    "not universal CRISPR superiority",
+    "`make barcode-comparison-gate`",
+    "Levenshtein one-edit barcode lane remains synthetic fixture evidence",
+]
+
+README_REQUIRED_EVIDENCE_FRAGMENTS = [
+    "Evidence boundary:",
+    "DotMatch Evidence Notes",
+    "strongest",
+    "native fixed-window indexed assignment",
+    "public CRISPR",
+    "guide-counting comparisons",
+    "checked public inline-barcode lanes",
+    "broader",
+    "BCL replacement claims need their",
+]
+
+DOCS_INDEX_REQUIRED_EVIDENCE_FRAGMENTS = [
+    "Evidence boundary:",
+    "DotMatch Evidence Notes",
+    "strongest",
+    "native fixed-window indexed assignment",
+    "public CRISPR",
+    "guide-counting comparisons",
+    "checked public inline-barcode lanes",
+    "broader",
+    "BCL replacement claims",
+]
 
 
 class AuditResult:
@@ -52,6 +114,156 @@ def _check_gate(gate: str, make_targets: set[str], result: AuditResult) -> None:
         return
     if parts[1] not in make_targets:
         result.failures.append(f"missing make target for scientific readiness gate: {parts[1]}")
+
+
+def _check_public_claim_wording(root: Path, result: AuditResult) -> None:
+    for rel_path in PUBLIC_CLAIM_FILES:
+        path = root / rel_path
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        for pattern, message in FORBIDDEN_PUBLIC_CLAIM_PATTERNS:
+            for match in pattern.finditer(text):
+                line_no = text.count("\n", 0, match.start()) + 1
+                result.failures.append(f"{rel_path}:{line_no}: {message}")
+
+
+def _check_scientific_claims_contract(root: Path, result: AuditResult) -> None:
+    path = root / "docs" / "scientific-claims.md"
+    if not path.exists():
+        result.failures.append("missing scientific claims document: docs/scientific-claims.md")
+        return
+    text = path.read_text(encoding="utf-8")
+    for fragment in SCIENTIFIC_CLAIMS_REQUIRED_FRAGMENTS:
+        if fragment not in text:
+            result.failures.append(f"docs/scientific-claims.md must retain scoped evidence statement: {fragment}")
+    _check_native_claim_values(root, text, result)
+    _check_crispr_claim_values(root, text, result)
+
+
+def _parse_native_gated_rows(report_text: str) -> dict[str, dict[str, str]]:
+    rows: dict[str, dict[str, str]] = {}
+    in_table = False
+    fields: list[str] = []
+    for line in report_text.splitlines():
+        stripped = line.strip()
+        if stripped == "## Gated Native Scaling Claims":
+            in_table = True
+            continue
+        if in_table and stripped.startswith("## "):
+            break
+        if not in_table or not stripped.startswith("|"):
+            continue
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if cells and all(set(cell) <= {"-"} for cell in cells):
+            continue
+        if cells and cells[0] == "claim":
+            fields = cells
+            continue
+        if fields and len(cells) == len(fields):
+            row = dict(zip(fields, cells))
+            claim = row.get("claim", "")
+            if claim:
+                rows[claim] = row
+    return rows
+
+
+def _check_native_claim_values(root: Path, scientific_text: str, result: AuditResult) -> None:
+    report = root / "docs" / "benchmarks" / "native" / "README.md"
+    if not report.exists():
+        result.failures.append("missing native benchmark report: docs/benchmarks/native/README.md")
+        return
+    rows = _parse_native_gated_rows(report.read_text(encoding="utf-8"))
+    for claim in [
+        "k=2 substitution indexed rows",
+        "Levenshtein k=2 insertion/deletion rows",
+    ]:
+        row = rows.get(claim)
+        if not row:
+            result.failures.append(f"native benchmark report missing gated claim row: {claim}")
+            continue
+        speedup = row.get("min_speedup_vs_edlib", "")
+        verified = row.get("max_verified_per_read", "")
+        if speedup and f"minimum `{speedup}x` speedup over Edlib" not in scientific_text:
+            result.failures.append(
+                "docs/scientific-claims.md must cite current native benchmark minimum "
+                f"for {claim}: {speedup}x"
+            )
+        if verified and f"at most `{verified}` verified" not in scientific_text:
+            result.failures.append(
+                "docs/scientific-claims.md must cite current native benchmark verified-candidate "
+                f"bound for {claim}: {verified}"
+            )
+
+
+def _parse_crispr_hamming_rows(report_text: str) -> dict[str, str]:
+    rows: dict[str, str] = {}
+    in_table = False
+    fields: list[str] = []
+    for line in report_text.splitlines():
+        stripped = line.strip()
+        if stripped == "## Hamming k2/k3 External Comparator Rows":
+            in_table = True
+            continue
+        if in_table and stripped.startswith("## "):
+            break
+        if not in_table or not stripped.startswith("|"):
+            continue
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if cells and all(set(cell) <= {"-"} for cell in cells):
+            continue
+        if cells and cells[0] == "dataset":
+            fields = cells
+            continue
+        if fields and len(cells) == len(fields):
+            row = dict(zip(fields, cells))
+            k = row.get("k", "")
+            speedup = row.get("speedup", "")
+            if k and speedup:
+                rows[k] = speedup
+    return rows
+
+
+def _check_crispr_claim_values(root: Path, scientific_text: str, result: AuditResult) -> None:
+    report = root / "docs" / "benchmarks" / "crispr_comparison" / "README.md"
+    if not report.exists():
+        result.failures.append("missing CRISPR comparison report: docs/benchmarks/crispr_comparison/README.md")
+        return
+    normalized_scientific_text = re.sub(r"\s+", " ", scientific_text)
+    rows = _parse_crispr_hamming_rows(report.read_text(encoding="utf-8"))
+    for k in ["2", "3"]:
+        speedup = rows.get(k)
+        if not speedup:
+            result.failures.append(f"CRISPR comparison report missing Hamming k={k} observed speedup")
+            continue
+        expected = f"current Bowtie 1 artifact records `{speedup}x` for Hamming `k={k}`"
+        if expected not in normalized_scientific_text:
+            result.failures.append(
+                "docs/scientific-claims.md must cite current CRISPR Bowtie 1 observed speedup "
+                f"for Hamming k={k}: {speedup}x"
+            )
+
+
+def _check_readme_evidence_boundary(root: Path, result: AuditResult) -> None:
+    path = root / "README.md"
+    if not path.exists():
+        result.failures.append("missing README.md")
+        return
+    text = path.read_text(encoding="utf-8")
+    for fragment in README_REQUIRED_EVIDENCE_FRAGMENTS:
+        if fragment not in text:
+            result.failures.append(f"README.md must retain evidence-boundary statement: {fragment}")
+
+
+def _check_docs_index_evidence_boundary(root: Path, result: AuditResult) -> None:
+    path = root / "docs" / "index.md"
+    if not path.exists():
+        result.failures.append("missing docs/index.md")
+        return
+    text = path.read_text(encoding="utf-8")
+    for fragment in DOCS_INDEX_REQUIRED_EVIDENCE_FRAGMENTS:
+        if fragment not in text:
+            result.failures.append(f"docs/index.md must retain evidence-boundary statement: {fragment}")
 
 
 def audit(root: Path) -> AuditResult:
@@ -112,6 +324,10 @@ def audit(root: Path) -> AuditResult:
     missing = REQUIRED_CONTROLS - seen
     for control_id in sorted(missing):
         result.failures.append(f"missing required scientific readiness control: {control_id}")
+    _check_public_claim_wording(root, result)
+    _check_scientific_claims_contract(root, result)
+    _check_readme_evidence_boundary(root, result)
+    _check_docs_index_evidence_boundary(root, result)
     if not missing and not result.failures:
         result.passed.append("scientific readiness controls valid")
     return result

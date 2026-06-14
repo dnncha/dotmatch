@@ -5,6 +5,7 @@
 [![Bioconda](https://img.shields.io/conda/vn/bioconda/dotmatch?label=bioconda)](https://anaconda.org/bioconda/dotmatch)
 [![Bioconda downloads](https://img.shields.io/conda/dn/bioconda/dotmatch?label=downloads)](https://anaconda.org/bioconda/dotmatch)
 [![Bioconda platforms](https://img.shields.io/conda/pn/bioconda/dotmatch?label=platforms)](https://anaconda.org/bioconda/dotmatch)
+[![Documentation Status](https://readthedocs.org/projects/dotmatch/badge/?version=latest)](https://dotmatch.readthedocs.io/en/latest/?badge=latest)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Citation](https://img.shields.io/badge/cite-CITATION.cff-green.svg)](CITATION.cff)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20541629.svg)](https://doi.org/10.5281/zenodo.20541629)
@@ -20,6 +21,13 @@ It is built for CRISPR guide counting, inline barcode demultiplexing,
 feature-barcode reads, primer or adapter-prefix checks, amplicon-panel starts,
 whitelist-style assays, and barcode panel design. It is not a genome aligner,
 basecaller, UMI tool, or downstream screen-analysis package.
+
+Evidence boundary: performance statements are scoped to the benchmark reports
+and gates in [DotMatch Evidence Notes](docs/scientific-claims.md). The strongest
+current evidence is native fixed-window indexed assignment, public CRISPR
+guide-counting comparisons, and checked public inline-barcode lanes; broader
+alignment, demultiplexing, screen-analysis, or BCL replacement claims need their
+own gates before they are public claims.
 
 Package scope: the published Bioconda package installs the `dotmatch` command,
 Python imports, workflow namespaces, and C header/library artifacts. The
@@ -148,11 +156,12 @@ windows and known target lists.
 
 ## Installation
 
-DotMatch is published on PyPI for Linux and macOS. The PyPI package includes the
-`dotmatch` command, Python imports, and the bundled native library.
+DotMatch is prepared for PyPI publication on Linux and macOS. After the
+`v0.1.8` release workflow publishes, the PyPI package includes the `dotmatch`
+command, Python imports, and the bundled native library.
 
 ```bash
-python3 -m pip install dotmatch==0.1.7
+python3 -m pip install dotmatch==0.1.8
 dotmatch --version
 dotmatch dist ACGT AGGT
 ```
@@ -185,14 +194,14 @@ docker build -t dotmatch:dev .
 docker run --rm -v "$PWD:/work" dotmatch:dev dist ACGT AGGT
 ```
 
-Bioconda currently publishes DotMatch 0.1.4 while the 0.1.7 recipe update is
-green and waiting for maintainer review. Use the pinned Bioconda command only
-when you specifically need the current Bioconda package. The 0.1.7 recipe opts
-into `osx-arm64` builds for Apple Silicon, but treat that platform as available
-only after Bioconda metadata and install smoke tests verify it:
+Bioconda is the Conda-based bioinformatics install path. The checked-in recipe
+template is prepared for DotMatch 0.1.8; public Bioconda metadata may still show
+0.1.7 until the upstream recipe PR merges and propagates. After propagation,
+the package is expected on `linux-64`, `osx-64`, and `osx-arm64`, including
+Apple Silicon Macs:
 
 ```bash
-conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.4
+conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.8
 conda activate dotmatch
 dotmatch --version
 ```
@@ -204,20 +213,20 @@ in [Packaging Notes](docs/packaging.md), the
 available for a release after `make distribution-channels` verifies public
 metadata and install smoke tests.
 
-PyPI publishes the 0.1.7 source distribution, native macOS wheel, and repaired
-manylinux/musllinux Linux wheels. PyPI trusted publishing is configured for the
-tagged release workflow. PyPI wheel availability is now visible on PyPI for
-0.1.7; the GitHub release workflow builds and smoke-tests repaired
-manylinux/musllinux wheels before upload. Raw `linux_x86_64` wheels remain
-GitHub release artifacts only and are not uploaded to PyPI.
+The tagged release workflow publishes the 0.1.8 source distribution, native
+macOS wheel, and repaired manylinux/musllinux Linux wheels. PyPI trusted
+publishing is configured for that workflow. The GitHub release workflow builds
+and smoke-tests repaired manylinux/musllinux wheels before upload. PyPI wheel
+availability should be treated as public only after the release files are
+visible on PyPI and `make distribution-channels` verifies the release. Raw
+`linux_x86_64` wheels remain GitHub release artifacts only and are not uploaded
+to PyPI.
 
 Bioconda provides the `dotmatch` command-line tool, Python workflow namespaces,
 Python imports, and C header/library artifacts for the published package
 version. The installed `dotmatch` console script exposes the native assignment
 commands plus `dotmatch assay ...`, `dotmatch barcode ...`, and
-`dotmatch panel ...`. The next release is packaging-ready in this repository,
-but do not cite a newer Bioconda version until the channel metadata and install
-smoke tests verify it.
+`dotmatch panel ...`.
 
 Optional local Workbench: DotMatch also includes a desktop Workbench under
 `apps/workbench` for local AssaySpec design, inference, planning, running, and
@@ -263,8 +272,26 @@ mode.
 
 ## CRISPR Guide Counting
 
-For pooled CRISPR screens, `crispr-count` wraps the FASTQ counting engine and
-writes a MAGeCK-style count matrix.
+The default production path scaffolds a reviewable assay project, runs preflight
+`check`, counts guides, and writes a reliability report with suggested
+`assay.toml` fixes when QC thresholds fail.
+
+```bash
+dotmatch assay new crispr \
+  --library guides.csv \
+  --reads-dir fastqs/ \
+  --out crispr_screen/
+
+cd crispr_screen
+./run.sh
+```
+
+`./run.sh` calls `dotmatch assay start assay.toml`. Open
+`assay_out/reliability_report.html` first; apply `assay_out/assay_fixes.tsv`
+before downstream statistics when the verdict is not `passed`.
+
+For a single command without the assay wrapper, `crispr-count` writes a
+MAGeCK-style count matrix:
 
 ```bash
 cat > samples.tsv <<'EOF'
@@ -558,7 +585,7 @@ A short JOSS software-paper draft is available in [paper/paper.md](paper/paper.m
 @software{dotmatch_zenodo_017,
   author = {{O'Toole}, Donncha},
   title = {{DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning}},
-  version = {0.1.7},
+  version = {0.1.8},
   date = {2026-06-04},
   publisher = {Zenodo},
   doi = {10.5281/zenodo.20541629},
