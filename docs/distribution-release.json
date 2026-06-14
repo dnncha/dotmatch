@@ -49,12 +49,12 @@
       "status": "blocked",
       "expected_url": "https://zenodo.org/records/20541629",
       "verification_command": "make distribution-channels",
-      "blocker": "The checked citation DOI resolves, but the v0.1.8 Zenodo archive has not yet been refreshed and verified after tag publication.",
+      "blocker": "The checked citation DOI resolves, but Zenodo record 20541629 still reports version 0.1.7, so the v0.1.8 archive has not yet been refreshed and verified after tag publication.",
       "next_action": "After Zenodo archives v0.1.8, update DOI evidence if Zenodo mints a new version DOI and rerun make distribution-channels."
     }
   ],
   "blockers": [
-    "DotMatch 0.1.8 has not yet been fully verified across Bioconda, BioContainers, GHCR runtime smoke tests, and Zenodo."
+    "DotMatch 0.1.8 has not yet been fully verified across Bioconda, BioContainers, GHCR runtime smoke tests, and Zenodo version metadata."
   ],
   "next_action": "Monitor the CI-green but review-required Bioconda handoff in bioconda/bioconda-recipes#66290, verify GHCR runtime behavior, BioContainers propagation, and DOI evidence, replace expected URLs with verified public and evidence URLs, set channels to verified when the full post-release gate passes, and rerun make distribution-channels."
 }

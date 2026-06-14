@@ -27,6 +27,7 @@ BIOCONTAINERS_TAGS_URL = (
     "https://quay.io/api/v1/repository/biocontainers/dotmatch/tag/?onlyActiveTags=true&page={page}&limit=100"
 )
 BIOCONTAINERS_IMAGE = "quay.io/biocontainers/dotmatch:{tag}"
+ZENODO_RECORD_URL = "https://zenodo.org/api/records/{record_id}"
 
 
 @dataclass(frozen=True)
@@ -378,17 +379,33 @@ def check_ghcr(version: str, result: AuditResult) -> None:
     result.passed.append(ChannelMessage("ghcr-run", f"docker run smoke tests pass for {image}"))
 
 
-def check_zenodo(root: Path, result: AuditResult) -> None:
+def check_zenodo(root: Path, version: str, result: AuditResult) -> None:
     channel = "zenodo"
     doi = citation_doi(root)
     if not doi:
         result.failures.append(ChannelMessage(channel, "CITATION.cff must include a DOI after Zenodo release"))
         return
+    record_id = doi.rsplit(".", 1)[-1] if doi.startswith("10.5281/zenodo.") else ""
+    if not record_id:
+        result.failures.append(ChannelMessage(channel, f"Zenodo DOI is not a Zenodo record DOI: {doi}"))
+        return
+    try:
+        data = fetch_json(ZENODO_RECORD_URL.format(record_id=record_id))
+    except Exception as exc:
+        result.failures.append(ChannelMessage(channel, f"Zenodo record metadata is not reachable for {doi}: {exc}"))
+        return
+    metadata = data.get("metadata") if isinstance(data, dict) else {}
+    record_version = str((metadata or {}).get("version") or "")
+    if record_version != version:
+        result.failures.append(
+            ChannelMessage(channel, f"Zenodo record {doi} reports version {record_version or '<missing>'}, expected {version}")
+        )
+        return
     url = f"https://doi.org/{doi}"
     if not url_ok(url):
         result.failures.append(ChannelMessage(channel, f"Zenodo DOI does not resolve: {doi}"))
         return
-    result.passed.append(ChannelMessage(channel, f"Zenodo DOI resolves: {doi}"))
+    result.passed.append(ChannelMessage(channel, f"Zenodo DOI resolves and reports version {version}: {doi}"))
 
 
 def audit(root: Path, version: Optional[str] = None) -> AuditResult:
@@ -403,7 +420,7 @@ def audit(root: Path, version: Optional[str] = None) -> AuditResult:
     check_bioconda(release_version, result)
     check_biocontainers(release_version, result)
     check_ghcr(release_version, result)
-    check_zenodo(root, result)
+    check_zenodo(root, release_version, result)
     return result
 
 

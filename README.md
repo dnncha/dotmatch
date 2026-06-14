@@ -218,7 +218,8 @@ metadata and install smoke tests.
 The tagged release workflow published the 0.1.8 source distribution, native
 macOS wheel, and repaired manylinux/musllinux Linux wheels. PyPI trusted
 publishing is configured for that workflow. The GitHub release workflow builds
-and smoke-tests repaired manylinux/musllinux wheels before upload. The 0.1.8
+and smoke-tests repaired manylinux/musllinux wheels before upload. PyPI wheel
+availability includes macOS, manylinux, and musllinux artifacts. The 0.1.8
 release files are visible on PyPI; the full multi-channel release record remains
 open until `make distribution-channels` verifies Bioconda, BioContainers, GHCR,
 and DOI evidence. Raw `linux_x86_64` wheels remain GitHub release artifacts only

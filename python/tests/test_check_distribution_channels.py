@@ -55,6 +55,8 @@ def test_distribution_channels_accepts_mocked_public_release(tmp_path, monkeypat
             return {"files": [{"version": "0.1.0", "basename": "dotmatch-0.1.0-0.tar.bz2"}]}
         if url == "https://quay.io/api/v1/repository/biocontainers/dotmatch/tag/?onlyActiveTags=true&page=1&limit=100":
             return {"tags": [{"name": "0.1.0--h123_0"}], "has_additional": False}
+        if url == "https://zenodo.org/api/records/1234567":
+            return {"metadata": {"version": "0.1.0"}}
         raise AssertionError(url)
 
     completed = subprocess.CompletedProcess(["docker"], 0, stdout="ok", stderr="")
@@ -129,6 +131,22 @@ def test_distribution_channels_reports_missing_zenodo_doi(tmp_path, monkeypatch)
     result = checker.audit(tmp_path)
 
     assert any("CITATION.cff must include a DOI" in failure.message for failure in result.failures)
+
+
+def test_distribution_channels_reports_stale_zenodo_version(tmp_path, monkeypatch):
+    checker = _load_checker()
+    _write_repo(tmp_path, doi="10.5281/zenodo.1234567")
+
+    monkeypatch.setattr(
+        checker,
+        "fetch_json",
+        lambda url: {"metadata": {"version": "0.0.9"}} if "zenodo.org" in url else {},
+    )
+    monkeypatch.setattr(checker.subprocess, "run", lambda *args, **kwargs: subprocess.CompletedProcess(["docker"], 0))
+
+    result = checker.audit(tmp_path)
+
+    assert any("reports version 0.0.9, expected 0.1.0" in failure.message for failure in result.failures)
 
 
 def test_distribution_channels_reports_pypi_missing_version(tmp_path, monkeypatch):

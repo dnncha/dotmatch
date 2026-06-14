@@ -18,9 +18,7 @@ The same verifier also builds the sdist, confirms it contains `src/qdalign.c` an
 
 For PyPI, upload the sdist plus the native macOS wheel built on GitHub Actions. Linux binary wheels should go to PyPI only after they are built or repaired as manylinux/musllinux wheels. The release workflow builds repaired Linux wheel artifacts with cibuildwheel for `manylinux_x86_64` and `musllinux_x86_64`, smoke-tests `import dotmatch`, the installed console script, and `dotmatch dist ACGT AGGT`, and uploads them as GitHub release artifacts. Do not upload a raw `linux_x86_64` wheel to PyPI.
 
-DotMatch 0.1.8 is published on PyPI; the `v0.1.8` release workflow published
-the source distribution, the native macOS wheel, and repaired
-manylinux/musllinux Linux wheels. The release workflow
+DotMatch 0.1.8 is published on PyPI; the `v0.1.8` release workflow publishes the source distribution, the native macOS wheel, and repaired manylinux/musllinux Linux wheels. The release workflow
 uses PyPI trusted publishing from repository `dnncha/dotmatch`, workflow
 `.github/workflows/release.yml`, and environment `pypi`; if that publisher is
 missing or mismatched, the build artifacts are created but the publish job fails
@@ -164,13 +162,15 @@ distance and threshold smoke tests, is published as
 `ghcr.io/dnncha/dotmatch:vX.Y.Z`, runs with
 `docker run --rm ghcr.io/dnncha/dotmatch:v<version> --version` and a CLI distance
 smoke test, and is backed by a DOI in `CITATION.cff` that resolves through
-`doi.org`. It is not part of `make release-ready` because it should fail until
-public publication has actually happened.
+`doi.org`, and reports the same release version from Zenodo record metadata. It
+is not part of `make release-ready` because it should fail until public
+publication has actually happened.
 
 ## Zenodo
 
 The repository includes `.zenodo.json` metadata for tagged software archives.
 The repository keeps Zenodo metadata in `.zenodo.json`. The current checked DOI
 metadata resolves through version DOI `10.5281/zenodo.20541629` and concept DOI
-`10.5281/zenodo.20541628`; refresh this section after Zenodo archives `v0.1.8`
-and mints or confirms the release DOI.
+`10.5281/zenodo.20541628`, but public Zenodo record `20541629` still reports
+version `0.1.7`. Refresh this section after Zenodo archives `v0.1.8` and mints
+or confirms the release DOI.
