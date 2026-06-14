@@ -23,8 +23,8 @@
       "recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/66290",
       "release_tarball_sha256": "ec3819bc773431454910287559d0809aca6ec1d81959f29d3d522650edb74904",
       "verification_command": "make distribution-channels",
-      "blocker": "The 0.1.8 Bioconda recipe PR has passing Lint, Linux, OSX-64, and ARM checks, but it is still review-required and public Anaconda metadata still lists 0.1.7 until the PR merges and propagates.",
-      "next_action": "Wait for bioconda/bioconda-recipes#66290 review/merge, then wait for channel propagation and rerun make distribution-channels."
+      "blocker": "The 0.1.8 Bioconda recipe PR has passing Lint, Linux, OSX-64, and ARM checks plus Bioconda's `please review & merge` label, but it is still review-required and public Anaconda metadata still lists 0.1.7 until the PR merges and propagates.",
+      "next_action": "Wait for bioconda/bioconda-recipes#66290 maintainer review/merge, then wait for channel propagation and rerun make distribution-channels."
     },
     {
       "id": "ghcr",
@@ -56,5 +56,5 @@
   "blockers": [
     "DotMatch 0.1.8 has not yet been fully verified across Bioconda, BioContainers, GHCR runtime smoke tests, and Zenodo version metadata."
   ],
-  "next_action": "Monitor the CI-green but review-required Bioconda handoff in bioconda/bioconda-recipes#66290, verify GHCR runtime behavior, BioContainers propagation, and DOI evidence, replace expected URLs with verified public and evidence URLs, set channels to verified when the full post-release gate passes, and rerun make distribution-channels."
+  "next_action": "Monitor the CI-green, review-labeled, but still review-required Bioconda handoff in bioconda/bioconda-recipes#66290, verify GHCR runtime behavior, BioContainers propagation, and DOI evidence, replace expected URLs with verified public and evidence URLs, set channels to verified when the full post-release gate passes, and rerun make distribution-channels."
 }
