@@ -1,14 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="980" height="184" viewBox="0 0 980 184">
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="364" viewBox="0 0 980 364">
 <style>text{font-family:Arial,sans-serif;font-size:13px}.title{font-size:18px;font-weight:700}.axis{fill:#444}.bar{fill:#2f7d68}</style>
 <text class="title" x="20" y="28">Barcode demultiplexing throughput</text>
 <text class="axis" x="20" y="50">Inline FASTQ barcode demux; higher is better</text>
 <text x="20" y="95">cutadapt_demux</text>
-<rect class="bar" x="280" y="80" width="66" height="21" rx="2"/>
-<text x="354" y="95">162378.10 reads/s</text>
-<text x="20" y="131">dotmatch_demux</text>
-<rect class="bar" x="280" y="116" width="590" height="21" rx="2"/>
-<text x="878" y="131">1445795.60 reads/s</text>
-<text x="20" y="167">hash_splitter_exact</text>
-<rect class="bar" x="280" y="152" width="114" height="21" rx="2"/>
-<text x="402" y="167">281344.10 reads/s</text>
+<rect class="bar" x="280" y="80" width="56" height="21" rx="2"/>
+<text x="344" y="95">381718.00 reads/s</text>
+<text x="20" y="131">cutadapt_demux</text>
+<rect class="bar" x="280" y="116" width="85" height="21" rx="2"/>
+<text x="373" y="131">573954.00 reads/s</text>
+<text x="20" y="167">dotmatch_demux</text>
+<rect class="bar" x="280" y="152" width="435" height="21" rx="2"/>
+<text x="723" y="167">2927217.70 reads/s</text>
+<text x="20" y="203">dotmatch_demux</text>
+<rect class="bar" x="280" y="188" width="590" height="21" rx="2"/>
+<text x="878" y="203">3965604.90 reads/s</text>
+<text x="20" y="239">dotmatch_demux</text>
+<rect class="bar" x="280" y="224" width="345" height="21" rx="2"/>
+<text x="633" y="239">2321611.70 reads/s</text>
+<text x="20" y="275">hamming_radius_splitter</text>
+<rect class="bar" x="280" y="260" width="35" height="21" rx="2"/>
+<text x="323" y="275">241704.10 reads/s</text>
+<text x="20" y="311">hash_splitter_exact</text>
+<rect class="bar" x="280" y="296" width="120" height="21" rx="2"/>
+<text x="408" y="311">811462.10 reads/s</text>
+<text x="20" y="347">levenshtein_radius_splitter</text>
+<rect class="bar" x="280" y="332" width="3" height="21" rx="2"/>
+<text x="291" y="347">21158.60 reads/s</text>
 </svg>

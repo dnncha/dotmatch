@@ -509,8 +509,22 @@ def command_crispr_namespace(argv: Sequence[str]) -> int:
     infer.add_argument("--max-reads", type=int, default=50000)
     infer.add_argument("--max-start", type=int, default=32)
 
-    for name in ["check", "plan", "run"]:
-        child = sub.add_parser(name, help=f"{name} a CRISPR AssaySpec")
+    new = sub.add_parser("new", help="scaffold a reviewable CRISPR assay project")
+    new.add_argument("--out", required=True, help="empty project directory to create")
+    new.add_argument("--library", required=True)
+    new.add_argument("--reads-dir", required=True)
+    new.add_argument("--link-reads", action="store_true")
+    new.add_argument("--threads", type=int, default=1)
+    new.add_argument("--max-reads", type=int, default=50000)
+    new.add_argument("--max-start", type=int, default=32)
+
+    for name, help_text in {
+        "check": "validate a CRISPR AssaySpec and write preflight reliability artifacts",
+        "plan": "print the native commands for a CRISPR AssaySpec",
+        "run": "run a CRISPR AssaySpec workflow",
+        "start": "check, run, and print the reliability verdict for a CRISPR AssaySpec",
+    }.items():
+        child = sub.add_parser(name, help=help_text)
         child.add_argument("spec")
 
     qc = sub.add_parser("qc", help="evaluate CRISPR guide-count QC and representation metrics")
@@ -519,6 +533,26 @@ def command_crispr_namespace(argv: Sequence[str]) -> int:
     args = parser.parse_args(list(argv))
     if args.command == "init":
         return command_assay(["init", "--template", "crispr", "--out", args.out])
+    if args.command == "new":
+        assay_args = [
+            "new",
+            "crispr",
+            "--out",
+            args.out,
+            "--library",
+            args.library,
+            "--reads-dir",
+            args.reads_dir,
+            "--threads",
+            str(args.threads),
+            "--max-reads",
+            str(args.max_reads),
+            "--max-start",
+            str(args.max_start),
+        ]
+        if args.link_reads:
+            assay_args.append("--link-reads")
+        return command_assay(assay_args)
     if args.command == "infer":
         assay_args = [
             "infer",
@@ -544,7 +578,7 @@ def command_crispr_namespace(argv: Sequence[str]) -> int:
         if args.candidates:
             assay_args.extend(["--candidates", args.candidates])
         return command_assay(assay_args)
-    if args.command in {"check", "plan", "run"}:
+    if args.command in {"check", "plan", "run", "start"}:
         return command_assay([args.command, args.spec])
     if args.command == "qc":
         return command_crispr_qc(args)
@@ -1975,6 +2009,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="dotmatch",
         description="Exact known-target short-DNA assignment and counting.",
+        epilog=(
+            "Common starts:\n"
+            "  dotmatch manual\n"
+            "  dotmatch count --help\n"
+            "  dotmatch barcode autopsy --help\n"
+            "  dotmatch assay check assay.toml\n"
+            "  dotmatch citation\n\n"
+            "Input tables accept TSV by default; .csv files are accepted by native workflow commands. "
+            "Use dotmatch manual for file-format notes, outcome definitions, and workflow examples."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--version", action="version", version=f"dotmatch {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -2028,6 +2073,7 @@ variant caller, adapter trimmer, cell/UMI quantifier, or screen statistics tool.
 Usage:
   dotmatch --help
   dotmatch --version
+  dotmatch manual
   dotmatch citation
   dotmatch <command> [options]
 
@@ -2076,11 +2122,149 @@ Examples:
   dotmatch dist ACGT AGGT
   dotmatch leq 1 ACGT AGGT
   dotmatch citation
+  dotmatch manual
   dotmatch count --targets guides.tsv --reads sample.fastq.gz --sample-label sample \\
       --target-start 23 --target-length 20 --k 1 --metric hamming --out counts.tsv
   dotmatch assay check assay.toml
   dotmatch barcode infer --barcodes barcodes.tsv --reads pooled.fastq.gz --out offset_scan.tsv
   dotmatch panel design --preset illumina-inline-96 --out-dir panel
+"""
+    )
+
+
+def print_manual() -> None:
+    print(
+        f"""DotMatch Manual
+Version: {__version__}
+
+NAME
+  dotmatch - deterministic short-DNA assignment for known targets.
+
+SYNOPSIS
+  dotmatch --help
+  dotmatch manual
+  dotmatch citation
+  dotmatch dist SEQ1 SEQ2
+  dotmatch leq K SEQ1 SEQ2
+  dotmatch count --targets targets.tsv --reads reads.fastq.gz --target-start N --target-length L --out counts.tsv
+  dotmatch demux --barcodes barcodes.tsv --reads reads.fastq.gz --barcode-start N --barcode-length L --out-dir demux/
+  dotmatch assay check assay.toml
+  dotmatch barcode autopsy --barcodes barcodes.tsv --reads reads.fastq.gz --out-dir report/
+  dotmatch panel design --preset illumina-inline-96 --out-dir panel/
+
+WHAT DOTMATCH DOES
+  DotMatch assigns a fixed read window to a known set of short DNA targets:
+  CRISPR guides, inline sample barcodes, feature barcodes, primers, or panel
+  targets. It is intended for reproducible workflow steps where the target list
+  is known before analysis starts.
+
+WHAT DOTMATCH DOES NOT DO
+  DotMatch is not a genome aligner, basecaller, adapter trimmer, variant caller,
+  UMI/cell quantifier, peak caller, or downstream CRISPR statistics package.
+
+COMMAND GROUPS
+  Core primitives:
+    dist                 print global edit distance between two sequences
+    leq                  print whether distance <= K
+    count                count fixed-window target assignments
+    demux                split FASTQ reads by fixed-window barcodes
+
+  Workflow namespaces:
+    assay                validate, plan, and run AssaySpec TOML workflows
+    barcode              infer barcode windows, audit, demux, and write reports
+    panel                design, check, optimize, simulate, lay out, and export barcode panels
+    crispr               CRISPR guide-count project helpers and QC
+
+  Diagnostics:
+    audit                native target collision audit
+    audit-targets        Python target-pair audit
+    inspect-unmatched    summarize frequent unmatched windows
+    validate             compare indexed assignment with a validation oracle
+    crispr-qc            evaluate guide-count QC and representation metrics
+
+ASSIGNMENT MODEL
+  DotMatch extracts one window from each read, compares that sequence with the
+  known target table, and emits one of four outcomes:
+    unique               exactly one target is compatible with the read window
+    ambiguous            more than one target is compatible
+    none                 no target is close enough
+    invalid              the requested window cannot be extracted
+
+  Ambiguous reads are not silently forced into a target. For production runs,
+  audit the target set at the same edit radius used for assignment.
+
+INPUT FILES
+  Targets/barcodes:
+    TSV with target_id and target_seq columns, or barcode_id and barcode_seq.
+    A third gene/sample column is preserved where relevant. Headerless two-column
+    TSV is accepted by the Python commands.
+
+  Reads:
+    FASTQ or FASTQ.gz. Coordinates are zero-based starts in the read sequence.
+
+  AssaySpec:
+    TOML workflow specification consumed by dotmatch assay. Start with
+    dotmatch assay new, dotmatch crispr new, or an example under examples/.
+
+OUTPUTS
+  count:
+    Counts TSV, optional per-read assignments TSV, optional JSON summary.
+
+  demux:
+    Split FASTQ files plus optional assignment, ambiguous, unmatched, and summary
+    artifacts depending on selected options.
+
+  barcode autopsy:
+    offset_scan.tsv, collision/safety audit outputs, demux outputs, top_unmatched.tsv,
+    findings.tsv, provenance.json, report.md, report.html, and MultiQC custom content.
+
+COMMON RECIPES
+  Count fixed-window CRISPR guides:
+    dotmatch count --targets guides.tsv --reads sample.fastq.gz \\
+      --target-start 23 --target-length 20 --k 1 --out counts.tsv \\
+      --assignments assignments.tsv --summary summary.json
+
+  Infer a barcode offset:
+    dotmatch barcode infer --barcodes barcodes.tsv --reads pooled.fastq.gz \\
+      --scan-starts 0:30 --barcode-length auto --out offset_scan.tsv --summary infer.json
+
+  Troubleshoot barcode assignment:
+    dotmatch barcode autopsy --barcodes barcodes.tsv --reads pooled.fastq.gz \\
+      --scan-starts 0:30 --barcode-length auto --k-values 0,1 --out-dir barcode_report/
+
+  Validate and run an assay workflow:
+    dotmatch assay check assay.toml
+    dotmatch assay start assay.toml
+
+  Cite DotMatch:
+    dotmatch citation
+
+SAFETY CHECKS
+  Use k=0 for exact-only assignment. Use k=1 only after checking that the target
+  set has no duplicate or one-edit collisions under the selected metric. For
+  Hamming k=2/k=3 safety, use the native audit path; fast audit may mark those
+  fields as not_computed rather than overclaiming safety.
+
+TROUBLESHOOTING
+  Low assignment rate:
+    Check read side, zero-based start, target length, target sheet, orientation,
+    trimming, and whether the assay requires exact-only assignment.
+
+  High ambiguous rate:
+    Run an audit at the same k and metric. Lower k or redesign colliding targets.
+
+  Many invalid windows:
+    Confirm read length and trimming. The requested start plus length must fit
+    inside each read.
+
+  Need subcommand options:
+    Use dotmatch <command> --help or dotmatch <namespace> <command> --help.
+
+REFERENCES
+  Documentation: https://dotmatch.readthedocs.io/
+  Source: https://github.com/dnncha/dotmatch
+  Citation metadata: CITATION.cff
+  DOI: https://doi.org/{SOFTWARE_DOI}
 """
     )
 
@@ -2107,6 +2291,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             print("usage: dotmatch citation", file=sys.stderr)
             return 2
         print_citation()
+        return 0
+    if raw_args and raw_args[0] in {"manual", "man"}:
+        if len(raw_args) != 1:
+            print("usage: dotmatch manual", file=sys.stderr)
+            return 2
+        print_manual()
         return 0
     if raw_args and raw_args[0] == "assay":
         return command_assay(raw_args[1:])

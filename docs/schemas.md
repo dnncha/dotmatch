@@ -341,8 +341,12 @@ n_targets
 samples
 ```
 
-For count and demux summaries, `k=2` is currently a Levenshtein-only fixed-window
-mode. Hamming summaries remain limited to `k=0` and `k=1`.
+For count and CRISPR-count summaries, Levenshtein supports `k=0..2` and Hamming
+supports `k=0..3` for fixed-length windows. Before production Hamming `k=2` or
+`k=3` runs, use exact audit and proceed only when the matching
+`safe_at_hamming_k2` or `safe_at_hamming_k3` field is true. Demultiplexing
+remains a fixed-window barcode workflow with the correction radius documented by
+its command help and summary metadata.
 
 `ambiguity_policy` is `radius` by default for user-facing assignment workflows:
 `unique` means exactly one target is inside the configured radius. `best` is an

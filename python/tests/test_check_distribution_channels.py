@@ -55,6 +55,8 @@ def test_distribution_channels_accepts_mocked_public_release(tmp_path, monkeypat
             return {"files": [{"version": "0.1.0", "basename": "dotmatch-0.1.0-0.tar.bz2"}]}
         if url == "https://quay.io/api/v1/repository/biocontainers/dotmatch/tag/?onlyActiveTags=true&page=1&limit=100":
             return {"tags": [{"name": "0.1.0--h123_0"}], "has_additional": False}
+        if url == "https://zenodo.org/api/records/1234567":
+            return {"metadata": {"version": "0.1.0"}}
         raise AssertionError(url)
 
     completed = subprocess.CompletedProcess(["docker"], 0, stdout="ok", stderr="")
@@ -62,6 +64,7 @@ def test_distribution_channels_accepts_mocked_public_release(tmp_path, monkeypat
     monkeypatch.setattr(checker.subprocess, "run", lambda *args, **kwargs: completed)
     monkeypatch.setattr(checker, "verify_pypi_install", lambda version: None, raising=False)
     monkeypatch.setattr(checker, "verify_bioconda_install", lambda version: None, raising=False)
+    monkeypatch.setattr(checker, "verify_ghcr_manifest", lambda image: "sha256:" + "0" * 64, raising=False)
     monkeypatch.setattr(checker, "verify_ghcr_run", lambda image, version: None, raising=False)
     monkeypatch.setattr(checker, "verify_biocontainers_run", lambda image, version: None, raising=False)
     monkeypatch.setattr(checker, "url_ok", lambda url: url == "https://doi.org/10.5281/zenodo.1234567")
@@ -111,6 +114,7 @@ def test_distribution_channels_reports_failed_pypi_install(tmp_path, monkeypatch
     monkeypatch.setattr(checker, "fetch_json", fake_fetch_json)
     monkeypatch.setattr(checker, "verify_pypi_install", lambda version: (_ for _ in ()).throw(RuntimeError("pip failed")), raising=False)
     monkeypatch.setattr(checker, "verify_bioconda_install", lambda version: None, raising=False)
+    monkeypatch.setattr(checker, "verify_ghcr_manifest", lambda image: "sha256:" + "0" * 64, raising=False)
     monkeypatch.setattr(checker.subprocess, "run", lambda *args, **kwargs: subprocess.CompletedProcess(["docker"], 0))
     monkeypatch.setattr(checker, "url_ok", lambda url: True)
 
@@ -131,6 +135,22 @@ def test_distribution_channels_reports_missing_zenodo_doi(tmp_path, monkeypatch)
     assert any("CITATION.cff must include a DOI" in failure.message for failure in result.failures)
 
 
+def test_distribution_channels_reports_stale_zenodo_version(tmp_path, monkeypatch):
+    checker = _load_checker()
+    _write_repo(tmp_path, doi="10.5281/zenodo.1234567")
+
+    monkeypatch.setattr(
+        checker,
+        "fetch_json",
+        lambda url: {"metadata": {"version": "0.0.9"}} if "zenodo.org" in url else {},
+    )
+    monkeypatch.setattr(checker.subprocess, "run", lambda *args, **kwargs: subprocess.CompletedProcess(["docker"], 0))
+
+    result = checker.audit(tmp_path)
+
+    assert any("reports version 0.0.9, expected 0.1.0" in failure.message for failure in result.failures)
+
+
 def test_distribution_channels_reports_pypi_missing_version(tmp_path, monkeypatch):
     checker = _load_checker()
     _write_repo(tmp_path)
@@ -143,6 +163,7 @@ def test_distribution_channels_reports_pypi_missing_version(tmp_path, monkeypatc
     monkeypatch.setattr(checker, "fetch_json", fake_fetch_json)
     monkeypatch.setattr(checker, "verify_pypi_install", lambda version: None, raising=False)
     monkeypatch.setattr(checker, "verify_bioconda_install", lambda version: None, raising=False)
+    monkeypatch.setattr(checker, "verify_ghcr_manifest", lambda image: "sha256:" + "0" * 64, raising=False)
     monkeypatch.setattr(checker.subprocess, "run", lambda *args, **kwargs: subprocess.CompletedProcess(["docker"], 0))
     monkeypatch.setattr(checker, "url_ok", lambda url: True)
 
@@ -172,12 +193,49 @@ def test_distribution_channels_reports_pypi_missing_repaired_wheels(tmp_path, mo
     monkeypatch.setattr(checker, "fetch_json", fake_fetch_json)
     monkeypatch.setattr(checker, "verify_pypi_install", lambda version: None, raising=False)
     monkeypatch.setattr(checker, "verify_bioconda_install", lambda version: None, raising=False)
+    monkeypatch.setattr(checker, "verify_ghcr_manifest", lambda image: "sha256:" + "0" * 64, raising=False)
     monkeypatch.setattr(checker.subprocess, "run", lambda *args, **kwargs: subprocess.CompletedProcess(["docker"], 0))
     monkeypatch.setattr(checker, "url_ok", lambda url: True)
 
     result = checker.audit(tmp_path)
 
     assert any("must include repaired manylinux and musllinux wheels" in failure.message for failure in result.failures)
+
+
+def test_distribution_channels_reports_missing_docker_for_ghcr_runtime_after_manifest_pass(tmp_path, monkeypatch):
+    checker = _load_checker()
+    _write_repo(tmp_path)
+
+    def fake_fetch_json(url: str):
+        if "pypi.org" in url:
+            return {
+                "info": {"version": "0.1.0"},
+                "urls": [
+                    {"packagetype": "sdist", "filename": "dotmatch-0.1.0.tar.gz"},
+                    {"packagetype": "bdist_wheel", "filename": "dotmatch-0.1.0-py3-none-macosx_11_0_universal2.whl"},
+                    {"packagetype": "bdist_wheel", "filename": "dotmatch-0.1.0-py3-none-manylinux_2_28_x86_64.whl"},
+                    {"packagetype": "bdist_wheel", "filename": "dotmatch-0.1.0-py3-none-musllinux_1_2_x86_64.whl"},
+                ],
+            }
+        if "anaconda.org" in url:
+            return {"files": [{"version": "0.1.0"}]}
+        if "quay.io" in url:
+            return {"tags": [], "has_additional": False}
+        if "zenodo.org" in url:
+            return {"metadata": {"version": "0.1.0"}}
+        raise AssertionError(url)
+
+    monkeypatch.setattr(checker, "fetch_json", fake_fetch_json)
+    monkeypatch.setattr(checker, "verify_pypi_install", lambda version: None, raising=False)
+    monkeypatch.setattr(checker, "verify_bioconda_install", lambda version: None, raising=False)
+    monkeypatch.setattr(checker, "verify_ghcr_manifest", lambda image: "sha256:" + "1" * 64, raising=False)
+    monkeypatch.setattr(checker, "verify_ghcr_run", lambda image, version: (_ for _ in ()).throw(FileNotFoundError("docker")), raising=False)
+    monkeypatch.setattr(checker, "url_ok", lambda url: True)
+
+    result = checker.audit(tmp_path)
+
+    assert any(item.channel == "ghcr" for item in result.passed)
+    assert any("docker is required to run GHCR image smoke tests" in failure.message for failure in result.failures)
 
 
 def test_distribution_channels_rejects_raw_pypi_linux_wheel(tmp_path, monkeypatch):
@@ -210,6 +268,7 @@ def test_distribution_channels_rejects_raw_pypi_linux_wheel(tmp_path, monkeypatc
     monkeypatch.setattr(checker, "fetch_json", fake_fetch_json)
     monkeypatch.setattr(checker, "verify_pypi_install", lambda version: None, raising=False)
     monkeypatch.setattr(checker, "verify_bioconda_install", lambda version: None, raising=False)
+    monkeypatch.setattr(checker, "verify_ghcr_manifest", lambda image: "sha256:" + "0" * 64, raising=False)
     monkeypatch.setattr(checker.subprocess, "run", lambda *args, **kwargs: subprocess.CompletedProcess(["docker"], 0))
     monkeypatch.setattr(checker, "url_ok", lambda url: True)
 
@@ -277,6 +336,7 @@ def test_distribution_channels_reports_missing_biocontainers_tag(tmp_path, monke
     monkeypatch.setattr(checker, "fetch_json", fake_fetch_json)
     monkeypatch.setattr(checker, "verify_pypi_install", lambda version: None, raising=False)
     monkeypatch.setattr(checker, "verify_bioconda_install", lambda version: None, raising=False)
+    monkeypatch.setattr(checker, "verify_ghcr_manifest", lambda image: "sha256:" + "0" * 64, raising=False)
     monkeypatch.setattr(checker.subprocess, "run", lambda *args, **kwargs: subprocess.CompletedProcess(["docker"], 0))
     monkeypatch.setattr(checker, "verify_ghcr_run", lambda image, version: None, raising=False)
     monkeypatch.setattr(checker, "url_ok", lambda url: True)
@@ -352,6 +412,7 @@ def test_distribution_channels_reports_failed_ghcr_runtime_smoke(tmp_path, monke
     monkeypatch.setattr(checker, "fetch_json", fake_fetch_json)
     monkeypatch.setattr(checker, "verify_pypi_install", lambda version: None, raising=False)
     monkeypatch.setattr(checker, "verify_bioconda_install", lambda version: None, raising=False)
+    monkeypatch.setattr(checker, "verify_ghcr_manifest", lambda image: "sha256:" + "0" * 64, raising=False)
     monkeypatch.setattr(checker.subprocess, "run", lambda *args, **kwargs: subprocess.CompletedProcess(["docker"], 0))
     monkeypatch.setattr(
         checker,

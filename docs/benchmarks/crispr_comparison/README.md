@@ -74,6 +74,8 @@ DotMatch `dotmatch_hamming_k1` versus `guide_counter_one_mismatch` on the public
 
 DotMatch Hamming `k=2` and `k=3` evidence is kept separate from guide-counter claims. Rows in this table must come from `benchmarks/raw/crispr_comparison_hamming_k23_comparators.csv` and compare DotMatch directly with Bowtie 1.
 
+Hamming k=2 must clear >=8x vs Bowtie 1; Hamming k=3 must clear >=2x vs Bowtie 1.
+
 ![Hamming k2/k3 comparator throughput](../../../benchmarks/figures/crispr_hamming_k23_comparison.svg)
 
 |dataset|k|records_per_sample|dotmatch_tool|bowtie1_tool|dotmatch_reads_per_sec|bowtie1_reads_per_sec|speedup|status|semantics|artifact|

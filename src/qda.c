@@ -9,6 +9,7 @@
 #endif
 
 #include "qdalign.h"
+#include "qdmetal.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -79,7 +80,7 @@ static void usage(const char *argv0) {
     fprintf(stderr, "  %s bcl-demux --run-folder RUN --sample-sheet SampleSheet.csv --out-dir demux_dir --barcode-mismatches 0|1|1,1 [--threads N] (0=auto) [--gzip-level 0..9] [--emit-index-fastqs] [--summary summary.json]\n", argv0);
     fprintf(stderr, "  %s bcl-validate --dotmatch-out DIR --truth-out DIR\n", argv0);
     fprintf(stderr, "  %s count --targets targets.tsv|targets.csv --reads reads.fastq[.gz] [--reads more.fastq.gz] --sample-label labels --target-start N --target-length L --k 0|1|2|3 --metric hamming|levenshtein [--hamming-index auto|query|precompute] [--max-correction-qual Q] [--ambiguity-policy radius|best] --offset-mode best|multi --out counts.tsv [--format dotmatch|mageck]\n", argv0);
-    fprintf(stderr, "  %s crispr-count --library guides.tsv|guides.csv --samples samples.tsv|samples.csv --guide-start N --guide-length L --k 0|1|2|3 [--ambiguity-policy radius|best] --out counts.mageck.tsv [--summary qc.json] [--sample-qc sample_qc.tsv]\n", argv0);
+    fprintf(stderr, "  %s crispr-count --library guides.tsv|guides.csv --samples samples.tsv|samples.csv --guide-start N --guide-length L --k 0|1|2|3 [--ambiguity-policy radius|best] [--backend auto|cpu|gpu-metal-experimental] --out counts.mageck.tsv [--summary qc.json] [--sample-qc sample_qc.tsv]\n", argv0);
     fprintf(stderr, "  %s guide-counter count --input reads.fastq[.gz]... --library guides.tsv|guides.csv --output prefix [--samples labels...] [--exact-match]\n", argv0);
     fprintf(stderr, "  %s inspect-unmatched --targets targets.tsv|targets.csv --reads reads.fastq[.gz] --target-start N --target-length L --k 0|1 --top N --out top_unmatched.tsv [--low-quality-threshold Q]\n", argv0);
     fprintf(stderr, "  %s audit --targets targets.tsv|targets.csv --k 0|1|2|3 --out-dir audit_dir [--audit-mode auto|exact|fast]\n", argv0);
@@ -222,9 +223,15 @@ static void count_help_manual(FILE *out, const char *argv0, int crispr_mode) {
     fprintf(out, "  --ambiguous NAME         discard, include, or separate ambiguous counts.\n");
     fprintf(out, "  --indel-window N         Levenshtein-only extraction slack for insertion/deletion rescue.\n");
     fprintf(out, "  --hamming-index NAME     auto, query, or precompute for Hamming counting.\n");
+    fprintf(out, "  --backend NAME           auto, cpu, or gpu-metal-experimental (Darwin Metal Hamming k<=1).\n");
+    fprintf(out, "  --progress               Emit read-processing progress to stderr (default on interactive stderr).\n");
+    fprintf(out, "  --no-progress            Disable progress reporting.\n");
+    fprintf(out, "  --progress-interval N    Report every N reads (default 250000).\n");
+    fprintf(out, "  --metal-validate         With gpu-metal-experimental, shadow-count on CPU and require agreement.\n");
+    fprintf(out, "                           Also enabled by DOTMATCH_METAL_VALIDATE=1.\n");
     fprintf(out, "\nOutputs:\n");
     fprintf(out, "  --summary PATH       JSON run summary with assignment rates and command metadata.\n");
-    fprintf(out, "  --sample-qc PATH     Per-sample QC TSV for CRISPR/workflow use.\n");
+    fprintf(out, "  --sample-qc PATH     Per-sample QC TSV; crispr-count defaults to sample_qc.tsv beside --out.\n");
     fprintf(out, "  --format mageck      Emit sgRNA/Gene columns for MAGeCK-style downstream analysis.\n");
     fprintf(out, "\nSafety:\n");
     fprintf(out, "  Before production Hamming k=2 or k=3 runs, use:\n");
@@ -1111,6 +1118,79 @@ typedef struct count_stats {
     unsigned long long candidates_verified;
 } count_stats;
 
+typedef struct count_progress {
+    int enabled;
+    const char *sample_label;
+    size_t interval_reads;
+    unsigned long long reads_done;
+    double start_seconds;
+    double last_report_seconds;
+    pthread_mutex_t lock;
+} count_progress;
+
+typedef struct sample_qc_metrics {
+    double assignment_rate;
+    double ambiguous_rate;
+    double no_match_rate;
+    double invalid_rate;
+    double coverage_fraction;
+    double zero_count_fraction;
+    double gini_index;
+    double top_1pct_fraction;
+} sample_qc_metrics;
+
+static void count_progress_init(count_progress *progress, const char *sample_label, size_t interval_reads) {
+    if (progress == NULL) return;
+    progress->enabled = 1;
+    progress->sample_label = sample_label;
+    progress->interval_reads = interval_reads > 0 ? interval_reads : 250000;
+    progress->reads_done = 0;
+    progress->start_seconds = seconds_now();
+    progress->last_report_seconds = progress->start_seconds;
+    pthread_mutex_init(&progress->lock, NULL);
+}
+
+static void count_progress_fini(count_progress *progress) {
+    if (progress == NULL) return;
+    pthread_mutex_destroy(&progress->lock);
+}
+
+static void count_progress_tick(count_progress *progress) {
+    if (progress == NULL || !progress->enabled) return;
+    pthread_mutex_lock(&progress->lock);
+    ++progress->reads_done;
+    unsigned long long total = progress->reads_done;
+    double now = seconds_now();
+    if (total % progress->interval_reads == 0 || now - progress->last_report_seconds >= 5.0) {
+        double elapsed = now - progress->start_seconds;
+        double rate = elapsed > 0.0 ? (double)total / elapsed : 0.0;
+        fprintf(stderr, "dotmatch: %s: %llu reads (%.0f reads/s)\n", progress->sample_label, total, rate);
+        progress->last_report_seconds = now;
+    }
+    pthread_mutex_unlock(&progress->lock);
+}
+
+static void count_progress_finish(count_progress *progress) {
+    if (progress == NULL || !progress->enabled || progress->reads_done == 0) return;
+    pthread_mutex_lock(&progress->lock);
+    double elapsed = seconds_now() - progress->start_seconds;
+    fprintf(stderr, "dotmatch: %s: finished %llu reads in %.1fs\n", progress->sample_label, progress->reads_done,
+            elapsed);
+    pthread_mutex_unlock(&progress->lock);
+}
+
+static int derive_output_sibling_path(const char *out_path, const char *filename, char *buf, size_t cap) {
+    if (out_path == NULL || filename == NULL || buf == NULL || cap == 0) return -1;
+    const char *slash = strrchr(out_path, '/');
+    if (slash == NULL) {
+        int n = snprintf(buf, cap, "%s", filename);
+        return n < 0 || (size_t)n >= cap ? -1 : 0;
+    }
+    size_t dir_len = (size_t)(slash - out_path) + 1;
+    int n = snprintf(buf, cap, "%.*s%s", (int)dir_len, out_path, filename);
+    return n < 0 || (size_t)n >= cap ? -1 : 0;
+}
+
 typedef enum count_metric {
     COUNT_METRIC_LEVENSHTEIN = 0,
     COUNT_METRIC_HAMMING = 1
@@ -1125,6 +1205,12 @@ typedef enum hamming_index_strategy {
     HAMMING_INDEX_PRECOMPUTE = 1,
     HAMMING_INDEX_AUTO = 2
 } hamming_index_strategy;
+
+typedef enum count_backend_mode {
+    COUNT_BACKEND_AUTO = 0,
+    COUNT_BACKEND_CPU = 1,
+    COUNT_BACKEND_METAL = 2
+} count_backend_mode;
 
 typedef enum offset_mode {
     OFFSET_MODE_BEST = 0,
@@ -1202,6 +1288,19 @@ typedef struct hamming_lookup {
     int seed_ready;
 } hamming_lookup;
 
+typedef struct levenshtein1_lookup {
+    hamming_lookup_entry *exact;
+    hamming_lookup_entry *substitution;
+    hamming_lookup_entry *target_deletion;
+    hamming_lookup_entry *target_insertion;
+    size_t exact_cap;
+    size_t substitution_cap;
+    size_t target_deletion_cap;
+    size_t target_insertion_cap;
+    size_t target_len;
+    int ready;
+} levenshtein1_lookup;
+
 static const char *hamming_lookup_kind(const hamming_lookup *lookup) {
     if (lookup == NULL || !lookup->ready) return "query";
     if (lookup->mismatch != NULL && lookup->mismatch_cap != 0) return "precompute";
@@ -1215,14 +1314,14 @@ static size_t next_pow2_local(size_t n) {
     return p < n ? n : p;
 }
 
-static size_t code_hash_local(uint64_t code, size_t len, size_t cap) {
+static inline size_t code_hash_local(uint64_t code, size_t len, size_t cap) {
     uint64_t x = code ^ ((uint64_t)len * 0x9e3779b97f4a7c15ULL);
     x *= 0x9e3779b97f4a7c15ULL;
     x ^= x >> 32;
     return (size_t)x & (cap - 1);
 }
 
-static size_t seed_hash_local(uint64_t code, size_t len, unsigned char seed_id, size_t cap) {
+static inline size_t seed_hash_local(uint64_t code, size_t len, unsigned char seed_id, size_t cap) {
     return code_hash_local(code ^ ((uint64_t)seed_id * 0x517cc1b727220a95ULL), len + seed_id * 37U, cap);
 }
 
@@ -1435,6 +1534,40 @@ static const hamming_lookup_entry *hamming_lookup_find(const hamming_lookup_entr
     }
 }
 
+static int levenshtein1_lookup_insert(hamming_lookup_entry *table, size_t cap, uint64_t code, size_t len,
+                                      int target_index) {
+    size_t slot = code_hash_local(code, len, cap);
+    for (;;) {
+        hamming_lookup_entry *entry = &table[slot];
+        if (entry->target_index < 0) {
+            entry->code = code;
+            entry->target_index = target_index;
+            entry->match_count = 1;
+            return 0;
+        }
+        if (entry->code == code) {
+            if (entry->target_index != target_index) {
+                if (target_index < entry->target_index) entry->target_index = target_index;
+                ++entry->match_count;
+            }
+            return 0;
+        }
+        slot = (slot + 1) & (cap - 1);
+    }
+}
+
+static const hamming_lookup_entry *levenshtein1_lookup_find(const hamming_lookup_entry *table, size_t cap,
+                                                           uint64_t code, size_t len) {
+    if (table == NULL || cap == 0) return NULL;
+    size_t slot = code_hash_local(code, len, cap);
+    for (;;) {
+        const hamming_lookup_entry *entry = &table[slot];
+        if (entry->target_index < 0) return NULL;
+        if (entry->code == code) return entry;
+        slot = (slot + 1) & (cap - 1);
+    }
+}
+
 static hamming_lookup_entry *alloc_hamming_table(size_t cap) {
     hamming_lookup_entry *table = (hamming_lookup_entry *)malloc(cap * sizeof(hamming_lookup_entry));
     if (table == NULL) return NULL;
@@ -1481,6 +1614,99 @@ static void free_hamming_lookup(hamming_lookup *lookup) {
     lookup->seed_ready = 0;
 }
 
+static void free_levenshtein1_lookup(levenshtein1_lookup *lookup) {
+    if (lookup == NULL) return;
+    free(lookup->exact);
+    free(lookup->substitution);
+    free(lookup->target_deletion);
+    free(lookup->target_insertion);
+    memset(lookup, 0, sizeof(*lookup));
+}
+
+static uint64_t code_remove_base_local(uint64_t code, size_t pos, size_t len) {
+    uint64_t low = code & code_low_mask_local(pos);
+    uint64_t high = code >> (2 * (pos + 1));
+    (void)len;
+    return low | (high << (2 * pos));
+}
+
+static uint64_t code_insert_base_local(uint64_t code, size_t pos, size_t len, uint64_t base) {
+    uint64_t low = code & code_low_mask_local(pos);
+    uint64_t high = (code >> (2 * pos)) & code_low_mask_local(len - pos);
+    return low | (base << (2 * pos)) | (high << (2 * (pos + 1)));
+}
+
+static int build_levenshtein1_lookup(const seq_table *targets, size_t target_len, levenshtein1_lookup *lookup) {
+    memset(lookup, 0, sizeof(*lookup));
+    if (target_len == 0 || target_len > 31) return 0;
+    for (size_t i = 0; i < targets->count; ++i) {
+        uint64_t code = 0;
+        if (targets->records[i].len != target_len ||
+            !dna2_code_local(targets->records[i].seq, target_len, &code)) {
+            return 0;
+        }
+    }
+
+    lookup->exact_cap = next_pow2_local(targets->count * 2 + 16);
+    lookup->substitution_cap = next_pow2_local(targets->count * target_len * 3 + 16);
+    lookup->target_deletion_cap = next_pow2_local(targets->count * target_len + 16);
+    lookup->target_insertion_cap = next_pow2_local(targets->count * (target_len + 1) * 4 + 16);
+    lookup->exact = alloc_hamming_table(lookup->exact_cap);
+    lookup->substitution = alloc_hamming_table(lookup->substitution_cap);
+    lookup->target_deletion = alloc_hamming_table(lookup->target_deletion_cap);
+    lookup->target_insertion = alloc_hamming_table(lookup->target_insertion_cap);
+    if (lookup->exact == NULL || lookup->substitution == NULL || lookup->target_deletion == NULL ||
+        lookup->target_insertion == NULL) {
+        free_levenshtein1_lookup(lookup);
+        return -1;
+    }
+    lookup->target_len = target_len;
+
+    for (size_t i = 0; i < targets->count; ++i) {
+        uint64_t code = 0;
+        if (!dna2_code_local(targets->records[i].seq, target_len, &code)) {
+            free_levenshtein1_lookup(lookup);
+            return 0;
+        }
+        if (levenshtein1_lookup_insert(lookup->exact, lookup->exact_cap, code, target_len, (int)i) != 0) {
+            free_levenshtein1_lookup(lookup);
+            return -1;
+        }
+        for (size_t pos = 0; pos < target_len; ++pos) {
+            uint64_t shift = (uint64_t)2 * pos;
+            uint64_t old_base = (code >> shift) & 3ULL;
+            uint64_t mask = 3ULL << shift;
+            for (uint64_t b = 0; b < 4; ++b) {
+                if (b == old_base) continue;
+                uint64_t mutated = (code & ~mask) | (b << shift);
+                if (levenshtein1_lookup_insert(lookup->substitution, lookup->substitution_cap, mutated,
+                                               target_len, (int)i) != 0) {
+                    free_levenshtein1_lookup(lookup);
+                    return -1;
+                }
+            }
+            uint64_t deleted = code_remove_base_local(code, pos, target_len);
+            if (levenshtein1_lookup_insert(lookup->target_deletion, lookup->target_deletion_cap, deleted,
+                                           target_len - 1, (int)i) != 0) {
+                free_levenshtein1_lookup(lookup);
+                return -1;
+            }
+        }
+        for (size_t pos = 0; pos <= target_len; ++pos) {
+            for (uint64_t b = 0; b < 4; ++b) {
+                uint64_t inserted = code_insert_base_local(code, pos, target_len, b);
+                if (levenshtein1_lookup_insert(lookup->target_insertion, lookup->target_insertion_cap, inserted,
+                                               target_len + 1, (int)i) != 0) {
+                    free_levenshtein1_lookup(lookup);
+                    return -1;
+                }
+            }
+        }
+    }
+    lookup->ready = 1;
+    return 0;
+}
+
 static int build_hamming_lookup(const seq_table *targets, size_t target_len, hamming_lookup *lookup) {
     memset(lookup, 0, sizeof(*lookup));
     if (target_len == 0 || target_len > 32) return 0;
@@ -1491,7 +1717,9 @@ static int build_hamming_lookup(const seq_table *targets, size_t target_len, ham
     }
 
     size_t exact_need = targets->count * 2 + 16;
-    size_t mismatch_need = targets->count * target_len * 4 + 16;
+    /* Tuned *3 (not *4) since exactly 3 mutations per position; smaller mismatch table
+       improves cache residency for hamming_lookup precompute k=1 guide/barcode counting. */
+    size_t mismatch_need = targets->count * target_len * 3 + 16;
     lookup->exact_cap = next_pow2_local(exact_need);
     lookup->mismatch_cap = next_pow2_local(mismatch_need);
     lookup->exact = alloc_hamming_table(lookup->exact_cap);
@@ -1671,6 +1899,69 @@ static double top_fraction_from_counts(const unsigned long long *values, size_t 
     return (double)top_sum / (double)sum;
 }
 
+static int compute_sample_qc_metrics(const seq_table *targets, const unsigned long long *counts, size_t sample_index,
+                                     const count_stats *stats, sample_qc_metrics *metrics_out) {
+    if (targets == NULL || counts == NULL || stats == NULL || metrics_out == NULL) return -1;
+    unsigned long long *target_totals =
+            (unsigned long long *)calloc(targets->count == 0 ? 1 : targets->count, sizeof(unsigned long long));
+    if (target_totals == NULL) return -1;
+    unsigned long long observed_targets = 0;
+    for (size_t t = 0; t < targets->count; ++t) {
+        for (size_t kind = 0; kind < 5; ++kind) {
+            target_totals[t] += counts[((sample_index * targets->count + t) * 5) + kind];
+        }
+        if (target_totals[t] != 0) ++observed_targets;
+    }
+    unsigned long long valid = stats->total >= stats->invalid ? stats->total - stats->invalid : 0;
+    double valid_denom = valid == 0 ? 1.0 : (double)valid;
+    metrics_out->assignment_rate = (double)stats->unique / valid_denom;
+    metrics_out->ambiguous_rate = (double)stats->ambiguous / valid_denom;
+    metrics_out->no_match_rate = (double)stats->unmatched / valid_denom;
+    metrics_out->invalid_rate = stats->total == 0 ? 0.0 : (double)stats->invalid / (double)stats->total;
+    metrics_out->coverage_fraction =
+            targets->count == 0 ? 0.0 : (double)observed_targets / (double)targets->count;
+    metrics_out->zero_count_fraction =
+            targets->count == 0 ? 0.0 : (double)(targets->count - observed_targets) / (double)targets->count;
+    metrics_out->gini_index = gini_from_counts(target_totals, targets->count);
+    metrics_out->top_1pct_fraction = top_fraction_from_counts(target_totals, targets->count, 0.01);
+    free(target_totals);
+    return 0;
+}
+
+static void emit_sample_qc_review_warnings(const string_list *labels, const sample_qc_metrics *metrics, size_t count) {
+    if (labels == NULL || metrics == NULL || count == 0) return;
+    int any = 0;
+    for (size_t sample = 0; sample < count; ++sample) {
+        const sample_qc_metrics *m = &metrics[sample];
+        int sample_warn = 0;
+        if (m->assignment_rate < 0.80) sample_warn = 1;
+        if (m->ambiguous_rate > 0.05) sample_warn = 1;
+        if (m->no_match_rate > 0.15) sample_warn = 1;
+        if (m->invalid_rate > 0.02) sample_warn = 1;
+        if (m->coverage_fraction < 0.90) sample_warn = 1;
+        if (m->zero_count_fraction > 0.10) sample_warn = 1;
+        if (m->gini_index > 0.50) sample_warn = 1;
+        if (m->top_1pct_fraction > 0.30) sample_warn = 1;
+        if (!sample_warn) continue;
+        any = 1;
+        fprintf(stderr, "dotmatch: QC review recommended for sample %s:", labels->items[sample]);
+        if (m->assignment_rate < 0.80) fprintf(stderr, " assignment_rate=%.1f%%", 100.0 * m->assignment_rate);
+        if (m->ambiguous_rate > 0.05) fprintf(stderr, " ambiguous_rate=%.1f%%", 100.0 * m->ambiguous_rate);
+        if (m->no_match_rate > 0.15) fprintf(stderr, " no_match_rate=%.1f%%", 100.0 * m->no_match_rate);
+        if (m->invalid_rate > 0.02) fprintf(stderr, " invalid_rate=%.1f%%", 100.0 * m->invalid_rate);
+        if (m->coverage_fraction < 0.90) fprintf(stderr, " coverage=%.1f%%", 100.0 * m->coverage_fraction);
+        if (m->zero_count_fraction > 0.10) fprintf(stderr, " zero_count_guides=%.1f%%", 100.0 * m->zero_count_fraction);
+        if (m->gini_index > 0.50) fprintf(stderr, " gini=%.2f", m->gini_index);
+        if (m->top_1pct_fraction > 0.30) fprintf(stderr, " top_1pct_fraction=%.1f%%", 100.0 * m->top_1pct_fraction);
+        fprintf(stderr, "\n");
+    }
+    if (any) {
+        fprintf(stderr,
+                "dotmatch: review sample_qc.tsv and summary.json before downstream MAGeCK/BAGEL analysis; "
+                "thresholds are conservative diagnostics, not biological pass/fail rules\n");
+    }
+}
+
 typedef enum ambiguity_policy {
     AMBIGUITY_POLICY_BEST = 0,
     AMBIGUITY_POLICY_RADIUS = 1
@@ -1848,6 +2139,7 @@ typedef struct count_dirty_slots {
 typedef struct count_sample_job {
     const qdaln_index *index;
     const hamming_lookup *hlookup;
+    const levenshtein1_lookup *levlookup;
     const seq_table *targets;
     const char **target_ptrs;
     const size_t *target_lens;
@@ -1867,6 +2159,8 @@ typedef struct count_sample_job {
     const char *ambiguous_policy;
     ambiguity_policy assignment_policy;
     int direct_hamming_counts;
+    int metal_hamming_counts;
+    const uint64_t *metal_target_codes;
     int fused_offset_detection;
     size_t target_start;
     size_t auto_offset;
@@ -1877,6 +2171,7 @@ typedef struct count_sample_job {
     int max_correction_qual;
     int rc;
     count_dirty_slots *dirty_slots;
+    count_progress *progress;
 } count_sample_job;
 
 static void write_assignment_like_row(FILE *out, const seq_table *targets, const char *sample, const char *read_id,
@@ -2191,6 +2486,30 @@ static int assign_count_window(const qdaln_index *index, const char *seq, size_t
         if (len >= observed_cap) continue;
         if (target_start > seq_len || len > seq_len - target_start) continue;
 
+        if (metric == COUNT_METRIC_HAMMING && k == 0) {
+            qdaln_match_result r;
+            qdaln_index_stats s = {0, 0};
+            int exact_rc = qdaln_index_lookup_exact_ascii_stats(index, seq + target_start, len, &r, &s);
+            if (exact_rc != 0) {
+                rc = -1;
+                goto done;
+            }
+            if (stats != NULL) {
+                stats->candidates_considered += s.candidates_considered;
+                stats->candidates_verified += s.candidates_verified;
+            }
+            char candidate[8192];
+            if (len >= sizeof(candidate)) continue;
+            memcpy(candidate, seq + target_start, len);
+            candidate[len] = '\0';
+            uppercase_ascii(candidate);
+            if (merge_state_add_result(&merge, observed, observed_cap, candidate, r) != 0) {
+                rc = -1;
+                goto done;
+            }
+            continue;
+        }
+
         char candidate[8192];
         if (len >= sizeof(candidate)) continue;
         memcpy(candidate, seq + target_start, len);
@@ -2202,7 +2521,7 @@ static int assign_count_window(const qdaln_index *index, const char *seq, size_t
         qdaln_match_result r;
         qdaln_index_stats s = {0, 0};
         if (best_exact_shortcut && metric == COUNT_METRIC_HAMMING && k == 1) {
-            int exact_rc = qdaln_index_assign_hamming_stats(index, &read_ptr, &read_len, 1, 0, &r, &s);
+            int exact_rc = qdaln_index_lookup_exact_stats(index, read_ptr, read_len, &r, &s);
             if (exact_rc != 0) {
                 rc = -1;
                 goto done;
@@ -2487,6 +2806,228 @@ static void hamming_lookup_result_from_entry(const hamming_lookup_entry *entry, 
     result->status = entry->match_count > 1 ? QDALN_MATCH_AMBIGUOUS : QDALN_MATCH_UNIQUE;
 }
 
+static void levenshtein1_lookup_result_from_entry(const hamming_lookup_entry *entry, int distance,
+                                                  qdaln_match_result *result) {
+    result->target_index = entry->target_index;
+    result->best_distance = distance;
+    result->second_best_distance = -1;
+    result->match_count = entry->match_count;
+    result->status = entry->match_count > 1 ? QDALN_MATCH_AMBIGUOUS : QDALN_MATCH_UNIQUE;
+}
+
+static int assign_levenshtein1_lookup_offset(const levenshtein1_lookup *lookup, const char *seq, size_t seq_len,
+                                             size_t offset, qdaln_match_result *result, qdaln_index_stats *stats,
+                                             char *observed, size_t observed_cap) {
+    if (lookup == NULL || !lookup->ready || lookup->target_len == 0 || lookup->target_len > 31) return 0;
+    *result = (qdaln_match_result){-1, -1, -1, 0, QDALN_MATCH_INVALID};
+    if (stats != NULL) {
+        stats->candidates_considered = 0;
+        stats->candidates_verified = 0;
+    }
+    if (observed_cap != 0) observed[0] = '\0';
+
+    size_t target_len = lookup->target_len;
+    if (offset > seq_len || target_len - 1 > seq_len - offset) return 1;
+
+    uint64_t code = 0;
+    const hamming_lookup_entry *entry = NULL;
+    qdaln_match_result local = {-1, -1, -1, 0, QDALN_MATCH_NONE};
+    int have_len_l = 0;
+    uint64_t code_len_l = 0;
+    if (target_len < observed_cap && target_len <= seq_len - offset &&
+        dna2_code_local_fold(seq + offset, target_len, &code_len_l)) {
+        have_len_l = 1;
+        code = code_len_l;
+        entry = levenshtein1_lookup_find(lookup->exact, lookup->exact_cap, code, target_len);
+        if (entry != NULL) {
+            levenshtein1_lookup_result_from_entry(entry, 0, &local);
+            if (stats != NULL) {
+                stats->candidates_considered += (size_t)entry->match_count;
+                stats->candidates_verified += (size_t)entry->match_count;
+            }
+            copy_upper_ascii_window(observed, observed_cap, seq + offset, target_len);
+            *result = local;
+            return 1;
+        }
+    }
+
+    match_merge_state merge;
+    merge_state_init(&merge);
+    int rc = 0;
+    char candidate_observed[128];
+
+    if (have_len_l) {
+        entry = levenshtein1_lookup_find(lookup->substitution, lookup->substitution_cap, code_len_l, target_len);
+        if (entry != NULL) {
+            levenshtein1_lookup_result_from_entry(entry, 1, &local);
+            if (stats != NULL) {
+                stats->candidates_considered += (size_t)entry->match_count;
+                stats->candidates_verified += (size_t)entry->match_count;
+            }
+            copy_upper_ascii_window(candidate_observed, sizeof(candidate_observed), seq + offset, target_len);
+            rc = merge_state_add_result(&merge, observed, observed_cap, candidate_observed, local);
+        }
+    }
+
+    if (rc == 0 && target_len - 1 < observed_cap && dna2_code_local_fold(seq + offset, target_len - 1, &code)) {
+        entry = levenshtein1_lookup_find(lookup->target_deletion, lookup->target_deletion_cap, code, target_len - 1);
+        if (entry != NULL) {
+            levenshtein1_lookup_result_from_entry(entry, 1, &local);
+            if (stats != NULL) {
+                stats->candidates_considered += (size_t)entry->match_count;
+                stats->candidates_verified += (size_t)entry->match_count;
+            }
+            copy_upper_ascii_window(candidate_observed, sizeof(candidate_observed), seq + offset, target_len - 1);
+            rc = merge_state_add_result(&merge, observed, observed_cap, candidate_observed, local);
+        }
+    }
+
+    if (rc == 0 && target_len + 1 < observed_cap && target_len + 1 <= seq_len - offset &&
+        dna2_code_local_fold(seq + offset, target_len + 1, &code)) {
+        entry = levenshtein1_lookup_find(lookup->target_insertion, lookup->target_insertion_cap, code, target_len + 1);
+        if (entry != NULL) {
+            levenshtein1_lookup_result_from_entry(entry, 1, &local);
+            if (stats != NULL) {
+                stats->candidates_considered += (size_t)entry->match_count;
+                stats->candidates_verified += (size_t)entry->match_count;
+            }
+            copy_upper_ascii_window(candidate_observed, sizeof(candidate_observed), seq + offset, target_len + 1);
+            rc = merge_state_add_result(&merge, observed, observed_cap, candidate_observed, local);
+        }
+    }
+
+    if (rc != 0) {
+        merge_state_free(&merge);
+        return -1;
+    }
+    merge_state_finish(&merge, result);
+    merge_state_free(&merge);
+    if (result->match_count > 0) {
+        return 1;
+    }
+
+    if (target_len <= seq_len - offset && target_len < observed_cap) {
+        copy_upper_ascii_window(observed, observed_cap, seq + offset, target_len);
+    } else if (target_len - 1 < observed_cap) {
+        copy_upper_ascii_window(observed, observed_cap, seq + offset, target_len - 1);
+    }
+    *result = (qdaln_match_result){-1, -1, -1, 0, QDALN_MATCH_NONE};
+    return 1;
+}
+
+static int hamming_lookup_counts_eligible(int count_only, int max_correction_qual, count_metric metric,
+                                          size_t indel_window, int k, size_t target_len,
+                                          hamming_index_strategy hamming_strategy) {
+    if (!count_only || max_correction_qual >= 0) return 0;
+    if (metric != COUNT_METRIC_HAMMING || indel_window != 0) return 0;
+    if (k != 0 && k != 1) return 0;
+    if (target_len > 32) return 0;
+    return hamming_strategy == HAMMING_INDEX_PRECOMPUTE || hamming_strategy == HAMMING_INDEX_AUTO;
+}
+
+static int levenshtein1_lookup_counts_eligible(int count_only, int max_correction_qual, count_metric metric,
+                                               size_t indel_window, int k, size_t target_len,
+                                               size_t max_selected_offsets, FILE *assignments,
+                                               FILE *ambiguous_out, FILE *unmatched_out,
+                                               ambiguity_policy assignment_policy) {
+    if (!count_only || max_correction_qual >= 0) return 0;
+    if (assignments != NULL || ambiguous_out != NULL || unmatched_out != NULL) return 0;
+    if (assignment_policy != AMBIGUITY_POLICY_BEST) return 0;
+    if (metric != COUNT_METRIC_LEVENSHTEIN || indel_window != 1 || k != 1) return 0;
+    if (max_selected_offsets > 1 || target_len == 0 || target_len > 31) return 0;
+    return 1;
+}
+
+static int hamming_direct_worker_eligible(int lookup_eligible, ambiguity_policy assignment_policy, int k) {
+    if (!lookup_eligible) return 0;
+    if (k == 0) return 1;
+    return assignment_policy == AMBIGUITY_POLICY_BEST || assignment_policy == AMBIGUITY_POLICY_RADIUS;
+}
+
+static const char *count_backend_mode_name(count_backend_mode mode) {
+    switch (mode) {
+        case COUNT_BACKEND_CPU:
+            return "cpu";
+        case COUNT_BACKEND_METAL:
+            return "gpu-metal-experimental";
+        case COUNT_BACKEND_AUTO:
+        default:
+            return "auto";
+    }
+}
+
+static int parse_count_backend_mode(const char *value, count_backend_mode *mode_out) {
+    if (strcmp(value, "auto") == 0) {
+        *mode_out = COUNT_BACKEND_AUTO;
+        return 0;
+    }
+    if (strcmp(value, "cpu") == 0) {
+        *mode_out = COUNT_BACKEND_CPU;
+        return 0;
+    }
+    if (strcmp(value, "gpu-metal-experimental") == 0 || strcmp(value, "metal") == 0) {
+        *mode_out = COUNT_BACKEND_METAL;
+        return 0;
+    }
+    return -1;
+}
+
+static int metal_hamming_count_eligible(count_backend_mode backend, int hamming_lookup_eligible,
+                                        ambiguity_policy assignment_policy, int k, size_t max_selected_offsets,
+                                        int fused_offset_detection) {
+    if (backend != COUNT_BACKEND_METAL) return 0;
+    if (!hamming_lookup_eligible || !qdmetal_available()) return 0;
+    if (fused_offset_detection) return 0;
+    if (max_selected_offsets > 1) return 0;
+    if (k == 1 && assignment_policy != AMBIGUITY_POLICY_BEST) return 0;
+    return 1;
+}
+
+static int build_packed_target_codes(const seq_table *targets, size_t target_len, uint64_t **codes_out) {
+    if (targets == NULL || codes_out == NULL || target_len == 0 || target_len > 32) return 0;
+    uint64_t *codes = (uint64_t *)calloc(targets->count == 0 ? 1 : targets->count, sizeof(uint64_t));
+    if (codes == NULL) return -1;
+    for (size_t i = 0; i < targets->count; ++i) {
+        if (targets->records[i].len != target_len || !dna2_code_local(targets->records[i].seq, target_len, &codes[i])) {
+            free(codes);
+            return 0;
+        }
+    }
+    *codes_out = codes;
+    return 1;
+}
+
+static const char *metal_count_engine_name(size_t n_targets) {
+    return n_targets >= 1024 ? "hamming_metal_seed_index" : "hamming_metal_brute_force";
+}
+
+static int direct_hamming_merge_lookup_entry(match_merge_state *merge, const hamming_lookup_entry *entry,
+                                             int distance) {
+    if (entry == NULL) return 0;
+    qdaln_match_result r;
+    hamming_lookup_result_from_entry(entry, distance, &r);
+    return merge_state_add_result(merge, NULL, 0, "", r);
+}
+
+static int direct_hamming_collect_seed_hits(count_sample_job *job, match_merge_state *merge, unsigned char seed_id,
+                                            uint64_t seed_code, uint64_t read_code) {
+    const hamming_lookup *lookup = job->hlookup;
+    size_t seed_len = seed_id == 0 ? lookup->seed0_len : lookup->target_len - lookup->seed0_len;
+    size_t slot = seed_hash_local(seed_code, seed_len, seed_id, lookup->seed_hash_cap);
+    for (int e = lookup->seed_heads[slot]; e >= 0; e = lookup->seeds[e].next) {
+        const hamming_seed_entry *entry = &lookup->seeds[e];
+        if (entry->seed_id != seed_id || entry->code != seed_code || entry->target_index < 0) continue;
+        job->stats->candidates_considered += 1;
+        job->stats->candidates_verified += 1;
+        if (hamming_code_distance_local(read_code, lookup->target_codes[entry->target_index], lookup->target_len) > 1) {
+            continue;
+        }
+        qdaln_match_result r = {entry->target_index, 1, -1, 1, QDALN_MATCH_UNIQUE};
+        if (merge_state_add_result(merge, NULL, 0, "", r) != 0) return -1;
+    }
+    return 0;
+}
+
 static int assign_hamming_lookup_offsets(const hamming_lookup *lookup, const char *seq, size_t seq_len,
                                          const offset_list *offsets, size_t fallback_offset, int k,
                                          qdaln_match_result *result, qdaln_index_stats *stats,
@@ -2531,7 +3072,7 @@ static int assign_hamming_lookup_offsets(const hamming_lookup *lookup, const cha
                 rc = -1;
                 break;
             }
-            continue;
+            if (!(exact_merge && k == 1)) continue;
         }
         if (k == 1) {
             if (!exact_merge && fast_result.best_distance == 0) continue;
@@ -2809,22 +3350,53 @@ static int increment_count_slot(count_sample_job *job, size_t slot) {
     return 0;
 }
 
+static int direct_hamming_apply_match_result(count_sample_job *job, qdaln_match_result result, int saw_window) {
+    apply_ambiguity_policy(&result, job->assignment_policy);
+    if (result.status == QDALN_MATCH_UNIQUE && result.target_index >= 0) {
+        int kind = result.best_distance == 0 ? 0 : 1;
+        if (increment_count_slot(job, ((job->sample_index * job->targets->count + (size_t)result.target_index) * 5) + (size_t)kind) != 0) {
+            return -1;
+        }
+        ++job->stats->unique;
+        if (result.best_distance == 0) ++job->stats->exact;
+        else ++job->stats->corrected;
+    } else if (result.status == QDALN_MATCH_AMBIGUOUS) {
+        ++job->stats->ambiguous;
+    } else if (result.status == QDALN_MATCH_NONE) {
+        ++job->stats->unmatched;
+    } else if (saw_window) {
+        ++job->stats->unmatched;
+    } else {
+        ++job->stats->invalid;
+    }
+    return 0;
+}
+
 static void direct_hamming_visit_seed(const count_sample_job *job, unsigned char seed_id, uint64_t seed_code,
                                       uint64_t read_code, int *best_target, int *ambiguous) {
     const hamming_lookup *lookup = job->hlookup;
     size_t seed_len = seed_id == 0 ? lookup->seed0_len : lookup->target_len - lookup->seed0_len;
     size_t slot = seed_hash_local(seed_code, seed_len, seed_id, lookup->seed_hash_cap);
-    for (int e = lookup->seed_heads[slot]; e >= 0; e = lookup->seeds[e].next) {
+    for (int e = lookup->seed_heads[slot]; e >= 0; ) {
+        int nexte = lookup->seeds[e].next;
         const hamming_seed_entry *entry = &lookup->seeds[e];
-        if (entry->seed_id != seed_id || entry->code != seed_code) continue;
+        if (entry->seed_id != seed_id || entry->code != seed_code) {
+            e = nexte;
+            continue;
+        }
         int target_index = entry->target_index;
-        if (target_index < 0) continue;
+        if (target_index < 0) {
+            e = nexte;
+            continue;
+        }
         job->stats->candidates_considered += 1;
         job->stats->candidates_verified += 1;
         if (hamming_code_distance_local(read_code, lookup->target_codes[target_index], lookup->target_len) > 1) {
+            e = nexte;
             continue;
         }
         direct_hamming_record_hit(target_index, 1, best_target, ambiguous);
+        e = nexte;
     }
 }
 
@@ -2941,6 +3513,7 @@ static void fill_direct_hamming_codes(const char *seq, size_t seq_len, const off
 static int direct_hamming_count_seq(count_sample_job *job, const char *seq, size_t seq_len) {
     if (job->hlookup == NULL || !job->hlookup->ready) return 0;
     ++job->stats->total;
+    count_progress_tick(job->progress);
 
     size_t n_offsets = job->selected_offsets == NULL || job->selected_offsets->count == 0
             ? 1 : job->selected_offsets->count;
@@ -2972,9 +3545,27 @@ static int direct_hamming_count_seq(count_sample_job *job, const char *seq, size
             if (entry != NULL) {
                 job->stats->candidates_considered += (unsigned long long)entry->match_count;
                 job->stats->candidates_verified += (unsigned long long)entry->match_count;
+                if (job->k == 0) {
+                    if (entry->match_count > 1) {
+                        ++job->stats->ambiguous;
+                    } else {
+                        if (increment_count_slot(job, ((job->sample_index * job->targets->count +
+                                                        (size_t)entry->target_index) * 5) + 0) != 0) {
+                            return -1;
+                        }
+                        ++job->stats->unique;
+                        ++job->stats->exact;
+                    }
+                    return 0;
+                }
                 direct_hamming_record_hit(entry->target_index, entry->match_count, &exact_target,
                                           &exact_ambiguous);
             }
+        }
+
+        if (job->k == 0) {
+            ++job->stats->unmatched;
+            return 0;
         }
 
         if (exact_target >= 0) {
@@ -3071,6 +3662,70 @@ static int direct_hamming_count_seq(count_sample_job *job, const char *seq, size
                               job->hlookup->target_len, codes, valid, invalid_counts,
                               bad_positions, n_offsets,
                               &saw_window, &saw_non_acgt_window);
+    (void)saw_non_acgt_window;
+
+    if (job->k == 1 && job->assignment_policy == AMBIGUITY_POLICY_RADIUS) {
+        match_merge_state merge;
+        merge_state_init(&merge);
+        int rc = 0;
+        for (size_t i = 0; i < n_offsets && rc == 0; ++i) {
+            if (valid[i]) {
+                const hamming_lookup_entry *entry =
+                        hamming_lookup_find(job->hlookup->exact, job->hlookup->exact_cap, codes[i]);
+                if (entry != NULL) {
+                    job->stats->candidates_considered += (unsigned long long)entry->match_count;
+                    job->stats->candidates_verified += (unsigned long long)entry->match_count;
+                    rc = direct_hamming_merge_lookup_entry(&merge, entry, 0);
+                }
+                if (rc == 0) {
+                    if (job->hlookup->seed_ready) {
+                        uint64_t seed0 = code_segment_local(codes[i], 0, job->hlookup->seed0_len);
+                        uint64_t seed1 = code_segment_local(codes[i], job->hlookup->seed0_len,
+                                                            job->hlookup->target_len - job->hlookup->seed0_len);
+                        if (direct_hamming_collect_seed_hits(job, &merge, 0, seed0, codes[i]) != 0 ||
+                            direct_hamming_collect_seed_hits(job, &merge, 1, seed1, codes[i]) != 0) {
+                            rc = -1;
+                        }
+                    } else {
+                        entry = hamming_lookup_find(job->hlookup->mismatch, job->hlookup->mismatch_cap, codes[i]);
+                        if (entry != NULL) {
+                            job->stats->candidates_considered += (unsigned long long)entry->match_count;
+                            job->stats->candidates_verified += (unsigned long long)entry->match_count;
+                            rc = direct_hamming_merge_lookup_entry(&merge, entry, 1);
+                        }
+                    }
+                }
+            } else if (invalid_counts[i] == 1) {
+                uint64_t shift = (uint64_t)2 * bad_positions[i];
+                uint64_t mask = 3ULL << shift;
+                for (uint64_t b = 0; b < 4 && rc == 0; ++b) {
+                    uint64_t patched = (codes[i] & ~mask) | (b << shift);
+                    const hamming_lookup_entry *entry =
+                            hamming_lookup_find(job->hlookup->exact, job->hlookup->exact_cap, patched);
+                    if (entry == NULL) continue;
+                    job->stats->candidates_considered += (unsigned long long)entry->match_count;
+                    job->stats->candidates_verified += (unsigned long long)entry->match_count;
+                    rc = direct_hamming_merge_lookup_entry(&merge, entry, 1);
+                }
+            }
+        }
+        qdaln_match_result result = {-1, -1, -1, 0, QDALN_MATCH_INVALID};
+        if (rc == 0) {
+            merge_state_finish(&merge, &result);
+            if (result.status == QDALN_MATCH_INVALID && saw_window) {
+                result = (qdaln_match_result){-1, -1, -1, 0, QDALN_MATCH_NONE};
+            }
+            rc = direct_hamming_apply_match_result(job, result, saw_window);
+        }
+        merge_state_free(&merge);
+        if (codes != inline_codes) {
+            free(codes);
+            free(valid);
+            free(invalid_counts);
+            free(bad_positions);
+        }
+        return rc;
+    }
 
     int exact_target = -1;
     int exact_ambiguous = 0;
@@ -3205,6 +3860,38 @@ static void *direct_hamming_batch_worker(void *arg) {
 
 static int process_direct_hamming_buffer(count_sample_job *job, const seq_buffer *buffer) {
     if (buffer->count == 0) return 0;
+    if (job->k == 0 && job->index != NULL && job->hlookup != NULL && job->hlookup->ready &&
+        job->hlookup->target_len == job->target_len && (job->selected_offsets == NULL || job->selected_offsets->count <= 1)) {
+        qdaln_match_result *results = (qdaln_match_result *)calloc(buffer->count, sizeof(qdaln_match_result));
+        if (results == NULL) return 1;
+        qdaln_index_stats batch_stats = {0, 0};
+        if (qdaln_index_lookup_exact_ascii_many_stats(job->index, (const char *const *)buffer->items, buffer->lens,
+                                                      buffer->count, results, &batch_stats) != 0) {
+            free(results);
+            return 1;
+        }
+        job->stats->candidates_considered += batch_stats.candidates_considered;
+        job->stats->candidates_verified += batch_stats.candidates_verified;
+        for (size_t i = 0; i < buffer->count; ++i) {
+            qdaln_match_result result = results[i];
+            if (result.status == QDALN_MATCH_UNIQUE && result.target_index >= 0) {
+                if (increment_count_slot(job, ((job->sample_index * job->targets->count + (size_t)result.target_index) * 5) + 0) != 0) {
+                    free(results);
+                    return 1;
+                }
+                ++job->stats->unique;
+                ++job->stats->exact;
+            } else if (result.status == QDALN_MATCH_AMBIGUOUS) {
+                ++job->stats->ambiguous;
+            } else if (result.status == QDALN_MATCH_NONE) {
+                ++job->stats->unmatched;
+            } else {
+                ++job->stats->invalid;
+            }
+        }
+        free(results);
+        return 0;
+    }
     size_t read_threads = job->read_threads;
     if (read_threads <= 1 || buffer->count < 1024) {
         for (size_t i = 0; i < buffer->count; ++i) {
@@ -3393,6 +4080,102 @@ static int count_sample_worker_direct_hamming(count_sample_job *job) {
     return 0;
 }
 
+static int pack_read_window_code(const char *seq, size_t seq_len, size_t offset, size_t target_len, uint64_t *code_out) {
+    if (offset > seq_len || target_len > seq_len - offset) return 0;
+    return dna2_code_local(seq + offset, target_len, code_out);
+}
+
+static int apply_metal_match_to_counts(count_sample_job *job, const qdmetal_match_result *metal_result) {
+    qdaln_match_result result = {metal_result->target_index, metal_result->best_distance,
+                                 metal_result->second_best_distance, metal_result->match_count,
+                                 metal_result->status};
+    return direct_hamming_apply_match_result(job, result, 1);
+}
+
+static int count_sample_worker_metal_hamming(count_sample_job *job) {
+    if (job->metal_target_codes == NULL) return 1;
+    fastq_reader reader = {0};
+    if (fastq_reader_open(&reader, job->reads_path) != 0) {
+        fprintf(stderr, "failed to open FASTQ input\n");
+        return 1;
+    }
+
+    size_t window_offset = job->selected_offsets == NULL || job->selected_offsets->count == 0
+            ? job->target_start
+            : job->selected_offsets->items[0];
+    const size_t batch_cap = 262144;
+    uint64_t *read_codes = (uint64_t *)malloc(batch_cap * sizeof(uint64_t));
+    qdmetal_match_result *metal_results =
+            (qdmetal_match_result *)malloc(batch_cap * sizeof(qdmetal_match_result));
+    if (read_codes == NULL || metal_results == NULL) {
+        free(read_codes);
+        free(metal_results);
+        fastq_reader_close(&reader);
+        return 1;
+    }
+
+    char seq[8192];
+    size_t seq_len = 0;
+    size_t batch_count = 0;
+    int got = 0;
+    int rc = 0;
+
+    while (rc == 0 && (got = fastq_read_sequence_record_len(&reader, seq, sizeof(seq), &seq_len)) == 1) {
+        ++job->stats->total;
+        count_progress_tick(job->progress);
+        uint64_t code = 0;
+        if (!pack_read_window_code(seq, seq_len, window_offset, job->target_len, &code)) {
+            if (window_offset > seq_len || job->target_len > seq_len - window_offset) ++job->stats->invalid;
+            else ++job->stats->unmatched;
+            continue;
+        }
+        read_codes[batch_count++] = code;
+        if (batch_count == batch_cap) {
+            qdmetal_assign_stats mstats = {0, 0, NULL, NULL};
+            if (qdmetal_hamming_assign(read_codes, batch_count, job->metal_target_codes, job->targets->count,
+                                       job->target_len, job->k, metal_results, &mstats) != 0) {
+                rc = 1;
+                break;
+            }
+            job->stats->candidates_considered += (unsigned long long)mstats.candidates_considered;
+            job->stats->candidates_verified += (unsigned long long)mstats.candidates_verified;
+            for (size_t i = 0; i < batch_count; ++i) {
+                if (apply_metal_match_to_counts(job, &metal_results[i]) != 0) {
+                    rc = 1;
+                    break;
+                }
+            }
+            batch_count = 0;
+        }
+    }
+
+    if (rc == 0 && got >= 0 && batch_count != 0) {
+        qdmetal_assign_stats mstats = {0, 0, NULL, NULL};
+        if (qdmetal_hamming_assign(read_codes, batch_count, job->metal_target_codes, job->targets->count,
+                                   job->target_len, job->k, metal_results, &mstats) != 0) {
+            rc = 1;
+        } else {
+            job->stats->candidates_considered += (unsigned long long)mstats.candidates_considered;
+            job->stats->candidates_verified += (unsigned long long)mstats.candidates_verified;
+            for (size_t i = 0; i < batch_count; ++i) {
+                if (apply_metal_match_to_counts(job, &metal_results[i]) != 0) {
+                    rc = 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    free(read_codes);
+    free(metal_results);
+    fastq_reader_close(&reader);
+    if (got < 0) {
+        fprintf(stderr, "malformed FASTQ input\n");
+        return 1;
+    }
+    return rc;
+}
+
 static int count_sample_sequence(count_sample_job *job, const char *seq, size_t seq_len, const char *qual,
                                  const char *read_id) {
     char observed[8192];
@@ -3400,10 +4183,21 @@ static int count_sample_sequence(count_sample_job *job, const char *seq, size_t 
     qdaln_index_stats istats = {0, 0};
     observed[0] = '\0';
     ++job->stats->total;
+    count_progress_tick(job->progress);
     int best_exact_shortcut = job->k == 1 &&
             job->assignment_policy == AMBIGUITY_POLICY_BEST && job->assignments == NULL &&
             job->ambiguous_out == NULL && job->unmatched_out == NULL;
     int handled = 0;
+    if (job->metric == COUNT_METRIC_LEVENSHTEIN && job->k == 1 && job->indel_window == 1 &&
+        job->levlookup != NULL && job->levlookup->ready &&
+        (job->selected_offsets == NULL || job->selected_offsets->count <= 1)) {
+        size_t offset = job->selected_offsets == NULL || job->selected_offsets->count == 0
+                ? job->target_start : job->selected_offsets->items[0];
+        int lookup_rc = assign_levenshtein1_lookup_offset(job->levlookup, seq, seq_len, offset, &result,
+                                                          &istats, observed, sizeof(observed));
+        if (lookup_rc < 0) return -1;
+        handled = lookup_rc;
+    }
     if (job->metric == COUNT_METRIC_HAMMING && job->indel_window == 0 && job->hlookup != NULL && job->hlookup->ready) {
         int exact_merge = job->assignment_policy == AMBIGUITY_POLICY_RADIUS ||
                           job->assignments != NULL || job->ambiguous_out != NULL ||
@@ -3505,6 +4299,40 @@ static void *count_batch_worker(void *arg) {
 
 static int process_count_buffer(count_sample_job *job, const seq_buffer *buffer) {
     if (buffer->count == 0) return 0;
+    if (job->k == 0 && job->metric == COUNT_METRIC_HAMMING && job->indel_window == 0 && job->index != NULL &&
+        job->hlookup != NULL && job->hlookup->ready && job->hlookup->target_len == job->target_len &&
+        job->assignments == NULL && job->ambiguous_out == NULL && job->unmatched_out == NULL &&
+        job->max_correction_qual < 0 && job->assignment_policy == AMBIGUITY_POLICY_BEST) {
+        qdaln_match_result *results = (qdaln_match_result *)calloc(buffer->count, sizeof(qdaln_match_result));
+        if (results == NULL) return 1;
+        qdaln_index_stats batch_stats = {0, 0};
+        if (qdaln_index_lookup_exact_ascii_many_stats(job->index, (const char *const *)buffer->items, buffer->lens,
+                                                      buffer->count, results, &batch_stats) != 0) {
+            free(results);
+            return 1;
+        }
+        job->stats->candidates_considered += batch_stats.candidates_considered;
+        job->stats->candidates_verified += batch_stats.candidates_verified;
+        for (size_t i = 0; i < buffer->count; ++i) {
+            qdaln_match_result result = results[i];
+            if (result.status == QDALN_MATCH_UNIQUE && result.target_index >= 0) {
+                if (increment_count_slot(job, ((job->sample_index * job->targets->count + (size_t)result.target_index) * 5) + 0) != 0) {
+                    free(results);
+                    return 1;
+                }
+                ++job->stats->unique;
+                ++job->stats->exact;
+            } else if (result.status == QDALN_MATCH_AMBIGUOUS) {
+                ++job->stats->ambiguous;
+            } else if (result.status == QDALN_MATCH_NONE) {
+                ++job->stats->unmatched;
+            } else {
+                ++job->stats->invalid;
+            }
+        }
+        free(results);
+        return 0;
+    }
     size_t read_threads = job->read_threads;
     if (read_threads <= 1 || buffer->count < 1024) {
         for (size_t i = 0; i < buffer->count; ++i) {
@@ -3561,8 +4389,157 @@ static int process_count_buffer(count_sample_job *job, const seq_buffer *buffer)
     return rc;
 }
 
+static void *count_sample_worker(void *arg);
+
+typedef struct count_samples_args {
+    const qdaln_index *index;
+    const hamming_lookup *hlookup;
+    const levenshtein1_lookup *levlookup;
+    const seq_table *targets;
+    const char **target_ptrs;
+    const size_t *target_lens;
+    const string_list *reads;
+    const string_list *labels;
+    offset_list *selected_offsets;
+    size_t target_len;
+    int k;
+    count_metric metric;
+    size_t indel_window;
+    unsigned long long *counts;
+    count_stats *stats_by_sample;
+    FILE *assignments;
+    FILE *ambiguous_out;
+    FILE *unmatched_out;
+    const char *ambiguous_policy;
+    ambiguity_policy assignment_policy;
+    int direct_hamming_counts;
+    int metal_hamming_counts;
+    const uint64_t *metal_target_codes;
+    int fused_offset_detection;
+    size_t target_start;
+    size_t auto_offset;
+    size_t auto_offset_sample;
+    offset_mode offsets_mode;
+    double offset_min_fraction;
+    size_t effective_read_threads;
+    int max_correction_qual;
+    size_t sample_threads;
+    count_progress *progress_by_sample;
+} count_samples_args;
+
+static int run_count_samples_phase(const count_samples_args *args) {
+    if (args == NULL || args->reads == NULL || args->labels == NULL || args->counts == NULL ||
+        args->stats_by_sample == NULL) {
+        return -1;
+    }
+    size_t sample_threads = args->sample_threads;
+    if (sample_threads <= 1 || args->reads->count <= 1) {
+        for (size_t sample = 0; sample < args->reads->count; ++sample) {
+            count_sample_job job = {
+                args->index, args->hlookup, args->levlookup, args->targets, args->target_ptrs, args->target_lens,
+                args->reads->items[sample], args->labels->items[sample], sample, &args->selected_offsets[sample],
+                args->target_len, args->k, args->metric, args->indel_window, args->counts, &args->stats_by_sample[sample],
+                args->assignments, args->ambiguous_out, args->unmatched_out, args->ambiguous_policy,
+                args->assignment_policy, args->direct_hamming_counts, args->metal_hamming_counts,
+                args->metal_target_codes, args->fused_offset_detection, args->target_start, args->auto_offset,
+                args->auto_offset_sample, args->offsets_mode, args->offset_min_fraction, args->effective_read_threads,
+                args->max_correction_qual, 1, NULL,
+                args->progress_by_sample != NULL ? &args->progress_by_sample[sample] : NULL};
+            count_sample_worker(&job);
+            if (job.rc != 0) return job.rc;
+        }
+        return 0;
+    }
+
+    pthread_t *thread_ids = (pthread_t *)calloc(sample_threads, sizeof(pthread_t));
+    count_sample_job *jobs = (count_sample_job *)calloc(args->reads->count, sizeof(count_sample_job));
+    if (thread_ids == NULL || jobs == NULL) {
+        free(thread_ids);
+        free(jobs);
+        fprintf(stderr, "out of memory\n");
+        return -1;
+    }
+    int rc = 0;
+    size_t next_sample = 0;
+    while (next_sample < args->reads->count && rc == 0) {
+        size_t batch = args->reads->count - next_sample;
+        if (batch > sample_threads) batch = sample_threads;
+        for (size_t i = 0; i < batch; ++i) {
+            size_t sample = next_sample + i;
+            jobs[sample] = (count_sample_job){
+                args->index, args->hlookup, args->levlookup, args->targets, args->target_ptrs, args->target_lens,
+                args->reads->items[sample], args->labels->items[sample], sample, &args->selected_offsets[sample],
+                args->target_len, args->k, args->metric, args->indel_window, args->counts, &args->stats_by_sample[sample],
+                NULL, NULL, NULL, args->ambiguous_policy, args->assignment_policy, args->direct_hamming_counts,
+                args->metal_hamming_counts, args->metal_target_codes, args->fused_offset_detection, args->target_start,
+                args->auto_offset, args->auto_offset_sample, args->offsets_mode, args->offset_min_fraction, 1,
+                args->max_correction_qual, 1, NULL,
+                args->progress_by_sample != NULL ? &args->progress_by_sample[sample] : NULL};
+            if (pthread_create(&thread_ids[i], NULL, count_sample_worker, &jobs[sample]) != 0) {
+                fprintf(stderr, "failed to create worker thread\n");
+                batch = i;
+                rc = -1;
+                break;
+            }
+        }
+        for (size_t i = 0; i < batch; ++i) {
+            pthread_join(thread_ids[i], NULL);
+            if (rc == 0 && jobs[next_sample + i].rc != 0) rc = jobs[next_sample + i].rc;
+        }
+        next_sample += batch;
+    }
+    free(thread_ids);
+    free(jobs);
+    return rc;
+}
+
+static unsigned long long count_matrix_cell_total(const unsigned long long *counts, size_t n_targets, size_t sample,
+                                                  size_t target) {
+    unsigned long long total = 0;
+    for (size_t kind = 0; kind < 5; ++kind) total += counts[((sample * n_targets + target) * 5) + kind];
+    return total;
+}
+
+static int validate_metal_counts_against_cpu(const unsigned long long *metal_counts, const unsigned long long *cpu_counts,
+                                             size_t n_samples, size_t n_targets, size_t *diff_guides_out,
+                                             long long *delta_reads_out, char *example_guide, size_t example_cap) {
+    if (metal_counts == NULL || cpu_counts == NULL || diff_guides_out == NULL || delta_reads_out == NULL) return -1;
+    *diff_guides_out = 0;
+    *delta_reads_out = 0;
+    if (example_guide != NULL && example_cap > 0) example_guide[0] = '\0';
+    for (size_t t = 0; t < n_targets; ++t) {
+        int guide_diff = 0;
+        for (size_t s = 0; s < n_samples; ++s) {
+            unsigned long long metal_total = count_matrix_cell_total(metal_counts, n_targets, s, t);
+            unsigned long long cpu_total = count_matrix_cell_total(cpu_counts, n_targets, s, t);
+            if (metal_total != cpu_total) {
+                guide_diff = 1;
+                *delta_reads_out += (long long)metal_total - (long long)cpu_total;
+                if (example_guide != NULL && example_guide[0] == '\0' && example_cap > 0) {
+                    snprintf(example_guide, example_cap, "sample_index=%zu target_index=%zu metal=%llu cpu=%llu", s, t,
+                             metal_total, cpu_total);
+                }
+            }
+        }
+        if (guide_diff) ++*diff_guides_out;
+    }
+    return *diff_guides_out == 0 ? 0 : 1;
+}
+
+static int env_truthy(const char *value) {
+    if (value == NULL || value[0] == '\0') return 0;
+    if (strcmp(value, "0") == 0) return 0;
+    if (strcmp(value, "false") == 0 || strcmp(value, "FALSE") == 0) return 0;
+    if (strcmp(value, "no") == 0 || strcmp(value, "NO") == 0) return 0;
+    return 1;
+}
+
 static void *count_sample_worker(void *arg) {
     count_sample_job *job = (count_sample_job *)arg;
+    if (job->metal_hamming_counts) {
+        job->rc = count_sample_worker_metal_hamming(job);
+        return NULL;
+    }
     if (job->direct_hamming_counts) {
         job->rc = count_sample_worker_direct_hamming(job);
         return NULL;
@@ -3862,8 +4839,15 @@ static int run_count(const char *argv0, int argc, char **argv) {
     size_t threads = 0;
     int max_correction_qual = -1;
     int k = -1;
+    count_backend_mode backend_mode = COUNT_BACKEND_AUTO;
     string_list reads = {0};
     string_list labels = {0};
+    int show_progress = isatty(STDERR_FILENO);
+    size_t progress_interval_reads = 250000;
+    char default_sample_qc_path[PATH_MAX];
+    count_progress *progress_by_sample = NULL;
+    int metal_validate = env_truthy(getenv("DOTMATCH_METAL_VALIDATE"));
+    const char *metal_validation_status = NULL;
 
     int i = 2;
     while (i < argc) {
@@ -3950,6 +4934,22 @@ static int run_count(const char *argv0, int argc, char **argv) {
                 usage(argv0);
                 goto fail_args;
             }
+        } else if (strcmp(arg, "--backend") == 0 && i < argc) {
+            if (parse_count_backend_mode(argv[i++], &backend_mode) != 0) {
+                fprintf(stderr, "--backend must be auto, cpu, or gpu-metal-experimental\n");
+                goto fail_args;
+            }
+        } else if (strcmp(arg, "--progress") == 0) {
+            show_progress = 1;
+        } else if (strcmp(arg, "--no-progress") == 0) {
+            show_progress = 0;
+        } else if (strcmp(arg, "--progress-interval") == 0 && i < argc) {
+            if (parse_size_value(argv[i++], &progress_interval_reads) != 0 || progress_interval_reads == 0) {
+                fprintf(stderr, "--progress-interval must be a positive integer\n");
+                goto fail_args;
+            }
+        } else if (strcmp(arg, "--metal-validate") == 0) {
+            metal_validate = 1;
         } else if (strcmp(arg, "--threads") == 0 && i < argc) {
             if (parse_size_value(argv[i++], &threads) != 0) {
                 usage(argv0);
@@ -4019,6 +5019,11 @@ static int run_count(const char *argv0, int argc, char **argv) {
         usage(argv0);
         goto fail_args;
     }
+    if (crispr_mode && sample_qc_path == NULL &&
+        derive_output_sibling_path(out_path, "sample_qc.tsv", default_sample_qc_path,
+                                   sizeof(default_sample_qc_path)) == 0) {
+        sample_qc_path = default_sample_qc_path;
+    }
     if (auto_offset > MAX_AUTO_OFFSET) {
         fprintf(stderr, "--auto-offset must be <= %d\n", MAX_AUTO_OFFSET);
         goto fail_args;
@@ -4068,6 +5073,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
     qdaln_index *index = NULL;
     hamming_lookup hlookup = {0};
     hamming_lookup offset_lookup = {0};
+    levenshtein1_lookup levlookup = {0};
     const char **target_ptrs = NULL;
     size_t *target_lens = NULL;
     unsigned char *ambiguous_nearby = NULL;
@@ -4087,6 +5093,9 @@ static int run_count(const char *argv0, int argc, char **argv) {
     const char *offset_detection_strategy = auto_offset == 0 ? "none" : "prepass";
     const char *count_engine = "generic_indexed";
     size_t effective_read_threads = threads;
+    const char *backend_effective = "cpu";
+    int metal_hamming_counts = 0;
+    uint64_t *metal_target_codes = NULL;
 
     double phase_start_seconds = seconds_now();
     if (read_target_table(targets_path, &targets) != 0) {
@@ -4104,10 +5113,11 @@ static int run_count(const char *argv0, int argc, char **argv) {
     }
     target_index_seconds = seconds_now() - phase_start_seconds;
 
-    int direct_hamming_counts = count_only && max_correction_qual < 0 &&
-            metric == COUNT_METRIC_HAMMING && indel_window == 0 &&
-            assignment_policy == AMBIGUITY_POLICY_BEST && (k == 0 || k == 1) && target_len <= 32 &&
-            (hamming_strategy == HAMMING_INDEX_PRECOMPUTE || hamming_strategy == HAMMING_INDEX_AUTO);
+    int hamming_lookup_eligible = hamming_lookup_counts_eligible(
+            count_only, max_correction_qual, metric, indel_window, k, target_len, hamming_strategy);
+    int direct_hamming_counts = hamming_direct_worker_eligible(hamming_lookup_eligible, assignment_policy, k);
+    int may_use_metal = backend_mode == COUNT_BACKEND_METAL && hamming_lookup_eligible && qdmetal_available() &&
+            (k == 0 || assignment_policy == AMBIGUITY_POLICY_BEST);
     if (direct_hamming_counts) {
         phase_start_seconds = seconds_now();
         int use_mismatch_precompute_now = k == 1 &&
@@ -4213,7 +5223,8 @@ static int run_count(const char *argv0, int argc, char **argv) {
         fprintf(unmatched_out, "sample\tread_id\tobserved_seq\ttarget_index\ttarget_id\ttarget_seq\tbest_distance\tsecond_best_distance\tmatch_count\tstatus\tcorrection\n");
     }
 
-    int fused_offset_detection = direct_hamming_counts && auto_offset != 0;
+    int metal_blocks_fused_offset = may_use_metal && offsets_mode != OFFSET_MODE_MULTI;
+    int fused_offset_detection = direct_hamming_counts && auto_offset != 0 && !metal_blocks_fused_offset;
     if (fused_offset_detection) {
         offset_detection_strategy = "fused";
     }
@@ -4243,7 +5254,47 @@ static int run_count(const char *argv0, int argc, char **argv) {
     for (size_t sample = 0; sample < reads.count; ++sample) {
         if (selected_offsets[sample].count > max_selected_offsets) max_selected_offsets = selected_offsets[sample].count;
     }
-    if (direct_hamming_counts && !fused_offset_detection && max_selected_offsets <= 1) {
+    int direct_levenshtein_counts = levenshtein1_lookup_counts_eligible(
+            count_only, max_correction_qual, metric, indel_window, k, target_len, max_selected_offsets,
+            assignments, ambiguous_out, unmatched_out, assignment_policy);
+    if (direct_levenshtein_counts) {
+        phase_start_seconds = seconds_now();
+        int lookup_rc = build_levenshtein1_lookup(&targets, target_len, &levlookup);
+        if (lookup_rc != 0) {
+            fprintf(stderr, "failed to build Levenshtein k=1 lookup\n");
+            goto done;
+        }
+        if (levlookup.ready) {
+            count_engine = "levenshtein_k1_lookup_direct";
+            target_index_seconds += seconds_now() - phase_start_seconds;
+        } else {
+            direct_levenshtein_counts = 0;
+        }
+    }
+    if (metal_hamming_count_eligible(backend_mode, hamming_lookup_eligible, assignment_policy, k,
+                                     max_selected_offsets, fused_offset_detection)) {
+        int pack_rc = build_packed_target_codes(&targets, target_len, &metal_target_codes);
+        if (pack_rc == 1) {
+            metal_hamming_counts = 1;
+            direct_hamming_counts = 0;
+            count_engine = metal_count_engine_name(targets.count);
+            backend_effective = "gpu-metal-experimental";
+        } else if (pack_rc < 0) {
+            goto done;
+        } else if (backend_mode == COUNT_BACKEND_METAL) {
+            fprintf(stderr,
+                    "Metal backend requires packable A/C/G/T targets, count-only output, single offset, and "
+                    "best-distance policy for k=1\n");
+            goto done;
+        }
+    } else if (backend_mode == COUNT_BACKEND_METAL) {
+        fprintf(stderr,
+                "Metal backend unavailable for this workload; requires Darwin Metal, --metric hamming, k 0|1, "
+                "count-only output, and single offset");
+        if (k == 1) fprintf(stderr, " with --ambiguity-policy best");
+        fprintf(stderr, "\n");
+        goto done;
+    } else if (direct_hamming_counts && !fused_offset_detection && max_selected_offsets <= 1) {
         count_engine = "hamming_lookup_direct_single_offset";
     }
     int use_precomputed_hamming = metric == COUNT_METRIC_HAMMING && k == 1 &&
@@ -4260,9 +5311,20 @@ static int run_count(const char *argv0, int argc, char **argv) {
         hamming_precompute_seconds = seconds_now() - phase_start_seconds;
     }
 
+    if (show_progress) {
+        progress_by_sample = (count_progress *)calloc(reads.count, sizeof(count_progress));
+        if (progress_by_sample == NULL) {
+            fprintf(stderr, "out of memory\n");
+            goto done;
+        }
+        for (size_t sample = 0; sample < reads.count; ++sample) {
+            count_progress_init(&progress_by_sample[sample], labels.items[sample], progress_interval_reads);
+        }
+    }
+
     phase_start_seconds = seconds_now();
     size_t sample_threads = threads;
-    if (direct_hamming_counts && reads.count == 1 && threads > 1) {
+    if ((direct_hamming_counts || metal_hamming_counts) && reads.count == 1 && threads > 1) {
         effective_read_threads = threads;
         sample_threads = 1;
     } else if (count_only && reads.count == 1 && threads > 1) {
@@ -4271,65 +5333,84 @@ static int run_count(const char *argv0, int argc, char **argv) {
     } else if (sample_threads > reads.count) {
         sample_threads = reads.count;
     }
-    if (sample_threads <= 1 || reads.count <= 1) {
-        for (size_t sample = 0; sample < reads.count; ++sample) {
-            count_sample_job job = {
-                index, &hlookup, &targets, target_ptrs, target_lens,
-                reads.items[sample], labels.items[sample], sample, &selected_offsets[sample],
-                target_len, k, metric, indel_window, counts, &stats_by_sample[sample],
-                assignments, ambiguous_out, unmatched_out, ambiguous_policy, assignment_policy,
-                direct_hamming_counts, fused_offset_detection, target_start, auto_offset, auto_offset_sample,
-                offsets_mode, offset_min_fraction, effective_read_threads, max_correction_qual, 1, NULL
-            };
-            count_sample_worker(&job);
-            if (job.rc != 0) goto done;
-        }
-    } else {
-        pthread_t *thread_ids = (pthread_t *)calloc(sample_threads, sizeof(pthread_t));
-        count_sample_job *jobs = (count_sample_job *)calloc(reads.count, sizeof(count_sample_job));
-        if (thread_ids == NULL || jobs == NULL) {
-            free(thread_ids);
-            free(jobs);
+    count_samples_args sample_args = {
+        index, &hlookup, &levlookup, &targets, target_ptrs, target_lens, &reads, &labels, selected_offsets, target_len, k, metric,
+        indel_window, counts, stats_by_sample, assignments, ambiguous_out, unmatched_out, ambiguous_policy,
+        assignment_policy, direct_hamming_counts, metal_hamming_counts, metal_target_codes, fused_offset_detection,
+        target_start, auto_offset, auto_offset_sample, offsets_mode, offset_min_fraction, effective_read_threads,
+        max_correction_qual, sample_threads, progress_by_sample};
+    if (run_count_samples_phase(&sample_args) != 0) goto done;
+
+    if (metal_validate && metal_hamming_counts) {
+        size_t count_slots = total_slots == 0 ? 1 : total_slots;
+        size_t sample_slots = reads.count == 0 ? 1 : reads.count;
+        unsigned long long *metal_counts_snapshot =
+                (unsigned long long *)calloc(count_slots, sizeof(unsigned long long));
+        count_stats *metal_stats_snapshot = (count_stats *)calloc(sample_slots, sizeof(count_stats));
+        if (metal_counts_snapshot == NULL || metal_stats_snapshot == NULL) {
+            free(metal_counts_snapshot);
+            free(metal_stats_snapshot);
             fprintf(stderr, "out of memory\n");
             goto done;
         }
-        size_t next_sample = 0;
-        while (next_sample < reads.count) {
-            size_t batch = reads.count - next_sample;
-            if (batch > sample_threads) batch = sample_threads;
-            for (size_t i = 0; i < batch; ++i) {
-                size_t sample = next_sample + i;
-                jobs[sample] = (count_sample_job){
-                    index, &hlookup, &targets, target_ptrs, target_lens,
-                    reads.items[sample], labels.items[sample], sample, &selected_offsets[sample],
-                    target_len, k, metric, indel_window, counts, &stats_by_sample[sample],
-                    NULL, NULL, NULL, ambiguous_policy, assignment_policy,
-                    direct_hamming_counts, fused_offset_detection, target_start, auto_offset, auto_offset_sample,
-                    offsets_mode, offset_min_fraction, 1, max_correction_qual, 1, NULL
-                };
-                if (pthread_create(&thread_ids[i], NULL, count_sample_worker, &jobs[sample]) != 0) {
-                    fprintf(stderr, "failed to create worker thread\n");
-                    batch = i;
-                    for (size_t j = 0; j < batch; ++j) pthread_join(thread_ids[j], NULL);
-                    free(thread_ids);
-                    free(jobs);
-                    goto done;
-                }
-            }
-            for (size_t i = 0; i < batch; ++i) {
-                pthread_join(thread_ids[i], NULL);
-                if (jobs[next_sample + i].rc != 0) {
-                    free(thread_ids);
-                    free(jobs);
-                    goto done;
-                }
-            }
-            next_sample += batch;
+        memcpy(metal_counts_snapshot, counts, total_slots * sizeof(unsigned long long));
+        memcpy(metal_stats_snapshot, stats_by_sample, reads.count * sizeof(count_stats));
+        memset(counts, 0, count_slots * sizeof(unsigned long long));
+        memset(stats_by_sample, 0, sample_slots * sizeof(count_stats));
+
+        int cpu_direct = hamming_direct_worker_eligible(hamming_lookup_eligible, assignment_policy, k) && hlookup.ready;
+        if (!cpu_direct) {
+            fprintf(stderr, "Metal validation requires a CPU Hamming direct lookup for this workload\n");
+            free(metal_counts_snapshot);
+            free(metal_stats_snapshot);
+            goto done;
         }
-        free(thread_ids);
-        free(jobs);
+        count_samples_args cpu_args = sample_args;
+        cpu_args.direct_hamming_counts = 1;
+        cpu_args.metal_hamming_counts = 0;
+        cpu_args.metal_target_codes = NULL;
+        cpu_args.assignments = NULL;
+        cpu_args.ambiguous_out = NULL;
+        cpu_args.unmatched_out = NULL;
+        cpu_args.progress_by_sample = NULL;
+        if (run_count_samples_phase(&cpu_args) != 0) {
+            free(metal_counts_snapshot);
+            free(metal_stats_snapshot);
+            goto done;
+        }
+
+        size_t diff_guides = 0;
+        long long delta_reads = 0;
+        char example[256];
+        example[0] = '\0';
+        if (validate_metal_counts_against_cpu(metal_counts_snapshot, counts, reads.count, targets.count, &diff_guides,
+                                              &delta_reads, example, sizeof(example)) != 0) {
+            metal_validation_status = "failed";
+            fprintf(stderr,
+                    "dotmatch: Metal validation failed: %zu guides differ across samples (net read delta %lld); %s\n",
+                    diff_guides, delta_reads, example[0] == '\0' ? "no example" : example);
+            fprintf(stderr, "dotmatch: rerun with --backend cpu for authoritative counts\n");
+            free(metal_counts_snapshot);
+            free(metal_stats_snapshot);
+            goto done;
+        }
+        metal_validation_status = "passed";
+        fprintf(stderr, "dotmatch: Metal validation passed (%zu guides, CPU authority check)\n", targets.count);
+        memcpy(counts, metal_counts_snapshot, total_slots * sizeof(unsigned long long));
+        memcpy(stats_by_sample, metal_stats_snapshot, reads.count * sizeof(count_stats));
+        free(metal_counts_snapshot);
+        free(metal_stats_snapshot);
+    } else if (metal_validate && backend_mode == COUNT_BACKEND_METAL) {
+        fprintf(stderr, "dotmatch: --metal-validate requires an active Metal counting backend for this workload\n");
+        goto done;
     }
+
     counting_seconds = seconds_now() - phase_start_seconds;
+    if (show_progress && progress_by_sample != NULL) {
+        for (size_t sample = 0; sample < reads.count; ++sample) {
+            count_progress_finish(&progress_by_sample[sample]);
+        }
+    }
 
     out = open_output_file(out_path);
     if (out == NULL) {
@@ -4454,10 +5535,23 @@ static int run_count(const char *argv0, int argc, char **argv) {
             fprintf(summary, "null");
         }
         fprintf(summary,
-                ",\n  \"indel_window\": %zu,\n  \"target_start\": %zu,\n  \"auto_offset\": %zu,\n  \"offset_mode\": \"%s\",\n  \"offset_min_fraction\": %.8f,\n  \"offset_detection_strategy\": \"%s\",\n  \"count_engine\": \"%s\",\n  \"hamming_index\": \"%s\",\n  \"target_length\": %zu,\n  \"n_targets\": %zu,\n  \"read_threads\": %zu,\n  \"phase_seconds\": {\"target_index\": %.6f, \"offset_detection\": %.6f, \"hamming_precompute\": %.6f, \"counting\": %.6f, \"total_before_summary\": %.6f},\n  \"samples\": [\n",
+                ",\n  \"indel_window\": %zu,\n  \"target_start\": %zu,\n  \"auto_offset\": %zu,\n  \"offset_mode\": \"%s\",\n  \"offset_min_fraction\": %.8f,\n  \"offset_detection_strategy\": \"%s\",\n  \"backend_requested\": \"%s\",\n  \"backend_effective\": \"%s\",\n  \"metal_device\": ",
                 indel_window, target_start, auto_offset, offset_mode_name(offsets_mode), offset_min_fraction,
-                offset_detection_strategy, count_engine, hamming_lookup_kind(&hlookup), target_len, targets.count,
-                effective_read_threads,
+                offset_detection_strategy, count_backend_mode_name(backend_mode), backend_effective);
+        if (metal_hamming_counts && qdmetal_device_name() != NULL) {
+            fprintf(summary, "\"%s\"", qdmetal_device_name());
+        } else {
+            fprintf(summary, "null");
+        }
+        fprintf(summary, ",\n  \"metal_validation\": ");
+        if (metal_validation_status != NULL) {
+            fprintf(summary, "\"%s\"", metal_validation_status);
+        } else {
+            fprintf(summary, "null");
+        }
+        fprintf(summary,
+                ",\n  \"count_engine\": \"%s\",\n  \"hamming_index\": \"%s\",\n  \"target_length\": %zu,\n  \"n_targets\": %zu,\n  \"read_threads\": %zu,\n  \"phase_seconds\": {\"target_index\": %.6f, \"offset_detection\": %.6f, \"hamming_precompute\": %.6f, \"counting\": %.6f, \"total_before_summary\": %.6f},\n  \"samples\": [\n",
+                count_engine, hamming_lookup_kind(&hlookup), target_len, targets.count, effective_read_threads,
                 target_index_seconds, offset_detection_seconds, hamming_precompute_seconds, counting_seconds,
                 total_before_summary_seconds);
         for (size_t sample = 0; sample < reads.count; ++sample) {
@@ -4504,9 +5598,34 @@ static int run_count(const char *argv0, int argc, char **argv) {
             goto done;
         }
     }
+    {
+        sample_qc_metrics *qc_metrics = (sample_qc_metrics *)calloc(reads.count, sizeof(sample_qc_metrics));
+        if (qc_metrics != NULL) {
+            int metrics_ok = 1;
+            for (size_t sample = 0; sample < reads.count; ++sample) {
+                if (compute_sample_qc_metrics(&targets, counts, sample, &stats_by_sample[sample],
+                                              &qc_metrics[sample]) != 0) {
+                    metrics_ok = 0;
+                    break;
+                }
+            }
+            if (metrics_ok) {
+                int enough_reads = 0;
+                for (size_t sample = 0; sample < reads.count; ++sample) {
+                    if (stats_by_sample[sample].total >= 1000) enough_reads = 1;
+                }
+                if (enough_reads || crispr_mode) emit_sample_qc_review_warnings(&labels, qc_metrics, reads.count);
+            }
+            free(qc_metrics);
+        }
+    }
     rc = 0;
 
 done:
+    if (progress_by_sample != NULL) {
+        for (size_t sample = 0; sample < reads.count; ++sample) count_progress_fini(&progress_by_sample[sample]);
+        free(progress_by_sample);
+    }
     if (out != NULL) fclose(out);
     if (assignments != NULL) fclose(assignments);
     if (ambiguous_out != NULL) fclose(ambiguous_out);
@@ -4514,6 +5633,8 @@ done:
     qdaln_index_free(index);
     free_hamming_lookup(&hlookup);
     free_hamming_lookup(&offset_lookup);
+    free_levenshtein1_lookup(&levlookup);
+    free(metal_target_codes);
     free(target_ptrs);
     free(target_lens);
     free(ambiguous_nearby);
@@ -6759,6 +7880,8 @@ static int run_demux(const char *argv0, int argc, char **argv) {
     seq_table targets = {0};
     fastq_reader reader = {0};
     qdaln_index *index = NULL;
+    hamming_lookup hlookup = {0};
+    levenshtein1_lookup levlookup = {0};
     const char **target_ptrs = NULL;
     size_t *target_lens = NULL;
     size_t *auto_barcode_lens = NULL;
@@ -6772,6 +7895,7 @@ static int run_demux(const char *argv0, int argc, char **argv) {
     FILE *unmatched_out = NULL;
     count_stats stats = {0};
     unsigned long long *target_counts = NULL;
+    const char *assignment_engine = "generic_indexed";
     int rc = 1;
 
     if (read_target_table(barcodes_path, &targets) != 0) {
@@ -6807,6 +7931,25 @@ static int run_demux(const char *argv0, int argc, char **argv) {
     if (index == NULL) {
         fprintf(stderr, "failed to build barcode index\n");
         goto done;
+    }
+    if (!auto_barcode_len && metric == COUNT_METRIC_HAMMING && indel_window == 0 && (k == 0 || k == 1) &&
+        barcode_len <= 32) {
+        int lookup_rc = k == 0 ? build_hamming_exact_lookup(&targets, barcode_len, &hlookup)
+                               : build_hamming_lookup(&targets, barcode_len, &hlookup);
+        if (lookup_rc < 0) {
+            fprintf(stderr, "failed to build barcode Hamming lookup\n");
+            goto done;
+        }
+        if (hlookup.ready) assignment_engine = k == 0 ? "hamming_exact_lookup_direct" : "hamming_k1_lookup_direct";
+    }
+    if (!auto_barcode_len && metric == COUNT_METRIC_LEVENSHTEIN && indel_window == 1 && k == 1 &&
+        assignment_policy == AMBIGUITY_POLICY_BEST && barcode_len <= 31) {
+        int lookup_rc = build_levenshtein1_lookup(&targets, barcode_len, &levlookup);
+        if (lookup_rc < 0) {
+            fprintf(stderr, "failed to build barcode Levenshtein lookup\n");
+            goto done;
+        }
+        if (levlookup.ready) assignment_engine = "levenshtein_k1_lookup_direct";
     }
     int filename_check = validate_unique_sanitized_filenames(&targets);
     if (filename_check != 0) {
@@ -6865,7 +8008,30 @@ static int run_demux(const char *argv0, int argc, char **argv) {
         observed[0] = '\0';
         ++stats.total;
 
-        if (assign_count_length_set(index, seq, seq_len, barcode_start, barcode_lens, barcode_lens_count, k, metric,
+        int handled = 0;
+        if (hlookup.ready) {
+            int exact_merge = assignment_policy == AMBIGUITY_POLICY_RADIUS ||
+                    assignments != NULL || ambiguous_out != NULL || unmatched_out != NULL;
+            int lookup_rc = assign_hamming_lookup_offsets(&hlookup, seq, seq_len, NULL, barcode_start, k,
+                                                          &result, &istats, observed, sizeof(observed),
+                                                          exact_merge);
+            if (lookup_rc < 0) {
+                fprintf(stderr, "FASTQ assignment failed\n");
+                goto done;
+            }
+            handled = lookup_rc;
+        }
+        if (!handled && levlookup.ready) {
+            int lookup_rc = assign_levenshtein1_lookup_offset(&levlookup, seq, seq_len, barcode_start, &result,
+                                                              &istats, observed, sizeof(observed));
+            if (lookup_rc < 0) {
+                fprintf(stderr, "FASTQ assignment failed\n");
+                goto done;
+            }
+            handled = lookup_rc;
+        }
+        if (!handled &&
+            assign_count_length_set(index, seq, seq_len, barcode_start, barcode_lens, barcode_lens_count, k, metric,
                                     indel_window, &result, &istats, observed, sizeof(observed), 0) != 0) {
             fprintf(stderr, "FASTQ assignment failed\n");
             goto done;
@@ -6937,8 +8103,9 @@ static int run_demux(const char *argv0, int argc, char **argv) {
             }
         }
         fprintf(summary,
-                "{\n  \"workflow\": \"demux\",\n  \"k\": %d,\n  \"metric\": \"%s\",\n  \"ambiguity_policy\": \"%s\",\n  \"alphabet_policy\": \"%s\",\n  \"max_correction_qual\": ",
-                k, metric_name(metric), ambiguity_policy_name(assignment_policy), qdaln_alphabet_policy());
+                "{\n  \"workflow\": \"demux\",\n  \"k\": %d,\n  \"metric\": \"%s\",\n  \"ambiguity_policy\": \"%s\",\n  \"assignment_engine\": \"%s\",\n  \"alphabet_policy\": \"%s\",\n  \"max_correction_qual\": ",
+                k, metric_name(metric), ambiguity_policy_name(assignment_policy), assignment_engine,
+                qdaln_alphabet_policy());
         if (max_correction_qual >= 0) {
             fprintf(summary, "%d", max_correction_qual);
         } else {
@@ -6972,6 +8139,8 @@ done:
     if (unmatched_out != NULL) fclose(unmatched_out);
     fastq_reader_close(&reader);
     qdaln_index_free(index);
+    free_hamming_lookup(&hlookup);
+    free_levenshtein1_lookup(&levlookup);
     free(target_ptrs);
     free(target_lens);
     free(auto_barcode_lens);

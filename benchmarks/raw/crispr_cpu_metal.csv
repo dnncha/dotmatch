@@ -1,0 +1,13 @@
+dataset,backend,metal_validate,status,records_per_sample,n_samples,total_reads,n_targets,guide_start,guide_length,k,offset_mode,auto_offset,wall_seconds,phase_total_seconds,reads_per_sec,backend_effective,count_engine,metal_validation,exit_code,count_match_cpu,device,notes
+mageck_yusa,cpu,0,ok,10000,2,20000,87437,23,19,1,fixed,0,0.063000,0.054383,317460.7,cpu,hamming_lookup_direct_single_offset,None,0,,macOS-26.2-arm64-arm-64bit,
+mageck_yusa,gpu-metal-experimental,0,ok,10000,2,20000,87437,23,19,1,fixed,0,0.109191,0.098912,183165.3,gpu-metal-experimental,hamming_metal_seed_index,None,0,0,macOS-26.2-arm64-arm-64bit,
+mageck_yusa,gpu-metal-experimental,1,validation_failed,10000,2,0,,23,19,1,fixed,0,0.090965,,,,,,1,,macOS-26.2-arm64-arm-64bit,Metal validation failed against CPU authority checksum
+mageck_yusa,cpu,0,ok,100000,2,200000,87437,23,19,1,fixed,0,0.087516,0.079423,2285296.4,cpu,hamming_lookup_direct_single_offset,None,0,,macOS-26.2-arm64-arm-64bit,
+mageck_yusa,gpu-metal-experimental,0,ok,100000,2,200000,87437,23,19,1,fixed,0,0.126537,0.117575,1580563.3,gpu-metal-experimental,hamming_metal_seed_index,None,0,0,macOS-26.2-arm64-arm-64bit,
+mageck_yusa,gpu-metal-experimental,1,validation_failed,100000,2,0,,23,19,1,fixed,0,0.151587,,,,,,1,,macOS-26.2-arm64-arm-64bit,Metal validation failed against CPU authority checksum
+sanson_brunello,cpu,0,ok,10000,4,40000,77441,20,20,1,multi,20,0.237331,0.221918,168540.9,cpu,hamming_lookup_direct,None,0,,macOS-26.2-arm64-arm-64bit,
+sanson_brunello,gpu-metal-experimental,0,ineligible,10000,4,,,20,20,1,multi,20,,,,,,,,,macOS-26.2-arm64-arm-64bit,Metal requires fixed single-offset Hamming k=1; offset-mode multi blocks the production Metal path
+sanson_brunello,gpu-metal-experimental,1,ineligible,10000,4,,,20,20,1,multi,20,,,,,,,,,macOS-26.2-arm64-arm-64bit,Metal requires fixed single-offset Hamming k=1; offset-mode multi blocks the production Metal path
+sanson_brunello,cpu,0,ok,100000,4,400000,77441,20,20,1,multi,20,0.800146,0.784700,499908.9,cpu,hamming_lookup_direct,None,0,,macOS-26.2-arm64-arm-64bit,
+sanson_brunello,gpu-metal-experimental,0,ineligible,100000,4,,,20,20,1,multi,20,,,,,,,,,macOS-26.2-arm64-arm-64bit,Metal requires fixed single-offset Hamming k=1; offset-mode multi blocks the production Metal path
+sanson_brunello,gpu-metal-experimental,1,ineligible,100000,4,,,20,20,1,multi,20,,,,,,,,,macOS-26.2-arm64-arm-64bit,Metal requires fixed single-offset Hamming k=1; offset-mode multi blocks the production Metal path

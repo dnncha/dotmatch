@@ -40,15 +40,18 @@
       "status": "required",
       "evidence": [
         "docs/benchmarks/public_crispr/README.md",
+        "docs/benchmarks/native/README.md",
         "docs/benchmarks/crispr_comparison/README.md",
+        "benchmarks/raw/native_edlib_assignment_summary.csv",
         "benchmarks/raw/public_crispr_edlib_validation.csv",
         "benchmarks/raw/crispr_comparison_edlib_validation.csv"
       ],
       "gates": [
+        "make native-exact-gate",
         "make public-crispr-evidence-gate",
         "make crispr-comparison-gate"
       ],
-      "acceptance": "Public CRISPR assignment claims require zero mismatches against the native Edlib oracle."
+      "acceptance": "Native fixed-window indexed assignment and public CRISPR assignment claims require zero mismatches against exact or native Edlib oracles and must satisfy scoped speed floors."
     },
     {
       "id": "public_assay_evidence",
@@ -67,6 +70,20 @@
         "make bcl-tiny-public-gate"
       ],
       "acceptance": "README, website, and release claims must stay inside lanes with raw artifacts, command provenance, reports, validation notes, and passing gates."
+    },
+    {
+      "id": "public_claim_wording",
+      "status": "required",
+      "evidence": [
+        "README.md",
+        "pyproject.toml",
+        "packaging/bioconda/meta.yaml",
+        "docs/scientific-claims.md"
+      ],
+      "gates": [
+        "make scientific-readiness-ready"
+      ],
+      "acceptance": "Broad public metadata must use deterministic/evidence-bounded assignment language and avoid unsupported global SOTA or fast-exact positioning."
     },
     {
       "id": "distribution_reproducibility",

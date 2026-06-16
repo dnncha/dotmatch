@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "benchmarks" / "raw" / "feature_barcode.csv"
+REPORT = ROOT / "docs" / "benchmarks" / "feature_barcode" / "README.md"
 
 
 def read_rows(path: Path) -> list[dict[str, str]]:
@@ -105,15 +106,36 @@ def public_row_gate(rows: list[dict[str, str]], failures: list[str]) -> None:
         failures.append("public feature-barcode rows must record metadata path")
 
 
+def report_gate(report: Path, failures: list[str]) -> None:
+    if not report.exists():
+        failures.append(f"missing feature-barcode report: {report}")
+        return
+    text = report.read_text(encoding="utf-8")
+    for required in [
+        "Feature reference pattern: `^NNNNNNNNNN(BC)NNNNNNNNN`",
+        "DotMatch uses `--target-start 10 --target-length 15`",
+        "validates per-read assignment semantics, not Cell Ranger cell/UMI quantification",
+        "public 10x lane supports only per-read assignment against the documented Feature Barcode reference window",
+        "Broader CITE-seq, cell-hashing, or cell-level quantification comparisons require public comparator output",
+        "UMI/cell aggregation validation",
+    ]:
+        if required not in text:
+            failures.append(f"feature-barcode report must retain evidence boundary: {required}")
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--csv", default=str(RAW))
+    parser.add_argument("--report", default=str(REPORT))
+    parser.add_argument("--skip-report", action="store_true")
     args = parser.parse_args(argv)
 
     failures: list[str] = []
     rows = read_rows(Path(args.csv))
     row_gate(rows, failures)
     public_row_gate(rows, failures)
+    if not args.skip_report:
+        report_gate(Path(args.report), failures)
     if failures:
         for failure in failures:
             print(f"FAIL: {failure}")

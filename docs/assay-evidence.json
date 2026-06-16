@@ -9,7 +9,9 @@
         "benchmarks/raw/public_crispr_repeated.csv",
         "benchmarks/raw/public_crispr_edlib_validation.csv",
         "benchmarks/raw/crispr_comparison_repeated.csv",
-        "benchmarks/raw/crispr_comparison_edlib_validation.csv"
+        "benchmarks/raw/crispr_comparison_edlib_validation.csv",
+        "benchmarks/raw/crispr_comparison_count_agreement_summary.csv",
+        "benchmarks/raw/crispr_comparison_hamming_k23_comparators.csv"
       ],
       "reports": [
         "docs/benchmarks/public_crispr/README.md",
@@ -25,8 +27,8 @@
         "make bench-crispr-comparison",
         "make crispr-comparison-gate"
       ],
-      "comparator_semantics": "MAGeCK exact-count agreement, guide-counter Hamming-lane comparison where installed, and native Edlib assignment validation are workflow comparators or semantic oracles as documented by each report.",
-      "validation": "The public CRISPR gates require repeated rows, count agreement, and zero Edlib assignment mismatches for the checked samples.",
+      "comparator_semantics": "MAGeCK exact-count agreement, guide-counter Hamming-lane comparison where installed, DotMatch-vs-Bowtie 1 Hamming k=2/k=3 fixed-window comparator rows, and native Edlib assignment validation are workflow comparators or semantic oracles as documented by each report.",
+      "validation": "The public CRISPR gates require repeated rows, count agreement, bounded Edlib validation, zero Edlib assignment mismatches for the checked samples, assigned-read agreement for DotMatch-vs-Bowtie 1 Hamming k=2/k=3 rows, and scoped speed floors: Hamming k=2 must clear >=8x vs Bowtie 1 and Hamming k=3 must clear >=2x vs Bowtie 1. This is not universal CRISPR superiority evidence.",
       "biological_unit": "per-read fixed-window guide assignment and per-sample guide counts",
       "unsupported_claims": [
         "gene essentiality or perturbation-effect inference",
@@ -59,8 +61,8 @@
         "make bench-barcode-demux",
         "make barcode-comparison-gate"
       ],
-      "comparator_semantics": "The checked public SRP009896 lane is an exact 5-prime inline-barcode comparison: DotMatch k=0 auto-length demux, Cutadapt anchored no-indel demux, and a transparent exact-prefix hash splitter baseline.",
-      "validation": "The barcode comparison gate requires evidence-ready metadata, five successful real-data repeats, assigned reads, Cutadapt rows, and a second exact-lane comparator.",
+      "comparator_semantics": "The checked public SRP009896 lanes are fixed-position 5-prime inline-barcode comparisons: DotMatch k=0 auto-length demux against Cutadapt anchored no-indel demux plus an exact-prefix hash splitter baseline, and fixed 8 bp Hamming k=1 demux against Cutadapt plus a transparent Hamming-radius splitter.",
+      "validation": "The barcode comparison gate requires evidence-ready metadata, five successful real-data repeats, assigned reads, Cutadapt rows, exact hash-splitter agreement for k=0, Hamming-radius splitter agreement for fixed 8 bp Hamming k=1, and real-data speed floors: k=0 must beat Cutadapt by >=5x and exact hash splitting by >=3x, while fixed 8 bp Hamming k=1 must beat Cutadapt by >=5x and the Hamming-radius splitter by >=12x. The Levenshtein one-edit barcode lane remains synthetic fixture evidence until public fixed-length indel barcode data and a production comparator are added.",
       "biological_unit": "per-read fixed-position sample barcode assignment",
       "unsupported_claims": [
         "arbitrary adapter trimming",
@@ -69,10 +71,10 @@
       ],
       "minimum_public_evidence": [
         "public FASTQ plus matching barcode/sample sheet",
-        "anchored comparator or exact-prefix oracle agreement",
+        "anchored comparator, exact-prefix oracle agreement, and fixed 8 bp Hamming k=1 oracle agreement",
         "repeat timing rows with invariant assigned/unmatched counts"
       ],
-      "claim_boundary": "Supported for the checked SRP009896/SRR391079 exact-prefix public inline-barcode lane with variable-length barcode sheet semantics; broader barcode demultiplexing claims need additional datasets and comparator semantics."
+      "claim_boundary": "Supported for the checked SRP009896/SRR391079 exact-prefix public inline-barcode lane with variable-length barcode sheet semantics and the fixed 8 bp Hamming k=1 public lane; broader barcode demultiplexing claims need additional datasets and comparator semantics."
     },
     {
       "id": "raw_bcl_demux",

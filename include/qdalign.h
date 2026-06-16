@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#define QDALN_VERSION "0.1.7"
+#define QDALN_VERSION "0.1.8"
 #define QDALN_ALPHABET_POLICY "literal-byte; A/C/G/T/N/IUPAC symbols are ordinary byte symbols; no wildcard expansion"
 
 enum qdaln_match_status {
@@ -167,6 +167,41 @@ int qdaln_index_assign_status_stats(const qdaln_index *index, const char *const 
 int qdaln_index_assign_hamming_stats(const qdaln_index *index, const char *const *reads,
                                      const size_t *read_lens, size_t n_reads, int k,
                                      qdaln_match_result *results, qdaln_index_stats *stats);
+
+/*
+ * Direct exact lookup for a single same-length known-target window.
+ * This is the low-overhead path for exact counting/demultiplexing loops.
+ * Results match qdaln_index_assign_hamming_stats(..., k=0, n_reads=1).
+ */
+int qdaln_index_lookup_exact_stats(const qdaln_index *index, const char *read, size_t read_len,
+                                   qdaln_match_result *result, qdaln_index_stats *stats);
+
+/*
+ * Batched direct exact lookup. Results match
+ * qdaln_index_assign_hamming_stats(..., k=0) while avoiding the general
+ * assignment dispatcher and repeated public API setup.
+ */
+int qdaln_index_lookup_exact_many_stats(const qdaln_index *index, const char *const *reads,
+                                        const size_t *read_lens, size_t n_reads,
+                                        qdaln_match_result *results, qdaln_index_stats *stats);
+
+/*
+ * Batched ASCII-folding exact lookup for buffered FASTQ windows.
+ * This is the exact-table path used by count-mode readers that keep raw ASCII
+ * windows and want to avoid per-read output plumbing.
+ */
+int qdaln_index_lookup_exact_ascii_many_stats(const qdaln_index *index, const char *const *reads,
+                                              const size_t *read_lens, size_t n_reads,
+                                              qdaln_match_result *results, qdaln_index_stats *stats);
+
+/*
+ * Direct exact lookup that folds ASCII a/c/g/t to A/C/G/T while preserving
+ * literal-byte behavior for other symbols through the non-encodable fallback.
+ * This matches DotMatch FASTQ window normalization without requiring callers
+ * to copy and uppercase the read window before lookup.
+ */
+int qdaln_index_lookup_exact_ascii_stats(const qdaln_index *index, const char *read, size_t read_len,
+                                         qdaln_match_result *result, qdaln_index_stats *stats);
 
 #ifdef __cplusplus
 }

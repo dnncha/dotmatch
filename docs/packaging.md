@@ -18,7 +18,11 @@ The same verifier also builds the sdist, confirms it contains `src/qdalign.c` an
 
 For PyPI, upload the sdist plus the native macOS wheel built on GitHub Actions. Linux binary wheels should go to PyPI only after they are built or repaired as manylinux/musllinux wheels. The release workflow builds repaired Linux wheel artifacts with cibuildwheel for `manylinux_x86_64` and `musllinux_x86_64`, smoke-tests `import dotmatch`, the installed console script, and `dotmatch dist ACGT AGGT`, and uploads them as GitHub release artifacts. Do not upload a raw `linux_x86_64` wheel to PyPI.
 
-The release workflow is prepared for PyPI trusted publishing and publishes the source distribution, the native macOS wheel, and repaired manylinux/musllinux Linux wheels on tagged releases. PyPI must have a trusted publisher configured for repository `dnncha/dotmatch`, workflow `.github/workflows/release.yml`, and environment `pypi`; otherwise the build artifacts are created but the publish job fails with `invalid-publisher`.
+DotMatch 0.1.8 is published on PyPI; the `v0.1.8` release workflow publishes the source distribution, the native macOS wheel, and repaired manylinux/musllinux Linux wheels. The release workflow
+uses PyPI trusted publishing from repository `dnncha/dotmatch`, workflow
+`.github/workflows/release.yml`, and environment `pypi`; if that publisher is
+missing or mismatched, the build artifacts are created but the publish job fails
+with `invalid-publisher`.
 Raw `linux_x86_64` wheels remain GitHub release artifacts only and are not uploaded to PyPI.
 `make citation-metadata-ready` also checks PyPI-facing `pyproject.toml`
 description, keywords, classifiers, and project URLs so the package page stays
@@ -30,28 +34,39 @@ assignment searches.
 Bioconda packages DotMatch from a recipe in `bioconda-recipes`; DotMatch does
 not upload a Conda package directly.
 [bioconda/bioconda-recipes#65367](https://github.com/bioconda/bioconda-recipes/pull/65367)
-published DotMatch 0.1.2 as the first Bioconda package. As of 2026-05-31,
-the latest verified public Bioconda package before the 0.1.7 release is 0.1.4.
-The 0.1.6 recipe update is submitted and green in
-[bioconda/bioconda-recipes#65901](https://github.com/bioconda/bioconda-recipes/pull/65901),
-with release tarball SHA256
-`4c265d3e741fd84b9d5096b4a1e47eacc44cb2949ec07da357f1833e3d0e84ae`.
-Submit a separate recipe update after tagging if 0.1.7 becomes the next
-Bioconda target.
+published DotMatch 0.1.2 as the first Bioconda package. As of 2026-06-14,
+Anaconda metadata lists DotMatch 0.1.7 as the latest Bioconda package on
+`linux-64`, `osx-64`, and `osx-arm64`. The 0.1.8 recipe update is open in
+[bioconda/bioconda-recipes#66290](https://github.com/bioconda/bioconda-recipes/pull/66290),
+using immutable `v0.1.8` tarball SHA256
+`ec3819bc773431454910287559d0809aca6ec1d81959f29d3d522650edb74904`.
+The PR has passing Bioconda Lint, Linux, OSX-64, and ARM checks and Bioconda's
+`please review & merge` label, and is waiting for maintainer review/merge.
 Treat future Bioconda versions as available only after
-`https://anaconda.org/bioconda/dotmatch`, repodata, and
-`make distribution-channels` all verify the release version and install smoke
-tests.
+`https://anaconda.org/bioconda/dotmatch`, repodata, and the install smoke tests
+in `make distribution-channels` all verify the release version.
 
 A release recipe template is kept under `packaging/bioconda/`. Before copying it
 to `bioconda-recipes`, replace `REPLACE_WITH_RELEASE_TARBALL_SHA256` with the
-SHA256 for the tagged GitHub release tarball. Run `make bioconda-recipe-ready`
-before that copy so the checked-in template stays aligned with the release
-version, native install steps, CLI smoke tests, and scope notes.
+SHA256 for the tagged GitHub release tarball. For 0.1.8 that SHA256 is
+`ec3819bc773431454910287559d0809aca6ec1d81959f29d3d522650edb74904`. The checked-in
+`docs/distribution-release.json` records the current channel state for the
+active Bioconda handoff. Run `make bioconda-recipe-ready` before that copy so the
+checked-in template stays aligned with the release version, native install
+steps, CLI smoke tests, and scope notes.
+
+After Bioconda merges the recipe, verify the channel with:
+
+```bash
+conda search -c bioconda dotmatch
+make distribution-channels
+```
+
 The template also includes `extra.additional-platforms: [osx-arm64]` so the
 Bioconda update opts into Apple Silicon CI/build coverage. Keep that selector in
-the upstream recipe update unless Bioconda CI demonstrates a platform-specific
-blocker and the release notes clearly document that `osx-arm64` is unavailable.
+future upstream recipe updates unless Bioconda CI demonstrates a
+platform-specific blocker and the release notes clearly document that
+`osx-arm64` is unavailable.
 
 The current Bioconda recipe installs the Python `dotmatch` console script as
 the user-facing command, with the native executable bundled inside the Python
@@ -78,10 +93,10 @@ The native CLI exposes `dotmatch --version`, so the Bioconda recipe and
 post-release Bioconda install verifier should check version output as well as
 functional CLI smoke tests.
 
-### Bioconda 0.1.7 PR changelog draft
+### Bioconda 0.1.8 PR changelog draft
 
-- Update DotMatch from the latest accepted Bioconda version to 0.1.7.
-- Use the immutable v0.1.7 tag and replace the SHA256 after the release tarball
+- Update DotMatch from the latest accepted Bioconda version to 0.1.8.
+- Use the immutable v0.1.8 tag and replace the SHA256 after the release tarball
   is available.
 - Keep the Python console-script package scope introduced in 0.1.4: `dotmatch`
   exposes the native commands plus `assay`, `barcode`, `panel`, and
@@ -89,6 +104,8 @@ functional CLI smoke tests.
 - Add Hamming `k=2`/`k=3` guide-counting support and exact audit safety fields;
   keep larger-radius claims bounded to same-length Hamming fixed-window
   assignment.
+- Add native exact-table shortcuts, indexed status paths, and bounded k=2
+  single-unknown status stops for the CRISPR/counting hot paths.
 - Add installed-package smoke tests for `dotmatch count --help`,
   `dotmatch crispr-count --help`, `dotmatch audit --help`, Hamming `k=2`
   CRISPR counting, exact Hamming `k=3` audit summaries, GuideCounter-compatible
@@ -112,6 +129,27 @@ version, license, and authorship. The release workflow smoke-tests both CLI
 behavior and the `org.opencontainers.image.version` label before pushing tagged
 images to `ghcr.io/dnncha/dotmatch`.
 
+## BioContainers
+
+BioContainers images for DotMatch are generated from the accepted Bioconda
+recipe; there is no separate DotMatch Dockerfile to submit to BioContainers for
+the normal release path. After
+[bioconda/bioconda-recipes#66290](https://github.com/bioconda/bioconda-recipes/pull/66290)
+merges and the `dotmatch=0.1.8` package appears on Anaconda, wait for the
+corresponding `quay.io/biocontainers/dotmatch:0.1.8--<build>` tag to appear.
+Then verify it with:
+
+```bash
+python3 scripts/check_distribution_channels.py --version 0.1.8
+docker pull quay.io/biocontainers/dotmatch:0.1.8--<build>
+docker run --rm quay.io/biocontainers/dotmatch:0.1.8--<build> dotmatch dist ACGT AGGT
+docker run --rm quay.io/biocontainers/dotmatch:0.1.8--<build> dotmatch leq 1 ACGT AGGT
+```
+
+Do not publish a manual BioContainers image for DotMatch unless the Bioconda
+automation fails after the accepted recipe is visible in Anaconda metadata and
+the failure is documented in the release record.
+
 ## Post-Release Channel Verification
 
 The prepared channel state is recorded in `docs/distribution-release.json`.
@@ -122,15 +160,12 @@ make distribution-record-ready
 make bioconda-recipe-ready
 ```
 
-While the first public release is still pending, this record must stay in
-`not_released` status with blockers and next actions for every public channel.
-For Bioconda, the blocker for the next release is submission, merge, and channel
-propagation of that release's recipe update. After publication, replace the
-expected links with verified public and evidence URLs, document the exact
-platforms visible in repodata, including whether `osx-arm64` propagated from the
-Apple Silicon recipe opt-in, set channels to `verified`, and run the
-post-release gate. Do not imply `linux-aarch64` or any other platform
-availability unless those Bioconda subdirs contain DotMatch for the release.
+While not all public channels are verified, this record must stay in
+`not_released` status with blockers and next actions for remaining channels.
+For Bioconda, document the exact platforms visible in repodata, including
+whether `osx-arm64` propagated from the Apple Silicon recipe opt-in. Do not
+imply `linux-aarch64` or any other platform availability unless those Bioconda
+subdirs contain DotMatch for the release.
 
 After publishing a tag, run:
 
@@ -148,11 +183,15 @@ distance and threshold smoke tests, is published as
 `ghcr.io/dnncha/dotmatch:vX.Y.Z`, runs with
 `docker run --rm ghcr.io/dnncha/dotmatch:v<version> --version` and a CLI distance
 smoke test, and is backed by a DOI in `CITATION.cff` that resolves through
-`doi.org`. It is not part of `make release-ready` because it should fail until
-public publication has actually happened.
+`doi.org`, and reports the same release version from Zenodo record metadata. It
+is not part of `make release-ready` because it should fail until public
+publication has actually happened.
 
 ## Zenodo
 
 The repository includes `.zenodo.json` metadata for tagged software archives.
-The v0.1.7 release is archived at Zenodo with version DOI
-`10.5281/zenodo.20541629` and concept DOI `10.5281/zenodo.20541628`.
+The repository keeps Zenodo metadata in `.zenodo.json`. The current checked DOI
+metadata resolves through version DOI `10.5281/zenodo.20541629` and concept DOI
+`10.5281/zenodo.20541628`, but public Zenodo record `20541629` still reports
+version `0.1.7`. Refresh this section after Zenodo archives `v0.1.8` and mints
+or confirms the release DOI.

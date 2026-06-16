@@ -430,6 +430,29 @@ static void run_case(size_t n_reads, size_t n_targets, size_t len, int k, unsign
     if (qdaln_index_assign_stats(index, reads, read_lens, n_reads, k, indexed, &stats) != 0) exit(1);
     double indexed_elapsed = seconds_now() - start;
 
+    qdaln_index_stats direct_exact_stats = {0, 0};
+    double direct_exact_elapsed = 0.0;
+    qdaln_index_stats batch_exact_stats = {0, 0};
+    double batch_exact_elapsed = 0.0;
+    qdaln_match_result *batch_exact = nullptr;
+    if (k == 0) {
+        start = seconds_now();
+        for (size_t i = 0; i < n_reads; ++i) {
+            if (qdaln_index_lookup_exact_stats(index, reads[i], read_lens[i], &baseline[i], NULL) != 0) exit(1);
+            if (baseline[i].status == QDALN_MATCH_UNIQUE || baseline[i].status == QDALN_MATCH_AMBIGUOUS) {
+                direct_exact_stats.candidates_considered += (size_t)baseline[i].match_count;
+                direct_exact_stats.candidates_verified += (size_t)baseline[i].match_count;
+            }
+        }
+        direct_exact_elapsed = seconds_now() - start;
+
+        batch_exact = (qdaln_match_result *)calloc(n_reads, sizeof(qdaln_match_result));
+        if (batch_exact == nullptr) exit(1);
+        start = seconds_now();
+        if (qdaln_index_lookup_exact_many_stats(index, reads, read_lens, n_reads, batch_exact, &batch_exact_stats) != 0) exit(1);
+        batch_exact_elapsed = seconds_now() - start;
+    }
+
     start = seconds_now();
     if (qdaln_match_many(reads, read_lens, n_reads, targets, target_lens, n_targets, k, scan) != 0) exit(1);
     double scan_elapsed = seconds_now() - start;
@@ -440,11 +463,27 @@ static void run_case(size_t n_reads, size_t n_targets, size_t len, int k, unsign
 
     assert_same(indexed, edlib, n_reads, "dotmatch_indexed", "edlib_native_scan");
     assert_same(scan, edlib, n_reads, "dotmatch_scan", "edlib_native_scan");
+    if (k == 0) {
+        assert_same(baseline, edlib, n_reads, "dotmatch_exact_direct", "edlib_native_scan");
+        assert_same(batch_exact, edlib, n_reads, "dotmatch_exact_batch", "edlib_native_scan");
+    }
 
     print_row("dotmatch_indexed", error_mode, n_reads, n_targets, len, k, err_per_thousand, indel_rate, indexed_elapsed,
               (double)stats.candidates_considered / (double)n_reads,
               (double)stats.candidates_verified / (double)n_reads,
               checksum_results(indexed, n_reads));
+    if (k == 0) {
+        print_row("dotmatch_exact_direct", error_mode, n_reads, n_targets, len, k, err_per_thousand, indel_rate,
+                  direct_exact_elapsed,
+                  (double)direct_exact_stats.candidates_considered / (double)n_reads,
+                  (double)direct_exact_stats.candidates_verified / (double)n_reads,
+                  checksum_results(baseline, n_reads));
+        print_row("dotmatch_exact_batch", error_mode, n_reads, n_targets, len, k, err_per_thousand, indel_rate,
+                  batch_exact_elapsed,
+                  (double)batch_exact_stats.candidates_considered / (double)n_reads,
+                  (double)batch_exact_stats.candidates_verified / (double)n_reads,
+                  checksum_results(batch_exact, n_reads));
+    }
     print_row("dotmatch_scan", error_mode, n_reads, n_targets, len, k, err_per_thousand, indel_rate, scan_elapsed,
               (double)n_targets, (double)n_targets, checksum_results(scan, n_reads));
     print_row("edlib_native_scan", error_mode, n_reads, n_targets, len, k, err_per_thousand, indel_rate, edlib_elapsed,
@@ -486,6 +525,7 @@ static void run_case(size_t n_reads, size_t n_targets, size_t len, int k, unsign
     free(scan);
     free(edlib);
     free(baseline);
+    free(batch_exact);
 }
 
 int main(int argc, char **argv) {
@@ -505,9 +545,9 @@ int main(int argc, char **argv) {
     const size_t n_lens = use_full_matrix ? sizeof(full_lens) / sizeof(full_lens[0]) : sizeof(smoke_lens) / sizeof(smoke_lens[0]);
     const size_t *target_counts = use_full_matrix ? full_target_counts : smoke_target_counts;
     const size_t n_target_counts = use_full_matrix ? sizeof(full_target_counts) / sizeof(full_target_counts[0]) : sizeof(smoke_target_counts) / sizeof(smoke_target_counts[0]);
-    const int ks[] = {0, 1};
+    const int ks[] = {0, 1, 2};
     const unsigned errs[] = {0, 5, 10, 30};
-    const char *smoke_error_modes[] = {"exact", "one_substitution"};
+    const char *smoke_error_modes[] = {"exact", "one_substitution", "one_insertion", "one_deletion"};
     const char *full_error_modes[] = {"exact", "one_substitution", "one_insertion", "one_deletion", "no_match", "ambiguous"};
     const char **error_modes = use_full_matrix ? full_error_modes : smoke_error_modes;
     const size_t n_error_modes = use_full_matrix ? sizeof(full_error_modes) / sizeof(full_error_modes[0]) : sizeof(smoke_error_modes) / sizeof(smoke_error_modes[0]);
@@ -517,6 +557,13 @@ int main(int argc, char **argv) {
         for (size_t ti = 0; ti < n_target_counts; ++ti) {
             for (size_t ki = 0; ki < sizeof(ks) / sizeof(ks[0]); ++ki) {
                 for (size_t em = 0; em < n_error_modes; ++em) {
+                    if (!use_full_matrix && ks[ki] < 2 &&
+                        (strcmp(error_modes[em], "one_insertion") == 0 ||
+                         strcmp(error_modes[em], "one_deletion") == 0 ||
+                         strcmp(error_modes[em], "no_match") == 0 ||
+                         strcmp(error_modes[em], "ambiguous") == 0)) {
+                        continue;
+                    }
                     size_t n_errs = strcmp(error_modes[em], "one_substitution") == 0 ? sizeof(errs) / sizeof(errs[0]) : 1;
                     for (size_t ei = 0; ei < n_errs; ++ei) {
                         run_case(n_reads, target_counts[ti], lens[li], ks[ki], errs[ei], error_modes[em]);

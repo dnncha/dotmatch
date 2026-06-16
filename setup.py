@@ -161,6 +161,7 @@ class build_py(_build_py):
             *cflags,
             str(ROOT / "src/qda.c"),
             str(ROOT / "src/qdalign.c"),
+            str(ROOT / "src/qdmetal_stub.c"),
             "-o",
             str(out_path),
             *ldflags,

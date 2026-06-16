@@ -28,7 +28,7 @@ def test_bioconda_recipe_tracks_release_metadata() -> None:
     assert "https://github.com/dnncha/dotmatch/archive/refs/tags/v{{ version }}.tar.gz" in text
     assert "license: Apache-2.0" in text
     assert "license_file: LICENSE" in text
-    assert "summary: Fast exact short-DNA known-target assignment" in text
+    assert "summary: Deterministic short-DNA known-target assignment" in text
     assert "recipe-maintainers:" in text
 
 
@@ -121,6 +121,8 @@ def test_codemeta_is_included_in_source_distribution_manifest() -> None:
     assert "include CITATION.cff" in manifest
     assert "include codemeta.json" in manifest
     assert "include docs/assay-evidence.json" in manifest
+    assert "include include/qdmetal.h" in manifest
+    assert "include src/qdmetal_stub.c" in manifest
     assert "/CITATION.cff" in verifier
     assert "/codemeta.json" in verifier
     assert "/docs/assay-evidence.json" in verifier
@@ -151,6 +153,7 @@ def test_python_package_build_bundles_native_cli() -> None:
     assert "dotmatch-native" in setup
     assert "assay-evidence.json" in setup
     assert "src/qda.c" in setup
+    assert "src/qdmetal_stub.c" in setup
     assert "DOTMATCH_VERSION" in setup
     assert 'tomli; python_version < \\"3.11\\"' in pyproject
 
@@ -169,7 +172,7 @@ def test_release_workflow_builds_and_smoke_tests_container() -> None:
     assert "org.opencontainers.image.version" in workflow
     assert "org.opencontainers.image.title=DotMatch" in workflow
     assert "org.opencontainers.image.licenses=Apache-2.0" in workflow
-    assert "org.opencontainers.image.documentation=https://github.com/dnncha/dotmatch#readme" in workflow
+    assert "org.opencontainers.image.documentation=https://dotmatch.readthedocs.io/" in workflow
     assert "org.opencontainers.image.authors=Donncha O'Toole" in workflow
 
 
@@ -178,11 +181,11 @@ def test_dockerfile_has_release_aligned_oci_metadata() -> None:
 
     assert 'LABEL org.opencontainers.image.title="DotMatch"' in dockerfile
     assert 'org.opencontainers.image.source="https://github.com/dnncha/dotmatch"' in dockerfile
-    assert 'org.opencontainers.image.url="https://github.com/dnncha/dotmatch"' in dockerfile
+    assert 'org.opencontainers.image.url="https://dotmatch.readthedocs.io/"' in dockerfile
     assert f'org.opencontainers.image.version="{_pyproject_version()}"' in dockerfile
     assert 'org.opencontainers.image.licenses="Apache-2.0"' in dockerfile
     assert 'org.opencontainers.image.description=' in dockerfile
-    assert 'org.opencontainers.image.documentation="https://github.com/dnncha/dotmatch#readme"' in dockerfile
+    assert 'org.opencontainers.image.documentation="https://dotmatch.readthedocs.io/"' in dockerfile
     assert 'org.opencontainers.image.authors=' in dockerfile
 
 
@@ -274,8 +277,11 @@ def test_distribution_docs_include_bioconda_install_verification() -> None:
 
 def test_distribution_docs_include_biocontainers_runtime_verification() -> None:
     packaging = (ROOT / "docs" / "packaging.md").read_text(encoding="utf-8")
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
     checker = (ROOT / "scripts" / "check_distribution_channels.py").read_text(encoding="utf-8")
 
     assert "quay.io/api/v1/repository/biocontainers/dotmatch/tag/" in checker
     assert '"docker", "run", "--rm", image, "dotmatch", "leq", "1", "ACGT", "AGGT"' in checker
     assert "quay.io/biocontainers/dotmatch:<version>--<build>" in packaging
+    assert "BioContainers images for DotMatch are generated from the accepted Bioconda" in packaging
+    assert "quay.io/biocontainers/dotmatch:0.1.8--<build>" in readme

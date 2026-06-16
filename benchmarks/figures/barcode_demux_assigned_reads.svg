@@ -1,14 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="980" height="184" viewBox="0 0 980 184">
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="364" viewBox="0 0 980 364">
 <style>text{font-family:Arial,sans-serif;font-size:13px}.title{font-size:18px;font-weight:700}.axis{fill:#444}.bar{fill:#476fb3}</style>
 <text class="title" x="20" y="28">Barcode demultiplexing assigned reads</text>
 <text class="axis" x="20" y="50">Reads assigned to a barcode-specific output FASTQ</text>
 <text x="20" y="95">cutadapt_demux</text>
-<rect class="bar" x="280" y="80" width="590" height="21" rx="2"/>
-<text x="878" y="95">658.00 reads</text>
-<text x="20" y="131">dotmatch_demux</text>
-<rect class="bar" x="280" y="116" width="590" height="21" rx="2"/>
-<text x="878" y="131">658.00 reads</text>
-<text x="20" y="167">hash_splitter_exact</text>
-<rect class="bar" x="280" y="152" width="590" height="21" rx="2"/>
-<text x="878" y="167">658.00 reads</text>
+<rect class="bar" x="280" y="80" width="24" height="21" rx="2"/>
+<text x="312" y="95">658.00 reads</text>
+<text x="20" y="131">cutadapt_demux</text>
+<rect class="bar" x="280" y="116" width="24" height="21" rx="2"/>
+<text x="312" y="131">652.00 reads</text>
+<text x="20" y="167">dotmatch_demux</text>
+<rect class="bar" x="280" y="152" width="24" height="21" rx="2"/>
+<text x="312" y="167">658.00 reads</text>
+<text x="20" y="203">dotmatch_demux</text>
+<rect class="bar" x="280" y="188" width="24" height="21" rx="2"/>
+<text x="312" y="203">652.00 reads</text>
+<text x="20" y="239">dotmatch_demux</text>
+<rect class="bar" x="280" y="224" width="590" height="21" rx="2"/>
+<text x="878" y="239">16000.00 reads</text>
+<text x="20" y="275">hamming_radius_splitter</text>
+<rect class="bar" x="280" y="260" width="24" height="21" rx="2"/>
+<text x="312" y="275">652.00 reads</text>
+<text x="20" y="311">hash_splitter_exact</text>
+<rect class="bar" x="280" y="296" width="24" height="21" rx="2"/>
+<text x="312" y="311">658.00 reads</text>
+<text x="20" y="347">levenshtein_radius_splitter</text>
+<rect class="bar" x="280" y="332" width="590" height="21" rx="2"/>
+<text x="878" y="347">16000.00 reads</text>
 </svg>

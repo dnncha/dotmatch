@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "benchmarks" / "raw" / "oligo_adapter.csv"
+REPORT = ROOT / "docs" / "benchmarks" / "oligo_adapter" / "README.md"
 WORKFLOW = "synthetic_oligo_adapter_fixture"
 PUBLIC_WORKFLOW = "public_fast_adapter_truseq_r1"
 
@@ -115,9 +116,27 @@ def public_row_gate(rows: list[dict[str, str]], failures: list[str]) -> None:
         failures.append("public adapter-prefix rows must record metadata path")
 
 
+def report_gate(report: Path, failures: list[str]) -> None:
+    if not report.exists():
+        failures.append(f"missing oligo/adapter report: {report}")
+        return
+    text = report.read_text(encoding="utf-8")
+    for required in [
+        "Fixed window: DotMatch uses `--target-start 229 --target-length 20` on R1.",
+        "validates fixed-window assignment semantics, not trimming correctness",
+        "fixed-window known-oligo/adapter assignment",
+        "The public lane checks adapter-prefix assignment for the recorded R1 window.",
+        "Primer removal, UMI grouping, read merging, and adapter-trimming workflows need separate comparator records.",
+    ]:
+        if required not in text:
+            failures.append(f"oligo/adapter report must retain evidence boundary: {required}")
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--csv", default=str(RAW))
+    parser.add_argument("--report", default=str(REPORT))
+    parser.add_argument("--skip-report", action="store_true")
     parser.add_argument("--public", action="store_true")
     args = parser.parse_args(argv)
 
@@ -126,6 +145,8 @@ def main(argv=None) -> int:
     row_gate(rows, failures)
     if args.public:
         public_row_gate(rows, failures)
+    if not args.skip_report:
+        report_gate(Path(args.report), failures)
     if failures:
         for failure in failures:
             print(f"FAIL: {failure}")

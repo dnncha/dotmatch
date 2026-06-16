@@ -26,3 +26,19 @@ def test_hamming_benchmark_uses_guide_counter_compatible_policy():
 
     assert bench.guide_counter_hamming_policy_args() == ["--ambiguity-policy", "best"]
     assert bench.guide_counter_offset_args() == ["--offset-min-fraction", "0.0025"]
+
+
+def test_guide_counter_command_can_request_exact_match():
+    bench = _load_bench()
+
+    cmd = bench.guide_counter_command(
+        "guide-counter",
+        [Path("sample.fastq.gz")],
+        ["sample"],
+        Path("library.tsv"),
+        Path("out/prefix"),
+        100000,
+        exact=True,
+    )
+
+    assert "--exact-match" in cmd

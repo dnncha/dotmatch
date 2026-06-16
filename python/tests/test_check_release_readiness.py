@@ -41,12 +41,15 @@ def _write_release_repo(root: Path) -> None:
             "include codemeta.json\n"
             "include docs/assay-evidence.json\n"
             "include src/qdalign.c\n"
+            "include src/qdmetal_stub.c\n"
             "include include/qdalign.h\n"
+            "include include/qdmetal.h\n"
         ),
         "include/qdalign.h": '#define QDALN_VERSION "0.1.0"\n',
         "scripts/check_python_wheel.py": (
             'required_suffixes = ["/CITATION.cff", "/codemeta.json", '
-            '"/docs/assay-evidence.json", "/src/qdalign.c", "/include/qdalign.h"]\n'
+            '"/docs/assay-evidence.json", "/src/qdalign.c", "/src/qdmetal_stub.c", '
+            '"/include/qdalign.h", "/include/qdmetal.h"]\n'
             'wheel_members = ["dotmatch/data/assay-evidence.json"]\n'
             'assert "evidence_boundary"\n'
         ),
@@ -54,7 +57,7 @@ def _write_release_repo(root: Path) -> None:
             'FROM debian:bookworm-slim\n'
             'LABEL org.opencontainers.image.title="DotMatch" \\\n'
             '      org.opencontainers.image.source="https://github.com/dnncha/dotmatch" \\\n'
-            '      org.opencontainers.image.url="https://github.com/dnncha/dotmatch" \\\n'
+            '      org.opencontainers.image.url="https://dotmatch.readthedocs.io/" \\\n'
             '      org.opencontainers.image.version="0.1.0" \\\n'
             '      org.opencontainers.image.licenses="Apache-2.0"\n'
         ),
@@ -86,6 +89,7 @@ def _write_release_repo(root: Path) -> None:
             "    name: Release preflight gates\n"
             "    steps:\n"
             "      - run: python -m pip install build pytest\n"
+            "      - run: python -m pip install -r docs/requirements.txt\n"
             "      - run: make test\n"
             "      - run: make cli-test\n"
             "      - run: make asan\n"
@@ -102,8 +106,8 @@ def _write_release_repo(root: Path) -> None:
             "          labels: |\n"
             "            org.opencontainers.image.title=DotMatch\n"
             "            org.opencontainers.image.source=https://github.com/dnncha/dotmatch\n"
-            "            org.opencontainers.image.url=https://github.com/dnncha/dotmatch\n"
-            "            org.opencontainers.image.documentation=https://github.com/dnncha/dotmatch#readme\n"
+            "            org.opencontainers.image.url=https://dotmatch.readthedocs.io/\n"
+            "            org.opencontainers.image.documentation=https://dotmatch.readthedocs.io/\n"
             "            org.opencontainers.image.licenses=Apache-2.0\n"
             "            org.opencontainers.image.authors=Donncha O'Toole\n"
             "      - uses: docker/login-action@v4\n"
@@ -173,10 +177,11 @@ def _write_release_repo(root: Path) -> None:
         ),
         "docs/release-process.md": (
             "# Release Process\n\n"
-            "Run `make pretag-ready`, `make release-ready`, `make assay-evidence-ready`, "
+            "Run `make pretag-ready`, `make release-ready`, `make docs-ready`, `make assay-evidence-ready`, "
             "`make scientific-readiness-ready`, `make distribution-record-ready`, `make alphabet-policy-ready`, "
             "`make bioconda-recipe-ready`, "
             "`make citation-metadata-ready`, `make native-comparator-scope-ready`, "
+            "`make native-exact-gate`, "
             "`make public-crispr-evidence-gate`, `make crispr-comparison-gate`, and "
             "`make barcode-comparison-gate`, `make feature-barcode-public-gate`, and "
             "`make perturb-seq-public-gate`, `make amplicon-panel-public-gate`, and "
@@ -188,8 +193,14 @@ def _write_release_repo(root: Path) -> None:
             "The release preflight includes `make asan`.\n"
         ),
         "Makefile": (
-            "release-ready: python-test python-package-test\n"
+            "repository-ready:\n"
+            "\t$(MAKE) docs-ready\n"
+            "release-ready: python-test python-package-test docs-ready native-exact-gate\n"
             "\tpython3 scripts/check_release_readiness.py\n"
+            "crispr-comparison-gate:\n"
+            "\tpython3 scripts/check_crispr_comparison_gate.py --require-hamming-k23-comparator 2 --require-hamming-k23-comparator 3\n"
+            "docs-ready:\n"
+            "\tpython3 -m sphinx -W -b html docs docs/_build/html\n"
             "pretag-ready:\n"
             "\t$(MAKE) test\n"
             "\t$(MAKE) cli-test\n"
@@ -288,6 +299,70 @@ def test_release_readiness_requires_pretag_ready_target(tmp_path):
     assert any("pretag-ready target must include NEXT_OUTPUT=export" in failure for failure in result.failures)
 
 
+def test_release_readiness_requires_docs_ready_targets(tmp_path):
+    checker = _load_checker()
+    _write_release_repo(tmp_path)
+    makefile = (tmp_path / "Makefile").read_text(encoding="utf-8")
+    (tmp_path / "Makefile").write_text(
+        makefile
+        .replace("repository-ready:\n\t$(MAKE) docs-ready\n", "repository-ready:\n\tpython3 scripts/check_evidence_gallery.py\n")
+        .replace("release-ready: python-test python-package-test docs-ready native-exact-gate\n", "release-ready: python-test python-package-test native-exact-gate\n")
+        .replace("docs-ready:\n\tpython3 -m sphinx -W -b html docs docs/_build/html\n", ""),
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("Makefile must include docs-ready target" in failure for failure in result.failures)
+    assert any("Makefile release-ready target must include docs-ready" in failure for failure in result.failures)
+    assert any("Makefile repository-ready target must include $(MAKE) docs-ready" in failure for failure in result.failures)
+
+
+def test_release_readiness_requires_release_ready_to_run_native_exact_gate(tmp_path):
+    checker = _load_checker()
+    _write_release_repo(tmp_path)
+    makefile = (tmp_path / "Makefile").read_text(encoding="utf-8")
+    (tmp_path / "Makefile").write_text(
+        makefile.replace("release-ready: python-test python-package-test docs-ready native-exact-gate\n", "release-ready: python-test python-package-test docs-ready\n"),
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("Makefile release-ready target must include native-exact-gate" in failure for failure in result.failures)
+
+
+def test_release_readiness_requires_crispr_gate_to_include_k23_comparators(tmp_path):
+    checker = _load_checker()
+    _write_release_repo(tmp_path)
+    makefile = (tmp_path / "Makefile").read_text(encoding="utf-8")
+    (tmp_path / "Makefile").write_text(
+        makefile.replace(" --require-hamming-k23-comparator 3", ""),
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("crispr-comparison-gate target must include --require-hamming-k23-comparator 3" in failure for failure in result.failures)
+
+
+def test_release_readiness_requires_docs_ready_to_treat_warnings_as_errors(tmp_path):
+    checker = _load_checker()
+    _write_release_repo(tmp_path)
+    makefile = (tmp_path / "Makefile").read_text(encoding="utf-8")
+    (tmp_path / "Makefile").write_text(
+        makefile.replace(
+            "python3 -m sphinx -W -b html docs docs/_build/html",
+            "python3 -m sphinx -b html docs docs/_build/html",
+        ),
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("docs-ready target must build public docs with Sphinx warnings as errors" in failure for failure in result.failures)
+
+
 def test_release_readiness_rejects_post_release_gates_in_pretag_ready(tmp_path):
     checker = _load_checker()
     _write_release_repo(tmp_path)
@@ -366,7 +441,9 @@ def test_release_readiness_requires_release_process_to_describe_safety_gates(tmp
     release_process = (tmp_path / "docs" / "release-process.md").read_text(encoding="utf-8")
     (tmp_path / "docs" / "release-process.md").write_text(
         release_process
+        .replace("`make docs-ready`, ", "")
         .replace("`make scientific-readiness-ready`, ", "")
+        .replace("`make native-exact-gate`, ", "")
         .replace("The release preflight includes `make asan`.\n", ""),
         encoding="utf-8",
     )
@@ -374,6 +451,8 @@ def test_release_readiness_requires_release_process_to_describe_safety_gates(tmp
     result = checker.audit(tmp_path)
 
     assert any("docs/release-process.md" in failure and "make scientific-readiness-ready" in failure for failure in result.failures)
+    assert any("docs/release-process.md" in failure and "make docs-ready" in failure for failure in result.failures)
+    assert any("docs/release-process.md" in failure and "make native-exact-gate" in failure for failure in result.failures)
     assert any("docs/release-process.md" in failure and "make asan" in failure for failure in result.failures)
 
 
@@ -433,3 +512,17 @@ def test_release_readiness_requires_tests_in_preflight(tmp_path):
     assert any("preflight job must run make cli-test" in failure for failure in result.failures)
     assert any("preflight job must run make asan" in failure for failure in result.failures)
     assert any("preflight job must run make python-test" in failure for failure in result.failures)
+
+
+def test_release_readiness_requires_docs_tooling_in_preflight(tmp_path):
+    checker = _load_checker()
+    _write_release_repo(tmp_path)
+    workflow = (tmp_path / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+    (tmp_path / ".github" / "workflows" / "release.yml").write_text(
+        workflow.replace("      - run: python -m pip install -r docs/requirements.txt\n", ""),
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("preflight job must install documentation tooling" in failure for failure in result.failures)

@@ -171,7 +171,7 @@ def _check_pyproject_discovery(root: Path, result: AuditResult) -> None:
             result.failures.append(f"pyproject.toml project URLs must include {key}")
     if urls.get("Issues") != f"{REPOSITORY_URL}/issues":
         result.failures.append("pyproject.toml project URLs must include Issues")
-    if not urls.get("Documentation", "").startswith(REPOSITORY_URL):
+    if urls.get("Documentation") != "https://dotmatch.readthedocs.io/":
         result.failures.append("pyproject.toml project URLs must include Documentation")
 
 

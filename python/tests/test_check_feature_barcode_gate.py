@@ -128,3 +128,35 @@ def test_feature_barcode_gate_rejects_public_rows_without_exact_agreement():
     gate.public_row_gate(rows, failures)
 
     assert any("exact-slice baseline" in failure for failure in failures)
+
+
+def test_feature_barcode_report_gate_requires_boundary_text(tmp_path):
+    gate = _load_gate()
+    report = tmp_path / "README.md"
+    report.write_text("# Feature Barcode\n\nPublic feature barcode rows.\n", encoding="utf-8")
+    failures = []
+
+    gate.report_gate(report, failures)
+
+    assert any("Feature reference pattern" in failure for failure in failures)
+    assert any("Cell Ranger cell/UMI quantification" in failure for failure in failures)
+    assert any("UMI/cell aggregation validation" in failure for failure in failures)
+
+
+def test_feature_barcode_report_gate_accepts_boundary_text(tmp_path):
+    gate = _load_gate()
+    report = tmp_path / "README.md"
+    report.write_text(
+        "# Feature Barcode\n\n"
+        "Feature reference pattern: `^NNNNNNNNNN(BC)NNNNNNNNN`, so DotMatch uses `--target-start 10 --target-length 15`.\n"
+        "The exact-slice baseline validates per-read assignment semantics, not Cell Ranger cell/UMI quantification.\n"
+        "The public 10x lane supports only per-read assignment against the documented Feature Barcode reference window.\n"
+        "Broader CITE-seq, cell-hashing, or cell-level quantification comparisons require public comparator output "
+        "and UMI/cell aggregation validation.\n",
+        encoding="utf-8",
+    )
+    failures = []
+
+    gate.report_gate(report, failures)
+
+    assert failures == []

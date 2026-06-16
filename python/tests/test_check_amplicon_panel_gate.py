@@ -133,3 +133,37 @@ def test_amplicon_panel_public_gate_rejects_exact_baseline_mismatch():
     gate.public_row_gate(rows, failures)
 
     assert any("exact-prefix baseline" in failure for failure in failures)
+
+
+def test_amplicon_panel_report_gate_requires_boundary_text(tmp_path):
+    gate = _load_gate()
+    report = tmp_path / "README.md"
+    report.write_text("# Amplicon\n\nPublic primer row.\n", encoding="utf-8")
+    failures = []
+
+    gate.report_gate(report, failures)
+
+    assert any("primer-start assignment" in failure for failure in failures)
+    assert any("variant calling" in failure for failure in failures)
+    assert any("full-assay comparator" in failure for failure in failures)
+
+
+def test_amplicon_panel_report_gate_accepts_boundary_text(tmp_path):
+    gate = _load_gate()
+    report = tmp_path / "README.md"
+    report.write_text(
+        "# Amplicon\n\n"
+        "Current status: public primer-start assignment evidence only.\n"
+        "This is not amplicon consensus, variant calling, primer trimming, or clinical validation evidence.\n"
+        "The baseline validates per-read known-primer assignment semantics, "
+        "not consensus generation, primer trimming, variant calling, or clinical interpretation.\n"
+        "Use this as narrow public ARTIC primer-start per-read assignment.\n"
+        "Broader amplicon/panel benchmarks require public full-assay comparator semantics "
+        "and consensus or variant-call validation where relevant.\n",
+        encoding="utf-8",
+    )
+    failures = []
+
+    gate.report_gate(report, failures)
+
+    assert failures == []

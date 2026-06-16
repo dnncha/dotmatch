@@ -104,8 +104,23 @@ def report_gate(path: Path, failures: list[str]) -> None:
     if not path.exists():
         failures.append(f"missing BCL benchmark report: {path}")
         return
-    if not path.read_text(encoding="utf-8").strip():
+    text = path.read_text(encoding="utf-8")
+    if not text.strip():
         failures.append(f"empty BCL benchmark report: {path}")
+        return
+    for required in [
+        "first lane-1 classic per-cycle BCL milestone",
+        "CBCL/NovaSeq-style input and broader multi-lane BCL operation are still gated as future work",
+        "Rows with exit code `127` are environment records for missing competitors, not runtime comparisons",
+        "narrow public 10x tiny-BCL classic per-cycle milestone",
+        "bcl2fastq count-total validation when bcl2fastq is available",
+        "explicit `not_installed` environment row keeps the boundary visible without turning it into a false comparison",
+        "Broader raw-BCL evaluation needs real classic-BCL and CBCL run-folder rows",
+        "successful DotMatch CBCL row",
+        "`dotmatch bcl-validate` zero-mismatch evidence",
+    ]:
+        if required not in text:
+            failures.append(f"BCL benchmark report must retain evidence boundary: {required}")
 
 
 def main(argv=None) -> int:

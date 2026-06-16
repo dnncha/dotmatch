@@ -20,7 +20,7 @@ Rows with exit code `127` are environment records for missing competitors, not r
 
 | tool | workflow | format | clusters | cycles | samples | threads | gzip | seconds | clusters/sec | peak RSS KB | output MB | assigned | undetermined | filtered | validation | mode | content hash | exit | logs |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | ---: | --- |
-| dotmatch_bcl_demux | public_10x_tiny_bcl | classic_bcl | 2136539 | 132 | 1 | 1 | 1 | 17.568424 | 121612.4 | 297488 | 200.06 | 2079501 | 57038 | 0 |  |  | 2f4c38035535 | 0 | ../../../benchmarks/work/bcl_demux/logs/dotmatch_bcl_demux.stderr.log |
+| dotmatch_bcl_demux | public_10x_tiny_bcl | classic_bcl | 2136539 | 132 | 1 | 1 | 1 | 10.029591 | 213023.5 | 297184 | 200.06 | 2079501 | 57038 | 0 |  |  | 2f4c38035535 | 0 | ../../../benchmarks/work/bcl_demux/logs/dotmatch_bcl_demux.stderr.log |
 | bcl-convert | public_10x_tiny_bcl | classic_bcl_or_cbcl | 2136539 | 132 | 1 |  |  | 0.000000 | 0.0 | 0 |  |  |  |  |  |  |  | 127 |  |
 | bcl2fastq | public_10x_tiny_bcl | classic_bcl_or_cbcl | 2136539 | 132 | 1 |  |  | 0.000000 | 0.0 | 0 |  |  |  |  |  |  |  | 127 |  |
 | cuda-demux | public_10x_tiny_bcl | classic_bcl_or_cbcl | 2136539 | 132 | 1 |  |  | 0.000000 | 0.0 | 0 |  |  |  |  |  |  |  | 127 |  |

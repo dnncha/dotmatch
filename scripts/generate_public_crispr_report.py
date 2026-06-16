@@ -476,14 +476,14 @@ def main() -> None:
         exact_speedups = speedup_rows(
             repeated_summary,
             dotmatch_tool="dotmatch_exact_k0",
-            baseline_tools={"mageck_count_exact"},
+            baseline_tools={"mageck_count_exact", "guide_counter_exact"},
             label="dotmatch_exact",
         )
         if exact_speedups:
             lines.extend([
                 "## DotMatch Exact Count Speedup",
                 "",
-                "This table compares exact-count semantics only: DotMatch exact `k=0` versus MAGeCK exact counting.",
+                "This table compares exact-count semantics only: DotMatch exact `k=0` versus exact-count baselines.",
                 "",
                 *md_table(exact_speedups, [
                     "baseline",
@@ -576,6 +576,10 @@ def main() -> None:
                 "checked_reads",
                 "mismatches",
                 "indel_window",
+                "oracle_strategy",
+                "edlib_alignments",
+                "bounded_windows",
+                "fallback_windows",
                 "stratum_exact",
                 "stratum_corrected",
                 "stratum_ambiguous",
@@ -599,7 +603,7 @@ def main() -> None:
         "- guide-counter is fast, but on the 10k Yusa run its own stats report more mapped reads than input reads, consistent with its multi-offset counting loop; DotMatch assigns at most one target per read and reports ambiguity instead.",
         "- In the multi-sample scaling table, DotMatch processes sample batches with threads while staying in the tens of MB. guide-counter uses roughly half a GB and its count total grows beyond input reads.",
         "- Cutadapt and Bowtie2 rows are workflow comparators on extracted guide windows; they are not exact assignment oracles.",
-        "- Native Edlib scan remains the exact semantic oracle for assignment correctness.",
+        "- Native Edlib scan remains the exact semantic oracle for assignment correctness; the public evidence gate requires bounded Edlib validation where recorded and caps fallback windows at 5% of checked reads.",
         "- Public speed statements should cite only repeated rows with zero validation mismatches and explicit semantics.",
         "",
         "## Raw Commands",

@@ -4,5 +4,5 @@
 <text class="axis" x="20" y="50">Classic BCL clusters processed per second; higher is better</text>
 <text x="20" y="97">dotmatch_bcl_demux</text>
 <rect class="bar" x="300" y="82" width="560" height="21" rx="2"/>
-<text x="868" y="97">121612.40 clusters/s</text>
+<text x="868" y="97">213023.50 clusters/s</text>
 </svg>

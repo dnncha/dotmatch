@@ -12,8 +12,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "benchmarks" / "raw"
 HAMMING_K23_COMPARATOR_CSV = RAW / "crispr_comparison_hamming_k23_comparators.csv"
+REPORT = ROOT / "docs" / "benchmarks" / "crispr_comparison" / "README.md"
 DATASETS = ["mageck_yusa", "sanson_brunello"]
 HAMMING_K23_VALUES = ["2", "3"]
+HAMMING_K23_MIN_SPEEDUP = {
+    "2": 8.0,
+    "3": 2.0,
+}
+HAMMING_K23_MIN_TARGETS = 50000
 FULL_FASTQ_MIN_READS = {
     "mageck_yusa": 20394663,
     "sanson_brunello": 246950411,
@@ -191,12 +197,34 @@ def validation_gate(rows: list[dict[str, str]], min_checked: int, failures: list
     seen = set()
     for row in rows:
         dataset = row.get("dataset", "")
+        sample = row.get("sample", "")
         seen.add(dataset)
+        checked = as_int(row.get("checked_reads"))
         require(as_int(row.get("mismatches")) == 0,
-                f"Edlib mismatch for {dataset}:{row.get('sample', '')}", failures)
-        require(as_int(row.get("checked_reads")) >= min_checked,
-                f"Edlib checked_reads below {min_checked} for {dataset}:{row.get('sample', '')}: {row.get('checked_reads')}",
+                f"Edlib mismatch for {dataset}:{sample}", failures)
+        require(checked >= min_checked,
+                f"Edlib checked_reads below {min_checked} for {dataset}:{sample}: {row.get('checked_reads')}",
                 failures)
+        if "oracle_strategy" in row:
+            require(row.get("oracle_strategy") == "bounded_edlib_candidates",
+                    f"Edlib validation must use bounded_edlib_candidates for {dataset}:{sample}: "
+                    f"{row.get('oracle_strategy', '')}",
+                    failures)
+        if "bounded_windows" in row:
+            require(as_int(row.get("bounded_windows")) > 0,
+                    f"Edlib validation bounded_windows missing for {dataset}:{sample}",
+                    failures)
+        if "edlib_alignments" in row:
+            require(as_int(row.get("edlib_alignments")) > 0,
+                    f"Edlib validation edlib_alignments missing for {dataset}:{sample}",
+                    failures)
+        if "fallback_windows" in row:
+            fallback_windows = as_int(row.get("fallback_windows"))
+            max_fallback = max(1, int(checked * 0.05))
+            require(fallback_windows <= max_fallback,
+                    f"Edlib validation fallback_windows exceeds 5% for {dataset}:{sample}: "
+                    f"{fallback_windows}/{checked}",
+                    failures)
     for dataset in DATASETS:
         require(dataset in seen, f"missing Edlib validation rows for {dataset}", failures)
 
@@ -281,6 +309,74 @@ def row_success(row: dict[str, str]) -> bool:
     return row.get("exit_code", "0") in {"", "0"}
 
 
+def hamming_k23_report_rows(rows: list[dict[str, str]], required_ks: list[str],
+                            min_records: int = 1,
+                            datasets: list[str] | None = None) -> list[dict[str, str]]:
+    required = [str(k).removeprefix("k") for k in required_ks]
+    evidence = [
+        row for row in rows
+        if row_success(row) and row_has_dotmatch(row) and row_has_bowtie1(row)
+    ]
+    scoped_datasets = datasets or sorted({row_dataset(row) for row in evidence if row_dataset(row)})
+    out: list[dict[str, str]] = []
+    for row in evidence:
+        k = row_k(row)
+        dataset = row_dataset(row)
+        if k not in required or dataset not in scoped_datasets or row_records(row) < min_records:
+            continue
+        dotmatch_rate = as_float(
+            row.get("dotmatch_reads_per_sec")
+            or row.get("dotmatch_mean_reads_per_sec")
+            or row.get("left_reads_per_sec")
+        )
+        bowtie_rate = as_float(
+            row.get("bowtie1_reads_per_sec")
+            or row.get("bowtie_reads_per_sec")
+            or row.get("bowtie1_mean_reads_per_sec")
+            or row.get("right_reads_per_sec")
+        )
+        ratio = as_float(row.get("speedup") or row.get("dotmatch_vs_bowtie1_speedup"))
+        if ratio <= 0.0 and dotmatch_rate > 0.0 and bowtie_rate > 0.0:
+            ratio = dotmatch_rate / bowtie_rate
+        out.append({
+            "dataset": dataset,
+            "k": k,
+            "records_per_sample": str(row_records(row)),
+            "dotmatch_tool": row.get("dotmatch_tool") or row.get("left_tool") or f"dotmatch_hamming_k{k}",
+            "bowtie1_tool": row.get("bowtie1_tool") or row.get("bowtie_tool") or row.get("right_tool") or "bowtie1",
+            "dotmatch_reads_per_sec": f"{dotmatch_rate:.1f}" if dotmatch_rate else "",
+            "bowtie1_reads_per_sec": f"{bowtie_rate:.1f}" if bowtie_rate else "",
+            "speedup": f"{ratio:.2f}" if ratio else "",
+            "status": row.get("status") or "reported",
+            "semantics": row.get("semantics") or f"Hamming k={k}, no indels",
+            "artifact": row.get("artifact") or row.get("source_artifact") or "",
+        })
+    return sorted(out, key=lambda row: (row["dataset"], row["k"], row["records_per_sample"]))
+
+
+def report_gate(report: Path, hamming_rows: list[dict[str, str]], failures: list[str]) -> None:
+    require(report.exists(), f"missing CRISPR comparison report: {report}", failures)
+    if not report.exists():
+        return
+    text = report.read_text(encoding="utf-8")
+    for required in [
+        "## Hamming k2/k3 External Comparator Rows",
+        "compare DotMatch directly with Bowtie 1",
+        "Hamming k=2 must clear >=8x vs Bowtie 1; Hamming k=3 must clear >=2x vs Bowtie 1.",
+        "## Edlib Oracle Validation",
+        "bounded_edlib_candidates",
+        "Broad comparisons require `make crispr-comparison-gate` to pass.",
+    ]:
+        require(required in text, f"CRISPR comparison report must mention: {required}", failures)
+    for row in hamming_rows:
+        expected = (
+            f"|{row['dataset']}|{row['k']}|{row['records_per_sample']}|{row['dotmatch_tool']}|"
+            f"{row['bowtie1_tool']}|{row['dotmatch_reads_per_sec']}|{row['bowtie1_reads_per_sec']}|"
+            f"{row['speedup']}|{row['status']}|{row['semantics']}|{row['artifact']}|"
+        )
+        require(expected in text, f"CRISPR comparison report missing Hamming k{row['k']} comparator row: {expected}", failures)
+
+
 def hamming_k23_comparator_gate(rows: list[dict[str, str]], required_ks: list[str],
                                 failures: list[str], min_records: int = 1,
                                 datasets: list[str] | None = None) -> None:
@@ -309,6 +405,44 @@ def hamming_k23_comparator_gate(rows: list[dict[str, str]], required_ks: list[st
                 f"at >= {min_records} records/sample",
                 failures,
             )
+            for row in matching:
+                dotmatch_rate = as_float(
+                    row.get("dotmatch_reads_per_sec")
+                    or row.get("dotmatch_mean_reads_per_sec")
+                    or row.get("left_reads_per_sec")
+                )
+                bowtie_rate = as_float(
+                    row.get("bowtie1_reads_per_sec")
+                    or row.get("bowtie_reads_per_sec")
+                    or row.get("bowtie1_mean_reads_per_sec")
+                    or row.get("right_reads_per_sec")
+                )
+                speedup = as_float(row.get("speedup") or row.get("dotmatch_vs_bowtie1_speedup"))
+                if speedup <= 0.0 and dotmatch_rate > 0.0 and bowtie_rate > 0.0:
+                    speedup = dotmatch_rate / bowtie_rate
+                dotmatch_assigned = as_int(row.get("dotmatch_assigned_reads"), default=-1)
+                bowtie_assigned = as_int(row.get("bowtie1_assigned_reads"), default=-1)
+                semantics = str(row.get("semantics", "")).lower()
+
+                require(dotmatch_rate > 0.0 and bowtie_rate > 0.0,
+                        f"{dataset} Hamming k{k} comparator needs positive DotMatch and Bowtie 1 rates",
+                        failures)
+                require(speedup >= HAMMING_K23_MIN_SPEEDUP[k],
+                        f"{dataset} Hamming k{k} DotMatch-vs-Bowtie 1 speedup below "
+                        f"{HAMMING_K23_MIN_SPEEDUP[k]:.2f}x: {speedup:.2f}x",
+                        failures)
+                require(as_int(row.get("n_targets")) >= HAMMING_K23_MIN_TARGETS,
+                        f"{dataset} Hamming k{k} comparator target library is too small: "
+                        f"{row.get('n_targets', '')}; need >= {HAMMING_K23_MIN_TARGETS}",
+                        failures)
+                require(dotmatch_assigned >= 0 and bowtie_assigned >= 0 and dotmatch_assigned == bowtie_assigned,
+                        f"{dataset} Hamming k{k} assigned reads differ between DotMatch and Bowtie 1: "
+                        f"{dotmatch_assigned} vs {bowtie_assigned}",
+                        failures)
+                require(f"hamming k={k}" in semantics or f"hamming_k{k}" in semantics,
+                        f"{dataset} Hamming k{k} comparator semantics must declare fixed Hamming k{k}: "
+                        f"{row.get('semantics', '')}",
+                        failures)
 
 
 def main() -> None:
@@ -337,6 +471,8 @@ def main() -> None:
                         help="require DotMatch-vs-Bowtie 1 Hamming comparator evidence for k=2 or k=3")
     parser.add_argument("--hamming-k23-dataset", action="append", default=[], metavar="DATASET",
                         help="dataset scope for --require-hamming-k23-comparator; defaults to datasets present in the artifact")
+    parser.add_argument("--report", default=str(REPORT))
+    parser.add_argument("--skip-report", action="store_true")
     parser.add_argument("--smoke", action="store_true", help="lower thresholds for local graph plumbing only")
     args = parser.parse_args()
     if args.smoke:
@@ -347,6 +483,7 @@ def main() -> None:
         args.require_mageck = False
         args.require_guide_counter = False
         args.skip_count_agreement = True
+        args.skip_report = True
 
     failures: list[str] = []
     repeated_gate(read_rows(Path(args.repeated)), args.min_records, args.min_repeats,
@@ -356,12 +493,26 @@ def main() -> None:
     if not args.skip_count_agreement:
         agreement_gate(read_rows(Path(args.count_agreement)), args.require_guide_counter, failures, args.min_records)
     if args.require_hamming_k23_comparator:
+        hamming_rows = read_rows(Path(args.hamming_k23_comparators))
         hamming_k23_comparator_gate(
-            read_rows(Path(args.hamming_k23_comparators)),
+            hamming_rows,
             args.require_hamming_k23_comparator,
             failures,
             args.min_records,
             args.hamming_k23_dataset,
+        )
+    else:
+        hamming_rows = []
+    if not args.skip_report:
+        report_gate(
+            Path(args.report),
+            hamming_k23_report_rows(
+                hamming_rows,
+                args.require_hamming_k23_comparator,
+                args.min_records,
+                args.hamming_k23_dataset,
+            ),
+            failures,
         )
 
     if failures:

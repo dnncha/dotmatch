@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 project = "DotMatch"
 author = "Donncha O'Toole"
 copyright = "2026, Donncha O'Toole"
-release = "0.1.7"
+release = "0.1.8"
 version = release
 
 extensions = [
@@ -20,7 +20,6 @@ exclude_patterns = [
     "_build",
     "Thumbs.db",
     ".DS_Store",
-    "superpowers/**",
 ]
 
 source_suffix = {

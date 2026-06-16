@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "benchmarks" / "raw" / "perturb_seq.csv"
+REPORT = ROOT / "docs" / "benchmarks" / "perturb_seq" / "README.md"
 PUBLIC_WORKFLOW = "public_10x_crispr_guide_capture"
 PUBLIC_STATUSES = {"supported", "gated"}
 
@@ -119,9 +120,28 @@ def public_row_gate(rows: list[dict[str, str]], failures: list[str]) -> None:
         failures.append("public perturb-seq rows must record metadata path")
 
 
+def report_gate(report: Path, failures: list[str]) -> None:
+    if not report.exists():
+        failures.append(f"missing perturb-seq report: {report}")
+        return
+    text = report.read_text(encoding="utf-8")
+    for required in [
+        "Current status: public single-guide guide-capture extraction evidence only.",
+        "not useful multi-guide assignment",
+        "not Cell Ranger cell/UMI quantification or perturbation effects",
+        "Broader Perturb-seq comparisons require a multi-guide public target set",
+        "guide-per-cell calls",
+        "expression or perturbation-effect comparator output",
+    ]:
+        if required not in text:
+            failures.append(f"perturb-seq report must retain evidence boundary: {required}")
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--csv", default=str(RAW))
+    parser.add_argument("--report", default=str(REPORT))
+    parser.add_argument("--skip-report", action="store_true")
     parser.add_argument("--public", action="store_true", help="require public 10x CRISPR guide-capture rows")
     args = parser.parse_args(argv)
 
@@ -130,6 +150,8 @@ def main(argv=None) -> int:
     row_gate(rows, failures)
     if args.public:
         public_row_gate(rows, failures)
+    if not args.skip_report:
+        report_gate(Path(args.report), failures)
     if failures:
         for failure in failures:
             print(f"FAIL: {failure}")

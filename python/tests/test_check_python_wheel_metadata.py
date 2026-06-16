@@ -23,7 +23,7 @@ Classifier: Topic :: Scientific/Engineering :: Bio-Informatics
 Project-URL: Homepage, https://github.com/dnncha/dotmatch
 Project-URL: Repository, https://github.com/dnncha/dotmatch
 Project-URL: Issues, https://github.com/dnncha/dotmatch/issues
-Project-URL: Documentation, https://github.com/dnncha/dotmatch#readme
+Project-URL: Documentation, https://dotmatch.readthedocs.io/
 
 Long description.
 """
@@ -124,6 +124,13 @@ def test_python_package_verifier_calls_metadata_checks() -> None:
 
     assert "check_distribution_metadata(sdist, expected_version)" in verifier
     assert "check_distribution_metadata(wheel, expected_version)" in verifier
+
+
+def test_python_package_verifier_expects_inferred_assay_blocker() -> None:
+    verifier = CHECKER.read_text(encoding="utf-8")
+
+    assert "run_expect_exit(" in verifier
+    assert "draft_assayspec" in verifier
 
 
 def test_build_and_verify_sdist_builds_sdist_without_wheel(tmp_path, monkeypatch):

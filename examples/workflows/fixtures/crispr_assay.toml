@@ -26,5 +26,8 @@ metric = "hamming"
 ambiguity_policy = "radius"
 ambiguous = "discard"
 
+[reliability]
+fail_on_unsafe_targets = false
+
 [outputs]
 format = "mageck"

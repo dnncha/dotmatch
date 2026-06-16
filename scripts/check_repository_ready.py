@@ -73,6 +73,7 @@ GENERATED_PATH_PARTS = {
     ".next",
     ".pytest_cache",
     "__pycache__",
+    "assay_out",
     "node_modules",
     "build",
     "dist",
