@@ -224,6 +224,107 @@ def test_count_reads_gzipped_fastq(tmp_path):
     assert "guide_1\tACGT\tTP53\t1\t1" in counts.read_text(encoding="utf-8")
 
 
+def test_count_reads_csv_targets(tmp_path):
+    targets = tmp_path / "targets.csv"
+    targets.write_text("target_id,target_seq,gene\nguide_1,ACGT,TP53\nguide_2,TTTT,BRCA1\n", encoding="utf-8")
+    reads = tmp_path / "reads.fastq"
+    reads.write_text("@r1\nACGT\n+\nIIII\n@r2\nTTTT\n+\nIIII\n", encoding="utf-8")
+    counts = tmp_path / "counts.tsv"
+
+    rc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "dotmatch.cli",
+            "count",
+            "--targets",
+            str(targets),
+            "--reads",
+            str(reads),
+            "--target-length",
+            "4",
+            "--out",
+            str(counts),
+        ],
+        check=False,
+        env=LEGACY_ENV,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    assert rc.returncode == 0, rc.stderr
+    text = counts.read_text(encoding="utf-8")
+    assert "guide_1\tACGT\tTP53\t1\t0\t0\t0\t0\t1\t0" in text
+    assert "guide_2\tTTTT\tBRCA1\t1\t0\t0\t0\t0\t1\t0" in text
+
+
+def test_count_rejects_fastq_quality_length_mismatch(tmp_path):
+    targets, _reads = _write_fixture_files(tmp_path)
+    reads = tmp_path / "bad.fastq"
+    reads.write_text("@r1\nACGT\n+\nIII\n", encoding="utf-8")
+    counts = tmp_path / "counts.tsv"
+
+    rc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "dotmatch.cli",
+            "count",
+            "--targets",
+            str(targets),
+            "--reads",
+            str(reads),
+            "--target-length",
+            "4",
+            "--out",
+            str(counts),
+        ],
+        check=False,
+        env=LEGACY_ENV,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    assert rc.returncode == 2
+    assert "sequence and quality lengths differ" in rc.stderr
+    assert not counts.exists()
+
+
+def test_count_rejects_invalid_window_and_batch_options(tmp_path):
+    targets, reads = _write_fixture_files(tmp_path)
+    cases = [
+        ["--target-start", "-1", "--target-length", "4"],
+        ["--target-length", "0"],
+        ["--target-length", "4", "--batch-size", "0"],
+    ]
+
+    for index, extra in enumerate(cases):
+        rc = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "dotmatch.cli",
+                "count",
+                "--targets",
+                str(targets),
+                "--reads",
+                str(reads),
+                "--out",
+                str(tmp_path / f"counts_{index}.tsv"),
+                *extra,
+            ],
+            check=False,
+            env=LEGACY_ENV,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        assert rc.returncode == 2
+
+
 def test_audit_targets_reports_k1_unsafe_pairs(tmp_path):
     targets = tmp_path / "targets.tsv"
     targets.write_text("a\tACGT\nb\tACGA\nc\tTTTT\n", encoding="utf-8")
@@ -310,6 +411,102 @@ def test_barcode_infer_reports_best_offset(tmp_path):
     data = json.loads(summary.read_text(encoding="utf-8"))
     assert data["recommended_start"] == 1
     assert data["warnings"] == []
+
+
+def test_barcode_wrappers_reject_invalid_numeric_options_before_native(tmp_path):
+    barcodes, reads = _write_barcode_fixture(tmp_path)
+    fake_native = tmp_path / "dotmatch-native"
+    native_log = tmp_path / "native.log"
+    fake_native.write_text(
+        "#!/bin/sh\n"
+        "printf '%s\\n' \"$*\" >> '" + str(native_log) + "'\n"
+        "exit 0\n",
+        encoding="utf-8",
+    )
+    fake_native.chmod(0o755)
+    env = {**LEGACY_ENV, "DOTMATCH_NATIVE_CLI": str(fake_native)}
+    cases = [
+        [
+            "barcode",
+            "audit",
+            "--barcodes",
+            str(barcodes),
+            "--k",
+            "-1",
+            "--out-dir",
+            str(tmp_path / "audit"),
+        ],
+        [
+            "barcode",
+            "demux",
+            "--barcodes",
+            str(barcodes),
+            "--reads",
+            str(reads),
+            "--barcode-start",
+            "-1",
+            "--barcode-length",
+            "4",
+            "--out-dir",
+            str(tmp_path / "demux_start"),
+        ],
+        [
+            "barcode",
+            "demux",
+            "--barcodes",
+            str(barcodes),
+            "--reads",
+            str(reads),
+            "--barcode-start",
+            "0",
+            "--barcode-length",
+            "0",
+            "--out-dir",
+            str(tmp_path / "demux_length"),
+        ],
+        [
+            "barcode",
+            "count",
+            "--barcodes",
+            str(barcodes),
+            "--reads",
+            str(reads),
+            "--barcode-start",
+            "-1",
+            "--barcode-length",
+            "4",
+            "--out",
+            str(tmp_path / "count_start.tsv"),
+        ],
+        [
+            "barcode",
+            "count",
+            "--barcodes",
+            str(barcodes),
+            "--reads",
+            str(reads),
+            "--barcode-start",
+            "0",
+            "--barcode-length",
+            "0",
+            "--out",
+            str(tmp_path / "count_length.tsv"),
+        ],
+    ]
+
+    for argv in cases:
+        rc = subprocess.run(
+            [sys.executable, "-m", "dotmatch.cli", *argv],
+            check=False,
+            env=env,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        assert rc.returncode == 2
+
+    assert not native_log.exists()
 
 
 def test_barcode_autopsy_writes_report_and_provenance(tmp_path):
@@ -406,6 +603,82 @@ def test_barcode_autopsy_writes_report_and_provenance(tmp_path):
     assert "Do not rescue ambiguous reads into either sample without changing the barcode design or assignment policy." in report
 
 
+def test_barcode_autopsy_uses_inferred_numeric_length_for_auto(tmp_path):
+    barcodes = tmp_path / "barcodes.tsv"
+    barcodes.write_text("barcode_id\tbarcode_seq\ns1\tACGT\ns2\tTTTT\nlong\tACGTAA\n", encoding="utf-8")
+    reads = tmp_path / "reads.fastq"
+    reads.write_text("@r1\nNACGTAAAA\n+\nIIIIIIIII\n@r2\nNTTTTAAAA\n+\nIIIIIIIII\n", encoding="utf-8")
+    fake_native = tmp_path / "dotmatch-native"
+    args_log = tmp_path / "args.log"
+    fake_native.write_text(
+        "#!/bin/sh\n"
+        "set -eu\n"
+        "printf '%s\\n' \"$*\" >> '" + str(args_log) + "'\n"
+        "cmd=$1; shift\n"
+        "if [ \"$cmd\" = audit ]; then\n"
+        "  out=''\n"
+        "  while [ $# -gt 0 ]; do [ \"$1\" = --out-dir ] && { out=$2; shift 2; } || shift; done\n"
+        "  mkdir -p \"$out\"\n"
+        "  printf '{\"safe_at_k1\": true, \"risk_pairs_for_k1\": 0}\\n' > \"$out/audit_summary.json\"\n"
+        "elif [ \"$cmd\" = demux ]; then\n"
+        "  out=''; summary=''; assignments=''; ambiguous=''; unmatched=''\n"
+        "  while [ $# -gt 0 ]; do\n"
+        "    case \"$1\" in\n"
+        "      --out-dir) out=$2; shift 2 ;;\n"
+        "      --summary) summary=$2; shift 2 ;;\n"
+        "      --assignments) assignments=$2; shift 2 ;;\n"
+        "      --ambiguous-out) ambiguous=$2; shift 2 ;;\n"
+        "      --unmatched-out) unmatched=$2; shift 2 ;;\n"
+        "      *) shift ;;\n"
+        "    esac\n"
+        "  done\n"
+        "  mkdir -p \"$out\"\n"
+        "  printf '{\"total_reads\": 2, \"assigned_unique\": 2, \"assigned_exact\": 2, \"assigned_corrected\": 0, \"ambiguous\": 0, \"unmatched\": 0, \"invalid\": 0}\\n' > \"$summary\"\n"
+        "  printf 'read_id\\tobserved_barcode\\tstatus\\n' > \"$assignments\"\n"
+        "  printf '' > \"$ambiguous\"\n"
+        "  printf '' > \"$unmatched\"\n"
+        "elif [ \"$cmd\" = inspect-unmatched ]; then\n"
+        "  out=''\n"
+        "  while [ $# -gt 0 ]; do [ \"$1\" = --out ] && { out=$2; shift 2; } || shift; done\n"
+        "  printf 'sequence\\tcount\\toffset_hint\\tlow_quality_count\\tadapter_hint\\treverse_complement_nearest\\tnearest_target\\tnearest_distance\\tdiagnosis\\n' > \"$out\"\n"
+        "fi\n",
+        encoding="utf-8",
+    )
+    fake_native.chmod(0o755)
+
+    rc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "dotmatch.cli",
+            "barcode",
+            "autopsy",
+            "--barcodes",
+            str(barcodes),
+            "--reads",
+            str(reads),
+            "--scan-starts",
+            "0:2",
+            "--barcode-length",
+            "auto",
+            "--k-values",
+            "0",
+            "--out-dir",
+            str(tmp_path / "autopsy"),
+        ],
+        check=False,
+        env={**LEGACY_ENV, "DOTMATCH_NATIVE_CLI": str(fake_native)},
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    assert rc.returncode == 0, rc.stderr
+    demux_line = next(line for line in args_log.read_text(encoding="utf-8").splitlines() if line.startswith("demux "))
+    assert "--barcode-length 4 " in f"{demux_line} "
+    assert "--barcode-length auto" not in demux_line
+
+
 def test_validate_compares_indexed_to_scan(tmp_path):
     targets, reads = _write_fixture_files(tmp_path)
     rc = subprocess.run(
@@ -493,6 +766,177 @@ def test_crispr_qc_writes_count_qc_report(tmp_path):
     html = out_html.read_text(encoding="utf-8")
     assert "<title>DotMatch CRISPR QC Report</title>" in html
     assert "Guide Library Audit" in html
+
+
+def test_crispr_qc_rejects_scientifically_invalid_count_matrices(tmp_path):
+    from dotmatch.cli import _read_crispr_count_matrix
+
+    cases = [
+        (
+            "duplicate_sample.tsv",
+            "sgRNA\tGene\tsample\tsample\nguide_a\tGENEA\t1\t2\n",
+            "columns must be unique",
+        ),
+        (
+            "duplicate_guide.tsv",
+            "sgRNA\tGene\tsample\nguide_a\tGENEA\t1\nguide_a\tGENEA\t2\n",
+            "duplicate guide id",
+        ),
+        (
+            "fractional_count.tsv",
+            "sgRNA\tGene\tsample\nguide_a\tGENEA\t1.5\n",
+            "non-integer count",
+        ),
+        (
+            "nonfinite_count.tsv",
+            "sgRNA\tGene\tsample\nguide_a\tGENEA\tinf\n",
+            "non-finite count",
+        ),
+        (
+            "nonnumeric_count.tsv",
+            "sgRNA\tGene\tsample\nguide_a\tGENEA\tNA\n",
+            "non-numeric count",
+        ),
+    ]
+
+    for name, text, message in cases:
+        path = tmp_path / name
+        path.write_text(text, encoding="utf-8")
+        try:
+            _read_crispr_count_matrix(path)
+        except ValueError as exc:
+            assert message in str(exc)
+        else:
+            raise AssertionError(f"{name} should have been rejected")
+
+
+def test_crispr_qc_rejects_scientifically_invalid_sample_qc(tmp_path):
+    from dotmatch.cli import _read_sample_qc
+
+    cases = [
+        (
+            "duplicate_column.tsv",
+            "sample_id\tassignment_rate\tassignment_rate\nsample_a\t0.9\t0.8\n",
+            "columns must be unique",
+        ),
+        (
+            "duplicate_sample.tsv",
+            "sample_id\tassignment_rate\nsample_a\t0.9\nsample_a\t0.8\n",
+            "duplicate sample_id",
+        ),
+        (
+            "negative_rate.tsv",
+            "sample_id\tassignment_rate\nsample_a\t-0.1\n",
+            "between 0 and 1",
+        ),
+        (
+            "over_one_rate.tsv",
+            "sample_id\tassignment_rate\nsample_a\t1.1\n",
+            "between 0 and 1",
+        ),
+        (
+            "nonfinite_rate.tsv",
+            "sample_id\tassignment_rate\nsample_a\tinf\n",
+            "non-finite value",
+        ),
+    ]
+
+    for name, text, message in cases:
+        path = tmp_path / name
+        path.write_text(text, encoding="utf-8")
+        try:
+            _read_sample_qc(path)
+        except ValueError as exc:
+            assert message in str(exc)
+        else:
+            raise AssertionError(f"{name} should have been rejected")
+
+
+def test_crispr_qc_derives_assignment_rates_from_read_counts(tmp_path):
+    counts = tmp_path / "counts.tsv"
+    sample_qc = tmp_path / "sample_qc.tsv"
+    out_json = tmp_path / "qc.json"
+    counts.write_text(
+        "sgRNA\tGene\tsample_a\n"
+        "guide_a\tGENEA\t50\n"
+        "guide_b\tGENEB\t0\n",
+        encoding="utf-8",
+    )
+    sample_qc.write_text(
+        "sample_id\ttotal_reads\tassigned_reads\tambiguous_reads\tno_match_reads\tinvalid_reads\n"
+        "sample_a\t100\t75\t5\t15\t5\n",
+        encoding="utf-8",
+    )
+
+    rc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "dotmatch.cli",
+            "crispr-qc",
+            "--counts",
+            str(counts),
+            "--sample-qc",
+            str(sample_qc),
+            "--out",
+            str(out_json),
+        ],
+        check=False,
+        env=LEGACY_ENV,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    assert rc.returncode == 0, rc.stderr
+    metrics = json.loads(out_json.read_text(encoding="utf-8"))["samples"]["sample_a"]
+    assert metrics["assignment_rate"] == 0.75
+    assert metrics["ambiguous_rate"] == 0.05
+    assert metrics["no_match_rate"] == 0.15
+    assert metrics["invalid_rate"] == 0.05
+
+
+def test_crispr_qc_rejects_negative_collision_radius(tmp_path):
+    out_json = tmp_path / "qc.json"
+
+    rc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "dotmatch.cli",
+            "crispr-qc",
+            "--counts",
+            str(ROOT / "examples/workflows/fixtures/expected_counts.mageck.tsv"),
+            "--k",
+            "-1",
+            "--out",
+            str(out_json),
+        ],
+        check=False,
+        env=LEGACY_ENV,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    assert rc.returncode == 2
+    assert "--k must be non-negative" in rc.stderr
+    assert not out_json.exists()
+
+
+def test_crispr_library_duplicate_counts_report_extra_records():
+    from dotmatch.cli import Target, _crispr_library_report
+
+    library = [
+        Target("guide_a", "ACGT", "GENEA"),
+        Target("guide_a", "ACGT", "GENEA"),
+        Target("guide_a", "ACGT", "GENEA"),
+    ]
+
+    report = _crispr_library_report(library, 0)
+
+    assert report["duplicate_ids"] == 2
+    assert report["duplicate_sequences"] == 2
 
 
 def test_crispr_library_reader_accepts_common_header_aliases(tmp_path):

@@ -88,25 +88,27 @@ def _open_text(path: str | Path, mode: str = "rt") -> TextIO:
 
 def _read_targets(path: str | Path) -> list[Target]:
     targets: list[Target] = []
+    delimiter = "," if Path(path).suffix.lower() == ".csv" else "\t"
     with _open_text(path) as fh:
         first_data = True
-        for raw in fh:
-            line = raw.rstrip("\n\r")
-            if not line or line.startswith("#"):
+        for row in csv.reader(fh, delimiter=delimiter):
+            if not row:
                 continue
-            cols = line.split("\t")
+            cols = [col.strip() for col in row]
+            if not any(cols) or cols[0].startswith("#"):
+                continue
             if first_data and _looks_like_header(cols):
                 first_data = False
                 continue
             first_data = False
             if len(cols) == 1:
-                seq = cols[0].strip().upper()
+                seq = cols[0].upper()
                 target_id = f"target_{len(targets)}"
                 gene = ""
             else:
-                target_id = cols[0].strip()
-                seq = cols[1].strip().upper()
-                gene = cols[2].strip() if len(cols) > 2 else ""
+                target_id = cols[0]
+                seq = cols[1].upper()
+                gene = cols[2] if len(cols) > 2 else ""
             if not seq:
                 raise ValueError(f"empty target sequence in {path}")
             targets.append(Target(target_id=target_id, seq=seq, gene=gene))
@@ -139,6 +141,8 @@ def _iter_fastq(path: str | Path) -> Iterator[ReadRecord]:
             qual = qual.rstrip("\n\r")
             if not header.startswith("@") or not plus.startswith("+"):
                 raise ValueError("invalid FASTQ record")
+            if len(seq) != len(qual):
+                raise ValueError("invalid FASTQ record: sequence and quality lengths differ")
             read_id = header[1:].split()[0]
             yield ReadRecord(read_id=read_id, seq=seq, qual=qual)
 
@@ -181,6 +185,8 @@ def _one_delete_matches(longer: str, shorter: str) -> bool:
 
 
 def _chunks(it: Iterable[ReadRecord], size: int) -> Iterator[list[ReadRecord]]:
+    if size <= 0:
+        raise ValueError("--batch-size must be positive")
     batch: list[ReadRecord] = []
     for item in it:
         batch.append(item)
@@ -198,6 +204,15 @@ def _extract(seq: str, start: int, length: int) -> str | None:
     if end > len(seq):
         return None
     return seq[start:end]
+
+
+def _validate_window_args(args: argparse.Namespace) -> None:
+    if args.target_start < 0:
+        raise ValueError("--target-start must be non-negative")
+    if args.target_length <= 0:
+        raise ValueError("--target-length must be positive")
+    if getattr(args, "batch_size", 1) <= 0:
+        raise ValueError("--batch-size must be positive")
 
 
 def _target_ambiguity_flags(targets: Sequence[Target], k: int) -> list[int]:
@@ -299,6 +314,7 @@ def _write_assignment_row(
 
 
 def command_count(args: argparse.Namespace) -> int:
+    _validate_window_args(args)
     targets = _read_targets(args.targets)
     matcher = Matcher([t.seq for t in targets])
     counts = {
@@ -429,6 +445,7 @@ def command_audit_targets(args: argparse.Namespace) -> int:
 
 
 def command_validate(args: argparse.Namespace) -> int:
+    _validate_window_args(args)
     targets = _read_targets(args.targets)
     matcher = Matcher([t.seq for t in targets])
     checked = 0
@@ -729,6 +746,21 @@ def _barcode_lengths(targets: Sequence[Target], length_arg: str) -> list[int]:
     return lengths
 
 
+def _require_non_negative(name: str, value: int) -> None:
+    if value < 0:
+        raise ValueError(f"{name} must be non-negative")
+
+
+def _parse_positive_int_option(name: str, value: int | str) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be a positive integer") from exc
+    if parsed <= 0:
+        raise ValueError(f"{name} must be a positive integer")
+    return parsed
+
+
 def _barcode_sample_reads(reads: str | Path, max_reads: int) -> list[ReadRecord]:
     if max_reads <= 0:
         raise ValueError("--sample-reads must be positive")
@@ -927,6 +959,7 @@ def _require_native_success(result: dict[str, object]) -> None:
 
 
 def _barcode_audit(barcodes: str, k: int, audit_mode: str, out_dir: str) -> int:
+    _require_non_negative("--k", k)
     Path(out_dir).mkdir(parents=True, exist_ok=True)
     result = _native_completed(["audit", "--targets", barcodes, "--k", str(k), "--audit-mode", audit_mode, "--out-dir", out_dir])
     _require_native_success(result)
@@ -949,6 +982,10 @@ def _copy_audit_aliases(source_dir: Path, dest_dir: Path) -> None:
 
 
 def _barcode_demux(args: argparse.Namespace) -> int:
+    _require_non_negative("--barcode-start", args.barcode_start)
+    _require_non_negative("--k", args.k)
+    if args.barcode_length != "auto":
+        _parse_positive_int_option("--barcode-length", args.barcode_length)
     argv = [
         "demux",
         "--barcodes",
@@ -984,6 +1021,9 @@ def _barcode_demux(args: argparse.Namespace) -> int:
 
 
 def _barcode_count(args: argparse.Namespace) -> int:
+    _require_non_negative("--barcode-start", args.barcode_start)
+    _require_non_negative("--k", args.k)
+    _parse_positive_int_option("--barcode-length", args.barcode_length)
     argv = [
         "count",
         "--targets",
@@ -1073,7 +1113,7 @@ def _barcode_autopsy(args: argparse.Namespace) -> int:
         "--barcode-start",
         str(best.start),
         "--barcode-length",
-        str(args.barcode_length),
+        str(best.length),
         "--k",
         str(audit_k),
         "--metric",
@@ -1568,19 +1608,25 @@ def _read_crispr_count_matrix(path: str | Path) -> dict[str, object]:
         reader = csv.DictReader(fh, delimiter="\t")
         if reader.fieldnames is None or len(reader.fieldnames) < 3:
             raise ValueError("count matrix must have guide, gene, and at least one sample column")
+        if len(set(reader.fieldnames)) != len(reader.fieldnames):
+            raise ValueError("count matrix columns must be unique")
         guide_col = reader.fieldnames[0]
         gene_col = reader.fieldnames[1]
         sample_cols = reader.fieldnames[2:]
         guides: list[dict[str, object]] = []
         sample_counts = {sample: [] for sample in sample_cols}
+        seen_guides: set[str] = set()
         for row in reader:
             guide_id = str(row.get(guide_col, "")).strip()
             gene = str(row.get(gene_col, "")).strip()
             if not guide_id:
                 raise ValueError("count matrix contains an empty guide id")
+            if guide_id in seen_guides:
+                raise ValueError(f"count matrix contains duplicate guide id: {guide_id}")
+            seen_guides.add(guide_id)
             guide_counts: dict[str, int] = {}
             for sample in sample_cols:
-                value = int(float(str(row.get(sample, "0") or "0")))
+                value = _parse_count_value(str(row.get(sample, "0") or "0"), guide_id, sample)
                 if value < 0:
                     raise ValueError(f"negative count for {guide_id}/{sample}")
                 guide_counts[sample] = value
@@ -1597,16 +1643,32 @@ def _read_crispr_count_matrix(path: str | Path) -> dict[str, object]:
     }
 
 
+def _parse_count_value(text: str, guide_id: str, sample: str) -> int:
+    try:
+        numeric = float(text)
+    except ValueError as exc:
+        raise ValueError(f"non-numeric count for {guide_id}/{sample}") from exc
+    if not math.isfinite(numeric):
+        raise ValueError(f"non-finite count for {guide_id}/{sample}")
+    if not numeric.is_integer():
+        raise ValueError(f"non-integer count for {guide_id}/{sample}")
+    return int(numeric)
+
+
 def _read_sample_qc(path: str | Path) -> dict[str, dict[str, float | str]]:
     with _open_text(path) as fh:
         reader = csv.DictReader(fh, delimiter="\t")
         if reader.fieldnames is None or "sample_id" not in reader.fieldnames:
             raise ValueError("sample_qc.tsv must contain a sample_id column")
+        if len(set(reader.fieldnames)) != len(reader.fieldnames):
+            raise ValueError("sample_qc.tsv columns must be unique")
         rows: dict[str, dict[str, float | str]] = {}
         for row in reader:
             sample_id = str(row.get("sample_id", "")).strip()
             if not sample_id:
                 raise ValueError("sample_qc.tsv contains an empty sample_id")
+            if sample_id in rows:
+                raise ValueError(f"sample_qc.tsv contains duplicate sample_id: {sample_id}")
             parsed: dict[str, float | str] = {}
             for key, value in row.items():
                 if key == "sample_id":
@@ -1616,8 +1678,20 @@ def _read_sample_qc(path: str | Path) -> dict[str, dict[str, float | str]]:
                     parsed[key] = float(text)
                 except ValueError:
                     parsed[key] = text
+            _validate_sample_qc_metrics(sample_id, parsed)
             rows[sample_id] = parsed
     return rows
+
+
+def _validate_sample_qc_metrics(sample_id: str, metrics: dict[str, float | str]) -> None:
+    for key, value in metrics.items():
+        if not isinstance(value, float):
+            continue
+        if not math.isfinite(value):
+            raise ValueError(f"sample_qc.tsv contains non-finite value for {sample_id}/{key}")
+        if key.endswith("_rate") or key.endswith("_fraction"):
+            if value < 0.0 or value > 1.0:
+                raise ValueError(f"sample_qc.tsv {key} for {sample_id} must be between 0 and 1")
 
 
 def _read_crispr_library(path: str | Path) -> list[Target]:
@@ -1664,6 +1738,8 @@ def _build_crispr_qc_report(
     k: int,
     thresholds: dict[str, float],
 ) -> dict[str, object]:
+    if k < 0:
+        raise ValueError("--k must be non-negative")
     samples = list(counts["samples"])  # type: ignore[arg-type]
     sample_counts: dict[str, list[int]] = counts["sample_counts"]  # type: ignore[assignment]
     guide_count = len(counts["guides"])  # type: ignore[arg-type]
@@ -1706,9 +1782,7 @@ def _build_crispr_qc_report(
             "gini_index": _gini(values),
             "top_1pct_fraction": top_fraction,
         })
-        if "invalid_rate" not in metrics and isinstance(metrics.get("invalid_reads"), (int, float)):
-            total_reads = metrics.get("total_reads")
-            metrics["invalid_rate"] = float(metrics["invalid_reads"]) / float(total_reads) if isinstance(total_reads, (int, float)) and total_reads else 0.0
+        _derive_sample_qc_rates(metrics)
         sample_warnings = _sample_crispr_warnings(sample, metrics, thresholds)
         metrics["qc_status"] = "review" if sample_warnings else "pass"
         sample_report[sample] = metrics
@@ -1770,6 +1844,26 @@ def _build_crispr_qc_report(
         "warnings": warnings,
         "interpretation": "QC flags are conservative diagnostics for guide counting and representation; downstream screen statistics should be run with MAGeCK or another screen-analysis method.",
     }
+
+
+def _derive_sample_qc_rates(metrics: dict[str, object]) -> None:
+    total_reads = metrics.get("total_reads")
+    if not isinstance(total_reads, (int, float)) or total_reads <= 0:
+        return
+    derived = {
+        "assignment_rate": ("assigned_reads", "assigned_unique"),
+        "ambiguous_rate": ("ambiguous_reads", "ambiguous"),
+        "no_match_rate": ("no_match_reads", "unmatched", "no_match"),
+        "invalid_rate": ("invalid_reads", "invalid"),
+    }
+    for rate_key, count_keys in derived.items():
+        if rate_key in metrics:
+            continue
+        for count_key in count_keys:
+            count = metrics.get(count_key)
+            if isinstance(count, (int, float)):
+                metrics[rate_key] = float(count) / float(total_reads)
+                break
 
 
 def _sample_crispr_warnings(sample: str, metrics: dict[str, object], thresholds: dict[str, float]) -> list[dict[str, object]]:
@@ -1903,13 +1997,10 @@ def _ranks(values: Sequence[int]) -> list[float]:
 
 
 def _duplicate_count(values: Sequence[str]) -> int:
-    seen: set[str] = set()
-    duplicates: set[str] = set()
+    counts: dict[str, int] = defaultdict(int)
     for value in values:
-        if value in seen:
-            duplicates.add(value)
-        seen.add(value)
-    return len(duplicates)
+        counts[value] += 1
+    return sum(count - 1 for count in counts.values() if count > 1)
 
 
 def _median(values: Sequence[int]) -> float:
