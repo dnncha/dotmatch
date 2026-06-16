@@ -32,7 +32,8 @@ static void check_pair(const char *a, const char *b) {
     int fast = qdaln_edit_distance(a, strlen(a), b, strlen(b));
     int fast_direct = qdaln_edit_distance_myers64(a, strlen(a), b, strlen(b));
     assert(dp == fast);
-    if (strlen(a) <= 64) assert(dp == fast_direct);
+    /* Now myers64 generalized to >64 via multi-word; always compare for oracle coverage */
+    assert(dp == fast_direct);
 
     for (int k = 0; k <= 8; ++k) {
         int leq = qdaln_edit_distance_leq(a, strlen(a), b, strlen(b), k);
@@ -54,6 +55,22 @@ static void fixed_tests(void) {
     check_pair("ACGTACGTACGTACGT", "TGCATGCATGCATGCA");
     check_pair("ACG", "CGA");
     check_pair("ABCDEFGHIJKLMNOPQ", "QBCDEFGHIJKLMNOPA");
+
+    /* Explicit longer patterns (>64) for multi-word Myers coverage + oracle */
+    {
+        char longp[80];
+        char longt[80];
+        memset(longp, 'A', 79); longp[79] = '\0';
+        memset(longt, 'A', 78); longt[78] = 'T'; longt[79] = '\0';
+        check_pair(longp, longt); /* dist 2: one sub + one del? wait len diff, actually 1sub +1del? but dp will tell */
+        check_pair(longp, longp);
+        /* 70bp with 1 edit */
+        char lp[71]; char lt[71];
+        memset(lp, 'C', 70); lp[70]='\0';
+        memcpy(lt, lp, 71);
+        lt[35] = 'G';
+        check_pair(lp, lt);
+    }
 
     assert(qdaln_edit_distance_leq(NULL, 1, "A", 1, -1) == -1);
     assert(qdaln_edit_distance_leq("A", 1, NULL, 1, -1) == -1);
@@ -812,7 +829,8 @@ static void fuzz_tests(void) {
     char b[129];
 
     for (size_t t = 0; t < 50000; ++t) {
-        size_t a_len = (size_t)(xorshift64() % 65ULL);
+        /* Extend a_len range to >64 to exercise multi-word Myers as pattern (oracle via dp) */
+        size_t a_len = (size_t)(xorshift64() % 129ULL);
         size_t b_len = (size_t)(xorshift64() % 129ULL);
         rand_seq(a, a_len);
         rand_seq(b, b_len);

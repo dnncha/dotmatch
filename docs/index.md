@@ -46,6 +46,7 @@ assayspec
 crispr-qc
 barcode-panel-design
 workbench
+proposals-and-roadmap
 ```
 
 ```{toctree}

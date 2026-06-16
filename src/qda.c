@@ -1,6 +1,12 @@
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200809L
 #endif
+#ifndef _DARWIN_C_SOURCE
+#define _DARWIN_C_SOURCE 1
+#endif
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
 
 #include "qdalign.h"
 
@@ -50,6 +56,14 @@ static double seconds_now(void) {
     return (double)tv.tv_sec + (double)tv.tv_usec / 1000000.0;
 }
 
+static size_t get_cpu_count(void) {
+    long n = 1;
+    n = sysconf(_SC_NPROCESSORS_ONLN);
+    if (n < 1) n = 1;
+    if ((size_t)n > 1024) n = 1024; /* cap for thread pools in this tool */
+    return (size_t)n;
+}
+
 static void usage(const char *argv0) {
     fprintf(stderr, "Usage:\n");
     fprintf(stderr, "  %s --help\n", argv0);
@@ -62,14 +76,14 @@ static void usage(const char *argv0) {
     fprintf(stderr, "  %s fastq-assign --barcodes barcodes.tsv --reads reads.fastq[.gz] --barcode-start N --barcode-length L --k 0|1 [--ambiguity-policy radius|best] --out assignments.tsv\n", argv0);
     fprintf(stderr, "  %s pair-count --left-targets left.tsv --right-targets right.tsv --reads reads.fastq[.gz] --left-start N --left-length L --right-start N --right-length L --k 0|1|2 --metric hamming|levenshtein [--ambiguity-policy radius|best] --out pair_counts.tsv [--summary summary.json]\n", argv0);
     fprintf(stderr, "  %s demux --barcodes barcodes.tsv|barcodes.csv --reads reads.fastq[.gz] --barcode-start N --barcode-length L|auto --k 0|1|2 --metric hamming|levenshtein [--ambiguity-policy radius|best] [--max-correction-qual Q] --out-dir demux_dir [--summary qc.json]\n", argv0);
-    fprintf(stderr, "  %s bcl-demux --run-folder RUN --sample-sheet SampleSheet.csv --out-dir demux_dir --barcode-mismatches 0|1|1,1 [--threads N] [--gzip-level 0..9] [--emit-index-fastqs] [--summary summary.json]\n", argv0);
+    fprintf(stderr, "  %s bcl-demux --run-folder RUN --sample-sheet SampleSheet.csv --out-dir demux_dir --barcode-mismatches 0|1|1,1 [--threads N] (0=auto) [--gzip-level 0..9] [--emit-index-fastqs] [--summary summary.json]\n", argv0);
     fprintf(stderr, "  %s bcl-validate --dotmatch-out DIR --truth-out DIR\n", argv0);
     fprintf(stderr, "  %s count --targets targets.tsv|targets.csv --reads reads.fastq[.gz] [--reads more.fastq.gz] --sample-label labels --target-start N --target-length L --k 0|1|2|3 --metric hamming|levenshtein [--hamming-index auto|query|precompute] [--max-correction-qual Q] [--ambiguity-policy radius|best] --offset-mode best|multi --out counts.tsv [--format dotmatch|mageck]\n", argv0);
     fprintf(stderr, "  %s crispr-count --library guides.tsv|guides.csv --samples samples.tsv|samples.csv --guide-start N --guide-length L --k 0|1|2|3 [--ambiguity-policy radius|best] --out counts.mageck.tsv [--summary qc.json] [--sample-qc sample_qc.tsv]\n", argv0);
     fprintf(stderr, "  %s guide-counter count --input reads.fastq[.gz]... --library guides.tsv|guides.csv --output prefix [--samples labels...] [--exact-match]\n", argv0);
     fprintf(stderr, "  %s inspect-unmatched --targets targets.tsv|targets.csv --reads reads.fastq[.gz] --target-start N --target-length L --k 0|1 --top N --out top_unmatched.tsv [--low-quality-threshold Q]\n", argv0);
     fprintf(stderr, "  %s audit --targets targets.tsv|targets.csv --k 0|1|2|3 --out-dir audit_dir [--audit-mode auto|exact|fast]\n", argv0);
-    fprintf(stderr, "  %s validate --targets targets.tsv|targets.csv --reads reads.fastq[.gz] --target-start N --target-length L --k 0|1 [--metric hamming|levenshtein] [--indel-window 0|1] [--offset-mode best|multi] [--threads N] --oracle scan|edlib\n", argv0);
+    fprintf(stderr, "  %s validate --targets targets.tsv|targets.csv --reads reads.fastq[.gz] --target-start N --target-length L --k 0|1 [--metric hamming|levenshtein] [--indel-window 0|1] [--offset-mode best|multi] [--threads N] (0=auto) --oracle scan|edlib\n", argv0);
 }
 
 static void help_manual(FILE *out, const char *argv0) {
@@ -126,7 +140,7 @@ static void help_manual(FILE *out, const char *argv0) {
     fprintf(out, "      --target-start N --target-length L --k 0|1 --oracle scan|edlib\n");
     fprintf(out, "      Compare indexed assignment with a validation oracle. Installed packages should use --oracle scan.\n");
     fprintf(out, "  bcl-demux --run-folder RUN --sample-sheet SampleSheet.csv --out-dir demux_dir \\\n");
-    fprintf(out, "      --barcode-mismatches 0|1|1,1 [--threads N] [--gzip-level 0..9]\n");
+    fprintf(out, "      --barcode-mismatches 0|1|1,1 [--threads N] (0=auto) [--gzip-level 0..9]\n");
     fprintf(out, "      Classic per-cycle BCL parser milestone; not a production CBCL/NovaSeq replacement.\n");
     fprintf(out, "\n");
     fprintf(out, "Assignment outcomes:\n");
@@ -138,6 +152,7 @@ static void help_manual(FILE *out, const char *argv0) {
     fprintf(out, "Defaults and conventions:\n");
     fprintf(out, "  --ambiguity-policy radius is the conservative default for assignment commands.\n");
     fprintf(out, "  --ambiguity-policy best is available only when best-distance compatibility is intended.\n");
+    fprintf(out, "  --threads N (default 0 = auto-detect from CPU count) enables parallel read processing for count/demux/validate/bcl.\n");
     fprintf(out, "  --metric levenshtein supports k=0,1,2 for count/demux fixed windows; hamming supports k=0,1,2,3 fixed-length comparisons.\n");
     fprintf(out, "  N and IUPAC ambiguity symbols are treated as literal bytes, not wildcards.\n");
     fprintf(out, "\n");
@@ -2599,6 +2614,28 @@ static void free_seq_buffer(seq_buffer *buffer) {
     buffer->fixed_active = 0;
 }
 
+/* Reset for reuse across batches: reclaim only the per-element xstrndup allocations
+ * for variable-length fallback cases (using the existing ptr-in-fixed check),
+ * but retain the pre-allocated items[]/lens[] arrays and any active fixed_items
+ * contiguous block (for the common uniform-length case) so the next batch can
+ * reuse without realloc churn. Deactivate fixed if lengths no longer match.
+ */
+static void reset_seq_buffer(seq_buffer *buffer) {
+    if (buffer == NULL) return;
+    for (size_t i = 0; i < buffer->count; ++i) {
+        if (!seq_buffer_ptr_in_fixed(buffer, buffer->items[i])) free(buffer->items[i]);
+    }
+    buffer->count = 0;
+    if (buffer->fixed_active) {
+        /* fixed block stays allocated for reuse on next push with matching len */
+    } else {
+        buffer->fixed_items = NULL;
+        buffer->fixed_len = 0;
+        buffer->fixed_cap = 0;
+    }
+    buffer->fixed_active = 0;
+}
+
 static int grow_seq_buffer(seq_buffer *buffer) {
     size_t old_cap = buffer->cap;
     size_t next_cap = buffer->cap == 0 ? 1024 : buffer->cap * 2;
@@ -2648,11 +2685,13 @@ static int reserve_seq_buffer(seq_buffer *buffer, size_t requested_cap) {
 static int push_seq_buffer(seq_buffer *buffer, const char *seq, size_t len) {
     if (buffer->count == buffer->cap && grow_seq_buffer(buffer) != 0) return -1;
     if (buffer->count == 0 && len <= 8191) {
-        buffer->fixed_items = (char *)malloc(buffer->cap * (len + 1));
-        if (buffer->fixed_items != NULL) {
-            buffer->fixed_len = len;
-            buffer->fixed_cap = buffer->cap;
-            buffer->fixed_active = 1;
+        if (buffer->fixed_items == NULL) {  /* guard to allow reuse without re-malloc */
+            buffer->fixed_items = (char *)malloc(buffer->cap * (len + 1));
+            if (buffer->fixed_items != NULL) {
+                buffer->fixed_len = len;
+                buffer->fixed_cap = buffer->cap;
+                buffer->fixed_active = 1;
+            }
         }
     }
     if (buffer->fixed_active && len == buffer->fixed_len) {
@@ -3312,7 +3351,7 @@ static int count_sample_worker_direct_hamming(count_sample_job *job) {
             }
         }
     } else {
-        const size_t batch_reads = 262144;
+        const size_t batch_reads = 1048576;
         seq_buffer batch = {0};
         if (reserve_seq_buffer(&batch, batch_reads) != 0) {
             free_seq_buffer(&batch);
@@ -3331,7 +3370,7 @@ static int count_sample_worker_direct_hamming(count_sample_job *job) {
                     fastq_reader_close(&reader);
                     return 1;
                 }
-                free_seq_buffer(&batch);
+                reset_seq_buffer(&batch);
                 if (reserve_seq_buffer(&batch, batch_reads) != 0) {
                     free_seq_buffer(&batch);
                     fastq_reader_close(&reader);
@@ -3547,7 +3586,7 @@ static void *count_sample_worker(void *arg) {
     int need_full_record = need_read_id || need_quality;
     size_t seq_len = 0;
     if (job->read_threads > 1 && !need_full_record) {
-        const size_t batch_reads = 262144;
+        const size_t batch_reads = 1048576;
         seq_buffer batch = {0};
         if (reserve_seq_buffer(&batch, batch_reads) != 0) {
             free_seq_buffer(&batch);
@@ -3570,7 +3609,7 @@ static void *count_sample_worker(void *arg) {
                     job->rc = 1;
                     return NULL;
                 }
-                free_seq_buffer(&batch);
+                reset_seq_buffer(&batch);
                 if (reserve_seq_buffer(&batch, batch_reads) != 0) {
                     free_seq_buffer(&batch);
                     fastq_reader_close(&reader);
@@ -3820,7 +3859,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
     size_t auto_offset_sample = 1000;
     offset_mode offsets_mode = OFFSET_MODE_BEST;
     double offset_min_fraction = 0.005;
-    size_t threads = 1;
+    size_t threads = 0;
     int max_correction_qual = -1;
     int k = -1;
     string_list reads = {0};
@@ -3912,7 +3951,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
                 goto fail_args;
             }
         } else if (strcmp(arg, "--threads") == 0 && i < argc) {
-            if (parse_size_value(argv[i++], &threads) != 0 || threads == 0) {
+            if (parse_size_value(argv[i++], &threads) != 0) {
                 usage(argv0);
                 goto fail_args;
             }
@@ -4015,6 +4054,14 @@ static int run_count(const char *argv0, int argc, char **argv) {
         fprintf(stderr, "--threads > 1 is not supported with row-level diagnostic outputs\n");
         goto fail_args;
     }
+    if (threads == 0) {
+        size_t auto_t = get_cpu_count();
+        if (auto_t > 1 && (assignments_path != NULL || ambiguous_path != NULL || unmatched_path != NULL)) {
+            threads = 1; /* fall back for safe ordered diagnostic outputs */
+        } else {
+            threads = auto_t;
+        }
+    }
     int count_only = assignments_path == NULL && ambiguous_path == NULL && unmatched_path == NULL;
 
     seq_table targets = {0};
@@ -4039,7 +4086,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
     double counting_seconds = 0.0;
     const char *offset_detection_strategy = auto_offset == 0 ? "none" : "prepass";
     const char *count_engine = "generic_indexed";
-    size_t effective_read_threads = 1;
+    size_t effective_read_threads = threads;
 
     double phase_start_seconds = seconds_now();
     if (read_target_table(targets_path, &targets) != 0) {
@@ -7701,7 +7748,7 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
     int k1 = 1;
     int k2 = 1;
     int emit_index_fastqs = 0;
-    size_t requested_threads = 1;
+    size_t requested_threads = 0;
     int gzip_level = 1;
 
     int i = 2;
@@ -7720,7 +7767,7 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
         } else if (strcmp(arg, "--emit-index-fastqs") == 0) {
             emit_index_fastqs = 1;
         } else if (strcmp(arg, "--threads") == 0 && i < argc) {
-            if (parse_size_value(argv[i++], &requested_threads) != 0 || requested_threads == 0) {
+            if (parse_size_value(argv[i++], &requested_threads) != 0) {
                 fprintf(stderr, "invalid --threads value\n");
                 return 2;
             }
@@ -7778,6 +7825,9 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
     if (samples.count > MAX_BCL_SAMPLE_ROWS) {
         fprintf(stderr, "sample sheet exceeds supported BCL sample count\n");
         goto done;
+    }
+    if (requested_threads == 0) {
+        requested_threads = get_cpu_count();
     }
     if (ensure_dir(out_dir) != 0) {
         fprintf(stderr, "failed to create BCL output directory\n");
@@ -8194,7 +8244,7 @@ static int run_validate(const char *argv0, int argc, char **argv) {
     size_t sample_limit = 100000;
     size_t auto_offset = 0;
     size_t auto_offset_sample = 1000;
-    size_t threads = 1;
+    size_t threads = 0;
     offset_mode offsets_mode = OFFSET_MODE_BEST;
     double offset_min_fraction = 0.005;
     count_metric metric = COUNT_METRIC_LEVENSHTEIN;
@@ -8271,7 +8321,7 @@ static int run_validate(const char *argv0, int argc, char **argv) {
                 return 2;
             }
         } else if (strcmp(arg, "--threads") == 0 && i < argc) {
-            if (parse_size_value(argv[i++], &threads) != 0 || threads == 0) {
+            if (parse_size_value(argv[i++], &threads) != 0) {
                 usage(argv0);
                 return 2;
             }
@@ -8292,6 +8342,9 @@ static int run_validate(const char *argv0, int argc, char **argv) {
     if (metric == COUNT_METRIC_HAMMING && indel_window != 0) {
         fprintf(stderr, "--indel-window is only valid with --metric levenshtein\n");
         return 2;
+    }
+    if (threads == 0) {
+        threads = get_cpu_count();
     }
     if (strcmp(oracle, "edlib") == 0) {
         if (metric != COUNT_METRIC_LEVENSHTEIN) {

@@ -11,6 +11,13 @@ requires-python = ">=3.9"
 dependencies = [
     "tomli; python_version < \"3.11\"",
 ]
+
+[project.optional-dependencies]
+pandas = ["pandas>=1.0"]
+anndata = ["anndata>=0.8", "pandas>=1.0"]
+polars = ["polars>=0.19"]
+multiqc = ["multiqc>=1.20"]
+dev = ["pytest", "pandas>=1.0", "anndata>=0.8", "polars>=0.19", "multiqc>=1.20"]
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 authors = [
@@ -47,6 +54,9 @@ Documentation = "https://github.com/dnncha/dotmatch#readme"
 
 [tool.setuptools]
 package-dir = {"" = "python"}
+
+[project.entry-points."multiqc.modules.v1"]
+dotmatch = "dotmatch.multiqc:DotMatchModule"
 
 [tool.setuptools.packages.find]
 where = ["python"]

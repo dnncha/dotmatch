@@ -4,6 +4,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(__AVX2__)
+#include <immintrin.h>
+#elif defined(__ARM_NEON) || defined(__aarch64__)
+#include <arm_neon.h>
+#endif
+
+/* Max words for stack-allocated multi-word Myers bitvectors.
+ * Supports patterns up to 512 bp with the fast bit-parallel path.
+ * (Roadmap target was 128; 512 is safe and sufficient for primers/amplicons.)
+ */
+#define QDALN_MYERS_MAX_WORDS 8
+
 typedef struct qdaln_hamming_seed_entry {
     uint64_t code;
     size_t target_index;
@@ -164,9 +176,48 @@ static int nonzero_bytes_u64(uint64_t x) {
     return popcount64_qd(x);
 }
 
+#if defined(__AVX2__)
+static inline int count_nonzero_bytes_avx2(__m256i v) {
+    __m256i zero = _mm256_setzero_si256();
+    __m256i cmp = _mm256_cmpeq_epi8(v, zero);
+    int mask = _mm256_movemask_epi8(cmp);
+    return 32 - __builtin_popcount(mask);
+}
+#endif
+
 static int same_length_hamming_distance_within_k(const char *a, const char *b, size_t len, int k) {
     int d = 0;
     size_t i = 0;
+#if defined(__AVX2__)
+    for (; i + 32 <= len; i += 32) {
+        __m256i va = _mm256_loadu_si256((const __m256i *)(a + i));
+        __m256i vb = _mm256_loadu_si256((const __m256i *)(b + i));
+        __m256i diff = _mm256_xor_si256(va, vb);
+        d += count_nonzero_bytes_avx2(diff);
+        if (d > k) return -1;
+    }
+#elif defined(__ARM_NEON) || defined(__aarch64__)
+    for (; i + 16 <= len; i += 16) {
+        uint8x16_t va = vld1q_u8((const uint8_t *)(a + i));
+        uint8x16_t vb = vld1q_u8((const uint8_t *)(b + i));
+        uint8x16_t diff = veorq_u8(va, vb);
+        uint8x16_t nz = vcgtq_u8(diff, vdupq_n_u8(0));
+        uint8x16_t one = vshrq_n_u8(nz, 7);
+        d += (int)vaddvq_u8(one);
+        if (d > k) return -1;
+    }
+    for (; i + 8 <= len; i += 8) {
+        uint64_t wa = 0;
+        uint64_t wb = 0;
+        memcpy(&wa, a + i, 8);
+        memcpy(&wb, b + i, 8);
+        uint64_t diff = wa ^ wb;
+        if (diff != 0) {
+            d += nonzero_bytes_u64(diff);
+            if (d > k) return -1;
+        }
+    }
+#else
     while (i + sizeof(uint64_t) <= len) {
         uint64_t wa = 0;
         uint64_t wb = 0;
@@ -179,6 +230,7 @@ static int same_length_hamming_distance_within_k(const char *a, const char *b, s
         }
         i += sizeof(uint64_t);
     }
+#endif
     for (; i < len; ++i) {
         if (a[i] != b[i] && ++d > k) return -1;
     }
@@ -228,39 +280,121 @@ int qdaln_edit_distance_myers64(const char *pattern, size_t pattern_len,
     if ((pattern == NULL && pattern_len != 0) || (text == NULL && text_len != 0)) return -1;
     if (pattern_len == 0) return (int)text_len;
     if (text_len == 0) return (int)pattern_len;
-    if (pattern_len > 64) return qdaln_edit_distance_dp(pattern, pattern_len, text, text_len);
 
-    uint64_t peq[256];
+    int nwords = (int)((pattern_len + 63) / 64);
+    if (nwords > QDALN_MYERS_MAX_WORDS) {
+        /* Extreme length: fall back to DP (still correct, though slower). */
+        return qdaln_edit_distance_dp(pattern, pattern_len, text, text_len);
+    }
+    uint64_t peq[256][QDALN_MYERS_MAX_WORDS];
     memset(peq, 0, sizeof(peq));
 
     for (size_t i = 0; i < pattern_len; ++i) {
-        peq[(unsigned char)pattern[i]] |= (uint64_t)1 << i;
+        unsigned char c = (unsigned char)pattern[i];
+        int w = (int)(i / 64);
+        int b = (int)(i % 64);
+        peq[c][w] |= (uint64_t)1 << b;
     }
 
-    const uint64_t valid_mask = pattern_len == 64 ? UINT64_MAX : (((uint64_t)1 << pattern_len) - 1);
-    const uint64_t last_bit = (uint64_t)1 << (pattern_len - 1);
+    uint64_t valid_masks[QDALN_MYERS_MAX_WORDS];
+    for (int w = 0; w < nwords; ++w) {
+        if ((w + 1) * 64 <= (int)pattern_len) {
+            valid_masks[w] = UINT64_MAX;
+        } else {
+            int rem = (int)(pattern_len % 64);
+            valid_masks[w] = (rem == 0 ? UINT64_MAX : (((uint64_t)1 << rem) - 1));
+        }
+    }
 
-    uint64_t pv = valid_mask;
-    uint64_t mv = 0;
+    int last_w = (int)((pattern_len - 1) / 64);
+    int last_b = (int)((pattern_len - 1) % 64);
+    uint64_t last_bit = (uint64_t)1 << last_b;
+
+    uint64_t pv[QDALN_MYERS_MAX_WORDS];
+    uint64_t mv[QDALN_MYERS_MAX_WORDS];
+    for (int w = 0; w < nwords; ++w) {
+        pv[w] = valid_masks[w];
+        mv[w] = 0;
+    }
     int score = (int)pattern_len;
 
-    for (size_t j = 0; j < text_len; ++j) {
-        uint64_t eq = peq[(unsigned char)text[j]];
-        uint64_t xv = eq | mv;
-        uint64_t xh = ((((eq & pv) + pv) ^ pv) | eq) & valid_mask;
-        uint64_t ph = (mv | ~(xh | pv)) & valid_mask;
-        uint64_t mh = (pv & xh) & valid_mask;
+    /* temps to avoid repeated stack in loop */
+    uint64_t eqq[QDALN_MYERS_MAX_WORDS];
+    uint64_t xvv[QDALN_MYERS_MAX_WORDS];
+    uint64_t xhh[QDALN_MYERS_MAX_WORDS];
+    uint64_t phh[QDALN_MYERS_MAX_WORDS];
+    uint64_t mhh[QDALN_MYERS_MAX_WORDS];
+    uint64_t suml[QDALN_MYERS_MAX_WORDS];
 
-        if (ph & last_bit) {
+    for (size_t j = 0; j < text_len; ++j) {
+        unsigned char c = (unsigned char)text[j];
+        for (int w = 0; w < nwords; ++w) {
+            eqq[w] = peq[c][w];
+        }
+
+        for (int w = 0; w < nwords; ++w) {
+            xvv[w] = (eqq[w] | mv[w]) & valid_masks[w];
+        }
+
+        /* (eq & pv) + pv  with carry propagation across words (carry can be 0-2).
+           Portable carry calc avoids __int128 for broad compiler compat (MSVC etc). */
+        uint64_t carry = 0;
+        for (int w = 0; w < nwords; ++w) {
+            uint64_t eqpv = eqq[w] & pv[w];
+            uint64_t lo = eqpv + pv[w];
+            uint64_t c1 = (lo < eqpv) ? 1ULL : 0ULL;
+            lo += carry;
+            uint64_t c2 = (lo < carry) ? 1ULL : 0ULL;
+            suml[w] = lo;
+            carry = c1 + c2;
+        }
+        for (int w = 0; w < nwords; ++w) {
+            xhh[w] = (((suml[w] ^ pv[w]) | eqq[w]) & valid_masks[w]);
+        }
+
+        for (int w = 0; w < nwords; ++w) {
+            uint64_t not_term = (~(xhh[w] | pv[w])) & valid_masks[w];
+            phh[w] = (mv[w] | not_term) & valid_masks[w];
+        }
+        for (int w = 0; w < nwords; ++w) {
+            mhh[w] = (pv[w] & xhh[w]) & valid_masks[w];
+        }
+
+        /* score delta from the MSB of the *pattern* (last bit) before the shift */
+        if (phh[last_w] & last_bit) {
             ++score;
-        } else if (mh & last_bit) {
+        } else if (mhh[last_w] & last_bit) {
             --score;
         }
 
-        ph = ((ph << 1) | 1ULL) & valid_mask;
-        mh = (mh << 1) & valid_mask;
-        pv = (mh | ~(xv | ph)) & valid_mask;
-        mv = (ph & xv) & valid_mask;
+        /* ph = ((ph << 1) | 1) & mask ; mh = (mh << 1) & mask ; cross-word carry for << */
+        uint64_t new_ph[QDALN_MYERS_MAX_WORDS];
+        uint64_t new_mh[QDALN_MYERS_MAX_WORDS];
+        uint64_t carry_ph = 1; /* lsb set for ph */
+        uint64_t carry_mh = 0;
+        for (int w = 0; w < nwords; ++w) {
+            uint64_t carry_out_ph = (phh[w] >> 63) & 1ULL;
+            uint64_t tmp_ph = (phh[w] << 1) | carry_ph;
+            new_ph[w] = tmp_ph & valid_masks[w];
+            carry_ph = carry_out_ph;
+
+            uint64_t carry_out_mh = (mhh[w] >> 63) & 1ULL;
+            uint64_t tmp_mh = (mhh[w] << 1) | carry_mh;
+            new_mh[w] = tmp_mh & valid_masks[w];
+            carry_mh = carry_out_mh;
+        }
+        for (int w = 0; w < nwords; ++w) {
+            phh[w] = new_ph[w];
+            mhh[w] = new_mh[w];
+        }
+
+        for (int w = 0; w < nwords; ++w) {
+            uint64_t not_term = (~(xvv[w] | phh[w])) & valid_masks[w];
+            pv[w] = (mhh[w] | not_term) & valid_masks[w];
+        }
+        for (int w = 0; w < nwords; ++w) {
+            mv[w] = (phh[w] & xvv[w]) & valid_masks[w];
+        }
     }
 
     return score;
@@ -274,11 +408,12 @@ int qdaln_edit_distance(const char *a, size_t a_len, const char *b, size_t b_len
         if (d >= 0) return d;
     }
 
-    /* Levenshtein distance is symmetric. Put the shorter sequence in the
-       Myers pattern slot when possible so more cases hit the fast path. */
-    if (a_len <= 64) return qdaln_edit_distance_myers64(a, a_len, b, b_len);
-    if (b_len <= 64) return qdaln_edit_distance_myers64(b, b_len, a, a_len);
-    return qdaln_edit_distance_dp(a, a_len, b, b_len);
+    /* Levenshtein distance is symmetric. Myers now handles arbitrary lengths
+       (multi-word), so use it for all cases for speed vs DP. Pick shorter as
+       "pattern" to bound the word count in the inner loop (though asymptotic
+       cost is identical either way). */
+    if (a_len <= b_len) return qdaln_edit_distance_myers64(a, a_len, b, b_len);
+    return qdaln_edit_distance_myers64(b, b_len, a, a_len);
 }
 
 static int one_delete_matches_qd(const char *longer, size_t longer_len,
@@ -325,8 +460,9 @@ int qdaln_edit_distance_leq(const char *a, size_t a_len, const char *b, size_t b
 
     if (a_len == b_len && same_length_hamming_distance_within_k(a, b, a_len, k) >= 0) return 1;
 
-    size_t min_len = a_len < b_len ? a_len : b_len;
-    if (k >= 2 && min_len <= 64) {
+    if (k >= 2) {
+        /* Myers now generalized to any length via multi-word; use for leq too
+           (avoids the DP alloc path and is faster). */
         if (a_len <= b_len) return qdaln_edit_distance_myers64(a, a_len, b, b_len) <= k ? 1 : 0;
         return qdaln_edit_distance_myers64(b, b_len, a, a_len) <= k ? 1 : 0;
     }
@@ -439,8 +575,9 @@ static int candidate_distance_within_k(const char *read, size_t read_len,
         if (d >= 0 && d <= 2) return d;
     }
 
-    size_t min_len = read_len < target_len ? read_len : target_len;
-    if (k >= 2 && min_len <= 64) {
+    if (k >= 2) {
+        /* Use generalized myers for any length when k>=2 (no more 64 limit).
+           This is exact and fast; falls to leq/edit only for k<2 (already handled). */
         int d = read_len <= target_len
                     ? qdaln_edit_distance_myers64(read, read_len, target, target_len)
                     : qdaln_edit_distance_myers64(target, target_len, read, read_len);

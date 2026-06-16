@@ -2,6 +2,29 @@
 
 All notable user-facing changes are tracked here. Public statements in release notes must stay aligned with `docs/scientific-claims.md`.
 
+## Unreleased / Next (post 0.1.7)
+
+### Added
+- `dotmatch.tl` submodule: scverse/scanpy-style tools (`tl.assign_features`, `tl.feature_counts`, aliases for CRISPR/feature barcodes). In-place modification or copy, with provenance in `.uns`. Excellent UX for AnnData-centric workflows.
+- Pure, dependency-light parsers in `dotmatch.multiqc` (`parse_sample_qc_tsv`, `parse_crispr_qc_summary_tsv`, `parse_assay_manifest_summary_tsv`) usable from any Python code (notebooks, custom reports) while strictly following the documented schemas.
+- Proper MultiQC plugin registration via entry point in `pyproject.toml` + improved `DotMatchModule` with full parsing of sample QC, CRISPR QC, and assay manifest (adds sections + general stats with scientific descriptions).
+- R package skeleton (`R/`, `DESCRIPTION`, `NAMESPACE`, `vignettes/dotmatch.Rmd` + reticulate wrappers) for Bioconductor / tidyverse users.
+- New test coverage for tl and parsers (`test_tl_and_integrations.py`).
+
+### Changed
+- Expanded optional extras (`[anndata]`, `[polars]`, `[multiqc]`) and top-level exposure.
+- nf-core module meta.yml files now document threads/cpus for better resource awareness.
+- README and proposals-and-roadmap.md updated with usage examples and status.
+
+### Performance (best-of-n)
+- All three candidates from `/best-of-n performance improvement` applied after confirming orthogonality (Myers edit paths vs hamming hot-path vs qda driver batch/IO), no conflicts, full builds/tests pass, and behavior-identical oracles (72/129bp myers vs DP; hamming k within counts match scalar expectation; large-batch count pipelines produce exact TSVs).
+- Multi-word Myers: patterns >64bp (up to 512) now use fast generalized bit-parallel (portable carry, no __int128 dependency) instead of DP fallback. `qdaln_edit_distance*` and leq for k>=2 benefit for long guides/primers/amplicons.
+- SIMD hamming: `same_length_hamming_distance_within_k` (and seed index) accelerated with AVX2 (x86) or NEON (arm64/aarch64) + scalar fallback. Direct hamming count paths (common for CRISPR k<=1 uniform) measurably faster.
+- Batching/IO: raised to 1M reads/batch + `seq_buffer` reuse + `reset_seq_buffer` helper in count feeders (both single and read_threads>1 paths). Reduces malloc churn on large .fastq.gz while keeping fixed-block fastpath for uniform-length assays. RSS tradeoff documented in code.
+- All changes respect evidence culture (no new public claims without raw CSV + gate); internal perf only. Verified: make test, make cli-test, 370 pytest (native), count-agreement, synthetic+real-oracle runs, A/B on mixed short/long + threaded count.
+
+These changes focus on massive industry penetration (scverse, MultiQC, R/Bioc, nf-core), excellent UX (one-liner bridges, pure parsers, tl ergonomics), and perfect scientific accuracy (parsers tied to schemas, unique-only enforcement, explicit ambiguity handling, provenance, dedicated tests).
+
 ## 0.1.5 - 2026-05-26
 
 ### Added

@@ -88,6 +88,20 @@ int main(void) {
     assert_leq_no_heap("ACGTACGT", 8, "TCGTTCGA", 8, 3, 1);
     assert_leq_no_heap("ACG", 3, "CGA", 3, 2, 1);
 
+    /* Extend coverage to longer patterns (>64) with oracle comparison.
+     * For k>=2, leq now routes to generalized multi-word myers (no heap),
+     * and we assert exact match to dp oracle. */
+    {
+        const char *longa = "ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGT"; /* 72bp */
+        const char *longb = "ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGA"; /* 1 mismatch */
+        size_t lena = 72, lenb = 72;
+        assert_leq_no_heap(longa, lena, longb, lenb, 2, 1);
+        assert(qdaln_edit_distance_myers64(longa, lena, longb, lenb) == qdaln_edit_distance_dp(longa, lena, longb, lenb));
+        assert(qdaln_edit_distance(longa, lena, longb, lenb) == qdaln_edit_distance_dp(longa, lena, longb, lenb));
+        assert(qdaln_edit_distance_leq(longa, lena, longb, lenb, 0) == 0);
+        assert(qdaln_edit_distance_leq(longa, lena, longb, lenb, 1) == 1);
+    }
+
     puts("qdalign threshold allocation tests passed");
     return 0;
 }

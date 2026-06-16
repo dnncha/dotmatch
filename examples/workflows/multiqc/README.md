@@ -24,3 +24,8 @@ assignment rate, exact/rescue rates, ambiguous/no-match rates, target coverage,
 library sparsity, dominance, and candidate-verification totals. It will also
 include a `DotMatch Assay Manifest` table that links the workflow run back to
 the primary `assay_report.html` and `assay_manifest.json` artifacts.
+
+For a "real" MultiQC module (with Python parsing, general stats, and nicer
+integration), see `python/dotmatch/multiqc.py` (DotMatchModule class). You can
+point MultiQC at it or adapt the code into the main MultiQC repository.
+The custom-content approach above remains the simplest zero-dependency option.

@@ -145,6 +145,55 @@ CIGAR strings, variant calls, cell/UMI quantification, UMI entropy designs,
 expression matrices, or screen-level hit-calling statistics. It works on
 extracted short windows and known target lists.
 
+## Performance and Scaling
+
+DotMatch is already fast for its niche: indexed candidate generation keeps
+verified edit-distance work low (often <1 per read in real panels), the Myers
+bit-parallel kernel + specialized Hamming paths deliver hundreds of millions of
+distance checks per second on a single core, and pthreads parallelize read
+windows across samples or batches.
+
+- Default `--threads 0` (or omitted) now auto-detects CPU count for count,
+  demux, validate, and bcl paths (single-thread forced transparently for
+  per-read diagnostic outputs to preserve ordering/contracts).
+- On a 4-thread Linux box, real 247M-read 77k-guide CRISPR lane achieved
+  ~635k reads/sec for Hamming k=1 (precompute path) with low ~200 MB RSS.
+- Uniform-length targets (common for guides/barcodes) use a fixed-block
+  allocator in batches to reduce malloc pressure; 1M-read batches + buffer
+  reuse/reset in the count feeders further cut churn on large gz inputs.
+- For production, pin `--threads $(nproc)` explicitly if desired; the index
+  build and precompute phases are single-threaded but cheap for typical panels.
+
+Memory scales with target count (hash tables + optional k=1 mismatch tables for
+Hamming precompute ~ O(N * L * 3) entries) and the current read batch (1M
+default in hot count paths). For very large target libraries consider the
+query/seeded hamming paths. Tradeoff (higher peak RSS for throughput) is
+documented in src/qda.c.
+
+## Proposed Improvements & Bioinformatics Industry Penetration
+
+See [docs/proposals-and-roadmap.md](docs/proposals-and-roadmap.md) for a living
+list of performance, feature, packaging, and ecosystem ideas aimed at wider
+adoption in core facilities, pharma screens, GBS/barcoding services, and
+scverse/nf-core pipelines. Highlights:
+
+- **Ecosystem**: pandas/polars interop + `dotmatch.tl` (scverse/AnnData), pure MultiQC parsers + registered plugin, nf-core module enhancements (with contribution guide), full R/Bioconductor support (reticulate wrappers + vignette with examples).
+- **Perf (implemented)**: multi-word Myers (portable, >64bp now fast) + AVX2/NEON SIMD hamming + 1M batch + seq_buffer reuse (via best-of-n: 3 candidates, all applied after full correctness/safety verification; see proposals-and-roadmap.md and CHANGELOG). Still room for libdeflate, GPU, etc.
+- **Features for assays**: full dual/combinatorial barcode support with
+  collision modeling, quality-aware rescue beyond current max-correction-qual,
+  native UMI-aware counting (within scope?), better BCL/CBCL, long-read
+  window extraction.
+- **Adoption**: public end-to-end nf-core + MultiQC example pipelines that
+  "just work", performance tuning guide, migration cookbooks from cutadapt /
+  MAGeCK / custom python, more public SRA evidence lanes, JOSS/paper updates,
+  case studies from real cores.
+- **UX/Trust**: richer HTML reports, interactive workbench enhancements,
+  better error messages for common wet-lab failure modes (offset, synthesis
+  errors), one-command "panel to counts to MultiQC" .
+
+Contributions that add evidence (raw CSV + gates + docs) or stay within
+documented scope are especially welcome.
+
 ## Installation
 
 DotMatch currently supports source builds and local Python package installs on
@@ -452,6 +501,29 @@ The Python API also defaults to radius-safe assignment. Pass `policy="best"` to
 `assign`, `Matcher.assign`, or `Matcher.assign_with_stats` only for explicit
 best-distance compatibility.
 
+Optional ecosystem extras (install e.g. `pip install "dotmatch[anndata]"`):
+
+```python
+import pandas as pd
+import dotmatch
+import dotmatch.tl as dm_tl  # scverse tools
+
+# pandas / polars interop
+targets = pd.DataFrame({"id": ["g1", "g2"], "seq": ["ACGT", "TGCA"]})
+seqs = ["ACGT", "ACGC"]
+df = dotmatch.assign_dataframe(seqs, targets, k=1)
+print(df)
+
+# AnnData bridge (after count or from assignments)
+# adata = dotmatch.counts_tsv_to_anndata("counts.mageck.tsv")
+# adata2 = dotmatch.assignments_to_anndata("assignments.tsv", cell_col="CB")
+
+# scverse / tl (scanpy-style)
+# import scanpy as sc
+# dm.tl.assign_features(adata, seq_col="feature_seq", library=lib, k=1)
+# feature_adata = dm.tl.feature_counts(adata, seq_col=..., library=lib)
+```
+
 When working from a source checkout, build the shared library first:
 
 ```bash
@@ -464,6 +536,23 @@ On Linux, use `libdotmatch.so` instead of `libdotmatch.dylib`.
 The historical `quickdna` Python package, `quickdna` console script, and `qda`
 native CLI target remain as compatibility aliases. New workflows should use
 `dotmatch`.
+
+## R / Bioconductor Support
+
+For R users, a reticulate-based wrapper is included in the `R/` directory (and
+vignette). Install Python dotmatch first, then:
+
+```r
+# devtools::install_github("dnncha/dotmatch", subdir = "R")  # or copy R/ and install locally
+library(dotmatch)
+distance("ACGT", "AGGT")
+```
+
+See `vignettes/dotmatch.Rmd` for examples and recommended workflow (use native
+CLI for large data, read outputs into SummarizedExperiment / SingleCellExperiment).
+
+This provides access to the same deterministic assignment from the Bioconductor
+ecosystem.
 
 ## Matching Semantics
 

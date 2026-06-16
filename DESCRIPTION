@@ -1,0 +1,27 @@
+Package: dotmatch
+Title: R Interface to DotMatch (Deterministic Short-DNA Assignment)
+Version: 0.1.7
+Authors@R: 
+    person("DotMatch Contributors", email = "donncha@example.com", role = c("aut", "cre"))
+Description: Provides R wrappers around the Python dotmatch package via
+    reticulate. Enables Bioconductor and tidyverse users to use DotMatch's
+    exact, ambiguity-aware assignment for CRISPR guides, feature barcodes,
+    inline barcodes, and other known-target assays directly from R.
+    For production scale, the native CLI is recommended; these helpers
+    provide excellent UX for interactive analysis and small-to-medium data.
+License: Apache License 2.0
+Encoding: UTF-8
+Imports: 
+    reticulate
+Suggests:
+    SingleCellExperiment,
+    SummarizedExperiment,
+    data.table,
+    testthat
+RoxygenNote: 7.2.3
+VignetteBuilder: knitr
+URL: https://github.com/dnncha/dotmatch
+BugReports: https://github.com/dnncha/dotmatch/issues
+Depends: R (>= 4.0)
+Collate: 
+    'dotmatch.R'
