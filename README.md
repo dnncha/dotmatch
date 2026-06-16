@@ -67,6 +67,20 @@ Typical outputs include count matrices or demultiplexed FASTQs, `sample_qc.tsv`,
 top-unmatched tables, target-library audit files, `summary.json`, and
 self-contained HTML reports.
 
+The Python API also exposes an experimental quality-aware helper for one
+fixed-window read when you want posterior mass instead of a hard edit-distance
+call:
+
+```python
+import dotmatch
+
+result = dotmatch.assign_posterior("ACGT", ["ACGT", "AGGT"], "IIII")
+assert result.status == dotmatch.MATCH_UNIQUE
+```
+
+This helper uses Phred+33 quality values with literal-byte target comparison.
+It is not part of the high-throughput CLI path yet.
+
 ## Barcode Troubleshooting
 
 For barcode runs, DotMatch can show why reads failed to demultiplex: wrong

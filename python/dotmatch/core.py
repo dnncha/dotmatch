@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ctypes
+import math
 import os
 import platform
 from dataclasses import dataclass
@@ -73,6 +74,7 @@ class PosteriorAssignment:
     posterior: float
     second_posterior: float
     status: int
+    posteriors: tuple[float, ...]
 
 
 def _platform_ext() -> str:
@@ -187,84 +189,6 @@ def distance_leq(a: str | bytes, b: str | bytes, k: int) -> bool:
     return bool(result)
 
 
-def _phred_error_probs(qualities: str | bytes) -> list[float]:
-    q = _as_bytes(qualities)
-    probs = []
-    for value in q:
-        score = value - 33
-        if score < 0:
-            raise ValueError("quality string must use Phred+33 encoding")
-        probs.append(10 ** (-score / 10))
-    return probs
-
-
-def assign_posterior(
-    read: str | bytes,
-    qualities: str | bytes,
-    targets: Sequence[str | bytes],
-    *,
-    min_posterior: float = 0.95,
-    priors: Sequence[float] | None = None,
-) -> PosteriorAssignment:
-    """Quality-aware same-length assignment for one fixed-window read.
-
-    This helper treats A/C/G/T/N/IUPAC symbols literally; it does not implement
-    wildcard semantics. Likelihoods use the observed Phred+33 base qualities and
-    a simple independent substitution-error model.
-    """
-    if not 0.0 <= min_posterior <= 1.0:
-        raise ValueError("min_posterior must be between 0 and 1")
-    read_bytes = _as_bytes(read)
-    error_probs = _phred_error_probs(qualities)
-    if len(read_bytes) != len(error_probs):
-        raise ValueError("read and quality lengths must match")
-    target_bytes = [_as_bytes(target) for target in targets]
-    if not target_bytes:
-        raise ValueError("targets must not be empty")
-    if any(len(target) != len(read_bytes) for target in target_bytes):
-        raise ValueError("posterior assignment requires targets to match read length")
-    if priors is None:
-        prior_values = [1.0 / len(target_bytes)] * len(target_bytes)
-    else:
-        if len(priors) != len(target_bytes):
-            raise ValueError("priors must match targets length")
-        if any(value < 0 for value in priors):
-            raise ValueError("priors must be non-negative")
-        total_prior = float(sum(priors))
-        if total_prior <= 0:
-            raise ValueError("priors must contain positive mass")
-        prior_values = [float(value) / total_prior for value in priors]
-
-    log_weights: list[float] = []
-    for target, prior in zip(target_bytes, prior_values):
-        if prior == 0:
-            log_weights.append(float("-inf"))
-            continue
-        logp = math.log(prior)
-        for observed, expected, error_prob in zip(read_bytes, target, error_probs):
-            if observed == expected:
-                logp += math.log(max(1.0 - error_prob, 1e-300))
-            else:
-                logp += math.log(max(error_prob / 3.0, 1e-300))
-        log_weights.append(logp)
-
-    max_log = max(log_weights)
-    weights = [0.0 if logp == float("-inf") else math.exp(logp - max_log) for logp in log_weights]
-    total = sum(weights)
-    if total <= 0:
-        return PosteriorAssignment(-1, 0.0, 0.0, MATCH_INVALID)
-    posteriors = [weight / total for weight in weights]
-    ranked = sorted(enumerate(posteriors), key=lambda item: item[1], reverse=True)
-    best_index, best = ranked[0]
-    second = ranked[1][1] if len(ranked) > 1 else 0.0
-    if best >= min_posterior and best > second:
-        status = MATCH_UNIQUE
-    else:
-        best_index = -1
-        status = MATCH_AMBIGUOUS
-    return PosteriorAssignment(best_index, best, second, status)
-
-
 def _array_inputs(seqs: Sequence[str | bytes]) -> tuple[list[bytes], ctypes.Array, ctypes.Array]:
     encoded = [_as_bytes(s) for s in seqs]
     ptrs = (ctypes.c_char_p * len(encoded))()
@@ -341,6 +265,68 @@ def assign(
         raise ValueError("invalid batch assignment input")
 
     return _apply_policy(_results_to_python(results), policy)
+
+
+def _phred33_probability(ch: int) -> float:
+    q = ch - 33
+    if q < 0:
+        raise ValueError("quality string must use Phred+33 characters")
+    return 10.0 ** (-q / 10.0)
+
+
+def assign_posterior(
+    read: str | bytes,
+    targets: Sequence[str | bytes],
+    quality: str | bytes,
+    *,
+    min_posterior: float = 0.95,
+    priors: Sequence[float] | None = None,
+) -> PosteriorAssignment:
+    """Assign one fixed-window read using a simple Phred likelihood model.
+
+    This is an auditable posterior call helper, not a replacement for the fast
+    indexed batch matcher. Bases compare literally; ambiguity symbols are not
+    expanded as wildcards.
+    """
+    read_b = _as_bytes(read)
+    qual_b = _as_bytes(quality)
+    target_b = [_as_bytes(t) for t in targets]
+    if not target_b:
+        raise ValueError("targets must not be empty")
+    if len(read_b) != len(qual_b):
+        raise ValueError("read and quality must have the same length")
+    if any(len(t) != len(read_b) for t in target_b):
+        return PosteriorAssignment(-1, 0.0, 0.0, MATCH_INVALID, tuple())
+    if not (0.0 <= min_posterior <= 1.0):
+        raise ValueError("min_posterior must be between 0 and 1")
+
+    if priors is None:
+        log_priors = [-math.log(len(target_b))] * len(target_b)
+    else:
+        if len(priors) != len(target_b):
+            raise ValueError("priors must have one entry per target")
+        if any(p < 0.0 for p in priors) or sum(priors) <= 0.0:
+            raise ValueError("priors must be non-negative with positive total mass")
+        total = float(sum(priors))
+        log_priors = [math.log(float(p) / total) if p > 0.0 else -math.inf for p in priors]
+
+    log_likelihoods: list[float] = []
+    for target, log_prior in zip(target_b, log_priors):
+        ll = log_prior
+        for rb, tb, qb in zip(read_b, target, qual_b):
+            p_error = min(max(_phred33_probability(qb), 1e-12), 1.0 - 1e-12)
+            ll += math.log1p(-p_error) if rb == tb else math.log(p_error / 3.0)
+        log_likelihoods.append(ll)
+
+    max_ll = max(log_likelihoods)
+    weights = [math.exp(ll - max_ll) for ll in log_likelihoods]
+    total_weight = sum(weights)
+    posteriors = tuple(w / total_weight for w in weights)
+    order = sorted(range(len(posteriors)), key=lambda i: posteriors[i], reverse=True)
+    best = order[0]
+    second = posteriors[order[1]] if len(order) > 1 else 0.0
+    status = MATCH_UNIQUE if posteriors[best] >= min_posterior else MATCH_AMBIGUOUS
+    return PosteriorAssignment(best, posteriors[best], second, status, posteriors)
 
 
 class Matcher:

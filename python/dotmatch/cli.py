@@ -401,8 +401,8 @@ def command_count(args: argparse.Namespace) -> int:
                         else:
                             posterior = assign_posterior(
                                 obs,
-                                qual,
                                 [target.seq for target in targets],
+                                qual,
                                 min_posterior=args.posterior_min,
                             )
                             posterior_value = posterior.posterior

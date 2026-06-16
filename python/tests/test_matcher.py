@@ -47,16 +47,59 @@ def test_assign_can_opt_into_best_distance_policy():
 
 
 def test_assign_posterior_accepts_confident_exact_call():
-    result = dotmatch.assign_posterior("ACGT", "IIII", ["ACGT", "ACGA"], min_posterior=0.95)
+    result = dotmatch.assign_posterior("ACGT", ["ACGT", "ACGA"], "IIII", min_posterior=0.95)
 
     assert result.status == dotmatch.MATCH_UNIQUE
     assert result.target_index == 0
     assert result.posterior > 0.99
+    assert result.second_posterior < 0.01
 
 
 def test_assign_posterior_rejects_low_quality_tie():
-    result = dotmatch.assign_posterior("ACGT", "III#", ["ACGT", "ACGA"], min_posterior=0.95)
+    result = dotmatch.assign_posterior("ACGT", ["ACGT", "ACGA"], "III#", min_posterior=0.95)
 
     assert result.status == dotmatch.MATCH_AMBIGUOUS
-    assert result.target_index == -1
+    assert result.target_index == 0
     assert result.posterior < 0.95
+
+
+def test_assign_posterior_uses_quality_to_make_confident_call():
+    result = dotmatch.assign_posterior("ACGT", ["ACGT", "AGGT"], "IIII")
+
+    assert result.status == dotmatch.MATCH_UNIQUE
+    assert result.target_index == 0
+    assert result.posterior > 0.99
+    assert result.second_posterior < 0.01
+
+
+def test_assign_posterior_reports_ambiguity_when_quality_is_weak():
+    result = dotmatch.assign_posterior("ACGT", ["ACGT", "AGGT"], "####")
+
+    assert result.status == dotmatch.MATCH_AMBIGUOUS
+    assert result.target_index == 0
+    assert result.posterior < 0.95
+    assert len(result.posteriors) == 2
+
+
+def test_assign_posterior_accepts_non_uniform_priors():
+    result = dotmatch.assign_posterior("ACGT", ["ACGT", "AGGT"], "####", priors=[0.01, 0.99])
+
+    assert result.status == dotmatch.MATCH_UNIQUE
+    assert result.target_index == 1
+
+
+def test_assign_posterior_marks_length_mismatch_invalid():
+    result = dotmatch.assign_posterior("ACGT", ["ACGT", "ACGTA"], "IIII")
+
+    assert result.status == dotmatch.MATCH_INVALID
+    assert result.target_index == -1
+    assert result.posteriors == ()
+
+
+def test_assign_posterior_validates_quality_length():
+    try:
+        dotmatch.assign_posterior("ACGT", ["ACGT"], "III")
+    except ValueError as exc:
+        assert "same length" in str(exc)
+    else:
+        raise AssertionError("expected quality length validation")
