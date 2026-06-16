@@ -690,7 +690,8 @@ def check_panel(
     configured_risk = _assignment_risk_rows(records, assignment, constraints)
     ambiguous_rows = [row for row in configured_risk if row["risk_type"] == "ambiguous"]
     silent_rows = [row for row in configured_risk if row["risk_type"] == "silent_assignment"]
-    target_safety_rows = _target_safety_rows(records, content_rows, configured_risk)
+    per_target_hamming_radius = _per_target_safe_hamming_radius(records, constraints)
+    target_safety_rows = _target_safety_rows(records, content_rows, configured_risk, per_target_hamming_radius)
 
     safe_k0 = len(duplicate_pairs) == 0
     safe_k1_hamming = _safe_for_radius(records, "hamming", 1, constraints)
@@ -730,6 +731,8 @@ def check_panel(
         "safe_for_k1_levenshtein": safe_k1_levenshtein,
         "safe_for_k2_hamming": safe_k2_hamming,
         "safe_for_k2_levenshtein": safe_k2_levenshtein,
+        "minimum_target_safe_hamming_radius": min(per_target_hamming_radius.values(), default=0),
+        "maximum_target_safe_hamming_radius": max(per_target_hamming_radius.values(), default=0),
         "minimum_hamming_distance": min_hamming,
         "minimum_levenshtein_distance": min_lev,
         "minimum_sequence_levenshtein_distance": min_seqlev,
@@ -1683,6 +1686,36 @@ def _safe_for_radius(records: Sequence[PanelRecord], metric: str, k: int, constr
     return not _assignment_risk_rows(records, assignment, constraints)
 
 
+def _per_target_safe_hamming_radius(records: Sequence[PanelRecord], constraints: PanelConstraints) -> dict[str, int]:
+    radii: dict[str, int] = {}
+    for source_index, source in enumerate(records):
+        safe_radius = 0
+        for radius in range(MAX_EXACT_CERTIFICATE_RADIUS + 1):
+            assignment = AssignmentConfig(metric="hamming", k=radius, ambiguity_policy="radius")
+            unsafe = False
+            for variant in variants_within(source.sequence, "hamming", radius):
+                outcome = assign_query(variant, records, "hamming", radius, "radius")
+                if outcome.status == "ambiguous" or (outcome.status == "unique" and outcome.target_index != source_index):
+                    unsafe = True
+                    break
+            if unsafe:
+                break
+            safe_radius = radius
+        radii[source.barcode_id] = min(safe_radius, _distance_rule_safe_radius(source, records, constraints))
+    return radii
+
+
+def _distance_rule_safe_radius(source: PanelRecord, records: Sequence[PanelRecord], constraints: PanelConstraints) -> int:
+    distances = [
+        metric_distance(source.sequence, other.sequence, "hamming", constraints)
+        for other in records
+        if other.barcode_id != source.barcode_id or other.sequence != source.sequence
+    ]
+    if not distances:
+        return MAX_EXACT_CERTIFICATE_RADIUS
+    return max(0, min(MAX_EXACT_CERTIFICATE_RADIUS, (min(distances) - 1) // 2))
+
+
 def _safe_by_distance_rule(records: Sequence[PanelRecord], metric: str, k: int, constraints: PanelConstraints) -> bool:
     min_dist = _minimum_pairwise_distance(records, metric, constraints)
     if min_dist is None:
@@ -1937,6 +1970,7 @@ def _target_safety_rows(
     records: Sequence[PanelRecord],
     content_rows: Sequence[dict[str, object]],
     risk_rows: Sequence[dict[str, object]],
+    per_target_hamming_radius: dict[str, int],
 ) -> list[dict[str, object]]:
     content_by_id = {str(row["barcode_id"]): row for row in content_rows}
     risk_by_id: dict[str, list[dict[str, object]]] = defaultdict(list)
@@ -1954,6 +1988,7 @@ def _target_safety_rows(
                 "status": status,
                 "ambiguous_variants": sum(1 for row in risks if row["risk_type"] == "ambiguous"),
                 "silent_assignment_variants": sum(1 for row in risks if row["risk_type"] == "silent_assignment"),
+                "safe_hamming_correction_radius": per_target_hamming_radius.get(record.barcode_id, 0),
                 "nearest_hamming_neighbor": content.get("nearest_hamming_neighbor", ""),
                 "gc": content.get("gc", ""),
                 "homopolymer_max": content.get("homopolymer_max", ""),
@@ -2504,6 +2539,7 @@ def _target_safety_columns() -> list[str]:
         "status",
         "ambiguous_variants",
         "silent_assignment_variants",
+        "safe_hamming_correction_radius",
         "nearest_hamming_neighbor",
         "gc",
         "homopolymer_max",

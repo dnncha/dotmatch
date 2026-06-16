@@ -29,6 +29,8 @@ Every designed panel includes a machine-checkable safety certificate:
 - `flanked_sequences.tsv`
 - `panel_report.html`
 
+`target_safety.tsv` includes a per-barcode `safe_hamming_correction_radius` field. This is the largest Hamming correction radius, up to the certificate's exact enumeration limit, for which that specific target has no ambiguous or silent-assignment variants under DotMatch radius semantics.
+
 ## Safety Semantics
 
 Panel safety is checked under DotMatch assignment outcomes: `unique`, `ambiguous`, `none`, and `invalid`, using the same default radius ambiguity policy as demux and counting.

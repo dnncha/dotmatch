@@ -94,6 +94,23 @@ def test_panel_check_detects_silent_assignment_and_reverse_complement_risk(tmp_p
     assert any(row["status"] == "fail" for row in safety)
 
 
+def test_panel_check_reports_per_target_safe_hamming_radius(tmp_path: Path) -> None:
+    panel = tmp_path / "panel.tsv"
+    panel.write_text("barcode_id\tsequence\nA\tAAAAAA\nB\tAAAATT\nC\tCCCCCC\n", encoding="utf-8")
+    out_dir = tmp_path / "check"
+
+    rc = _run_cli(["panel", "check", str(panel), "--k", "1", "--metric", "hamming", "--out-dir", str(out_dir)])
+
+    assert rc.returncode == 1, rc.stderr
+    summary = json.loads((out_dir / "panel_summary.json").read_text(encoding="utf-8"))
+    assert summary["minimum_target_safe_hamming_radius"] == 0
+    assert summary["maximum_target_safe_hamming_radius"] == 2
+    safety = {row["barcode_id"]: row for row in _rows(out_dir / "target_safety.tsv")}
+    assert safety["A"]["safe_hamming_correction_radius"] == "0"
+    assert safety["B"]["safe_hamming_correction_radius"] == "0"
+    assert safety["C"]["safe_hamming_correction_radius"] == "2"
+
+
 def test_panel_check_fails_ambiguous_k2_hamming_exact_sphere(tmp_path: Path) -> None:
     panel = tmp_path / "panel.tsv"
     panel.write_text("barcode_id\tsequence\nBC001\tAAAA\nBC002\tTTTT\n", encoding="utf-8")
