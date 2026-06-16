@@ -57,6 +57,12 @@ For each read, DotMatch reports one outcome:
 Ambiguity is part of the output. If a read could belong to more than one target,
 DotMatch reports it as ambiguous instead of forcing a call.
 
+For fixed-length count runs, `--posterior-min` can add an experimental
+Phred-quality posterior filter on top of the normal deterministic assignment.
+This is intended as a conservative guardrail for low-quality bases near
+competing targets; it is not a calibrated sequencer-error model or a speed
+claim.
+
 Typical outputs include count matrices or demultiplexed FASTQs, `sample_qc.tsv`,
 top-unmatched tables, target-library audit files, `summary.json`, and
 self-contained HTML reports.

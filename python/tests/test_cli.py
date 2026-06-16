@@ -259,6 +259,62 @@ def test_count_reads_csv_targets(tmp_path):
     assert "guide_2\tTTTT\tBRCA1\t1\t0\t0\t0\t0\t1\t0" in text
 
 
+def test_count_can_filter_low_quality_posterior_calls(tmp_path):
+    targets = tmp_path / "targets.tsv"
+    targets.write_text(
+        "target_id\ttarget_seq\tgene\n"
+        "guide_1\tACGT\tTP53\n"
+        "guide_2\tACGA\tBRCA1\n",
+        encoding="utf-8",
+    )
+    reads = tmp_path / "reads.fastq"
+    reads.write_text("@weak\nACGT\n+\nIII#\n", encoding="utf-8")
+    counts = tmp_path / "counts.tsv"
+    assignments = tmp_path / "assignments.tsv"
+    summary = tmp_path / "summary.json"
+
+    rc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "dotmatch.cli",
+            "count",
+            "--targets",
+            str(targets),
+            "--reads",
+            str(reads),
+            "--target-length",
+            "4",
+            "--k",
+            "0",
+            "--out",
+            str(counts),
+            "--assignments",
+            str(assignments),
+            "--summary",
+            str(summary),
+            "--ambiguous",
+            "report",
+            "--posterior-min",
+            "0.95",
+        ],
+        check=False,
+        env=LEGACY_ENV,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    assert rc.returncode == 0, rc.stderr
+    summary_data = json.loads(summary.read_text(encoding="utf-8"))
+    assert summary_data["assigned_unique"] == 0
+    assert summary_data["ambiguous"] == 1
+    assert summary_data["posterior_filtered"] == 1
+    assignment_lines = assignments.read_text(encoding="utf-8").splitlines()
+    assert assignment_lines[0].endswith("\tposterior\tsecond_posterior")
+    assert "\tposterior_ambiguous\t" in assignment_lines[1]
+
+
 def test_count_rejects_fastq_quality_length_mismatch(tmp_path):
     targets, _reads = _write_fixture_files(tmp_path)
     reads = tmp_path / "bad.fastq"

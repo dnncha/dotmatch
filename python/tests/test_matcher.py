@@ -44,3 +44,19 @@ def test_assign_can_opt_into_best_distance_policy():
     assert result.target_index == 0
     assert result.best_distance == 0
     assert result.match_count == 3
+
+
+def test_assign_posterior_accepts_confident_exact_call():
+    result = dotmatch.assign_posterior("ACGT", "IIII", ["ACGT", "ACGA"], min_posterior=0.95)
+
+    assert result.status == dotmatch.MATCH_UNIQUE
+    assert result.target_index == 0
+    assert result.posterior > 0.99
+
+
+def test_assign_posterior_rejects_low_quality_tie():
+    result = dotmatch.assign_posterior("ACGT", "III#", ["ACGT", "ACGA"], min_posterior=0.95)
+
+    assert result.status == dotmatch.MATCH_AMBIGUOUS
+    assert result.target_index == -1
+    assert result.posterior < 0.95

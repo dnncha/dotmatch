@@ -25,6 +25,7 @@ from .core import (
     Matcher,
     MatchResult,
     assign,
+    assign_posterior,
     distance,
 )
 from .native import find_native_cli, run_native_cli
@@ -285,11 +286,14 @@ def _near_target_pairs(targets: Sequence[Target], k: int) -> Iterator[tuple[int,
                     yield i, j, dist
 
 
-def _write_assignment_header(fh: TextIO) -> None:
+def _write_assignment_header(fh: TextIO, include_posterior: bool = False) -> None:
     fh.write(
         "read_id\tobserved_seq\ttarget_id\ttarget_seq\tdistance\tstatus\t"
-        "match_count\tsecond_best_distance\tcorrection\n"
+        "match_count\tsecond_best_distance\tcorrection"
     )
+    if include_posterior:
+        fh.write("\tposterior\tsecond_posterior")
+    fh.write("\n")
 
 
 def _write_assignment_row(
@@ -299,6 +303,9 @@ def _write_assignment_row(
     targets: Sequence[Target],
     result: MatchResult,
     correction: str,
+    posterior: float | None = None,
+    second_posterior: float | None = None,
+    include_posterior: bool = False,
 ) -> None:
     if 0 <= result.target_index < len(targets):
         target = targets[result.target_index]
@@ -309,8 +316,13 @@ def _write_assignment_row(
         target_seq = ""
     fh.write(
         f"{read_id}\t{observed}\t{target_id}\t{target_seq}\t{result.best_distance}\t"
-        f"{_status_name(result.status)}\t{result.match_count}\t{result.second_best_distance}\t{correction}\n"
+        f"{_status_name(result.status)}\t{result.match_count}\t{result.second_best_distance}\t{correction}"
     )
+    if include_posterior:
+        posterior_text = "" if posterior is None else f"{posterior:.6g}"
+        second_text = "" if second_posterior is None else f"{second_posterior:.6g}"
+        fh.write(f"\t{posterior_text}\t{second_text}")
+    fh.write("\n")
 
 
 def command_count(args: argparse.Namespace) -> int:
@@ -340,11 +352,14 @@ def command_count(args: argparse.Namespace) -> int:
         "candidates_considered": 0,
         "candidates_verified": 0,
     }
+    if args.posterior_min is not None:
+        summary["posterior_min"] = args.posterior_min
+        summary["posterior_filtered"] = 0
 
     assignment_fh = _open_text(args.assignments, "wt") if args.assignments else None
     try:
         if assignment_fh is not None:
-            _write_assignment_header(assignment_fh)
+            _write_assignment_header(assignment_fh, include_posterior=args.posterior_min is not None)
         for batch in _chunks(_iter_fastq(args.reads), args.batch_size):
             observed: list[str] = []
             valid_positions: list[int] = []
@@ -355,7 +370,15 @@ def command_count(args: argparse.Namespace) -> int:
                     summary["invalid"] += 1
                     if assignment_fh is not None:
                         invalid = MatchResult(-1, -1, -1, 0, MATCH_INVALID)
-                        _write_assignment_row(assignment_fh, record.read_id, "", targets, invalid, "invalid")
+                        _write_assignment_row(
+                            assignment_fh,
+                            record.read_id,
+                            "",
+                            targets,
+                            invalid,
+                            "invalid",
+                            include_posterior=args.posterior_min is not None,
+                        )
                     continue
                 observed.append(seq)
                 valid_positions.append(pos)
@@ -367,15 +390,47 @@ def command_count(args: argparse.Namespace) -> int:
                 record = batch[record_index]
                 summary["total_reads"] += 1
                 correction = "none"
+                posterior_value: float | None = None
+                second_posterior: float | None = None
+                handled = False
                 if result.status == MATCH_UNIQUE and 0 <= result.target_index < len(targets):
-                    target = targets[result.target_index]
-                    correction = _edit_kind(obs, target.seq, result.best_distance)
-                    counts[correction][result.target_index] += 1
-                    summary["assigned_unique"] += 1
-                    if result.best_distance == 0:
-                        summary["assigned_exact"] += 1
-                    else:
-                        summary["assigned_corrected"] += 1
+                    if args.posterior_min is not None:
+                        qual = _extract(record.qual, args.target_start, len(obs))
+                        if qual is None:
+                            result = MatchResult(-1, -1, -1, 0, MATCH_INVALID)
+                        else:
+                            posterior = assign_posterior(
+                                obs,
+                                qual,
+                                [target.seq for target in targets],
+                                min_posterior=args.posterior_min,
+                            )
+                            posterior_value = posterior.posterior
+                            second_posterior = posterior.second_posterior
+                            if posterior.status != MATCH_UNIQUE or posterior.target_index != result.target_index:
+                                result = MatchResult(
+                                    result.target_index,
+                                    result.best_distance,
+                                    result.second_best_distance,
+                                    result.match_count,
+                                    MATCH_AMBIGUOUS,
+                                )
+                                correction = "posterior_ambiguous"
+                                summary["ambiguous"] += 1
+                                summary["posterior_filtered"] += 1
+                                handled = True
+                    if not handled and result.status == MATCH_UNIQUE:
+                        target = targets[result.target_index]
+                        correction = _edit_kind(obs, target.seq, result.best_distance)
+                        counts[correction][result.target_index] += 1
+                        summary["assigned_unique"] += 1
+                        if result.best_distance == 0:
+                            summary["assigned_exact"] += 1
+                        else:
+                            summary["assigned_corrected"] += 1
+                        handled = True
+                if handled:
+                    pass
                 elif result.status == MATCH_AMBIGUOUS:
                     correction = "ambiguous"
                     summary["ambiguous"] += 1
@@ -388,7 +443,17 @@ def command_count(args: argparse.Namespace) -> int:
                 if assignment_fh is not None and (
                     result.status != MATCH_AMBIGUOUS or args.ambiguous == "report"
                 ):
-                    _write_assignment_row(assignment_fh, record.read_id, obs, targets, result, correction)
+                    _write_assignment_row(
+                        assignment_fh,
+                        record.read_id,
+                        obs,
+                        targets,
+                        result,
+                        correction,
+                        posterior_value,
+                        second_posterior,
+                        include_posterior=args.posterior_min is not None,
+                    )
     finally:
         matcher.close()
         if assignment_fh is not None:
@@ -2126,6 +2191,11 @@ def build_parser() -> argparse.ArgumentParser:
     count.add_argument("--assignments", help="optional per-read assignments TSV")
     count.add_argument("--summary", help="optional summary JSON output")
     count.add_argument("--ambiguous", choices=["discard", "report"], default="discard")
+    count.add_argument(
+        "--posterior-min",
+        type=float,
+        help="optional Phred-quality posterior threshold for accepting same-length unique calls",
+    )
     count.add_argument("--batch-size", type=int, default=4096)
     count.set_defaults(func=command_count)
 

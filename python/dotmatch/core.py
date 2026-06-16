@@ -4,6 +4,7 @@ import ctypes
 import os
 import platform
 from dataclasses import dataclass
+import math
 from pathlib import Path
 from typing import Sequence, Any
 
@@ -64,6 +65,14 @@ class MatchResult:
 class AssignmentStats:
     candidates_considered: int
     candidates_verified: int
+
+
+@dataclass(frozen=True)
+class PosteriorAssignment:
+    target_index: int
+    posterior: float
+    second_posterior: float
+    status: int
 
 
 def _platform_ext() -> str:
@@ -176,6 +185,84 @@ def distance_leq(a: str | bytes, b: str | bytes, k: int) -> bool:
     if result < 0:
         raise ValueError("invalid sequence input")
     return bool(result)
+
+
+def _phred_error_probs(qualities: str | bytes) -> list[float]:
+    q = _as_bytes(qualities)
+    probs = []
+    for value in q:
+        score = value - 33
+        if score < 0:
+            raise ValueError("quality string must use Phred+33 encoding")
+        probs.append(10 ** (-score / 10))
+    return probs
+
+
+def assign_posterior(
+    read: str | bytes,
+    qualities: str | bytes,
+    targets: Sequence[str | bytes],
+    *,
+    min_posterior: float = 0.95,
+    priors: Sequence[float] | None = None,
+) -> PosteriorAssignment:
+    """Quality-aware same-length assignment for one fixed-window read.
+
+    This helper treats A/C/G/T/N/IUPAC symbols literally; it does not implement
+    wildcard semantics. Likelihoods use the observed Phred+33 base qualities and
+    a simple independent substitution-error model.
+    """
+    if not 0.0 <= min_posterior <= 1.0:
+        raise ValueError("min_posterior must be between 0 and 1")
+    read_bytes = _as_bytes(read)
+    error_probs = _phred_error_probs(qualities)
+    if len(read_bytes) != len(error_probs):
+        raise ValueError("read and quality lengths must match")
+    target_bytes = [_as_bytes(target) for target in targets]
+    if not target_bytes:
+        raise ValueError("targets must not be empty")
+    if any(len(target) != len(read_bytes) for target in target_bytes):
+        raise ValueError("posterior assignment requires targets to match read length")
+    if priors is None:
+        prior_values = [1.0 / len(target_bytes)] * len(target_bytes)
+    else:
+        if len(priors) != len(target_bytes):
+            raise ValueError("priors must match targets length")
+        if any(value < 0 for value in priors):
+            raise ValueError("priors must be non-negative")
+        total_prior = float(sum(priors))
+        if total_prior <= 0:
+            raise ValueError("priors must contain positive mass")
+        prior_values = [float(value) / total_prior for value in priors]
+
+    log_weights: list[float] = []
+    for target, prior in zip(target_bytes, prior_values):
+        if prior == 0:
+            log_weights.append(float("-inf"))
+            continue
+        logp = math.log(prior)
+        for observed, expected, error_prob in zip(read_bytes, target, error_probs):
+            if observed == expected:
+                logp += math.log(max(1.0 - error_prob, 1e-300))
+            else:
+                logp += math.log(max(error_prob / 3.0, 1e-300))
+        log_weights.append(logp)
+
+    max_log = max(log_weights)
+    weights = [0.0 if logp == float("-inf") else math.exp(logp - max_log) for logp in log_weights]
+    total = sum(weights)
+    if total <= 0:
+        return PosteriorAssignment(-1, 0.0, 0.0, MATCH_INVALID)
+    posteriors = [weight / total for weight in weights]
+    ranked = sorted(enumerate(posteriors), key=lambda item: item[1], reverse=True)
+    best_index, best = ranked[0]
+    second = ranked[1][1] if len(ranked) > 1 else 0.0
+    if best >= min_posterior and best > second:
+        status = MATCH_UNIQUE
+    else:
+        best_index = -1
+        status = MATCH_AMBIGUOUS
+    return PosteriorAssignment(best_index, best, second, status)
 
 
 def _array_inputs(seqs: Sequence[str | bytes]) -> tuple[list[bytes], ctypes.Array, ctypes.Array]:
