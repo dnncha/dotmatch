@@ -3155,26 +3155,24 @@ static void free_seq_buffer(seq_buffer *buffer) {
     buffer->fixed_active = 0;
 }
 
-/* Reset for reuse across batches: reclaim only the per-element xstrndup allocations
- * for variable-length fallback cases (using the existing ptr-in-fixed check),
- * but retain the pre-allocated items[]/lens[] arrays and any active fixed_items
- * contiguous block (for the common uniform-length case) so the next batch can
- * reuse without realloc churn. Deactivate fixed if lengths no longer match.
+/* reset_seq_buffer reclaims per-sequence mallocs (for variable-length batches) but
+ * retains the items/lens arrays and fixed block (when active for uniform lengths)
+ * so subsequent batches reuse the same allocations without per-batch malloc/free.
+ * This is used in the high-throughput batched reader paths for large FASTQ.
  */
 static void reset_seq_buffer(seq_buffer *buffer) {
     if (buffer == NULL) return;
     for (size_t i = 0; i < buffer->count; ++i) {
         if (!seq_buffer_ptr_in_fixed(buffer, buffer->items[i])) free(buffer->items[i]);
     }
-    buffer->count = 0;
-    if (buffer->fixed_active) {
-        /* fixed block stays allocated for reuse on next push with matching len */
-    } else {
+    if (!buffer->fixed_active) {
+        free(buffer->fixed_items);
         buffer->fixed_items = NULL;
         buffer->fixed_len = 0;
         buffer->fixed_cap = 0;
     }
-    buffer->fixed_active = 0;
+    /* keep items/lens (and fixed block + active if still set) and cap for reuse */
+    buffer->count = 0;
 }
 
 static int grow_seq_buffer(seq_buffer *buffer) {
@@ -3225,14 +3223,12 @@ static int reserve_seq_buffer(seq_buffer *buffer, size_t requested_cap) {
 
 static int push_seq_buffer(seq_buffer *buffer, const char *seq, size_t len) {
     if (buffer->count == buffer->cap && grow_seq_buffer(buffer) != 0) return -1;
-    if (buffer->count == 0 && len <= 8191) {
-        if (buffer->fixed_items == NULL) {  /* guard to allow reuse without re-malloc */
-            buffer->fixed_items = (char *)malloc(buffer->cap * (len + 1));
-            if (buffer->fixed_items != NULL) {
-                buffer->fixed_len = len;
-                buffer->fixed_cap = buffer->cap;
-                buffer->fixed_active = 1;
-            }
+    if (buffer->count == 0 && buffer->fixed_items == NULL && len <= 8191) {
+        buffer->fixed_items = (char *)malloc(buffer->cap * (len + 1));
+        if (buffer->fixed_items != NULL) {
+            buffer->fixed_len = len;
+            buffer->fixed_cap = buffer->cap;
+            buffer->fixed_active = 1;
         }
     }
     if (buffer->fixed_active && len == buffer->fixed_len) {
