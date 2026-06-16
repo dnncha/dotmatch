@@ -47,6 +47,8 @@ SCIENTIFIC_CLAIMS_REQUIRED_FRAGMENTS = [
     "`make crispr-comparison-gate` requires two real public",
     "DotMatch-vs-Bowtie 1 Hamming `k=2`/`k=3`",
     "fair guide-counter compatibility lane is Hamming `k=1`, no indels",
+    "calibrated posterior or likelihood-based assignment is not currently claimed",
+    "not a target posterior probability",
     "`make public-crispr-evidence-gate`",
     "not universal CRISPR superiority",
     "`make barcode-comparison-gate`",

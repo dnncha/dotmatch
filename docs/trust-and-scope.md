@@ -33,6 +33,12 @@ quantifier, variant caller, consensus builder, or screen-level statistical
 analysis tool. It does not produce SAM/BAM, CIGAR strings, expression matrices,
 variant calls, guide-level effect sizes, or hit-calling statistics.
 
+DotMatch also does not currently make posterior-probability or calibrated
+likelihood calls. `--max-correction-qual` is a deterministic Phred-quality
+filter for selected one-edit correction paths; it can reject high-quality
+observed mismatches or insertions, but it is not a probabilistic confidence
+score.
+
 For CRISPR screens, DotMatch stops at guide assignment, count matrices, and QC.
 Use tools such as MAGeCK, BAGEL, drugZ, CERES, or other appropriate downstream
 methods for biological effect analysis.

@@ -52,6 +52,11 @@ Techniques deliberately not claimed:
   would need labeled assay-specific training data, held-out public validation,
   and a clear advantage over the deterministic oracle before it could be
   claimed;
+- calibrated posterior or likelihood-based assignment is not currently claimed.
+  DotMatch can reject one-edit substitution and read-insertion rescue when the
+  observed edited base is above a configured Phred threshold, but this is a
+  deterministic hard filter. It is not a target posterior probability, a
+  calibrated sequencing-error model, or a quality-weighted confidence score;
 - calibrated statistical screen interpretation is left to downstream tools such
   as MAGeCK, BAGEL, drugZ, or CERES because DotMatch stops at read assignment
   and QC;
@@ -123,6 +128,7 @@ alignment or all demultiplexing tasks.
 | General aligner replacement. | No repository check promotes this. | DotMatch does not currently expose reference-index mapping, traceback/CIGAR, SAM/BAM, paired-end mapping, or genome-scale alignment semantics. |
 | Native SeqAn/Parasail comparisons. | `make native-comparator-scope-ready` checks the documented scope in `docs/native-comparator-scope.md`. | SeqAn and Parasail are not completed comparator evidence until equivalent scoring semantics, native dependency/version capture, raw CSV rows, generated reports, and zero assignment mismatches are recorded. |
 | Package-channel availability. | `make python-package-test` verifies local Linux/macOS wheel and sdist installability; public PyPI and Bioconda availability for DotMatch 0.1.8 is claimed only after `make distribution-channels` verifies metadata and install smoke tests. | Package-channel availability is distribution evidence only. It does not extend CRISPR, barcode, feature-barcode, BCL, amplicon, adapter, GPU, or aligner-comparison claims; `make distribution-channels` records each release channel only after public metadata and install smoke tests pass. |
+| Quality-aware assignment. | Current checks cover deterministic `--max-correction-qual` behavior only. A posterior or likelihood model would need fixtures with known truth, calibration diagnostics, threshold semantics, and comparator or oracle validation before appearing in supported public claims. | Do not describe current DotMatch calls as posterior probabilities, calibrated confidence, probabilistic assignment, or quality-weighted target likelihoods. The supported behavior is a hard Phred threshold on observed edited bases for selected one-edit rescue paths. |
 
 ## Rules For New Public Statements
 

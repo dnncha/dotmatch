@@ -362,7 +362,9 @@ field.
 with `--max-correction-qual`. When set, one-edit substitution and read-insertion
 rescues require the observed edited base to have quality at or below this
 threshold; exact matches and read-deletion rescues are not rejected by this
-gate. Demultiplexing summaries include the same field.
+gate. This field records a hard deterministic filter, not a posterior
+probability, calibrated likelihood, or confidence score. Demultiplexing
+summaries include the same field.
 
 Each sample object includes:
 
