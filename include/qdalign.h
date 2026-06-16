@@ -75,8 +75,11 @@ const char *qdaln_alphabet_policy(void);
 int qdaln_edit_distance(const char *a, size_t a_len, const char *b, size_t b_len);
 
 /*
- * Fast Myers bit-vector kernel when pattern length <= 64.
- * Falls back to the public exact distance for longer inputs.
+ * Myers bit-vector kernel (generalized from 64-bit to multi-word for pattern_len > 64,
+ * using arrays of uint64_t with proper carry handling for + and <<1 in the
+ * bit-parallel steps). Computes exact Levenshtein distance.
+ * Used by qdaln_edit_distance and qdaln_edit_distance_leq for fast exact/leq
+ * even on longer patterns (primers etc). Falls back to DP only for extreme lengths.
  */
 int qdaln_edit_distance_myers64(const char *pattern, size_t pattern_len,
                                 const char *text, size_t text_len);
