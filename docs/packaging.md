@@ -34,15 +34,13 @@ assignment searches.
 Bioconda packages DotMatch from a recipe in `bioconda-recipes`; DotMatch does
 not upload a Conda package directly.
 [bioconda/bioconda-recipes#65367](https://github.com/bioconda/bioconda-recipes/pull/65367)
-published DotMatch 0.1.2 as the first Bioconda package. As of 2026-06-14,
-Anaconda metadata lists DotMatch 0.1.7 as the latest Bioconda package on
-`linux-64`, `osx-64`, and `osx-arm64`. The 0.1.8 recipe update is open in
-[bioconda/bioconda-recipes#66290](https://github.com/bioconda/bioconda-recipes/pull/66290),
-using immutable `v0.1.8` tarball SHA256
-`ec3819bc773431454910287559d0809aca6ec1d81959f29d3d522650edb74904`.
-The PR has passing Bioconda Lint, Linux, OSX-64, and ARM checks and Bioconda's
-`please review & merge` label, and is waiting for maintainer review/merge.
-Treat future Bioconda versions as available only after
+published DotMatch 0.1.2 as the first Bioconda package.
+[bioconda/bioconda-recipes#66291](https://github.com/bioconda/bioconda-recipes/pull/66291)
+merged the DotMatch 0.1.8 update on 2026-06-17. Anaconda package metadata now
+lists DotMatch 0.1.8 on `linux-64`, `osx-64`, and `osx-arm64`, using immutable
+`v0.1.8` release sources. On 2026-06-17, Bioconda repodata had not yet
+propagated `dotmatch=0.1.8`, so a clean `conda create` still failed. Treat
+future Bioconda versions as available only after
 `https://anaconda.org/bioconda/dotmatch`, repodata, and the install smoke tests
 in `make distribution-channels` all verify the release version.
 
@@ -133,11 +131,10 @@ images to `ghcr.io/dnncha/dotmatch`.
 
 BioContainers images for DotMatch are generated from the accepted Bioconda
 recipe; there is no separate DotMatch Dockerfile to submit to BioContainers for
-the normal release path. After
-[bioconda/bioconda-recipes#66290](https://github.com/bioconda/bioconda-recipes/pull/66290)
-merges and the `dotmatch=0.1.8` package appears on Anaconda, wait for the
-corresponding `quay.io/biocontainers/dotmatch:0.1.8--<build>` tag to appear.
-Then verify it with:
+the normal release path. DotMatch 0.1.8 package metadata is visible on
+Anaconda, so the next steps are Bioconda repodata propagation, then waiting for
+the corresponding `quay.io/biocontainers/dotmatch:0.1.8--<build>` tag to
+appear. Then verify it with:
 
 ```bash
 python3 scripts/check_distribution_channels.py --version 0.1.8

@@ -1,0 +1,73 @@
+<tool id="dotmatch_demux" name="DotMatch demux" version="0.1.0+galaxy0" profile="22.05" license="Apache-2.0">
+    <description>demultiplex fixed-window inline barcodes</description>
+    <requirements>
+        <requirement type="package" version="0.1.0">dotmatch</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+dotmatch demux \
+  --barcodes '$barcodes' \
+  --reads '$reads' \
+  --barcode-start '$barcode_start' \
+  --barcode-length '$barcode_length' \
+  --k '$k' \
+  --metric '$metric' \
+  --ambiguity-policy radius \
+  --out-dir demuxed \
+  --summary '$summary' \
+  --assignments '$assignments'
+
+tar -czf '$demuxed_fastqs' demuxed
+    ]]></command>
+    <inputs>
+        <param name="barcodes" type="data" format="tabular,csv,txt" label="Barcode table" help="Table with id and sequence columns."/>
+        <param name="reads" type="data" format="fastq,fastqsanger,fastq.gz,fastqsanger.gz" label="Reads FASTQ"/>
+        <param name="barcode_start" type="integer" value="0" min="0" label="Barcode start"/>
+        <param name="barcode_length" type="text" value="auto" label="Barcode length" help="Use a positive integer or auto."/>
+        <param name="k" type="integer" value="0" min="0" max="2" label="Edit-distance threshold"/>
+        <param name="metric" type="select" label="Metric">
+            <option value="hamming" selected="true">Hamming</option>
+            <option value="levenshtein">Levenshtein</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="demuxed_fastqs" format="tar.gz" label="${tool.name} on ${on_string}: demuxed FASTQs"/>
+        <data name="summary" format="json" label="${tool.name} on ${on_string}: summary"/>
+        <data name="assignments" format="tabular" label="${tool.name} on ${on_string}: assignments"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="3">
+            <param name="barcodes" value="barcodes.tsv"/>
+            <param name="reads" value="barcode_reads.fastq"/>
+            <param name="barcode_start" value="0"/>
+            <param name="barcode_length" value="4"/>
+            <param name="k" value="0"/>
+            <param name="metric" value="hamming"/>
+            <output name="summary">
+                <assert_contents>
+                    <has_text text="&quot;assigned_unique&quot;"/>
+                    <has_text text="&quot;unmatched&quot;"/>
+                </assert_contents>
+            </output>
+            <output name="assignments">
+                <assert_contents>
+                    <has_text text="bc_a_exact"/>
+                    <has_text text="bc_b_exact"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+DotMatch demux splits fixed-window inline barcode reads into one FASTQ per
+uniquely assigned barcode and writes explicit unmatched/ambiguous diagnostics.
+    ]]></help>
+    <citations>
+        <citation type="bibtex"><![CDATA[
+@software{dotmatch_2026,
+  title = {DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning},
+  author = {O'Toole, Donncha},
+  version = {0.1.0},
+  url = {https://github.com/Dnncha/dotmatch}
+}
+        ]]></citation>
+    </citations>
+</tool>

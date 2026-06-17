@@ -18,13 +18,16 @@
       "id": "bioconda",
       "status": "prepared",
       "expected_url": "https://anaconda.org/bioconda/dotmatch",
-      "latest_published_version": "0.1.7",
+      "latest_published_version": "0.1.8",
       "initial_recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/65367",
-      "recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/66290",
+      "recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/66291",
       "release_tarball_sha256": "ec3819bc773431454910287559d0809aca6ec1d81959f29d3d522650edb74904",
+      "public_url": "https://anaconda.org/bioconda/dotmatch",
+      "evidence_url": "https://github.com/bioconda/bioconda-recipes/pull/66291",
+      "platforms": ["linux-64", "osx-64", "osx-arm64"],
       "verification_command": "make distribution-channels",
-      "blocker": "The 0.1.8 Bioconda recipe PR has passing Lint, Linux, OSX-64, and ARM checks plus Bioconda's `please review & merge` label, but it is still review-required and public Anaconda metadata still lists 0.1.7 until the PR merges and propagates.",
-      "next_action": "Wait for bioconda/bioconda-recipes#66290 maintainer review/merge, then wait for channel propagation and rerun make distribution-channels."
+      "blocker": "Anaconda package metadata now lists DotMatch 0.1.8 on linux-64, osx-64, and osx-arm64, but Bioconda repodata did not yet resolve dotmatch=0.1.8 in a clean conda create on 2026-06-17. The full distribution record remains not_released until make distribution-channels verifies a clean Bioconda install together with BioContainers, GHCR runtime, and Zenodo evidence.",
+      "next_action": "Wait for Bioconda repodata propagation and rerun make distribution-channels; if the Bioconda install smoke test passes, keep waiting for BioContainers propagation, GHCR runtime verification, and Zenodo version metadata before marking the overall release record released."
     },
     {
       "id": "ghcr",
@@ -41,8 +44,8 @@
       "status": "prepared",
       "expected_url": "https://quay.io/repository/biocontainers/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "The BioContainers image for version 0.1.8 is generated from the accepted Bioconda recipe and is not available until the Bioconda package update is merged, uploaded to Anaconda, and converted into a quay.io/biocontainers/dotmatch tag.",
-      "next_action": "After Bioconda accepts a 0.1.8 package, wait for a quay.io/biocontainers/dotmatch:0.1.8--<build> tag and rerun make distribution-channels."
+      "blocker": "The BioContainers image for version 0.1.8 is generated from accepted Bioconda repodata and has not yet been verified as a quay.io/biocontainers/dotmatch tag by make distribution-channels.",
+      "next_action": "After Bioconda repodata contains dotmatch=0.1.8, wait for a quay.io/biocontainers/dotmatch:0.1.8--<build> tag, then rerun make distribution-channels."
     },
     {
       "id": "zenodo",
@@ -54,7 +57,7 @@
     }
   ],
   "blockers": [
-    "DotMatch 0.1.8 has not yet been fully verified across Bioconda, BioContainers, GHCR runtime smoke tests, and Zenodo version metadata."
+    "DotMatch 0.1.8 has not yet been fully verified across Bioconda repodata and clean install smoke tests, BioContainers, GHCR runtime smoke tests, and Zenodo version metadata."
   ],
-  "next_action": "Monitor the CI-green, review-labeled, but still review-required Bioconda handoff in bioconda/bioconda-recipes#66290, verify GHCR runtime behavior, BioContainers propagation, and DOI evidence, replace expected URLs with verified public and evidence URLs, set channels to verified when the full post-release gate passes, and rerun make distribution-channels."
+  "next_action": "Rerun make distribution-channels after Bioconda 0.1.8 propagates from Anaconda package metadata into repodata, verify GHCR runtime behavior, BioContainers propagation, and DOI evidence, replace expected URLs with verified public and evidence URLs, set channels to verified when the full post-release gate passes, and rerun make distribution-channels."
 }

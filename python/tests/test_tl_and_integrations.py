@@ -6,6 +6,8 @@ from dotmatch.multiqc import (
     parse_sample_qc_tsv,
     parse_crispr_qc_summary_tsv,
     parse_assay_manifest_summary_tsv,
+    parse_summary_json,
+    parse_panel_summary_json,
 )
 
 # Use the real fixtures that the workflow checks also validate
@@ -26,6 +28,16 @@ def test_pure_parsers_on_fixtures():
     row = next(iter(manifest.values()))
     assert "status" in row
     assert "primary_report" in row
+
+    summary = parse_summary_json(ROOT / "examples/workflows/fixtures/assay_out/summary.json")
+    row = next(iter(summary.values()))
+    assert "assigned_unique" in row
+    assert "ambiguous" in row
+
+    panel = parse_panel_summary_json(ROOT / "examples/workflows/multiqc/data/panel_summary.json")
+    row = next(iter(panel.values()))
+    assert "status" in row
+    assert "minimum_hamming_distance" in row
 
 
 def test_tl_importable():

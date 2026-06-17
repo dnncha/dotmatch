@@ -22,6 +22,7 @@ __pycache__/
 htmlcov/
 dist/
 docs/_build/
+repro/
 
 # Node / Next.js outputs
 node_modules/
@@ -54,6 +55,11 @@ python/tests/test_check_paper_readiness.py
 
 # Workflow manager local state and example outputs
 .snakemake/
+.nf-test/
+.nf-test.log
+.nextflow/
+.nextflow.log
+.nextflow.log.*
 work/
 **/assay_out/
 examples/workflows/multiqc/output/

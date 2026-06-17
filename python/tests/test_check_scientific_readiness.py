@@ -116,6 +116,8 @@ def _write_repo(root: Path, manifest: Optional[dict] = None) -> None:
             "`make public-crispr-evidence-gate` supports public rows, not universal CRISPR superiority.\n"
             "`make barcode-comparison-gate` requires public barcode evidence; "
             "the Levenshtein one-edit barcode lane remains synthetic fixture evidence.\n"
+            "calibrated posterior or likelihood-based assignment is not currently claimed.\n"
+            "The posterior helper is not a target posterior probability.\n"
         ),
         "docs/benchmarks/native/README.md": (
             "# Native Edlib Benchmark Report\n\n"

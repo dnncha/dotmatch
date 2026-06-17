@@ -12,14 +12,16 @@ def test_snakemake_crispr_config_is_complete() -> None:
     config_path = ROOT / "examples" / "workflows" / "snakemake" / "config.json"
     config = json.loads(config_path.read_text(encoding="utf-8"))
 
-    assert config["library"] == "examples/crispr_guides/data/yusa_library.csv"
+    assert config["library"] == "examples/workflows/fixtures/crispr_library.csv"
     assert config["samples"] == {
-        "plasmid": "examples/crispr_guides/data/ERR376998.fastq.gz",
-        "ESC1": "examples/crispr_guides/data/ERR376999.fastq.gz",
+        "sample_a": "examples/workflows/fixtures/sample_a.fastq",
+        "sample_b": "examples/workflows/fixtures/sample_b.fastq",
     }
-    assert config["guide_start"] == 23
-    assert config["guide_length"] == 19
-    assert config["metric"] in {"hamming", "levenshtein"}
+    assert (ROOT / config["library"]).is_file()
+    assert all((ROOT / fastq).is_file() for fastq in config["samples"].values())
+    assert config["guide_start"] == 0
+    assert config["guide_length"] == 4
+    assert config["metric"] == "hamming"
     assert config["ambiguity_policy"] == "radius"
     assert config["ambiguous"] == "discard"
     assert config["outdir"] == "examples/workflows/snakemake/output"
@@ -112,7 +114,7 @@ def test_nfcore_module_candidate_has_nf_test_fixture() -> None:
 
     assert "nextflow_process" in text
     assert "process \"DOTMATCH_CRISPR_COUNT\"" in text
-    assert "examples/workflows/fixtures/crispr_library.csv" in text
+    assert "${System.getenv('PWD')}/../../../../../fixtures/crispr_library.csv" in text
     assert "sample_qc" in text
     assert "versions.yml" in text
 

@@ -2,9 +2,9 @@ process DOTMATCH_ASSAY_RUN {
     tag "$meta.id"
     label 'process_medium'
 
-    cpus   = { task.ext.cpus   ?: 4 }
-    memory = { task.ext.memory ?: 8.GB }
-    time   = { task.ext.time   ?: 4.h  }
+    cpus   { task.ext.cpus   ?: 4 }
+    memory { task.ext.memory ?: 8.GB }
+    time   { task.ext.time   ?: 4.h  }
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/dotmatch:0.1.7--h*' :
@@ -30,13 +30,15 @@ process DOTMATCH_ASSAY_RUN {
 
     script:
     def args = task.ext.args ?: ''
-    def threads = task.cpus ?: 1
     """
     for input_file in ${assay_inputs}; do
-      ln -sf "\${input_file}" "\$(basename "\${input_file}")"
+      input_base="\$(basename "\${input_file}")"
+      cp -L "\${input_file}" ".\${input_base}.tmp"
+      mv ".\${input_base}.tmp" "\${input_base}"
     done
 
-    dotmatch assay run ${assay_spec} --threads ${threads} ${args}
+    cp -L ${assay_spec} assay_spec.toml
+    dotmatch assay run assay_spec.toml ${args}
 
     cp assay_out/assay_report.html assay_report.html
     cp assay_out/assay_manifest.json assay_manifest.json

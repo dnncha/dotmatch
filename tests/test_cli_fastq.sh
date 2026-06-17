@@ -336,6 +336,7 @@ BARCODEHEADER
   --target-length 4 \
   --k 0 \
   --metric hamming \
+  --threads 1 \
   --out "$TMPDIR/barcode_header_counts.tsv" \
   --summary "$TMPDIR/barcode_header_summary.json"
 
@@ -1732,6 +1733,7 @@ grep '^radius	r0	ACGT	0	bc0	ACGT	0	1	3	ambiguous	ambiguous$' "$TMPDIR/ambiguous_
   --metric hamming \
   --ambiguity-policy radius \
   --backend cpu \
+  --threads 1 \
   --out "$TMPDIR/counts_exact_radius.tsv" \
   --summary "$TMPDIR/summary_exact_radius.json"
 

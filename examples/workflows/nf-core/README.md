@@ -5,6 +5,19 @@ contribution to the official [nf-core/modules](https://github.com/nf-core/module
 
 ## Current Modules
 
+- `dotmatch/count`: Runs the general `dotmatch count` command for fixed-window
+  known-target counting across guides, barcodes, primers, or panels. Emits counts,
+  `summary.json`, `sample_qc.tsv`, and per-read assignments for downstream QC.
+
+- `dotmatch/demux`: Runs `dotmatch demux` for inline barcode demultiplexing.
+  Emits split FASTQ outputs, demux summary JSON, assignments, and versions.
+
+- `dotmatch/audit`: Runs `dotmatch audit` before correction-based assignment.
+  Emits audit summaries, target-safety tables, and collision-pair diagnostics.
+
+- `dotmatch/panel_check`: Runs `dotmatch panel check` for barcode-panel safety
+  certification. Emits the panel certificate and safety/collision tables.
+
 - `dotmatch/crispr_count`: Runs the native `dotmatch crispr-count` (or `count`) for
   MAGeCK-compatible CRISPR guide counting with full QC (`sample_qc.tsv`, summary).
   Supports Hamming/Levenshtein, k=0-3, auto offset detection, etc.
@@ -13,10 +26,10 @@ contribution to the official [nf-core/modules](https://github.com/nf-core/module
   Emits the complete set of workflow artifacts: reports, manifests, QC (including
   CRISPR-specific), counts, and versions. Ideal for complex or multi-step assays.
 
-Both modules:
+All module candidates:
 - Use `process_medium` label and flexible containers (Docker + Singularity).
 - Forward `task.cpus` / `task.ext.cpus` to `--threads` (leverages DotMatch's
-  auto CPU detection for excellent multi-core UX).
+  auto CPU detection where the subcommand supports it).
 - Pass through `task.ext.args` for full CLI flexibility.
 - Emit `versions.yml` for nf-core version tracking.
 - Include `when` directive and nf-test stubs using shared fixtures.
@@ -39,7 +52,7 @@ pipelines, reproducibility, MultiQC integration, etc.):
 
 3. **Enhance for Upstream (Recommended Polish)**
    - Use exact bioconda/singularity container hashes from a released version
-     (update the placeholder `0.1.7--h*` after a tagged release passes Bioconda).
+     (update the placeholder `0.1.8--h*` after a tagged release passes Bioconda).
    - The upstream tree already includes: maintainers + license in meta.yml, stub test case, self-contained tests/data/.
    - Add more nf-test cases (different k, metrics, full vs stub runs) if needed.
    - Support additional common params via `task.ext` (e.g. `--auto-offset`,
@@ -75,7 +88,7 @@ pipelines, reproducibility, MultiQC integration, etc.):
 From the repo root:
 ```bash
 # Requires nextflow + nf-test in PATH
-cd examples/workflows/nf-core/modules/local/dotmatch/crispr_count
+cd examples/workflows/nf-core/modules/local/dotmatch/count
 nf-test test tests/main.nf.test
 ```
 
@@ -88,7 +101,7 @@ cd examples/workflows/nf-core/pipeline
 nextflow run main.nf --outdir results
 ```
 
-It exercises both modules against the shared fixtures and produces the expected artifacts. This serves as a "copy-paste ready" template for real pipelines and as the basis for an upstream nf-core pipeline subworkflow or module usage example.
+It exercises the CRISPR and AssaySpec modules against the shared fixtures and produces the expected artifacts. This serves as a "copy-paste ready" template for real pipelines and as the basis for an upstream nf-core pipeline subworkflow or module usage example.
 
 See the main [DotMatch docs/proposals-and-roadmap.md](https://github.com/dnncha/dotmatch/blob/main/docs/proposals-and-roadmap.md) for the full adoption roadmap. nf-core integration is one of the highest-leverage steps for "massive industry penetration" because nf-core is the standard for reproducible bioinformatics workflows.
 
@@ -102,6 +115,8 @@ Current state after prep:
 - versions.yml + nf-test (including stub)
 - meta.yml with authors/maintainers/license
 - Self-contained tests/data/ in upstream/
+- Local module candidates for `count`, `demux`, `audit`, `panel_check`,
+  `crispr_count`, and `assay_run`
 - Pipeline demo in `pipeline/`
 - Comprehensive contribution guide
 

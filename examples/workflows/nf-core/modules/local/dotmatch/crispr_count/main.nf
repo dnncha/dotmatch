@@ -2,9 +2,9 @@ process DOTMATCH_CRISPR_COUNT {
     tag "$meta.id"
     label 'process_medium'
 
-    cpus   = { task.ext.cpus   ?: 4 }
-    memory = { task.ext.memory ?: 8.GB }
-    time   = { task.ext.time   ?: 4.h  }
+    cpus   { task.ext.cpus   ?: 4 }
+    memory { task.ext.memory ?: 8.GB }
+    time   { task.ext.time   ?: 4.h  }
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/dotmatch:0.1.7--h*' :

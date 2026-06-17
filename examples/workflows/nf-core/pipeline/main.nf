@@ -19,11 +19,13 @@ include { DOTMATCH_CRISPR_COUNT } from '../modules/local/dotmatch/crispr_count/m
 include { DOTMATCH_ASSAY_RUN }    from '../modules/local/dotmatch/assay_run/main'
 
 workflow {
+    fixtures_dir = "${projectDir}/../../fixtures"
+
     // Demo for CRISPR count module using fixture
     ch_crispr_input = Channel.of([
         [ id: 'demo_crispr' ],
-        file('examples/workflows/fixtures/sample_a.fastq'),
-        file('examples/workflows/fixtures/crispr_library.csv')
+        file("${fixtures_dir}/sample_a.fastq"),
+        file("${fixtures_dir}/crispr_library.csv")
     ])
 
     DOTMATCH_CRISPR_COUNT (
@@ -37,11 +39,11 @@ workflow {
     // Demo for full AssaySpec run
     ch_assay_spec = Channel.of([
         [ id: 'demo_assay' ],
-        file('examples/workflows/fixtures/crispr_assay.toml'),
+        file("${fixtures_dir}/crispr_assay.toml"),
         [
-            file('examples/workflows/fixtures/crispr_library.csv'),
-            file('examples/workflows/fixtures/sample_a.fastq'),
-            file('examples/workflows/fixtures/sample_b.fastq')
+            file("${fixtures_dir}/crispr_library.csv"),
+            file("${fixtures_dir}/sample_a.fastq"),
+            file("${fixtures_dir}/sample_b.fastq")
         ]
     ])
 
@@ -50,8 +52,4 @@ workflow {
     // Emit for inspection
     DOTMATCH_CRISPR_COUNT.out.counts.view { "CRISPR counts: $it" }
     DOTMATCH_ASSAY_RUN.out.assay_report.view { "Assay report: $it" }
-}
-
-workflow.onComplete {
-    println "DotMatch example pipeline complete. Results in ${params.outdir ?: 'work'}"
 }

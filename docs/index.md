@@ -54,6 +54,7 @@ people and consumed by workflow systems.
 getting-started
 command-reference
 tutorials/crispr-count-first-run
+tutorials/scverse-perturb-seq
 assayspec
 crispr-qc
 barcode-panel-design
@@ -69,6 +70,8 @@ schemas
 methods-and-citation
 packaging
 release-process
+workflow-submissions
+resubmission-evidence
 ```
 
 ```{toctree}
@@ -114,4 +117,5 @@ evidence-gallery/scenarios/oligo_adapter_truseq_prefix
 evidence-gallery/scenarios/perturb_seq_10x_guide_capture
 evidence-gallery/scenarios/public_crispr_yusa
 evidence-gallery/snapshots/barcode_autopsy/report
+adopters/README
 ```

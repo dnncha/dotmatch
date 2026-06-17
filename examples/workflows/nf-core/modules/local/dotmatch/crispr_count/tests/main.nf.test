@@ -9,8 +9,8 @@ nextflow_process {
                 """
                 input[0] = Channel.of([
                     [id: 'sample_a'],
-                    file('examples/workflows/fixtures/sample_a.fastq'),
-                    file('examples/workflows/fixtures/crispr_library.csv')
+                    file("${System.getenv('PWD')}/../../../../../fixtures/sample_a.fastq"),
+                    file("${System.getenv('PWD')}/../../../../../fixtures/crispr_library.csv")
                 ])
                 input[1] = 0
                 input[2] = 4
@@ -22,11 +22,11 @@ nextflow_process {
 
         then {
             assert process.success
-            assert path(process.out.counts[0][1]).name.endsWith(".counts.mageck.tsv")
+            assert path(process.out.counts[0][1]).toFile().name.endsWith(".counts.mageck.tsv")
             assert path(process.out.sample_qc[0][1]).text.contains("assignment_rate")
-            assert path(process.out.versions[0]).name == "versions.yml"
+            assert path(process.out.versions[0]).toFile().name == "versions.yml"
             assert path(process.out.versions[0]).text.contains("dotmatch")
-            assert path(process.out.summary[0][1]).text.contains("dotmatch")
+            assert path(process.out.summary[0][1]).text.contains("count_engine")
         }
     }
 
@@ -36,8 +36,8 @@ nextflow_process {
                 """
                 input[0] = Channel.of([
                     [id: 'sample_b'],
-                    file('examples/workflows/fixtures/sample_b.fastq'),
-                    file('examples/workflows/fixtures/crispr_library.csv')
+                    file("${System.getenv('PWD')}/../../../../../fixtures/sample_b.fastq"),
+                    file("${System.getenv('PWD')}/../../../../../fixtures/crispr_library.csv")
                 ])
                 input[1] = 0
                 input[2] = 4
@@ -49,7 +49,7 @@ nextflow_process {
 
         then {
             assert process.success
-            assert path(process.out.counts[0][1]).name.endsWith(".counts.mageck.tsv")
+            assert path(process.out.counts[0][1]).toFile().name.endsWith(".counts.mageck.tsv")
         }
     }
 }

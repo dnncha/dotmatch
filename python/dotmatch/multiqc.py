@@ -11,8 +11,11 @@ Usage (advanced):
 
 It parses:
 - sample_qc.tsv (and *sample_qc.tsv)
+- summary.json (and *summary.json)
 - crispr_qc.summary.tsv
 - assay_manifest.summary.tsv
+- panel_summary.json
+- top_unmatched.tsv-style diagnostics
 and adds nice tables + plots to the MultiQC report.
 
 See examples/workflows/multiqc/ for the simple custom-content alternative
@@ -22,6 +25,7 @@ that works today with no extra code.
 from __future__ import annotations
 
 import logging
+import json
 from pathlib import Path
 from typing import Any
 
@@ -50,6 +54,17 @@ def _get_table_plot():
     if not _HAS_MULTIQC or _mqc_table is None:
         raise ImportError("multiqc is required to use the DotMatch MultiQC module")
     return _mqc_table.plot
+
+
+def _multiqc_file_path(record: Any) -> Path:
+    """Return a filesystem path from a MultiQC find_log_files record."""
+    if isinstance(record, dict):
+        filename = record.get("fn") or record.get("path")
+        root = record.get("root") or record.get("dir") or ""
+        if filename is None:
+            raise ValueError(f"MultiQC file record has no filename: {record!r}")
+        return Path(root) / str(filename)
+    return Path(record)
 
 
 # Pure, dependency-free parsers. These can be used from any Python code (notebooks,
@@ -138,6 +153,68 @@ def parse_assay_manifest_summary_tsv(path: str | Path) -> dict[str, dict[str, An
     return data
 
 
+def parse_summary_json(path: str | Path) -> dict[str, dict[str, Any]]:
+    """Parse DotMatch summary.json into a single MultiQC-friendly row."""
+    path = Path(path)
+    summary = json.loads(path.read_text(encoding="utf-8"))
+    sample = summary.get("sample_label") or summary.get("sample") or path.stem.replace(".summary", "")
+    samples = summary.get("samples")
+    if isinstance(samples, list) and samples:
+        sample = ",".join(str(item.get("sample_id", item.get("id", ""))) for item in samples if isinstance(item, dict)) or sample
+    return {
+        str(sample): {
+            "total_reads": summary.get("total_reads", ""),
+            "assigned_unique": summary.get("assigned_unique", summary.get("assigned_reads", "")),
+            "assigned_exact": summary.get("assigned_exact", summary.get("exact_reads", "")),
+            "assigned_corrected": summary.get("assigned_corrected", ""),
+            "ambiguous": summary.get("ambiguous", summary.get("ambiguous_reads", "")),
+            "unmatched": summary.get("unmatched", summary.get("no_match_reads", "")),
+            "invalid": summary.get("invalid", summary.get("invalid_reads", "")),
+            "assignment_rate": summary.get("assignment_rate", ""),
+            "ambiguous_rate": summary.get("ambiguous_rate", ""),
+            "assignment_engine": summary.get("assignment_engine", ""),
+        }
+    }
+
+
+def parse_panel_summary_json(path: str | Path) -> dict[str, dict[str, Any]]:
+    """Parse dotmatch panel check panel_summary.json into a MultiQC row."""
+    path = Path(path)
+    summary = json.loads(path.read_text(encoding="utf-8"))
+    key = str(summary.get("panel_id") or path.parent.name or path.stem)
+    return {
+        key: {
+            "status": summary.get("status", ""),
+            "panel_grade": summary.get("panel_grade", ""),
+            "n_barcodes": summary.get("n_barcodes", ""),
+            "assignment_metric": summary.get("assignment_metric", ""),
+            "configured_assignment_k": summary.get("configured_assignment_k", ""),
+            "minimum_hamming_distance": summary.get("minimum_hamming_distance", ""),
+            "collision_pairs": summary.get("collision_pairs", ""),
+            "ambiguous_error_spheres": summary.get("ambiguous_error_spheres", ""),
+            "silent_assignment_risk": summary.get("silent_assignment_risk", ""),
+            "safe_for_k1_hamming": summary.get("safe_for_k1_hamming", ""),
+        }
+    }
+
+
+def parse_top_unmatched_tsv(path: str | Path, limit: int = 10) -> dict[str, dict[str, Any]]:
+    """Parse top_unmatched.tsv-style diagnostics, capped for compact reports."""
+    path = Path(path)
+    data: dict[str, dict[str, Any]] = {}
+    with path.open(encoding="utf-8") as fh:
+        header = fh.readline().strip().split("\t")
+        for i, line in enumerate(fh):
+            if i >= limit:
+                break
+            if not line.strip():
+                continue
+            row = dict(zip(header, line.strip().split("\t")))
+            seq = row.get("sequence") or row.get("observed_sequence") or row.get("target") or f"row_{i + 1}"
+            data[f"{path.stem}:{seq}"] = row
+    return data
+
+
 class DotMatchModule(BaseMultiqcModule):
     """
     DotMatch MultiQC module.
@@ -161,35 +238,43 @@ class DotMatchModule(BaseMultiqcModule):
         )
 
         # Find files
-        self.sample_qc_files: list[Path] = self.find_log_files(
+        self.sample_qc_files: list[Any] = list(self.find_log_files(
             "dotmatch/sample_qc", filehandles=False, filecontents=False
-        )
-        self.crispr_qc_files: list[Path] = self.find_log_files(
+        ))
+        self.summary_files: list[Any] = list(self.find_log_files(
+            "dotmatch/summary_json", filehandles=False, filecontents=False
+        ))
+        self.crispr_qc_files: list[Any] = list(self.find_log_files(
             "dotmatch/crispr_qc", filehandles=False, filecontents=False
-        )
-        self.assay_manifest_files: list[Path] = self.find_log_files(
+        ))
+        self.assay_manifest_files: list[Any] = list(self.find_log_files(
             "dotmatch/assay_manifest", filehandles=False, filecontents=False
-        )
+        ))
+        self.panel_summary_files: list[Any] = list(self.find_log_files(
+            "dotmatch/panel_summary", filehandles=False, filecontents=False
+        ))
 
-        if not any([self.sample_qc_files, self.crispr_qc_files, self.assay_manifest_files]):
+        if not any([self.sample_qc_files, self.summary_files, self.crispr_qc_files, self.assay_manifest_files, self.panel_summary_files]):
             raise ModuleNotFoundError("No DotMatch logs found")
 
         # Parse and add sections
         self._parse_sample_qc()
+        self._parse_summary_json()
         self._parse_crispr_qc()
         self._parse_assay_manifest()
+        self._parse_panel_summary()
 
         # Cleanup
-        for f in self.sample_qc_files + self.crispr_qc_files + self.assay_manifest_files:
+        for f in self.sample_qc_files + self.summary_files + self.crispr_qc_files + self.assay_manifest_files + self.panel_summary_files:
             self.add_data_source(f)
 
     def _parse_sample_qc(self) -> None:
         data: dict[str, dict[str, Any]] = {}
         for f in self.sample_qc_files:
             try:
-                data.update(parse_sample_qc_tsv(f["fn"]))
+                data.update(parse_sample_qc_tsv(_multiqc_file_path(f)))
             except Exception as exc:
-                log.warning(f"Could not parse DotMatch sample_qc {f['fn']}: {exc}")
+                log.warning(f"Could not parse DotMatch sample_qc {_multiqc_file_path(f)}: {exc}")
                 continue
 
         if data:
@@ -211,13 +296,39 @@ class DotMatchModule(BaseMultiqcModule):
                 "ambiguous_rate": {"title": "Ambig %", "description": "Fraction of reads that were ambiguous (multiple targets within radius)", "max": 1, "min": 0, "scale": "OrRd"},
             })
 
+    def _parse_summary_json(self) -> None:
+        data: dict[str, dict[str, Any]] = {}
+        for f in self.summary_files:
+            try:
+                data.update(parse_summary_json(_multiqc_file_path(f)))
+            except Exception as exc:
+                log.warning(f"Could not parse DotMatch summary.json {_multiqc_file_path(f)}: {exc}")
+                continue
+
+        if data:
+            self.add_section(
+                name="DotMatch Assignment Summary",
+                anchor="dotmatch-assignment-summary",
+                description="Run-level assignment outcomes from DotMatch summary.json files.",
+                plot=_get_table_plot()(data, {
+                    "assigned_unique": {"title": "Unique"},
+                    "assigned_exact": {"title": "Exact"},
+                    "assigned_corrected": {"title": "Corrected"},
+                    "ambiguous": {"title": "Ambiguous"},
+                    "unmatched": {"title": "Unmatched"},
+                    "invalid": {"title": "Invalid"},
+                    "assignment_rate": {"title": "Assign Rate"},
+                    "assignment_engine": {"title": "Engine"},
+                }),
+            )
+
     def _parse_crispr_qc(self) -> None:
         data: dict[str, dict[str, Any]] = {}
         for f in self.crispr_qc_files:
             try:
-                data.update(parse_crispr_qc_summary_tsv(f["fn"]))
+                data.update(parse_crispr_qc_summary_tsv(_multiqc_file_path(f)))
             except Exception as exc:
-                log.warning(f"Could not parse DotMatch crispr_qc.summary {f['fn']}: {exc}")
+                log.warning(f"Could not parse DotMatch crispr_qc.summary {_multiqc_file_path(f)}: {exc}")
                 continue
 
         if data:
@@ -244,9 +355,9 @@ class DotMatchModule(BaseMultiqcModule):
         data: dict[str, dict[str, Any]] = {}
         for f in self.assay_manifest_files:
             try:
-                data.update(parse_assay_manifest_summary_tsv(f["fn"]))
+                data.update(parse_assay_manifest_summary_tsv(_multiqc_file_path(f)))
             except Exception as exc:
-                log.warning(f"Could not parse DotMatch assay_manifest.summary {f['fn']}: {exc}")
+                log.warning(f"Could not parse DotMatch assay_manifest.summary {_multiqc_file_path(f)}: {exc}")
                 continue
 
         if data:
@@ -260,6 +371,33 @@ class DotMatchModule(BaseMultiqcModule):
                     "sample_count": {"title": "Samples"},
                     "autopsy_triggered": {"title": "Autopsy"},
                     "warning_count": {"title": "Warnings"},
+                }),
+            )
+
+    def _parse_panel_summary(self) -> None:
+        data: dict[str, dict[str, Any]] = {}
+        for f in self.panel_summary_files:
+            try:
+                data.update(parse_panel_summary_json(_multiqc_file_path(f)))
+            except Exception as exc:
+                log.warning(f"Could not parse DotMatch panel_summary.json {_multiqc_file_path(f)}: {exc}")
+                continue
+
+        if data:
+            self.add_section(
+                name="DotMatch Panel Safety",
+                anchor="dotmatch-panel-safety",
+                description="Barcode panel safety certificate summaries from DotMatch panel check.",
+                plot=_get_table_plot()(data, {
+                    "status": {"title": "Status"},
+                    "panel_grade": {"title": "Grade"},
+                    "n_barcodes": {"title": "Barcodes"},
+                    "assignment_metric": {"title": "Metric"},
+                    "configured_assignment_k": {"title": "k"},
+                    "minimum_hamming_distance": {"title": "Min Hamming"},
+                    "collision_pairs": {"title": "Collisions"},
+                    "ambiguous_error_spheres": {"title": "Ambig Spheres"},
+                    "silent_assignment_risk": {"title": "Silent Risk"},
                 }),
             )
 
