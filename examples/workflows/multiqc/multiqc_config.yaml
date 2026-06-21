@@ -197,6 +197,10 @@ sp:
     fn: "*assay_manifest.summary.tsv"
   dotmatch_crispr_qc:
     fn: "*crispr_qc.summary.tsv"
+  dotmatch/summary_json:
+    fn: "*summary.json"
+  dotmatch/panel_summary:
+    fn: "*panel_summary.json"
 
 custom_content:
   order:

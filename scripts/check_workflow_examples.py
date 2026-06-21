@@ -13,6 +13,9 @@ WORKFLOW_FIXTURES = [
     "README.md",
     "crispr_assay.toml",
     "crispr_library.csv",
+    "barcodes.tsv",
+    "barcode_reads.fastq",
+    "panel_barcodes.tsv",
     "sample_a.fastq",
     "sample_b.fastq",
     "expected_counts.mageck.tsv",
@@ -20,6 +23,9 @@ WORKFLOW_FIXTURES = [
 ]
 GALAXY_TEST_DATA = [
     "crispr_library.csv",
+    "barcodes.tsv",
+    "barcode_reads.fastq",
+    "panel_barcodes.tsv",
     "sample_a.fastq",
     "sample_b.fastq",
     "expected_counts.mageck.tsv",
@@ -67,6 +73,9 @@ def check_snakemake(root: Path, result: WorkflowAudit) -> None:
         "ambiguity_policy",
         "ambiguous",
         "outdir",
+        "barcode_table",
+        "barcode_reads",
+        "panel_table",
     ]
     for key in required_keys:
         if key not in config:
@@ -97,6 +106,12 @@ def check_snakemake(root: Path, result: WorkflowAudit) -> None:
     _require(snakefile, "--ambiguous {params.ambiguous}", "Snakemake Snakefile must keep ambiguous-output handling explicit", result)
     _require(snakefile, "--sample-qc", "Snakemake Snakefile must emit sample_qc.tsv for MultiQC", result)
     _require(snakefile, "sample_qc", "Snakemake Snakefile must declare sample_qc output", result)
+    _require(snakefile, "rule dotmatch_demux", "Snakemake Snakefile missing rule dotmatch_demux", result)
+    _require(snakefile, "dotmatch demux", "Snakemake demux rule must run dotmatch demux", result)
+    _require(snakefile, "--assignments {output.assignments}", "Snakemake demux rule must emit assignments", result)
+    _require(snakefile, "rule dotmatch_panel_check", "Snakemake Snakefile missing rule dotmatch_panel_check", result)
+    _require(snakefile, "dotmatch panel check", "Snakemake panel-check rule must run dotmatch panel check", result)
+    _require(snakefile, "panel_summary.json", "Snakemake panel-check rule must emit panel_summary.json", result)
 
     if not any("Snakemake" in failure for failure in result.failures):
         result.passed.append("Snakemake CRISPR workflow example present")
@@ -183,7 +198,7 @@ def check_nfcore(root: Path, result: WorkflowAudit) -> None:
             ('script "../main.nf"', "nf-core nf-test candidate must reference ../main.nf"),
             ('process "DOTMATCH_CRISPR_COUNT"', "nf-core nf-test candidate must test DOTMATCH_CRISPR_COUNT"),
             ("Channel.of", "nf-core nf-test candidate must build input channels"),
-            ("examples/workflows/fixtures/crispr_library.csv", "nf-core nf-test candidate must use shared workflow fixtures"),
+            ("${System.getenv('PWD')}/../../../../../fixtures/crispr_library.csv", "nf-core nf-test candidate must use shared workflow fixtures"),
             ("sample_qc", "nf-core nf-test candidate must assert sample_qc output"),
             ("versions.yml", "nf-core nf-test candidate must assert versions.yml output"),
         ]:
@@ -230,9 +245,9 @@ def check_nfcore(root: Path, result: WorkflowAudit) -> None:
             ("nextflow_process", "nf-core AssaySpec nf-test candidate must define a nextflow_process"),
             ('script "../main.nf"', "nf-core AssaySpec nf-test candidate must reference ../main.nf"),
             ('process "DOTMATCH_ASSAY_RUN"', "nf-core AssaySpec nf-test candidate must test DOTMATCH_ASSAY_RUN"),
-            ("examples/workflows/fixtures/crispr_assay.toml", "nf-core AssaySpec nf-test candidate must use shared AssaySpec fixture"),
-            ("examples/workflows/fixtures/crispr_library.csv", "nf-core AssaySpec nf-test candidate must stage target table"),
-            ("examples/workflows/fixtures/sample_a.fastq", "nf-core AssaySpec nf-test candidate must stage FASTQ inputs"),
+            ("${System.getenv('PWD')}/../../../../../fixtures/crispr_assay.toml", "nf-core AssaySpec nf-test candidate must use shared AssaySpec fixture"),
+            ("${System.getenv('PWD')}/../../../../../fixtures/crispr_library.csv", "nf-core AssaySpec nf-test candidate must stage target table"),
+            ("${System.getenv('PWD')}/../../../../../fixtures/sample_a.fastq", "nf-core AssaySpec nf-test candidate must stage FASTQ inputs"),
             ("assay_report", "nf-core AssaySpec nf-test candidate must assert assay_report output"),
             ("assay_manifest_summary", "nf-core AssaySpec nf-test candidate must assert assay_manifest_summary output"),
             ("sample_qc", "nf-core AssaySpec nf-test candidate must assert sample_qc output"),
@@ -243,6 +258,167 @@ def check_nfcore(root: Path, result: WorkflowAudit) -> None:
 
     if not any("nf-core" in failure for failure in result.failures):
         result.passed.append("nf-core-style module candidate present")
+
+
+def _check_nfcore_tool_module(
+    root: Path,
+    result: WorkflowAudit,
+    module_name: str,
+    process_name: str,
+    command: str,
+    required_module_needles: list[str],
+    required_meta_needles: list[str],
+    required_test_needles: list[str],
+) -> None:
+    base = root / "examples" / "workflows" / "nf-core" / "modules" / "local" / "dotmatch" / module_name
+    module = _read(base / "main.nf", result)
+    meta = _read(base / "meta.yml", result)
+    test_path = base / "tests" / "main.nf.test"
+    nf_test = _read(test_path, result) if test_path.is_file() else ""
+    for needle, message in [
+        (f"process {process_name}", f"nf-core {module_name} module missing {process_name} process"),
+        (command, f"nf-core {module_name} module must run {command}"),
+        ("task.ext.args", f"nf-core {module_name} module must expose task.ext.args"),
+        ("versions.yml", f"nf-core {module_name} module must emit versions.yml"),
+        ("dotmatch --version", f"nf-core {module_name} module must record dotmatch --version"),
+    ]:
+        _require(module, needle, message, result)
+    for needle in required_module_needles:
+        _require(module, needle, f"nf-core {module_name} module missing {needle}", result)
+    for needle in required_meta_needles:
+        _require(meta, needle, f"nf-core {module_name} metadata missing {needle}", result)
+    if not nf_test:
+        result.failures.append(f"nf-core {module_name} module must include an nf-test candidate at tests/main.nf.test")
+    else:
+        for needle, message in [
+            ("nextflow_process", f"nf-core {module_name} nf-test candidate must define a nextflow_process"),
+            ('script "../main.nf"', f"nf-core {module_name} nf-test candidate must reference ../main.nf"),
+            (f'process "{process_name}"', f"nf-core {module_name} nf-test candidate must test {process_name}"),
+            ("Channel.of", f"nf-core {module_name} nf-test candidate must build input channels"),
+        ]:
+            _require(nf_test, needle, message, result)
+        for needle in required_test_needles:
+            _require(nf_test, needle, f"nf-core {module_name} nf-test candidate missing {needle}", result)
+
+
+def check_nfcore_dotmatch_modules(root: Path, result: WorkflowAudit) -> None:
+    _check_nfcore_tool_module(
+        root,
+        result,
+        "count",
+        "DOTMATCH_COUNT",
+        "dotmatch count",
+        [
+            "tuple val(meta), path(reads), path(targets)",
+            "--target-start ${target_start}",
+            "--target-length ${target_length}",
+            "--sample-qc",
+            "--assignments",
+            "emit: sample_qc",
+            "emit: assignments",
+        ],
+        [
+            "name: dotmatch_count",
+            "Count fixed-window known targets with DotMatch",
+            "counts:",
+            "sample_qc:",
+            "assignments:",
+            "versions:",
+        ],
+        [
+            "${System.getenv('PWD')}/../../../../../fixtures/barcode_reads.fastq",
+            "${System.getenv('PWD')}/../../../../../fixtures/barcodes.tsv",
+            "sample_qc",
+            "assignments",
+        ],
+    )
+    _check_nfcore_tool_module(
+        root,
+        result,
+        "demux",
+        "DOTMATCH_DEMUX",
+        "dotmatch demux",
+        [
+            "tuple val(meta), path(reads), path(barcodes)",
+            "--barcode-start ${barcode_start}",
+            "--barcode-length ${barcode_length}",
+            "--out-dir demuxed",
+            "--assignments",
+            "emit: demuxed",
+            "emit: assignments",
+        ],
+        [
+            "name: dotmatch_demux",
+            "Demultiplex fixed-window inline barcodes with DotMatch",
+            "demuxed:",
+            "summary:",
+            "assignments:",
+            "versions:",
+        ],
+        [
+            "${System.getenv('PWD')}/../../../../../fixtures/barcode_reads.fastq",
+            "${System.getenv('PWD')}/../../../../../fixtures/barcodes.tsv",
+            "demuxed",
+            "assigned_unique",
+        ],
+    )
+    _check_nfcore_tool_module(
+        root,
+        result,
+        "audit",
+        "DOTMATCH_AUDIT",
+        "dotmatch audit",
+        [
+            "tuple val(meta), path(targets)",
+            "--audit-mode ${audit_mode}",
+            "--out-dir audit",
+            "emit: target_safety",
+            "emit: collision_pairs",
+        ],
+        [
+            "name: dotmatch_audit",
+            "Audit a DotMatch target library",
+            "audit_dir:",
+            "target_safety:",
+            "collision_pairs:",
+            "versions:",
+        ],
+        [
+            "${System.getenv('PWD')}/../../../../../fixtures/barcodes.tsv",
+            "target_safety",
+            "min_hamming_distance",
+        ],
+    )
+    _check_nfcore_tool_module(
+        root,
+        result,
+        "panel_check",
+        "DOTMATCH_PANEL_CHECK",
+        "dotmatch panel check",
+        [
+            "tuple val(meta), path(panel)",
+            "--metric ${metric}",
+            "--out-dir panel_check",
+            "emit: panel_summary",
+            "emit: target_safety",
+            "emit: collision_pairs",
+        ],
+        [
+            "name: dotmatch_panel_check",
+            "Check a barcode panel for DotMatch assignment safety",
+            "panel_check_dir:",
+            "panel_summary:",
+            "target_safety:",
+            "versions:",
+        ],
+        [
+            "${System.getenv('PWD')}/../../../../../fixtures/panel_barcodes.tsv",
+            "panel_summary",
+            "target_safety",
+        ],
+    )
+    if not any("nf-core count" in failure or "nf-core demux" in failure or "nf-core audit" in failure or "nf-core panel_check" in failure for failure in result.failures):
+        result.passed.append("nf-core DotMatch count/demux/audit/panel_check modules present")
 
 
 def check_multiqc(root: Path, result: WorkflowAudit) -> None:
@@ -436,6 +612,53 @@ def check_galaxy(root: Path, result: WorkflowAudit) -> None:
             if crispr_qc_report is None or crispr_qc_report.find("./assert_contents/has_text[@text='DotMatch CRISPR QC']") is None:
                 result.failures.append("Galaxy AssaySpec Planemo test must assert CRISPR QC report content")
 
+    demux_wrapper_path = root / "examples" / "workflows" / "galaxy" / "dotmatch_demux.xml"
+    try:
+        demux_wrapper = ET.parse(demux_wrapper_path).getroot()
+    except Exception as exc:
+        result.failures.append(f"Galaxy demux wrapper XML could not be parsed: {exc}")
+        demux_wrapper = None
+    if demux_wrapper is not None:
+        if demux_wrapper.tag != "tool" or demux_wrapper.attrib.get("id") != "dotmatch_demux":
+            result.failures.append("Galaxy demux wrapper must be tool id dotmatch_demux")
+        demux_command = demux_wrapper.findtext("command") or ""
+        _require(demux_command, "dotmatch demux", "Galaxy demux wrapper command must run dotmatch demux", result)
+        _require(demux_command, "--summary", "Galaxy demux wrapper command must include --summary", result)
+        _require(demux_command, "--assignments", "Galaxy demux wrapper command must include --assignments", result)
+        demux_outputs = {node.attrib.get("name", "") for node in demux_wrapper.findall("./outputs/data")}
+        if not {"demuxed_fastqs", "summary", "assignments"} <= demux_outputs:
+            result.failures.append("Galaxy demux wrapper outputs must include demuxed_fastqs, summary, and assignments")
+        demux_test = demux_wrapper.find("./tests/test")
+        if demux_test is None:
+            result.failures.append("Galaxy demux wrapper must include a Planemo test")
+        else:
+            params = {node.attrib.get("name", ""): node.attrib.get("value", "") for node in demux_test.findall("param")}
+            if params.get("barcodes") != "barcodes.tsv" or params.get("reads") != "barcode_reads.fastq":
+                result.failures.append("Galaxy demux Planemo test must use barcode fixtures")
+
+    panel_wrapper_path = root / "examples" / "workflows" / "galaxy" / "dotmatch_panel_check.xml"
+    try:
+        panel_wrapper = ET.parse(panel_wrapper_path).getroot()
+    except Exception as exc:
+        result.failures.append(f"Galaxy panel-check wrapper XML could not be parsed: {exc}")
+        panel_wrapper = None
+    if panel_wrapper is not None:
+        if panel_wrapper.tag != "tool" or panel_wrapper.attrib.get("id") != "dotmatch_panel_check":
+            result.failures.append("Galaxy panel-check wrapper must be tool id dotmatch_panel_check")
+        panel_command = panel_wrapper.findtext("command") or ""
+        _require(panel_command, "dotmatch panel check", "Galaxy panel-check wrapper command must run dotmatch panel check", result)
+        _require(panel_command, "panel_summary.json", "Galaxy panel-check wrapper command must expose panel_summary.json", result)
+        panel_outputs = {node.attrib.get("name", "") for node in panel_wrapper.findall("./outputs/data")}
+        if not {"panel_summary", "target_safety", "collision_pairs", "panel_report"} <= panel_outputs:
+            result.failures.append("Galaxy panel-check wrapper outputs must include summary, safety, collision, and report files")
+        panel_test = panel_wrapper.find("./tests/test")
+        if panel_test is None:
+            result.failures.append("Galaxy panel-check wrapper must include a Planemo test")
+        else:
+            params = {node.attrib.get("name", ""): node.attrib.get("value", "") for node in panel_test.findall("param")}
+            if params.get("panel") != "panel_barcodes.tsv":
+                result.failures.append("Galaxy panel-check Planemo test must use panel_barcodes.tsv")
+
     if not any("Galaxy" in failure for failure in result.failures):
         result.passed.append("Galaxy wrapper example present")
 
@@ -469,6 +692,7 @@ def audit(root: Path) -> WorkflowAudit:
     check_snakemake(root, result)
     check_nextflow(root, result)
     check_nfcore(root, result)
+    check_nfcore_dotmatch_modules(root, result)
     check_multiqc(root, result)
     check_galaxy(root, result)
     return result

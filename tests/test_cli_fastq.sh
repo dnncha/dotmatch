@@ -39,10 +39,10 @@ if grep "Packaging note:" "$TMPDIR/help.txt" >/dev/null; then
 fi
 "$DOTMATCH_BIN" citation > "$TMPDIR/citation.txt"
 grep "Software release: v$EXPECTED_VERSION" "$TMPDIR/citation.txt" >/dev/null
-grep "O'Toole D. DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning. Software release v$EXPECTED_VERSION." "$TMPDIR/citation.txt" >/dev/null
+grep "O'Toole D. DotMatch: deterministic known-target short-DNA assignment for sequencing workflows. Software release v$EXPECTED_VERSION." "$TMPDIR/citation.txt" >/dev/null
 grep "Citation metadata: CITATION.cff" "$TMPDIR/citation.txt" >/dev/null
-grep "DOI: 10.5281/zenodo.20541629" "$TMPDIR/citation.txt" >/dev/null
-grep "DOI URL: https://doi.org/10.5281/zenodo.20541629" "$TMPDIR/citation.txt" >/dev/null
+grep "DOI: 10.5281/zenodo.20541628" "$TMPDIR/citation.txt" >/dev/null
+grep "DOI URL: https://doi.org/10.5281/zenodo.20541628" "$TMPDIR/citation.txt" >/dev/null
 
 cat > "$TMPDIR/barcodes.tsv" <<'BARCODES'
 bc0	ACGT
@@ -336,6 +336,7 @@ BARCODEHEADER
   --target-length 4 \
   --k 0 \
   --metric hamming \
+  --threads 1 \
   --out "$TMPDIR/barcode_header_counts.tsv" \
   --summary "$TMPDIR/barcode_header_summary.json"
 
@@ -1732,6 +1733,7 @@ grep '^radius	r0	ACGT	0	bc0	ACGT	0	1	3	ambiguous	ambiguous$' "$TMPDIR/ambiguous_
   --metric hamming \
   --ambiguity-policy radius \
   --backend cpu \
+  --threads 1 \
   --out "$TMPDIR/counts_exact_radius.tsv" \
   --summary "$TMPDIR/summary_exact_radius.json"
 

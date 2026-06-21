@@ -77,8 +77,8 @@ def audit(root: Path) -> Result:
     for required in ["title:", "tags:", "authors:", "affiliations:", "date:", "bibliography: paper.bib"]:
         if required not in metadata:
             result.failures.append(f"paper metadata missing {required}")
-    if "archive_doi: 10.5281/zenodo.20541629" not in metadata:
-        result.failures.append("paper metadata must include the v0.1.7 Zenodo archive DOI")
+    if "archive_doi: 10.5281/zenodo.20541628" not in metadata:
+        result.failures.append("paper metadata must include the DotMatch Zenodo concept DOI")
 
     headings = set(re.findall(r"^# (.+)$", paper, flags=re.M))
     for heading in REQUIRED_HEADINGS:

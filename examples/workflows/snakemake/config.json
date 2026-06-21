@@ -1,15 +1,25 @@
 {
-  "library": "examples/crispr_guides/data/yusa_library.csv",
+  "library": "examples/workflows/fixtures/crispr_library.csv",
   "samples": {
-    "plasmid": "examples/crispr_guides/data/ERR376998.fastq.gz",
-    "ESC1": "examples/crispr_guides/data/ERR376999.fastq.gz"
+    "sample_a": "examples/workflows/fixtures/sample_a.fastq",
+    "sample_b": "examples/workflows/fixtures/sample_b.fastq"
   },
-  "guide_start": 23,
-  "guide_length": 19,
+  "guide_start": 0,
+  "guide_length": 4,
   "k": 1,
-  "metric": "levenshtein",
+  "assay_k": 0,
+  "metric": "hamming",
   "ambiguity_policy": "radius",
   "ambiguous": "discard",
-  "indel_window": 1,
+  "indel_window": 0,
+  "barcode_table": "examples/workflows/fixtures/barcodes.tsv",
+  "barcode_reads": "examples/workflows/fixtures/barcode_reads.fastq",
+  "barcode_start": 0,
+  "barcode_length": 4,
+  "barcode_k": 0,
+  "barcode_metric": "hamming",
+  "panel_table": "examples/workflows/fixtures/panel_barcodes.tsv",
+  "panel_k": 1,
+  "panel_metric": "hamming",
   "outdir": "examples/workflows/snakemake/output"
 }

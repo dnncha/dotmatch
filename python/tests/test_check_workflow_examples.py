@@ -1,4 +1,5 @@
 import importlib.util
+import shutil
 from pathlib import Path
 
 
@@ -278,6 +279,24 @@ def _write_workflow_repo(root: Path) -> None:
             "guide_b,ACGA,GENEB\n"
             "guide_c,TTTT,GENEC\n"
         ),
+        "examples/workflows/fixtures/barcodes.tsv": (
+            "id\tsequence\n"
+            "bc_a\tACGT\n"
+            "bc_b\tTGCA\n"
+            "bc_c\tGGTT\n"
+        ),
+        "examples/workflows/fixtures/barcode_reads.fastq": (
+            "@bc_a_exact\nACGTAAAA\n+\nIIIIIIII\n"
+            "@bc_b_exact\nTGCAAAAA\n+\nIIIIIIII\n"
+            "@bc_none\nCCCCAAAA\n+\nIIIIIIII\n"
+        ),
+        "examples/workflows/fixtures/panel_barcodes.tsv": (
+            "id\tsequence\n"
+            "BC001\tCACTCGTA\n"
+            "BC002\tTGTGATGC\n"
+            "BC003\tACGAGACT\n"
+            "BC004\tGTACTCAG\n"
+        ),
         "examples/workflows/fixtures/sample_a.fastq": (
             "@unique\nACGT\n+\nIIII\n@ambiguous\nACGG\n+\nIIII\n@unmatched\nCCCC\n+\nIIII\n@invalid\nAC\n+\nII\n"
         ),
@@ -327,6 +346,24 @@ def _write_workflow_repo(root: Path) -> None:
             "guide_b,ACGA,GENEB\n"
             "guide_c,TTTT,GENEC\n"
         ),
+        "examples/workflows/galaxy/test-data/barcodes.tsv": (
+            "id\tsequence\n"
+            "bc_a\tACGT\n"
+            "bc_b\tTGCA\n"
+            "bc_c\tGGTT\n"
+        ),
+        "examples/workflows/galaxy/test-data/barcode_reads.fastq": (
+            "@bc_a_exact\nACGTAAAA\n+\nIIIIIIII\n"
+            "@bc_b_exact\nTGCAAAAA\n+\nIIIIIIII\n"
+            "@bc_none\nCCCCAAAA\n+\nIIIIIIII\n"
+        ),
+        "examples/workflows/galaxy/test-data/panel_barcodes.tsv": (
+            "id\tsequence\n"
+            "BC001\tCACTCGTA\n"
+            "BC002\tTGTGATGC\n"
+            "BC003\tACGAGACT\n"
+            "BC004\tGTACTCAG\n"
+        ),
         "examples/workflows/galaxy/test-data/sample_a.fastq": (
             "@unique\nACGT\n+\nIIII\n@ambiguous\nACGG\n+\nIIII\n@unmatched\nCCCC\n+\nIIII\n@invalid\nAC\n+\nII\n"
         ),
@@ -362,6 +399,20 @@ def _write_workflow_repo(root: Path) -> None:
         full = root / path
         full.parent.mkdir(parents=True, exist_ok=True)
         full.write_text(text, encoding="utf-8")
+    source_modules = ROOT / "examples" / "workflows" / "nf-core" / "modules" / "local" / "dotmatch"
+    target_modules = root / "examples" / "workflows" / "nf-core" / "modules" / "local" / "dotmatch"
+    for module_name in ["count", "demux", "audit", "panel_check", "crispr_count", "assay_run"]:
+        if (target_modules / module_name).exists():
+            shutil.rmtree(target_modules / module_name)
+        shutil.copytree(source_modules / module_name, target_modules / module_name)
+    source_snakemake = ROOT / "examples" / "workflows" / "snakemake"
+    target_snakemake = root / "examples" / "workflows" / "snakemake"
+    shutil.copyfile(source_snakemake / "Snakefile", target_snakemake / "Snakefile")
+    shutil.copyfile(source_snakemake / "config.json", target_snakemake / "config.json")
+    source_galaxy = ROOT / "examples" / "workflows" / "galaxy"
+    target_galaxy = root / "examples" / "workflows" / "galaxy"
+    for wrapper_name in ["dotmatch_demux.xml", "dotmatch_panel_check.xml"]:
+        shutil.copyfile(source_galaxy / wrapper_name, target_galaxy / wrapper_name)
 
 
 def test_workflow_examples_ready_accepts_complete_local_examples(tmp_path):
@@ -468,10 +519,10 @@ def test_workflow_examples_ready_requires_nfcore_sample_qc_output(tmp_path):
         / "dotmatch"
         / "crispr_count"
         / "main.nf"
-    ).write_text(
-        module.replace("  path 'sample_qc.tsv'\n", "").replace(" --sample-qc sample_qc.tsv", ""),
-        encoding="utf-8",
-    )
+        ).write_text(
+            module.replace('    tuple val(meta), path("*.sample_qc.tsv"), emit: sample_qc\n', "").replace("      --sample-qc ${prefix}.sample_qc.tsv \\\n", ""),
+            encoding="utf-8",
+        )
 
     result = checker.audit(tmp_path)
 

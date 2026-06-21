@@ -438,7 +438,10 @@ def check_zenodo(root: Path, version: str, result: AuditResult) -> None:
         return
     metadata = data.get("metadata") if isinstance(data, dict) else {}
     record_version = str((metadata or {}).get("version") or "")
-    if record_version != version:
+    conceptdoi = str((metadata or {}).get("conceptdoi") or "")
+    conceptrecid = str((metadata or {}).get("conceptrecid") or "")
+    is_concept_doi = doi == conceptdoi or record_id == conceptrecid
+    if not is_concept_doi and record_version != version:
         result.failures.append(
             ChannelMessage(channel, f"Zenodo record {doi} reports version {record_version or '<missing>'}, expected {version}")
         )
@@ -447,7 +450,10 @@ def check_zenodo(root: Path, version: str, result: AuditResult) -> None:
     if not url_ok(url):
         result.failures.append(ChannelMessage(channel, f"Zenodo DOI does not resolve: {doi}"))
         return
-    result.passed.append(ChannelMessage(channel, f"Zenodo DOI resolves and reports version {version}: {doi}"))
+    if is_concept_doi:
+        result.passed.append(ChannelMessage(channel, f"Zenodo concept DOI resolves for DotMatch software citation: {doi}"))
+    else:
+        result.passed.append(ChannelMessage(channel, f"Zenodo DOI resolves and reports version {version}: {doi}"))
 
 
 def audit(root: Path, version: Optional[str] = None) -> AuditResult:

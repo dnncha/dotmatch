@@ -1,0 +1,12 @@
+@exact
+ACGT
++
+IIII
+@substitution
+ACGA
++
+IIII
+@unmatched
+CCCC
++
+IIII

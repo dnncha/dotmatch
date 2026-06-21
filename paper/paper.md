@@ -18,7 +18,7 @@ affiliations:
 date: 4 June 2026
 bibliography: paper.bib
 repository: https://github.com/dnncha/dotmatch
-archive_doi: 10.5281/zenodo.20541629
+archive_doi: 10.5281/zenodo.20541628
 ---
 
 # Summary

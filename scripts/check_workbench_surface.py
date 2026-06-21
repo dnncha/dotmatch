@@ -1,81 +1,47 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def read(path: str, failures: list[str]) -> str:
-    full = ROOT / path
-    if not full.is_file():
-        failures.append(f"missing required Workbench file: {path}")
-        return ""
-    return full.read_text(encoding="utf-8")
-
-
 def main() -> int:
     failures: list[str] = []
-    for path in [
-        "docs/workbench.md",
-        "apps/workbench/package.json",
-        "apps/workbench/src-tauri/tauri.conf.json",
-        "apps/workbench/src-tauri/Cargo.toml",
-        "apps/workbench/src-tauri/src/lib.rs",
-        "apps/workbench/src/App.tsx",
-        "apps/workbench/src/lib/assayModel.ts",
-        "apps/workbench/src/lib/results.ts",
-        "apps/workbench/src/lib/workbenchApi.ts",
-    ]:
-        if not (ROOT / path).is_file():
-            failures.append(f"missing required Workbench file: {path}")
 
-    try:
-        package_json = json.loads(read("apps/workbench/package.json", failures))
-    except json.JSONDecodeError as exc:
-        failures.append(f"apps/workbench/package.json is invalid JSON: {exc}")
-        package_json = {}
-    scripts = package_json.get("scripts", {})
-    for script in ["build", "lint", "test", "tauri:build"]:
-        if script not in scripts:
-            failures.append(f"apps/workbench/package.json missing script: {script}")
+    if (ROOT / "apps" / "workbench").exists():
+        failures.append("apps/workbench must live in the dotmatch-community repository")
 
-    try:
-        tauri_config = json.loads(read("apps/workbench/src-tauri/tauri.conf.json", failures))
-    except json.JSONDecodeError as exc:
-        failures.append(f"apps/workbench/src-tauri/tauri.conf.json is invalid JSON: {exc}")
-        tauri_config = {}
-    if tauri_config.get("productName") != "DotMatch Workbench":
-        failures.append("Tauri config productName must be DotMatch Workbench")
-    if not tauri_config.get("bundle", {}).get("targets"):
-        failures.append("Tauri config must define bundle targets")
+    workbench_doc = ROOT / "docs" / "workbench.md"
+    if not workbench_doc.is_file():
+        failures.append("missing docs/workbench.md integration contract")
+    else:
+        text = workbench_doc.read_text(encoding="utf-8")
+        for required in [
+            "dotmatch-community",
+            "DOTMATCH_WORKBENCH_DOTMATCH",
+            "assay_manifest.json",
+            "sample_qc.tsv",
+        ]:
+            if required not in text:
+                failures.append(f"docs/workbench.md must mention {required}")
 
-    rust = read("apps/workbench/src-tauri/src/lib.rs", failures)
-    for symbol in [
-        "canonical_workspace",
-        "resolve_workspace_path",
-        "validate_workspace_args",
-        "build_dotmatch_command",
-        "DOTMATCH_WORKBENCH_DOTMATCH",
-        "run_workbench_command",
-    ]:
-        if symbol not in rust:
-            failures.append(f"Workbench backend missing symbol: {symbol}")
-
-    app = read("apps/workbench/src/App.tsx", failures)
-    for symbol in ["AssayInfer", "AssayPlan", "AssayRun", "AssayAutopsy", "runWorkbenchCommand"]:
-        if symbol not in app:
-            failures.append(f"Workbench UI missing symbol: {symbol}")
+    readme = ROOT / "README.md"
+    if readme.is_file():
+        text = readme.read_text(encoding="utf-8")
+        if "dotmatch-community" not in text:
+            failures.append("README.md must point Workbench users to dotmatch-community")
+    else:
+        failures.append("missing README.md")
 
     if failures:
-        print("Workbench surface check failed:")
+        print("Workbench boundary check failed:")
         for failure in failures:
             print(f"- {failure}")
         return 1
 
-    print("Workbench surface check passed")
+    print("Workbench boundary check passed")
     return 0
 
 

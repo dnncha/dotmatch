@@ -5,6 +5,11 @@ AssaySpec workflows. It is designed for labs that want a guided interface for
 fixed-window known-target assays while keeping the command-line DotMatch engine
 as the source of truth.
 
+The Workbench source now lives in the separate Apache-2.0
+`dotmatch-community` repository. This core repository keeps the documented
+integration contract: CLI commands, AssaySpec inputs, report artifacts, JSON
+schemas, and the local execution environment variable.
+
 All sequencing data stays on the user's machine. The app runs the installed
 `dotmatch` executable locally, writes ordinary AssaySpec outputs, and reads the
 same `assay_manifest.json`, `assay_manifest.summary.tsv`, `sample_qc.tsv`,

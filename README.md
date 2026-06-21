@@ -6,9 +6,10 @@
 [![Bioconda downloads](https://img.shields.io/conda/dn/bioconda/dotmatch?label=downloads)](https://anaconda.org/bioconda/dotmatch)
 [![Bioconda platforms](https://img.shields.io/conda/pn/bioconda/dotmatch?label=platforms)](https://anaconda.org/bioconda/dotmatch)
 [![Documentation Status](https://readthedocs.org/projects/dotmatch/badge/?version=latest)](https://dotmatch.readthedocs.io/en/latest/?badge=latest)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/dnncha/dotmatch/main?filepath=demo.ipynb)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Citation](https://img.shields.io/badge/cite-CITATION.cff-green.svg)](CITATION.cff)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20541629.svg)](https://doi.org/10.5281/zenodo.20541629)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20541628.svg)](https://doi.org/10.5281/zenodo.20541628)
 
 ![Cinematic DotMatch workflow: sequencing reads flow through a precise known-target matching gate into count matrices, demultiplexed barcode lanes, QC panels, and visible ambiguity diagnostics.](public/dotmatch-header-cinematic.png)
 
@@ -262,14 +263,11 @@ docker build -t dotmatch:dev .
 docker run --rm -v "$PWD:/work" dotmatch:dev dist ACGT AGGT
 ```
 
-Bioconda is the Conda-based bioinformatics install path. The checked-in recipe
-recipe update for DotMatch 0.1.8 is open in
-[bioconda/bioconda-recipes#66290](https://github.com/bioconda/bioconda-recipes/pull/66290);
-that PR has passing Bioconda Lint, Linux, OSX-64, and ARM checks plus the
-`please review & merge` label, but public Bioconda metadata may still show 0.1.7
-until it is reviewed, merged, and propagated. After propagation,
-the package is expected on `linux-64`, `osx-64`, and `osx-arm64`, including
-Apple Silicon Macs:
+Bioconda is the Conda-based bioinformatics install path. DotMatch 0.1.8 package
+metadata is visible on Anaconda's Bioconda channel for `linux-64`, `osx-64`,
+and `osx-arm64`, including Apple Silicon Macs. Treat the install command as
+fully released only after `make distribution-channels` verifies that Bioconda
+repodata and a clean `conda create` both resolve the package:
 
 ```bash
 conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.8
@@ -290,13 +288,14 @@ publishing is configured for that workflow. The GitHub release workflow builds
 and smoke-tests repaired manylinux/musllinux wheels before upload. PyPI wheel
 availability includes macOS, manylinux, and musllinux artifacts. The 0.1.8
 release files are visible on PyPI; the full multi-channel release record remains
-open until `make distribution-channels` verifies Bioconda, BioContainers, GHCR,
-and DOI evidence. Raw `linux_x86_64` wheels remain GitHub release artifacts only
-and are not uploaded to PyPI.
+open until `make distribution-channels` verifies clean Bioconda installs,
+BioContainers propagation, GHCR runtime behavior, and DOI evidence. Raw
+`linux_x86_64` wheels remain GitHub release artifacts only and are not uploaded
+to PyPI.
 
 BioContainers publication is expected through the Bioconda automation rather
-than a separate DotMatch container submission. After the Bioconda 0.1.8 recipe
-merges and Anaconda metadata updates, the expected image tag shape is
+than a separate DotMatch container submission. After the accepted Bioconda 0.1.8
+package is converted by BioContainers, the expected image tag shape is
 `quay.io/biocontainers/dotmatch:0.1.8--<build>`.
 
 Bioconda provides the `dotmatch` command-line tool, Python workflow namespaces,
@@ -305,13 +304,22 @@ version. The installed `dotmatch` console script exposes the native assignment
 commands plus `dotmatch assay ...`, `dotmatch barcode ...`, and
 `dotmatch panel ...`.
 
-Optional local Workbench: DotMatch also includes a desktop Workbench under
-`apps/workbench` for local AssaySpec design, inference, planning, running, and
-report review. It is separate from the Bioconda recipe and keeps FASTQ, target,
-barcode, spec, and output paths inside a user-selected local workspace. See
-[Workbench](docs/workbench.md).
+Optional local Workbench: the desktop Workbench now lives in the separate
+Apache-2.0 `dotmatch-community` repository for local AssaySpec design,
+inference, planning, running, and report review. It is separate from the
+Bioconda recipe and keeps FASTQ, target, barcode, spec, and output paths inside
+a user-selected local workspace. See [Workbench](docs/workbench.md).
 
 ## Quick Example
+
+One-click review path:
+
+- Open [demo.ipynb](demo.ipynb) locally or launch it on
+  [Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?filepath=demo.ipynb).
+- Follow the 10-minute notebook tutorial at
+  [tutorials/01_quickstart.ipynb](tutorials/01_quickstart.ipynb).
+- Run `make repro` to build the compact reviewer reproducibility packet under
+  `repro/small/`.
 
 The core operation is many reads against many expected sequences. Target files
 and read files can be simple TSVs with `id<TAB>sequence`.
@@ -588,6 +596,9 @@ print(df)
 # feature_adata = dm.tl.feature_counts(adata, seq_col=..., library=lib)
 ```
 
+For a practical Perturb-seq / CROP-seq / feature-barcode workflow, see
+[docs/tutorials/scverse-perturb-seq.md](docs/tutorials/scverse-perturb-seq.md).
+
 When working from a source checkout, build the shared library first:
 
 ```bash
@@ -655,6 +666,7 @@ make test
 make cli-test
 make python-test
 make python-package-test
+make repro
 ```
 
 Reports with data sources, commands, comparison settings, and checked outputs:
@@ -671,7 +683,9 @@ Reports with data sources, commands, comparison settings, and checked outputs:
 
 For a compact list of what has and has not been checked, see
 [Evidence Notes](docs/scientific-claims.md). For methods text and citation
-language, see [Methods and Citation](docs/methods-and-citation.md).
+language, see [Methods and Citation](docs/methods-and-citation.md). For a
+reviewer concern-to-artifact map, see
+[Reviewer Evidence Matrix](docs/resubmission-evidence.md).
 
 ## Development
 
@@ -699,14 +713,14 @@ provided in [docs/methods-and-citation.md](docs/methods-and-citation.md).
 A short JOSS software-paper draft is available in [paper/paper.md](paper/paper.md).
 
 ```bibtex
-@software{dotmatch_zenodo_017,
+@software{dotmatch_software,
   author = {{O'Toole}, Donncha},
-  title = {{DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning}},
+  title = {{DotMatch: deterministic known-target short-DNA assignment for sequencing workflows}},
   version = {0.1.8},
   date = {2026-06-04},
   publisher = {Zenodo},
-  doi = {10.5281/zenodo.20541629},
-  url = {https://doi.org/10.5281/zenodo.20541629}
+  doi = {10.5281/zenodo.20541628},
+  url = {https://doi.org/10.5281/zenodo.20541628}
 }
 ```
 

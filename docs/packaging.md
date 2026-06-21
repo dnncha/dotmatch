@@ -34,15 +34,12 @@ assignment searches.
 Bioconda packages DotMatch from a recipe in `bioconda-recipes`; DotMatch does
 not upload a Conda package directly.
 [bioconda/bioconda-recipes#65367](https://github.com/bioconda/bioconda-recipes/pull/65367)
-published DotMatch 0.1.2 as the first Bioconda package. As of 2026-06-14,
-Anaconda metadata lists DotMatch 0.1.7 as the latest Bioconda package on
-`linux-64`, `osx-64`, and `osx-arm64`. The 0.1.8 recipe update is open in
-[bioconda/bioconda-recipes#66290](https://github.com/bioconda/bioconda-recipes/pull/66290),
-using immutable `v0.1.8` tarball SHA256
-`ec3819bc773431454910287559d0809aca6ec1d81959f29d3d522650edb74904`.
-The PR has passing Bioconda Lint, Linux, OSX-64, and ARM checks and Bioconda's
-`please review & merge` label, and is waiting for maintainer review/merge.
-Treat future Bioconda versions as available only after
+published DotMatch 0.1.2 as the first Bioconda package.
+[bioconda/bioconda-recipes#66291](https://github.com/bioconda/bioconda-recipes/pull/66291)
+merged the DotMatch 0.1.8 update on 2026-06-17. Anaconda package metadata and a
+clean install smoke test now verify DotMatch 0.1.8 on `linux-64`, `osx-64`, and
+`osx-arm64`, using immutable `v0.1.8` release sources. Treat future Bioconda
+versions as available only after
 `https://anaconda.org/bioconda/dotmatch`, repodata, and the install smoke tests
 in `make distribution-channels` all verify the release version.
 
@@ -133,11 +130,10 @@ images to `ghcr.io/dnncha/dotmatch`.
 
 BioContainers images for DotMatch are generated from the accepted Bioconda
 recipe; there is no separate DotMatch Dockerfile to submit to BioContainers for
-the normal release path. After
-[bioconda/bioconda-recipes#66290](https://github.com/bioconda/bioconda-recipes/pull/66290)
-merges and the `dotmatch=0.1.8` package appears on Anaconda, wait for the
-corresponding `quay.io/biocontainers/dotmatch:0.1.8--<build>` tag to appear.
-Then verify it with:
+the normal release path. DotMatch 0.1.8 package metadata and clean Bioconda
+install smoke tests pass, and `make distribution-channels` can discover a
+matching `quay.io/biocontainers/dotmatch:0.1.8--<build>` tag. The remaining
+local check is Docker-backed manifest/runtime verification:
 
 ```bash
 python3 scripts/check_distribution_channels.py --version 0.1.8
@@ -160,12 +156,15 @@ make distribution-record-ready
 make bioconda-recipe-ready
 ```
 
-While not all public channels are verified, this record must stay in
-`not_released` status with blockers and next actions for remaining channels.
-For Bioconda, document the exact platforms visible in repodata, including
-whether `osx-arm64` propagated from the Apple Silicon recipe opt-in. Do not
-imply `linux-aarch64` or any other platform availability unless those Bioconda
-subdirs contain DotMatch for the release.
+Before any public channel is verified, this record must stay in `not_released`
+status with blockers and next actions. After some channels pass
+`make distribution-channels`, use `partially_verified` and keep blockers only
+for the remaining channels. Use `released` only when every required channel has
+public evidence and the full post-release gate passes. For Bioconda, document
+the exact platforms visible in repodata, including whether `osx-arm64`
+propagated from the Apple Silicon recipe opt-in. Do not imply `linux-aarch64` or
+any other platform availability unless those Bioconda subdirs contain DotMatch
+for the release.
 
 After publishing a tag, run:
 
@@ -190,8 +189,7 @@ publication has actually happened.
 ## Zenodo
 
 The repository includes `.zenodo.json` metadata for tagged software archives.
-The repository keeps Zenodo metadata in `.zenodo.json`. The current checked DOI
-metadata resolves through version DOI `10.5281/zenodo.20541629` and concept DOI
-`10.5281/zenodo.20541628`, but public Zenodo record `20541629` still reports
-version `0.1.7`. Refresh this section after Zenodo archives `v0.1.8` and mints
-or confirms the release DOI.
+General software citation uses DOI `10.5281/zenodo.20541628`, which resolves
+through Zenodo metadata for DotMatch 0.1.8. Version DOI
+`10.5281/zenodo.20541629` belongs to v0.1.7 and is retained only as explicit
+version-specific provenance, not as the v0.1.8 DOI.

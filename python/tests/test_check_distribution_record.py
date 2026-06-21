@@ -106,6 +106,48 @@ def test_distribution_record_accepts_released_manifest_with_verified_links(tmp_p
     assert result.failures == []
 
 
+def test_distribution_record_accepts_partially_verified_manifest(tmp_path):
+    checker = _load_checker()
+    manifest = _manifest(
+        status="partially_verified",
+        channels=[
+            _channel(
+                "pypi",
+                status="verified",
+                public_url="https://pypi.org/project/dotmatch/0.1.0/",
+                evidence_url="https://github.com/dnncha/dotmatch/actions/runs/123456",
+                blocker="",
+                next_action="Keep this channel verified before final release status.",
+            ),
+            _channel(
+                "bioconda",
+                status="verified",
+                public_url="https://anaconda.org/bioconda/dotmatch",
+                evidence_url="https://github.com/bioconda/bioconda-recipes/pull/123456",
+                blocker="",
+                next_action="Keep this channel verified before final release status.",
+            ),
+            _channel("ghcr", status="manifest_verified", blocker="Runtime smoke test still needs Docker."),
+            _channel("biocontainers", status="prepared", blocker="Runtime smoke test still needs Docker."),
+            _channel(
+                "zenodo",
+                status="verified",
+                public_url="https://zenodo.org/records/123456",
+                evidence_url="https://zenodo.org/records/123456",
+                blocker="",
+                next_action="Keep this channel verified before final release status.",
+            ),
+        ],
+    )
+    manifest["blockers"] = ["Runtime image checks still need Docker."]
+    manifest["next_action"] = "Run make distribution-channels on a Docker host."
+    _write_repo(tmp_path, manifest)
+
+    result = checker.audit(tmp_path)
+
+    assert result.failures == []
+
+
 def test_distribution_record_rejects_missing_required_channel(tmp_path):
     checker = _load_checker()
     manifest = _manifest(channels=[_channel("pypi")])

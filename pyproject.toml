@@ -11,13 +11,6 @@ requires-python = ">=3.9"
 dependencies = [
     "tomli; python_version < \"3.11\"",
 ]
-
-[project.optional-dependencies]
-pandas = ["pandas>=1.0"]
-anndata = ["anndata>=0.8", "pandas>=1.0"]
-polars = ["polars>=0.19"]
-multiqc = ["multiqc>=1.20"]
-dev = ["pytest", "pandas>=1.0", "anndata>=0.8", "polars>=0.19", "multiqc>=1.20"]
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 authors = [
@@ -45,6 +38,13 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
 ]
+
+[project.optional-dependencies]
+pandas = ["pandas>=1.0"]
+anndata = ["anndata>=0.8", "pandas>=1.0"]
+polars = ["polars>=0.19"]
+multiqc = ["multiqc>=1.20"]
+dev = ["pytest", "pandas>=1.0", "anndata>=0.8", "polars>=0.19", "multiqc>=1.20"]
 
 [project.urls]
 Homepage = "https://github.com/dnncha/dotmatch"

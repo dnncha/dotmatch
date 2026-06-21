@@ -3,10 +3,24 @@
 This directory contains the **exact tree** that can be copied into a fork of https://github.com/nf-core/modules for a PR.
 
 Structure matches nf-core convention:
+- modules/nf-core/dotmatch/count/main.nf
+- modules/nf-core/dotmatch/count/meta.yml
+- modules/nf-core/dotmatch/count/tests/main.nf.test
+- modules/nf-core/dotmatch/demux/main.nf
+- modules/nf-core/dotmatch/demux/meta.yml
+- modules/nf-core/dotmatch/demux/tests/main.nf.test
+- modules/nf-core/dotmatch/audit/main.nf
+- modules/nf-core/dotmatch/audit/meta.yml
+- modules/nf-core/dotmatch/audit/tests/main.nf.test
+- modules/nf-core/dotmatch/panel_check/main.nf
+- modules/nf-core/dotmatch/panel_check/meta.yml
+- modules/nf-core/dotmatch/panel_check/tests/main.nf.test
 - modules/nf-core/dotmatch/crispr_count/main.nf
 - modules/nf-core/dotmatch/crispr_count/meta.yml
 - modules/nf-core/dotmatch/crispr_count/tests/main.nf.test
-- (same for assay_run)
+- modules/nf-core/dotmatch/assay_run/main.nf
+- modules/nf-core/dotmatch/assay_run/meta.yml
+- modules/nf-core/dotmatch/assay_run/tests/main.nf.test
 
 ## How to use for PR
 

@@ -3,6 +3,7 @@ configfile: "examples/workflows/snakemake/config.json"
 outdir = config.get("outdir", "examples/workflows/snakemake/output")
 samples = config["samples"]
 metric = config.get("metric", "levenshtein")
+assay_k = int(config.get("assay_k", 0))
 ambiguity_policy = config.get("ambiguity_policy", "radius")
 ambiguous = config.get("ambiguous", "discard")
 indel_window = int(config.get("indel_window", 0))
@@ -17,6 +18,10 @@ rule all:
         f"{outdir}/assay/assay_report.html",
         f"{outdir}/assay/assay_manifest.json",
         f"{outdir}/assay/assay_manifest.summary.tsv",
+        f"{outdir}/demux/summary.json",
+        f"{outdir}/demux/assignments.tsv",
+        f"{outdir}/panel_check/panel_summary.json",
+        f"{outdir}/panel_check/target_safety.tsv",
 
 
 rule sample_sheet:
@@ -76,17 +81,18 @@ rule dotmatch_assay_spec:
         def toml_string(value):
             return json.dumps(str(value))
 
+        library_path = os.path.abspath(config["library"])
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
         with open(output[0], "w", encoding="utf-8") as handle:
             handle.write("schema_version = 1\n")
             handle.write('status = "ready"\n')
             handle.write('mode = "count"\n')
             handle.write('assay_type = "crispr"\n')
-            handle.write(f"targets = {toml_string(config['library'])}\n\n")
+            handle.write(f"targets = {toml_string(library_path)}\n\n")
             for sample_id, fastq in samples.items():
                 handle.write("[[samples]]\n")
                 handle.write(f"id = {toml_string(sample_id)}\n")
-                handle.write(f"fastq = {toml_string(fastq)}\n\n")
+                handle.write(f"fastq = {toml_string(os.path.abspath(fastq))}\n\n")
             handle.write("[run]\n")
             handle.write(f"out_dir = {toml_string(f'{outdir}/assay')}\n")
             handle.write("threads = 1\n\n")
@@ -94,11 +100,11 @@ rule dotmatch_assay_spec:
             handle.write(f"start = {config['guide_start']}\n")
             handle.write(f"length = {config['guide_length']}\n\n")
             handle.write("[assignment]\n")
-            handle.write(f"k = {config.get('k', 1)}\n")
+            handle.write(f"k = {assay_k}\n")
             handle.write(f'metric = "{metric}"\n')
             handle.write(f'ambiguity_policy = "{ambiguity_policy}"\n')
             handle.write(f'ambiguous = "{ambiguous}"\n')
-            if metric == "levenshtein" and indel_window > 0:
+            if metric == "levenshtein" and assay_k > 0 and indel_window > 0:
                 handle.write(f"indel_window = {indel_window}\n")
             handle.write("\n[outputs]\n")
             handle.write('format = "mageck"\n')
@@ -120,4 +126,54 @@ rule dotmatch_assay_run:
     shell:
         """
         dotmatch assay run {input.spec}
+        """
+
+
+rule dotmatch_demux:
+    input:
+        barcodes=config["barcode_table"],
+        reads=config["barcode_reads"],
+    output:
+        demux_dir=directory(f"{outdir}/demux/fastqs"),
+        summary=f"{outdir}/demux/summary.json",
+        assignments=f"{outdir}/demux/assignments.tsv",
+    params:
+        barcode_start=config.get("barcode_start", 0),
+        barcode_length=config.get("barcode_length", "auto"),
+        k=config.get("barcode_k", 0),
+        metric=config.get("barcode_metric", "hamming"),
+    shell:
+        """
+        dotmatch demux \
+          --barcodes {input.barcodes} \
+          --reads {input.reads} \
+          --barcode-start {params.barcode_start} \
+          --barcode-length {params.barcode_length} \
+          --k {params.k} \
+          --metric {params.metric} \
+          --ambiguity-policy radius \
+          --out-dir {output.demux_dir} \
+          --summary {output.summary} \
+          --assignments {output.assignments}
+        """
+
+
+rule dotmatch_panel_check:
+    input:
+        panel=config["panel_table"],
+    output:
+        panel_summary=f"{outdir}/panel_check/panel_summary.json",
+        target_safety=f"{outdir}/panel_check/target_safety.tsv",
+        collision_pairs=f"{outdir}/panel_check/collision_pairs.tsv",
+        panel_report=f"{outdir}/panel_check/panel_report.html",
+    params:
+        k=config.get("panel_k", 1),
+        metric=config.get("panel_metric", "hamming"),
+        out_dir=f"{outdir}/panel_check",
+    shell:
+        """
+        dotmatch panel check {input.panel} \
+          --k {params.k} \
+          --metric {params.metric} \
+          --out-dir {params.out_dir}
         """

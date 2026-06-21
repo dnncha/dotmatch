@@ -36,12 +36,13 @@ def _write_repo(root: Path, *, version: str = "0.1.0") -> None:
         ),
         "CITATION.cff": (
             "cff-version: 1.2.0\n"
-            'title: "DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning"\n'
+            'title: "DotMatch: deterministic known-target short-DNA assignment for sequencing workflows"\n'
             'message: "If you use DotMatch, please cite this software release."\n'
             "type: software\n"
             "authors:\n"
             '  - given-names: "Donncha"\n'
             '    family-names: "O\'Toole"\n'
+            '    orcid: "https://orcid.org/0009-0003-5012-7229"\n'
             'repository-code: "https://github.com/dnncha/dotmatch"\n'
             "license: Apache-2.0\n"
             f'version: "{version}"\n'
@@ -71,17 +72,24 @@ def _write_repo(root: Path, *, version: str = "0.1.0") -> None:
                     "FASTQ",
                     "known-target assignment",
                 ],
-                "author": [{"@type": "Person", "givenName": "Donncha", "familyName": "O'Toole"}],
+                "author": [
+                    {
+                        "@type": "Person",
+                        "givenName": "Donncha",
+                        "familyName": "O'Toole",
+                        "@id": "https://orcid.org/0009-0003-5012-7229",
+                    }
+                ],
             },
             indent=2,
         )
         + "\n",
         ".zenodo.json": json.dumps(
             {
-                "title": "DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning",
+                "title": "DotMatch: deterministic known-target short-DNA assignment for sequencing workflows",
                 "upload_type": "software",
                 "version": version,
-                "creators": [{"name": "O'Toole, Donncha"}],
+                "creators": [{"name": "O'Toole, Donncha", "orcid": "0009-0003-5012-7229"}],
                 "description": "DotMatch is a deterministic known-target short-DNA assignment engine for CRISPR guides and barcodes.",
                 "license": "Apache-2.0",
                 "access_right": "open",
@@ -115,7 +123,7 @@ def _write_repo(root: Path, *, version: str = "0.1.0") -> None:
             "If you use DotMatch, cite the software release through `CITATION.cff`. "
             "Installed packages also provide `dotmatch citation` for a copyable citation.\n\n"
             "Suggested citation before DOI assignment:\n\n"
-            f"> O'Toole D. DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning. Software release v{version}. https://github.com/dnncha/dotmatch\n"
+            f"> O'Toole D. DotMatch: deterministic known-target short-DNA assignment for sequencing workflows. Software release v{version}. https://github.com/dnncha/dotmatch\n"
         ),
         "docs/index.md": (
             "# DotMatch Documentation\n\n"

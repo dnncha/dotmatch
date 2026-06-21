@@ -15,8 +15,8 @@ from check_common import AuditResult, check_https_url, check_simple_make_target,
 
 MANIFEST = Path("docs") / "distribution-release.json"
 REQUIRED_CHANNELS = ["pypi", "bioconda", "ghcr", "biocontainers", "zenodo"]
-VALID_OVERALL_STATUSES = {"not_released", "released"}
-VALID_CHANNEL_STATUSES = {"prepared", "blocked", "verified"}
+VALID_OVERALL_STATUSES = {"not_released", "partially_verified", "released"}
+VALID_CHANNEL_STATUSES = {"prepared", "blocked", "manifest_verified", "verified"}
 
 
 def _project_version(root: Path) -> str:
@@ -62,6 +62,19 @@ def _check_channel(item: object, overall_status: str, result: AuditResult) -> st
             result.failures.append(f"released channel {channel_id} must not keep blocker text")
         if item.get("next_action"):
             result.failures.append(f"released channel {channel_id} must not keep next_action text")
+    elif overall_status == "partially_verified":
+        if status == "verified":
+            public_url = str(item.get("public_url") or item.get("expected_url") or "").strip()
+            evidence_url = str(item.get("evidence_url") or item.get("expected_url") or "").strip()
+            _check_https_url(channel_id, "public_url", public_url, result)
+            _check_https_url(channel_id, "evidence_url", evidence_url, result)
+            if item.get("blocker"):
+                result.failures.append(f"verified channel {channel_id} must not keep blocker text")
+        else:
+            if not str(item.get("blocker") or "").strip():
+                result.failures.append(f"{channel_id} must declare blocker while partially verified")
+            if not str(item.get("next_action") or "").strip():
+                result.failures.append(f"{channel_id} must declare next_action while partially verified")
     else:
         if status == "verified":
             result.failures.append(f"not_released channel {channel_id} must not be marked verified")
@@ -119,11 +132,19 @@ def audit(root: Path) -> AuditResult:
         if channel_id not in seen:
             result.failures.append(f"missing required distribution channel: {channel_id}")
 
+    if status not in VALID_OVERALL_STATUSES:
+        return result
+
     if status == "released":
         if manifest.get("blockers"):
             result.failures.append("released distribution record must not declare blockers")
         if manifest.get("next_action"):
             result.failures.append("released distribution record must not declare next_action")
+    elif status == "partially_verified":
+        if not manifest.get("blockers"):
+            result.failures.append("partially_verified distribution record must declare blockers")
+        if not manifest.get("next_action"):
+            result.failures.append("partially_verified distribution record must declare next_action")
     elif status == "not_released":
         if not manifest.get("blockers"):
             result.failures.append("not_released distribution record must declare blockers")

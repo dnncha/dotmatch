@@ -8,7 +8,7 @@
   "codeRepository": "https://github.com/dnncha/dotmatch",
   "issueTracker": "https://github.com/dnncha/dotmatch/issues",
   "license": "https://spdx.org/licenses/Apache-2.0",
-  "identifier": "https://doi.org/10.5281/zenodo.20541629",
+  "identifier": "https://doi.org/10.5281/zenodo.20541628",
   "version": "0.1.8",
   "softwareVersion": "0.1.8",
   "programmingLanguage": [
@@ -34,7 +34,8 @@
     {
       "@type": "Person",
       "givenName": "Donncha",
-      "familyName": "O'Toole"
+      "familyName": "O'Toole",
+      "@id": "https://orcid.org/0009-0003-5012-7229"
     }
   ],
   "softwareRequirements": [
