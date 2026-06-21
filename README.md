@@ -9,7 +9,7 @@
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/dnncha/dotmatch/main?filepath=demo.ipynb)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Citation](https://img.shields.io/badge/cite-CITATION.cff-green.svg)](CITATION.cff)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20541629.svg)](https://doi.org/10.5281/zenodo.20541629)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20541628.svg)](https://doi.org/10.5281/zenodo.20541628)
 
 ![Cinematic DotMatch workflow: sequencing reads flow through a precise known-target matching gate into count matrices, demultiplexed barcode lanes, QC panels, and visible ambiguity diagnostics.](public/dotmatch-header-cinematic.png)
 
@@ -304,11 +304,11 @@ version. The installed `dotmatch` console script exposes the native assignment
 commands plus `dotmatch assay ...`, `dotmatch barcode ...`, and
 `dotmatch panel ...`.
 
-Optional local Workbench: DotMatch also includes a desktop Workbench under
-`apps/workbench` for local AssaySpec design, inference, planning, running, and
-report review. It is separate from the Bioconda recipe and keeps FASTQ, target,
-barcode, spec, and output paths inside a user-selected local workspace. See
-[Workbench](docs/workbench.md).
+Optional local Workbench: the desktop Workbench now lives in the separate
+Apache-2.0 `dotmatch-community` repository for local AssaySpec design,
+inference, planning, running, and report review. It is separate from the
+Bioconda recipe and keeps FASTQ, target, barcode, spec, and output paths inside
+a user-selected local workspace. See [Workbench](docs/workbench.md).
 
 ## Quick Example
 
@@ -713,14 +713,14 @@ provided in [docs/methods-and-citation.md](docs/methods-and-citation.md).
 A short JOSS software-paper draft is available in [paper/paper.md](paper/paper.md).
 
 ```bibtex
-@software{dotmatch_zenodo_017,
+@software{dotmatch_software,
   author = {{O'Toole}, Donncha},
-  title = {{DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning}},
+  title = {{DotMatch: deterministic known-target short-DNA assignment for sequencing workflows}},
   version = {0.1.8},
   date = {2026-06-04},
   publisher = {Zenodo},
-  doi = {10.5281/zenodo.20541629},
-  url = {https://doi.org/10.5281/zenodo.20541629}
+  doi = {10.5281/zenodo.20541628},
+  url = {https://doi.org/10.5281/zenodo.20541628}
 }
 ```
 

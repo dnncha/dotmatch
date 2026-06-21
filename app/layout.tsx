@@ -5,14 +5,14 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://dnncha.github.io/do
 const socialImageUrl = `${siteUrl}/dotmatch-og.png`;
 const twitterImageUrl = `${siteUrl}/dotmatch-twitter.png`;
 const socialImageAlt =
-  "DotMatch preview showing CRISPR guide counts, barcode checks, and QC outcomes";
+  "DotMatch preview showing assignment reliability outcomes for known-target sequencing assays";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: "DotMatch",
-  title: "DotMatch - CRISPR Guide Counts and Barcode QC",
+  title: "DotMatch - Assignment Reliability for Known-Target Sequencing Assays",
   description:
-    "DotMatch counts CRISPR guides, splits barcode reads, designs barcode panels, and writes QC reports from FASTQ.",
+    "DotMatch shows which known-target read assignments are unique, ambiguous, unmatched, or invalid.",
   authors: [{ name: "DotMatch maintainers", url: "https://github.com/dnncha/dotmatch" }],
   creator: "DotMatch maintainers",
   publisher: "DotMatch",
@@ -25,16 +25,17 @@ export const metadata: Metadata = {
     "computational biology",
     "CRISPR",
     "FASTQ",
+    "known-target sequencing",
+    "assignment reliability",
     "barcode demultiplexing",
     "barcode panel design",
     "barcode troubleshooting",
-    "edit distance",
     "FASTQ sequence matching"
   ],
   openGraph: {
-    title: "DotMatch - CRISPR Guide Counts and Barcode QC",
+    title: "DotMatch - Assignment Reliability",
     description:
-      "Count guides, split barcodes, design panels, and review QC reports for known short DNA sequences.",
+      "Know which read assignments you can trust for known-target sequencing assays.",
     type: "website",
     siteName: "DotMatch",
     locale: "en_US",
@@ -52,9 +53,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "DotMatch - CRISPR Guide Counts and Barcode QC",
+    title: "DotMatch - Assignment Reliability",
     description:
-      "Count guides, split barcodes, design panels, and review QC reports for known short DNA sequences.",
+      "Know which read assignments you can trust for known-target sequencing assays.",
     images: [
       {
         url: twitterImageUrl,

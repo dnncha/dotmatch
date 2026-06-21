@@ -70,6 +70,7 @@ Keep scope: stop at assignment + QC + audit. Leave UMI dedup, cell calling, hit 
 - **Competitor refresh**: Re-bench against latest guide-counter, MAGeCK, cutadapt, any new "ultra-fast demux" tools. Keep semantics documented.
 - **Case studies**: 1–2 anonymized or public "we replaced X with DotMatch in production and got Y% faster + better QC visibility" from cores or companies.
 - **JOSS / paper / blog**: Keep the JOSS process honest; add a methods-focused preprint or blog series on the indexing + ambiguity design.
+- **Citation flywheel**: Prioritize official nf-core modules, a released MultiQC module, Galaxy and Snakemake wrappers, generated `methods.md` / `CITATION.bib` / `software_versions.yml` artifacts, copyable citation UI in Workbench and HTML reports, documented external pilots, and a public used-by page. Track the executable checklist in `docs/citation-flywheel.md`.
 - **Distribution**: Ensure every release has:
   - Bioconda (already), PyPI wheels (linux repaired + mac), source sdist.
   - Containers published and smoke-tested in the release gate.

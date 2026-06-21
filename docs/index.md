@@ -68,6 +68,7 @@ proposals-and-roadmap
 
 schemas
 methods-and-citation
+citation-flywheel
 packaging
 release-process
 workflow-submissions

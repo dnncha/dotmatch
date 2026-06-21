@@ -24,8 +24,9 @@ that works today with no extra code.
 
 from __future__ import annotations
 
-import logging
+import csv
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -45,10 +46,83 @@ _HAS_MULTIQC = False
 try:
     from multiqc import BaseMultiqcModule  # type: ignore
     from multiqc.plots import table as _mqc_table  # type: ignore
+    from multiqc.utils import config as _mqc_config  # type: ignore
     _HAS_MULTIQC = True
 except Exception:  # noqa: BLE001
     BaseMultiqcModule = object  # type: ignore
     _mqc_table = None  # type: ignore
+    _mqc_config = None  # type: ignore
+
+
+DOTMATCH_SEARCH_PATTERNS: dict[str, dict[str, Any]] = {
+    "dotmatch/sample_qc": {"fn": "*sample_qc.tsv"},
+    "dotmatch/summary_json": {"fn": "*summary.json"},
+    "dotmatch/crispr_qc": {"fn": "*crispr_qc.summary.tsv"},
+    "dotmatch/assay_manifest": {"fn": "*assay_manifest.summary.tsv"},
+    "dotmatch/panel_summary": {"fn": "*panel_summary.json"},
+    "dotmatch/top_unmatched": {"fn": "*top_unmatched.tsv"},
+}
+
+
+INTEGER_FIELDS = {
+    "ambiguous_error_spheres",
+    "ambiguous_reads",
+    "assigned_corrected",
+    "assigned_exact",
+    "assigned_reads",
+    "assigned_unique",
+    "candidates_verified",
+    "collision_pairs",
+    "configured_assignment_k",
+    "exact_reads",
+    "invalid",
+    "invalid_reads",
+    "k1_del_reads",
+    "k1_ins_reads",
+    "k1_rescued_reads",
+    "k1_sub_reads",
+    "minimum_hamming_distance",
+    "n_barcodes",
+    "no_match_reads",
+    "sample_count",
+    "silent_assignment_risk",
+    "targets_observed",
+    "total_count",
+    "total_reads",
+    "unmatched",
+    "valid_extracted_reads",
+    "warning_count",
+    "zero_count_targets",
+}
+
+FLOAT_FIELDS = {
+    "ambiguous_rate",
+    "assignment_rate",
+    "coverage_fraction",
+    "exact_rate",
+    "gini_index",
+    "invalid_rate",
+    "no_match_rate",
+    "rescue_rate",
+    "top_1pct_fraction",
+    "top_1pct_read_fraction",
+    "zero_count_fraction",
+}
+
+
+def _install_search_patterns() -> None:
+    """Register DotMatch file patterns when MultiQC imports this entry point."""
+    if _mqc_config is None:
+        return
+    search_patterns = getattr(_mqc_config, "sp", None)
+    if not isinstance(search_patterns, dict):
+        return
+    for key, pattern in DOTMATCH_SEARCH_PATTERNS.items():
+        search_patterns.setdefault(key, pattern)
+
+
+if _HAS_MULTIQC:
+    _install_search_patterns()
 
 def _get_table_plot():
     if not _HAS_MULTIQC or _mqc_table is None:
@@ -56,14 +130,43 @@ def _get_table_plot():
     return _mqc_table.plot
 
 
+def _coerce_value(name: str, value: Any) -> Any:
+    if value is None or value == "":
+        return ""
+    if name in INTEGER_FIELDS:
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return value
+    if name in FLOAT_FIELDS:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return value
+    return value
+
+
+def _read_tsv_rows(path: str | Path) -> list[dict[str, Any]]:
+    path = Path(path)
+    with path.open(encoding="utf-8", newline="") as fh:
+        return [
+            {key: _coerce_value(key, value) for key, value in row.items()}
+            for row in csv.DictReader(fh, delimiter="\t")
+            if any(value not in (None, "") for value in row.values())
+        ]
+
+
 def _multiqc_file_path(record: Any) -> Path:
     """Return a filesystem path from a MultiQC find_log_files record."""
     if isinstance(record, dict):
-        filename = record.get("fn") or record.get("path")
+        filename = record.get("path") or record.get("fn")
         root = record.get("root") or record.get("dir") or ""
         if filename is None:
             raise ValueError(f"MultiQC file record has no filename: {record!r}")
-        return Path(root) / str(filename)
+        path = Path(str(filename))
+        if path.is_absolute() or not root:
+            return path
+        return Path(root) / path
     return Path(record)
 
 
@@ -80,76 +183,66 @@ def parse_sample_qc_tsv(path: str | Path) -> dict[str, dict[str, Any]]:
     """
     path = Path(path)
     data: dict[str, dict[str, Any]] = {}
-    with path.open(encoding="utf-8") as fh:
-        header = fh.readline().strip().split("\t")
-        for line in fh:
-            if not line.strip():
-                continue
-            vals = line.strip().split("\t")
-            row = dict(zip(header, vals))
-            sname = row.get("sample_id", row.get("sample", path.stem))
-            data[sname] = {
-                "total_reads": row.get("total_reads", ""),
-                "assigned_reads": row.get("assigned_reads", ""),
-                "exact_reads": row.get("exact_reads", ""),
-                "ambiguous_reads": row.get("ambiguous_reads", ""),
-                "no_match_reads": row.get("no_match_reads", ""),
-                "invalid_reads": row.get("invalid_reads", ""),
-                "assignment_rate": row.get("assignment_rate", ""),
-                "ambiguous_rate": row.get("ambiguous_rate", ""),
-                "gini_index": row.get("gini_index", ""),
-                "candidates_verified": row.get("candidates_verified", ""),
-            }
+    for row in _read_tsv_rows(path):
+        sname = str(row.get("sample_id") or row.get("sample") or path.stem)
+        data[sname] = {
+            "total_reads": row.get("total_reads", ""),
+            "valid_extracted_reads": row.get("valid_extracted_reads", ""),
+            "assigned_reads": row.get("assigned_reads", ""),
+            "exact_reads": row.get("exact_reads", ""),
+            "k1_rescued_reads": row.get("k1_rescued_reads", ""),
+            "ambiguous_reads": row.get("ambiguous_reads", ""),
+            "no_match_reads": row.get("no_match_reads", ""),
+            "invalid_reads": row.get("invalid_reads", ""),
+            "assignment_rate": row.get("assignment_rate", ""),
+            "exact_rate": row.get("exact_rate", ""),
+            "rescue_rate": row.get("rescue_rate", ""),
+            "ambiguous_rate": row.get("ambiguous_rate", ""),
+            "no_match_rate": row.get("no_match_rate", ""),
+            "targets_observed": row.get("targets_observed", ""),
+            "zero_count_targets": row.get("zero_count_targets", ""),
+            "gini_index": row.get("gini_index", ""),
+            "top_1pct_read_fraction": row.get("top_1pct_read_fraction", ""),
+            "candidates_verified": row.get("candidates_verified", ""),
+        }
     return data
 
 def parse_crispr_qc_summary_tsv(path: str | Path) -> dict[str, dict[str, Any]]:
     """Parse crispr_qc.summary.tsv (guide library representation + QC)."""
     path = Path(path)
     data: dict[str, dict[str, Any]] = {}
-    with path.open(encoding="utf-8") as fh:
-        header = fh.readline().strip().split("\t")
-        for line in fh:
-            if not line.strip():
-                continue
-            vals = line.strip().split("\t")
-            row = dict(zip(header, vals))
-            sname = row.get("sample_id", path.stem)
-            data[sname] = {
-                "qc_status": row.get("qc_status", ""),
-                "total_count": row.get("total_count", ""),
-                "coverage_fraction": row.get("coverage_fraction", ""),
-                "zero_count_fraction": row.get("zero_count_fraction", ""),
-                "gini_index": row.get("gini_index", ""),
-                "top_1pct_fraction": row.get("top_1pct_fraction", ""),
-                "assignment_rate": row.get("assignment_rate", ""),
-                "ambiguous_rate": row.get("ambiguous_rate", ""),
-                "no_match_rate": row.get("no_match_rate", ""),
-                "invalid_rate": row.get("invalid_rate", ""),
-            }
+    for row in _read_tsv_rows(path):
+        sname = str(row.get("sample_id") or path.stem)
+        data[sname] = {
+            "qc_status": row.get("qc_status", ""),
+            "total_count": row.get("total_count", ""),
+            "coverage_fraction": row.get("coverage_fraction", ""),
+            "zero_count_fraction": row.get("zero_count_fraction", ""),
+            "gini_index": row.get("gini_index", ""),
+            "top_1pct_fraction": row.get("top_1pct_fraction", ""),
+            "assignment_rate": row.get("assignment_rate", ""),
+            "ambiguous_rate": row.get("ambiguous_rate", ""),
+            "no_match_rate": row.get("no_match_rate", ""),
+            "invalid_rate": row.get("invalid_rate", ""),
+        }
     return data
 
 def parse_assay_manifest_summary_tsv(path: str | Path) -> dict[str, dict[str, Any]]:
     """Parse assay_manifest.summary.tsv for run provenance and links."""
     path = Path(path)
     data: dict[str, dict[str, Any]] = {}
-    with path.open(encoding="utf-8") as fh:
-        header = fh.readline().strip().split("\t")
-        for line in fh:
-            if not line.strip():
-                continue
-            vals = line.strip().split("\t")
-            row = dict(zip(header, vals))
-            key = f"{row.get('assay_type', 'assay')}_{row.get('mode', 'run')}"
-            data[key] = {
-                "mode": row.get("mode", ""),
-                "assay_type": row.get("assay_type", ""),
-                "status": row.get("status", ""),
-                "native_version": row.get("native_version", ""),
-                "sample_count": row.get("sample_count", ""),
-                "autopsy_triggered": row.get("autopsy_triggered", ""),
-                "warning_count": row.get("warning_count", ""),
-                "primary_report": row.get("primary_report", ""),
-            }
+    for row in _read_tsv_rows(path):
+        key = f"{row.get('assay_type', 'assay')}_{row.get('mode', 'run')}"
+        data[key] = {
+            "mode": row.get("mode", ""),
+            "assay_type": row.get("assay_type", ""),
+            "status": row.get("status", ""),
+            "native_version": row.get("native_version", ""),
+            "sample_count": row.get("sample_count", ""),
+            "autopsy_triggered": row.get("autopsy_triggered", ""),
+            "warning_count": row.get("warning_count", ""),
+            "primary_report": row.get("primary_report", ""),
+        }
     return data
 
 
@@ -163,15 +256,15 @@ def parse_summary_json(path: str | Path) -> dict[str, dict[str, Any]]:
         sample = ",".join(str(item.get("sample_id", item.get("id", ""))) for item in samples if isinstance(item, dict)) or sample
     return {
         str(sample): {
-            "total_reads": summary.get("total_reads", ""),
-            "assigned_unique": summary.get("assigned_unique", summary.get("assigned_reads", "")),
-            "assigned_exact": summary.get("assigned_exact", summary.get("exact_reads", "")),
-            "assigned_corrected": summary.get("assigned_corrected", ""),
-            "ambiguous": summary.get("ambiguous", summary.get("ambiguous_reads", "")),
-            "unmatched": summary.get("unmatched", summary.get("no_match_reads", "")),
-            "invalid": summary.get("invalid", summary.get("invalid_reads", "")),
-            "assignment_rate": summary.get("assignment_rate", ""),
-            "ambiguous_rate": summary.get("ambiguous_rate", ""),
+            "total_reads": _coerce_value("total_reads", summary.get("total_reads", "")),
+            "assigned_unique": _coerce_value("assigned_unique", summary.get("assigned_unique", summary.get("assigned_reads", ""))),
+            "assigned_exact": _coerce_value("assigned_exact", summary.get("assigned_exact", summary.get("exact_reads", ""))),
+            "assigned_corrected": _coerce_value("assigned_corrected", summary.get("assigned_corrected", "")),
+            "ambiguous": _coerce_value("ambiguous", summary.get("ambiguous", summary.get("ambiguous_reads", ""))),
+            "unmatched": _coerce_value("unmatched", summary.get("unmatched", summary.get("no_match_reads", ""))),
+            "invalid": _coerce_value("invalid", summary.get("invalid", summary.get("invalid_reads", ""))),
+            "assignment_rate": _coerce_value("assignment_rate", summary.get("assignment_rate", "")),
+            "ambiguous_rate": _coerce_value("ambiguous_rate", summary.get("ambiguous_rate", "")),
             "assignment_engine": summary.get("assignment_engine", ""),
         }
     }
@@ -186,13 +279,13 @@ def parse_panel_summary_json(path: str | Path) -> dict[str, dict[str, Any]]:
         key: {
             "status": summary.get("status", ""),
             "panel_grade": summary.get("panel_grade", ""),
-            "n_barcodes": summary.get("n_barcodes", ""),
+            "n_barcodes": _coerce_value("n_barcodes", summary.get("n_barcodes", "")),
             "assignment_metric": summary.get("assignment_metric", ""),
-            "configured_assignment_k": summary.get("configured_assignment_k", ""),
-            "minimum_hamming_distance": summary.get("minimum_hamming_distance", ""),
-            "collision_pairs": summary.get("collision_pairs", ""),
-            "ambiguous_error_spheres": summary.get("ambiguous_error_spheres", ""),
-            "silent_assignment_risk": summary.get("silent_assignment_risk", ""),
+            "configured_assignment_k": _coerce_value("configured_assignment_k", summary.get("configured_assignment_k", "")),
+            "minimum_hamming_distance": _coerce_value("minimum_hamming_distance", summary.get("minimum_hamming_distance", "")),
+            "collision_pairs": _coerce_value("collision_pairs", summary.get("collision_pairs", "")),
+            "ambiguous_error_spheres": _coerce_value("ambiguous_error_spheres", summary.get("ambiguous_error_spheres", "")),
+            "silent_assignment_risk": _coerce_value("silent_assignment_risk", summary.get("silent_assignment_risk", "")),
             "safe_for_k1_hamming": summary.get("safe_for_k1_hamming", ""),
         }
     }
@@ -202,17 +295,40 @@ def parse_top_unmatched_tsv(path: str | Path, limit: int = 10) -> dict[str, dict
     """Parse top_unmatched.tsv-style diagnostics, capped for compact reports."""
     path = Path(path)
     data: dict[str, dict[str, Any]] = {}
-    with path.open(encoding="utf-8") as fh:
-        header = fh.readline().strip().split("\t")
-        for i, line in enumerate(fh):
-            if i >= limit:
-                break
-            if not line.strip():
-                continue
-            row = dict(zip(header, line.strip().split("\t")))
-            seq = row.get("sequence") or row.get("observed_sequence") or row.get("target") or f"row_{i + 1}"
-            data[f"{path.stem}:{seq}"] = row
+    for i, row in enumerate(_read_tsv_rows(path)):
+        if i >= limit:
+            break
+        seq = row.get("sequence") or row.get("observed_sequence") or row.get("target") or f"row_{i + 1}"
+        data[f"{path.stem}:{seq}"] = row
     return data
+
+
+def parse_dotmatch_artifacts(paths: list[str | Path]) -> dict[str, dict[str, dict[str, Any]]]:
+    """Parse all supported DotMatch report artifacts without importing MultiQC."""
+    parsed: dict[str, dict[str, dict[str, Any]]] = {
+        "sample_qc": {},
+        "summary": {},
+        "crispr_qc": {},
+        "assay_manifest": {},
+        "panel_summary": {},
+        "top_unmatched": {},
+    }
+    for raw_path in paths:
+        path = Path(raw_path)
+        name = path.name
+        if name.endswith("sample_qc.tsv"):
+            parsed["sample_qc"].update(parse_sample_qc_tsv(path))
+        elif name.endswith("crispr_qc.summary.tsv"):
+            parsed["crispr_qc"].update(parse_crispr_qc_summary_tsv(path))
+        elif name.endswith("assay_manifest.summary.tsv"):
+            parsed["assay_manifest"].update(parse_assay_manifest_summary_tsv(path))
+        elif name.endswith("panel_summary.json"):
+            parsed["panel_summary"].update(parse_panel_summary_json(path))
+        elif name.endswith("top_unmatched.tsv"):
+            parsed["top_unmatched"].update(parse_top_unmatched_tsv(path))
+        elif name.endswith("summary.json"):
+            parsed["summary"].update(parse_summary_json(path))
+    return {key: value for key, value in parsed.items() if value}
 
 
 class DotMatchModule(BaseMultiqcModule):
@@ -237,6 +353,8 @@ class DotMatchModule(BaseMultiqcModule):
             # Add more metadata as desired
         )
 
+        _install_search_patterns()
+
         # Find files
         self.sample_qc_files: list[Any] = list(self.find_log_files(
             "dotmatch/sample_qc", filehandles=False, filecontents=False
@@ -253,8 +371,18 @@ class DotMatchModule(BaseMultiqcModule):
         self.panel_summary_files: list[Any] = list(self.find_log_files(
             "dotmatch/panel_summary", filehandles=False, filecontents=False
         ))
+        self.top_unmatched_files: list[Any] = list(self.find_log_files(
+            "dotmatch/top_unmatched", filehandles=False, filecontents=False
+        ))
 
-        if not any([self.sample_qc_files, self.summary_files, self.crispr_qc_files, self.assay_manifest_files, self.panel_summary_files]):
+        if not any([
+            self.sample_qc_files,
+            self.summary_files,
+            self.crispr_qc_files,
+            self.assay_manifest_files,
+            self.panel_summary_files,
+            self.top_unmatched_files,
+        ]):
             raise ModuleNotFoundError("No DotMatch logs found")
 
         # Parse and add sections
@@ -263,9 +391,17 @@ class DotMatchModule(BaseMultiqcModule):
         self._parse_crispr_qc()
         self._parse_assay_manifest()
         self._parse_panel_summary()
+        self._parse_top_unmatched()
 
         # Cleanup
-        for f in self.sample_qc_files + self.summary_files + self.crispr_qc_files + self.assay_manifest_files + self.panel_summary_files:
+        for f in (
+            self.sample_qc_files
+            + self.summary_files
+            + self.crispr_qc_files
+            + self.assay_manifest_files
+            + self.panel_summary_files
+            + self.top_unmatched_files
+        ):
             self.add_data_source(f)
 
     def _parse_sample_qc(self) -> None:
@@ -335,7 +471,7 @@ class DotMatchModule(BaseMultiqcModule):
             self.add_section(
                 name="DotMatch CRISPR QC",
                 anchor="dotmatch-crispr-qc",
-                description="CRISPR guide-count library QC and representation from DotMatch (zero-count guides, Gini, top 1% dominance, assignment rates). High zero-count or high Gini indicates poor library coverage or skew — important for screen interpretability.",
+                description="CRISPR guide-count library QC and representation from DotMatch (zero-count guides, Gini, top 1% dominance, assignment rates). High zero-count or high Gini indicates poor library coverage or skew, which is important for screen interpretability.",
                 plot=_get_table_plot()(data, {
                     "qc_status": {"title": "QC"},
                     "total_count": {"title": "Total Guides"},
@@ -374,6 +510,23 @@ class DotMatchModule(BaseMultiqcModule):
                 }),
             )
 
+    def _parse_top_unmatched(self) -> None:
+        data: dict[str, dict[str, Any]] = {}
+        for f in self.top_unmatched_files:
+            try:
+                data.update(parse_top_unmatched_tsv(_multiqc_file_path(f)))
+            except Exception as exc:
+                log.warning(f"Could not parse DotMatch top_unmatched.tsv {_multiqc_file_path(f)}: {exc}")
+                continue
+
+        if data:
+            self.add_section(
+                name="DotMatch Top Unmatched",
+                anchor="dotmatch-top-unmatched",
+                description="Most frequent unassigned observed sequences from DotMatch diagnostics.",
+                plot=_get_table_plot()(data),
+            )
+
     def _parse_panel_summary(self) -> None:
         data: dict[str, dict[str, Any]] = {}
         for f in self.panel_summary_files:
@@ -405,5 +558,4 @@ class DotMatchModule(BaseMultiqcModule):
 # For users who want to register without subclassing the whole thing
 def load_dotmatch_multiqc() -> None:
     """Helper to make the module discoverable in some MultiQC setups."""
-    # In practice, MultiQC discovers via package entry points or --module path
-    pass
+    _install_search_patterns()

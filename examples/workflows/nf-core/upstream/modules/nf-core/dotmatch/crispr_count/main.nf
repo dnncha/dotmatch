@@ -7,8 +7,8 @@ process DOTMATCH_CRISPR_COUNT {
     time   { task.ext.time   ?: 4.h  }
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/dotmatch:0.1.7--h*' :
-        'biocontainers/dotmatch:0.1.7--h*' }"
+        'https://depot.galaxyproject.org/singularity/dotmatch:0.1.8--h*' :
+        'biocontainers/dotmatch:0.1.8--h*' }"
 
     input:
     tuple val(meta), path(reads), path(library)

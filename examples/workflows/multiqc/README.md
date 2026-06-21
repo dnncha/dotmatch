@@ -1,9 +1,21 @@
-# MultiQC Custom-Content Example
+# MultiQC Example
 
-This example shows how to include DotMatch `sample_qc.tsv`,
-`crispr_qc.summary.tsv`, and `assay_manifest.summary.tsv` outputs in a MultiQC
-report using MultiQC custom content. It is an integration pattern for workflow
-reports, not a benchmark result and not a core MultiQC module.
+DotMatch ships a native MultiQC module in `dotmatch.multiqc`. After installing
+the optional MultiQC extra, MultiQC can discover DotMatch outputs directly:
+
+```bash
+pip install "dotmatch[multiqc]"
+multiqc examples/workflows/multiqc/data --module dotmatch \
+  -o examples/workflows/multiqc/output
+```
+
+The native parser handles `sample_qc.tsv`, `crispr_qc.summary.tsv`,
+`assay_manifest.summary.tsv`, `summary.json`, `panel_summary.json`, and
+`top_unmatched.tsv` artifacts.
+
+This directory also keeps a custom-content config for workflow environments
+that cannot install the plugin yet. It is an integration pattern for workflow
+reports, not a benchmark result.
 
 Run from the repository root:
 
@@ -25,7 +37,6 @@ library sparsity, dominance, and candidate-verification totals. It will also
 include a `DotMatch Assay Manifest` table that links the workflow run back to
 the primary `assay_report.html` and `assay_manifest.json` artifacts.
 
-For a "real" MultiQC module (with Python parsing, general stats, and nicer
-integration), see `python/dotmatch/multiqc.py` (DotMatchModule class). You can
-point MultiQC at it or adapt the code into the main MultiQC repository.
-The custom-content approach above remains the simplest zero-dependency option.
+For the native parser implementation and dependency-free parser helpers, see
+`python/dotmatch/multiqc.py`. The custom-content approach above remains the
+simplest zero-dependency option.

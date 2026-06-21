@@ -1,14 +1,15 @@
 cff-version: 1.2.0
-title: "DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning"
+title: "DotMatch: deterministic known-target short-DNA assignment for sequencing workflows"
 message: "If you use DotMatch, please cite this software release."
 type: software
 authors:
   - given-names: "Donncha"
     family-names: "O'Toole"
+    orcid: "https://orcid.org/0009-0003-5012-7229"
 repository-code: "https://github.com/dnncha/dotmatch"
 license: Apache-2.0
 version: "0.1.8"
-doi: 10.5281/zenodo.20541629
+doi: 10.5281/zenodo.20541628
 abstract: "DotMatch is a deterministic known-target short-DNA assignment engine for CRISPR guide counting, barcode demultiplexing, and fixed-target FASTQ workflows."
 keywords:
   - bioinformatics
@@ -18,3 +19,11 @@ keywords:
   - known-target assignment
   - barcode demultiplexing
   - edit distance
+preferred-citation:
+  type: article
+  title: "DotMatch: deterministic known-target short-DNA assignment for sequencing workflows"
+  authors:
+    - given-names: "Donncha"
+      family-names: "O'Toole"
+      orcid: "https://orcid.org/0009-0003-5012-7229"
+  url: "https://github.com/dnncha/dotmatch/blob/main/paper/paper.md"

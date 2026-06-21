@@ -431,12 +431,15 @@ python-package-test:
 	python3 scripts/check_python_wheel.py
 
 workbench-ready:
-	python3 scripts/check_workbench_surface.py
-	npm --prefix apps/workbench run lint
-	npm --prefix apps/workbench run test
-	npm --prefix apps/workbench run build
+	@if [ ! -d ../dotmatch-community ]; then \
+		echo "dotmatch-community sibling checkout is required for workbench-ready" >&2; \
+		exit 1; \
+	fi
+	npm --prefix ../dotmatch-community run lint
+	npm --prefix ../dotmatch-community run test
+	npm --prefix ../dotmatch-community run build
 	@if command -v cargo >/dev/null 2>&1; then \
-		cargo test --manifest-path apps/workbench/src-tauri/Cargo.toml; \
+		cargo test --manifest-path ../dotmatch-community/src-tauri/Cargo.toml; \
 	else \
 		echo "cargo is required for Workbench Rust/Tauri tests" >&2; \
 		exit 127; \

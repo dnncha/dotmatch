@@ -20,6 +20,7 @@ REQUIRED_KEYWORDS = [
 REPOSITORY_URL = "https://github.com/dnncha/dotmatch"
 AUTHOR_GIVEN = "Donncha"
 AUTHOR_FAMILY = "O'Toole"
+AUTHOR_ORCID = "0009-0003-5012-7229"
 
 
 class AuditResult:
@@ -265,12 +266,18 @@ def audit(root: Path) -> AuditResult:
 
     if AUTHOR_GIVEN not in citation_text or AUTHOR_FAMILY not in citation_text:
         result.failures.append("CITATION.cff must include the release author")
+    if AUTHOR_ORCID not in citation_text:
+        result.failures.append("CITATION.cff must include the release author ORCID")
     authors = codemeta.get("author") or []
     if not any(item.get("givenName") == AUTHOR_GIVEN and item.get("familyName") == AUTHOR_FAMILY for item in authors if isinstance(item, dict)):
         result.failures.append("codemeta.json must include the release author")
+    if not any(AUTHOR_ORCID in str(item.get("@id") or item.get("identifier") or "") for item in authors if isinstance(item, dict)):
+        result.failures.append("codemeta.json must include the release author ORCID")
     creators = zenodo.get("creators") or []
     if not any(AUTHOR_FAMILY in str(item.get("name") or "") and AUTHOR_GIVEN in str(item.get("name") or "") for item in creators if isinstance(item, dict)):
         result.failures.append(".zenodo.json must include the release creator")
+    if not any(str(item.get("orcid") or "") == AUTHOR_ORCID for item in creators if isinstance(item, dict)):
+        result.failures.append(".zenodo.json must include the release creator ORCID")
 
     _check_keywords("CITATION.cff", list(citation.get("keywords") or []), result)
     _check_keywords("codemeta.json", [str(value) for value in codemeta.get("keywords") or []], result)

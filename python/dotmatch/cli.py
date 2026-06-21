@@ -32,8 +32,8 @@ from .native import find_native_cli, run_native_cli
 
 
 DNA = "ACGT"
-SOFTWARE_TITLE = "DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning"
-SOFTWARE_DOI = "10.5281/zenodo.20541629"
+SOFTWARE_TITLE = "DotMatch: deterministic known-target short-DNA assignment for sequencing workflows"
+SOFTWARE_DOI = "10.5281/zenodo.20541628"
 CRISPR_QC_THRESHOLDS = {
     "assignment_rate_min": 0.80,
     "ambiguous_rate_max": 0.05,

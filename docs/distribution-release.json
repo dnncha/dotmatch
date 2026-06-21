@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "status": "not_released",
+  "status": "partially_verified",
   "release_version": "0.1.8",
   "post_release_gate": "make distribution-channels",
   "channels": [
     {
       "id": "pypi",
-      "status": "prepared",
+      "status": "verified",
       "expected_url": "https://pypi.org/project/dotmatch/0.1.8/",
       "verification_command": "make distribution-channels",
       "public_url": "https://pypi.org/project/dotmatch/0.1.8/",
       "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/27484079771",
-      "blocker": "PyPI publishes DotMatch 0.1.8 as a source distribution plus native macOS, manylinux, and musllinux repaired wheels, but the full distribution record remains not_released until Bioconda, BioContainers, GHCR runtime verification, and Zenodo evidence are all verified together.",
-      "next_action": "Rerun make distribution-channels after the remaining public channels are ready so the whole release record can be marked released."
+      "blocker": "",
+      "next_action": "Keep this channel verified by rerunning make distribution-channels before any release status change."
     },
     {
       "id": "bioconda",
-      "status": "prepared",
+      "status": "verified",
       "expected_url": "https://anaconda.org/bioconda/dotmatch",
       "latest_published_version": "0.1.8",
       "initial_recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/65367",
@@ -26,38 +26,39 @@
       "evidence_url": "https://github.com/bioconda/bioconda-recipes/pull/66291",
       "platforms": ["linux-64", "osx-64", "osx-arm64"],
       "verification_command": "make distribution-channels",
-      "blocker": "Anaconda package metadata now lists DotMatch 0.1.8 on linux-64, osx-64, and osx-arm64, but Bioconda repodata did not yet resolve dotmatch=0.1.8 in a clean conda create on 2026-06-17. The full distribution record remains not_released until make distribution-channels verifies a clean Bioconda install together with BioContainers, GHCR runtime, and Zenodo evidence.",
-      "next_action": "Wait for Bioconda repodata propagation and rerun make distribution-channels; if the Bioconda install smoke test passes, keep waiting for BioContainers propagation, GHCR runtime verification, and Zenodo version metadata before marking the overall release record released."
+      "blocker": "",
+      "next_action": "Keep this channel verified by rerunning make distribution-channels before any release status change."
     },
     {
       "id": "ghcr",
-      "status": "prepared",
+      "status": "manifest_verified",
       "expected_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
       "verification_command": "make distribution-channels",
       "public_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
       "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/27484079771",
-      "blocker": "The v0.1.8 GHCR image was published by the release workflow, but it has not yet been independently verified by make distribution-channels in the full post-release channel audit.",
-      "next_action": "Confirm the GHCR image label and runtime smoke tests with Docker or another OCI runtime, then rerun make distribution-channels."
+      "manifest_digest": "sha256:6c4634f9e61c15c289e1a4238cec341c69d3e2163080f4cf2ab3f9ebe5f50f67",
+      "blocker": "The v0.1.8 GHCR manifest is reachable, but this workstation does not have Docker, so runtime smoke tests could not be run by make distribution-channels.",
+      "next_action": "Run make distribution-channels on a host with Docker or another OCI runtime and verify ghcr.io/dnncha/dotmatch:v0.1.8 --version plus CLI distance smoke tests."
     },
     {
       "id": "biocontainers",
       "status": "prepared",
       "expected_url": "https://quay.io/repository/biocontainers/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "The BioContainers image for version 0.1.8 is generated from accepted Bioconda repodata and has not yet been verified as a quay.io/biocontainers/dotmatch tag by make distribution-channels.",
-      "next_action": "After Bioconda repodata contains dotmatch=0.1.8, wait for a quay.io/biocontainers/dotmatch:0.1.8--<build> tag, then rerun make distribution-channels."
+      "blocker": "make distribution-channels can discover a BioContainers tag for 0.1.8, but this workstation does not have Docker, so manifest and runtime smoke tests could not be run.",
+      "next_action": "Run make distribution-channels on a host with Docker and verify the selected quay.io/biocontainers/dotmatch:0.1.8--<build> image with CLI distance and threshold smoke tests."
     },
     {
       "id": "zenodo",
-      "status": "blocked",
-      "expected_url": "https://zenodo.org/records/20541629",
+      "status": "verified",
+      "expected_url": "https://zenodo.org/records/20541628",
       "verification_command": "make distribution-channels",
-      "blocker": "The checked citation DOI resolves, but Zenodo record 20541629 still reports version 0.1.7, so the v0.1.8 archive has not yet been refreshed and verified after tag publication.",
-      "next_action": "After Zenodo archives v0.1.8, update DOI evidence if Zenodo mints a new version DOI and rerun make distribution-channels."
+      "blocker": "",
+      "next_action": "Keep this channel verified by rerunning make distribution-channels before any release status change."
     }
   ],
   "blockers": [
-    "DotMatch 0.1.8 has not yet been fully verified across Bioconda repodata and clean install smoke tests, BioContainers, GHCR runtime smoke tests, and Zenodo version metadata."
+    "DotMatch 0.1.8 still needs Docker-backed runtime verification for GHCR and BioContainers on a host with an OCI runtime."
   ],
-  "next_action": "Rerun make distribution-channels after Bioconda 0.1.8 propagates from Anaconda package metadata into repodata, verify GHCR runtime behavior, BioContainers propagation, and DOI evidence, replace expected URLs with verified public and evidence URLs, set channels to verified when the full post-release gate passes, and rerun make distribution-channels."
+  "next_action": "Run make distribution-channels on a host with Docker or another OCI runtime, verify GHCR and BioContainers runtime behavior, then set the overall release record to verified if the full post-release gate passes."
 }

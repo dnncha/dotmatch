@@ -75,7 +75,7 @@ def test_bioconda_recipe_gate_is_wired_into_release_ready() -> None:
 def test_zenodo_metadata_tracks_minted_release_doi() -> None:
     metadata = json.loads((ROOT / ".zenodo.json").read_text(encoding="utf-8"))
 
-    assert metadata["title"] == "DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning"
+    assert metadata["title"] == "DotMatch: deterministic known-target short-DNA assignment for sequencing workflows"
     assert metadata["upload_type"] == "software"
     assert metadata["version"] == _pyproject_version()
     assert metadata["license"] == "Apache-2.0"
@@ -88,7 +88,7 @@ def test_zenodo_metadata_tracks_minted_release_doi() -> None:
         }
     ]
     assert "known-target assignment" in metadata["keywords"]
-    assert metadata["doi"] == "10.5281/zenodo.20541629"
+    assert "doi" not in metadata
     assert metadata["conceptdoi"] == "10.5281/zenodo.20541628"
 
 
@@ -105,10 +105,17 @@ def test_codemeta_tracks_package_citation_and_minted_doi() -> None:
     assert codemeta["softwareVersion"] == _pyproject_version()
     assert codemeta["license"] == "https://spdx.org/licenses/Apache-2.0"
     assert codemeta["citation"].endswith("/CITATION.cff")
-    assert codemeta["identifier"] == "https://doi.org/10.5281/zenodo.20541629"
-    assert codemeta["author"] == [{"@type": "Person", "givenName": "Donncha", "familyName": "O'Toole"}]
+    assert codemeta["identifier"] == "https://doi.org/10.5281/zenodo.20541628"
+    assert codemeta["author"] == [
+        {
+            "@type": "Person",
+            "givenName": "Donncha",
+            "familyName": "O'Toole",
+            "@id": "https://orcid.org/0009-0003-5012-7229",
+        }
+    ]
     assert f"version: \"{_pyproject_version()}\"" in citation
-    assert "doi: 10.5281/zenodo.20541629" in citation
+    assert "doi: 10.5281/zenodo.20541628" in citation
     assert codemeta["softwareVersion"] == zenodo["version"]
     assert "known-target assignment" in codemeta["keywords"]
     assert "CRISPR" in codemeta["keywords"]

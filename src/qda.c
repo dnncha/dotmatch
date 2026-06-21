@@ -29,7 +29,7 @@
 #include <zlib.h>
 
 #ifndef DOTMATCH_VERSION
-#define DOTMATCH_VERSION "0.1.7"
+#define DOTMATCH_VERSION "0.1.8"
 #endif
 
 #define MAX_AUTO_OFFSET 1024
@@ -171,10 +171,10 @@ static void print_citation(FILE *out) {
     fprintf(out, "DotMatch citation\n");
     fprintf(out, "Software release: v%s\n", DOTMATCH_VERSION);
     fprintf(out, "Preferred citation:\n");
-    fprintf(out, "O'Toole D. DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning. Software release v%s. https://github.com/dnncha/dotmatch\n", DOTMATCH_VERSION);
+    fprintf(out, "O'Toole D. DotMatch: deterministic known-target short-DNA assignment for sequencing workflows. Software release v%s. https://github.com/dnncha/dotmatch\n", DOTMATCH_VERSION);
     fprintf(out, "Citation metadata: CITATION.cff\n");
-    fprintf(out, "DOI: 10.5281/zenodo.20541629\n");
-    fprintf(out, "DOI URL: https://doi.org/10.5281/zenodo.20541629\n");
+    fprintf(out, "DOI: 10.5281/zenodo.20541628\n");
+    fprintf(out, "DOI URL: https://doi.org/10.5281/zenodo.20541628\n");
 }
 
 static int help_requested(int argc, char **argv) {

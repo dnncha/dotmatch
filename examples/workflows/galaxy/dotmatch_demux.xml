@@ -63,7 +63,7 @@ uniquely assigned barcode and writes explicit unmatched/ambiguous diagnostics.
     <citations>
         <citation type="bibtex"><![CDATA[
 @software{dotmatch_2026,
-  title = {DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning},
+  title = {DotMatch: deterministic known-target short-DNA assignment for sequencing workflows},
   author = {O'Toole, Donncha},
   version = {0.1.0},
   url = {https://github.com/Dnncha/dotmatch}

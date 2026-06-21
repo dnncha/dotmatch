@@ -10,9 +10,11 @@ one of these submissions is accepted or released outside this repository.
 1. **nf-core modules**: highest leverage after PyPI/Bioconda because accepted
    modules become reusable in nf-core pipelines and inherit nf-core update and
    container automation.
-2. **Galaxy / IUC wrappers**: reaches core facilities and wet-lab users through
+2. **MultiQC module**: makes DotMatch outputs recognizable in existing pipeline
+   reports without per-project custom content.
+3. **Galaxy / IUC wrappers**: reaches core facilities and wet-lab users through
    ToolShed-reviewed tools.
-3. **Snakemake + MultiQC handoff**: lower review overhead, strong for lab
+4. **Snakemake handoff**: lower review overhead, strong for lab
    workflow adoption and QC report visibility.
 
 ## Shared Preflight

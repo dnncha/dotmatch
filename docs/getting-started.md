@@ -14,7 +14,7 @@ python3 -m pip install dotmatch==0.1.8
 dotmatch --version
 ```
 
-After the v0.1.8 Bioconda recipe merges and propagates:
+For Conda-based environments, Bioconda now publishes DotMatch 0.1.8:
 
 ```bash
 conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.8
@@ -35,11 +35,9 @@ dotmatch --version
 The source build needs a C compiler, `make`, Python 3.9 or newer, and zlib for
 FASTQ.gz support.
 
-Bioconda metadata may still list 0.1.7 until
-[bioconda/bioconda-recipes#66290](https://github.com/bioconda/bioconda-recipes/pull/66290)
-merges and propagates. PyPI remains the simplest cross-platform Python install
-path; Bioconda is the preferred package-manager path for Conda-based
-bioinformatics environments.
+Bioconda 0.1.8 metadata and clean install smoke tests have been verified. PyPI
+remains the simplest cross-platform Python install path; Bioconda is the
+preferred package-manager path for Conda-based bioinformatics environments.
 
 ## Recommended Workflow: Assay Project
 

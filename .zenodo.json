@@ -1,8 +1,7 @@
 {
-  "title": "DotMatch: Streaming Exact One-Edit Barcode and Guide Assignment Without Exhaustive Scanning",
+  "title": "DotMatch: deterministic known-target short-DNA assignment for sequencing workflows",
   "upload_type": "software",
   "version": "0.1.8",
-  "doi": "10.5281/zenodo.20541629",
   "conceptdoi": "10.5281/zenodo.20541628",
   "creators": [
     {
@@ -25,6 +24,12 @@
     "sequence analysis"
   ],
   "related_identifiers": [
+    {
+      "identifier": "10.5281/zenodo.20541629",
+      "relation": "isNewVersionOf",
+      "scheme": "doi",
+      "resource_type": "software"
+    },
     {
       "identifier": "https://github.com/dnncha/dotmatch",
       "relation": "isSupplementTo",
