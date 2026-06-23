@@ -33,6 +33,9 @@ need their own gates before they are public claims.
 - CRISPR users can follow the [first-run CRISPR guide-counting tutorial](tutorials/crispr-count-first-run.md).
 - Labs evaluating scientific claims should read [Trust, Scope, and Evidence](trust-and-scope.md).
 - Workflow and pipeline authors should use the [public output schemas](schemas.md).
+- Teams evaluating the open-core boundary should read
+  [Commercial Boundary](commercial-boundary.md) and
+  [Evidence Packet v1](evidence-packet-v1.md).
 
 ## Core Ideas
 
@@ -73,6 +76,8 @@ packaging
 release-process
 workflow-submissions
 resubmission-evidence
+commercial-boundary
+evidence-packet-v1
 ```
 
 ```{toctree}

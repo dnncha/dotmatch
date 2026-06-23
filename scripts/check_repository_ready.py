@@ -16,12 +16,14 @@ REQUIRED_FILES = [
     "README.md",
     "CHANGELOG.md",
     "LICENSE",
+    "NOTICE",
     "CITATION.cff",
     "codemeta.json",
     "CONTRIBUTING.md",
     "CODE_OF_CONDUCT.md",
     "SECURITY.md",
     "SUPPORT.md",
+    "TRADEMARKS.md",
     "pyproject.toml",
     "package.json",
     "MANIFEST.in",
@@ -47,6 +49,8 @@ REQUIRED_FILES = [
     "docs/native-comparator-scope.md",
     "docs/packaging.md",
     "docs/schemas.md",
+    "docs/commercial-boundary.md",
+    "docs/evidence-packet-v1.md",
     "examples/workflows/galaxy/dotmatch_crispr_count.xml",
     "examples/workflows/multiqc/multiqc_config.yaml",
     "examples/workflows/nf-core/README.md",
@@ -90,6 +94,22 @@ LOCAL_ABSOLUTE_PATH_PATTERNS = [
     for prefix in LOCAL_ABSOLUTE_PATH_PREFIXES
 ]
 
+RAW_DATA_SUFFIXES = (".fastq", ".fq", ".fastq.gz", ".fq.gz", ".bam", ".bcl")
+ALLOWED_RAW_DATA_PREFIXES = (
+    "demo-data/",
+    "examples/barcode_autopsy/failure_modes/",
+    "examples/workflows/fixtures/",
+    "examples/workflows/galaxy/test-data/",
+    "examples/workflows/nf-core/upstream/modules/nf-core/dotmatch/",
+    "benchmarks/real/data/",
+)
+PRIVATE_DATA_MARKERS = [
+    re.compile(rb"\bcustomer\b", re.IGNORECASE),
+    re.compile(rb"\bpatient\b", re.IGNORECASE),
+    re.compile(rb"\bPHI\b", re.IGNORECASE),
+    re.compile(rb"\bproprietary\b", re.IGNORECASE),
+]
+
 
 @dataclass
 class AuditResult:
@@ -127,7 +147,7 @@ def repository_files(root: Path) -> list[Path]:
             stderr=subprocess.PIPE,
             check=True,
         )
-        return [path for item in proc.stdout.split(b"\0") if item and (path := root / item.decode()).exists()]
+        return [path for item in proc.stdout.split(b"\0") if item and (path := root / item.decode()).is_file()]
 
     files: list[Path] = []
     for path in root.rglob("*"):
@@ -282,6 +302,93 @@ def check_pull_request_template(root: Path, result: AuditResult) -> None:
         result.passed.append("pull request template evidence checklist present")
 
 
+def _require_text(path: Path, needles: list[str], result: AuditResult) -> None:
+    rel_path = path.relative_to(path.parents[1]).as_posix() if path.parent.name == "docs" else path.name
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        result.failures.append(f"{rel_path} could not be read: {exc}")
+        return
+    for needle in needles:
+        if needle not in text:
+            result.failures.append(f"{rel_path} must include: {needle}")
+
+
+def check_open_core_governance(root: Path, result: AuditResult) -> None:
+    failures_before = len(result.failures)
+
+    try:
+        license_text = (root / "LICENSE").read_text(encoding="utf-8")
+        if "Apache License" not in license_text or "Version 2.0" not in license_text:
+            result.failures.append("LICENSE must remain Apache License 2.0")
+    except OSError as exc:
+        result.failures.append(f"LICENSE could not be read: {exc}")
+
+    _require_text(
+        root / "CONTRIBUTING.md",
+        ["same Apache-2.0 terms", "unless otherwise agreed"],
+        result,
+    )
+    _require_text(
+        root / "SECURITY.md",
+        [
+            "Do not attach real FASTQ, BAM, BCL, customer assay data",
+            "Use synthetic or minimized reproductions",
+            "Report security and data-leak issues privately",
+        ],
+        result,
+    )
+    _require_text(
+        root / "TRADEMARKS.md",
+        [
+            "DotMatch",
+            "DotMatch Pro",
+            "do not change the Apache-2.0 license",
+        ],
+        result,
+    )
+    _require_text(
+        root / "NOTICE",
+        ["Apache License, Version 2.0", "DotMatch Pro"],
+        result,
+    )
+    _require_text(
+        root / "README.md",
+        [
+            "## DotMatch Pro",
+            "DotMatch Pro is the commercial assay reliability workbench for teams that need",
+            "The open-source DotMatch engine remains available under Apache-2.0.",
+        ],
+        result,
+    )
+    _require_text(
+        root / "docs" / "commercial-boundary.md",
+        [
+            "the deterministic assignment engine and CLI",
+            "hosted or team workspaces",
+            "run registries",
+            "signed reports",
+            "private assay registries",
+            "enterprise connectors",
+            "commercial support",
+            "license present and still Apache-2.0",
+            "security policy present",
+            "no raw customer assay data",
+            "docs build passes with `make docs-ready`",
+            "tests pass",
+        ],
+        result,
+    )
+    _require_text(
+        root / "docs" / "evidence-packet-v1.md",
+        ["unique", "ambiguous", "none", "invalid", "private customer FASTQ/BAM/BCL"],
+        result,
+    )
+
+    if len(result.failures) == failures_before:
+        result.passed.append("open-core governance files present")
+
+
 def check_repository_tree(root: Path, result: AuditResult) -> None:
     files = repository_files(root)
     total = 0
@@ -323,6 +430,40 @@ def check_no_local_absolute_paths(root: Path, result: AuditResult) -> None:
         result.passed.append("no local absolute paths in repository files")
 
 
+def _has_raw_data_suffix(relative: str) -> bool:
+    return relative.endswith(RAW_DATA_SUFFIXES)
+
+
+def check_no_private_raw_data(root: Path, result: AuditResult) -> None:
+    offenders: list[str] = []
+    marker_offenders: list[str] = []
+    for path in repository_files(root):
+        relative = rel(path, root)
+        if not _has_raw_data_suffix(relative):
+            continue
+        if not relative.startswith(ALLOWED_RAW_DATA_PREFIXES):
+            offenders.append(relative)
+            continue
+        try:
+            sample = path.read_bytes()[:4096]
+        except OSError as exc:
+            result.failures.append(f"could not read raw-data fixture {relative}: {exc}")
+            continue
+        if any(pattern.search(sample) for pattern in PRIVATE_DATA_MARKERS):
+            marker_offenders.append(relative)
+
+    for relative in offenders[:20]:
+        result.failures.append(f"raw biological data fixture is outside approved public/synthetic paths: {relative}")
+    if len(offenders) > 20:
+        result.failures.append(f"raw biological data fixture is outside approved paths: {len(offenders) - 20} more files")
+    for relative in marker_offenders[:20]:
+        result.failures.append(f"raw-data fixture contains private/customer marker: {relative}")
+    if len(marker_offenders) > 20:
+        result.failures.append(f"raw-data fixture contains private/customer marker: {len(marker_offenders) - 20} more files")
+    if not offenders and not marker_offenders:
+        result.passed.append("no private raw-data fixtures detected")
+
+
 def audit(root: Path) -> AuditResult:
     root = root.resolve()
     result = AuditResult()
@@ -333,8 +474,10 @@ def audit(root: Path) -> AuditResult:
     check_readme_distribution_status(root, result)
     check_manifest(root, result)
     check_pull_request_template(root, result)
+    check_open_core_governance(root, result)
     check_repository_tree(root, result)
     check_no_local_absolute_paths(root, result)
+    check_no_private_raw_data(root, result)
     return result
 
 

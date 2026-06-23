@@ -48,6 +48,9 @@ __MACOSX/
 
 # Local planning and non-public strategic notes
 .codex-goals/
+/dotmatch-pro/
+/dotmatch-pro-infra/
+/dotmatch-pro-site/
 docs/software-paper-*.md
 docs/software-paper-*.json
 scripts/check_paper_readiness.py
@@ -69,6 +72,7 @@ examples/workflows/snakemake/output/
 # Generated example inputs/outputs. Keep checked-in benchmark evidence under
 # benchmarks/raw, benchmarks/figures, and docs/benchmarks visible.
 # Large public datasets are fetched by scripts instead of committed.
+artifacts/
 benchmarks/work/
 examples/crispr_guides/data/
 examples/crispr_guides/output/

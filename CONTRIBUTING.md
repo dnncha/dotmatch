@@ -57,7 +57,12 @@ Run `make coverage` for changes that touch `src/qdalign.c`, `src/qda.c`, CLI par
 
 ## Contributor Certification
 
-By contributing, you certify that you wrote the contribution or have the right to submit it under the Apache-2.0 license used by DotMatch. Add a Developer Certificate of Origin sign-off to commits when practical:
+Normal contributions are accepted under the same Apache-2.0 terms as DotMatch
+unless otherwise agreed in writing before the contribution is submitted.
+
+By contributing, you certify that you wrote the contribution or have the right
+to submit it under the Apache-2.0 license used by DotMatch. Add a Developer
+Certificate of Origin sign-off to commits when practical:
 
 ```bash
 git commit -s -m "your message"

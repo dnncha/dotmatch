@@ -37,6 +37,12 @@ release features are only described as publicly available after the matching
 package version passes the install smoke tests in
 [Packaging Notes](docs/packaging.md).
 
+## DotMatch Pro
+
+DotMatch Pro is the commercial assay reliability workbench for teams that need
+run registries, signed reports, private assay specs, audit trails, and support.
+The open-source DotMatch engine remains available under Apache-2.0.
+
 ![DotMatch workflow: FASTQ reads and a known target table are sliced at the same read position, assigned to known short DNA targets, and written to counts, split FASTQs, QC tables, and reports.](public/dotmatch-read-assignment.svg)
 
 ## How Matching Works
@@ -727,3 +733,5 @@ A short JOSS software-paper draft is available in [paper/paper.md](paper/paper.m
 ## License
 
 DotMatch is released under the [Apache License 2.0](LICENSE).
+Trademark guidance for the DotMatch and DotMatch Pro names is documented in
+[TRADEMARKS.md](TRADEMARKS.md).
