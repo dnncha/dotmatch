@@ -3,10 +3,40 @@ const scientificClaimsUrl = `${repoUrl}/blob/main/docs/scientific-claims.md`;
 const evidenceGalleryUrl = `${repoUrl}/blob/main/docs/evidence-gallery/README.md`;
 const methodsUrl = `${repoUrl}/blob/main/docs/methods-and-citation.md`;
 const packagingUrl = `${repoUrl}/blob/main/docs/packaging.md`;
+const exposureUrl = `${repoUrl}/blob/main/docs/industry-exposure.md`;
+const workflowSubmissionsUrl = `${repoUrl}/blob/main/docs/workflow-submissions.md`;
+const adoptersUrl = `${repoUrl}/blob/main/docs/adopters/README.md`;
 const pypiUrl = "https://pypi.org/project/dotmatch/";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const assignmentWorkflowImage = `${basePath}/dotmatch-read-assignment.svg`;
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://dnncha.github.io/dotmatch/#website",
+      name: "DotMatch",
+      url: "https://dnncha.github.io/dotmatch",
+      description:
+        "DotMatch is a deterministic known-target sequencing assignment toolkit for CRISPR guides, inline barcodes, feature tags, primers, and panel targets."
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://dnncha.github.io/dotmatch/#software",
+      name: "DotMatch",
+      applicationCategory: "Bioinformatics software",
+      operatingSystem: "Linux, macOS",
+      softwareHelp: "https://dotmatch.readthedocs.io/",
+      codeRepository: repoUrl,
+      license: `${repoUrl}/blob/main/LICENSE`,
+      programmingLanguage: ["C", "Python", "R"],
+      description:
+        "DotMatch assigns fixed read windows to known short DNA targets and reports unique, ambiguous, none, and invalid outcomes for auditable sequencing workflows."
+    }
+  ]
+};
 
 const outcomes = [
   ["unique", "Exactly one target is compatible, so the read can be counted or written to the matching output."],
@@ -59,6 +89,37 @@ const workflowSteps = [
   }
 ] as const;
 
+const audienceRoutes = [
+  {
+    title: "Core facilities",
+    body:
+      "Use DotMatch when sample barcodes, guide libraries, or panel targets need visible ambiguity and unmatched-read review before a result leaves the core.",
+    link: "Start with barcode troubleshooting",
+    href: `${repoUrl}/blob/main/docs/crispr-qc.md`
+  },
+  {
+    title: "CRISPR screen teams",
+    body:
+      "Count known guide windows, keep MAGeCK-compatible outputs, and preserve assignment failures for methods review and downstream screen analysis.",
+    link: "Run the CRISPR tutorial",
+    href: `${repoUrl}/blob/main/docs/tutorials/crispr-count-first-run.md`
+  },
+  {
+    title: "Workflow maintainers",
+    body:
+      "Wrap stable TSV, JSON, FASTQ, and HTML artifacts in nf-core, Galaxy, Snakemake, MultiQC, or institutional pipeline templates.",
+    link: "Use the submission pack",
+    href: workflowSubmissionsUrl
+  },
+  {
+    title: "Assay developers",
+    body:
+      "Design and audit barcode panels, test correction radius safety, and export lab-ready panel records before sequencing starts.",
+    link: "Review panel design",
+    href: `${repoUrl}/blob/main/docs/barcode-panel-design.md`
+  }
+] as const;
+
 const contexts = [
   "CRISPR guides",
   "inline barcodes",
@@ -74,9 +135,41 @@ const evidenceLinks = [
   ["Packaging notes", packagingUrl]
 ] as const;
 
+const exposureActions = [
+  {
+    title: "Evaluate",
+    body:
+      "Install the released package, run the tutorial, and compare the explicit assignment outcomes against your current known-target workflow."
+  },
+  {
+    title: "Integrate",
+    body:
+      "Use the workflow submission pack to make DotMatch visible in nf-core, MultiQC, Galaxy, Snakemake, and institutional pipeline reports."
+  },
+  {
+    title: "Cite",
+    body:
+      "Copy methods language from the citation guidance so external reports describe assignment windows, ambiguity policy, and software version."
+  },
+  {
+    title: "Pilot",
+    body:
+      "Record quote-approved external pilots only after a public lab, workflow, or package integration can be linked and reviewed."
+  },
+  {
+    title: "Share",
+    body:
+      "Use the industry exposure kit for conference abstracts, repository announcements, short social copy, and direct maintainer outreach."
+  }
+] as const;
+
 export default function Home() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <header className="site-header">
         <a className="brand" href="#top" aria-label="DotMatch home">
           <span className="brand-mark" aria-hidden="true" />
@@ -85,7 +178,9 @@ export default function Home() {
         <nav aria-label="Primary navigation">
           <a href="#failure-modes">Reliability</a>
           <a href="#workflow">Workflow</a>
+          <a href="#industry-routes">Audiences</a>
           <a href="#evidence">Evidence</a>
+          <a href="#exposure">Adoption</a>
           <a href="#install">Install</a>
           <a href={repoUrl}>GitHub</a>
         </nav>
@@ -175,6 +270,28 @@ export default function Home() {
           </div>
         </section>
 
+        <section id="industry-routes" className="section audience-section" aria-labelledby="audience-title">
+          <div className="section-heading">
+            <p className="section-kicker">Routes into industry workflows</p>
+            <h2 id="audience-title">Give each evaluator a next step.</h2>
+            <p>
+              The people who can spread DotMatch need different entry points:
+              core facilities want reliable handoff, screen teams want count
+              compatibility, workflow maintainers want stable outputs, and assay
+              teams want panel safety.
+            </p>
+          </div>
+          <div className="audience-grid">
+            {audienceRoutes.map((route) => (
+              <article key={route.title}>
+                <h3>{route.title}</h3>
+                <p>{route.body}</p>
+                <a href={route.href}>{route.link}</a>
+              </article>
+            ))}
+          </div>
+        </section>
+
         <section id="evidence" className="section evidence-section" aria-labelledby="evidence-title">
           <div className="section-heading">
             <p className="section-kicker">Auditable evidence</p>
@@ -205,6 +322,34 @@ export default function Home() {
                 <a key={label} href={href}>{label}</a>
               ))}
             </div>
+          </div>
+        </section>
+
+        <section id="exposure" className="section exposure-section" aria-labelledby="exposure-title">
+          <div className="section-heading">
+            <p className="section-kicker">Adoption flywheel</p>
+            <h2 id="exposure-title">Five moves turn a useful tool into a visible one.</h2>
+            <p>
+              DotMatch is easier to recommend when every external mention points
+              to runnable examples, scoped evidence, citation text, and a public
+              record of accepted integrations.
+            </p>
+          </div>
+          <div className="exposure-layout">
+            <ol className="exposure-list">
+              {exposureActions.map((action) => (
+                <li key={action.title}>
+                  <strong>{action.title}</strong>
+                  <p>{action.body}</p>
+                </li>
+              ))}
+            </ol>
+            <aside className="exposure-links" aria-label="Adoption and exposure links">
+              <a href={exposureUrl}>Industry exposure kit</a>
+              <a href={workflowSubmissionsUrl}>Workflow submission pack</a>
+              <a href={methodsUrl}>Methods and citation text</a>
+              <a href={adoptersUrl}>Used-by record policy</a>
+            </aside>
           </div>
         </section>
 

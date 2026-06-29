@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 from urllib.parse import quote
 
+from . import __version__ as PYTHON_PACKAGE_VERSION
 from .core import MATCH_AMBIGUOUS, MATCH_NONE, MATCH_UNIQUE, Matcher
 from .native import find_native_cli
 
@@ -333,6 +334,9 @@ def compile_assay_plan(assay: AssaySpec) -> AssayPlan:
         "reliability_manifest_summary": out_dir / "reliability_manifest.summary.tsv",
         "assay_fixes": out_dir / "assay_fixes.tsv",
         "backend_optimization": out_dir / "backend_optimization.json",
+        "methods": out_dir / "methods.md",
+        "citation_bib": out_dir / "CITATION.bib",
+        "software_versions": out_dir / "software_versions.yml",
     }
     steps: list[PlanStep] = []
 
@@ -370,6 +374,9 @@ def format_plan(plan: AssayPlan) -> str:
             f"# reliability_report: {plan.artifacts['reliability_report']}",
             f"# reliability_manifest_summary: {plan.artifacts['reliability_manifest_summary']}",
             f"# assay_fixes: {plan.artifacts['assay_fixes']}",
+            f"# methods: {plan.artifacts['methods']}",
+            f"# citation_bib: {plan.artifacts['citation_bib']}",
+            f"# software_versions: {plan.artifacts['software_versions']}",
         ]
     )
     return "\n".join(lines) + "\n"
@@ -2098,7 +2105,210 @@ def _write_normalized_spec(plan: AssayPlan) -> None:
         fh.write("\n")
 
 
+def _write_citation_artifacts(plan: AssayPlan, manifest: Mapping[str, Any]) -> None:
+    metadata = _citation_metadata()
+    _write_methods_md(plan.artifacts["methods"], plan, manifest, metadata)
+    _write_citation_bib(plan.artifacts["citation_bib"], metadata)
+    _write_software_versions_yml(plan.artifacts["software_versions"], plan, manifest)
+
+
+def _project_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def _citation_metadata() -> dict[str, str]:
+    cff = _project_root() / "CITATION.cff"
+    metadata: dict[str, str] = {
+        "title": "DotMatch: deterministic known-target short-DNA assignment for sequencing workflows",
+        "family_names": "O'Toole",
+        "given_names": "Donncha",
+        "version": PYTHON_PACKAGE_VERSION,
+        "doi": "10.5281/zenodo.20541628",
+        "url": "https://github.com/dnncha/dotmatch",
+        "year": "2026",
+    }
+    if not cff.exists():
+        return metadata
+    current_author = False
+    for raw_line in cff.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if line.startswith("title:"):
+            metadata["title"] = _unquote_cff_value(line.split(":", 1)[1].strip())
+        elif line.startswith("version:"):
+            metadata["version"] = _unquote_cff_value(line.split(":", 1)[1].strip())
+        elif line.startswith("doi:"):
+            metadata["doi"] = _unquote_cff_value(line.split(":", 1)[1].strip())
+        elif line.startswith("repository-code:"):
+            metadata["url"] = _unquote_cff_value(line.split(":", 1)[1].strip())
+        elif line.startswith("- given-names:") and "given_names" in metadata:
+            current_author = True
+            metadata["given_names"] = _unquote_cff_value(line.split(":", 1)[1].strip())
+        elif current_author and line.startswith("family-names:"):
+            metadata["family_names"] = _unquote_cff_value(line.split(":", 1)[1].strip())
+            current_author = False
+    return metadata
+
+
+def _unquote_cff_value(value: str) -> str:
+    value = value.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+        return value[1:-1]
+    return value
+
+
+def _write_methods_md(path: Path, plan: AssayPlan, manifest: Mapping[str, Any], metadata: Mapping[str, str]) -> None:
+    assignment = _table(plan.spec.data, "assignment")
+    reliability = plan.spec.reliability
+    backend = plan.spec.backend
+    extract_lines = _methods_extract_lines(plan.spec)
+    target_lines = _methods_target_lines(plan.spec)
+    sample_lines = _methods_sample_lines(plan.spec)
+    command_lines = _methods_command_lines(manifest)
+    warning_lines = [str(item) for item in manifest.get("production_warnings", []) or []] + [
+        str(item) for item in manifest.get("warnings", []) or []
+    ]
+    if not warning_lines:
+        warning_lines = ["No AssaySpec production warnings were recorded."]
+
+    text = "\n".join(
+        [
+            "# DotMatch Methods and Citation",
+            "",
+            "## Methods",
+            "",
+            f"DotMatch {PYTHON_PACKAGE_VERSION} was used for deterministic known-target short-DNA assignment.",
+            f"The assay mode was `{plan.spec.mode}` and the assay type was `{plan.spec.assay_type}`.",
+            "Reads were assigned only when exactly one known target was compatible under the configured policy; ambiguous reads were not silently counted.",
+            "",
+            "## Assignment Configuration",
+            "",
+            f"- Edit radius (`k`): `{plan.spec.k}`",
+            f"- Metric: `{assignment.get('metric', 'levenshtein')}`",
+            f"- Ambiguity policy: `{assignment.get('ambiguity_policy', 'radius')}`",
+            f"- Ambiguous output policy: `{assignment.get('ambiguous', 'discard')}`",
+            f"- Reliability profile: `{reliability.get('profile', 'production')}`",
+            f"- Backend mode: `{backend.get('mode', 'auto')}`",
+            f"- Native version: `{manifest.get('native_version', '')}`",
+            "",
+            "## Extraction Windows",
+            "",
+            *extract_lines,
+            "",
+            "## Inputs",
+            "",
+            *target_lines,
+            *sample_lines,
+            "",
+            "## Commands",
+            "",
+            *command_lines,
+            "",
+            "## Warnings",
+            "",
+            *(f"- {warning}" for warning in warning_lines),
+            "",
+            "## Citation",
+            "",
+            f"Cite DotMatch as: {metadata.get('family_names', '')} {metadata.get('given_names', '')}. {metadata.get('title', '')}. Software release v{metadata.get('version', PYTHON_PACKAGE_VERSION)}. {metadata.get('url', '')}.",
+            f"DOI: https://doi.org/{metadata.get('doi', '')}",
+            "",
+            "BibTeX is written to `CITATION.bib`; software versions are written to `software_versions.yml`.",
+            "",
+        ]
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+
+
+def _methods_extract_lines(assay: AssaySpec) -> list[str]:
+    if assay.mode in {"count", "demux"}:
+        extract = _table(assay.data, "extract")
+        return [f"- Primary window: start `{extract.get('start')}`, length `{extract.get('length')}`"]
+    left = _table(assay.data, "left")
+    right = _table(assay.data, "right")
+    return [
+        f"- Left window: start `{left.get('start')}`, length `{left.get('length')}`",
+        f"- Right window: start `{right.get('start')}`, length `{right.get('length')}`",
+    ]
+
+
+def _methods_target_lines(assay: AssaySpec) -> list[str]:
+    keys = ["targets"] if assay.mode == "count" else ["barcodes"] if assay.mode == "demux" else ["left_targets", "right_targets"]
+    return [f"- `{key}`: `{assay.data.get(key, '')}`" for key in keys]
+
+
+def _methods_sample_lines(assay: AssaySpec) -> list[str]:
+    if assay.mode == "count":
+        return [
+            f"- Sample `{sample.get('id', '')}` FASTQ: `{sample.get('fastq', '')}`"
+            for sample in _samples(assay.data)
+        ]
+    return [f"- Reads: `{assay.data.get('reads', '')}`"]
+
+
+def _methods_command_lines(manifest: Mapping[str, Any]) -> list[str]:
+    commands = manifest.get("commands", []) or []
+    if not commands:
+        return ["- No native commands were recorded for this preflight artifact."]
+    lines = []
+    for command in commands:
+        if not isinstance(command, Mapping):
+            continue
+        argv = command.get("argv", []) or []
+        lines.append(f"- `{shlex.join(str(part) for part in argv)}`")
+    return lines or ["- No native commands were recorded for this preflight artifact."]
+
+
+def _write_citation_bib(path: Path, metadata: Mapping[str, str]) -> None:
+    family = metadata.get("family_names", "O'Toole")
+    given = metadata.get("given_names", "Donncha")
+    title = metadata.get("title", "DotMatch")
+    version = metadata.get("version", PYTHON_PACKAGE_VERSION)
+    doi = metadata.get("doi", "")
+    url = metadata.get("url", "https://github.com/dnncha/dotmatch")
+    year = metadata.get("year", "2026")
+    bib = f"""@software{{dotmatch,
+  author = {{{_bibtex_escape(family)}, {_bibtex_escape(given)}}},
+  title = {{{_bibtex_escape(title)}}},
+  version = {{{_bibtex_escape(version)}}},
+  year = {{{_bibtex_escape(year)}}},
+  doi = {{{_bibtex_escape(doi)}}},
+  url = {{{_bibtex_escape(url)}}}
+}}
+"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(bib, encoding="utf-8")
+
+
+def _bibtex_escape(value: str) -> str:
+    return value.replace("\\", "\\\\").replace("{", "\\{").replace("}", "\\}")
+
+
+def _write_software_versions_yml(path: Path, plan: AssayPlan, manifest: Mapping[str, Any]) -> None:
+    versions = {
+        "dotmatch_python": PYTHON_PACKAGE_VERSION,
+        "dotmatch_native": str(manifest.get("native_version", "")),
+        "python": sys.version.split()[0],
+        "assayspec_schema": "1",
+        "assayspec_mode": plan.spec.mode,
+        "assayspec_assay_type": plan.spec.assay_type,
+        "workflow_wrapper": "dotmatch assay",
+        "report_tool": "dotmatch assayspec report",
+    }
+    lines = ["software:"]
+    for key, value in versions.items():
+        lines.append(f"  {key}: {_yaml_scalar(value)}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _yaml_scalar(value: object) -> str:
+    text = str(value)
+    return "'" + text.replace("'", "''") + "'"
+
+
 def _write_manifest(plan: AssayPlan, manifest: Mapping[str, Any]) -> None:
+    _write_citation_artifacts(plan, manifest)
     path = plan.artifacts["manifest"]
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as fh:
@@ -3710,6 +3920,9 @@ def _write_manifest_summary(plan: AssayPlan, manifest: Mapping[str, Any]) -> Non
         "sample_count",
         "primary_report",
         "manifest",
+        "methods",
+        "citation_bib",
+        "software_versions",
     ]
     row = [
         str(manifest.get("schema_version", "")),
@@ -3723,6 +3936,9 @@ def _write_manifest_summary(plan: AssayPlan, manifest: Mapping[str, Any]) -> Non
         str(_sample_count(plan.spec)),
         str(plan.artifacts["assay_report"]),
         str(plan.artifacts["manifest"]),
+        str(plan.artifacts["methods"]),
+        str(plan.artifacts["citation_bib"]),
+        str(plan.artifacts["software_versions"]),
     ]
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as fh:
@@ -3777,6 +3993,8 @@ def _write_assay_report(plan: AssayPlan, manifest: Mapping[str, Any]) -> None:
         _audit_html(plan),
         "<h2>Autopsy</h2>",
         _autopsy_html(autopsy_artifacts, path.parent),
+        "<h2>Methods and Citation</h2>",
+        _citation_artifacts_html(plan, path.parent),
         "<h2>Artifacts</h2>",
         _mapping_table(artifacts, path.parent),
         "<h2>Native Commands</h2>",
@@ -3837,6 +4055,20 @@ def _reliability_html(plan: AssayPlan, report_dir: Path) -> str:
     summary = plan.artifacts.get("reliability_manifest_summary")
     if summary is not None and summary.exists():
         parts.append(_tsv_preview_table(summary, 4))
+    return "".join(parts)
+
+
+def _citation_artifacts_html(plan: AssayPlan, report_dir: Path) -> str:
+    artifacts = {
+        "methods": plan.artifacts.get("methods", ""),
+        "citation_bib": plan.artifacts.get("citation_bib", ""),
+        "software_versions": plan.artifacts.get("software_versions", ""),
+    }
+    parts = [_mapping_table({key: str(value) for key, value in artifacts.items() if value}, report_dir)]
+    methods = plan.artifacts.get("methods")
+    if methods is not None and methods.exists():
+        preview = "\n".join(methods.read_text(encoding="utf-8").splitlines()[:12])
+        parts.append(f"<pre><code>{html.escape(preview)}</code></pre>")
     return "".join(parts)
 
 

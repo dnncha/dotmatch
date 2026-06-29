@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import ctypes
+import csv
+import gzip
 import math
 import os
 import platform
 from dataclasses import dataclass
-import math
 from pathlib import Path
-from typing import Sequence, Any
+from typing import Any, Iterable, Iterator, Sequence, TextIO
 
 try:
     import pandas as pd  # type: ignore
@@ -75,6 +76,27 @@ class PosteriorAssignment:
     second_posterior: float
     status: int
     posteriors: tuple[float, ...]
+
+
+@dataclass(frozen=True)
+class FastqRecord:
+    read_id: str
+    seq: str
+    qual: str
+
+
+@dataclass(frozen=True)
+class StreamAssignment:
+    read_id: str
+    observed_seq: str
+    target_index: int
+    target_name: str
+    target_seq: str
+    best_distance: int
+    second_best_distance: int
+    match_count: int
+    status: int
+    status_name: str
 
 
 def _platform_ext() -> str:
@@ -169,6 +191,144 @@ def _as_bytes(seq: str | bytes) -> bytes:
     if isinstance(seq, str):
         return seq.encode("ascii")
     raise TypeError("sequence must be str or bytes")
+
+
+def status_name(status: int) -> str:
+    """Return the stable text name for a DotMatch assignment status."""
+    return {
+        MATCH_INVALID: "invalid",
+        MATCH_NONE: "none",
+        MATCH_UNIQUE: "unique",
+        MATCH_AMBIGUOUS: "ambiguous",
+    }.get(status, f"unknown:{status}")
+
+
+def _open_text(path: str | Path, mode: str = "rt") -> TextIO:
+    path = Path(path)
+    if str(path).endswith(".gz"):
+        return gzip.open(path, mode)
+    return path.open(mode, encoding="utf-8", newline="")
+
+
+def _looks_like_target_header(cols: Sequence[str]) -> bool:
+    normalized = {str(col).strip().lower() for col in cols[:3]}
+    return bool(normalized & {"target_id", "guide_id", "barcode_id", "id", "name"}) and bool(
+        normalized & {"target_seq", "guide_seq", "barcode_seq", "sequence", "seq"}
+    )
+
+
+def load_targets(path: str | Path) -> list[tuple[str, str]]:
+    """Load a target table as ``(target_id, sequence)`` pairs.
+
+    TSV is the default; ``.csv`` files are parsed as comma-separated. Headered
+    tables use common id/sequence column names, and headerless one- or two-column
+    files are accepted for notebook and workflow glue.
+    """
+    source = Path(path)
+    delimiter = "," if source.suffix.lower() == ".csv" else "\t"
+    targets: list[tuple[str, str]] = []
+    with _open_text(source) as fh:
+        first_data = True
+        id_col = 0
+        seq_col = 1
+        for row in csv.reader(fh, delimiter=delimiter):
+            if not row:
+                continue
+            cols = [col.strip() for col in row]
+            if not any(cols) or cols[0].startswith("#"):
+                continue
+            if first_data and _looks_like_target_header(cols):
+                header = {name.strip().lower(): i for i, name in enumerate(cols)}
+                for candidate in ("target_id", "guide_id", "barcode_id", "id", "name"):
+                    if candidate in header:
+                        id_col = header[candidate]
+                        break
+                for candidate in ("target_seq", "guide_seq", "barcode_seq", "sequence", "seq"):
+                    if candidate in header:
+                        seq_col = header[candidate]
+                        break
+                first_data = False
+                continue
+            first_data = False
+            if len(cols) == 1:
+                target_id = f"target_{len(targets)}"
+                seq = cols[0].upper()
+            else:
+                if id_col >= len(cols) or seq_col >= len(cols):
+                    raise ValueError(f"target row does not contain id/sequence columns: {source}")
+                target_id = cols[id_col] or f"target_{len(targets)}"
+                seq = cols[seq_col].upper()
+            if not seq:
+                raise ValueError(f"empty target sequence in {source}")
+            targets.append((target_id, seq))
+    if not targets:
+        raise ValueError(f"no targets found in {source}")
+    return targets
+
+
+def iter_fastq(path: str | Path) -> Iterator[FastqRecord]:
+    """Yield FASTQ records from plain or gzipped FASTQ."""
+    with _open_text(path) as fh:
+        while True:
+            header = fh.readline()
+            if not header:
+                return
+            seq = fh.readline()
+            plus = fh.readline()
+            qual = fh.readline()
+            if not seq or not plus or not qual:
+                raise ValueError(f"truncated FASTQ record in {path}")
+            header = header.rstrip("\n\r")
+            seq = seq.rstrip("\n\r").upper()
+            plus = plus.rstrip("\n\r")
+            qual = qual.rstrip("\n\r")
+            if not header.startswith("@") or not plus.startswith("+"):
+                raise ValueError(f"invalid FASTQ record in {path}")
+            if len(seq) != len(qual):
+                raise ValueError(f"invalid FASTQ record in {path}: sequence and quality lengths differ")
+            yield FastqRecord(header[1:].split()[0], seq, qual)
+
+
+def _normalize_targets(targets: Any) -> list[tuple[str, str]]:
+    if isinstance(targets, (str, Path)):
+        return load_targets(targets)
+    if _HAS_PANDAS and hasattr(targets, "columns"):
+        return targets_from_dataframe(targets)
+    if _HAS_POLARS and pl is not None and isinstance(targets, pl.DataFrame):
+        return targets_from_dataframe(targets)
+    normalized: list[tuple[str, str]] = []
+    for i, item in enumerate(targets):
+        if isinstance(item, (tuple, list)) and len(item) >= 2:
+            normalized.append((str(item[0]), str(item[1]).upper()))
+        else:
+            normalized.append((f"target_{i}", str(item).upper()))
+    if not normalized:
+        raise ValueError("targets must not be empty")
+    return normalized
+
+
+def _extract_window(seq: str, start: int, length: int) -> str | None:
+    if start < 0:
+        raise ValueError("target_start must be non-negative")
+    if length <= 0:
+        raise ValueError("target_length must be positive")
+    end = start + length
+    if end > len(seq):
+        return None
+    return seq[start:end]
+
+
+def _chunks(items: Iterable[FastqRecord], size: int) -> Iterator[list[FastqRecord]]:
+    if size <= 0:
+        raise ValueError("batch_size must be positive")
+    batch: list[FastqRecord] = []
+    for item in items:
+        batch.append(item)
+        if len(batch) == size:
+            yield batch
+            batch = []
+    if batch:
+        yield batch
 
 
 def distance(a: str | bytes, b: str | bytes) -> int:
@@ -394,6 +554,167 @@ class Matcher:
             candidates_considered=int(stats.candidates_considered),
             candidates_verified=int(stats.candidates_verified),
         )
+
+
+def stream_assign(
+    fastq_path: str | Path,
+    targets: Any,
+    *,
+    target_start: int = 0,
+    target_length: int | None = None,
+    k: int = 1,
+    policy: str = "radius",
+    batch_size: int = 4096,
+    include_invalid: bool = True,
+) -> Iterator[StreamAssignment]:
+    """Stream fixed-window FASTQ assignments without loading reads into memory.
+
+    ``targets`` may be a path, a DataFrame accepted by ``targets_from_dataframe``,
+    a list of ``(id, seq)`` pairs, or a list of sequences. Only ``unique`` rows
+    carry a target id/sequence; ambiguous, none, and invalid windows remain
+    explicit rather than being forced into a target.
+    """
+    normalized_targets = _normalize_targets(targets)
+    target_names = [target_id for target_id, _seq in normalized_targets]
+    target_seqs = [seq for _target_id, seq in normalized_targets]
+    if target_length is None:
+        lengths = {len(seq) for seq in target_seqs}
+        if len(lengths) != 1:
+            raise ValueError("target_length is required when targets have mixed lengths")
+        target_length = lengths.pop()
+    _extract_window("", target_start, target_length)
+
+    with Matcher(target_seqs) as matcher:
+        for batch in _chunks(iter_fastq(fastq_path), batch_size):
+            observed: list[str] = []
+            valid_slots: list[int] = []
+            output: list[StreamAssignment | None] = [None] * len(batch)
+            for slot, record in enumerate(batch):
+                window = _extract_window(record.seq, target_start, target_length)
+                if window is None:
+                    if include_invalid:
+                        output[slot] = StreamAssignment(
+                            read_id=record.read_id,
+                            observed_seq="",
+                            target_index=-1,
+                            target_name="",
+                            target_seq="",
+                            best_distance=-1,
+                            second_best_distance=-1,
+                            match_count=0,
+                            status=MATCH_INVALID,
+                            status_name=status_name(MATCH_INVALID),
+                        )
+                    continue
+                observed.append(window)
+                valid_slots.append(slot)
+
+            if observed:
+                for slot, window, result in zip(
+                    valid_slots,
+                    observed,
+                    matcher.assign(observed, k=k, policy=policy),
+                ):
+                    record = batch[slot]
+                    if result.status == MATCH_UNIQUE and 0 <= result.target_index < len(target_names):
+                        target_name = target_names[result.target_index]
+                        target_seq = target_seqs[result.target_index]
+                    else:
+                        target_name = ""
+                        target_seq = ""
+                    output[slot] = StreamAssignment(
+                        read_id=record.read_id,
+                        observed_seq=window,
+                        target_index=result.target_index,
+                        target_name=target_name,
+                        target_seq=target_seq,
+                        best_distance=result.best_distance,
+                        second_best_distance=result.second_best_distance,
+                        match_count=result.match_count,
+                        status=result.status,
+                        status_name=status_name(result.status),
+                )
+            for assignment in output:
+                if assignment is not None:
+                    yield assignment
+
+
+def assignment_summary(assignments: Iterable[StreamAssignment]) -> dict[str, int | float]:
+    """Summarize streamed assignments into counts and core rates."""
+    summary = _empty_assignment_summary()
+    for assignment in assignments:
+        _add_assignment_to_summary(summary, assignment)
+    return _finish_assignment_summary(summary)
+
+
+def _empty_assignment_summary() -> dict[str, int | float]:
+    return {
+        "total_reads": 0,
+        "assigned_unique": 0,
+        "assigned_exact": 0,
+        "assigned_corrected": 0,
+        "ambiguous": 0,
+        "unmatched": 0,
+        "invalid": 0,
+    }
+
+
+def _add_assignment_to_summary(summary: dict[str, int | float], assignment: StreamAssignment) -> None:
+    summary["total_reads"] = int(summary["total_reads"]) + 1
+    if assignment.status == MATCH_UNIQUE:
+        summary["assigned_unique"] = int(summary["assigned_unique"]) + 1
+        if assignment.best_distance == 0:
+            summary["assigned_exact"] = int(summary["assigned_exact"]) + 1
+        else:
+            summary["assigned_corrected"] = int(summary["assigned_corrected"]) + 1
+    elif assignment.status == MATCH_AMBIGUOUS:
+        summary["ambiguous"] = int(summary["ambiguous"]) + 1
+    elif assignment.status == MATCH_NONE:
+        summary["unmatched"] = int(summary["unmatched"]) + 1
+    else:
+        summary["invalid"] = int(summary["invalid"]) + 1
+
+
+def _finish_assignment_summary(summary: dict[str, int | float]) -> dict[str, int | float]:
+    total = int(summary["total_reads"])
+    summary["assignment_rate"] = int(summary["assigned_unique"]) / total if total else 0.0
+    summary["ambiguous_rate"] = int(summary["ambiguous"]) / total if total else 0.0
+    summary["no_match_rate"] = int(summary["unmatched"]) / total if total else 0.0
+    summary["invalid_rate"] = int(summary["invalid"]) / total if total else 0.0
+    return summary
+
+
+def write_assignments_tsv(assignments: Iterable[StreamAssignment], path: str | Path) -> dict[str, int | float]:
+    """Write streamed assignments to TSV and return ``assignment_summary``."""
+    columns = [
+        "read_id",
+        "observed_seq",
+        "target_id",
+        "target_seq",
+        "distance",
+        "status",
+        "match_count",
+        "second_best_distance",
+    ]
+    summary = _empty_assignment_summary()
+    with _open_text(path, "wt") as fh:
+        writer = csv.DictWriter(fh, fieldnames=columns, delimiter="\t", lineterminator="\n")
+        writer.writeheader()
+        for row in assignments:
+            writer.writerow(
+                {
+                    "read_id": row.read_id,
+                    "observed_seq": row.observed_seq,
+                    "target_id": row.target_name,
+                    "target_seq": row.target_seq,
+                    "distance": row.best_distance,
+                    "status": row.status_name,
+                    "match_count": row.match_count,
+                    "second_best_distance": row.second_best_distance,
+                }
+            )
+            _add_assignment_to_summary(summary, row)
+    return _finish_assignment_summary(summary)
 
 
 def _ensure_pandas() -> None:

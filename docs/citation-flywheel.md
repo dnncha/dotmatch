@@ -12,9 +12,10 @@ listed in `docs/scientific-claims.md`.
 | P0 | Upstream official nf-core modules | A DotMatch module PR is merged into `nf-core/modules`, with tests, metadata, containers, and a workflow adoption record. |
 | P0 | Publish a MultiQC module | MultiQC automatically discovers DotMatch outputs without a custom config, renders core assignment metrics, and has a released package or upstream integration. |
 | P1 | Publish Galaxy and Snakemake wrappers | Reviewed wrappers are available outside this repository, with tiny fixtures and documented outputs. |
-| P1 | Generate run citation artifacts | Each production run writes `methods.md`, `CITATION.bib`, and `software_versions.yml` beside summary and report outputs. |
+| P1 | Generate run citation artifacts | Done in AssaySpec runs: each production run writes `methods.md`, `CITATION.bib`, and `software_versions.yml` beside summary and report outputs. |
 | P1 | Add copyable methods and citation UI | Workbench and generated HTML reports expose a single "Copy methods and citation" action backed by the generated methods artifact. |
 | P1 | Recruit documented external pilots | Three to five independent labs, cores, or workflow maintainers approve public pilot records with scope notes. |
+| P1 | Maintain the industry exposure kit | Homepage audience routes, outreach copy, workflow handoffs, citation links, and adopter-record rules stay aligned in `docs/industry-exposure.md`. |
 | P2 | Publish a methods and benchmark preprint | The manuscript demonstrates speed and the consequences of ambiguity, unsafe rescue, and incorrect barcode windows. |
 | P2 | Maintain a public used-by page | Quote-approved independent examples are listed in `docs/adopters/` and mirrored in the public docs. |
 

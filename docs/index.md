@@ -33,6 +33,9 @@ need their own gates before they are public claims.
 - CRISPR users can follow the [first-run CRISPR guide-counting tutorial](tutorials/crispr-count-first-run.md).
 - Labs evaluating scientific claims should read [Trust, Scope, and Evidence](trust-and-scope.md).
 - Workflow and pipeline authors should use the [public output schemas](schemas.md).
+- Industry evaluators and maintainers should use the
+  [Industry Exposure Kit](industry-exposure.md) to route outreach, citations,
+  pilots, and workflow submissions without broadening public claims.
 - Teams evaluating the open-core boundary should read
   [Commercial Boundary](commercial-boundary.md) and
   [Evidence Packet v1](evidence-packet-v1.md).
@@ -58,6 +61,7 @@ getting-started
 command-reference
 tutorials/crispr-count-first-run
 tutorials/scverse-perturb-seq
+streaming-api
 assayspec
 crispr-qc
 barcode-panel-design
@@ -72,6 +76,7 @@ proposals-and-roadmap
 schemas
 methods-and-citation
 citation-flywheel
+industry-exposure
 packaging
 release-process
 workflow-submissions

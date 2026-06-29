@@ -1,5 +1,7 @@
 """Light tests for tl and pure parsers (no heavy optional deps required for basic paths)."""
 
+import gzip
+
 import pytest
 
 from dotmatch.multiqc import (
@@ -82,3 +84,52 @@ def test_assign_features_requires_anndata(monkeypatch):
     monkeypatch.setattr(tl, "_HAS_ANNDATA", False)
     with pytest.raises(ImportError, match="anndata"):
         tl.assign_features(None, library=[], seq_col="x")
+
+
+def test_stream_assign_loads_targets_and_summarizes_without_loading_reads(tmp_path):
+    import dotmatch
+
+    targets = tmp_path / "targets.csv"
+    targets.write_text("target_id,target_seq\na,ACGT\nb,TTTT\n", encoding="utf-8")
+    reads = tmp_path / "reads.fastq.gz"
+    with gzip.open(reads, "wt", encoding="utf-8") as fh:
+        fh.write(
+            "@exact\nACGT\n+\nIIII\n"
+            "@corrected\nACGA\n+\nIIII\n"
+            "@none\nGGGG\n+\nIIII\n"
+            "@short\nAC\n+\nII\n"
+        )
+
+    rows = list(dotmatch.stream_assign(reads, targets, target_length=4, k=1))
+
+    assert [row.status_name for row in rows] == ["unique", "unique", "none", "invalid"]
+    assert rows[0].target_name == "a"
+    assert rows[1].best_distance == 1
+    summary = dotmatch.assignment_summary(rows)
+    assert summary["total_reads"] == 4
+    assert summary["assigned_unique"] == 2
+    assert summary["assigned_exact"] == 1
+    assert summary["assigned_corrected"] == 1
+    assert summary["unmatched"] == 1
+    assert summary["invalid"] == 1
+    assert summary["assignment_rate"] == 0.5
+
+
+def test_write_assignments_tsv_returns_summary(tmp_path):
+    import dotmatch
+
+    reads = tmp_path / "reads.fastq"
+    reads.write_text("@r0\nACGT\n+\nIIII\n@r1\nCCCC\n+\nIIII\n", encoding="utf-8")
+    out = tmp_path / "assignments.tsv"
+
+    summary = dotmatch.write_assignments_tsv(
+        dotmatch.stream_assign(reads, [("guide_1", "ACGT")], target_length=4, k=0),
+        out,
+    )
+
+    lines = out.read_text(encoding="utf-8").splitlines()
+    assert lines[0] == "read_id\tobserved_seq\ttarget_id\ttarget_seq\tdistance\tstatus\tmatch_count\tsecond_best_distance"
+    assert "r0\tACGT\tguide_1\tACGT\t0\tunique\t1\t-1" in lines
+    assert "r1\tCCCC\t\t\t-1\tnone\t0\t-1" in lines
+    assert summary["assigned_unique"] == 1
+    assert summary["unmatched"] == 1

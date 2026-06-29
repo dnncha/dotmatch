@@ -90,12 +90,20 @@ production_warning_count
 sample_count
 primary_report
 manifest
+methods
+citation_bib
+software_versions
 ```
 
 Rules:
 
 - `primary_report` points to the `assay_report.html` artifact;
 - `manifest` points to the full `assay_manifest.json` provenance record;
+- `methods` points to copyable methods prose for lab notebooks, reports, and
+  workflow submissions;
+- `citation_bib` points to BibTeX generated from checked citation metadata;
+- `software_versions` points to YAML-formatted version metadata for DotMatch,
+  the native binary, Python, and the AssaySpec wrapper;
 - warning counts are decimal integers;
 - `autopsy_triggered` is `true` or `false`.
 

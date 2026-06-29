@@ -298,6 +298,10 @@ def check_pull_request_template(root: Path, result: AuditResult) -> None:
         result.failures.append("pull request template must mention make asan for native safety changes")
     if "make scientific-readiness-ready" not in template:
         result.failures.append("pull request template must mention make scientific-readiness-ready for claim/evidence changes")
+    if "make repository-ready" not in template:
+        result.failures.append(
+            "pull request template must mention make repository-ready for governance/security/licensing/trademark/public-doc changes"
+        )
     if not any("pull request template" in failure for failure in result.failures):
         result.passed.append("pull request template evidence checklist present")
 

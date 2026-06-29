@@ -315,6 +315,12 @@ h3 {
   background: #fff;
 }
 
+.audience-section {
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%),
+    #fff;
+}
+
 .context-rail {
   flex-wrap: wrap;
   gap: 0.56rem;
@@ -349,6 +355,54 @@ h3 {
   border-radius: 7px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-weight: 800;
+}
+
+.audience-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.audience-grid article {
+  display: flex;
+  min-width: 0;
+  min-height: 250px;
+  flex-direction: column;
+  padding: 1.15rem;
+  border: 1px solid var(--line);
+  border-top: 5px solid var(--blue);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.audience-grid article:nth-child(2) {
+  border-top-color: var(--green);
+}
+
+.audience-grid article:nth-child(3) {
+  border-top-color: var(--amber);
+}
+
+.audience-grid article:nth-child(4) {
+  border-top-color: var(--purple);
+}
+
+.audience-grid h3 {
+  margin-bottom: 0.72rem;
+}
+
+.audience-grid p {
+  color: var(--muted);
+  font-size: 0.98rem;
+  line-height: 1.56;
+}
+
+.audience-grid a {
+  margin-top: auto;
+  padding-top: 1rem;
+  color: var(--green-strong);
+  font-size: 0.94rem;
+  font-weight: 780;
 }
 
 .evidence-section {
@@ -403,6 +457,74 @@ h3 {
 
 .evidence-links a:hover {
   color: var(--green);
+}
+
+.exposure-section {
+  background: #fff;
+}
+
+.exposure-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.36fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.exposure-list {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  background: var(--line);
+  list-style: none;
+}
+
+.exposure-list li {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.22fr) minmax(0, 1fr);
+  gap: 1rem;
+  min-width: 0;
+  padding: 1rem 1.15rem;
+  background: #fff;
+}
+
+.exposure-list strong {
+  color: var(--green-strong);
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.exposure-list p {
+  color: var(--muted);
+  font-size: 0.98rem;
+  line-height: 1.52;
+}
+
+.exposure-links {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f7fbf9;
+}
+
+.exposure-links a {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0.85rem;
+  border: 1px solid rgba(15, 107, 87, 0.18);
+  border-radius: 7px;
+  background: #fff;
+  font-size: 0.94rem;
+  font-weight: 760;
+}
+
+.exposure-links a:hover {
+  color: var(--green);
+  border-color: rgba(15, 107, 87, 0.38);
 }
 
 .install-section {
@@ -520,11 +642,13 @@ h3 {
   }
 
   .outcome-grid,
-  .failure-grid {
+  .failure-grid,
+  .audience-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .evidence-layout {
+  .evidence-layout,
+  .exposure-layout {
     grid-template-columns: 1fr;
   }
 }
@@ -556,6 +680,11 @@ h3 {
 
   .workflow-grid {
     grid-template-columns: 1fr;
+  }
+
+  .exposure-list li {
+    grid-template-columns: 1fr;
+    gap: 0.38rem;
   }
 
   .outcome-card {
@@ -591,12 +720,14 @@ h3 {
   }
 
   .outcome-grid,
-  .failure-grid {
+  .failure-grid,
+  .audience-grid {
     grid-template-columns: 1fr;
   }
 
   .failure-grid article,
-  .workflow-grid article {
+  .workflow-grid article,
+  .audience-grid article {
     min-height: auto;
   }
 

@@ -37,6 +37,23 @@ release features are only described as publicly available after the matching
 package version passes the install smoke tests in
 [Packaging Notes](docs/packaging.md).
 
+## Industry Evaluation and Exposure
+
+If you are evaluating DotMatch for a core facility, CRISPR screen team, assay
+development group, or workflow project, start with the public homepage and the
+scoped handoff documents:
+
+- [Homepage](https://dnncha.github.io/dotmatch): short positioning and audience
+  routes for known-target sequencing assignment.
+- [Industry Exposure Kit](docs/industry-exposure.md): the five highest-leverage
+  adoption moves, copy-paste outreach, and claim guardrails.
+- [Workflow Submission Pack](docs/workflow-submissions.md): nf-core, MultiQC,
+  Galaxy, and Snakemake handoff checklist.
+- [Methods and Citation](docs/methods-and-citation.md): copyable language for
+  reports, manuscripts, and release-specific citation.
+- [Adopter Notes](docs/adopters/README.md): rules for public, quote-approved
+  used-by records.
+
 ## DotMatch Pro
 
 DotMatch Pro is the commercial assay reliability workbench for teams that need
@@ -578,6 +595,26 @@ results, stats = matcher.assign_with_stats(["ACGT", "ACGC"], k=1)
 The Python API also defaults to radius-safe assignment. Pass `policy="best"` to
 `assign`, `Matcher.assign`, or `Matcher.assign_with_stats` only for explicit
 best-distance compatibility.
+
+For notebook or workflow glue that needs FASTQ-scale iteration without loading
+all reads into Python memory, use the streaming helper:
+
+```python
+import dotmatch
+
+rows = dotmatch.stream_assign(
+    "reads.fastq.gz",
+    "guides.tsv",
+    target_start=23,
+    target_length=20,
+    k=1,
+)
+summary = dotmatch.write_assignments_tsv(rows, "assignments.tsv")
+```
+
+`stream_assign` yields one `StreamAssignment` per read in FASTQ order, including
+`invalid` rows when the requested window cannot be extracted. See
+[docs/streaming-api.md](docs/streaming-api.md).
 
 Optional ecosystem extras (install e.g. `pip install "dotmatch[anndata]"`):
 

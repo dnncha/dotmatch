@@ -31,6 +31,9 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
+    "dotmatch-pro",
+    "dotmatch-pro-infra",
+    "dotmatch-pro-site",
     "node_modules"
   ]
 }

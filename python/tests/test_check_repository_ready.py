@@ -176,6 +176,7 @@ def test_repository_ready_reports_incomplete_pull_request_template(tmp_path):
     assert any("make pretag-ready" in failure for failure in result.failures)
     assert any("make asan" in failure for failure in result.failures)
     assert any("make scientific-readiness-ready" in failure for failure in result.failures)
+    assert any("make repository-ready" in failure for failure in result.failures)
 
 
 def test_repository_ready_reports_missing_changelog(tmp_path):

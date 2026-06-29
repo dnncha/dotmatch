@@ -335,6 +335,9 @@ def test_load_count_spec_and_compile_deterministic_plan(tmp_path: Path) -> None:
     assert plan.artifacts["reliability_findings"].name == "reliability_findings.tsv"
     assert plan.artifacts["reliability_report"].name == "reliability_report.html"
     assert plan.artifacts["reliability_manifest_summary"].name == "reliability_manifest.summary.tsv"
+    assert plan.artifacts["methods"].name == "methods.md"
+    assert plan.artifacts["citation_bib"].name == "CITATION.bib"
+    assert plan.artifacts["software_versions"].name == "software_versions.yml"
 
 
 def test_compile_assay_plan_passes_backend_mode(tmp_path: Path) -> None:
@@ -412,6 +415,9 @@ def test_assay_plan_prints_native_commands_without_creating_outputs(tmp_path: Pa
     assert "dotmatch-native audit --targets" in rc.stdout
     assert "dotmatch-native crispr-count --library" in rc.stdout
     assert "# reliability_report:" in rc.stdout
+    assert "# methods:" in rc.stdout
+    assert "# citation_bib:" in rc.stdout
+    assert "# software_versions:" in rc.stdout
     assert not (tmp_path / "assay_out").exists()
 
 
@@ -556,9 +562,25 @@ def test_assay_run_count_reproduces_existing_crispr_fixture(tmp_path: Path) -> N
     assert manifest["artifacts"]["reliability_findings"].endswith("reliability_findings.tsv")
     assert manifest["artifacts"]["reliability_report"].endswith("reliability_report.html")
     assert manifest["artifacts"]["reliability_manifest_summary"].endswith("reliability_manifest.summary.tsv")
+    assert manifest["artifacts"]["methods"].endswith("methods.md")
+    assert manifest["artifacts"]["citation_bib"].endswith("CITATION.bib")
+    assert manifest["artifacts"]["software_versions"].endswith("software_versions.yml")
     assert (out_dir / "crispr_qc.json").exists()
     assert (out_dir / "crispr_qc.summary.tsv").exists()
     assert (out_dir / "crispr_qc.html").exists()
+    methods = (out_dir / "methods.md").read_text(encoding="utf-8")
+    assert "DotMatch Methods and Citation" in methods
+    assert "Edit radius (`k`): `1`" in methods
+    assert "ambiguous reads were not silently counted" in methods
+    citation = (out_dir / "CITATION.bib").read_text(encoding="utf-8")
+    assert "@software{dotmatch" in citation
+    assert "doi = {10.5281/zenodo.20541628}" in citation
+    versions = (out_dir / "software_versions.yml").read_text(encoding="utf-8")
+    assert "dotmatch_python:" in versions
+    assert "dotmatch_native:" in versions
+    report_html = (out_dir / "assay_report.html").read_text(encoding="utf-8")
+    assert "Methods and Citation" in report_html
+    assert "methods.md" in report_html
     crispr_qc = json.loads((out_dir / "crispr_qc.json").read_text(encoding="utf-8"))
     assert crispr_qc["assay"] == "crispr_count_qc"
     assert "low_assignment_rate" in {warning["code"] for warning in crispr_qc["warnings"]}
@@ -576,6 +598,9 @@ def test_assay_run_count_reproduces_existing_crispr_fixture(tmp_path: Path) -> N
         "sample_count",
         "primary_report",
         "manifest",
+        "methods",
+        "citation_bib",
+        "software_versions",
     ]
     assert summary_lines[1].split("\t")[1:4] == ["count", "crispr", "ready"]
     reliability = json.loads((out_dir / "reliability_summary.json").read_text(encoding="utf-8"))
