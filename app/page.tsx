@@ -4,6 +4,7 @@ const evidenceGalleryUrl = `${repoUrl}/blob/main/docs/evidence-gallery/README.md
 const methodsUrl = `${repoUrl}/blob/main/docs/methods-and-citation.md`;
 const packagingUrl = `${repoUrl}/blob/main/docs/packaging.md`;
 const exposureUrl = `${repoUrl}/blob/main/docs/industry-exposure.md`;
+const nextWinsUrl = `${repoUrl}/blob/main/docs/industry-next-wins.md`;
 const workflowSubmissionsUrl = `${repoUrl}/blob/main/docs/workflow-submissions.md`;
 const adoptersUrl = `${repoUrl}/blob/main/docs/adopters/README.md`;
 const pypiUrl = "https://pypi.org/project/dotmatch/";
@@ -163,6 +164,19 @@ const exposureActions = [
   }
 ] as const;
 
+const nextWins = [
+  "Decision tree",
+  "Persona one-pagers",
+  "Integration tracker",
+  "Reviewer packet",
+  "Conference abstracts",
+  "Social pack",
+  "Maintainer templates",
+  "Pilot scorecard",
+  "Adoption KPIs",
+  "Release calendar"
+] as const;
+
 export default function Home() {
   return (
     <>
@@ -181,6 +195,7 @@ export default function Home() {
           <a href="#industry-routes">Audiences</a>
           <a href="#evidence">Evidence</a>
           <a href="#exposure">Adoption</a>
+          <a href="#next-wins">Next wins</a>
           <a href="#install">Install</a>
           <a href={repoUrl}>GitHub</a>
         </nav>
@@ -349,6 +364,35 @@ export default function Home() {
               <a href={workflowSubmissionsUrl}>Workflow submission pack</a>
               <a href={methodsUrl}>Methods and citation text</a>
               <a href={adoptersUrl}>Used-by record policy</a>
+            </aside>
+          </div>
+        </section>
+
+        <section id="next-wins" className="section next-wins-section" aria-labelledby="next-wins-title">
+          <div className="section-heading">
+            <p className="section-kicker">Next 10 exposure wins</p>
+            <h2 id="next-wins-title">Turn interest into repeatable distribution.</h2>
+            <p>
+              The next adoption layer is a checked playbook: decision paths,
+              persona-specific handoffs, maintainer-ready templates, pilot scoring,
+              and release communication assets that can be reused without widening
+              the scientific claim boundary.
+            </p>
+          </div>
+          <div className="next-wins-layout">
+            <ol className="next-wins-grid" aria-label="Next 10 industry exposure wins">
+              {nextWins.map((win) => (
+                <li key={win}>{win}</li>
+              ))}
+            </ol>
+            <aside className="next-wins-note">
+              <h3>Checked source of truth</h3>
+              <p>
+                The playbook and machine-readable tracker must stay aligned before
+                release. Private outreach and unmerged PRs remain activity, not
+                adoption evidence.
+              </p>
+              <a href={nextWinsUrl}>Open the next 10 playbook</a>
             </aside>
           </div>
         </section>

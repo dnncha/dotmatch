@@ -35,7 +35,9 @@ export const metadata: Metadata = {
     "MultiQC",
     "Galaxy workflows",
     "Snakemake",
-    "core facility sequencing"
+    "core facility sequencing",
+    "bioinformatics workflow adoption",
+    "sequencing core facility QC"
   ],
   openGraph: {
     title: "DotMatch - Assignment Reliability",

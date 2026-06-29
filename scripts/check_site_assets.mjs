@@ -8,6 +8,8 @@ const requiredFiles = [
   "../app/globals.css",
   "../next.config.ts",
   "../docs/industry-exposure.md",
+  "../docs/industry-exposure-plan.json",
+  "../docs/industry-next-wins.md",
   "../public/dotmatch-read-assignment.svg",
   "../public/dotmatch-og.png",
   "../public/dotmatch-twitter.png",
@@ -28,6 +30,8 @@ const layout = readFileSync(new URL("../app/layout.tsx", import.meta.url), "utf8
 const robots = readFileSync(new URL("../app/robots.ts", import.meta.url), "utf8");
 const sitemap = readFileSync(new URL("../app/sitemap.ts", import.meta.url), "utf8");
 const exposureKit = readFileSync(new URL("../docs/industry-exposure.md", import.meta.url), "utf8");
+const nextWinsDoc = readFileSync(new URL("../docs/industry-next-wins.md", import.meta.url), "utf8");
+const exposurePlan = JSON.parse(readFileSync(new URL("../docs/industry-exposure-plan.json", import.meta.url), "utf8"));
 const socialRenderer = readFileSync(new URL("../scripts/render_social_images.py", import.meta.url), "utf8");
 const nextConfig = readFileSync(new URL("../next.config.ts", import.meta.url), "utf8");
 
@@ -38,6 +42,7 @@ for (const anchor of [
   'id="industry-routes"',
   'id="evidence"',
   'id="exposure"',
+  'id="next-wins"',
   'id="install"'
 ]) {
   if (!page.includes(anchor)) {
@@ -57,6 +62,8 @@ for (const selector of [
   ".audience-grid",
   ".evidence-layout",
   ".exposure-list",
+  ".next-wins-grid",
+  ".next-wins-note",
   ".terminal",
   ".site-footer"
 ]) {
@@ -86,6 +93,9 @@ for (const phrase of [
   "Assay developers",
   "Industry exposure kit",
   "Workflow submission pack",
+  "Next 10 exposure wins",
+  "Decision tree",
+  "Release calendar",
   "pip install dotmatch"
 ]) {
   if (!normalizedPage.includes(phrase)) {
@@ -100,6 +110,7 @@ for (const phrase of [
   "docs/methods-and-citation.md",
   "docs/packaging.md",
   "docs/industry-exposure.md",
+  "docs/industry-next-wins.md",
   "docs/workflow-submissions.md",
   "docs/adopters/README.md"
 ]) {
@@ -176,6 +187,7 @@ if (!sitemap.includes("MetadataRoute.Sitemap") || !sitemap.includes("changeFrequ
 
 for (const phrase of [
   "The Big 5 Wins",
+  "Next 10 Wins",
   "Workflow distribution handoff",
   "Citation and methods flywheel",
   "Evidence-first launch packet",
@@ -184,6 +196,42 @@ for (const phrase of [
 ]) {
   if (!exposureKit.includes(phrase)) {
     console.error(`Exposure kit is missing required section: ${phrase}`);
+    process.exit(1);
+  }
+}
+
+if (!Array.isArray(exposurePlan.items) || exposurePlan.items.length !== 10) {
+  console.error("Industry exposure plan must contain exactly 10 next-win items.");
+  process.exit(1);
+}
+
+for (const item of exposurePlan.items) {
+  for (const field of ["id", "title", "primary_audience", "asset", "done_when"]) {
+    if (!item[field]) {
+      console.error(`Industry exposure plan item missing ${field}.`);
+      process.exit(1);
+    }
+  }
+  if (!nextWinsDoc.includes(item.title)) {
+    console.error(`Next-win doc missing plan title: ${item.title}`);
+    process.exit(1);
+  }
+}
+
+for (const phrase of [
+  "Evaluator Decision Tree",
+  "Persona One-Pagers",
+  "Integration Target Tracker",
+  "Reviewer Evidence Packet",
+  "Conference Abstracts",
+  "Social And Forum Pack",
+  "Maintainer Issue Templates",
+  "Pilot Scorecard",
+  "Adoption KPI Dashboard Spec",
+  "Release Communications Calendar"
+]) {
+  if (!nextWinsDoc.includes(phrase)) {
+    console.error(`Next-win doc is missing required section: ${phrase}`);
     process.exit(1);
   }
 }

@@ -47,6 +47,9 @@ scoped handoff documents:
   routes for known-target sequencing assignment.
 - [Industry Exposure Kit](docs/industry-exposure.md): the five highest-leverage
   adoption moves, copy-paste outreach, and claim guardrails.
+- [Next 10 Industry Exposure Wins](docs/industry-next-wins.md): decision tree,
+  persona one-pagers, integration tracker, reviewer packet, outreach copy,
+  pilot scorecard, KPIs, and release communication calendar.
 - [Workflow Submission Pack](docs/workflow-submissions.md): nf-core, MultiQC,
   Galaxy, and Snakemake handoff checklist.
 - [Methods and Citation](docs/methods-and-citation.md): copyable language for

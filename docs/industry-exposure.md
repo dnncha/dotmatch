@@ -135,6 +135,22 @@ Docs: https://dotmatch.readthedocs.io/
 5. Keep the homepage, docs index, citation page, and adopter records aligned so
    every external mention points to the same source of truth.
 
+## Next 10 Wins
+
+The next layer is tracked in [DotMatch Next 10 Industry Exposure Wins](industry-next-wins.md)
+and mirrored in `docs/industry-exposure-plan.json`.
+
+1. Evaluator decision tree.
+2. Persona one-pagers.
+3. Integration target tracker.
+4. Reviewer evidence packet.
+5. Conference abstracts.
+6. Social and forum pack.
+7. Maintainer issue templates.
+8. Pilot scorecard.
+9. Adoption KPI dashboard spec.
+10. Release communications calendar.
+
 ## Tracking Rules
 
 - Private feedback can inform the roadmap, but it is not adoption evidence.

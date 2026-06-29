@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "status": "ready_to_execute",
+  "scope": "next 10 industry exposure wins",
+  "items": [
+    {
+      "id": "decision_tree",
+      "title": "Evaluator Decision Tree",
+      "primary_audience": "technical evaluators",
+      "asset": "docs/industry-next-wins.md#1-evaluator-decision-tree",
+      "done_when": "A visitor can pick the right DotMatch entry path in under one minute without broad claims."
+    },
+    {
+      "id": "persona_one_pagers",
+      "title": "Persona One-Pagers",
+      "primary_audience": "core facilities, CRISPR teams, workflow maintainers, assay developers",
+      "asset": "docs/industry-next-wins.md#2-persona-one-pagers",
+      "done_when": "Each priority audience has a one-page pitch, proof path, and first command."
+    },
+    {
+      "id": "integration_tracker",
+      "title": "Integration Target Tracker",
+      "primary_audience": "pipeline maintainers",
+      "asset": "docs/industry-next-wins.md#3-integration-target-tracker",
+      "done_when": "Every target integration has an owner, upstream URL, readiness state, and next action."
+    },
+    {
+      "id": "reviewer_packet",
+      "title": "Reviewer Evidence Packet",
+      "primary_audience": "maintainers, reviewers, procurement evaluators",
+      "asset": "docs/industry-next-wins.md#4-reviewer-evidence-packet",
+      "done_when": "A reviewer can find install, outputs, claim boundaries, evidence, and citation text from one checklist."
+    },
+    {
+      "id": "conference_abstracts",
+      "title": "Conference Abstracts",
+      "primary_audience": "conference reviewers and attendees",
+      "asset": "docs/industry-next-wins.md#5-conference-abstracts",
+      "done_when": "Short and long abstracts are ready for workflow, core facility, and methods venues."
+    },
+    {
+      "id": "social_pack",
+      "title": "Social And Forum Pack",
+      "primary_audience": "bioinformatics community readers",
+      "asset": "docs/industry-next-wins.md#6-social-and-forum-pack",
+      "done_when": "Release posts, technical threads, and forum prompts are ready without unsupported claims."
+    },
+    {
+      "id": "maintainer_issue_templates",
+      "title": "Maintainer Issue Templates",
+      "primary_audience": "nf-core, MultiQC, Galaxy, Snakemake maintainers",
+      "asset": "docs/industry-next-wins.md#7-maintainer-issue-templates",
+      "done_when": "External issue or PR openings can be copied with scope, outputs, tests, and review asks."
+    },
+    {
+      "id": "pilot_scorecard",
+      "title": "Pilot Scorecard",
+      "primary_audience": "labs, cores, CROs, biotech teams",
+      "asset": "docs/industry-next-wins.md#8-pilot-scorecard",
+      "done_when": "Pilot feedback can be scored without turning private evaluation into public adoption evidence."
+    },
+    {
+      "id": "adoption_kpis",
+      "title": "Adoption KPI Dashboard Spec",
+      "primary_audience": "maintainers and commercial leads",
+      "asset": "docs/industry-next-wins.md#9-adoption-kpi-dashboard-spec",
+      "done_when": "The project tracks exposure health separately from scientific claims and release quality."
+    },
+    {
+      "id": "release_comms_calendar",
+      "title": "Release Communications Calendar",
+      "primary_audience": "maintainers",
+      "asset": "docs/industry-next-wins.md#10-release-communications-calendar",
+      "done_when": "Each release has a pre-merge, tag, channel-verification, and follow-up communication plan."
+    }
+  ]
+}

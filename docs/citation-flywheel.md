@@ -16,6 +16,7 @@ listed in `docs/scientific-claims.md`.
 | P1 | Add copyable methods and citation UI | Workbench and generated HTML reports expose a single "Copy methods and citation" action backed by the generated methods artifact. |
 | P1 | Recruit documented external pilots | Three to five independent labs, cores, or workflow maintainers approve public pilot records with scope notes. |
 | P1 | Maintain the industry exposure kit | Homepage audience routes, outreach copy, workflow handoffs, citation links, and adopter-record rules stay aligned in `docs/industry-exposure.md`. |
+| P1 | Execute the next 10 exposure wins | `docs/industry-next-wins.md`, `docs/industry-exposure-plan.json`, and the homepage "Next 10 exposure wins" section stay aligned. |
 | P2 | Publish a methods and benchmark preprint | The manuscript demonstrates speed and the consequences of ambiguity, unsafe rescue, and incorrect barcode windows. |
 | P2 | Maintain a public used-by page | Quote-approved independent examples are listed in `docs/adopters/` and mirrored in the public docs. |
 

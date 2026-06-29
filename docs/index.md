@@ -36,6 +36,9 @@ need their own gates before they are public claims.
 - Industry evaluators and maintainers should use the
   [Industry Exposure Kit](industry-exposure.md) to route outreach, citations,
   pilots, and workflow submissions without broadening public claims.
+- Maintainers pushing the next adoption layer should use the
+  [Next 10 Industry Exposure Wins](industry-next-wins.md) and the checked
+  `industry-exposure-plan.json` tracker.
 - Teams evaluating the open-core boundary should read
   [Commercial Boundary](commercial-boundary.md) and
   [Evidence Packet v1](evidence-packet-v1.md).
@@ -77,6 +80,7 @@ schemas
 methods-and-citation
 citation-flywheel
 industry-exposure
+industry-next-wins
 packaging
 release-process
 workflow-submissions

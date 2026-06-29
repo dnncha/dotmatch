@@ -527,6 +527,84 @@ h3 {
   border-color: rgba(15, 107, 87, 0.38);
 }
 
+.next-wins-section {
+  background:
+    linear-gradient(180deg, #f7fbf9 0%, #ffffff 100%),
+    #fff;
+}
+
+.next-wins-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.36fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.next-wins-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  background: var(--line);
+  list-style: none;
+  counter-reset: next-win;
+}
+
+.next-wins-grid li {
+  min-width: 0;
+  min-height: 132px;
+  padding: 1rem;
+  background: #fff;
+  color: var(--ink);
+  font-size: 0.98rem;
+  font-weight: 760;
+  line-height: 1.35;
+  counter-increment: next-win;
+}
+
+.next-wins-grid li::before {
+  display: block;
+  margin-bottom: 0.9rem;
+  color: var(--green-strong);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.88rem;
+  content: counter(next-win, decimal-leading-zero);
+}
+
+.next-wins-note {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: 1.15rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #102018;
+  color: #fff;
+}
+
+.next-wins-note h3 {
+  margin-bottom: 0.75rem;
+}
+
+.next-wins-note p {
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.next-wins-note a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: auto;
+  padding-top: 1rem;
+  color: #9ce5c9;
+  font-size: 0.94rem;
+  font-weight: 780;
+}
+
 .install-section {
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(420px, 1.1fr);
@@ -648,8 +726,13 @@ h3 {
   }
 
   .evidence-layout,
-  .exposure-layout {
+  .exposure-layout,
+  .next-wins-layout {
     grid-template-columns: 1fr;
+  }
+
+  .next-wins-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -680,6 +763,14 @@ h3 {
 
   .workflow-grid {
     grid-template-columns: 1fr;
+  }
+
+  .next-wins-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .next-wins-grid li {
+    min-height: auto;
   }
 
   .exposure-list li {
