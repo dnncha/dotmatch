@@ -42,6 +42,7 @@ jobs:
             snakemake-minimal
             planemo
             multiqc
+            pip
       - name: Install Python package and Galaxy lint extras
         shell: bash -el {0}
         run: |
