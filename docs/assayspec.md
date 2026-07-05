@@ -48,6 +48,9 @@ writes generated files, runs target audit first, runs the compiled native
 workflow, and records command exit codes and warnings in `assay_manifest.json`.
 It also writes `assay_report.html` as the primary workflow report and
 `assay_manifest.summary.tsv` for workflow systems and MultiQC custom content.
+Production runs also write `methods.md`, `CITATION.bib`, and
+`software_versions.yml` for lab notebooks, workflow submissions, and report
+handoff.
 
 `new` scaffolds a reviewable project directory from a target or barcode table and
 a directory of FASTQ files. It stages inputs under `inputs/` and `reads/`,
@@ -123,8 +126,9 @@ unmatched = true
 Count mode writes `counts.mageck.tsv` for CRISPR/MAGeCK output or `counts.tsv`
 for DotMatch output, plus `target_counts.long.tsv`, `sample_qc.tsv`,
 `summary.json`, native `report.html`, `assay_report.html`,
-`assay_manifest.json`, `assay_manifest.summary.tsv`, `audit/`, and optional
-row-level diagnostics. CRISPR count runs also write `crispr_qc.json`,
+`assay_manifest.json`, `assay_manifest.summary.tsv`, `methods.md`,
+`CITATION.bib`, `software_versions.yml`, `audit/`, and optional row-level
+diagnostics. CRISPR count runs also write `crispr_qc.json`,
 `crispr_qc.summary.tsv`, and `crispr_qc.html`.
 
 ## Reliability Artifacts

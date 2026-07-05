@@ -8,7 +8,11 @@ Security fixes target the latest development branch until formal releases begin.
 
 ## Reporting a Vulnerability
 
-Please do not open a public issue for a suspected vulnerability. Use GitHub private vulnerability reporting when it is enabled for the repository. If that is unavailable, contact the maintainer through the contact method listed on the GitHub profile or package metadata.
+Please do not open a public issue for a suspected vulnerability, security bug,
+or data-leak concern. Report security and data-leak issues privately. Use
+GitHub private vulnerability reporting when it is enabled for the repository. If
+that is unavailable, contact the maintainer through the contact method listed on
+the GitHub profile or package metadata.
 
 Useful reports include:
 
@@ -19,5 +23,10 @@ Useful reports include:
 
 ## Scientific Data
 
-Do not attach private sequencing data, patient data, human subject data, unpublished datasets, or proprietary sample sheets to public issues. Reduce reports to synthetic fixtures whenever possible.
+Do not attach real FASTQ, BAM, BCL, customer assay data, private sequencing
+data, patient data, human subject data, unpublished datasets, or proprietary
+sample sheets to public issues.
 
+Use synthetic or minimized reproductions whenever possible. If a reproduction
+needs biological context, reduce it to the smallest non-sensitive fixture that
+still demonstrates the parser, assignment, provenance, or reporting issue.

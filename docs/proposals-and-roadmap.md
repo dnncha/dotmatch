@@ -23,7 +23,7 @@ Target: keep or improve the current "hundreds of k reads/sec per core" while han
 - **scverse / AnnData + tl (implemented + UX hardened)**: Full `dotmatch.tl` submodule (`tl.assign_features`, `tl.feature_counts`, aliases for crispr/feature). In-place or copy, adds provenance. Plus the anndata bridges. `dotmatch[anndata]`. Pure parsers in multiqc for notebook use too.
 - **MultiQC (real module + pure parsers)**: Full DotMatchModule + public `parse_*_tsv` functions (no multiqc dep) for direct use in reports/notebooks. Tied exactly to schemas.md for scientific fidelity. `dotmatch[multiqc]` extra.
 - **nf-core**: Modules now document threads in meta.yml + pass cpus.
-- **Streaming / generator API**: `dotmatch.stream_assign(fastq_path, targets, ...)` yielding results without loading full read list in py layer (C side already batches).
+- **Streaming / generator API (implemented)**: `dotmatch.stream_assign(fastq_path, targets, ...)` yields FASTQ-order row assignments without loading full read lists in the Python layer. Helpers now cover `load_targets`, `iter_fastq`, `assignment_summary`, and `write_assignments_tsv` for notebook and workflow handoff.
 
 These let data scientists stay in notebooks without shelling out or writing glue.
 

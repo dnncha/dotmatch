@@ -30,7 +30,14 @@ export const metadata: Metadata = {
     "barcode demultiplexing",
     "barcode panel design",
     "barcode troubleshooting",
-    "FASTQ sequence matching"
+    "FASTQ sequence matching",
+    "nf-core",
+    "MultiQC",
+    "Galaxy workflows",
+    "Snakemake",
+    "core facility sequencing",
+    "bioinformatics workflow adoption",
+    "sequencing core facility QC"
   ],
   openGraph: {
     title: "DotMatch - Assignment Reliability",

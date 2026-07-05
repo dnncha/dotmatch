@@ -58,21 +58,21 @@ jobs:
         if: runner.os == 'Linux'
         run: npm run build
       - name: Workbench install
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && hashFiles('apps/workbench/package.json') != ''
         run: npm --prefix apps/workbench ci
       - name: Workbench lint
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && hashFiles('apps/workbench/package.json') != ''
         run: npm --prefix apps/workbench run lint
       - name: Workbench tests
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && hashFiles('apps/workbench/package.json') != ''
         run: npm --prefix apps/workbench run test
       - name: Workbench web build
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && hashFiles('apps/workbench/package.json') != ''
         run: npm --prefix apps/workbench run build
       - uses: dtolnay/rust-toolchain@stable
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && hashFiles('apps/workbench/src-tauri/Cargo.toml') != ''
       - name: Workbench Linux system dependencies
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && hashFiles('apps/workbench/src-tauri/Cargo.toml') != ''
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -82,7 +82,7 @@ jobs:
             libwebkit2gtk-4.1-dev \
             patchelf
       - name: Workbench Rust tests
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && hashFiles('apps/workbench/src-tauri/Cargo.toml') != ''
         run: cargo test --manifest-path apps/workbench/src-tauri/Cargo.toml
       - name: Coverage tool dependencies
         if: runner.os == 'Linux'

@@ -19,19 +19,30 @@ def _write_minimal_repo(root: Path) -> None:
         "README.md": (
             "# DotMatch\n\n"
             "`v0.1.0` includes stable release artifacts.\n\n"
+            "## DotMatch Pro\n\n"
+            "DotMatch Pro is the commercial assay reliability workbench for teams that need "
+            "run registries, signed reports, private assay specs, audit trails, and support.\n"
+            "The open-source DotMatch engine remains available under Apache-2.0.\n\n"
             "See the docs directory for packaging, release, and benchmark notes.\n"
         ),
         "CHANGELOG.md": "# Changelog\n\n## 0.1.0\n\n- Initial release.\n",
-        "LICENSE": "Apache-2.0\n",
+        "LICENSE": "Apache License\nVersion 2.0\n",
+        "NOTICE": "DotMatch\n\nApache License, Version 2.0\nDotMatch Pro\n",
         "CITATION.cff": "cff-version: 1.2.0\ntitle: DotMatch\nversion: \"0.1.0\"\n",
         "codemeta.json": (
             '{"name": "DotMatch", "license": "https://spdx.org/licenses/Apache-2.0", '
             '"version": "0.1.0", "softwareVersion": "0.1.0", "keywords": ["bioinformatics"]}\n'
         ),
-        "CONTRIBUTING.md": "# Contributing\n",
+        "CONTRIBUTING.md": "# Contributing\n\nNormal contributions use the same Apache-2.0 terms unless otherwise agreed.\n",
         "CODE_OF_CONDUCT.md": "# Code of Conduct\n",
-        "SECURITY.md": "# Security\n",
+        "SECURITY.md": (
+            "# Security\n\n"
+            "Do not attach real FASTQ, BAM, BCL, customer assay data to public issues.\n"
+            "Use synthetic or minimized reproductions.\n"
+            "Report security and data-leak issues privately.\n"
+        ),
         "SUPPORT.md": "# Support\n",
+        "TRADEMARKS.md": "# Trademarks\n\nDotMatch and DotMatch Pro branding do not change the Apache-2.0 license.\n",
         "pyproject.toml": "[project]\nname = \"dotmatch\"\nversion = \"0.1.0\"\nlicense = \"Apache-2.0\"\n",
         "package.json": '{"version": "0.1.0", "license": "Apache-2.0"}\n',
         "MANIFEST.in": "include src/qdalign.c\ninclude include/qdalign.h\n",
@@ -51,6 +62,7 @@ def _write_minimal_repo(root: Path) -> None:
             "- [ ] `make test`\n"
             "- [ ] `make cli-test`\n"
             "- [ ] `make python-test`\n"
+            "- [ ] `make repository-ready`\n"
             "- [ ] `make pretag-ready` if release surfaces changed.\n"
             "- [ ] `make asan` if native C code changed.\n"
             "- [ ] `make scientific-readiness-ready` if claims or evidence changed.\n"
@@ -74,6 +86,15 @@ def _write_minimal_repo(root: Path) -> None:
             "Current native comparator: Edlib exhaustive global edit-distance assignment.\n"
         ),
         "docs/schemas.md": "# Schemas\n",
+        "docs/commercial-boundary.md": (
+            "# Commercial Boundary\n\n"
+            "Open source includes the deterministic assignment engine and CLI.\n"
+            "Pro includes hosted or team workspaces, run registries, signed reports, "
+            "private assay registries, enterprise connectors, and commercial support.\n"
+            "Checklist: license present and still Apache-2.0; security policy present; "
+            "no raw customer assay data; docs build passes with `make docs-ready`; tests pass.\n"
+        ),
+        "docs/evidence-packet-v1.md": "# Evidence Packet v1\n\nunique ambiguous none invalid private customer FASTQ/BAM/BCL\n",
         "examples/workflows/galaxy/dotmatch_crispr_count.xml": "<tool id=\"dotmatch_crispr_count\" />\n",
         "examples/workflows/multiqc/multiqc_config.yaml": "custom_data:\n  dotmatch_sample_qc:\n",
         "examples/workflows/nf-core/README.md": "# nf-core-style Module Candidate\n",
@@ -155,6 +176,7 @@ def test_repository_ready_reports_incomplete_pull_request_template(tmp_path):
     assert any("make pretag-ready" in failure for failure in result.failures)
     assert any("make asan" in failure for failure in result.failures)
     assert any("make scientific-readiness-ready" in failure for failure in result.failures)
+    assert any("make repository-ready" in failure for failure in result.failures)
 
 
 def test_repository_ready_reports_missing_changelog(tmp_path):
@@ -330,3 +352,51 @@ def test_repository_ready_rejects_local_absolute_paths(tmp_path):
     result = checker.audit(tmp_path)
 
     assert any("local absolute path" in failure and "example.csv" in failure for failure in result.failures)
+
+
+def test_repository_ready_reports_missing_open_core_governance(tmp_path):
+    checker = _load_checker()
+    _write_minimal_repo(tmp_path)
+    (tmp_path / "TRADEMARKS.md").unlink()
+    (tmp_path / "docs" / "commercial-boundary.md").unlink()
+
+    result = checker.audit(tmp_path)
+
+    assert any("TRADEMARKS.md" in failure for failure in result.failures)
+    assert any("docs/commercial-boundary.md" in failure for failure in result.failures)
+
+
+def test_repository_ready_rejects_security_policy_without_raw_data_warning(tmp_path):
+    checker = _load_checker()
+    _write_minimal_repo(tmp_path)
+    (tmp_path / "SECURITY.md").write_text("# Security\n\nReport bugs.\n", encoding="utf-8")
+
+    result = checker.audit(tmp_path)
+
+    assert any("Do not attach real FASTQ, BAM, BCL, customer assay data" in failure for failure in result.failures)
+    assert any("Use synthetic or minimized reproductions" in failure for failure in result.failures)
+    assert any("Report security and data-leak issues privately" in failure for failure in result.failures)
+
+
+def test_repository_ready_rejects_unapproved_raw_data_paths(tmp_path):
+    checker = _load_checker()
+    _write_minimal_repo(tmp_path)
+    raw = tmp_path / "private_runs" / "customer.fastq"
+    raw.parent.mkdir(parents=True)
+    raw.write_text("@r1\nACGT\n+\nIIII\n", encoding="utf-8")
+
+    result = checker.audit(tmp_path)
+
+    assert any("raw biological data fixture is outside approved public/synthetic paths" in failure for failure in result.failures)
+
+
+def test_repository_ready_allows_public_synthetic_raw_data_paths(tmp_path):
+    checker = _load_checker()
+    _write_minimal_repo(tmp_path)
+    raw = tmp_path / "examples" / "workflows" / "fixtures" / "sample_a.fastq"
+    raw.parent.mkdir(parents=True, exist_ok=True)
+    raw.write_text("@r1\nACGT\n+\nIIII\n", encoding="utf-8")
+
+    result = checker.audit(tmp_path)
+
+    assert not any("raw biological data fixture" in failure for failure in result.failures)
