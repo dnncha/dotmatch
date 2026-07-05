@@ -3,7 +3,7 @@
   "status": "not_ready",
   "integrations": [],
   "blockers": [
-    "No external workflow-manager adoption record is listed yet. Bioconda package availability is distribution evidence, not workflow adoption evidence."
+    "No external workflow-manager integration record is listed yet. Bioconda package availability is distribution evidence, not an accepted workflow integration."
   ],
-  "next_action": "After a stable Galaxy, Nextflow, Snakemake, nf-core, MultiQC, or other external workflow record is public, add an integration entry with adoption and evidence URLs, then run make workflow-adoption-status."
+  "next_action": "After a stable Galaxy, Nextflow, Snakemake, nf-core, MultiQC, or other external workflow record is public, add an integration entry with integration and evidence URLs, then run make workflow-adoption-status."
 }

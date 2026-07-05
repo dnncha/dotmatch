@@ -170,6 +170,44 @@ def _load_lib() -> ctypes.CDLL:
                 ctypes.POINTER(_CIndexStats),
             ]
             lib.qdaln_index_assign_stats.restype = ctypes.c_int
+            lib.qdaln_index_assign_status_stats.argtypes = [
+                ctypes.c_void_p,
+                ctypes.POINTER(ctypes.c_char_p),
+                ctypes.POINTER(ctypes.c_size_t),
+                ctypes.c_size_t,
+                ctypes.c_int,
+                ctypes.POINTER(_CMatchResult),
+                ctypes.POINTER(_CIndexStats),
+            ]
+            lib.qdaln_index_assign_status_stats.restype = ctypes.c_int
+            lib.qdaln_index_assign_hamming_stats.argtypes = [
+                ctypes.c_void_p,
+                ctypes.POINTER(ctypes.c_char_p),
+                ctypes.POINTER(ctypes.c_size_t),
+                ctypes.c_size_t,
+                ctypes.c_int,
+                ctypes.POINTER(_CMatchResult),
+                ctypes.POINTER(_CIndexStats),
+            ]
+            lib.qdaln_index_assign_hamming_stats.restype = ctypes.c_int
+            lib.qdaln_index_lookup_exact_many_stats.argtypes = [
+                ctypes.c_void_p,
+                ctypes.POINTER(ctypes.c_char_p),
+                ctypes.POINTER(ctypes.c_size_t),
+                ctypes.c_size_t,
+                ctypes.POINTER(_CMatchResult),
+                ctypes.POINTER(_CIndexStats),
+            ]
+            lib.qdaln_index_lookup_exact_many_stats.restype = ctypes.c_int
+            lib.qdaln_index_lookup_exact_ascii_many_stats.argtypes = [
+                ctypes.c_void_p,
+                ctypes.POINTER(ctypes.c_char_p),
+                ctypes.POINTER(ctypes.c_size_t),
+                ctypes.c_size_t,
+                ctypes.POINTER(_CMatchResult),
+                ctypes.POINTER(_CIndexStats),
+            ]
+            lib.qdaln_index_lookup_exact_ascii_many_stats.restype = ctypes.c_int
             return lib
     searched = ", ".join(str(p) for p in _candidate_paths())
     raise RuntimeError(f"could not find DotMatch native library; searched: {searched}")
@@ -195,12 +233,15 @@ def _as_bytes(seq: str | bytes) -> bytes:
 
 def status_name(status: int) -> str:
     """Return the stable text name for a DotMatch assignment status."""
-    return {
+    return _STATUS_NAMES.get(status, f"unknown:{status}")
+
+
+_STATUS_NAMES = {
         MATCH_INVALID: "invalid",
         MATCH_NONE: "none",
         MATCH_UNIQUE: "unique",
         MATCH_AMBIGUOUS: "ambiguous",
-    }.get(status, f"unknown:{status}")
+}
 
 
 def _open_text(path: str | Path, mode: str = "rt") -> TextIO:
@@ -382,18 +423,23 @@ def _apply_policy(results: list[MatchResult], policy: str) -> list[MatchResult]:
     policy = _normalize_policy(policy)
     if policy == "best":
         return results
-    return [
-        MatchResult(
-            target_index=r.target_index,
-            best_distance=r.best_distance,
-            second_best_distance=r.second_best_distance,
-            match_count=r.match_count,
-            status=MATCH_AMBIGUOUS,
-        )
-        if r.status == MATCH_UNIQUE and r.match_count > 1
-        else r
-        for r in results
-    ]
+    applied: list[MatchResult] | None = None
+    for i, r in enumerate(results):
+        if r.status == MATCH_UNIQUE and r.match_count > 1:
+            if applied is None:
+                applied = results[:i]
+            applied.append(
+                MatchResult(
+                    target_index=r.target_index,
+                    best_distance=r.best_distance,
+                    second_best_distance=r.second_best_distance,
+                    match_count=r.match_count,
+                    status=MATCH_AMBIGUOUS,
+                )
+            )
+        elif applied is not None:
+            applied.append(r)
+    return applied if applied is not None else results
 
 
 def assign(
@@ -425,6 +471,29 @@ def assign(
         raise ValueError("invalid batch assignment input")
 
     return _apply_policy(_results_to_python(results), policy)
+
+
+def assign_hamming(
+    reads: Sequence[str | bytes],
+    barcodes: Sequence[str | bytes],
+    k: int = 1,
+    policy: str = "radius",
+) -> list[MatchResult]:
+    """Assign fixed-length reads by Hamming distance using the native Hamming index."""
+    with Matcher(barcodes) as matcher:
+        return matcher.assign_hamming(reads, k=k, policy=policy)
+
+
+def assign_exact(
+    reads: Sequence[str | bytes],
+    barcodes: Sequence[str | bytes],
+    *,
+    ascii_fold: bool = False,
+    policy: str = "radius",
+) -> list[MatchResult]:
+    """Assign exact fixed windows using the native exact lookup table."""
+    with Matcher(barcodes) as matcher:
+        return matcher.assign_exact(reads, ascii_fold=ascii_fold, policy=policy)
 
 
 def _phred33_probability(ch: int) -> float:
@@ -527,6 +596,94 @@ class Matcher:
         k: int = 1,
         policy: str = "radius",
     ) -> tuple[list[MatchResult], AssignmentStats]:
+        return self._assign_with_stats_func(_LIB.qdaln_index_assign_stats, reads, k=k, policy=policy)
+
+    def assign_hamming(self, reads: Sequence[str | bytes], k: int = 1, policy: str = "radius") -> list[MatchResult]:
+        """Assign fixed-length reads by Hamming distance with the native Hamming kernel.
+
+        This is the fast path for one-mismatch guide or barcode workflows where
+        insertions and deletions are intentionally out of scope.
+        """
+        results, _stats = self.assign_hamming_with_stats(reads, k=k, policy=policy)
+        return results
+
+    def assign_hamming_with_stats(
+        self,
+        reads: Sequence[str | bytes],
+        k: int = 1,
+        policy: str = "radius",
+    ) -> tuple[list[MatchResult], AssignmentStats]:
+        if k < 0 or k > 3:
+            raise ValueError("hamming assignment supports k between 0 and 3")
+        if k == 0:
+            return self.assign_exact_with_stats(reads, policy=policy)
+        return self._assign_with_stats_func(_LIB.qdaln_index_assign_hamming_stats, reads, k=k, policy=policy)
+
+    def assign_exact(
+        self,
+        reads: Sequence[str | bytes],
+        *,
+        ascii_fold: bool = False,
+        policy: str = "radius",
+    ) -> list[MatchResult]:
+        """Assign exact fixed windows using the native exact lookup table."""
+        results, _stats = self.assign_exact_with_stats(reads, ascii_fold=ascii_fold, policy=policy)
+        return results
+
+    def assign_exact_with_stats(
+        self,
+        reads: Sequence[str | bytes],
+        *,
+        ascii_fold: bool = False,
+        policy: str = "radius",
+    ) -> tuple[list[MatchResult], AssignmentStats]:
+        if self._closed:
+            raise ValueError("matcher is closed")
+        _normalize_policy(policy)
+        _read_bytes, read_ptrs, read_lens = _array_inputs(reads)
+        results = (_CMatchResult * len(reads))()
+        stats = _CIndexStats()
+        func = _LIB.qdaln_index_lookup_exact_ascii_many_stats if ascii_fold else _LIB.qdaln_index_lookup_exact_many_stats
+        rc = int(
+            func(
+                self._index,
+                read_ptrs,
+                read_lens,
+                len(reads),
+                results,
+                ctypes.byref(stats),
+            )
+        )
+        if rc != 0:
+            raise ValueError("invalid indexed assignment input")
+
+        return _apply_policy(_results_to_python(results), policy), AssignmentStats(
+            candidates_considered=int(stats.candidates_considered),
+            candidates_verified=int(stats.candidates_verified),
+        )
+
+    def assign_status_with_stats(
+        self,
+        reads: Sequence[str | bytes],
+        k: int = 1,
+        policy: str = "radius",
+    ) -> tuple[list[MatchResult], AssignmentStats]:
+        """Assign with an early-stop native path when only status/best target matters.
+
+        For ambiguous calls, ``match_count`` and ``second_best_distance`` may be
+        lower-bound values. Use ``assign_with_stats`` when exact ambiguity counts
+        are required.
+        """
+        return self._assign_with_stats_func(_LIB.qdaln_index_assign_status_stats, reads, k=k, policy=policy)
+
+    def _assign_with_stats_func(
+        self,
+        func: Any,
+        reads: Sequence[str | bytes],
+        *,
+        k: int,
+        policy: str,
+    ) -> tuple[list[MatchResult], AssignmentStats]:
         if self._closed:
             raise ValueError("matcher is closed")
         if k < 0:
@@ -537,7 +694,7 @@ class Matcher:
         results = (_CMatchResult * len(reads))()
         stats = _CIndexStats()
         rc = int(
-            _LIB.qdaln_index_assign_stats(
+            func(
                 self._index,
                 read_ptrs,
                 read_lens,
@@ -563,6 +720,7 @@ def stream_assign(
     target_start: int = 0,
     target_length: int | None = None,
     k: int = 1,
+    metric: str = "levenshtein",
     policy: str = "radius",
     batch_size: int = 4096,
     include_invalid: bool = True,
@@ -574,6 +732,10 @@ def stream_assign(
     carry a target id/sequence; ambiguous, none, and invalid windows remain
     explicit rather than being forced into a target.
     """
+    if metric not in {"levenshtein", "hamming", "exact"}:
+        raise ValueError("metric must be 'levenshtein', 'hamming', or 'exact'")
+    if metric == "exact" and k != 0:
+        raise ValueError("metric='exact' requires k=0")
     normalized_targets = _normalize_targets(targets)
     target_names = [target_id for target_id, _seq in normalized_targets]
     target_seqs = [seq for _target_id, seq in normalized_targets]
@@ -610,10 +772,16 @@ def stream_assign(
                 valid_slots.append(slot)
 
             if observed:
+                if metric == "levenshtein":
+                    results = matcher.assign(observed, k=k, policy=policy)
+                elif metric == "hamming":
+                    results = matcher.assign_hamming(observed, k=k, policy=policy)
+                elif metric == "exact":
+                    results = matcher.assign_exact(observed, policy=policy)
                 for slot, window, result in zip(
                     valid_slots,
                     observed,
-                    matcher.assign(observed, k=k, policy=policy),
+                    results,
                 ):
                     record = batch[slot]
                     if result.status == MATCH_UNIQUE and 0 <= result.target_index < len(target_names):
@@ -641,10 +809,36 @@ def stream_assign(
 
 def assignment_summary(assignments: Iterable[StreamAssignment]) -> dict[str, int | float]:
     """Summarize streamed assignments into counts and core rates."""
-    summary = _empty_assignment_summary()
+    total_reads = 0
+    assigned_unique = 0
+    assigned_exact = 0
+    assigned_corrected = 0
+    ambiguous = 0
+    unmatched = 0
+    invalid = 0
     for assignment in assignments:
-        _add_assignment_to_summary(summary, assignment)
-    return _finish_assignment_summary(summary)
+        total_reads += 1
+        if assignment.status == MATCH_UNIQUE:
+            assigned_unique += 1
+            if assignment.best_distance == 0:
+                assigned_exact += 1
+            else:
+                assigned_corrected += 1
+        elif assignment.status == MATCH_AMBIGUOUS:
+            ambiguous += 1
+        elif assignment.status == MATCH_NONE:
+            unmatched += 1
+        else:
+            invalid += 1
+    return _summary_from_counts(
+        total_reads,
+        assigned_unique,
+        assigned_exact,
+        assigned_corrected,
+        ambiguous,
+        unmatched,
+        invalid,
+    )
 
 
 def _empty_assignment_summary() -> dict[str, int | float]:
@@ -675,6 +869,28 @@ def _add_assignment_to_summary(summary: dict[str, int | float], assignment: Stre
         summary["invalid"] = int(summary["invalid"]) + 1
 
 
+def _summary_from_counts(
+    total_reads: int,
+    assigned_unique: int,
+    assigned_exact: int,
+    assigned_corrected: int,
+    ambiguous: int,
+    unmatched: int,
+    invalid: int,
+) -> dict[str, int | float]:
+    return _finish_assignment_summary(
+        {
+            "total_reads": total_reads,
+            "assigned_unique": assigned_unique,
+            "assigned_exact": assigned_exact,
+            "assigned_corrected": assigned_corrected,
+            "ambiguous": ambiguous,
+            "unmatched": unmatched,
+            "invalid": invalid,
+        }
+    )
+
+
 def _finish_assignment_summary(summary: dict[str, int | float]) -> dict[str, int | float]:
     total = int(summary["total_reads"])
     summary["assignment_rate"] = int(summary["assigned_unique"]) / total if total else 0.0
@@ -696,25 +912,43 @@ def write_assignments_tsv(assignments: Iterable[StreamAssignment], path: str | P
         "match_count",
         "second_best_distance",
     ]
-    summary = _empty_assignment_summary()
+    total_reads = 0
+    assigned_unique = 0
+    assigned_exact = 0
+    assigned_corrected = 0
+    ambiguous = 0
+    unmatched = 0
+    invalid = 0
     with _open_text(path, "wt") as fh:
-        writer = csv.DictWriter(fh, fieldnames=columns, delimiter="\t", lineterminator="\n")
-        writer.writeheader()
+        write = fh.write
+        write("\t".join(columns) + "\n")
         for row in assignments:
-            writer.writerow(
-                {
-                    "read_id": row.read_id,
-                    "observed_seq": row.observed_seq,
-                    "target_id": row.target_name,
-                    "target_seq": row.target_seq,
-                    "distance": row.best_distance,
-                    "status": row.status_name,
-                    "match_count": row.match_count,
-                    "second_best_distance": row.second_best_distance,
-                }
+            write(
+                f"{row.read_id}\t{row.observed_seq}\t{row.target_name}\t{row.target_seq}\t"
+                f"{row.best_distance}\t{row.status_name}\t{row.match_count}\t{row.second_best_distance}\n"
             )
-            _add_assignment_to_summary(summary, row)
-    return _finish_assignment_summary(summary)
+            total_reads += 1
+            if row.status == MATCH_UNIQUE:
+                assigned_unique += 1
+                if row.best_distance == 0:
+                    assigned_exact += 1
+                else:
+                    assigned_corrected += 1
+            elif row.status == MATCH_AMBIGUOUS:
+                ambiguous += 1
+            elif row.status == MATCH_NONE:
+                unmatched += 1
+            else:
+                invalid += 1
+    return _summary_from_counts(
+        total_reads,
+        assigned_unique,
+        assigned_exact,
+        assigned_corrected,
+        ambiguous,
+        unmatched,
+        invalid,
+    )
 
 
 def _ensure_pandas() -> None:
@@ -817,6 +1051,7 @@ def assign_dataframe(
     targets: Any,
     k: int = 1,
     policy: str = "radius",
+    metric: str = "levenshtein",
     read_ids: Sequence[str] | None = None,
     target_names: Sequence[str] | None = None,
 ) -> Any:
@@ -847,7 +1082,16 @@ def assign_dataframe(
     else:
         rseqs = [str(x) for x in reads]
         rids = read_ids
-    res = assign(rseqs, tseqs, k=k, policy=policy)
+    if metric == "levenshtein":
+        res = assign(rseqs, tseqs, k=k, policy=policy)
+    elif metric == "hamming":
+        res = assign_hamming(rseqs, tseqs, k=k, policy=policy)
+    elif metric == "exact":
+        if k != 0:
+            raise ValueError("metric='exact' requires k=0")
+        res = assign_exact(rseqs, tseqs, policy=policy)
+    else:
+        raise ValueError("metric must be 'levenshtein', 'hamming', or 'exact'")
     return results_to_dataframe(res, target_names=tnames, read_ids=rids)
 
 

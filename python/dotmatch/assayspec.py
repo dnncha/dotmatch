@@ -1026,7 +1026,7 @@ def _score_windows(reads: Sequence[str], targets: Sequence[str], *, max_start: i
                 observed = [seq[start : start + length] for seq in reads if start + length <= len(seq)]
                 invalid = len(reads) - len(observed)
                 if observed:
-                    results = matcher.assign(observed, k=1)
+                    results = matcher.assign_hamming(observed, k=1)
                 else:
                     results = []
                 unique = sum(1 for result in results if result.status == MATCH_UNIQUE)

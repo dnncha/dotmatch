@@ -135,7 +135,7 @@ def main() -> None:
         "",
         "## Scope",
         "",
-        "Run `make bcl-tiny-public-gate` to verify the narrow public 10x tiny-BCL classic per-cycle milestone. This gate checks the committed DotMatch row, output hashes, count totals, and bcl2fastq count-total validation when bcl2fastq is available; an explicit `not_installed` environment row keeps the boundary visible without turning it into a false comparison.",
+        "Run `make bcl-tiny-public-gate` to verify the narrow public 10x tiny-BCL classic per-cycle milestone. This gate checks the committed DotMatch row, output hashes, count totals, and bcl2fastq count-total validation when bcl2fastq is available; an explicit `not_installed` environment row keeps the limitation visible without creating a false comparison.",
         "",
         "Broader raw-BCL evaluation needs real classic-BCL and CBCL run-folder rows, a successful DotMatch CBCL row, competitor rows for BCL Convert/bcl2fastq/CUDA-Demux where installable, distinct repeated timing, and `dotmatch bcl-validate` zero-mismatch evidence.",
         "",

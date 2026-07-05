@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#define QDALN_VERSION "0.1.8"
+#define QDALN_VERSION "0.1.9"
 #define QDALN_ALPHABET_POLICY "literal-byte; A/C/G/T/N/IUPAC symbols are ordinary byte symbols; no wildcard expansion"
 
 enum qdaln_match_status {

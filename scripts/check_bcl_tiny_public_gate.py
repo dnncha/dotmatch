@@ -114,7 +114,7 @@ def report_gate(path: Path, failures: list[str]) -> None:
         "Rows with exit code `127` are environment records for missing competitors, not runtime comparisons",
         "narrow public 10x tiny-BCL classic per-cycle milestone",
         "bcl2fastq count-total validation when bcl2fastq is available",
-        "explicit `not_installed` environment row keeps the boundary visible without turning it into a false comparison",
+        "explicit `not_installed` environment row keeps the limitation visible without creating a false comparison",
         "Broader raw-BCL evaluation needs real classic-BCL and CBCL run-folder rows",
         "successful DotMatch CBCL row",
         "`dotmatch bcl-validate` zero-mismatch evidence",

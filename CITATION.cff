@@ -8,7 +8,7 @@ authors:
     orcid: "https://orcid.org/0009-0003-5012-7229"
 repository-code: "https://github.com/dnncha/dotmatch"
 license: Apache-2.0
-version: "0.1.8"
+version: "0.1.9"
 doi: 10.5281/zenodo.20541628
 abstract: "DotMatch is a deterministic known-target short-DNA assignment engine for CRISPR guide counting, barcode demultiplexing, and fixed-target FASTQ workflows."
 keywords:

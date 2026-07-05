@@ -12,7 +12,7 @@ one of these submissions is accepted or released outside this repository.
    container automation.
 2. **MultiQC module**: makes DotMatch outputs recognizable in existing pipeline
    reports without per-project custom content.
-3. **Galaxy / IUC wrappers**: reaches core facilities and wet-lab users through
+3. **Galaxy / IUC wrappers**: reaches core facilities and wet-lab teams through
    ToolShed-reviewed tools.
 4. **Snakemake handoff**: lower review overhead, strong for lab
    workflow adoption and QC report visibility.
@@ -65,7 +65,7 @@ Adoption record:
 
 - Add a `nf_core_module` entry to `docs/workflow-adoption.json` only after the
   nf-core PR is merged or released.
-- Use the merged PR or nf-core module page as `adoption_url`, and CI/lint
+- Use the merged PR or nf-core module page as `integration_url`, and CI/lint
   evidence as `evidence_url`.
 
 ## Galaxy / IUC
@@ -132,7 +132,7 @@ Source payload:
 External target:
 
 - MultiQC plugin packaging or upstream module discussion after public workflow
-  users confirm the report shape.
+  maintainers confirm the report shape.
 
 Reviewer notes:
 

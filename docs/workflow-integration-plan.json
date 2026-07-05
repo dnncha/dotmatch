@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "status": "ready_to_execute",
+  "scope": "workflow integration and external technical review assets",
+  "items": [
+    {
+      "id": "reviewer_decision_tree",
+      "title": "Reviewer Decision Tree",
+      "primary_audience": "technical reviewers",
+      "asset": "docs/workflow-integration-roadmap.md#1-reviewer-decision-tree",
+      "done_when": "A reviewer can pick the right DotMatch entry path without broad assay claims."
+    },
+    {
+      "id": "persona_one_pagers",
+      "title": "Persona One-Pagers",
+      "primary_audience": "core facilities, CRISPR teams, workflow maintainers, assay developers",
+      "asset": "docs/workflow-integration-roadmap.md#2-persona-one-pagers",
+      "done_when": "Each priority reviewer group has a workflow use case, evidence path, and first command."
+    },
+    {
+      "id": "integration_tracker",
+      "title": "Integration Target Tracker",
+      "primary_audience": "pipeline maintainers",
+      "asset": "docs/workflow-integration-roadmap.md#3-integration-target-tracker",
+      "done_when": "Every target integration has an upstream URL, readiness state, source assets, and next action."
+    },
+    {
+      "id": "reviewer_packet",
+      "title": "Reviewer Packet",
+      "primary_audience": "maintainers, reviewers, procurement evaluators",
+      "asset": "docs/workflow-integration-roadmap.md#4-reviewer-packet",
+      "done_when": "A reviewer can find install proof, outputs, limitations, evidence, and citation text from one checklist."
+    },
+    {
+      "id": "conference_abstracts",
+      "title": "Conference Abstracts",
+      "primary_audience": "conference reviewers and attendees",
+      "asset": "docs/workflow-integration-roadmap.md#5-conference-abstracts",
+      "done_when": "Short and long abstracts are ready for workflow, core facility, and methods venues."
+    },
+    {
+      "id": "technical_communication_pack",
+      "title": "Technical Communication Pack",
+      "primary_audience": "bioinformatics community readers",
+      "asset": "docs/workflow-integration-roadmap.md#6-technical-communication-pack",
+      "done_when": "Release notes, technical threads, and forum prompts stay scoped to validated behavior."
+    },
+    {
+      "id": "maintainer_issue_templates",
+      "title": "Maintainer Issue Templates",
+      "primary_audience": "nf-core, MultiQC, Galaxy, Snakemake maintainers",
+      "asset": "docs/workflow-integration-roadmap.md#7-maintainer-issue-templates",
+      "done_when": "External issue or PR openings can be copied with scope, outputs, tests, and review asks."
+    },
+    {
+      "id": "evaluation_scorecard",
+      "title": "Evaluation Scorecard",
+      "primary_audience": "labs, cores, CROs, biotech teams",
+      "asset": "docs/workflow-integration-roadmap.md#8-evaluation-scorecard",
+      "done_when": "Evaluation feedback can be scored against install, input mapping, outputs, workflow fit, methods text, and public-use permission."
+    },
+    {
+      "id": "integration_tracking_metrics",
+      "title": "Integration Tracking Metrics",
+      "primary_audience": "maintainers",
+      "asset": "docs/workflow-integration-roadmap.md#9-integration-tracking-metrics",
+      "done_when": "The project tracks workflow interest separately from scientific claims and release quality."
+    },
+    {
+      "id": "release_communications_calendar",
+      "title": "Release Communications Calendar",
+      "primary_audience": "maintainers",
+      "asset": "docs/workflow-integration-roadmap.md#10-release-communications-calendar",
+      "done_when": "Each release has a pre-merge, tag, channel-verification, and follow-up communication checklist."
+    }
+  ]
+}

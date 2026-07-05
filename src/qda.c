@@ -2615,19 +2615,18 @@ static int assign_count_offsets(const qdaln_index *index, const char *seq, size_
         for (size_t i = 0; i < n_offsets; ++i) {
             size_t offset = offsets == NULL || offsets->count == 0 ? fallback_offset : offsets->items[i];
             if (offset > seq_len || target_len > seq_len - offset || target_len >= sizeof(exact_observed)) continue;
-            memcpy(exact_observed, seq + offset, target_len);
-            exact_observed[target_len] = '\0';
-            uppercase_ascii(exact_observed);
-            const char *read_ptr = exact_observed;
-            size_t read_len = target_len;
             qdaln_match_result exact_one;
             qdaln_index_stats exact_stats = {0, 0};
-            if (qdaln_index_assign_stats(index, &read_ptr, &read_len, 1, 0, &exact_one, &exact_stats) != 0) {
+            if (qdaln_index_lookup_exact_ascii_stats(index, seq + offset, target_len, &exact_one, &exact_stats) != 0) {
                 merge_state_free(&exact_merge);
                 return -1;
             }
             exact_stats_total.candidates_considered += exact_stats.candidates_considered;
             exact_stats_total.candidates_verified += exact_stats.candidates_verified;
+            if (exact_one.match_count == 0) continue;
+            memcpy(exact_observed, seq + offset, target_len);
+            exact_observed[target_len] = '\0';
+            uppercase_ascii(exact_observed);
             if (merge_state_add_result(&exact_merge, observed, observed_cap, exact_observed, exact_one) != 0) {
                 exact_rc_total = -1;
                 break;
@@ -3854,39 +3853,67 @@ static void *direct_hamming_batch_worker(void *arg) {
     return NULL;
 }
 
+static int process_exact_hamming_window_buffer(count_sample_job *job, const seq_buffer *buffer) {
+    if (buffer->count == 0) return 0;
+    if (job->index == NULL) return 1;
+
+    size_t offset = job->selected_offsets == NULL || job->selected_offsets->count == 0
+            ? job->target_start
+            : job->selected_offsets->items[0];
+    size_t alloc_count = alloc_count_or_one(buffer->count);
+    const char **windows = (const char **)malloc(alloc_count * sizeof(char *));
+    size_t *window_lens = (size_t *)malloc(alloc_count * sizeof(size_t));
+    qdaln_match_result *results = (qdaln_match_result *)malloc(alloc_count * sizeof(qdaln_match_result));
+    if (windows == NULL || window_lens == NULL || results == NULL) {
+        free(windows);
+        free(window_lens);
+        free(results);
+        return 1;
+    }
+
+    size_t n_windows = 0;
+    for (size_t i = 0; i < buffer->count; ++i) {
+        ++job->stats->total;
+        count_progress_tick(job->progress);
+        if (offset > buffer->lens[i] || job->target_len > buffer->lens[i] - offset) {
+            ++job->stats->invalid;
+            continue;
+        }
+        windows[n_windows] = buffer->items[i] + offset;
+        window_lens[n_windows] = job->target_len;
+        ++n_windows;
+    }
+
+    int rc = 0;
+    if (n_windows != 0) {
+        qdaln_index_stats batch_stats = {0, 0};
+        if (qdaln_index_lookup_exact_ascii_many_stats(job->index, windows, window_lens,
+                                                      n_windows, results, &batch_stats) != 0) {
+            rc = 1;
+        } else {
+            job->stats->candidates_considered += (unsigned long long)batch_stats.candidates_considered;
+            job->stats->candidates_verified += (unsigned long long)batch_stats.candidates_verified;
+            for (size_t i = 0; i < n_windows; ++i) {
+                if (direct_hamming_apply_match_result(job, results[i], 1) != 0) {
+                    rc = 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    free(windows);
+    free(window_lens);
+    free(results);
+    return rc;
+}
+
 static int process_direct_hamming_buffer(count_sample_job *job, const seq_buffer *buffer) {
     if (buffer->count == 0) return 0;
     if (job->k == 0 && job->index != NULL && job->hlookup != NULL && job->hlookup->ready &&
-        job->hlookup->target_len == job->target_len && (job->selected_offsets == NULL || job->selected_offsets->count <= 1)) {
-        qdaln_match_result *results = (qdaln_match_result *)calloc(buffer->count, sizeof(qdaln_match_result));
-        if (results == NULL) return 1;
-        qdaln_index_stats batch_stats = {0, 0};
-        if (qdaln_index_lookup_exact_ascii_many_stats(job->index, (const char *const *)buffer->items, buffer->lens,
-                                                      buffer->count, results, &batch_stats) != 0) {
-            free(results);
-            return 1;
-        }
-        job->stats->candidates_considered += batch_stats.candidates_considered;
-        job->stats->candidates_verified += batch_stats.candidates_verified;
-        for (size_t i = 0; i < buffer->count; ++i) {
-            qdaln_match_result result = results[i];
-            if (result.status == QDALN_MATCH_UNIQUE && result.target_index >= 0) {
-                if (increment_count_slot(job, ((job->sample_index * job->targets->count + (size_t)result.target_index) * 5) + 0) != 0) {
-                    free(results);
-                    return 1;
-                }
-                ++job->stats->unique;
-                ++job->stats->exact;
-            } else if (result.status == QDALN_MATCH_AMBIGUOUS) {
-                ++job->stats->ambiguous;
-            } else if (result.status == QDALN_MATCH_NONE) {
-                ++job->stats->unmatched;
-            } else {
-                ++job->stats->invalid;
-            }
-        }
-        free(results);
-        return 0;
+        job->hlookup->target_len == job->target_len && (job->selected_offsets == NULL || job->selected_offsets->count <= 1) &&
+        job->read_threads <= 1) {
+        return process_exact_hamming_window_buffer(job, buffer);
     }
     size_t read_threads = job->read_threads;
     if (read_threads <= 1 || buffer->count < 1024) {
@@ -4298,36 +4325,9 @@ static int process_count_buffer(count_sample_job *job, const seq_buffer *buffer)
     if (job->k == 0 && job->metric == COUNT_METRIC_HAMMING && job->indel_window == 0 && job->index != NULL &&
         job->hlookup != NULL && job->hlookup->ready && job->hlookup->target_len == job->target_len &&
         job->assignments == NULL && job->ambiguous_out == NULL && job->unmatched_out == NULL &&
-        job->max_correction_qual < 0 && job->assignment_policy == AMBIGUITY_POLICY_BEST) {
-        qdaln_match_result *results = (qdaln_match_result *)calloc(buffer->count, sizeof(qdaln_match_result));
-        if (results == NULL) return 1;
-        qdaln_index_stats batch_stats = {0, 0};
-        if (qdaln_index_lookup_exact_ascii_many_stats(job->index, (const char *const *)buffer->items, buffer->lens,
-                                                      buffer->count, results, &batch_stats) != 0) {
-            free(results);
-            return 1;
-        }
-        job->stats->candidates_considered += batch_stats.candidates_considered;
-        job->stats->candidates_verified += batch_stats.candidates_verified;
-        for (size_t i = 0; i < buffer->count; ++i) {
-            qdaln_match_result result = results[i];
-            if (result.status == QDALN_MATCH_UNIQUE && result.target_index >= 0) {
-                if (increment_count_slot(job, ((job->sample_index * job->targets->count + (size_t)result.target_index) * 5) + 0) != 0) {
-                    free(results);
-                    return 1;
-                }
-                ++job->stats->unique;
-                ++job->stats->exact;
-            } else if (result.status == QDALN_MATCH_AMBIGUOUS) {
-                ++job->stats->ambiguous;
-            } else if (result.status == QDALN_MATCH_NONE) {
-                ++job->stats->unmatched;
-            } else {
-                ++job->stats->invalid;
-            }
-        }
-        free(results);
-        return 0;
+        job->max_correction_qual < 0 && job->assignment_policy == AMBIGUITY_POLICY_BEST &&
+        job->read_threads <= 1) {
+        return process_exact_hamming_window_buffer(job, buffer);
     }
     size_t read_threads = job->read_threads;
     if (read_threads <= 1 || buffer->count < 1024) {
@@ -4703,15 +4703,9 @@ static int detect_offsets(const qdaln_index *index, const hamming_lookup *exact_
                 if (delta < 0 && target_start < (size_t)(-delta)) continue;
                 size_t offset = delta < 0 ? target_start - (size_t)(-delta) : target_start + (size_t)delta;
                 if (offset > seq_len || target_len > seq_len - offset) continue;
-                char observed[8192];
-                if (target_len >= sizeof(observed)) continue;
-                memcpy(observed, seq + offset, target_len);
-                observed[target_len] = '\0';
-                uppercase_ascii(observed);
-                const char *read_ptr = observed;
-                size_t read_len = target_len;
                 qdaln_match_result r;
-                if (qdaln_index_assign(index, &read_ptr, &read_len, 1, 0, &r) != 0) {
+                qdaln_index_stats s;
+                if (qdaln_index_lookup_exact_ascii_stats(index, seq + offset, target_len, &r, &s) != 0) {
                     fastq_reader_close(&reader);
                     free(scores);
                     return -1;
@@ -7225,14 +7219,20 @@ static int find_offset_hint(const qdaln_index *index, const char *seq, size_t se
             if (sign < 0 && target_start < step) continue;
             size_t offset = sign > 0 ? target_start + step : target_start - step;
             if (offset > seq_len || target_len > seq_len - offset) continue;
-            memcpy(observed, seq + offset, target_len);
-            observed[target_len] = '\0';
-            uppercase_ascii(observed);
-            const char *read_ptr = observed;
-            size_t read_len = target_len;
             qdaln_match_result r;
             qdaln_index_stats stats;
-            if (qdaln_index_assign_stats(index, &read_ptr, &read_len, 1, k, &r, &stats) != 0) return 0;
+            if (k == 0) {
+                if (qdaln_index_lookup_exact_ascii_stats(index, seq + offset, target_len, &r, &stats) != 0) {
+                    return 0;
+                }
+            } else {
+                memcpy(observed, seq + offset, target_len);
+                observed[target_len] = '\0';
+                uppercase_ascii(observed);
+                const char *read_ptr = observed;
+                size_t read_len = target_len;
+                if (qdaln_index_assign_stats(index, &read_ptr, &read_len, 1, k, &r, &stats) != 0) return 0;
+            }
             if (r.status == QDALN_MATCH_UNIQUE) return sign > 0 ? (int)step : -(int)step;
         }
     }
@@ -7362,10 +7362,16 @@ static int run_inspect_unmatched(const char *argv0, int argc, char **argv) {
             memcpy(observed, seq + target_start, target_len);
             observed[target_len] = '\0';
             uppercase_ascii(observed);
-            const char *read_ptr = observed;
-            size_t read_len = target_len;
             qdaln_index_stats stats;
-            if (qdaln_index_assign_stats(index, &read_ptr, &read_len, 1, k, &r, &stats) != 0) {
+            int assign_rc = 0;
+            if (k == 0) {
+                assign_rc = qdaln_index_lookup_exact_ascii_stats(index, seq + target_start, target_len, &r, &stats);
+            } else {
+                const char *read_ptr = observed;
+                size_t read_len = target_len;
+                assign_rc = qdaln_index_assign_stats(index, &read_ptr, &read_len, 1, k, &r, &stats);
+            }
+            if (assign_rc != 0) {
                 fprintf(stderr, "assignment failed\n");
                 goto done;
             }

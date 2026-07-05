@@ -143,9 +143,19 @@ def assign_features(
     seqs = adata.obs[seq_col].astype(str).tolist()
     targets = _load_library(library)
 
+    if metric not in {"hamming", "levenshtein", "exact"}:
+        raise ValueError("metric must be 'hamming', 'levenshtein', or 'exact'")
+    if metric == "exact" and k != 0:
+        raise ValueError("metric='exact' requires k=0")
+
     # Use efficient indexed path
     with Matcher([t[1] for t in targets]) as matcher:
-        results = matcher.assign(seqs, k=k, policy=ambiguity_policy)
+        if metric == "hamming":
+            results = matcher.assign_hamming(seqs, k=k, policy=ambiguity_policy)
+        elif metric == "exact":
+            results = matcher.assign_exact(seqs, policy=ambiguity_policy)
+        else:
+            results = matcher.assign(seqs, k=k, policy=ambiguity_policy)
 
     # Map back
     id_map = {i: t[0] for i, t in enumerate(targets)}
@@ -192,6 +202,7 @@ def feature_counts(
     seq_col: str,
     cell_col: str | None = None,
     k: int = 1,
+    metric: str = "hamming",
     ambiguity_policy: str = "radius",
     **kwargs,
 ) -> Any:
@@ -219,8 +230,18 @@ def feature_counts(
     target_seqs = [t[1] for t in targets]
     target_names = [t[0] for t in targets]
 
+    if metric not in {"hamming", "levenshtein", "exact"}:
+        raise ValueError("metric must be 'hamming', 'levenshtein', or 'exact'")
+    if metric == "exact" and k != 0:
+        raise ValueError("metric='exact' requires k=0")
+
     with Matcher(target_seqs) as matcher:
-        results = matcher.assign(seqs, k=k, policy=ambiguity_policy)
+        if metric == "hamming":
+            results = matcher.assign_hamming(seqs, k=k, policy=ambiguity_policy)
+        elif metric == "exact":
+            results = matcher.assign_exact(seqs, policy=ambiguity_policy)
+        else:
+            results = matcher.assign(seqs, k=k, policy=ambiguity_policy)
 
     # Turn results into a DataFrame that assignments_to_anndata understands
     import pandas as _pd  # local to avoid top-level dep if not needed

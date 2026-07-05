@@ -18,7 +18,7 @@ Evidence packets should include:
   generated TSV/JSON/HTML outputs, and report build commands;
 - safety checks: duplicate targets, ambiguous near-neighbors, invalid windows,
   unsafe correction radii, and panel-collision findings when applicable;
-- claim boundary: what the packet supports, what it does not support, and which
+- validated scope: what the packet supports, what it does not support, and which
   public evidence gate or benchmark report is relevant;
 - review artifacts: summary tables, top-unmatched tables, panel or target
   audits, QC summaries, and a human-readable report.

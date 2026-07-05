@@ -37,25 +37,38 @@ release features are only described as publicly available after the matching
 package version passes the install smoke tests in
 [Packaging Notes](docs/packaging.md).
 
-## Industry Evaluation and Exposure
+## Bioinformatics Evaluation
 
 If you are evaluating DotMatch for a core facility, CRISPR screen team, assay
-development group, or workflow project, start with the public homepage and the
-scoped handoff documents:
+development group, or workflow project, start with the package surface, evidence
+scope, and output contracts:
 
 - [Homepage](https://dnncha.github.io/dotmatch): short positioning and audience
   routes for known-target sequencing assignment.
-- [Industry Exposure Kit](docs/industry-exposure.md): the five highest-leverage
-  adoption moves, copy-paste outreach, and claim guardrails.
-- [Next 10 Industry Exposure Wins](docs/industry-next-wins.md): decision tree,
-  persona one-pagers, integration tracker, reviewer packet, outreach copy,
-  pilot scorecard, KPIs, and release communication calendar.
+- [Bioinformatics Evaluation Packet](docs/bioinformatics-evaluation.md):
+  current package channels, validated assay status, minimum local
+  evaluation commands, output files to inspect, and current workflow-integration
+  limitations.
+- [External Review Packet](docs/external-review-packet.md): one-page checklist
+  for maintainers, PIs, core-facility leads, and technical reviewers.
+- [Integration Target Tracker](docs/integration-targets.json): machine-readable
+  status for nf-core, MultiQC, Galaxy/IUC, Snakemake, and bio.tools work.
+- [DotMatch Evaluation Protocol](docs/pilot-program.md): intake fields, review
+  steps, output checks, and public-use record requirements.
+- [Reviewer Readiness Record](docs/reviewer-readiness.json): machine-readable
+  checklist for the public evaluation materials enforced by
+  `make reviewer-readiness-ready`.
+- [Workflow Integration Kit](docs/workflow-integration-kit.md): workflow
+  submission, citation, evaluation, and public-use record guidance.
+- [Workflow Integration Roadmap](docs/workflow-integration-roadmap.md):
+  decision tree, reviewer packet, integration tracker, abstracts, issue
+  templates, evaluation scorecard, and release communication checklist.
 - [Workflow Submission Pack](docs/workflow-submissions.md): nf-core, MultiQC,
   Galaxy, and Snakemake handoff checklist.
 - [Methods and Citation](docs/methods-and-citation.md): copyable language for
   reports, manuscripts, and release-specific citation.
-- [Adopter Notes](docs/adopters/README.md): rules for public, quote-approved
-  used-by records.
+- [Public Use Records](docs/adopters/README.md): approved public records from
+  labs, workflow projects, package maintainers, or organizations.
 
 ## DotMatch Pro
 
@@ -239,10 +252,10 @@ scverse/nf-core pipelines. Highlights:
   collision modeling, quality-aware rescue beyond current max-correction-qual,
   native UMI-aware counting (within scope?), better BCL/CBCL, long-read
   window extraction.
-- **Adoption**: public end-to-end nf-core + MultiQC example pipelines that
-  "just work", performance tuning guide, migration cookbooks from cutadapt /
-  MAGeCK / custom python, more public SRA evidence lanes, JOSS/paper updates,
-  case studies from real cores.
+- **Adoption**: public end-to-end nf-core + MultiQC example pipelines with
+  reproducible fixtures and documented outputs, performance tuning guide,
+  migration cookbooks from cutadapt / MAGeCK / custom python, more public SRA
+  evidence lanes, JOSS/paper updates, case studies from real cores.
 - **UX/Trust**: richer HTML reports, interactive workbench enhancements,
   better error messages for common wet-lab failure modes (offset, synthesis
   errors), one-command "panel to counts to MultiQC" .
@@ -252,11 +265,13 @@ documented scope are especially welcome.
 
 ## Installation
 
-DotMatch 0.1.8 is published on PyPI for Linux and macOS. The PyPI package
-includes the `dotmatch` command, Python imports, and the bundled native library.
+DotMatch 0.1.9 is the current release target. After the tagged release workflow
+publishes the package and `make distribution-channels` verifies the channel, the
+PyPI package includes the `dotmatch` command, Python imports, and the bundled
+native library.
 
 ```bash
-python3 -m pip install dotmatch==0.1.8
+python3 -m pip install dotmatch==0.1.9
 dotmatch --version
 dotmatch dist ACGT AGGT
 ```
@@ -289,14 +304,14 @@ docker build -t dotmatch:dev .
 docker run --rm -v "$PWD:/work" dotmatch:dev dist ACGT AGGT
 ```
 
-Bioconda is the Conda-based bioinformatics install path. DotMatch 0.1.8 package
-metadata is visible on Anaconda's Bioconda channel for `linux-64`, `osx-64`,
-and `osx-arm64`, including Apple Silicon Macs. Treat the install command as
-fully released only after `make distribution-channels` verifies that Bioconda
+Bioconda is the Conda-based bioinformatics install path. The 0.1.9 recipe update
+keeps `linux-64`, `osx-64`, and `osx-arm64` support, including Apple Silicon
+Macs. Treat the install command as released only after the Bioconda recipe
+update is accepted and `make distribution-channels` verifies that Bioconda
 repodata and a clean `conda create` both resolve the package:
 
 ```bash
-conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.8
+conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.9
 conda activate dotmatch
 dotmatch --version
 ```
@@ -308,21 +323,19 @@ in [Packaging Notes](docs/packaging.md), the
 available for a release after `make distribution-channels` verifies public
 metadata and install smoke tests.
 
-The tagged release workflow published the 0.1.8 source distribution, native
+The tagged release workflow publishes the 0.1.9 source distribution, native
 macOS wheel, and repaired manylinux/musllinux Linux wheels. PyPI trusted
 publishing is configured for that workflow. The GitHub release workflow builds
 and smoke-tests repaired manylinux/musllinux wheels before upload. PyPI wheel
-availability includes macOS, manylinux, and musllinux artifacts. The 0.1.8
-release files are visible on PyPI; the full multi-channel release record remains
-open until `make distribution-channels` verifies clean Bioconda installs,
-BioContainers propagation, GHCR runtime behavior, and DOI evidence. Raw
+availability should include macOS, manylinux, and musllinux artifacts; release
+files are visible on PyPI only after the tagged workflow publishes them. Raw
 `linux_x86_64` wheels remain GitHub release artifacts only and are not uploaded
 to PyPI.
 
 BioContainers publication is expected through the Bioconda automation rather
-than a separate DotMatch container submission. After the accepted Bioconda 0.1.8
+than a separate DotMatch container submission. After the accepted Bioconda 0.1.9
 package is converted by BioContainers, the expected image tag shape is
-`quay.io/biocontainers/dotmatch:0.1.8--<build>`.
+`quay.io/biocontainers/dotmatch:0.1.9--<build>`.
 
 Bioconda provides the `dotmatch` command-line tool, Python workflow namespaces,
 Python imports, and C header/library artifacts for the published package
@@ -593,11 +606,20 @@ dotmatch.distance_leq("ACGT", "AGGT", 1)
 
 matcher = dotmatch.Matcher(["ACGT", "AGGT", "ACGA"])
 results, stats = matcher.assign_with_stats(["ACGT", "ACGC"], k=1)
+
+# Fixed-length one-mismatch workflows can use the Hamming index directly.
+guide_results = matcher.assign_hamming(["ACGT", "ACGC"], k=1, policy="best")
+
+# Exact fixed windows use the native exact lookup table.
+exact_results = matcher.assign_exact(["ACGT"])
 ```
 
 The Python API also defaults to radius-safe assignment. Pass `policy="best"` to
 `assign`, `Matcher.assign`, or `Matcher.assign_with_stats` only for explicit
-best-distance compatibility.
+best-distance compatibility. For substitution-only guide, barcode, or feature
+workflows, use `assign_hamming`, `Matcher.assign_hamming`, or
+`assign_dataframe(..., metric="hamming")` so Python callers reach the same
+native Hamming fast path used by the CLI.
 
 For notebook or workflow glue that needs FASTQ-scale iteration without loading
 all reads into Python memory, use the streaming helper:
@@ -611,6 +633,7 @@ rows = dotmatch.stream_assign(
     target_start=23,
     target_length=20,
     k=1,
+    metric="hamming",
 )
 summary = dotmatch.write_assignments_tsv(rows, "assignments.tsv")
 ```
@@ -660,7 +683,7 @@ native CLI target remain as compatibility aliases. New workflows should use
 
 ## R / Bioconductor Support
 
-For R users, a reticulate-based wrapper is included in the `R/` directory (and
+For R workflows, a reticulate-based wrapper is included in the `R/` directory (and
 vignette). Install Python dotmatch first, then:
 
 ```r
@@ -762,7 +785,7 @@ A short JOSS software-paper draft is available in [paper/paper.md](paper/paper.m
 @software{dotmatch_software,
   author = {{O'Toole}, Donncha},
   title = {{DotMatch: deterministic known-target short-DNA assignment for sequencing workflows}},
-  version = {0.1.8},
+  version = {0.1.9},
   date = {2026-06-04},
   publisher = {Zenodo},
   doi = {10.5281/zenodo.20541628},

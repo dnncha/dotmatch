@@ -1,16 +1,20 @@
-# DotMatch Used By and Adopter Notes
+# DotMatch Public Use Records
 
-This directory is reserved for quote-approved, independent adoption records and
-the public "Used by" page. Do not count private emails, informal calls, or
-in-repository examples as external adoption evidence.
+This directory is for public records from labs, workflow projects, package
+maintainers, or organizations that have approved the exact wording used here.
 
-When an external workflow, lab, or package maintainer approves a public record,
-add:
+Each record must include:
 
-- adopter name or project name;
-- public adoption URL;
-- evidence URL for the exact DotMatch integration or release;
+- adopter or project name;
+- public URL;
+- evidence URL for the DotMatch release or integration being described;
 - approval date;
-- scope notes for what was adopted.
+- DotMatch version;
+- workflow scope;
+- outputs used.
 
-The machine-readable adoption status remains in `docs/workflow-adoption.json`.
+Use [record-template.md](record-template.md) for the required fields and scope
+notes. Do not add logos, quotes, organization names, or implied endorsements
+unless the wording has been approved by the named party.
+
+The machine-readable workflow status remains in `docs/workflow-adoption.json`.

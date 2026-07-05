@@ -7,17 +7,18 @@ adapter prefixes.
 
 ## Install
 
-For the current PyPI release:
+For the current release target after PyPI publication:
 
 ```bash
-python3 -m pip install dotmatch==0.1.8
+python3 -m pip install dotmatch==0.1.9
 dotmatch --version
 ```
 
-For Conda-based environments, Bioconda now publishes DotMatch 0.1.8:
+For Conda-based environments, use the 0.1.9 Bioconda package after the recipe
+update has been accepted and `make distribution-channels` verifies the channel:
 
 ```bash
-conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.8
+conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.9
 conda activate dotmatch
 dotmatch --version
 ```
@@ -35,9 +36,10 @@ dotmatch --version
 The source build needs a C compiler, `make`, Python 3.9 or newer, and zlib for
 FASTQ.gz support.
 
-Bioconda 0.1.8 metadata and clean install smoke tests have been verified. PyPI
-remains the simplest cross-platform Python install path; Bioconda is the
-preferred package-manager path for Conda-based bioinformatics environments.
+PyPI remains the simplest cross-platform Python install path. Bioconda is the
+preferred package-manager path for Conda-based bioinformatics environments after
+the release package appears in Bioconda repodata and passes a clean install
+smoke test.
 
 ## Recommended Workflow: Assay Project
 

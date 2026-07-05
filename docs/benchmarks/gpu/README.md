@@ -4,7 +4,7 @@ This report is an experimental GPU evidence lane. It is intentionally not a prod
 
 For the shipping `dotmatch crispr-count` CLI on MAGeCK/Yusa and Sanson/Brunello, see [Production CRISPR CPU vs Metal](production_crispr_cpu_metal.md). That report records when Metal is eligible, when `--metal-validate` passes, and when CPU remains faster or authoritative.
 
-The decision rule is simple: GPU rows must have zero mismatches before any speed result is considered, and CPU-indexed throughput remains the production baseline unless the GPU path wins end-to-end on real workloads.
+The decision rule is simple: GPU rows must have zero mismatches before any speed result is considered, and CPU-indexed throughput remains the production baseline unless the GPU path is faster end-to-end on real workloads.
 
 ## Synthetic Figure
 

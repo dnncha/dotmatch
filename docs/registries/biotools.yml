@@ -1,0 +1,49 @@
+name: DotMatch
+biotoolsID: dotmatch
+homepage: https://github.com/dnncha/dotmatch
+documentation: https://dotmatch.readthedocs.io/
+description: >
+  DotMatch is a deterministic known-target short-DNA assignment toolkit for
+  fixed read windows in CRISPR guide counting, inline barcode demultiplexing,
+  feature-barcode reads, primer or adapter-prefix checks, amplicon-panel starts,
+  whitelist-style assays, and barcode panel design.
+license: Apache-2.0
+version: "0.1.9"
+topic:
+  - Bioinformatics
+  - Sequencing
+  - Quality control
+function:
+  - operation:
+      - Sequence analysis
+      - Demultiplexing
+      - Quality control
+    input:
+      - data: FASTQ
+      - data: Sequence set
+    output:
+      - data: Count matrix
+      - data: Report
+      - data: FASTQ
+language:
+  - Python
+  - C
+operatingSystem:
+  - Linux
+  - macOS
+download:
+  - type: Source code
+    url: https://github.com/dnncha/dotmatch
+  - type: Package
+    url: https://pypi.org/project/dotmatch/
+  - type: Package
+    url: https://anaconda.org/bioconda/dotmatch
+publication:
+  - doi: 10.5281/zenodo.20541628
+credit:
+  - name: Donncha O'Toole
+    orcid: https://orcid.org/0009-0003-5012-7229
+note: >
+  Draft registry metadata. Do not describe this as an accepted bio.tools record
+  until the public registry page exists and is recorded in docs/integration-targets.json
+  or docs/workflow-adoption.json.

@@ -83,7 +83,7 @@
       "gates": [
         "make scientific-readiness-ready"
       ],
-      "acceptance": "Broad public metadata must use deterministic/evidence-bounded assignment language and avoid unsupported global SOTA or fast-exact positioning."
+      "acceptance": "Broad public metadata must use deterministic, evidence-backed assignment language and avoid unsupported global SOTA or fast-exact positioning."
     },
     {
       "id": "distribution_reproducibility",

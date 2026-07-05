@@ -27,18 +27,29 @@ need their own gates before they are public claims.
 
 ## Start Here
 
-- New users should begin with [Getting Started](getting-started.md).
+- New evaluators should begin with [Getting Started](getting-started.md).
 - Use [Command Reference](command-reference.md) when choosing the right
   namespace or compatibility entrypoint.
-- CRISPR users can follow the [first-run CRISPR guide-counting tutorial](tutorials/crispr-count-first-run.md).
+- CRISPR teams can follow the [first-run CRISPR guide-counting tutorial](tutorials/crispr-count-first-run.md).
 - Labs evaluating scientific claims should read [Trust, Scope, and Evidence](trust-and-scope.md).
 - Workflow and pipeline authors should use the [public output schemas](schemas.md).
+- Bioinformatics teams evaluating package maturity, workflow fit, and current
+  public limitations should read the
+  [Bioinformatics Evaluation Packet](bioinformatics-evaluation.md).
+- External reviewers should use the
+  [External Review Packet](external-review-packet.md), the
+  [Integration Target Tracker](integration-targets.json), and the
+  [DotMatch Evaluation Protocol](pilot-program.md) for a structured technical
+  review.
+- Maintainers can verify these reviewer materials with
+  `make reviewer-readiness-ready`, which checks the
+  [Reviewer Readiness Record](reviewer-readiness.json).
 - Industry evaluators and maintainers should use the
-  [Industry Exposure Kit](industry-exposure.md) to route outreach, citations,
-  pilots, and workflow submissions without broadening public claims.
+  [Workflow Integration Kit](workflow-integration-kit.md) to route citations,
+  evaluations, and workflow submissions.
 - Maintainers pushing the next adoption layer should use the
-  [Next 10 Industry Exposure Wins](industry-next-wins.md) and the checked
-  `industry-exposure-plan.json` tracker.
+  [Workflow Integration Roadmap](workflow-integration-roadmap.md) and the checked
+  `workflow-integration-plan.json` tracker.
 - Teams evaluating the open-core boundary should read
   [Commercial Boundary](commercial-boundary.md) and
   [Evidence Packet v1](evidence-packet-v1.md).
@@ -79,8 +90,11 @@ proposals-and-roadmap
 schemas
 methods-and-citation
 citation-flywheel
-industry-exposure
-industry-next-wins
+bioinformatics-evaluation
+external-review-packet
+pilot-program
+workflow-integration-kit
+workflow-integration-roadmap
 packaging
 release-process
 workflow-submissions
@@ -115,6 +129,7 @@ benchmarks/crispr_comparison/README
 benchmarks/feature_barcode/README
 benchmarks/gpu/README
 benchmarks/gpu/production_crispr_cpu_metal
+benchmarks/performance-improvements-2026-07-05
 benchmarks/native/README
 benchmarks/oligo_adapter/README
 benchmarks/perturb_seq/README
@@ -133,4 +148,5 @@ evidence-gallery/scenarios/perturb_seq_10x_guide_capture
 evidence-gallery/scenarios/public_crispr_yusa
 evidence-gallery/snapshots/barcode_autopsy/report
 adopters/README
+adopters/record-template
 ```
