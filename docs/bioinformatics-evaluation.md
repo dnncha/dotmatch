@@ -13,22 +13,21 @@ quantifier, or screen-level statistical analysis package.
 
 ## Current Package Surface
 
-For release target `0.1.9`, the package surface is:
+For release `0.1.9`, the package surface is:
 
 | Surface | Current state | Evidence or source |
 | --- | --- | --- |
-| PyPI | Prepared for tagged release publication and install smoke tests | `docs/distribution-release.json` |
-| Bioconda | Prepared recipe template with `linux-64`, `osx-64`, and `osx-arm64` support | `docs/distribution-release.json` |
-| GHCR container | Prepared for tagged image publication and runtime smoke tests | `docs/distribution-release.json` |
-| BioContainers | Prepared; propagation depends on the accepted Bioconda recipe | `docs/distribution-release.json` |
+| PyPI | Published and smoke-tested from a clean virtual environment | `docs/distribution-release.json` |
+| Bioconda | Passing 0.1.9 recipe update pending review, merge, and channel propagation | `docs/distribution-release.json` |
+| GHCR container | Release workflow build completed; runtime verification still needs an OCI runtime | `docs/distribution-release.json` |
+| BioContainers | Propagation depends on the accepted Bioconda recipe | `docs/distribution-release.json` |
 | Documentation | Sphinx docs and public schemas in repository | `docs/index.md`, `docs/schemas.md` |
 | Citation | `CITATION.cff`, Zenodo concept DOI, and generated run artifacts | `docs/methods-and-citation.md` |
 | Python API | `dotmatch` package, streaming helpers, pandas/polars/AnnData interop, MultiQC parser entry point | `pyproject.toml`, `docs/streaming-api.md` |
 | R interface | Reticulate-backed package skeleton and vignette | `R/`, `vignettes/dotmatch.Rmd` |
 
-The package should not be described as published or verified on a public channel
-until `make distribution-channels` passes for that channel and the release record
-is updated.
+Do not describe a channel as verified until `make distribution-channels` passes
+for that channel and the release record is updated.
 
 ## Validated Assay Scope
 

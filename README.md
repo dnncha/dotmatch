@@ -265,10 +265,9 @@ documented scope are especially welcome.
 
 ## Installation
 
-DotMatch 0.1.9 is the current release target. After the tagged release workflow
-publishes the package and `make distribution-channels` verifies the channel, the
-PyPI package includes the `dotmatch` command, Python imports, and the bundled
-native library.
+DotMatch 0.1.9 is published on PyPI and GitHub Releases. The PyPI package
+includes the `dotmatch` command, Python imports, and the bundled native
+library.
 
 ```bash
 python3 -m pip install dotmatch==0.1.9
@@ -306,9 +305,9 @@ docker run --rm -v "$PWD:/work" dotmatch:dev dist ACGT AGGT
 
 Bioconda is the Conda-based bioinformatics install path. The 0.1.9 recipe update
 keeps `linux-64`, `osx-64`, and `osx-arm64` support, including Apple Silicon
-Macs. Treat the install command as released only after the Bioconda recipe
-update is accepted and `make distribution-channels` verifies that Bioconda
-repodata and a clean `conda create` both resolve the package:
+Macs. Use the install command after the Bioconda recipe update is accepted and
+`make distribution-channels` verifies that Bioconda repodata and a clean
+`conda create` both resolve the package:
 
 ```bash
 conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.9
@@ -327,8 +326,7 @@ The tagged release workflow publishes the 0.1.9 source distribution, native
 macOS wheel, and repaired manylinux/musllinux Linux wheels. PyPI trusted
 publishing is configured for that workflow. The GitHub release workflow builds
 and smoke-tests repaired manylinux/musllinux wheels before upload. PyPI wheel
-availability should include macOS, manylinux, and musllinux artifacts; release
-files are visible on PyPI only after the tagged workflow publishes them. Raw
+availability includes macOS, manylinux, and musllinux artifacts. Raw
 `linux_x86_64` wheels remain GitHub release artifacts only and are not uploaded
 to PyPI.
 

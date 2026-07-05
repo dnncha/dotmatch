@@ -1,54 +1,67 @@
 {
   "schema_version": 1,
-  "status": "not_released",
+  "status": "partially_verified",
   "release_version": "0.1.9",
   "post_release_gate": "make distribution-channels",
   "channels": [
     {
       "id": "pypi",
-      "status": "prepared",
+      "status": "verified",
       "expected_url": "https://pypi.org/project/dotmatch/0.1.9/",
+      "public_url": "https://pypi.org/project/dotmatch/0.1.9/",
+      "evidence_url": "https://pypi.org/pypi/dotmatch/0.1.9/json",
+      "verified_date": "2026-07-05",
       "verification_command": "make distribution-channels",
-      "blocker": "The 0.1.9 source distribution and repaired wheel artifacts have not been published by the tagged release workflow yet.",
-      "next_action": "Tag v0.1.9, let the GitHub release workflow publish the source distribution and repaired wheels, then rerun make distribution-channels."
+      "verified_artifacts": [
+        "dotmatch-0.1.9.tar.gz",
+        "dotmatch-0.1.9-py3-none-macosx_11_0_universal2.whl",
+        "dotmatch-0.1.9-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "dotmatch-0.1.9-py3-none-musllinux_1_2_x86_64.whl"
+      ],
+      "smoke_test": "Clean virtualenv install from PyPI, dotmatch --version, dotmatch dist ACGT AGGT, and Python import distance check passed on 2026-07-05."
     },
     {
       "id": "bioconda",
-      "status": "prepared",
+      "status": "manifest_verified",
       "expected_url": "https://anaconda.org/bioconda/dotmatch",
       "latest_published_version": "0.1.8",
-      "initial_recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/65367",
+      "recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/66914",
+      "source_sha256": "35bda517040de7d1c83482ee4d3f1ef9fa3540dc4165cbf0afb2dd46784bee06",
       "verification_command": "make distribution-channels",
-      "blocker": "Bioconda 0.1.9 requires an accepted bioconda-recipes update using the immutable v0.1.9 release tarball and SHA256.",
-      "next_action": "After v0.1.9 is public, update the upstream Bioconda recipe, replace the source SHA256, open or merge the bioconda-recipes PR, and rerun make distribution-channels after channel propagation."
+      "blocker": "Bioconda PR #66914 updates only the DotMatch version and tag-archive SHA256, and Bioconda lint, Linux, macOS x86_64, and ARM checks pass. The package is not available from Bioconda until a Bioconda maintainer review or the autobump age gate allows merge, followed by channel propagation.",
+      "next_action": "Monitor PR #66914 until it merges, then verify that conda search -c bioconda dotmatch includes 0.1.9 and run a clean conda install smoke test."
     },
     {
       "id": "ghcr",
-      "status": "prepared",
+      "status": "blocked",
       "expected_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "The v0.1.9 GHCR image has not been published and runtime-smoke-tested yet.",
-      "next_action": "Let the release workflow publish ghcr.io/dnncha/dotmatch:v0.1.9, then verify --version and CLI distance smoke tests with an OCI runtime."
+      "blocker": "The v0.1.9 release workflow completed the container build job, but this local environment lacks Docker or another OCI inspection tool, and the available GitHub token lacks read:packages scope for GitHub Packages API verification.",
+      "next_action": "Verify ghcr.io/dnncha/dotmatch:v0.1.9 with an OCI runtime or a token with package-read access, then run --version and CLI distance smoke tests."
     },
     {
       "id": "biocontainers",
-      "status": "prepared",
+      "status": "blocked",
       "expected_url": "https://quay.io/repository/biocontainers/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "BioContainers 0.1.9 cannot propagate until the Bioconda recipe is accepted.",
+      "blocker": "BioContainers 0.1.9 cannot propagate until the Bioconda recipe is accepted and the Bioconda package is built.",
       "next_action": "After Bioconda publishes 0.1.9, verify the selected quay.io/biocontainers/dotmatch:0.1.9--<build> image with CLI distance and threshold smoke tests."
     },
     {
       "id": "zenodo",
-      "status": "prepared",
+      "status": "verified",
       "expected_url": "https://zenodo.org/records/20541628",
+      "public_url": "https://zenodo.org/records/21207180",
+      "evidence_url": "https://zenodo.org/api/records/21207180",
+      "verified_date": "2026-07-05",
       "verification_command": "make distribution-channels",
-      "blocker": "The Zenodo archive metadata for v0.1.9 has not been verified yet.",
-      "next_action": "After v0.1.9 is tagged and archived, verify the Zenodo record metadata and DOI resolution, then rerun make distribution-channels."
+      "verified_doi": "10.5281/zenodo.21207180"
     }
   ],
   "blockers": [
-    "DotMatch 0.1.9 has not been tagged, published to PyPI/GHCR/Zenodo, accepted by Bioconda, or propagated to BioContainers yet."
+    "Bioconda 0.1.9 has passed PR checks but still needs Bioconda merge and channel propagation.",
+    "BioContainers 0.1.9 depends on the Bioconda publication path.",
+    "GHCR runtime verification needs Docker, another OCI runtime, or package-read API access."
   ],
-  "next_action": "Run make pretag-ready, tag v0.1.9, monitor the release workflow, submit the Bioconda recipe update, and rerun make distribution-channels after public channels propagate."
+  "next_action": "Keep monitoring bioconda/bioconda-recipes#66914. After Bioconda publishes 0.1.9, rerun make distribution-channels and update this record to released only when every required channel is verified."
 }

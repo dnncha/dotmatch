@@ -7,7 +7,7 @@ adapter prefixes.
 
 ## Install
 
-For the current release target after PyPI publication:
+For the current PyPI release:
 
 ```bash
 python3 -m pip install dotmatch==0.1.9
