@@ -10,7 +10,7 @@
       "expected_url": "https://pypi.org/project/dotmatch/0.1.9/",
       "public_url": "https://pypi.org/project/dotmatch/0.1.9/",
       "evidence_url": "https://pypi.org/pypi/dotmatch/0.1.9/json",
-      "verified_date": "2026-07-05",
+      "verified_date": "2026-07-07",
       "verification_command": "make distribution-channels",
       "verified_artifacts": [
         "dotmatch-0.1.9.tar.gz",
@@ -18,34 +18,55 @@
         "dotmatch-0.1.9-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
         "dotmatch-0.1.9-py3-none-musllinux_1_2_x86_64.whl"
       ],
-      "smoke_test": "Clean virtualenv install from PyPI, dotmatch --version, dotmatch dist ACGT AGGT, and Python import distance check passed on 2026-07-05."
+      "smoke_test": "Clean virtualenv install from PyPI, dotmatch --version, dotmatch dist ACGT AGGT, and Python import distance check passed on 2026-07-07."
     },
     {
       "id": "bioconda",
-      "status": "manifest_verified",
+      "status": "verified",
       "expected_url": "https://anaconda.org/bioconda/dotmatch",
-      "latest_published_version": "0.1.8",
+      "public_url": "https://anaconda.org/bioconda/dotmatch/files?version=0.1.9",
+      "evidence_url": "https://api.anaconda.org/package/bioconda/dotmatch",
+      "verified_date": "2026-07-08",
+      "latest_published_version": "0.1.9",
       "recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/66914",
       "source_sha256": "35bda517040de7d1c83482ee4d3f1ef9fa3540dc4165cbf0afb2dd46784bee06",
       "verification_command": "make distribution-channels",
-      "blocker": "Bioconda PR #66914 updates only the DotMatch version and tag-archive SHA256, and Bioconda lint, Linux, macOS x86_64, and ARM checks pass. The package is not available from Bioconda until a Bioconda maintainer review or the autobump age gate allows merge, followed by channel propagation.",
-      "next_action": "Monitor PR #66914 until it merges, then verify that conda search -c bioconda dotmatch includes 0.1.9 and run a clean conda install smoke test."
+      "verified_platforms": [
+        "linux-64",
+        "osx-64",
+        "osx-arm64"
+      ],
+      "smoke_test": "Clean conda install from Bioconda, dotmatch --version, dotmatch dist ACGT AGGT, Python import distance check, and repository distribution-channel GuideCounter smoke passed on 2026-07-08."
     },
     {
       "id": "ghcr",
-      "status": "blocked",
+      "status": "verified",
       "expected_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
+      "public_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch?tag=v0.1.9",
+      "evidence_url": "https://github.com/users/dnncha/packages/container/dotmatch/1002349183?tag=v0.1.9",
+      "verified_date": "2026-07-07",
       "verification_command": "make distribution-channels",
-      "blocker": "The v0.1.9 release workflow completed the container build job, but this local environment lacks Docker or another OCI inspection tool, and the available GitHub token lacks read:packages scope for GitHub Packages API verification.",
-      "next_action": "Verify ghcr.io/dnncha/dotmatch:v0.1.9 with an OCI runtime or a token with package-read access, then run --version and CLI distance smoke tests."
+      "verified_digest": "sha256:205e870299200cf1c00403a6ae855541896ee9212b5f24146f10e7c47bc17462",
+      "verified_platforms": [
+        "linux/amd64"
+      ],
+      "metadata_check": "The public GHCR registry manifest reports the v0.1.9 OCI image index digest, and the GitHub Packages public version page lists tag v0.1.9, the same digest, and linux/amd64 metadata.",
+      "runtime_smoke_test": "Not run in this environment because Docker is unavailable.",
+      "next_action": "Run Docker-backed --version and CLI distance smoke tests from an OCI host when available; this is a runtime follow-up, not a GHCR publication blocker."
     },
     {
       "id": "biocontainers",
-      "status": "blocked",
+      "status": "manifest_verified",
       "expected_url": "https://quay.io/repository/biocontainers/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "BioContainers 0.1.9 cannot propagate until the Bioconda recipe is accepted and the Bioconda package is built.",
-      "next_action": "After Bioconda publishes 0.1.9, verify the selected quay.io/biocontainers/dotmatch:0.1.9--<build> image with CLI distance and threshold smoke tests."
+      "observed_tags": [
+        "0.1.9--py310hfe4f656_0",
+        "0.1.9--py311h13f8228_0",
+        "0.1.9--py312h9639c01_0",
+        "0.1.9--py313hfeada96_0"
+      ],
+      "blocker": "BioContainers 0.1.9 tags are visible on Quay, but Docker is unavailable in this environment, so the manifest inspect and runtime smoke tests have not run locally.",
+      "next_action": "From an OCI host, run docker manifest inspect and dotmatch dist/leq smoke tests against a selected quay.io/biocontainers/dotmatch:0.1.9--<build> image."
     },
     {
       "id": "zenodo",
@@ -53,15 +74,13 @@
       "expected_url": "https://zenodo.org/records/20541628",
       "public_url": "https://zenodo.org/records/21207180",
       "evidence_url": "https://zenodo.org/api/records/21207180",
-      "verified_date": "2026-07-05",
+      "verified_date": "2026-07-07",
       "verification_command": "make distribution-channels",
       "verified_doi": "10.5281/zenodo.21207180"
     }
   ],
   "blockers": [
-    "Bioconda 0.1.9 has passed PR checks but still needs Bioconda merge and channel propagation.",
-    "BioContainers 0.1.9 depends on the Bioconda publication path.",
-    "GHCR runtime verification needs Docker, another OCI runtime, or package-read API access."
+    "BioContainers 0.1.9 is visible on Quay, but local Docker-backed manifest and runtime smoke tests are still needed."
   ],
-  "next_action": "Keep monitoring bioconda/bioconda-recipes#66914. After Bioconda publishes 0.1.9, rerun make distribution-channels and update this record to released only when every required channel is verified."
+  "next_action": "Run BioContainers manifest and dotmatch dist/leq runtime smoke tests from an OCI host. Mark the record released only after that container runtime check passes."
 }

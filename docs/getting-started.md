@@ -14,8 +14,7 @@ python3 -m pip install dotmatch==0.1.9
 dotmatch --version
 ```
 
-For Conda-based environments, use the 0.1.9 Bioconda package after the recipe
-update has been accepted and `make distribution-channels` verifies the channel:
+For Conda-based environments, use the 0.1.9 Bioconda package:
 
 ```bash
 conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.9

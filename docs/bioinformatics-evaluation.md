@@ -18,9 +18,9 @@ For release `0.1.9`, the package surface is:
 | Surface | Current state | Evidence or source |
 | --- | --- | --- |
 | PyPI | Published and smoke-tested from a clean virtual environment | `docs/distribution-release.json` |
-| Bioconda | Passing 0.1.9 recipe update pending review, merge, and channel propagation | `docs/distribution-release.json` |
-| GHCR container | Release workflow build completed; runtime verification still needs an OCI runtime | `docs/distribution-release.json` |
-| BioContainers | Propagation depends on the accepted Bioconda recipe | `docs/distribution-release.json` |
+| Bioconda | Published for linux-64, osx-64, and osx-arm64; clean install and CLI smoke tests pass | `docs/distribution-release.json` |
+| GHCR container | Public v0.1.9 tag, digest, and linux/amd64 metadata verified; local runtime smoke test runs when Docker is available | `docs/distribution-release.json` |
+| BioContainers | 0.1.9 tags are visible on Quay; Docker-backed manifest and runtime smoke tests still need an OCI host | `docs/distribution-release.json` |
 | Documentation | Sphinx docs and public schemas in repository | `docs/index.md`, `docs/schemas.md` |
 | Citation | `CITATION.cff`, Zenodo concept DOI, and generated run artifacts | `docs/methods-and-citation.md` |
 | Python API | `dotmatch` package, streaming helpers, pandas/polars/AnnData interop, MultiQC parser entry point | `pyproject.toml`, `docs/streaming-api.md` |

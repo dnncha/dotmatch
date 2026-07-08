@@ -303,11 +303,10 @@ docker build -t dotmatch:dev .
 docker run --rm -v "$PWD:/work" dotmatch:dev dist ACGT AGGT
 ```
 
-Bioconda is the Conda-based bioinformatics install path. The 0.1.9 recipe update
-keeps `linux-64`, `osx-64`, and `osx-arm64` support, including Apple Silicon
-Macs. Use the install command after the Bioconda recipe update is accepted and
-`make distribution-channels` verifies that Bioconda repodata and a clean
-`conda create` both resolve the package:
+Bioconda is the Conda-based bioinformatics install path. The 0.1.9 package is
+available for `linux-64`, `osx-64`, and `osx-arm64`, including Apple Silicon
+Macs, and the release checker verifies Bioconda repodata plus a clean
+`conda create` install:
 
 ```bash
 conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.9
@@ -320,19 +319,19 @@ in [Packaging Notes](docs/packaging.md), the
 [Release Process](docs/release-process.md), and the machine-readable
 [Distribution Status](docs/distribution-release.json). Only claim a channel as
 available for a release after `make distribution-channels` verifies public
-metadata and install smoke tests.
+metadata and the required install or runtime smoke tests for that channel.
 
 The tagged release workflow publishes the 0.1.9 source distribution, native
 macOS wheel, and repaired manylinux/musllinux Linux wheels. PyPI trusted
 publishing is configured for that workflow. The GitHub release workflow builds
 and smoke-tests repaired manylinux/musllinux wheels before upload. PyPI wheel
-availability includes macOS, manylinux, and musllinux artifacts. Raw
+availability is visible on PyPI for macOS, manylinux, and musllinux artifacts. Raw
 `linux_x86_64` wheels remain GitHub release artifacts only and are not uploaded
 to PyPI.
 
-BioContainers publication is expected through the Bioconda automation rather
-than a separate DotMatch container submission. After the accepted Bioconda 0.1.9
-package is converted by BioContainers, the expected image tag shape is
+BioContainers publication is handled through the Bioconda automation rather
+than a separate DotMatch container submission. The 0.1.9 tags are visible on
+Quay; local Docker-backed runtime verification still needs an OCI host. The tag shape is
 `quay.io/biocontainers/dotmatch:0.1.9--<build>`.
 
 Bioconda provides the `dotmatch` command-line tool, Python workflow namespaces,
