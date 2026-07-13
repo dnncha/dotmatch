@@ -96,6 +96,8 @@ pilot-program
 workflow-integration-kit
 workflow-integration-roadmap
 adoption-metrics
+adopters/record-template
+benchmarks/performance-improvements-2026-07-05
 ```
 
 ```{toctree}
