@@ -1,17 +1,16 @@
-# DotMatch Next 10 Distribution Actions
+# DotMatch Workflow Integration Roadmap
 
-This playbook builds on the first five exposure wins in
-`docs/industry-exposure.md`. It turns the next adoption layer into concrete
-assets that can be used by maintainers, workflow reviewers, core facilities,
-CRISPR teams, and assay developers without expanding DotMatch's public claim
-boundary.
+This roadmap builds on the workflow integration kit in
+`docs/workflow-integration-kit.md`. It turns reviewer-facing work into concrete
+assets for maintainers, workflow reviewers, core facilities, CRISPR teams, and
+assay developers without expanding DotMatch's validated scope.
 
-Use `docs/industry-exposure-plan.json` as the machine-readable checklist for
-these ten actions. Keep private conversations, unmerged PRs, and internal
-examples out of public use records until the rules in `docs/adopters/README.md`
-are satisfied.
+Use `docs/workflow-integration-plan.json` as the machine-readable checklist for
+these ten assets. Reviewer readiness is checked by
+`docs/reviewer-readiness.json` and `scripts/check_reviewer_readiness_assets.py`.
+Public use records follow the approval requirements in `docs/adopters/README.md`.
 
-## 1. Evaluator Decision Tree
+## 1. Reviewer Decision Tree
 
 Use this when someone asks whether DotMatch is relevant.
 
@@ -55,28 +54,31 @@ Use this when someone asks whether DotMatch is relevant.
 
 ## 3. Integration Target Tracker
 
-Track external integration work without calling it adoption too early.
+Track external integration work separately from local examples.
 
 | Target | Why it matters | Ready asset | Public state to record |
 | --- | --- | --- | --- |
 | nf-core modules | High-trust workflow reuse and container automation | `docs/workflow-submissions.md` | Merged PR or released module page |
 | MultiQC module | Makes DotMatch visible in existing pipeline reports | `python/dotmatch/multiqc.py` | Released plugin or upstream integration |
-| Galaxy/IUC | Reaches core facilities and wet-lab users | Galaxy wrapper examples | IUC acceptance or ToolShed publication |
+| Galaxy/IUC | Reaches core facilities and wet-lab teams | Galaxy wrapper examples | IUC acceptance or ToolShed publication |
 | Snakemake wrapper | Easy lab workflow reuse | Snakemake example workflow | Public wrapper or external lab pipeline |
 | bio.tools entry | Searchable bioinformatics registry presence | Homepage and metadata | Accepted bio.tools record |
 
-## 4. Reviewer Evidence Packet
+## 4. Reviewer Packet
 
 Send this packet when a maintainer, reviewer, procurement evaluator, or PI asks
 what is real today.
 
 - Positioning: homepage.
+- Bioinformatics evaluation: `docs/bioinformatics-evaluation.md`.
+- External review packet: `docs/external-review-packet.md`.
 - Install proof: PyPI, Bioconda, packaging notes.
 - Output contract: schemas and command reference.
-- Claim boundary: scientific claims and trust/scope docs.
+- Validated scope: scientific claims and trust/scope docs.
 - Evidence: evidence gallery and benchmark pages.
 - Citation: methods and citation template.
-- Adoption rules: adopter notes and workflow adoption JSON.
+- Public use records: adopter notes and workflow status JSON.
+- Integration status: `docs/integration-targets.json`.
 
 ## 5. Conference Abstracts
 
@@ -104,7 +106,7 @@ the facility. It supports guide counting, inline barcode demultiplexing, barcode
 panel design, and assignment autopsy reports while preserving ambiguity,
 unmatched reads, and invalid extraction windows as visible QC signals.
 
-## 6. Social And Forum Pack
+## 6. Technical Communication Pack
 
 ### Technical Thread
 
@@ -136,9 +138,9 @@ easiest for your lab: nf-core, MultiQC, Galaxy, Snakemake, or something else?
 
 ```text
 The latest DotMatch release gates package installability, docs, scientific
-claim boundaries, workflow examples, and public evidence checks before release
+validated scope, workflow examples, and public evidence checks before release
 tagging. The project is looking for reviewed workflow integrations and scoped
-pilot feedback.
+technical feedback.
 ```
 
 ## 7. Maintainer Issue Templates
@@ -171,9 +173,10 @@ assignment rate, ambiguity rate, unmatched rate, invalid windows, and panel
 safety status without implying downstream biological pass/fail calls.
 ```
 
-## 8. Pilot Scorecard
+## 8. Evaluation Scorecard
 
-Use this privately during pilots. Publish only approved summaries.
+Use `docs/pilot-program.md` for intake fields, review steps, and public-use
+record requirements.
 
 | Dimension | Score | Notes |
 | --- | --- | --- |
@@ -182,17 +185,18 @@ Use this privately during pilots. Publish only approved summaries.
 | Assignment failures were clearer | 0-2 | Ambiguous, unmatched, invalid, unsafe correction |
 | Outputs fit existing workflow | 0-2 | TSV, JSON, FASTQ, HTML, MultiQC, notebook |
 | Citation and methods text was usable | 0-2 | Version, command, ambiguity policy |
-| Public adoption record approved | 0-2 | Only with explicit approval and public URL |
+| Public use record approved | 0-2 | Approved wording and public URL, if applicable |
 
 Interpretation:
 
-- 0-4: do not publicize; fix product or docs first.
-- 5-8: useful internal review; consider a follow-up pilot.
-- 9-12: candidate for an approved adopter record.
+- 0-4: workflow fit is poor or incomplete.
+- 5-8: useful evaluation; record blockers and repeat after fixes.
+- 9-12: strong candidate for a documented public workflow example or approved
+  use record.
 
-## 9. Adoption KPI Dashboard Spec
+## 9. Integration Tracking Metrics
 
-Track exposure health separately from scientific evidence.
+Track integration status separately from scientific evidence.
 
 | KPI | Source | Cadence |
 | --- | --- | --- |
@@ -200,12 +204,12 @@ Track exposure health separately from scientific evidence.
 | Docs visits to tutorial starts | docs analytics if enabled | monthly |
 | External workflow PRs opened | GitHub URLs | weekly during push |
 | External workflow PRs merged | accepted public records | release cycle |
-| Public pilot records approved | `docs/adopters/` | release cycle |
+| Public use records approved | `docs/adopters/` | release cycle |
 | Citation artifacts generated | release or assay outputs | release cycle |
 | Distribution channel health | `make distribution-channels` | release cycle |
 
-Do not combine these KPIs with performance or correctness claims. Interest can
-increase before external use is proven.
+Do not combine these metrics with performance or correctness claims. Workflow
+interest can increase before external integration is accepted.
 
 ## 10. Release Communications Calendar
 
@@ -213,16 +217,16 @@ Use this around each release or major integration push.
 
 | Time | Action | Evidence link |
 | --- | --- | --- |
-| T-7 days | Confirm claim boundary and release notes | `docs/scientific-claims.md` |
+| T-7 days | Confirm validated scope and release notes | `docs/scientific-claims.md` |
 | T-5 days | Prepare maintainer issue or PR drafts | `docs/workflow-submissions.md` |
 | T-3 days | Prepare short social and forum posts | this page |
 | Tag day | Announce only after release workflow artifacts are visible | release URL |
 | T+1 day | Verify PyPI, Bioconda, containers, Zenodo as applicable | `docs/distribution-release.json` |
 | T+7 days | Follow up with maintainers and pilot contacts | public URLs only |
-| T+30 days | Update adoption KPI snapshot | private tracker or public records |
+| T+30 days | Update integration metrics snapshot | public records only |
 
 ## Completion Rule
 
-These wins are complete only when the homepage, docs index, exposure kit,
+These assets are complete only when the homepage, docs index, integration kit,
 structured plan, and site guard all reference the same ten items. If the JSON
 plan and markdown playbook diverge, treat the playbook as not release-ready.

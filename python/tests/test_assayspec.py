@@ -871,6 +871,39 @@ def test_crispr_new_scaffold_matches_assay_new(tmp_path: Path) -> None:
     assert (project / "assay.toml").exists()
 
 
+def test_crispr_quickstart_creates_self_contained_reviewable_project(tmp_path: Path) -> None:
+    targets = _write_inference_targets(tmp_path)
+    reads = _write_inference_reads(tmp_path, prefix="NN", good=True)
+    source = tmp_path / "sample.fastq"
+    reads.rename(source)
+    project = tmp_path / "quickstart"
+
+    rc = _run_cli(
+        [
+            "crispr",
+            "quickstart",
+            "--library",
+            str(targets),
+            "--fastq",
+            str(source),
+            "--out",
+            str(project),
+            "--accept-inference",
+        ]
+    )
+
+    assert rc.returncode == 2, rc.stderr
+    assert (project / "assay.toml").exists()
+    assert (project / "inference_report.json").exists()
+    assert (project / "run.sh").exists()
+    staged = project / "reads" / "sample.fastq"
+    assert staged.exists()
+    assert staged.resolve() != source.resolve()
+    assert staged.read_bytes() == source.read_bytes()
+    assert "Created reviewable CRISPR project" in rc.stdout
+    assert (project / "assay_out" / "reliability_report.html").exists()
+
+
 def test_assay_new_refuses_non_empty_project_dir(tmp_path: Path) -> None:
     targets = _write_inference_targets(tmp_path)
     reads_dir = tmp_path / "fastqs"

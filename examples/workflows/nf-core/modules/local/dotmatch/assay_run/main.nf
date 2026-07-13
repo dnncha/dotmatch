@@ -7,8 +7,8 @@ process DOTMATCH_ASSAY_RUN {
     time   { task.ext.time   ?: 4.h  }
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/dotmatch:0.1.8--h*' :
-        'biocontainers/dotmatch:0.1.8--h*' }"
+        'https://depot.galaxyproject.org/singularity/dotmatch:0.1.9--h*' :
+        'biocontainers/dotmatch:0.1.9--h*' }"
 
     input:
     tuple val(meta), path(assay_spec), path(assay_inputs)

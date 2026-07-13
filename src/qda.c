@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 100844)
+Total output lines: 9730
+
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200809L
 #endif
@@ -29,7 +32,7 @@
 #include <zlib.h>
 
 #ifndef DOTMATCH_VERSION
-#define DOTMATCH_VERSION "0.1.8"
+#define DOTMATCH_VERSION "0.1.9"
 #endif
 
 #define MAX_AUTO_OFFSET 1024
@@ -4830,83 +4833,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
     size_t indel_window = 0;
     size_t auto_offset = 0;
     size_t auto_offset_sample = 1000;
-    offset_mode offsets_mode = OFFSET_MODE_BEST;
-    double offset_min_fraction = 0.005;
-    size_t threads = 0;
-    int max_correction_qual = -1;
-    int k = -1;
-    count_backend_mode backend_mode = COUNT_BACKEND_AUTO;
-    string_list reads = {0};
-    string_list labels = {0};
-    int show_progress = isatty(STDERR_FILENO);
-    size_t progress_interval_reads = 250000;
-    char default_sample_qc_path[PATH_MAX];
-    count_progress *progress_by_sample = NULL;
-    int metal_validate = env_truthy(getenv("DOTMATCH_METAL_VALIDATE"));
-    const char *metal_validation_status = NULL;
-
-    int i = 2;
-    while (i < argc) {
-        const char *arg = argv[i++];
-        if ((strcmp(arg, "--targets") == 0 || strcmp(arg, "--library") == 0) && i < argc) {
-            targets_path = argv[i++];
-        } else if (strcmp(arg, "--samples") == 0 && i < argc) {
-            samples_path = argv[i++];
-        } else if (strcmp(arg, "--reads") == 0 && i < argc) {
-            if (push_string(&reads, argv[i++]) != 0) {
-                fprintf(stderr, "out of memory\n");
-                goto fail_args;
-            }
-        } else if (strcmp(arg, "--sample-label") == 0 && i < argc) {
-            if (split_string_list(&labels, argv[i++], ',') != 0) {
-                fprintf(stderr, "out of memory\n");
-                goto fail_args;
-            }
-        } else if ((strcmp(arg, "--target-start") == 0 || strcmp(arg, "--guide-start") == 0) && i < argc) {
-            if (parse_size_value(argv[i++], &target_start) != 0) {
-                usage(argv0);
-                goto fail_args;
-            }
-        } else if ((strcmp(arg, "--target-length") == 0 || strcmp(arg, "--guide-length") == 0) && i < argc) {
-            if (parse_size_value(argv[i++], &target_len) != 0 || target_len == 0) {
-                usage(argv0);
-                goto fail_args;
-            }
-        } else if (strcmp(arg, "--k") == 0 && i < argc) {
-            if (parse_int_value(argv[i++], &k) != 0 || k < 0 || k > 3) {
-                usage(argv0);
-                goto fail_args;
-            }
-        } else if (strcmp(arg, "--metric") == 0 && i < argc) {
-            const char *value = argv[i++];
-            if (strcmp(value, "hamming") == 0) {
-                metric = COUNT_METRIC_HAMMING;
-            } else if (strcmp(value, "levenshtein") == 0) {
-                metric = COUNT_METRIC_LEVENSHTEIN;
-            } else {
-                usage(argv0);
-                goto fail_args;
-            }
-        } else if (strcmp(arg, "--hamming-index") == 0 && i < argc) {
-            const char *value = argv[i++];
-            if (strcmp(value, "auto") == 0) {
-                hamming_strategy = HAMMING_INDEX_AUTO;
-            } else if (strcmp(value, "query") == 0) {
-                hamming_strategy = HAMMING_INDEX_QUERY;
-            } else if (strcmp(value, "precompute") == 0) {
-                hamming_strategy = HAMMING_INDEX_PRECOMPUTE;
-            } else {
-                usage(argv0);
-                goto fail_args;
-            }
-        } else if (strcmp(arg, "--indel-window") == 0 && i < argc) {
-            if (parse_size_value(argv[i++], &indel_window) != 0 || indel_window > 1) {
-                usage(argv0);
-                goto fail_args;
-            }
-        } else if (strcmp(arg, "--auto-offset") == 0 && i < argc) {
-            if (parse_size_value(argv[i++], &auto_offset) != 0) {
-                usage(argv0);
+    offset_mod…844 tokens truncated…            usage(argv0);
                 goto fail_args;
             }
         } else if (strcmp(arg, "--auto-offset-sample") == 0 && i < argc) {

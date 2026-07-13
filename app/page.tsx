@@ -7,6 +7,13 @@ const exposureUrl = `${repoUrl}/blob/main/docs/industry-exposure.md`;
 const nextWinsUrl = `${repoUrl}/blob/main/docs/industry-next-wins.md`;
 const workflowSubmissionsUrl = `${repoUrl}/blob/main/docs/workflow-submissions.md`;
 const adoptersUrl = `${repoUrl}/blob/main/docs/adopters/README.md`;
+const evaluationUrl = `${repoUrl}/blob/main/docs/bioinformatics-evaluation.md`;
+const pilotUrl = `${repoUrl}/blob/main/docs/pilot-program.md`;
+const reviewPacketUrl = `${repoUrl}/blob/main/docs/external-review-packet.md`;
+const integrationRoadmapUrl = `${repoUrl}/blob/main/docs/workflow-integration-roadmap.md`;
+const integrationTargetsUrl = `${repoUrl}/blob/main/docs/integration-targets.json`;
+const reviewerReadinessUrl = `${repoUrl}/blob/main/docs/reviewer-readiness.json`;
+const adoptionMetricsUrl = `${repoUrl}/blob/main/docs/adoption-metrics.md`;
 const pypiUrl = "https://pypi.org/project/dotmatch/";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -155,12 +162,12 @@ const exposureActions = [
   {
     title: "Pilot",
     body:
-      "Record quote-approved external pilots only after a public lab, workflow, or package integration can be linked and reviewed."
+      "Record approved external pilots only after a public lab, workflow, or package integration can be linked and reviewed."
   },
   {
     title: "Share",
     body:
-      "Use the industry exposure kit for conference abstracts, repository announcements, short social copy, and direct maintainer outreach."
+      "Use the outreach and integration kit for conference abstracts, repository announcements, short social copy, and direct maintainer outreach."
   }
 ] as const;
 
@@ -195,7 +202,7 @@ export default function Home() {
           <a href="#industry-routes">Audiences</a>
           <a href="#evidence">Evidence</a>
           <a href="#exposure">Adoption</a>
-          <a href="#next-wins">Next wins</a>
+          <a href="#next-wins">Next actions</a>
           <a href="#install">Install</a>
           <a href={repoUrl}>GitHub</a>
         </nav>
@@ -360,8 +367,15 @@ export default function Home() {
               ))}
             </ol>
             <aside className="exposure-links" aria-label="Adoption and exposure links">
-              <a href={exposureUrl}>Industry exposure kit</a>
+          <a href={exposureUrl}>Outreach and integration kit</a>
               <a href={workflowSubmissionsUrl}>Workflow submission pack</a>
+              <a href={evaluationUrl}>Bioinformatics evaluation packet</a>
+              <a href={pilotUrl}>External pilot protocol</a>
+              <a href={reviewPacketUrl}>External review packet</a>
+              <a href={integrationRoadmapUrl}>Workflow integration roadmap</a>
+              <a href={integrationTargetsUrl}>Integration target tracker</a>
+              <a href={reviewerReadinessUrl}>Reviewer readiness record</a>
+              <a href={adoptionMetricsUrl}>Adoption metrics contract</a>
               <a href={methodsUrl}>Methods and citation text</a>
               <a href={adoptersUrl}>Used-by record policy</a>
             </aside>
@@ -380,7 +394,7 @@ export default function Home() {
             </p>
           </div>
           <div className="next-wins-layout">
-            <ol className="next-wins-grid" aria-label="Next 10 industry exposure wins">
+            <ol className="next-wins-grid" aria-label="Next 10 distribution actions">
               {nextWins.map((win) => (
                 <li key={win}>{win}</li>
               ))}
@@ -390,7 +404,7 @@ export default function Home() {
               <p>
                 The playbook and machine-readable tracker must stay aligned before
                 release. Private outreach and unmerged PRs remain activity, not
-                adoption evidence.
+                an accepted external-use record.
               </p>
               <a href={nextWinsUrl}>Open the next 10 playbook</a>
             </aside>

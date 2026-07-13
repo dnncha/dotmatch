@@ -45,16 +45,32 @@ scoped handoff documents:
 
 - [Homepage](https://dnncha.github.io/dotmatch): short positioning and audience
   routes for known-target sequencing assignment.
-- [Industry Exposure Kit](docs/industry-exposure.md): the five highest-leverage
-  adoption moves, copy-paste outreach, and claim guardrails.
-- [Next 10 Industry Exposure Wins](docs/industry-next-wins.md): decision tree,
+- [Outreach and Integration Kit](docs/industry-exposure.md): the five
+  highest-leverage distribution moves, copy-paste outreach, and claim guardrails.
+- [Next 10 Distribution Actions](docs/industry-next-wins.md): decision tree,
   persona one-pagers, integration tracker, reviewer packet, outreach copy,
   pilot scorecard, KPIs, and release communication calendar.
+- [Bioinformatics Evaluation Packet](docs/bioinformatics-evaluation.md):
+  installation, evidence boundaries, evaluation commands, and output review
+  criteria for independent technical reviewers.
+- [Pilot Program](docs/pilot-program.md): a reproducible intake, migration,
+  review, and public-use process for external laboratories.
+- [Workflow Integration Roadmap](docs/workflow-integration-roadmap.md): the
+  maintainer handoff plan for nf-core, MultiQC, Galaxy/IUC, Snakemake, and
+  bio.tools.
+- [Workflow Integration Kit](docs/workflow-integration-kit.md): the concrete
+  handoff assets, launch checklist, and reviewer rules for maintainers.
+- [Reviewer Readiness Record](docs/reviewer-readiness.json) and
+  [Integration Target Tracker](docs/integration-targets.json): machine-readable
+  records that keep planned ecosystem work separate from accepted adoption.
+- [Adoption Metrics](docs/adoption-metrics.json): a measurement contract that
+  separates package distribution health from completed evaluations and accepted
+  workflow integrations.
 - [Workflow Submission Pack](docs/workflow-submissions.md): nf-core, MultiQC,
   Galaxy, and Snakemake handoff checklist.
 - [Methods and Citation](docs/methods-and-citation.md): copyable language for
   reports, manuscripts, and release-specific citation.
-- [Adopter Notes](docs/adopters/README.md): rules for public, quote-approved
+- [Adopter Notes](docs/adopters/README.md): rules for public, approved
   used-by records.
 
 ## DotMatch Pro
@@ -252,11 +268,13 @@ documented scope are especially welcome.
 
 ## Installation
 
-DotMatch 0.1.8 is published on PyPI for Linux and macOS. The PyPI package
-includes the `dotmatch` command, Python imports, and the bundled native library.
+DotMatch 0.1.9 is the current release target. After the tagged release workflow
+publishes the package and `make distribution-channels` verifies the channel,
+the PyPI package includes the `dotmatch` command, Python imports, and the bundled
+native library.
 
 ```bash
-python3 -m pip install dotmatch==0.1.8
+python3 -m pip install dotmatch==0.1.9
 dotmatch --version
 dotmatch dist ACGT AGGT
 ```
@@ -289,14 +307,14 @@ docker build -t dotmatch:dev .
 docker run --rm -v "$PWD:/work" dotmatch:dev dist ACGT AGGT
 ```
 
-Bioconda is the Conda-based bioinformatics install path. DotMatch 0.1.8 package
-metadata is visible on Anaconda's Bioconda channel for `linux-64`, `osx-64`,
-and `osx-arm64`, including Apple Silicon Macs. Treat the install command as
-fully released only after `make distribution-channels` verifies that Bioconda
+Bioconda is the Conda-based bioinformatics install path. The 0.1.9 recipe update
+keeps `linux-64`, `osx-64`, and `osx-arm64` support, including Apple Silicon
+Macs. Treat the install command as released only after the Bioconda recipe
+update is accepted and `make distribution-channels` verifies that Bioconda
 repodata and a clean `conda create` both resolve the package:
 
 ```bash
-conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.8
+conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.9
 conda activate dotmatch
 dotmatch --version
 ```
@@ -308,21 +326,22 @@ in [Packaging Notes](docs/packaging.md), the
 available for a release after `make distribution-channels` verifies public
 metadata and install smoke tests.
 
-The tagged release workflow published the 0.1.8 source distribution, native
+The tagged release workflow publishes the 0.1.9 source distribution, native
 macOS wheel, and repaired manylinux/musllinux Linux wheels. PyPI trusted
 publishing is configured for that workflow. The GitHub release workflow builds
 and smoke-tests repaired manylinux/musllinux wheels before upload. PyPI wheel
-availability includes macOS, manylinux, and musllinux artifacts. The 0.1.8
-release files are visible on PyPI; the full multi-channel release record remains
-open until `make distribution-channels` verifies clean Bioconda installs,
-BioContainers propagation, GHCR runtime behavior, and DOI evidence. Raw
+availability should include macOS, manylinux, and musllinux artifacts; release
+files are visible on PyPI only after the tagged workflow publishes them. The
+full multi-channel release record remains open until `make distribution-channels`
+verifies clean Bioconda installs, BioContainers propagation, GHCR runtime
+behavior, and DOI evidence. Raw
 `linux_x86_64` wheels remain GitHub release artifacts only and are not uploaded
 to PyPI.
 
 BioContainers publication is expected through the Bioconda automation rather
-than a separate DotMatch container submission. After the accepted Bioconda 0.1.8
+than a separate DotMatch container submission. After the accepted Bioconda 0.1.9
 package is converted by BioContainers, the expected image tag shape is
-`quay.io/biocontainers/dotmatch:0.1.8--<build>`.
+`quay.io/biocontainers/dotmatch:0.1.9--<build>`.
 
 Bioconda provides the `dotmatch` command-line tool, Python workflow namespaces,
 Python imports, and C header/library artifacts for the published package
@@ -382,6 +401,25 @@ ambiguous instead of forcing a call. Use `--ambiguity-policy best` or Python
 mode.
 
 ## CRISPR Guide Counting
+
+For the fastest safe evaluation, use the reviewable one-command path:
+
+```bash
+dotmatch crispr quickstart \
+  --library guides.csv \
+  --fastq 'fastqs/*.fastq.gz' \
+  --out crispr_screen/
+```
+
+This infers the guide window, creates an AssaySpec project, and writes a
+self-contained project for review. By default it leaves the inferred spec in
+draft form. For an immediate, explicit run, pass `--accept-inference` on the
+initial command; otherwise review the inference report, set `status = "ready"`,
+and run `dotmatch assay start crispr_screen/assay.toml`. `--no-run` is an
+explicit review-only form. Inputs are copied into the project
+so the generated run remains portable. The command is a convenience layer over
+the same `dotmatch assay start` path used by workflow examples and production
+handoffs.
 
 The default production path scaffolds a reviewable assay project, runs preflight
 `check`, counts guides, and writes a reliability report with suggested
@@ -762,7 +800,7 @@ A short JOSS software-paper draft is available in [paper/paper.md](paper/paper.m
 @software{dotmatch_software,
   author = {{O'Toole}, Donncha},
   title = {{DotMatch: deterministic known-target short-DNA assignment for sequencing workflows}},
-  version = {0.1.8},
+  version = {0.1.9},
   date = {2026-06-04},
   publisher = {Zenodo},
   doi = {10.5281/zenodo.20541628},

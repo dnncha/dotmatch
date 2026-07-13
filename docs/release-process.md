@@ -1,6 +1,6 @@
 # Release Process
 
-DotMatch releases should be specific, reproducible, and evidence-bounded.
+DotMatch releases should be specific, reproducible, and evidence-scoped.
 
 ## Pre-Tag Checks
 

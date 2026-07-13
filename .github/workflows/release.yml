@@ -113,10 +113,10 @@ jobs:
         run: docker build -t dotmatch:ci .
       - name: Smoke test container
         run: |
-          docker run --rm dotmatch:ci --version | grep '^dotmatch 0.1.8$'
+          docker run --rm dotmatch:ci --version | grep '^dotmatch 0.1.9$'
           docker run --rm dotmatch:ci dist ACGT AGGT | grep '^1$'
           docker run --rm dotmatch:ci leq 1 ACGT AGGT | grep '^true$'
-          docker image inspect dotmatch:ci --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' | grep '^0.1.8$'
+          docker image inspect dotmatch:ci --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' | grep '^0.1.9$'
       - uses: docker/metadata-action@v6
         id: meta
         with:

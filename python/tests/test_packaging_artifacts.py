@@ -291,4 +291,4 @@ def test_distribution_docs_include_biocontainers_runtime_verification() -> None:
     assert '"docker", "run", "--rm", image, "dotmatch", "leq", "1", "ACGT", "AGGT"' in checker
     assert "quay.io/biocontainers/dotmatch:<version>--<build>" in packaging
     assert "BioContainers images for DotMatch are generated from the accepted Bioconda" in packaging
-    assert "quay.io/biocontainers/dotmatch:0.1.8--<build>" in readme
+    assert "quay.io/biocontainers/dotmatch:0.1.9--<build>" in readme

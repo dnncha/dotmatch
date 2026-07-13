@@ -10,14 +10,14 @@ adapter prefixes.
 For the current PyPI release:
 
 ```bash
-python3 -m pip install dotmatch==0.1.8
+python3 -m pip install dotmatch==0.1.9
 dotmatch --version
 ```
 
-For Conda-based environments, Bioconda now publishes DotMatch 0.1.8:
+For Conda-based environments, the 0.1.9 Bioconda recipe targets:
 
 ```bash
-conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.8
+conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.9
 conda activate dotmatch
 dotmatch --version
 ```
@@ -35,7 +35,8 @@ dotmatch --version
 The source build needs a C compiler, `make`, Python 3.9 or newer, and zlib for
 FASTQ.gz support.
 
-Bioconda 0.1.8 metadata and clean install smoke tests have been verified. PyPI
+The 0.1.9 release record tracks PyPI and Bioconda verification separately. Run
+`make distribution-channels` before treating a public channel as verified. PyPI
 remains the simplest cross-platform Python install path; Bioconda is the
 preferred package-manager path for Conda-based bioinformatics environments.
 
@@ -98,6 +99,29 @@ queries before using `--k 1` or higher in production. A target set that is not
 safe for correction should usually be counted exactly or redesigned.
 
 ## Count Known Targets From FASTQ
+
+### Fastest safe CRISPR evaluation
+
+For a first CRISPR-screen evaluation, `crispr quickstart` turns one or more
+FASTQ paths into the same reviewable AssaySpec project used by production runs.
+It infers the guide window, writes an inference report, and copies the selected
+FASTQs into a self-contained project. By default the project stays in draft
+status for review:
+
+```bash
+dotmatch crispr quickstart \
+  --library guides.csv \
+  --fastq 'fastqs/*.fastq.gz' \
+  --out crispr_screen/
+```
+
+Review `crispr_screen/inference_report.json`. Then set `status = "ready"` in
+`assay.toml` and run `dotmatch assay start crispr_screen/assay.toml`. For an
+immediate explicit run, pass `--accept-inference` on the initial quickstart
+command. A non-zero result means the run completed but a
+reliability gate needs review; inspect `assay_out/reliability_report.html` and
+`assay_out/assay_fixes.tsv` before using counts downstream. `--no-run` is an
+explicit review-only form.
 
 Use `dotmatch count` when reads contain one fixed target window.
 

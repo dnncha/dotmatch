@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ready_to_execute",
-  "scope": "next 10 industry exposure wins",
+  "scope": "next 10 distribution actions",
   "items": [
     {
       "id": "decision_tree",
@@ -57,7 +57,7 @@
       "title": "Pilot Scorecard",
       "primary_audience": "labs, cores, CROs, biotech teams",
       "asset": "docs/industry-next-wins.md#8-pilot-scorecard",
-      "done_when": "Pilot feedback can be scored without turning private evaluation into public adoption evidence."
+      "done_when": "Pilot feedback can be scored without turning private evaluation into an external-use record."
     },
     {
       "id": "adoption_kpis",

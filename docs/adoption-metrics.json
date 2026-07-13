@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "status": "instrumentation_ready",
+  "north_star": {
+    "id": "completed_external_evaluations_30d",
+    "definition": "Count of independent teams that complete the DotMatch evaluation protocol in a rolling 30-day window.",
+    "target_next_90_days": 5,
+    "why": "Completed evaluations measure real workflow use; package downloads alone do not."
+  },
+  "metrics": [
+    {
+      "id": "anaconda_downloads_6m",
+      "name": "Anaconda package downloads",
+      "role": "distribution_health",
+      "definition": "Cumulative downloads reported for the bioconda/dotmatch package over six months.",
+      "source": "https://api.anaconda.org/package/bioconda/dotmatch",
+      "cadence": "monthly",
+      "target": "Establish a baseline; never use this metric as a standalone adoption claim.",
+      "limitation": "Downloads do not identify active projects, unique teams, successful runs, or retention."
+    },
+    {
+      "id": "pypi_downloads_30d",
+      "name": "PyPI downloads",
+      "role": "distribution_health",
+      "definition": "Download count for the current package version over the most recent 30-day window.",
+      "source": "https://pypistats.org/packages/dotmatch",
+      "cadence": "monthly",
+      "target": "Establish a baseline and compare with completed evaluations.",
+      "limitation": "Mirrors, CI jobs, and repeated installs can inflate the count."
+    },
+    {
+      "id": "completed_external_evaluations_30d",
+      "name": "Completed external evaluations",
+      "role": "north_star",
+      "definition": "Teams that complete the intake, run, output review, and scorecard in docs/pilot-program.md.",
+      "source": "Approved pilot scorecards; private records may be summarized without exposing assay data.",
+      "cadence": "monthly",
+      "target": "5 completed evaluations in the first 90-day push.",
+      "limitation": "Requires an approved record or auditable private summary; do not infer from clicks."
+    },
+    {
+      "id": "repeat_workflows_90d",
+      "name": "Repeat workflows",
+      "role": "retention",
+      "definition": "Independent teams that run DotMatch in at least two distinct workflows within 90 days.",
+      "source": "Approved pilot scorecards and docs/workflow-adoption.json.",
+      "cadence": "quarterly",
+      "target": "2 independent teams in the first 90-day push.",
+      "limitation": "A repeat workflow must be recorded with scope; an unmerged example is not evidence."
+    },
+    {
+      "id": "accepted_external_integrations",
+      "name": "Accepted external integrations",
+      "role": "ecosystem",
+      "definition": "Workflow, registry, or reporting integrations accepted outside the DotMatch repository.",
+      "source": "docs/workflow-adoption.json with public adoption and evidence URLs.",
+      "cadence": "release_cycle",
+      "target": "1 accepted integration in the first 90-day push.",
+      "limitation": "Local wrapper payloads and open issues remain planned until accepted externally."
+    },
+    {
+      "id": "docs_to_install_intent",
+      "name": "Documentation-to-install intent",
+      "role": "funnel",
+      "definition": "Unique visitors reaching a documented install or quickstart command divided by tutorial visitors.",
+      "source": "Opt-in documentation or homepage analytics, when enabled.",
+      "cadence": "monthly",
+      "target": "Establish a baseline before setting a conversion target.",
+      "limitation": "Analytics are optional; no user-level tracking is required for DotMatch to operate."
+    }
+  ],
+  "decision_rules": [
+    "Report distribution health separately from external use, retention, and integration acceptance.",
+    "Never convert a package download count into a unique-user, active-project, or production-use claim.",
+    "A public use statement requires an approved record, a public URL, and a scope note.",
+    "Review the north-star count monthly and update the target only after the baseline is recorded."
+  ]
+}

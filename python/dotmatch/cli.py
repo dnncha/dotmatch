@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import glob
 import gzip
 import html
 import json
@@ -16,7 +17,7 @@ from pathlib import Path
 from typing import Iterable, Iterator, Sequence, TextIO
 
 from . import __version__
-from .assayspec import command_assay
+from .assayspec import AssaySpecError, command_assay, scaffold_assay_project
 from .core import (
     MATCH_AMBIGUOUS,
     MATCH_INVALID,
@@ -574,6 +575,86 @@ def command_crispr_qc(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_crispr_quickstart(args: argparse.Namespace) -> int:
+    """Create and optionally run a reviewable CRISPR project from FASTQ paths.
+
+    This is intentionally a thin UX layer over AssaySpec.  It keeps the
+    inference report, staged inputs, preflight checks, QC, and provenance that
+    make the longer ``assay new`` workflow safe, while removing the temporary
+    directory and sample-sheet ceremony from a first evaluation.
+    """
+    library = Path(args.library).expanduser().resolve()
+    if not library.is_file():
+        print(f"dotmatch crispr: library does not exist: {library}", file=sys.stderr)
+        return 2
+
+    sources: list[Path] = []
+    for pattern in args.fastq:
+        expanded_pattern = os.path.expanduser(pattern)
+        matches = [Path(value).expanduser().resolve() for value in sorted(glob.glob(expanded_pattern))]
+        if not matches and Path(expanded_pattern).is_file():
+            matches = [Path(expanded_pattern).resolve()]
+        sources.extend(matches)
+    # Preserve command order while rejecting duplicate paths produced by an
+    # overlapping glob. Deterministic ordering makes pilot results reproducible.
+    unique_sources = list(dict.fromkeys(sources))
+    if not unique_sources:
+        print("dotmatch crispr: --fastq matched no FASTQ files", file=sys.stderr)
+        return 2
+    invalid = [path for path in unique_sources if path.suffix not in {".fastq", ".fq", ".gz"}]
+    if invalid:
+        print(f"dotmatch crispr: inputs do not look like FASTQ files: {invalid[0]}", file=sys.stderr)
+        return 2
+
+    project = Path(args.out).expanduser().resolve()
+    staging_parent = project.parent / f".{project.name}.dotmatch-inputs"
+    if staging_parent.exists():
+        shutil.rmtree(staging_parent)
+    staging_parent.mkdir(parents=True)
+    try:
+        # The scaffold API discovers files in a directory. Symlinking only in
+        # this disposable staging directory lets the scaffold copy the source
+        # bytes into a self-contained project, so the generated run remains
+        # valid after this staging directory is removed.
+        for source in unique_sources:
+            staged = staging_parent / source.name
+            if staged.exists():
+                raise ValueError(f"duplicate FASTQ basename: {source.name}")
+            staged.symlink_to(source)
+        result = scaffold_assay_project(
+            template="crispr",
+            project_dir=project,
+            reads_dir=staging_parent,
+            targets=library,
+            link_reads=False,
+            threads=args.threads,
+            max_reads=args.max_reads,
+            max_start=args.max_start,
+        )
+        print(f"Created reviewable CRISPR project: {result['project']}")
+        print(f"Review inference: {project / 'inference_report.json'}")
+        print(f"Run: {project / 'run.sh'}")
+        if args.no_run or not args.accept_inference:
+            if not args.no_run:
+                print(
+                    "Draft project created; review inference_report.json, then rerun with "
+                    "--accept-inference or use dotmatch assay start after setting status = \"ready\"."
+                )
+            return 0
+        spec_text = (project / "assay.toml").read_text(encoding="utf-8")
+        if 'status = "draft"' in spec_text:
+            (project / "assay.toml").write_text(
+                spec_text.replace('status = "draft"', 'status = "ready"', 1),
+                encoding="utf-8",
+            )
+        return command_assay(["start", str(project / "assay.toml")])
+    except (AssaySpecError, ValueError, OSError) as exc:
+        print(f"dotmatch crispr: {exc}", file=sys.stderr)
+        return 2
+    finally:
+        shutil.rmtree(staging_parent, ignore_errors=True)
+
+
 def command_crispr_namespace(argv: Sequence[str]) -> int:
     parser = argparse.ArgumentParser(prog="dotmatch crispr", description="CRISPR guide-count setup, QC, and AssaySpec helpers.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -599,6 +680,32 @@ def command_crispr_namespace(argv: Sequence[str]) -> int:
     new.add_argument("--threads", type=int, default=1)
     new.add_argument("--max-reads", type=int, default=50000)
     new.add_argument("--max-start", type=int, default=32)
+
+    quickstart = sub.add_parser(
+        "quickstart",
+        help="infer, preflight, and optionally run a CRISPR project from one or more FASTQ paths",
+    )
+    quickstart.add_argument("--library", required=True, help="guide library CSV/TSV")
+    quickstart.add_argument(
+        "--fastq",
+        required=True,
+        action="append",
+        help="FASTQ path or glob; repeat for multiple samples",
+    )
+    quickstart.add_argument("--out", required=True, help="new project directory")
+    quickstart.add_argument("--threads", type=int, default=1)
+    quickstart.add_argument("--max-reads", type=int, default=50000)
+    quickstart.add_argument("--max-start", type=int, default=32)
+    quickstart.add_argument(
+        "--no-run",
+        action="store_true",
+        help="create and infer the project, but leave execution for review",
+    )
+    quickstart.add_argument(
+        "--accept-inference",
+        action="store_true",
+        help="promote a draft inference to ready and run after reviewing the command inputs",
+    )
 
     for name, help_text in {
         "check": "validate a CRISPR AssaySpec and write preflight reliability artifacts",
@@ -635,6 +742,8 @@ def command_crispr_namespace(argv: Sequence[str]) -> int:
         if args.link_reads:
             assay_args.append("--link-reads")
         return command_assay(assay_args)
+    if args.command == "quickstart":
+        return command_crispr_quickstart(args)
     if args.command == "infer":
         assay_args = [
             "infer",
@@ -2259,7 +2368,9 @@ Workflow namespaces:
   panel
       Design, certify, simulate, lay out, and export barcode panels.
   crispr
-      Convenience commands for CRISPR guide-count workflows.
+      Convenience commands for CRISPR guide-count workflows. Use
+      `dotmatch crispr quickstart --library guides.csv --fastq '*.fastq.gz' --out run/`
+      for an inferred, reviewable first run.
 
 Diagnostics and validation:
   audit --targets targets.tsv|targets.csv --k K --out-dir audit_dir

@@ -14,7 +14,7 @@ and kept current as evidence changes.
 | Public CRISPR example | Public Yusa/CRISPR guide-counting fixture and comparison reports | See `examples/crispr_guides/`, `examples/crispr_sanson_brunello/`, and `docs/benchmarks/public_crispr/README.md` |
 | Workflow reuse | nf-core-style, Snakemake, MultiQC, and Galaxy integration examples | See `examples/workflows/` and `docs/workflow-adoption.json` |
 | Citation and archival record | CITATION metadata and Zenodo DOI badge | See `CITATION.cff` and `docs/methods-and-citation.md` |
-| Independent adoption | External confirmations | Track quote-approved confirmations in `docs/adopters/README.md`; do not count unapproved private emails |
+| Independent use | External confirmations | Track approved confirmations in `docs/adopters/README.md`; do not count unapproved private emails |
 
 ## Minimal Reproduction Command
 
@@ -60,7 +60,7 @@ accepted, released, or published.
 - Run `make repro`, `make repository-ready`, and the relevant evidence gates for
   any claim being made in the submission text.
 - Link to release artifacts: PyPI, Bioconda, GitHub Release, and Zenodo DOI.
-- Add only quote-approved, independent adopter statements to
+- Add only approved, independent adopter statements to
   `docs/adopters/README.md`.
 - Keep claims aligned with `docs/scientific-claims.md`; move aspirational or
   unverified statements to roadmap text.

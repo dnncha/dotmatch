@@ -454,7 +454,7 @@ repository-ready:
 	python3 scripts/check_evidence_gallery.py
 	$(MAKE) docs-ready
 
-release-ready: python-test python-package-test docs-ready scientific-readiness-ready assay-evidence-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready evidence-gallery-ready distribution-record-ready bioconda-recipe-ready gpu-evidence-gate native-exact-gate public-crispr-evidence-gate crispr-comparison-gate barcode-comparison-gate feature-barcode-public-gate perturb-seq-public-gate amplicon-panel-public-gate bcl-tiny-public-gate oligo-adapter-public-gate
+release-ready: python-test python-package-test docs-ready scientific-readiness-ready assay-evidence-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready evidence-gallery-ready distribution-record-ready bioconda-recipe-ready gpu-evidence-gate native-exact-gate public-crispr-evidence-gate crispr-comparison-gate barcode-comparison-gate feature-barcode-public-gate perturb-seq-public-gate amplicon-panel-public-gate bcl-tiny-public-gate oligo-adapter-public-gate reviewer-readiness-ready adoption-metrics-ready
 	python3 scripts/check_release_readiness.py
 
 pretag-ready:
@@ -497,6 +497,14 @@ workflow-integration-test: dotmatch shared
 
 workflow-adoption-status:
 	python3 scripts/check_workflow_adoption.py
+
+.PHONY: reviewer-readiness-ready
+reviewer-readiness-ready:
+	python3 scripts/check_reviewer_readiness_assets.py
+
+.PHONY: adoption-metrics-ready
+adoption-metrics-ready:
+	python3 scripts/check_adoption_metrics.py
 
 distribution-record-ready:
 	python3 scripts/check_distribution_record.py

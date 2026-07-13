@@ -20,6 +20,12 @@
 - [ ] Large generated datasets or scratch outputs are not committed.
 - [ ] No real FASTQ/BAM/BCL/customer assay data is committed; examples are synthetic, minimized, or public and scoped.
 
+## Public Language and Reviewer Readiness
+
+- [ ] This PR does not imply accepted external workflow integration.
+- [ ] Broad replacement wording or launch copy was removed or avoided.
+- [ ] Public-facing claims link to a checked artifact, gate, or scoped status record.
+
 ## Acceptance Criteria
 
 - 

@@ -34,10 +34,13 @@ need their own gates before they are public claims.
 - Labs evaluating scientific claims should read [Trust, Scope, and Evidence](trust-and-scope.md).
 - Workflow and pipeline authors should use the [public output schemas](schemas.md).
 - Industry evaluators and maintainers should use the
-  [Industry Exposure Kit](industry-exposure.md) to route outreach, citations,
+  [Outreach and Integration Kit](industry-exposure.md) to route outreach, citations,
   pilots, and workflow submissions without broadening public claims.
+- Independent reviewers should start with the
+  [Bioinformatics Evaluation Packet](bioinformatics-evaluation.md), then use
+  the [Pilot Program](pilot-program.md) for an external migration.
 - Maintainers pushing the next adoption layer should use the
-  [Next 10 Industry Exposure Wins](industry-next-wins.md) and the checked
+  [Next 10 Distribution Actions](industry-next-wins.md) and the checked
   `industry-exposure-plan.json` tracker.
 - Teams evaluating the open-core boundary should read
   [Commercial Boundary](commercial-boundary.md) and
@@ -87,6 +90,12 @@ workflow-submissions
 resubmission-evidence
 commercial-boundary
 evidence-packet-v1
+bioinformatics-evaluation
+external-review-packet
+pilot-program
+workflow-integration-kit
+workflow-integration-roadmap
+adoption-metrics
 ```
 
 ```{toctree}

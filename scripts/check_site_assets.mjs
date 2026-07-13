@@ -91,7 +91,7 @@ for (const phrase of [
   "CRISPR screen teams",
   "Workflow maintainers",
   "Assay developers",
-  "Industry exposure kit",
+  "Outreach and integration kit",
   "Workflow submission pack",
   "Next 10 exposure wins",
   "Decision tree",
@@ -186,7 +186,7 @@ if (!sitemap.includes("MetadataRoute.Sitemap") || !sitemap.includes("changeFrequ
 }
 
 for (const phrase of [
-  "The Big 5 Wins",
+  "The Big 5 Distribution Moves",
   "Next 10 Wins",
   "Workflow distribution handoff",
   "Citation and methods flywheel",
