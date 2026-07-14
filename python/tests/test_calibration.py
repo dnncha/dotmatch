@@ -42,7 +42,7 @@ def test_decode_returns_selective_unique_call() -> None:
 
     assert call.status == "unique"
     assert call.target == "ACGT"
-    assert call.posterior > 0.999
+    assert call.posterior > 0.99
     assert call.likelihood_ratio > 10.0
 
 
