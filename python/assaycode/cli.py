@@ -11,6 +11,7 @@ from typing import Sequence
 from dotmatch import __version__
 from dotmatch import cli as _engine_cli
 from dotmatch.assayscript import AssayScriptError, load_and_compile, write_compiled_plan
+from dotmatch.assaywatch import WatchThresholds, watch_jsonl
 
 
 _SHORTCUTS = {"new", "infer", "check", "plan", "run", "start"}
@@ -75,6 +76,42 @@ def command_inspect(argv: Sequence[str]) -> int:
     return 0
 
 
+
+def command_watch(argv: Sequence[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="assaycode watch",
+        description="Stream assignment JSONL into bounded-memory sequential QC snapshots.",
+    )
+    parser.add_argument("events", help="assignment JSONL, or - for stdin")
+    parser.add_argument("--out", default="-", help="snapshot JSONL, or - for stdout")
+    parser.add_argument("--every", type=int, default=100000)
+    parser.add_argument("--min-reads", type=int, default=1000)
+    parser.add_argument("--min-assignment-rate", type=float, default=0.80)
+    parser.add_argument("--max-ambiguous-rate", type=float, default=0.05)
+    parser.add_argument("--max-unmatched-rate", type=float, default=0.15)
+    parser.add_argument("--max-invalid-rate", type=float, default=0.02)
+    parser.add_argument("--fail-on-review", action="store_true")
+    args = parser.parse_args(list(argv))
+    try:
+        latest = watch_jsonl(
+            args.events,
+            args.out,
+            every=args.every,
+            thresholds=WatchThresholds(
+                min_assignment_rate=args.min_assignment_rate,
+                max_ambiguous_rate=args.max_ambiguous_rate,
+                max_unmatched_rate=args.max_unmatched_rate,
+                max_invalid_rate=args.max_invalid_rate,
+                min_reads=args.min_reads,
+            ),
+        )
+    except (OSError, ValueError) as exc:
+        print(f"assaycode watch: {exc}", file=sys.stderr)
+        return 2
+    if args.fail_on_review and latest is not None and latest.decision == "review":
+        return 1
+    return 0
+
 def print_help() -> None:
     print(
         f"""AssayCode {__version__} — powered by the DotMatch engine
@@ -87,6 +124,7 @@ Usage:
   assaycode --version
   assaycode compile assay-v2.toml --out assay.plan.json
   assaycode inspect assay.plan.json
+  assaycode watch assignments.jsonl --out snapshots.jsonl
   assaycode check assay.toml
   assaycode plan assay.toml
   assaycode run assay.toml
@@ -97,6 +135,7 @@ Usage:
 AssayScript v2:
   compile   validate a multi-read specification and select deterministic strategies
   inspect   summarize a compiled plan, safety status, fingerprints, and findings
+  watch     stream assignment events into sequential QC decisions
 
 AssaySpec v1 workflow shortcuts:
   new       scaffold an AssayScript/AssaySpec project
@@ -133,6 +172,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return command_compile(raw_args[1:])
     if raw_args[0] == "inspect":
         return command_inspect(raw_args[1:])
+    if raw_args[0] == "watch":
+        return command_watch(raw_args[1:])
     if raw_args[0] == "engine":
         if len(raw_args) == 1:
             print("usage: assaycode engine <dotmatch-command> [options]", file=sys.stderr)
