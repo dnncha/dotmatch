@@ -1,7 +1,7 @@
 {
   "title": "DotMatch: deterministic known-target short-DNA assignment for sequencing workflows",
   "upload_type": "software",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "conceptdoi": "10.5281/zenodo.20541628",
   "creators": [
     {
