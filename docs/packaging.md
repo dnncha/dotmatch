@@ -36,9 +36,9 @@ not upload a Conda package directly.
 [bioconda/bioconda-recipes#65367](https://github.com/bioconda/bioconda-recipes/pull/65367)
 published DotMatch 0.1.2 as the first Bioconda package.
 [bioconda/bioconda-recipes#66291](https://github.com/bioconda/bioconda-recipes/pull/66291)
-merged the DotMatch 0.1.8 update on 2026-06-17. The public Anaconda page now
-shows 0.2.0, but immutable source, checksum, repodata, and clean-install
-evidence for that release still needs to be captured. Treat the Bioconda
+merged the DotMatch 0.1.8 update on 2026-06-17. The public Anaconda page currently shows 0.1.9. AssayCode is targeted for the
+prepared 0.2.0 update, which still needs an immutable source tag, checksum,
+recipe review, repodata visibility, and clean-install evidence. Treat the Bioconda
 versions as available only after
 `https://anaconda.org/bioconda/dotmatch`, repodata, and the install smoke tests
 in `make distribution-channels` all verify the release version.
@@ -64,9 +64,9 @@ future upstream recipe updates unless Bioconda CI demonstrates a
 platform-specific blocker and the release notes clearly document that
 `osx-arm64` is unavailable.
 
-The current Bioconda recipe installs the Python `dotmatch` console script as
-the user-facing command, with the native executable bundled inside the Python
-package as `dotmatch-native`. It also installs the public C header, static
+The prepared 0.2.0 Bioconda recipe installs both the additive `assaycode`
+platform command and the compatibility-stable `dotmatch` command, with the
+native executable bundled inside the Python package as `dotmatch-native`. It also installs the public C header, static
 library, shared library, and license. Workbench and browser assets remain
 outside the Bioconda recipe.
 
@@ -91,25 +91,18 @@ functional CLI smoke tests.
 
 ### Bioconda 0.2.0 PR changelog draft
 
-- Update DotMatch from the latest accepted Bioconda version to 0.2.0.
-- Use the immutable v0.2.0 tag and replace the SHA256 after the release tarball
-  is available.
-- Keep the Python console-script package scope introduced in 0.1.4: `dotmatch`
-  exposes the native commands plus `assay`, `barcode`, `panel`, and
-  GuideCounter-compatible CRISPR counting namespaces.
-- Add Hamming `k=2`/`k=3` guide-counting support and exact audit safety fields;
-  keep larger-radius claims bounded to same-length Hamming fixed-window
-  assignment.
-- Add native exact-table shortcuts, indexed status paths, and bounded k=2
-  single-unknown status stops for the CRISPR/counting hot paths.
-- Add installed-package smoke tests for `dotmatch count --help`,
-  `dotmatch crispr-count --help`, `dotmatch audit --help`, Hamming `k=2`
-  CRISPR counting, exact Hamming `k=3` audit summaries, GuideCounter-compatible
-  counts/extended-counts/stats files, barcode offset inference, and panel
-  design.
-- Opt into `osx-arm64` builds with `extra.additional-platforms`.
-- Keep host `zlib` for FASTQ.gz/native linkage and let Conda export `libzlib`
-  at runtime.
+- Update the existing `dotmatch` package from the published 0.1.9 build to
+  0.2.0; do not create or rename to a second Conda package.
+- Use the immutable v0.2.0 tag and replace the SHA256 placeholder only after the
+  release tarball exists.
+- Install and smoke-test both `dotmatch` and `assaycode`; verify that the
+  AssayCode Python namespace exposes the same DotMatch engine and version.
+- Include AssayScript v2 compilation, experimental calibrated/joint decoding,
+  bounded-memory sequential QC, the rewritten paper, and explicit experimental
+  claim boundaries.
+- Preserve the native commands, C header/static/shared libraries, workflow
+  namespaces, GuideCounter compatibility, Hamming k=2/k=3 audit tests,
+  `osx-arm64` opt-in, and host-zlib linkage.
 
 ## Docker
 
