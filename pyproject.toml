@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "dotmatch"
 version = "0.2.0"
-description = "Deterministic known-target short-DNA assignment for CRISPR guide counting, barcode demultiplexing, and FASTQ workflows"
+description = "AssayCode workflows and the DotMatch engine for auditable known-target DNA assignment"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
@@ -22,6 +22,8 @@ keywords = [
     "CRISPR",
     "FASTQ",
     "known-target assignment",
+    "assay compiler",
+    "assay QC",
     "barcode demultiplexing",
     "edit distance",
 ]
