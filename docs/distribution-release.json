@@ -21,8 +21,16 @@
       "observed_date": "2026-07-13",
       "initial_recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/65367",
       "verification_command": "make distribution-channels",
-      "blocker": "Bioconda currently publishes dotmatch 0.1.9. Version 0.2.0 needs an immutable release tarball checksum and a recipe PR that smoke-tests both dotmatch and assaycode.",
-      "next_action": "After v0.2.0 is tagged, compute its SHA256, copy the prepared recipe into dnncha/bioconda-recipes, open the upstream recipe PR, and verify a clean conda create."
+      "blocker": "Bioconda currently publishes dotmatch 0.1.9. Version 0.2.0 needs an immutable release tarball checksum and a joint recipe PR that smoke-tests both command surfaces.",
+      "next_action": "After v0.2.0 is tagged, run scripts/prepare_bioconda_handoff.py and submit the rendered dotmatch update with the assaycode metapackage."
+    },
+    {
+      "id": "bioconda-assaycode",
+      "status": "prepared",
+      "expected_url": "https://anaconda.org/bioconda/assaycode",
+      "verification_command": "make distribution-channels",
+      "blocker": "The AssayCode metapackage cannot resolve until DotMatch 0.2.0 has an immutable tag, checksum, and accepted Bioconda build.",
+      "next_action": "Submit recipes/assaycode together with the rendered recipes/dotmatch 0.2.0 update, then verify conda create -n assaycode -c conda-forge -c bioconda assaycode=0.2.0."
     },
     {
       "id": "ghcr",
@@ -52,5 +60,5 @@
   "blockers": [
     "AssayCode/DotMatch 0.2.0 is not tagged; PyPI, GHCR, Zenodo, Bioconda, and BioContainers publication cannot be claimed before immutable artifacts and channel verification exist."
   ],
-  "next_action": "Pass CI and make pretag-ready, tag v0.2.0, monitor release publication, submit the prepared Bioconda recipe update, and rerun make distribution-channels."
+  "next_action": "Pass CI and make pretag-ready, tag v0.2.0, render both Bioconda recipes, submit the DotMatch update and AssayCode metapackage together, then rerun make distribution-channels."
 }
