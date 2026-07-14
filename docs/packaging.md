@@ -51,10 +51,35 @@ active Bioconda handoff. Run `make bioconda-recipe-ready` before that copy so th
 checked-in template stays aligned with the release version, native install
 steps, CLI smoke tests, and scope notes.
 
+The takeover-oriented distribution model uses two Bioconda coordinates without
+renaming the existing package:
+
+- `dotmatch` remains the engine, native library, compatibility CLI, and package
+  upgraded by existing environments;
+- `assaycode` is a noarch metapackage pinned to the matching `dotmatch` release,
+  making `conda install -c bioconda assaycode` the future flagship install path
+  without duplicating files or breaking existing dependencies.
+
+The AssayCode metapackage template is
+`packaging/bioconda/assaycode-meta.yaml`. Once `v0.2.0` exists, render both
+upstream recipe directories from the downloaded immutable tag archive:
+
+```bash
+python scripts/prepare_bioconda_handoff.py \
+  --release-tarball /path/to/v0.2.0.tar.gz \
+  --out /tmp/dotmatch-bioconda-handoff
+```
+
+Copy the resulting `recipes/dotmatch/` and `recipes/assaycode/` directories to
+the `dnncha/bioconda-recipes` branch and submit them together. The renderer
+computes and inserts the real DotMatch source checksum; the AssayCode recipe is
+a dependency-only metapackage and therefore has no duplicate source payload.
+
 After Bioconda merges the recipe, verify the channel with:
 
 ```bash
 conda search -c bioconda dotmatch
+conda search -c bioconda assaycode
 make distribution-channels
 ```
 
