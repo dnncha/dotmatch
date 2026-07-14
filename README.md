@@ -1,4 +1,6 @@
-# DotMatch
+# AssayCode
+
+### Powered by the DotMatch engine
 
 [![CI](https://github.com/dnncha/dotmatch/actions/workflows/ci.yml/badge.svg)](https://github.com/dnncha/dotmatch/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/dotmatch?label=pypi)](https://pypi.org/project/dotmatch/)
@@ -27,14 +29,16 @@ artifacts, output schemas, DOI, and citations remain supported. The same Python
 distribution also installs the `assaycode` command:
 
 ```bash
-assaycode check assay.toml
-assaycode plan assay.toml
+assaycode compile assay-v2.toml --out assay.plan.json
+assaycode calibrate trusted.tsv --out error-model.json
+assaycode simulate --targets targets.tsv --out simulation.json
+assaycode watch assignments.jsonl --out snapshots.jsonl
 assaycode start assay.toml
 assaycode engine dist ACGT AGGT
 ```
 
 See the [AssayCode Platform guide](docs/assaycode.md) for the product
-architecture, compatibility boundary, and honest current capability limits.
+architecture, compatibility boundary, simulation workflow, and honest current capability limits.
 
 DotMatch counts CRISPR guides, splits inline barcodes, designs barcode panels,
 and writes QC reports from FASTQ. Use it when you already know the short DNA
