@@ -167,6 +167,13 @@ held-out threshold selector can maximize accepted calls subject to an empirical
 false-discovery ceiling. These APIs remain experimental until public datasets
 show calibration and yield improvements at a fixed measured error rate.
 
+A deterministic design-time simulator perturbs fixed-length panels under a
+declared scalar or per-cycle substitution model and applies the same
+ambiguity-preserving radius rule. It reports usable yield, ambiguity, no-call
+rate, false-discovery rate, and truth-by-call confusion. This digital twin is a
+reproducible stress test for panel geometry, not a replacement for held-out
+platform data.
+
 AssayCode also includes a bounded-memory sequential monitor for assignment
 events. It reports assignment, ambiguity, unmatched, and invalid rates with a
 Wilson confidence interval and emits machine-readable on-track, review, or
@@ -177,7 +184,7 @@ sequencer-control or production adaptive-sampling claim.
 
 Tests cover native kernels, deterministic fuzzing, Python APIs, CLI workflows,
 AssaySpec projects, AssayScript compilation, calibration mathematics,
-sequential monitoring, packaging, and public workflow fixtures. The repository
+panel simulation, sequential monitoring, packaging, and public workflow fixtures. The repository
 separates supported, experimental, and unsupported statements in a
 machine-checked evidence inventory.
 
