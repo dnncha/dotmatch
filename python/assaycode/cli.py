@@ -12,6 +12,7 @@ from dotmatch import __version__
 from dotmatch import cli as _engine_cli
 from dotmatch.assayscript import AssayScriptError, load_and_compile, write_compiled_plan
 from dotmatch.assaywatch import WatchThresholds, watch_jsonl
+from dotmatch.calibration_io import decode_tsv, fit_model_tsv, read_model, write_model
 
 
 _SHORTCUTS = {"new", "infer", "check", "plan", "run", "start"}
@@ -77,6 +78,60 @@ def command_inspect(argv: Sequence[str]) -> int:
 
 
 
+
+def command_calibrate(argv: Sequence[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="assaycode calibrate",
+        description="Fit an experimental per-cycle error model from independently trusted TSV pairs.",
+    )
+    parser.add_argument("training", help="TSV with observed, expected, and quality columns")
+    parser.add_argument("--out", required=True, help="model JSON")
+    parser.add_argument("--prior-strength", type=float, default=100.0)
+    args = parser.parse_args(list(argv))
+    try:
+        model = fit_model_tsv(args.training, prior_strength=args.prior_strength)
+        output = write_model(model, args.out)
+    except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
+        print(f"assaycode calibrate: {exc}", file=sys.stderr)
+        return 2
+    print(json.dumps({
+        "status": "experimental",
+        "model": str(output),
+        "cycles": len(model.cycle_totals),
+        "observations": sum(model.cycle_totals),
+        "errors": sum(model.cycle_errors),
+    }, indent=2, sort_keys=True))
+    return 0
+
+
+def command_decode_quality(argv: Sequence[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="assaycode decode-quality",
+        description="Apply an experimental calibrated selective decoder to short read windows.",
+    )
+    parser.add_argument("--reads", required=True, help="TSV with read_id, observed, and quality")
+    parser.add_argument("--targets", required=True, help="TSV target table")
+    parser.add_argument("--model", required=True, help="calibration model JSON")
+    parser.add_argument("--out", required=True, help="calls TSV")
+    parser.add_argument("--posterior-min", type=float, default=0.99)
+    parser.add_argument("--likelihood-ratio-min", type=float, default=10.0)
+    args = parser.parse_args(list(argv))
+    try:
+        model = read_model(args.model)
+        summary = decode_tsv(
+            args.reads,
+            args.targets,
+            model,
+            args.out,
+            posterior_min=args.posterior_min,
+            likelihood_ratio_min=args.likelihood_ratio_min,
+        )
+    except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
+        print(f"assaycode decode-quality: {exc}", file=sys.stderr)
+        return 2
+    print(json.dumps({"status": "experimental", **summary}, indent=2, sort_keys=True))
+    return 0
+
 def command_watch(argv: Sequence[str]) -> int:
     parser = argparse.ArgumentParser(
         prog="assaycode watch",
@@ -124,6 +179,8 @@ Usage:
   assaycode --version
   assaycode compile assay-v2.toml --out assay.plan.json
   assaycode inspect assay.plan.json
+  assaycode calibrate trusted.tsv --out error-model.json
+  assaycode decode-quality --reads windows.tsv --targets targets.tsv --model error-model.json --out calls.tsv
   assaycode watch assignments.jsonl --out snapshots.jsonl
   assaycode check assay.toml
   assaycode plan assay.toml
@@ -135,6 +192,8 @@ Usage:
 AssayScript v2:
   compile   validate a multi-read specification and select deterministic strategies
   inspect   summarize a compiled plan, safety status, fingerprints, and findings
+  calibrate fit an experimental cycle-error model from trusted pairs
+  decode-quality apply calibrated selective decoding with abstention
   watch     stream assignment events into sequential QC decisions
 
 AssaySpec v1 workflow shortcuts:
@@ -172,6 +231,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return command_compile(raw_args[1:])
     if raw_args[0] == "inspect":
         return command_inspect(raw_args[1:])
+    if raw_args[0] == "calibrate":
+        return command_calibrate(raw_args[1:])
+    if raw_args[0] == "decode-quality":
+        return command_decode_quality(raw_args[1:])
     if raw_args[0] == "watch":
         return command_watch(raw_args[1:])
     if raw_args[0] == "engine":
