@@ -254,8 +254,8 @@ Specialized DotMatch workflows remain available unchanged:
 
 Compatibility:
   The dotmatch executable, Python package, native ABI, output schemas, DOI, and
-  citation remain authoritative and supported. AssayCode is an additive
-  assay-level identity, not a fork or destructive package rename.
+  citation remain authoritative and supported.
+  AssayCode is an additive assay-level identity, not a fork or destructive package rename.
 """
     )
 
