@@ -261,7 +261,7 @@ def smoothed_abundance_priors(
         raise ValueError("alpha must be positive")
     if not counts:
         raise ValueError("counts must not be empty")
-    if any(isinstance(value, bool) or value < 0 for value in counts.values()):
+    if any(isinstance(value, bool) or not isinstance(value, int) or value < 0 for value in counts.values()):
         raise ValueError("counts must be non-negative integers")
     total = sum(counts.values()) + alpha * len(counts)
     return {target: (count + alpha) / total for target, count in counts.items()}
