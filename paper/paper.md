@@ -67,6 +67,8 @@ a guide window can be shifted by library construction; a read can be too short
 to contain the requested region; independently plausible barcode components can
 form a biologically impossible tuple.
 
+# State of the field
+
 These states affect downstream scientific conclusions. CRISPR screen analysis
 software such as MAGeCK [@li2014mageck] expects reliable guide counts.
 Single-cell CRISPR guide-assignment strategies can change the number of assigned
@@ -83,7 +85,9 @@ analysis: extract declared regions, compare them with declared known targets,
 preserve ambiguity, audit correction safety, and record enough provenance for
 the decision to be reproduced.
 
-# Assignment contract and algorithms
+# Software design
+
+## Assignment contract and algorithms
 
 The deterministic assignment contract consists of a target table, read window,
 metric, maximum distance, and ambiguity policy. Exact, Hamming, and Levenshtein
@@ -184,7 +188,7 @@ semantics separate. Accelerated or probabilistic paths are not promoted by
 association with deterministic evidence; each requires its own correctness,
 calibration, performance, and public-data gate.
 
-# Availability and research impact
+# Research impact statement
 
 DotMatch is distributed as source, Python wheels, and a Bioconda package
 following common life-science distribution practices [@gruning2018bioconda].
