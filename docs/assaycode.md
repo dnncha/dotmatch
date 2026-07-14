@@ -86,6 +86,27 @@ assaycode engine validate --targets targets.tsv --reads reads.fastq.gz \
   --target-length 20
 ```
 
+## Design-time simulation
+
+Use the experimental digital twin to stress-test a fixed-length target panel
+under a declared substitution-error rate before sequencing:
+
+```bash
+assaycode simulate \
+  --targets targets.tsv \
+  --reads-per-target 10000 \
+  --error-rate 0.01 \
+  -k 1 \
+  --seed 42 \
+  --out simulation.json
+```
+
+The JSON result reports correct and incorrect unique calls, ambiguous calls,
+no-calls, usable yield, false-discovery rate, and a truth-by-call confusion
+table. Results are deterministic for a seed. This substitution-only simulator
+is an experimental design aid, not a replacement for held-out empirical
+validation or a platform performance claim.
+
 ## Streaming QC
 
 `assaycode watch` consumes assignment events as JSON Lines. It keeps bounded
