@@ -74,13 +74,13 @@ for (const selector of [
 }
 
 const h1Matches = page.match(/<h1\b/g) ?? [];
-if (h1Matches.length !== 1 || !page.includes("Know which read assignments you can trust.")) {
+if (h1Matches.length !== 1 || !page.includes("Design the assay. Trust the assignment.")) {
   console.error("Homepage must have exactly one required H1.");
   process.exit(1);
 }
 
 for (const phrase of [
-  "Assignment reliability for known-target sequencing assays.",
+  "Assay compilation and reliability for known-target sequencing.",
   "unique, ambiguous, none, or invalid",
   "CRISPR guides",
   "inline barcodes",
@@ -91,6 +91,8 @@ for (const phrase of [
   "CRISPR screen teams",
   "Workflow maintainers",
   "Assay developers",
+  "AssayCode",
+  "DotMatch engine",
   "Outreach and integration kit",
   "Workflow submission pack",
   "Next 10 exposure wins",
@@ -153,8 +155,8 @@ if (!layout.includes("export const metadata") || !layout.includes("openGraph") |
   process.exit(1);
 }
 
-if (!layout.includes("Assignment Reliability") || !layout.includes("Know which read assignments you can trust")) {
-  console.error("Site metadata must match the new assignment reliability positioning.");
+if (!layout.includes("AssayCode") || !layout.includes("Design the assay and trust the assignment")) {
+  console.error("Site metadata must match the AssayCode positioning.");
   process.exit(1);
 }
 
