@@ -29,7 +29,7 @@ def main() -> int:
     )
     errors += require(
         "python/assaycode/cli.py",
-        ["command_compile", "command_inspect", "command_watch"],
+        ["command_compile", "command_inspect", "command_calibrate", "command_decode_quality", "command_watch"],
     )
     errors += require(
         "python/dotmatch/assayscript.py",
@@ -46,6 +46,10 @@ def main() -> int:
         ],
     )
     errors += require(
+        "python/dotmatch/calibration_io.py",
+        ["fit_model_tsv", "write_model", "decode_tsv"],
+    )
+    errors += require(
         "python/dotmatch/assaywatch.py",
         ["class SequentialMonitor", "assignment_rate_interval95", "insufficient_data"],
     )
@@ -53,6 +57,7 @@ def main() -> int:
         "python/tests/test_assaycode_brand.py",
         "python/tests/test_assayscript.py",
         "python/tests/test_calibration.py",
+        "python/tests/test_calibration_io.py",
         "python/tests/test_assaywatch.py",
     ]:
         errors += require(test, ["test_"])
