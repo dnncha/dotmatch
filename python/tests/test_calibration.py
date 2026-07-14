@@ -154,3 +154,8 @@ def test_joint_decode_rejects_incomplete_constraints() -> None:
             {"sample": {"s1": 1.0}, "guide": {"g1": 1.0}},
             [{"sample": "s1"}],
         )
+
+
+def test_abundance_priors_reject_fractional_counts():
+    with pytest.raises(ValueError, match="non-negative integers"):
+        smoothed_abundance_priors({"a": 1.5})
