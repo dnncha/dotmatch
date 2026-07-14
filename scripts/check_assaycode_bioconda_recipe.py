@@ -13,7 +13,7 @@ PYPROJECT = ROOT / "pyproject.toml"
 
 
 def _version(text: str) -> str | None:
-    match = re.search(r'^version\\s*=\\s*"([^"]+)"', text, flags=re.MULTILINE)
+    match = re.search(r'^version\s*=\s*"([^"]+)"', text, flags=re.MULTILINE)
     return match.group(1) if match else None
 
 
@@ -26,7 +26,7 @@ def audit() -> list[str]:
         return [str(exc)]
 
     project_version = _version(project)
-    recipe_match = re.search(r'{%\\s*set\\s+version\\s*=\\s*"([^"]+)"\\s*%}', meta)
+    recipe_match = re.search(r'{%\s*set\s+version\s*=\s*"([^"]+)"\s*%}', meta)
     recipe_version = recipe_match.group(1) if recipe_match else None
     if not project_version or recipe_version != project_version:
         errors.append(
@@ -59,7 +59,7 @@ def audit() -> list[str]:
         if fragment in meta:
             errors.append(f"metapackage must not contain: {fragment}")
 
-    run_match = re.search(r"requirements:\\n  run:\\n(?P<body>(?:    - .+\\n)+)", meta)
+    run_match = re.search(r"requirements:\n  run:\n(?P<body>(?:    - .+\n)+)", meta)
     dependencies = [] if run_match is None else [
         line.strip()[2:] for line in run_match.group("body").splitlines()
     ]
