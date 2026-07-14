@@ -18,7 +18,7 @@ The same verifier also builds the sdist, confirms it contains `src/qdalign.c` an
 
 For PyPI, upload the sdist plus the native macOS wheel built on GitHub Actions. Linux binary wheels should go to PyPI only after they are built or repaired as manylinux/musllinux wheels. The release workflow builds repaired Linux wheel artifacts with cibuildwheel for `manylinux_x86_64` and `musllinux_x86_64`, smoke-tests `import dotmatch`, the installed console script, and `dotmatch dist ACGT AGGT`, and uploads them as GitHub release artifacts. Do not upload a raw `linux_x86_64` wheel to PyPI.
 
-DotMatch 0.1.9 is the current release target; the `v0.1.9` release workflow publishes the source distribution, the native macOS wheel, and repaired manylinux/musllinux Linux wheels. The release workflow
+DotMatch 0.2.0 is the current release target; the `v0.2.0` release workflow publishes the source distribution, the native macOS wheel, and repaired manylinux/musllinux Linux wheels. The release workflow
 uses PyPI trusted publishing from repository `dnncha/dotmatch`, workflow
 `.github/workflows/release.yml`, and environment `pypi`; if that publisher is
 missing or mismatched, the build artifacts are created but the publish job fails
@@ -37,7 +37,7 @@ not upload a Conda package directly.
 published DotMatch 0.1.2 as the first Bioconda package.
 [bioconda/bioconda-recipes#66291](https://github.com/bioconda/bioconda-recipes/pull/66291)
 merged the DotMatch 0.1.8 update on 2026-06-17. The public Anaconda page now
-shows 0.1.9, but immutable source, checksum, repodata, and clean-install
+shows 0.2.0, but immutable source, checksum, repodata, and clean-install
 evidence for that release still needs to be captured. Treat the Bioconda
 versions as available only after
 `https://anaconda.org/bioconda/dotmatch`, repodata, and the install smoke tests
@@ -89,10 +89,10 @@ The native CLI exposes `dotmatch --version`, so the Bioconda recipe and
 post-release Bioconda install verifier should check version output as well as
 functional CLI smoke tests.
 
-### Bioconda 0.1.9 PR changelog draft
+### Bioconda 0.2.0 PR changelog draft
 
-- Update DotMatch from the latest accepted Bioconda version to 0.1.9.
-- Use the immutable v0.1.9 tag and replace the SHA256 after the release tarball
+- Update DotMatch from the latest accepted Bioconda version to 0.2.0.
+- Use the immutable v0.2.0 tag and replace the SHA256 after the release tarball
   is available.
 - Keep the Python console-script package scope introduced in 0.1.4: `dotmatch`
   exposes the native commands plus `assay`, `barcode`, `panel`, and
@@ -129,15 +129,15 @@ images to `ghcr.io/dnncha/dotmatch`.
 
 BioContainers images for DotMatch are generated from the accepted Bioconda
 recipe; there is no separate DotMatch Dockerfile to submit to BioContainers for
-the normal release path. The 0.1.9 image is expected only after the Bioconda
+the normal release path. The 0.2.0 image is expected only after the Bioconda
 recipe is accepted and propagated. The remaining local check is Docker-backed
 manifest/runtime verification:
 
 ```bash
-python3 scripts/check_distribution_channels.py --version 0.1.9
-docker pull quay.io/biocontainers/dotmatch:0.1.9--<build>
-docker run --rm quay.io/biocontainers/dotmatch:0.1.9--<build> dotmatch dist ACGT AGGT
-docker run --rm quay.io/biocontainers/dotmatch:0.1.9--<build> dotmatch leq 1 ACGT AGGT
+python3 scripts/check_distribution_channels.py --version 0.2.0
+docker pull quay.io/biocontainers/dotmatch:0.2.0--<build>
+docker run --rm quay.io/biocontainers/dotmatch:0.2.0--<build> dotmatch dist ACGT AGGT
+docker run --rm quay.io/biocontainers/dotmatch:0.2.0--<build> dotmatch leq 1 ACGT AGGT
 ```
 
 Do not publish a manual BioContainers image for DotMatch unless the Bioconda
@@ -188,7 +188,7 @@ publication has actually happened.
 
 The repository includes `.zenodo.json` metadata for tagged software archives.
 General software citation uses DOI `10.5281/zenodo.20541628`, which resolves
-through Zenodo metadata for DotMatch. The 0.1.9 archive metadata remains a
+through Zenodo metadata for DotMatch. The 0.2.0 archive metadata remains a
 post-tag verification step. Version DOI
 `10.5281/zenodo.20541629` belongs to v0.1.7 and is retained only as explicit
-version-specific provenance, not as the v0.1.9 DOI.
+version-specific provenance, not as the v0.2.0 DOI.
