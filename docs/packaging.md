@@ -67,7 +67,7 @@ upstream recipe directories from the downloaded immutable tag archive:
 ```bash
 python scripts/prepare_bioconda_handoff.py \
   --release-tarball /path/to/v0.2.0.tar.gz \
-  --out /tmp/dotmatch-bioconda-handoff
+  --out ./dotmatch-bioconda-handoff
 ```
 
 Copy the resulting `recipes/dotmatch/` and `recipes/assaycode/` directories to
