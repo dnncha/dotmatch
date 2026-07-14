@@ -17,11 +17,11 @@ If you use DotMatch, cite the software release through `CITATION.cff`.
 Installed packages also provide `dotmatch citation` for a copyable citation.
 Use the Zenodo concept DOI `10.5281/zenodo.20541628` for general software
 citation. The DOI `10.5281/zenodo.20541629` is the version DOI for v0.1.7 and
-must not be used as the v0.1.9 release DOI.
+must not be used as the v0.2.0 release DOI.
 
 Suggested citation:
 
-> O'Toole D. DotMatch: deterministic known-target short-DNA assignment for sequencing workflows. Software release v0.1.9. https://github.com/dnncha/dotmatch
+> O'Toole D. DotMatch: deterministic known-target short-DNA assignment for sequencing workflows. Software release v0.2.0. https://github.com/dnncha/dotmatch
 
 DOI: <https://doi.org/10.5281/zenodo.20541628>
 
@@ -29,7 +29,7 @@ DOI: <https://doi.org/10.5281/zenodo.20541628>
 
 For CRISPR guide-counting workflows:
 
-> Reads were assigned to the guide library using DotMatch v0.1.9 with known-target assignment, literal-byte sequence semantics, and the radius ambiguity policy. Count matrices retained only reads for which exactly one guide lay inside the configured edit-distance radius; ambiguous and unmatched reads were excluded from target counts and retained in diagnostic summaries.
+> Reads were assigned to the guide library using DotMatch v0.2.0 with known-target assignment, literal-byte sequence semantics, and the radius ambiguity policy. Count matrices retained only reads for which exactly one guide lay inside the configured edit-distance radius; ambiguous and unmatched reads were excluded from target counts and retained in diagnostic summaries.
 
 For one-edit Levenshtein rescue:
 
@@ -121,7 +121,7 @@ statements out until real-data comparator evidence is in the repository.
 
 ## Evidence Boundary
 
-Describe DotMatch v0.1.9 as a known-target short-DNA assignment engine. It is
+Describe DotMatch v0.2.0 as a known-target short-DNA assignment engine. It is
 not a genome aligner, general Edlib replacement, production Illumina
 demultiplexer, full Perturb-seq analysis pipeline, adapter trimmer, UMI grouper,
 read merger, or amplicon consensus/variant-calling workflow. Current public
