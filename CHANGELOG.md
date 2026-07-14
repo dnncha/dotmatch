@@ -4,6 +4,7 @@ All notable user-facing changes are tracked here. Public statements in release n
 
 ## 0.2.0 - Unreleased
 
+- Added a deterministic experimental panel simulator for pre-sequencing yield, ambiguity, no-call, confusion, and FDR analysis.
 ### AssayCode platform
 
 - Added the additive `assaycode` CLI and Python namespace while preserving the `dotmatch` package, executable, ABI, DOI, schemas, and citation contract.
