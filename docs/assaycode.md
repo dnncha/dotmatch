@@ -20,11 +20,28 @@ citation.
 | AssayCode Audit | Pre-run collision, input, and safety checks |
 | AssayCode Autopsy | Evidence-backed diagnosis of offsets, unsafe correction, unmatched reads, and other failures |
 | AssayCode Design | Barcode-panel design, optimization, simulation, layout, and export |
-| AssayCode Watch | Reserved identity for future streaming run intelligence; not a current capability |
+| AssayCode Watch | Experimental bounded-memory sequential QC over assignment event streams |
 | AssayCode Pro | Commercial workbench, registry, signed-report, private-assay, audit-trail, and support boundary |
 
 Names in this table are architecture and positioning. A surface is not a public
 capability until its command, schema, tests, evidence, and release gate exist.
+
+## AssayScript v2 Compilation
+
+AssayScript v2 describes multiple target-bearing segments across R1, R2, I1,
+and I2. Each segment declares a fixed position or anchor, target library,
+orientation, jitter, metric, radius, ambiguity policy, and requirement status.
+An optional constraint table declares allowed cross-segment combinations.
+
+```bash
+assaycode compile assay-v2.toml --out assay.plan.json
+assaycode inspect assay.plan.json
+```
+
+The compiler validates and fingerprints every input, audits bounded target
+sets, records review findings, selects a deterministic strategy per segment,
+and emits a portable JSON plan. It does not yet claim a production universal
+multi-segment execution runtime.
 
 ## Commands
 
@@ -69,6 +86,28 @@ assaycode engine validate --targets targets.tsv --reads reads.fastq.gz \
   --target-length 20
 ```
 
+## Streaming QC
+
+`assaycode watch` consumes assignment events as JSON Lines. It keeps bounded
+state, emits periodic rate snapshots with a 95% Wilson interval, and returns
+`insufficient_data`, `on_track`, or `review` decisions under explicit
+thresholds.
+
+```bash
+assaycode watch assignments.jsonl --out watch.jsonl --every 100000
+```
+
+This is an experimental workflow primitive, not a sequencer-control or adaptive
+sampling claim.
+
+## Experimental Calibration
+
+`dotmatch.calibration` contains a held-apart experimental decoder with
+per-cycle empirical error fitting, Phred shrinkage, selective posterior and
+likelihood-ratio thresholds, joint inference over allowed assay combinations,
+Brier score, expected calibration error, and held-out FDR threshold selection.
+Deterministic DotMatch assignment remains the production default.
+
 ## Python Identity
 
 ```python
@@ -102,9 +141,10 @@ methods should continue to cite the DotMatch release that performed assignment.
 
 ## Claim Boundary
 
-AssayCode currently organizes existing assay-level capabilities. It does not yet
-claim a general assay compiler, calibrated probabilistic decoder, production
-streaming monitor, or universal sequencing platform.
+AssayCode now includes an experimental multi-segment compiler, quality-aware
+calibration module, joint tuple decoder, and streaming QC primitive. It does not
+yet claim a production universal multi-segment runtime, calibrated public-data
+superiority, sequencer control, or universal sequencing-platform coverage.
 
 Those capabilities require implementation plus independent correctness,
 calibration, performance, and public-data evidence before their names become
