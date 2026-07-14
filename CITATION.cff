@@ -21,7 +21,7 @@ keywords:
   - edit distance
 preferred-citation:
   type: article
-  title: "DotMatch: deterministic known-target short-DNA assignment for sequencing workflows"
+  title: "DotMatch: ambiguity-aware known-target DNA assignment and auditable assay workflows"
   authors:
     - given-names: "Donncha"
       family-names: "O'Toole"
