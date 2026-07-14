@@ -103,6 +103,14 @@ def main() -> int:
         "packaging/bioconda/meta.yaml",
         ["import assaycode, dotmatch", "assaycode --version"],
     )
+    errors += require(
+        "packaging/bioconda/assaycode-meta.yaml",
+        ["name: assaycode", "noarch: generic", "- dotmatch =={{ version }}"],
+    )
+    errors += require(
+        "scripts/prepare_bioconda_handoff.py",
+        ["def render", "REPLACE_WITH_RELEASE_TARBALL_SHA256", "recipes"],
+    )
     if errors:
         for error in errors:
             print(f"assaycode-readiness: {error}", file=sys.stderr)
