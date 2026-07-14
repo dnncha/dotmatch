@@ -29,7 +29,14 @@ def main() -> int:
     )
     errors += require(
         "python/assaycode/cli.py",
-        ["command_compile", "command_inspect", "command_calibrate", "command_decode_quality", "command_watch"],
+        [
+            "command_compile",
+            "command_inspect",
+            "command_calibrate",
+            "command_decode_quality",
+            "command_simulate",
+            "command_watch",
+        ],
     )
     errors += require(
         "python/dotmatch/assayscript.py",
@@ -51,8 +58,11 @@ def main() -> int:
     )
     errors += require(
         "python/dotmatch/assaywatch.py",
-    "python/dotmatch/assaysim.py",
         ["class SequentialMonitor", "assignment_rate_interval95", "insufficient_data"],
+    )
+    errors += require(
+        "python/dotmatch/assaysim.py",
+        ["class SimulationResult", "def simulate_panel", "This module is experimental"],
     )
     for test in [
         "python/tests/test_assaycode_brand.py",
@@ -60,7 +70,7 @@ def main() -> int:
         "python/tests/test_calibration.py",
         "python/tests/test_calibration_io.py",
         "python/tests/test_assaywatch.py",
-    "python/tests/test_assaysim.py",
+        "python/tests/test_assaysim.py",
     ]:
         errors += require(test, ["test_"])
     errors += require(
@@ -68,6 +78,7 @@ def main() -> int:
         [
             "Compatibility Contract",
             "AssayScript v2 Compilation",
+            "Design-time simulation",
             "Experimental Calibration",
             "not yet claim",
         ],
@@ -84,7 +95,8 @@ def main() -> int:
         [
             "# AssayCode and AssayScript",
             "# Experimental uncertainty and run monitoring",
-            "does not yet claim",
+            "currently produces a portable JSON plan",
+            "remain experimental",
         ],
     )
     errors += require(
