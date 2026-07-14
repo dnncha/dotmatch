@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "dotmatch"
 version = "0.2.0"
-description = "AssayCode workflows and the DotMatch engine for auditable known-target short-DNA assignment"
+description = "AssayCode workflows and the DotMatch engine for auditable known-target short-DNA assignment across CRISPR, barcode, and FASTQ assays"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
