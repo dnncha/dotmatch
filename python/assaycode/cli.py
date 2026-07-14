@@ -11,6 +11,8 @@ from typing import Sequence
 from dotmatch import __version__
 from dotmatch import cli as _engine_cli
 from dotmatch.assayscript import AssayScriptError, load_and_compile, write_compiled_plan
+from dotmatch.assaysim import simulate_panel
+from dotmatch.core import load_targets
 from dotmatch.assaywatch import WatchThresholds, watch_jsonl
 from dotmatch.calibration_io import decode_tsv, fit_model_tsv, read_model, write_model
 
@@ -132,6 +134,43 @@ def command_decode_quality(argv: Sequence[str]) -> int:
     print(json.dumps({"status": "experimental", **summary}, indent=2, sort_keys=True))
     return 0
 
+def command_simulate(argv: Sequence[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="assaycode simulate",
+        description="Run an experimental deterministic substitution-error simulation for a target panel.",
+    )
+    parser.add_argument("--targets", required=True, help="TSV target table")
+    parser.add_argument("--out", required=True, help="simulation result JSON")
+    parser.add_argument("--reads-per-target", type=int, default=1000)
+    parser.add_argument("--error-rate", type=float, default=0.01)
+    parser.add_argument("-k", type=int, default=1)
+    parser.add_argument("--seed", type=int, default=1)
+    args = parser.parse_args(list(argv))
+    try:
+        targets = dict(load_targets(args.targets))
+        result = simulate_panel(
+            targets,
+            reads_per_target=args.reads_per_target,
+            error_rate=args.error_rate,
+            k=args.k,
+            seed=args.seed,
+        )
+        output = Path(args.out)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(result.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    except (OSError, ValueError) as exc:
+        print(f"assaycode simulate: {exc}", file=sys.stderr)
+        return 2
+    print(json.dumps({
+        "status": "experimental",
+        "result": str(output),
+        "total_reads": result.total_reads,
+        "usable_yield": result.usable_yield,
+        "false_discovery_rate": result.false_discovery_rate,
+    }, indent=2, sort_keys=True))
+    return 0
+
+
 def command_watch(argv: Sequence[str]) -> int:
     parser = argparse.ArgumentParser(
         prog="assaycode watch",
@@ -181,6 +220,7 @@ Usage:
   assaycode inspect assay.plan.json
   assaycode calibrate trusted.tsv --out error-model.json
   assaycode decode-quality --reads windows.tsv --targets targets.tsv --model error-model.json --out calls.tsv
+  assaycode simulate --targets targets.tsv --out simulation.json
   assaycode watch assignments.jsonl --out snapshots.jsonl
   assaycode check assay.toml
   assaycode plan assay.toml
@@ -194,6 +234,7 @@ AssayScript v2:
   inspect   summarize a compiled plan, safety status, fingerprints, and findings
   calibrate fit an experimental cycle-error model from trusted pairs
   decode-quality apply calibrated selective decoding with abstention
+  simulate  estimate yield, ambiguity, no-calls, and FDR under an error model
   watch     stream assignment events into sequential QC decisions
 
 AssaySpec v1 workflow shortcuts:
@@ -235,6 +276,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return command_calibrate(raw_args[1:])
     if raw_args[0] == "decode-quality":
         return command_decode_quality(raw_args[1:])
+    if raw_args[0] == "simulate":
+        return command_simulate(raw_args[1:])
     if raw_args[0] == "watch":
         return command_watch(raw_args[1:])
     if raw_args[0] == "engine":
