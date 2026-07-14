@@ -369,7 +369,8 @@ to PyPI.
 BioContainers publication is expected through the Bioconda automation rather
 than a separate DotMatch container submission. After the accepted Bioconda 0.2.0
 package is converted by BioContainers, the expected image tag shape is
-`quay.io/biocontainers/dotmatch:0.2.0--<build>`.
+`quay.io/biocontainers/dotmatch:0.1.9--<build>` for the currently published
+release. The 0.2.0 image will exist only after the Bioconda recipe is accepted.
 
 Bioconda provides the `dotmatch` command-line tool, Python workflow namespaces,
 Python imports, and C header/library artifacts for the published package
