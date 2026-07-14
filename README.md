@@ -13,6 +13,29 @@
 
 ![Cinematic DotMatch workflow: sequencing reads flow through a precise known-target matching gate into count matrices, demultiplexed barcode lanes, QC panels, and visible ambiguity diagnostics.](public/dotmatch-header-cinematic.png)
 
+## AssayCode Platform
+
+**AssayCode is the assay-level platform powered by the DotMatch engine.** It gives
+scientists one identity for specifying, validating, running, and diagnosing
+sequencing assays built from known guides, barcodes, primers, feature tags, and
+panel targets. **AssayScript** is the human-reviewable assay specification;
+**DotMatch** remains the native assignment engine, published package, CLI,
+scientific citation, and compatibility contract.
+
+The transition is additive: existing `dotmatch` commands, Python APIs, native
+artifacts, output schemas, DOI, and citations remain supported. The same Python
+distribution also installs the `assaycode` command:
+
+```bash
+assaycode check assay.toml
+assaycode plan assay.toml
+assaycode start assay.toml
+assaycode engine dist ACGT AGGT
+```
+
+See the [AssayCode Platform guide](docs/assaycode.md) for the product
+architecture, compatibility boundary, and honest current capability limits.
+
 DotMatch counts CRISPR guides, splits inline barcodes, designs barcode panels,
 and writes QC reports from FASTQ. Use it when you already know the short DNA
 sequences you expect and need to see which reads matched, which did not, and
@@ -275,6 +298,7 @@ native library.
 
 ```bash
 python3 -m pip install dotmatch==0.1.9
+assaycode --version
 dotmatch --version
 dotmatch dist ACGT AGGT
 ```
