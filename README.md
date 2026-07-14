@@ -40,6 +40,13 @@ assaycode engine dist ACGT AGGT
 See the [AssayCode Platform guide](docs/assaycode.md) for the product
 architecture, compatibility boundary, simulation workflow, and honest current capability limits.
 
+
+The 0.2.0 distribution rollout uses two Bioconda coordinates. `dotmatch`
+remains the engine and uninterrupted compatibility package; a new `assaycode`
+metapackage will provide the flagship `conda install -c bioconda assaycode`
+path by pinning the matching DotMatch release. That command should be treated as
+available only after both Anaconda pages and the clean-install release gate pass.
+
 DotMatch counts CRISPR guides, splits inline barcodes, designs barcode panels,
 and writes QC reports from FASTQ. Use it when you already know the short DNA
 sequences you expect and need to see which reads matched, which did not, and
