@@ -291,13 +291,13 @@ documented scope are especially welcome.
 
 ## Installation
 
-DotMatch 0.1.9 is the current release target. After the tagged release workflow
+DotMatch 0.2.0 is the current release target. After the tagged release workflow
 publishes the package and `make distribution-channels` verifies the channel,
 the PyPI package includes the `dotmatch` command, Python imports, and the bundled
 native library.
 
 ```bash
-python3 -m pip install dotmatch==0.1.9
+python3 -m pip install dotmatch==0.2.0
 assaycode --version
 dotmatch --version
 dotmatch dist ACGT AGGT
@@ -331,14 +331,14 @@ docker build -t dotmatch:dev .
 docker run --rm -v "$PWD:/work" dotmatch:dev dist ACGT AGGT
 ```
 
-Bioconda is the Conda-based bioinformatics install path. The 0.1.9 recipe update
+Bioconda is the Conda-based bioinformatics install path. The 0.2.0 recipe update
 keeps `linux-64`, `osx-64`, and `osx-arm64` support, including Apple Silicon
 Macs. Treat the install command as released only after the Bioconda recipe
 update is accepted and `make distribution-channels` verifies that Bioconda
 repodata and a clean `conda create` both resolve the package:
 
 ```bash
-conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.9
+conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.2.0
 conda activate dotmatch
 dotmatch --version
 ```
@@ -350,7 +350,7 @@ in [Packaging Notes](docs/packaging.md), the
 available for a release after `make distribution-channels` verifies public
 metadata and install smoke tests.
 
-The tagged release workflow publishes the 0.1.9 source distribution, native
+The tagged release workflow publishes the 0.2.0 source distribution, native
 macOS wheel, and repaired manylinux/musllinux Linux wheels. PyPI trusted
 publishing is configured for that workflow. The GitHub release workflow builds
 and smoke-tests repaired manylinux/musllinux wheels before upload. PyPI wheel
@@ -363,9 +363,9 @@ behavior, and DOI evidence. Raw
 to PyPI.
 
 BioContainers publication is expected through the Bioconda automation rather
-than a separate DotMatch container submission. After the accepted Bioconda 0.1.9
+than a separate DotMatch container submission. After the accepted Bioconda 0.2.0
 package is converted by BioContainers, the expected image tag shape is
-`quay.io/biocontainers/dotmatch:0.1.9--<build>`.
+`quay.io/biocontainers/dotmatch:0.2.0--<build>`.
 
 Bioconda provides the `dotmatch` command-line tool, Python workflow namespaces,
 Python imports, and C header/library artifacts for the published package
@@ -824,7 +824,7 @@ A short JOSS software-paper draft is available in [paper/paper.md](paper/paper.m
 @software{dotmatch_software,
   author = {{O'Toole}, Donncha},
   title = {{DotMatch: deterministic known-target short-DNA assignment for sequencing workflows}},
-  version = {0.1.9},
+  version = {0.2.0},
   date = {2026-06-04},
   publisher = {Zenodo},
   doi = {10.5281/zenodo.20541628},
