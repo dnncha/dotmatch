@@ -4,6 +4,8 @@ All notable user-facing changes are tracked here. Public statements in release n
 
 ## 0.2.0 - Unreleased
 
+- Added a compatibility-safe AssayCode Bioconda metapackage template and a deterministic two-recipe release-handoff generator while preserving `dotmatch` as the engine package.
+
 - Added a deterministic experimental panel simulator for pre-sequencing yield, ambiguity, no-call, confusion, and FDR analysis.
 ### AssayCode platform
 
