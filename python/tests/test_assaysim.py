@@ -1,5 +1,8 @@
+import json
+
 import pytest
 
+from assaycode.cli import command_simulate
 from dotmatch.assaysim import simulate_panel
 
 
@@ -63,3 +66,25 @@ def test_close_targets_expose_ambiguity():
 def test_invalid_simulations_are_rejected(targets, kwargs):
     with pytest.raises(ValueError):
         simulate_panel(targets, **kwargs)
+
+
+def test_simulate_cli_writes_machine_readable_result(tmp_path, capsys):
+    targets = tmp_path / "targets.tsv"
+    targets.write_text("target_id\ttarget_seq\na\tAAAA\nb\tCCCC\n", encoding="utf-8")
+    output = tmp_path / "simulation.json"
+
+    assert command_simulate([
+        "--targets", str(targets),
+        "--out", str(output),
+        "--reads-per-target", "5",
+        "--error-rate", "0",
+        "-k", "0",
+        "--seed", "7",
+    ]) == 0
+
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    summary = json.loads(capsys.readouterr().out)
+    assert payload["correct_unique"] == 10
+    assert payload["seed"] == 7
+    assert summary["status"] == "experimental"
+    assert summary["usable_yield"] == 1.0
