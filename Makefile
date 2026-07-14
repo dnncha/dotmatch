@@ -516,6 +516,7 @@ assaycode-readiness-ready:
 
 bioconda-recipe-ready:
 	python3 scripts/check_bioconda_recipe.py
+	python3 scripts/check_assaycode_bioconda_recipe.py
 
 distribution-channels:
 	python3 scripts/check_distribution_channels.py
