@@ -27,6 +27,7 @@ need their own gates before they are public claims.
 
 ## Start Here
 
+- Read [AssayCode Platform](assaycode.md) for the additive platform identity, AssayScript terminology, command shortcuts, and DotMatch compatibility contract.
 - New users should begin with [Getting Started](getting-started.md).
 - Use [Command Reference](command-reference.md) when choosing the right
   namespace or compatibility entrypoint.
@@ -64,6 +65,7 @@ people and consumed by workflow systems.
 :caption: User Guide
 
 getting-started
+assaycode
 command-reference
 tutorials/crispr-count-first-run
 tutorials/scverse-perturb-seq
