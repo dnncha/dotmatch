@@ -69,7 +69,7 @@ def main() -> int:
         "docs/scientific-claims.md",
         [
             "AssayScript v2 compilation is experimental",
-            "deterministic DotMatch assignment remains authoritative",
+            "Deterministic DotMatch assignment remains authoritative",
         ],
     )
     errors += require(
