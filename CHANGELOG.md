@@ -11,6 +11,7 @@ All notable user-facing changes are tracked here. Public statements in release n
 
 - Added the additive `assaycode` CLI and Python namespace while preserving the `dotmatch` package, executable, ABI, DOI, schemas, and citation contract.
 - Added AssayScript v2 compilation for R1/R2/I1/I2 segment declarations, fixed or anchored extraction, positional jitter, orientation, per-segment matching policies, allowed-combination tables, source and library fingerprints, bounded safety findings, deterministic strategy selection, and portable JSON plans.
+- Added an experimental fail-closed AssayScript runtime for synchronized multi-read FASTQs, fixed or anchored extraction, ambiguity-preserving segment calls, allowed-tuple filtering and rescue, atomic assignment/count/event outputs, and fingerprinted provenance summaries.
 - Added `assaycode compile`, `assaycode inspect`, and compatibility-safe assay workflow shortcuts.
 - Added an explicitly experimental calibration module with per-cycle error fitting, Phred shrinkage, selective posterior calls, likelihood-ratio abstention, joint decoding over permitted tuples, Brier score, expected calibration error, held-out FDR threshold selection, and smoothed abundance priors.
 - Added `assaycode watch`, a bounded-memory JSONL monitor that emits assignment-rate confidence intervals and threshold-based sequential QC decisions.

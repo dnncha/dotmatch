@@ -56,6 +56,7 @@ class CompiledSegment:
     library_sha256: str
     target_count: int
     target_lengths: list[int]
+    length: int
     strategy: str
     start: int | None
     anchor: str | None
@@ -251,6 +252,7 @@ def _compile_segment(segment: Segment) -> CompiledSegment:
         library_sha256=_sha256(segment.library),
         target_count=len(targets),
         target_lengths=lengths,
+        length=segment.length,
         strategy=strategy,
         start=segment.start,
         anchor=segment.anchor,

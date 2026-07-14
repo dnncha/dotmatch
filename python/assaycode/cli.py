@@ -11,6 +11,7 @@ from typing import Sequence
 from dotmatch import __version__
 from dotmatch import cli as _engine_cli
 from dotmatch.assayscript import AssayScriptError, load_and_compile, write_compiled_plan
+from dotmatch.assayruntime import run_compiled_plan
 from dotmatch.assaysim import simulate_panel
 from dotmatch.core import load_targets
 from dotmatch.assaywatch import WatchThresholds, watch_jsonl
@@ -76,6 +77,59 @@ def command_inspect(argv: Sequence[str]) -> int:
         "findings": data.get("findings", []),
     }
     print(json.dumps(summary, indent=2, sort_keys=True))
+    return 0
+
+
+def command_execute(argv: Sequence[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="assaycode execute",
+        description="Execute a compiled AssayScript v2 plan over synchronized FASTQ inputs.",
+    )
+    parser.add_argument("plan", help="compiled AssayScript plan JSON")
+    parser.add_argument("--r1", help="R1 FASTQ or FASTQ.GZ")
+    parser.add_argument("--r2", help="R2 FASTQ or FASTQ.GZ")
+    parser.add_argument("--i1", help="I1 FASTQ or FASTQ.GZ")
+    parser.add_argument("--i2", help="I2 FASTQ or FASTQ.GZ")
+    parser.add_argument("--out", required=True, help="new or empty output directory")
+    parser.add_argument("--max-reads", type=int)
+    parser.add_argument(
+        "--accept-findings",
+        action="store_true",
+        help="execute after explicitly reviewing findings recorded by the compiler",
+    )
+    args = parser.parse_args(list(argv))
+    read_paths = {
+        name: path
+        for name, path in {"R1": args.r1, "R2": args.r2, "I1": args.i1, "I2": args.i2}.items()
+        if path
+    }
+    try:
+        result = run_compiled_plan(
+            args.plan,
+            read_paths,
+            args.out,
+            max_reads=args.max_reads,
+            accept_findings=args.accept_findings,
+        )
+    except (AssayScriptError, OSError, ValueError) as exc:
+        print(f"assaycode execute: {exc}", file=sys.stderr)
+        return 2
+    print(
+        json.dumps(
+            {
+                "status": "experimental",
+                "output_dir": str(result.output_dir),
+                "total_reads": result.total_reads,
+                "status_counts": result.status_counts,
+                "assignments": str(result.assignments),
+                "counts": str(result.counts),
+                "events": str(result.events),
+                "summary": str(result.summary),
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
     return 0
 
 
@@ -218,6 +272,7 @@ Usage:
   assaycode --version
   assaycode compile assay-v2.toml --out assay.plan.json
   assaycode inspect assay.plan.json
+  assaycode execute assay.plan.json --r1 R1.fastq.gz --i1 I1.fastq.gz --out run
   assaycode calibrate trusted.tsv --out error-model.json
   assaycode decode-quality --reads windows.tsv --targets targets.tsv --model error-model.json --out calls.tsv
   assaycode simulate --targets targets.tsv --out simulation.json
@@ -232,6 +287,7 @@ Usage:
 AssayScript v2:
   compile   validate a multi-read specification and select deterministic strategies
   inspect   summarize a compiled plan, safety status, fingerprints, and findings
+  execute   stream synchronized FASTQs through a compiled multi-segment plan
   calibrate fit an experimental cycle-error model from trusted pairs
   decode-quality apply calibrated selective decoding with abstention
   simulate  estimate yield, ambiguity, no-calls, and FDR under an error model
@@ -272,6 +328,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return command_compile(raw_args[1:])
     if raw_args[0] == "inspect":
         return command_inspect(raw_args[1:])
+    if raw_args[0] == "execute":
+        return command_execute(raw_args[1:])
     if raw_args[0] == "calibrate":
         return command_calibrate(raw_args[1:])
     if raw_args[0] == "decode-quality":

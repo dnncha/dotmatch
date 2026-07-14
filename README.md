@@ -30,6 +30,8 @@ distribution also installs the `assaycode` command:
 
 ```bash
 assaycode compile assay-v2.toml --out assay.plan.json
+assaycode inspect assay.plan.json
+assaycode execute assay.plan.json --r1 R1.fastq.gz --i1 I1.fastq.gz --out run/
 assaycode calibrate trusted.tsv --out error-model.json
 assaycode simulate --targets targets.tsv --out simulation.json
 assaycode watch assignments.jsonl --out snapshots.jsonl
