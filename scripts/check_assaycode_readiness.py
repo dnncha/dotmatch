@@ -51,6 +51,7 @@ def main() -> int:
     )
     errors += require(
         "python/dotmatch/assaywatch.py",
+    "python/dotmatch/assaysim.py",
         ["class SequentialMonitor", "assignment_rate_interval95", "insufficient_data"],
     )
     for test in [
@@ -59,6 +60,7 @@ def main() -> int:
         "python/tests/test_calibration.py",
         "python/tests/test_calibration_io.py",
         "python/tests/test_assaywatch.py",
+    "python/tests/test_assaysim.py",
     ]:
         errors += require(test, ["test_"])
     errors += require(
