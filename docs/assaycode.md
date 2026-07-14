@@ -108,6 +108,22 @@ likelihood-ratio thresholds, joint inference over allowed assay combinations,
 Brier score, expected calibration error, and held-out FDR threshold selection.
 Deterministic DotMatch assignment remains the production default.
 
+A file-backed evaluation path makes this testable without integrating it into
+the production FASTQ router:
+
+```bash
+assaycode calibrate trusted-observed-expected.tsv --out error-model.json
+assaycode decode-quality \
+  --reads held-out-windows.tsv \
+  --targets targets.tsv \
+  --model error-model.json \
+  --out calls.tsv
+```
+
+Training rows must contain independently trusted `observed`, `expected`, and
+`quality` columns. Calibration and false-discovery thresholds must be
+evaluated on separate held-out truth data before any scientific claim.
+
 ## Python Identity
 
 ```python
