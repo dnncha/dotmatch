@@ -16,7 +16,7 @@ PLACEHOLDER = "REPLACE_WITH_RELEASE_TARBALL_SHA256"
 
 def _project_version() -> str:
     text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    match = re.search(r'^version\\s*=\\s*"([^"]+)"', text, flags=re.MULTILINE)
+    match = re.search(r'^version\s*=\s*"([^"]+)"', text, flags=re.MULTILINE)
     if match is None:
         raise ValueError("pyproject.toml does not declare a version")
     return match.group(1)
