@@ -2,7 +2,16 @@
 
 All notable user-facing changes are tracked here. Public statements in release notes must stay aligned with `docs/scientific-claims.md`.
 
-## Unreleased / Next (post 0.1.7)
+## 0.2.0 - Unreleased
+
+### AssayCode platform
+
+- Added the additive `assaycode` CLI and Python namespace while preserving the `dotmatch` package, executable, ABI, DOI, schemas, and citation contract.
+- Added AssayScript v2 compilation for R1/R2/I1/I2 segment declarations, fixed or anchored extraction, positional jitter, orientation, per-segment matching policies, allowed-combination tables, source and library fingerprints, bounded safety findings, deterministic strategy selection, and portable JSON plans.
+- Added `assaycode compile`, `assaycode inspect`, and compatibility-safe assay workflow shortcuts.
+- Added an explicitly experimental calibration module with per-cycle error fitting, Phred shrinkage, selective posterior calls, likelihood-ratio abstention, joint decoding over permitted tuples, Brier score, expected calibration error, held-out FDR threshold selection, and smoothed abundance priors.
+- Added `assaycode watch`, a bounded-memory JSONL monitor that emits assignment-rate confidence intervals and threshold-based sequential QC decisions.
+- Added a release-blocking AssayCode readiness gate, focused tests, updated scientific claim boundaries, a rewritten paper, and Bioconda smoke tests for both command identities.
 
 ### Added
 - `dotmatch.tl` submodule: scverse/scanpy-style tools (`tl.assign_features`, `tl.feature_counts`, aliases for CRISPR/feature barcodes). In-place modification or copy, with provenance in `.uns`. Excellent UX for AnnData-centric workflows.
