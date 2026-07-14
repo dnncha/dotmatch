@@ -49,10 +49,12 @@ correctness claims.
 The same distribution now introduces AssayCode as an additive assay-level
 identity. DotMatch remains the package, engine, scientific citation, and
 compatibility contract. AssayCode supplies concise assay workflow commands and
-an experimental AssayScript v2 compiler for multi-read segment descriptions.
+an experimental AssayScript v2 compiler and runtime for multi-read segment descriptions.
 The compiler validates target libraries and allowed combinations, fingerprints
 inputs, records safety findings, and selects a deterministic execution strategy
-for each segment. Experimental calibration and sequential-monitoring modules
+for each segment. The runtime synchronizes FASTQs, preserves ambiguous segment
+calls, and applies allowed cross-segment tuples before emitting assignments,
+counts, provenance, and sequential-monitoring events. Experimental calibration and sequential-monitoring modules
 are separated from default deterministic assignment until dedicated evidence
 gates are satisfied.
 
@@ -143,12 +145,16 @@ length, positional jitter, orientation, metric, radius, ambiguity policy, and
 whether it is required. A constraint table can enumerate allowed combinations
 across segments.
 
-The compiler currently produces a portable JSON plan rather than claiming a
-complete universal assay runtime. The plan contains source and input SHA-256
+The compiler produces a portable JSON plan containing source and input SHA-256
 fingerprints, target counts and lengths, safety status, selected matching
-strategy, execution order, and review findings. This creates a testable
-foundation for joint combinatorial execution without overstating current
-capability.
+strategy, execution order, and review findings. An experimental streaming
+runtime verifies those fingerprints, synchronizes supplied FASTQs by read
+identifier, extracts fixed or anchor-relative windows with configured jitter
+and orientation, preserves compatible target sets, and uses allowed tuples for
+deterministic joint rescue. It writes per-read assignments, unique-combination
+counts, event streams, and provenance summaries only after successful
+completion. This runtime has focused unit evidence but not yet public multi-read
+dataset validation or production throughput evidence.
 
 # Experimental uncertainty and run monitoring
 
@@ -183,7 +189,7 @@ sequencer-control or production adaptive-sampling claim.
 # Validation and evidence boundaries
 
 Tests cover native kernels, deterministic fuzzing, Python APIs, CLI workflows,
-AssaySpec projects, AssayScript compilation, calibration mathematics,
+AssaySpec projects, AssayScript compilation and execution, calibration mathematics,
 panel simulation, sequential monitoring, packaging, and public workflow fixtures. The repository
 separates supported, experimental, and unsupported statements in a
 machine-checked evidence inventory.

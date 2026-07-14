@@ -40,8 +40,44 @@ assaycode inspect assay.plan.json
 
 The compiler validates and fingerprints every input, audits bounded target
 sets, records review findings, selects a deterministic strategy per segment,
-and emits a portable JSON plan. It does not yet claim a production universal
-multi-segment execution runtime.
+and emits a portable JSON plan.
+
+## Experimental AssayScript execution
+
+The experimental runtime streams synchronized R1, R2, I1, and I2 FASTQs through
+that compiled plan. It implements fixed and anchor-relative extraction,
+positional jitter, forward/reverse-complement search, bounded Hamming or
+Levenshtein assignment, explicit ambiguity, and deterministic rescue through
+an allowed-combination table.
+
+```bash
+assaycode inspect assay.plan.json
+assaycode execute assay.plan.json \
+  --r1 R1.fastq.gz --r2 R2.fastq.gz --i1 I1.fastq.gz \
+  --out run/
+```
+
+Execution is fail-closed. Source, library, and constraint fingerprints must
+still match; required reads must be supplied; all FASTQs must have synchronized
+read identifiers and equal record counts; and the output path must be new or
+empty. When compilation records review findings, inspect them and opt in only
+after review:
+
+```bash
+assaycode execute assay.plan.json --r1 R1.fastq.gz --out run/ \
+  --accept-findings
+```
+
+The runtime writes `assignments.tsv`, unique `counts.tsv`, `events.jsonl` for
+`assaycode watch`, and a fingerprinted `summary.json`. It commits these files
+only after the complete run succeeds, so desynchronized or malformed inputs do
+not leave a partial result set.
+
+This first runtime is deliberately experimental and Python-based. It has unit
+evidence for synchronization, extraction, ambiguity preservation, tuple
+filtering, deterministic rescue, fingerprints, and atomic failure, but not yet
+public multi-read dataset validation or a throughput claim. The native
+DotMatch commands remain the supported high-throughput path.
 
 ## Commands
 
@@ -178,10 +214,11 @@ methods should continue to cite the DotMatch release that performed assignment.
 
 ## Claim Boundary
 
-AssayCode now includes an experimental multi-segment compiler, quality-aware
-calibration module, joint tuple decoder, and streaming QC primitive. It does not
-yet claim a production universal multi-segment runtime, calibrated public-data
-superiority, sequencer control, or universal sequencing-platform coverage.
+AssayCode now includes an experimental multi-segment compiler and runtime,
+quality-aware calibration module, joint tuple decoder, and streaming QC
+primitive. It does not claim production readiness for the universal runtime,
+calibrated public-data superiority, sequencer control, or universal
+sequencing-platform coverage.
 
 Those capabilities require implementation plus independent correctness,
 calibration, performance, and public-data evidence before their names become

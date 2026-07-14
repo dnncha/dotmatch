@@ -32,6 +32,7 @@ def main() -> int:
         [
             "command_compile",
             "command_inspect",
+            "command_execute",
             "command_calibrate",
             "command_decode_quality",
             "command_simulate",
@@ -41,6 +42,10 @@ def main() -> int:
     errors += require(
         "python/dotmatch/assayscript.py",
         ["class CompiledAssay", "source_sha256", "library_sha256", "safety_status"],
+    )
+    errors += require(
+        "python/dotmatch/assayruntime.py",
+        ["def run_compiled_plan", "def _synchronized_records", "def _joint_call", "accept_findings"],
     )
     errors += require(
         "python/dotmatch/calibration.py",
@@ -67,6 +72,7 @@ def main() -> int:
     for test in [
         "python/tests/test_assaycode_brand.py",
         "python/tests/test_assayscript.py",
+        "python/tests/test_assayruntime.py",
         "python/tests/test_calibration.py",
         "python/tests/test_calibration_io.py",
         "python/tests/test_assaywatch.py",
@@ -78,15 +84,16 @@ def main() -> int:
         [
             "Compatibility Contract",
             "AssayScript v2 Compilation",
+            "Experimental AssayScript execution",
             "Design-time simulation",
             "Experimental Calibration",
-            "not yet claim",
+            "does not claim",
         ],
     )
     errors += require(
         "docs/scientific-claims.md",
         [
-            "AssayScript v2 compilation is experimental",
+            "AssayScript v2 compilation and execution are experimental",
             "Deterministic DotMatch assignment remains authoritative",
         ],
     )
@@ -95,7 +102,7 @@ def main() -> int:
         [
             "# AssayCode and AssayScript",
             "# Experimental uncertainty and run monitoring",
-            "currently produces a portable JSON plan",
+            "experimental streaming",
             "remain experimental",
         ],
     )
