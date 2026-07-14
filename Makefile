@@ -454,7 +454,7 @@ repository-ready:
 	python3 scripts/check_evidence_gallery.py
 	$(MAKE) docs-ready
 
-release-ready: python-test python-package-test docs-ready scientific-readiness-ready assay-evidence-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready evidence-gallery-ready distribution-record-ready bioconda-recipe-ready gpu-evidence-gate native-exact-gate public-crispr-evidence-gate crispr-comparison-gate barcode-comparison-gate feature-barcode-public-gate perturb-seq-public-gate amplicon-panel-public-gate bcl-tiny-public-gate oligo-adapter-public-gate reviewer-readiness-ready adoption-metrics-ready
+release-ready: python-test python-package-test docs-ready scientific-readiness-ready assay-evidence-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready evidence-gallery-ready distribution-record-ready bioconda-recipe-ready gpu-evidence-gate native-exact-gate public-crispr-evidence-gate crispr-comparison-gate barcode-comparison-gate feature-barcode-public-gate perturb-seq-public-gate amplicon-panel-public-gate bcl-tiny-public-gate oligo-adapter-public-gate reviewer-readiness-ready adoption-metrics-ready assaycode-readiness-ready
 	python3 scripts/check_release_readiness.py
 
 pretag-ready:
@@ -508,6 +508,10 @@ adoption-metrics-ready:
 
 distribution-record-ready:
 	python3 scripts/check_distribution_record.py
+
+.PHONY: assaycode-readiness-ready
+assaycode-readiness-ready:
+	python3 scripts/check_assaycode_readiness.py
 
 
 bioconda-recipe-ready:
