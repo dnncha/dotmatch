@@ -260,6 +260,22 @@ def test_release_readiness_rejects_unaligned_container_label(tmp_path):
     assert any("Dockerfile" in failure and "version" in failure for failure in result.failures)
 
 
+def test_release_readiness_rejects_stale_container_smoke_version(tmp_path):
+    checker = _load_checker()
+    _write_release_repo(tmp_path)
+    workflow = (tmp_path / ".github/workflows/release.yml").read_text(encoding="utf-8")
+    workflow += (
+        "\n      - run: docker image inspect dotmatch:ci --format "
+        "'{{ index .Config.Labels \\\"org.opencontainers.image.version\\\" }}' "
+        "| grep '^0.2.0$'\n"
+    )
+    (tmp_path / ".github/workflows/release.yml").write_text(workflow, encoding="utf-8")
+
+    result = checker.audit(tmp_path)
+
+    assert any("container version smoke test" in failure for failure in result.failures)
+
+
 def test_release_readiness_rejects_unaligned_c_header_version(tmp_path):
     checker = _load_checker()
     _write_release_repo(tmp_path)
