@@ -100,6 +100,29 @@ safe for correction should usually be counted exactly or redesigned.
 
 ## Count Known Targets From FASTQ
 
+### Fastest safe CRISPR evaluation
+
+For a first CRISPR-screen evaluation, `crispr quickstart` turns one or more
+FASTQ paths into the same reviewable AssaySpec project used by production runs.
+It infers the guide window, writes an inference report, and copies the selected
+FASTQs into a self-contained project. By default the project stays in draft
+status for review:
+
+```bash
+dotmatch crispr quickstart \
+  --library guides.csv \
+  --fastq 'fastqs/*.fastq.gz' \
+  --out crispr_screen/
+```
+
+Review `crispr_screen/inference_report.json`. Then set `status = "ready"` in
+`assay.toml` and run `dotmatch assay start crispr_screen/assay.toml`. For an
+immediate explicit run, pass `--accept-inference` on the initial quickstart
+command. A non-zero result means the run completed but a
+reliability gate needs review; inspect `assay_out/reliability_report.html` and
+`assay_out/assay_fixes.tsv` before using counts downstream. `--no-run` is an
+explicit review-only form.
+
 Use `dotmatch count` when reads contain one fixed target window.
 
 ```bash

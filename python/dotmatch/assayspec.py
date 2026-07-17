@@ -770,6 +770,7 @@ def scaffold_assay_project(
     threads: int = 1,
     max_reads: int = 50000,
     max_start: int = 32,
+    force_draft: bool = False,
 ) -> dict[str, Path]:
     if template not in SCAFFOLD_TEMPLATES:
         raise AssaySpecError(
@@ -834,6 +835,9 @@ def scaffold_assay_project(
         target_set = _read_target_sequences(staged_table)
         candidates = _score_windows(read_seqs, target_set.sequences, max_start=max_start)
         chosen, status, warnings = _choose_candidate(candidates)
+        if force_draft and status == "ready":
+            status = "draft"
+            warnings = [*warnings, "quickstart requires explicit --accept-inference before execution"]
         _write_scaffolded_count_spec(
             spec_path,
             project_dir=project_dir,
@@ -868,6 +872,9 @@ def scaffold_assay_project(
         target_set = _read_target_sequences(staged_table)
         candidates = _score_windows(read_seqs, target_set.sequences, max_start=max_start)
         chosen, status, warnings = _choose_candidate(candidates)
+        if force_draft and status == "ready":
+            status = "draft"
+            warnings = [*warnings, "quickstart requires explicit --accept-inference before execution"]
         sample_id, staged_fastq, source_fastq = staged_samples[0]
         _write_scaffolded_demux_spec(
             spec_path,

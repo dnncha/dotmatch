@@ -72,6 +72,7 @@ people and consumed by workflow systems.
 :caption: User Guide
 
 getting-started
+assaycode
 command-reference
 tutorials/crispr-count-first-run
 tutorials/scverse-perturb-seq

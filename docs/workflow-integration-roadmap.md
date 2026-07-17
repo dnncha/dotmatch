@@ -211,19 +211,20 @@ Track integration status separately from scientific evidence.
 Do not combine these metrics with performance or correctness claims. Workflow
 interest can increase before external integration is accepted.
 
-## 10. Release Communications Calendar
+## 10. Release Publication Checklist
 
-Use this around each release or major integration push.
+Use this to keep public package and workflow records synchronized with each
+release.
 
 | Time | Action | Evidence link |
 | --- | --- | --- |
 | T-7 days | Confirm validated scope and release notes | `docs/scientific-claims.md` |
-| T-5 days | Prepare maintainer issue or PR drafts | `docs/workflow-submissions.md` |
-| T-3 days | Prepare short social and forum posts | this page |
+| Before tag | Prepare maintainer issue or PR drafts | `docs/workflow-submissions.md` |
+| Before tag | Run the complete pre-tag verification | `make pretag-ready` |
 | Tag day | Announce only after release workflow artifacts are visible | release URL |
 | T+1 day | Verify PyPI, Bioconda, containers, Zenodo as applicable | `docs/distribution-release.json` |
-| T+7 days | Follow up with maintainers and pilot contacts | public URLs only |
-| T+30 days | Update integration metrics snapshot | public records only |
+| After channel verification | Update installation documentation | verified public URLs |
+| After accepted integration | Update the integration record | accepted public URL |
 
 ## Completion Rule
 

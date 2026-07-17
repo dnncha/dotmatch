@@ -67,11 +67,11 @@
       "done_when": "The project tracks workflow interest separately from scientific claims and release quality."
     },
     {
-      "id": "release_communications_calendar",
-      "title": "Release Communications Calendar",
+      "id": "release_publication_checklist",
+      "title": "Release Publication Checklist",
       "primary_audience": "maintainers",
-      "asset": "docs/workflow-integration-roadmap.md#10-release-communications-calendar",
-      "done_when": "Each release has a pre-merge, tag, channel-verification, and follow-up communication checklist."
+      "asset": "docs/workflow-integration-roadmap.md#10-release-publication-checklist",
+      "done_when": "Each release has a pre-merge, tag, channel-verification, and public-record update checklist."
     }
   ]
 }

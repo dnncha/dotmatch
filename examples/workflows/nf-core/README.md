@@ -52,7 +52,7 @@ pipelines, reproducibility, MultiQC integration, etc.):
 
 3. **Enhance for Upstream (Recommended Polish)**
    - Use exact bioconda/singularity container hashes from a released version
-     (update the placeholder `0.1.8--h*` after a tagged release passes Bioconda).
+     (update the placeholder `0.1.9--h*` after a tagged release passes Bioconda).
    - The upstream tree already includes: maintainers + license in meta.yml, stub test case, self-contained tests/data/.
    - Add more nf-test cases (different k, metrics, full vs stub runs) if needed.
    - Support additional common params via `task.ext` (e.g. `--auto-offset`,

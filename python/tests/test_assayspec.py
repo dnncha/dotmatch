@@ -871,6 +871,118 @@ def test_crispr_new_scaffold_matches_assay_new(tmp_path: Path) -> None:
     assert (project / "assay.toml").exists()
 
 
+def test_crispr_quickstart_creates_self_contained_reviewable_project(tmp_path: Path) -> None:
+    targets = _write_inference_targets(tmp_path)
+    reads = _write_inference_reads(tmp_path, prefix="NN", good=True)
+    source = tmp_path / "sample.fastq"
+    reads.rename(source)
+    project = tmp_path / "quickstart"
+
+    rc = _run_cli(
+        [
+            "crispr",
+            "quickstart",
+            "--library",
+            str(targets),
+            "--fastq",
+            str(source),
+            "--out",
+            str(project),
+            "--accept-inference",
+        ]
+    )
+
+    assert rc.returncode == 2, rc.stderr
+    assert (project / "assay.toml").exists()
+    assert (project / "inference_report.json").exists()
+    assert (project / "run.sh").exists()
+    staged = project / "reads" / "sample.fastq"
+    assert staged.exists()
+    assert staged.resolve() != source.resolve()
+    assert staged.read_bytes() == source.read_bytes()
+    assert "Created reviewable CRISPR project" in rc.stdout
+    assert (project / "assay_out" / "reliability_report.html").exists()
+
+
+def test_crispr_quickstart_keeps_review_only_project_in_draft(tmp_path: Path) -> None:
+    targets = _write_inference_targets(tmp_path)
+    reads = _write_inference_reads(tmp_path, prefix="NN", good=True)
+    source = tmp_path / "sample.fastq"
+    reads.rename(source)
+    project = tmp_path / "quickstart"
+
+    rc = _run_cli(
+        [
+            "crispr",
+            "quickstart",
+            "--library",
+            str(targets),
+            "--fastq",
+            str(source),
+            "--out",
+            str(project),
+        ]
+    )
+
+    assert rc.returncode == 0, rc.stderr
+    assert 'status = "draft"' in (project / "assay.toml").read_text(encoding="utf-8")
+    assert "Draft assay.toml" in (project / "run.sh").read_text(encoding="utf-8")
+    assert "quickstart requires explicit --accept-inference" in (
+        project / "inference_report.json"
+    ).read_text(encoding="utf-8")
+
+
+def test_crispr_quickstart_rejects_non_fastq_gzip_inputs(tmp_path: Path) -> None:
+    targets = _write_inference_targets(tmp_path)
+    invalid = tmp_path / "not-a-fastq.gz"
+    invalid.write_bytes(b"not FASTQ")
+
+    rc = _run_cli(
+        [
+            "crispr",
+            "quickstart",
+            "--library",
+            str(targets),
+            "--fastq",
+            str(invalid),
+            "--out",
+            str(tmp_path / "quickstart"),
+        ]
+    )
+
+    assert rc.returncode == 2
+    assert "do not look like FASTQ files" in rc.stderr
+
+
+def test_crispr_quickstart_does_not_delete_existing_staging_path(tmp_path: Path) -> None:
+    targets = _write_inference_targets(tmp_path)
+    reads = _write_inference_reads(tmp_path, prefix="NN", good=True)
+    source = tmp_path / "sample.fastq"
+    reads.rename(source)
+    project = tmp_path / "quickstart"
+    staging_parent = tmp_path / ".quickstart.dotmatch-inputs"
+    staging_parent.mkdir()
+    sentinel = staging_parent / "do-not-delete.txt"
+    sentinel.write_text("preserve", encoding="utf-8")
+
+    rc = _run_cli(
+        [
+            "crispr",
+            "quickstart",
+            "--library",
+            str(targets),
+            "--fastq",
+            str(source),
+            "--out",
+            str(project),
+        ]
+    )
+
+    assert rc.returncode == 2
+    assert "refusing to overwrite existing staging directory" in rc.stderr
+    assert sentinel.read_text(encoding="utf-8") == "preserve"
+
+
 def test_assay_new_refuses_non_empty_project_dir(tmp_path: Path) -> None:
     targets = _write_inference_targets(tmp_path)
     reads_dir = tmp_path / "fastqs"

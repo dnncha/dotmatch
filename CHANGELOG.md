@@ -2,10 +2,22 @@
 
 All notable user-facing changes are tracked here. Public statements in release notes must stay aligned with `docs/scientific-claims.md`.
 
-## Unreleased / Next (post 0.1.7)
+## 0.2.0 - Unreleased
+
+- Added a compatibility-safe AssayCode Bioconda metapackage template and a deterministic two-recipe release-handoff generator while preserving `dotmatch` as the engine package.
+
+- Added a deterministic experimental panel simulator for pre-sequencing yield, ambiguity, no-call, confusion, and FDR analysis.
+### AssayCode platform
+
+- Added the additive `assaycode` CLI and Python namespace while preserving the `dotmatch` package, executable, ABI, DOI, schemas, and citation contract.
+- Added AssayScript v2 compilation for R1/R2/I1/I2 segment declarations, fixed or anchored extraction, positional jitter, orientation, per-segment matching policies, allowed-combination tables, source and library fingerprints, bounded safety findings, deterministic strategy selection, and portable JSON plans.
+- Added `assaycode compile`, `assaycode inspect`, and compatibility-safe assay workflow shortcuts.
+- Added an explicitly experimental calibration module with per-cycle error fitting, Phred shrinkage, selective posterior calls, likelihood-ratio abstention, joint decoding over permitted tuples, Brier score, expected calibration error, held-out FDR threshold selection, and smoothed abundance priors.
+- Added `assaycode watch`, a bounded-memory JSONL monitor that emits assignment-rate confidence intervals and threshold-based sequential QC decisions.
+- Added a release-blocking AssayCode readiness gate, focused tests, updated scientific claim boundaries, a rewritten paper, and Bioconda smoke tests for both command identities.
 
 ### Added
-- `dotmatch.tl` submodule: scverse/scanpy-style tools (`tl.assign_features`, `tl.feature_counts`, aliases for CRISPR/feature barcodes). In-place modification or copy, with provenance in `.uns`. Excellent UX for AnnData-centric workflows.
+- `dotmatch.tl` submodule: scverse/scanpy-style tools (`tl.assign_features`, `tl.feature_counts`, aliases for CRISPR/feature barcodes), with in-place or copy semantics and provenance in `.uns`.
 - Pure, dependency-light parsers in `dotmatch.multiqc` (`parse_sample_qc_tsv`, `parse_crispr_qc_summary_tsv`, `parse_assay_manifest_summary_tsv`) usable from any Python code (notebooks, custom reports) while strictly following the documented schemas.
 - Proper MultiQC plugin registration via entry point in `pyproject.toml` + improved `DotMatchModule` with full parsing of sample QC, CRISPR QC, and assay manifest (adds sections + general stats with scientific descriptions).
 - R package skeleton (`R/`, `DESCRIPTION`, `NAMESPACE`, `vignettes/dotmatch.Rmd` + reticulate wrappers) for Bioconductor / tidyverse users.
@@ -23,7 +35,7 @@ All notable user-facing changes are tracked here. Public statements in release n
 - Batching/IO: raised to 1M reads/batch + `seq_buffer` reuse + `reset_seq_buffer` helper in count feeders (both single and read_threads>1 paths). Reduces malloc churn on large .fastq.gz while keeping fixed-block fastpath for uniform-length assays. RSS tradeoff documented in code.
 - All changes respect evidence culture (no new public claims without raw CSV + gate); internal perf only. Verified: make test, make cli-test, 370 pytest (native), count-agreement, synthetic+real-oracle runs, A/B on mixed short/long + threaded count.
 
-These changes focus on massive industry penetration (scverse, MultiQC, R/Bioc, nf-core), excellent UX (one-liner bridges, pure parsers, tl ergonomics), and perfect scientific accuracy (parsers tied to schemas, unique-only enforcement, explicit ambiguity handling, provenance, dedicated tests).
+These changes add checked interfaces for scverse, MultiQC, R, and nf-core workflows while preserving unique-only counting, explicit ambiguity handling, schema-aligned parsing, and recorded provenance.
 
 ## 0.1.5 - 2026-05-26
 

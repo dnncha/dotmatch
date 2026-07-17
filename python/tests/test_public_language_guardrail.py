@@ -28,6 +28,14 @@ FORBIDDEN_PHRASES = [
     "quote-" + "approved",
     "turning private evaluation into public adoption " + "evidence",
     "without turning private feedback into public " + "evidence",
+    "industry " + "penetration",
+    "massive industry " + "penetration",
+    "excellent " + "ux",
+    "perfect scientific " + "accuracy",
+    "adoption " + "flywheel",
+    "adoption " + "kpi",
+    "pilot " + "scorecard",
+    "release communications " + "calendar",
 ]
 
 

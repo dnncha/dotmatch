@@ -188,9 +188,9 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       <header className="site-header">
-        <a className="brand" href="#top" aria-label="DotMatch home">
+        <a className="brand" href="#top" aria-label="AssayCode home">
           <span className="brand-mark" aria-hidden="true" />
-          <span>DotMatch</span>
+          <span>AssayCode</span>
         </a>
         <nav aria-label="Primary navigation">
           <a href="#failure-modes">Reliability</a>
@@ -207,11 +207,11 @@ export default function Home() {
       <main id="top">
         <section className="hero" aria-labelledby="hero-title">
           <div className="hero-copy">
-            <p className="positioning">Assignment reliability for known-target sequencing assays.</p>
-            <h1 id="hero-title">Know which read assignments you can trust.</h1>
+            <p className="positioning">Assay compilation and reliability for known-target sequencing.</p>
+            <h1 id="hero-title">Design the assay. Trust the assignment.</h1>
             <p className="hero-lede">
-              DotMatch assigns fixed read windows to known short DNA targets and keeps
-              the outcome visible for every read: unique, ambiguous, none, or invalid.
+              AssayCode turns known-target assay descriptions into reviewable plans, then uses
+              the DotMatch engine to keep every read outcome visible: unique, ambiguous, none, or invalid.
             </p>
             <p className="hero-text">
               Use it when the guide, inline barcode, feature tag, primer or panel
@@ -223,7 +223,7 @@ export default function Home() {
               <a className="button secondary" href="#evidence">Review evidence</a>
             </div>
           </div>
-          <div className="hero-panel" aria-label="DotMatch assignment outcomes">
+          <div className="hero-panel" aria-label="AssayCode assignment outcomes">
             <figure className="assignment-figure">
               <img
                 src={assignmentWorkflowImage}
@@ -434,7 +434,7 @@ dotmatch --help`}</code></pre>
       </main>
 
       <footer className="site-footer">
-        <span>DotMatch</span>
+        <span>AssayCode</span>
         <nav aria-label="Footer navigation">
           <a href={repoUrl}>GitHub</a>
           <a href={scientificClaimsUrl}>Scientific claims</a>

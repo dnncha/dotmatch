@@ -1,4 +1,6 @@
-# DotMatch
+# AssayCode
+
+### Powered by the DotMatch engine
 
 [![CI](https://github.com/dnncha/dotmatch/actions/workflows/ci.yml/badge.svg)](https://github.com/dnncha/dotmatch/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/dotmatch?label=pypi)](https://pypi.org/project/dotmatch/)
@@ -12,6 +14,38 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20541628.svg)](https://doi.org/10.5281/zenodo.20541628)
 
 ![Cinematic DotMatch workflow: sequencing reads flow through a precise known-target matching gate into count matrices, demultiplexed barcode lanes, QC panels, and visible ambiguity diagnostics.](public/dotmatch-header-cinematic.png)
+
+## AssayCode Platform
+
+**AssayCode is the assay-level platform powered by the DotMatch engine.** It gives
+scientists one identity for specifying, validating, running, and diagnosing
+sequencing assays built from known guides, barcodes, primers, feature tags, and
+panel targets. **AssayScript** is the human-reviewable assay specification;
+**DotMatch** remains the native assignment engine, published package, CLI,
+scientific citation, and compatibility contract.
+
+The transition is additive: existing `dotmatch` commands, Python APIs, native
+artifacts, output schemas, DOI, and citations remain supported. The same Python
+distribution also installs the `assaycode` command:
+
+```bash
+assaycode compile assay-v2.toml --out assay.plan.json
+assaycode calibrate trusted.tsv --out error-model.json
+assaycode simulate --targets targets.tsv --out simulation.json
+assaycode watch assignments.jsonl --out snapshots.jsonl
+assaycode start assay.toml
+assaycode engine dist ACGT AGGT
+```
+
+See the [AssayCode Platform guide](docs/assaycode.md) for the product
+architecture, compatibility boundary, simulation workflow, and honest current capability limits.
+
+
+The 0.2.0 distribution rollout uses two Bioconda coordinates. `dotmatch`
+remains the engine and uninterrupted compatibility package; a new `assaycode`
+metapackage will provide the flagship `conda install -c bioconda assaycode`
+path by pinning the matching DotMatch release. That command should be treated as
+available only after both Anaconda pages and the clean-install release gate pass.
 
 DotMatch counts CRISPR guides, splits inline barcodes, designs barcode panels,
 and writes QC reports from FASTQ. Use it when you already know the short DNA
@@ -62,7 +96,7 @@ scope, and output contracts:
   submission, citation, evaluation, and public-use record guidance.
 - [Workflow Integration Roadmap](docs/workflow-integration-roadmap.md):
   decision tree, reviewer packet, integration tracker, abstracts, issue
-  templates, evaluation scorecard, and release communication checklist.
+  templates, evaluation scorecard, and submission checklist.
 - [Workflow Submission Pack](docs/workflow-submissions.md): nf-core, MultiQC,
   Galaxy, and Snakemake handoff checklist.
 - [Methods and Citation](docs/methods-and-citation.md): copyable language for
@@ -239,12 +273,12 @@ default in hot count paths). For very large target libraries consider the
 query/seeded hamming paths. Tradeoff (higher peak RSS for throughput) is
 documented in src/qda.c.
 
-## Proposed Improvements & Bioinformatics Industry Penetration
+## Development Roadmap
 
 See [docs/proposals-and-roadmap.md](docs/proposals-and-roadmap.md) for a living
-list of performance, feature, packaging, and ecosystem ideas aimed at wider
-adoption in core facilities, pharma screens, GBS/barcoding services, and
-scverse/nf-core pipelines. Highlights:
+list of performance, feature, packaging, and workflow-integration proposals for
+core facilities, screening teams, barcoding services, and scverse or nf-core
+pipelines. Highlights:
 
 - **Ecosystem**: pandas/polars interop + `dotmatch.tl` (scverse/AnnData), pure MultiQC parsers + registered plugin, nf-core module enhancements (with contribution guide), full R/Bioconductor support (reticulate wrappers + vignette with examples).
 - **Perf (implemented)**: multi-word Myers (portable, >64bp now fast) + AVX2/NEON SIMD hamming + 1M batch + seq_buffer reuse (via best-of-n: 3 candidates, all applied after full correctness/safety verification; see proposals-and-roadmap.md and CHANGELOG). Still room for libdeflate, GPU, etc.
@@ -333,6 +367,9 @@ BioContainers publication is handled through the Bioconda automation rather
 than a separate DotMatch container submission. The 0.1.9 tags are visible on
 Quay; local Docker-backed runtime verification still needs an OCI host. The tag shape is
 `quay.io/biocontainers/dotmatch:0.1.9--<build>`.
+After Bioconda accepts the prepared 0.2.0 recipe, the corresponding image will
+use the exact tag shape `quay.io/biocontainers/dotmatch:0.2.0--<build>` and must
+pass the release runtime checks before it is documented as available.
 
 Bioconda provides the `dotmatch` command-line tool, Python workflow namespaces,
 Python imports, and C header/library artifacts for the published package
@@ -392,6 +429,25 @@ ambiguous instead of forcing a call. Use `--ambiguity-policy best` or Python
 mode.
 
 ## CRISPR Guide Counting
+
+For the fastest safe evaluation, use the reviewable one-command path:
+
+```bash
+dotmatch crispr quickstart \
+  --library guides.csv \
+  --fastq 'fastqs/*.fastq.gz' \
+  --out crispr_screen/
+```
+
+This infers the guide window, creates an AssaySpec project, and writes a
+self-contained project for review. By default it leaves the inferred spec in
+draft form. For an immediate, explicit run, pass `--accept-inference` on the
+initial command; otherwise review the inference report, set `status = "ready"`,
+and run `dotmatch assay start crispr_screen/assay.toml`. `--no-run` is an
+explicit review-only form. Inputs are copied into the project
+so the generated run remains portable. The command is a convenience layer over
+the same `dotmatch assay start` path used by workflow examples and production
+handoffs.
 
 The default production path scaffolds a reviewable assay project, runs preflight
 `check`, counts guides, and writes a reliability report with suggested

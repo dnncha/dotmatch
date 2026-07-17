@@ -151,7 +151,7 @@ and mirrored in `docs/workflow-integration-plan.json`.
 7. Maintainer issue templates.
 8. Evaluation scorecard.
 9. Integration tracking metrics.
-10. Release communications calendar.
+10. Release publication checklist.
 
 ## Tracking Rules
 

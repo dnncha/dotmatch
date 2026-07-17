@@ -209,6 +209,7 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
     release_process = _read(root / "docs" / "release-process.md")
     readme = _read(root / "README.md")
     makefile = _read(root / "Makefile")
+    project_version = _pyproject_version(root / "pyproject.toml")
 
     required_workflow_fragments = [
         "id-token: write",
@@ -228,6 +229,18 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
             result.failures.append(f"release workflow missing {fragment}")
     if "dotmatch-wheel-Linux" in workflow:
         result.failures.append("release workflow must not publish raw Linux wheels to PyPI")
+    container_version_check = re.search(
+        r"docker image inspect dotmatch:ci.*?\| grep '\^([^']+)\$'",
+        workflow,
+        flags=re.S,
+    )
+    if container_version_check and project_version:
+        workflow_version = container_version_check.group(1)
+        if workflow_version != project_version:
+            result.failures.append(
+                "release workflow container version smoke test must match "
+                f"pyproject.toml ({project_version}); saw {workflow_version}"
+            )
     preflight = _workflow_job_block(workflow, "preflight")
     container_job = _workflow_job_block(workflow, "container")
     sdist_job = _workflow_job_block(workflow, "sdist")

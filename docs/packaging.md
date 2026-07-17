@@ -18,7 +18,7 @@ The same verifier also builds the sdist, confirms it contains `src/qdalign.c` an
 
 For PyPI, upload the sdist plus the native macOS wheel built on GitHub Actions. Linux binary wheels should go to PyPI only after they are built or repaired as manylinux/musllinux wheels. The release workflow builds repaired Linux wheel artifacts with cibuildwheel for `manylinux_x86_64` and `musllinux_x86_64`, smoke-tests `import dotmatch`, the installed console script, and `dotmatch dist ACGT AGGT`, and uploads them as GitHub release artifacts. Do not upload a raw `linux_x86_64` wheel to PyPI.
 
-DotMatch 0.1.8 is published on PyPI; the `v0.1.8` release workflow publishes the source distribution, the native macOS wheel, and repaired manylinux/musllinux Linux wheels. The release workflow
+DotMatch 0.2.0 is the current release target; the `v0.2.0` release workflow publishes the source distribution, the native macOS wheel, and repaired manylinux/musllinux Linux wheels. The release workflow
 uses PyPI trusted publishing from repository `dnncha/dotmatch`, workflow
 `.github/workflows/release.yml`, and environment `pypi`; if that publisher is
 missing or mismatched, the build artifacts are created but the publish job fails
@@ -36,26 +36,50 @@ not upload a Conda package directly.
 [bioconda/bioconda-recipes#65367](https://github.com/bioconda/bioconda-recipes/pull/65367)
 published DotMatch 0.1.2 as the first Bioconda package.
 [bioconda/bioconda-recipes#66291](https://github.com/bioconda/bioconda-recipes/pull/66291)
-merged the DotMatch 0.1.8 update on 2026-06-17. Anaconda package metadata and a
-clean install smoke test now verify DotMatch 0.1.8 on `linux-64`, `osx-64`, and
-`osx-arm64`, using immutable `v0.1.8` release sources. Treat future Bioconda
+merged the DotMatch 0.1.8 update on 2026-06-17. The public Anaconda page currently shows 0.1.9. AssayCode is targeted for the
+prepared 0.2.0 update, which still needs an immutable source tag, checksum,
+recipe review, repodata visibility, and clean-install evidence. Treat the Bioconda
 versions as available only after
 `https://anaconda.org/bioconda/dotmatch`, repodata, and the install smoke tests
 in `make distribution-channels` all verify the release version.
 
 A release recipe template is kept under `packaging/bioconda/`. Before copying it
 to `bioconda-recipes`, replace `REPLACE_WITH_RELEASE_TARBALL_SHA256` with the
-SHA256 for the tagged GitHub release tarball. For 0.1.8 that SHA256 is
-`ec3819bc773431454910287559d0809aca6ec1d81959f29d3d522650edb74904`. The checked-in
+SHA256 for the tagged GitHub release tarball. The checked-in
 `docs/distribution-release.json` records the current channel state for the
 active Bioconda handoff. Run `make bioconda-recipe-ready` before that copy so the
 checked-in template stays aligned with the release version, native install
 steps, CLI smoke tests, and scope notes.
 
+The takeover-oriented distribution model uses two Bioconda coordinates without
+renaming the existing package:
+
+- `dotmatch` remains the engine, native library, compatibility CLI, and package
+  upgraded by existing environments;
+- `assaycode` is a noarch metapackage pinned to the matching `dotmatch` release,
+  making `conda install -c bioconda assaycode` the future flagship install path
+  without duplicating files or breaking existing dependencies.
+
+The AssayCode metapackage template is
+`packaging/bioconda/assaycode-meta.yaml`. Once `v0.2.0` exists, render both
+upstream recipe directories from the downloaded immutable tag archive:
+
+```bash
+python scripts/prepare_bioconda_handoff.py \
+  --release-tarball /path/to/v0.2.0.tar.gz \
+  --out ./dotmatch-bioconda-handoff
+```
+
+Copy the resulting `recipes/dotmatch/` and `recipes/assaycode/` directories to
+the `dnncha/bioconda-recipes` branch and submit them together. The renderer
+computes and inserts the real DotMatch source checksum; the AssayCode recipe is
+a dependency-only metapackage and therefore has no duplicate source payload.
+
 After Bioconda merges the recipe, verify the channel with:
 
 ```bash
 conda search -c bioconda dotmatch
+conda search -c bioconda assaycode
 make distribution-channels
 ```
 
@@ -65,9 +89,9 @@ future upstream recipe updates unless Bioconda CI demonstrates a
 platform-specific blocker and the release notes clearly document that
 `osx-arm64` is unavailable.
 
-The current Bioconda recipe installs the Python `dotmatch` console script as
-the user-facing command, with the native executable bundled inside the Python
-package as `dotmatch-native`. It also installs the public C header, static
+The prepared 0.2.0 Bioconda recipe installs both the additive `assaycode`
+platform command and the compatibility-stable `dotmatch` command, with the
+native executable bundled inside the Python package as `dotmatch-native`. It also installs the public C header, static
 library, shared library, and license. Workbench and browser assets remain
 outside the Bioconda recipe.
 
@@ -90,27 +114,20 @@ The native CLI exposes `dotmatch --version`, so the Bioconda recipe and
 post-release Bioconda install verifier should check version output as well as
 functional CLI smoke tests.
 
-### Bioconda 0.1.8 PR changelog draft
+### Bioconda 0.2.0 PR changelog draft
 
-- Update DotMatch from the latest accepted Bioconda version to 0.1.8.
-- Use the immutable v0.1.8 tag and replace the SHA256 after the release tarball
-  is available.
-- Keep the Python console-script package scope introduced in 0.1.4: `dotmatch`
-  exposes the native commands plus `assay`, `barcode`, `panel`, and
-  GuideCounter-compatible CRISPR counting namespaces.
-- Add Hamming `k=2`/`k=3` guide-counting support and exact audit safety fields;
-  keep larger-radius claims bounded to same-length Hamming fixed-window
-  assignment.
-- Add native exact-table shortcuts, indexed status paths, and bounded k=2
-  single-unknown status stops for the CRISPR/counting hot paths.
-- Add installed-package smoke tests for `dotmatch count --help`,
-  `dotmatch crispr-count --help`, `dotmatch audit --help`, Hamming `k=2`
-  CRISPR counting, exact Hamming `k=3` audit summaries, GuideCounter-compatible
-  counts/extended-counts/stats files, barcode offset inference, and panel
-  design.
-- Opt into `osx-arm64` builds with `extra.additional-platforms`.
-- Keep host `zlib` for FASTQ.gz/native linkage and let Conda export `libzlib`
-  at runtime.
+- Update the existing `dotmatch` package from the published 0.1.9 build to
+  0.2.0; do not create or rename to a second Conda package.
+- Use the immutable v0.2.0 tag and replace the SHA256 placeholder only after the
+  release tarball exists.
+- Install and smoke-test both `dotmatch` and `assaycode`; verify that the
+  AssayCode Python namespace exposes the same DotMatch engine and version.
+- Include AssayScript v2 compilation, experimental calibrated/joint decoding,
+  bounded-memory sequential QC, the rewritten paper, and explicit experimental
+  claim boundaries.
+- Preserve the native commands, C header/static/shared libraries, workflow
+  namespaces, GuideCounter compatibility, Hamming k=2/k=3 audit tests,
+  `osx-arm64` opt-in, and host-zlib linkage.
 
 ## Docker
 
@@ -130,16 +147,15 @@ images to `ghcr.io/dnncha/dotmatch`.
 
 BioContainers images for DotMatch are generated from the accepted Bioconda
 recipe; there is no separate DotMatch Dockerfile to submit to BioContainers for
-the normal release path. DotMatch 0.1.8 package metadata and clean Bioconda
-install smoke tests pass, and `make distribution-channels` can discover a
-matching `quay.io/biocontainers/dotmatch:0.1.8--<build>` tag. The remaining
-local check is Docker-backed manifest/runtime verification:
+the normal release path. The 0.2.0 image is expected only after the Bioconda
+recipe is accepted and propagated. The remaining local check is Docker-backed
+manifest/runtime verification:
 
 ```bash
-python3 scripts/check_distribution_channels.py --version 0.1.8
-docker pull quay.io/biocontainers/dotmatch:0.1.8--<build>
-docker run --rm quay.io/biocontainers/dotmatch:0.1.8--<build> dotmatch dist ACGT AGGT
-docker run --rm quay.io/biocontainers/dotmatch:0.1.8--<build> dotmatch leq 1 ACGT AGGT
+python3 scripts/check_distribution_channels.py --version 0.2.0
+docker pull quay.io/biocontainers/dotmatch:0.2.0--<build>
+docker run --rm quay.io/biocontainers/dotmatch:0.2.0--<build> dotmatch dist ACGT AGGT
+docker run --rm quay.io/biocontainers/dotmatch:0.2.0--<build> dotmatch leq 1 ACGT AGGT
 ```
 
 Do not publish a manual BioContainers image for DotMatch unless the Bioconda
@@ -190,6 +206,7 @@ publication has actually happened.
 
 The repository includes `.zenodo.json` metadata for tagged software archives.
 General software citation uses DOI `10.5281/zenodo.20541628`, which resolves
-through Zenodo metadata for DotMatch 0.1.8. Version DOI
+through Zenodo metadata for DotMatch. The 0.2.0 archive metadata remains a
+post-tag verification step. Version DOI
 `10.5281/zenodo.20541629` belongs to v0.1.7 and is retained only as explicit
-version-specific provenance, not as the v0.1.8 DOI.
+version-specific provenance, not as the v0.2.0 DOI.
