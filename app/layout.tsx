@@ -5,14 +5,14 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://dnncha.github.io/do
 const socialImageUrl = `${siteUrl}/dotmatch-og.png`;
 const twitterImageUrl = `${siteUrl}/dotmatch-twitter.png`;
 const socialImageAlt =
-  "DotMatch workflow showing known-target assignment outcomes from FASTQ reads";
+  "DotMatch preview showing unique, ambiguous, unmatched, and invalid read assignments";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: "DotMatch",
-  title: "DotMatch - Known-target assignment from FASTQ",
+  title: "DotMatch - Clear Read Assignment for Known DNA Targets",
   description:
-    "Assign fixed FASTQ read windows to known guides, barcodes, feature tags, primers, and other short DNA targets without hiding ambiguous reads.",
+    "DotMatch compares a chosen part of each sequencing read with known short DNA targets and keeps uncertain or invalid assignments visible.",
   authors: [{ name: "DotMatch maintainers", url: "https://github.com/dnncha/dotmatch" }],
   creator: "DotMatch maintainers",
   publisher: "DotMatch",
@@ -22,22 +22,17 @@ export const metadata: Metadata = {
   },
   keywords: [
     "bioinformatics",
-    "computational biology",
     "CRISPR",
     "FASTQ",
     "known-target sequencing",
-    "known-target assignment",
     "barcode demultiplexing",
     "barcode panel design",
-    "barcode troubleshooting",
-    "FASTQ sequence matching",
-    "CRISPR guide counting",
-    "feature barcode assignment"
+    "FASTQ sequence matching"
   ],
   openGraph: {
-    title: "DotMatch - Known-target assignment from FASTQ",
+    title: "DotMatch - Clear Read Assignment",
     description:
-      "Count guides, split inline barcodes, and inspect ambiguous or unmatched reads with an explicit target list.",
+      "See which sequencing reads match known DNA targets and which remain ambiguous, unmatched, or invalid.",
     type: "website",
     siteName: "DotMatch",
     locale: "en_US",
@@ -55,9 +50,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "DotMatch - Known-target assignment from FASTQ",
+    title: "DotMatch - Clear Read Assignment",
     description:
-      "Count guides, split inline barcodes, and inspect ambiguous or unmatched reads with an explicit target list.",
+      "See which sequencing reads match known DNA targets and which remain ambiguous, unmatched, or invalid.",
     images: [
       {
         url: twitterImageUrl,

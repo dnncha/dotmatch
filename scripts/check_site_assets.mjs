@@ -35,9 +35,10 @@ const normalizedPage = page.replace(/\s+/g, " ");
 
 for (const anchor of [
   'id="top"',
-  'id="how-it-works"',
-  'id="workflows"',
-  'id="documentation"',
+  'id="failure-modes"',
+  'id="workflow"',
+  'id="use-cases"',
+  'id="evidence"',
   'id="install"'
 ]) {
   if (!page.includes(anchor)) {
@@ -53,14 +54,15 @@ if ((page.match(/<h1\b/g) ?? []).length !== 1) {
 
 for (const phrase of [
   "DotMatch",
-  "Known-target assignment from FASTQ",
-  "Keep ambiguous reads out of your counts.",
+  "Open-source known-target read assignment",
+  "See which sequencing reads match—and which do not.",
   "unique",
   "ambiguous",
   "none",
   "invalid",
-  "CRISPR guide counting",
-  "Inline barcode demultiplexing",
+  "CRISPR guides",
+  "inline barcodes",
+  "DotMatch is not a genome aligner or basecaller.",
   "python3 -m pip install dotmatch",
   "https://dotmatch.readthedocs.io/en/latest/"
 ]) {
@@ -77,7 +79,7 @@ if (page.includes("github.com/dnncha/dotmatch/blob/main/docs/")) {
 
 if (!layout.includes('applicationName: "DotMatch"') ||
     !layout.includes('siteName: "DotMatch"') ||
-    !layout.includes("Known-target assignment from FASTQ")) {
+    !layout.includes("known short DNA targets")) {
   console.error("Site metadata must describe DotMatch consistently.");
   process.exit(1);
 }
