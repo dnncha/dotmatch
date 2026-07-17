@@ -277,6 +277,7 @@ h1 {
   background: #fff;
 }
 
+.assignment-figure picture,
 .assignment-figure img {
   display: block;
   width: 100%;
@@ -1004,5 +1005,11 @@ h3 {
 
   h2 {
     font-size: 2.1rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .hero-panel .outcome-grid {
+    display: none;
   }
 }

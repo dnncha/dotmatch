@@ -14,7 +14,8 @@ const requiredFiles = [
   "docs/index.md",
   "docs/getting-started.md",
   "docs/command-reference.md",
-  "public/dotmatch-read-assignment.svg",
+  "public/dotmatch-read-assignment-v2.webp",
+  "public/dotmatch-read-assignment-mobile-v2.webp",
   "public/dotmatch-og.png",
   "public/dotmatch-twitter.png"
 ];
@@ -74,6 +75,21 @@ for (const phrase of [
 
 if (page.includes("github.com/dnncha/dotmatch/blob/main/docs/")) {
   console.error("Homepage documentation links must point to the rendered documentation site.");
+  process.exit(1);
+}
+
+for (const image of [
+  "dotmatch-read-assignment-v2.webp",
+  "dotmatch-read-assignment-mobile-v2.webp"
+]) {
+  if (!page.includes(image)) {
+    console.error(`Homepage does not reference its responsive explainer image: ${image}`);
+    process.exit(1);
+  }
+}
+
+if (!page.includes("<picture>") || !page.includes('media="(max-width: 520px)"')) {
+  console.error("Homepage explainer must provide a dedicated mobile image source.");
   process.exit(1);
 }
 
