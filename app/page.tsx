@@ -148,7 +148,7 @@ const evaluationItems = [
   {
     title: "Package channels",
     body:
-      "PyPI and Bioconda are verified for v0.1.8. GHCR and BioContainers have public records, with runtime smoke tests still pending on a host with Docker or another OCI runtime."
+      "PyPI and Bioconda publish DotMatch v0.1.9. DotMatch v0.2.0 will be listed here only after its tagged artifacts and container images pass the release checks."
   },
   {
     title: "Validated scope",
@@ -195,7 +195,7 @@ export default function Home() {
         <nav aria-label="Primary navigation">
           <a href="#failure-modes">Reliability</a>
           <a href="#workflow">Workflow</a>
-          <a href="#industry-routes">Use cases</a>
+          <a href="#use-cases">Use cases</a>
           <a href="#evidence">Evidence</a>
           <a href="#evaluation">Evaluation</a>
           <a href="#ecosystem">Ecosystem</a>
@@ -288,15 +288,14 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="industry-routes" className="section audience-section" aria-labelledby="audience-title">
+        <section id="use-cases" className="section audience-section" aria-labelledby="audience-title">
           <div className="section-heading">
-            <p className="section-kicker">Routes into industry workflows</p>
-            <h2 id="audience-title">Give each evaluator a next step.</h2>
+            <p className="section-kicker">Known-target assay contexts</p>
+            <h2 id="audience-title">Use the same assignment contract in each workflow.</h2>
             <p>
-              The people who can spread DotMatch need different entry points:
-              core facilities want reliable handoff, screen teams want count
-              compatibility, workflow maintainers want stable outputs, and assay
-              teams want panel safety.
+              Core facilities can review handoff artifacts, screen teams can retain
+              count compatibility, workflow maintainers can wrap stable outputs,
+              and assay teams can check panel safety before sequencing.
             </p>
           </div>
           <div className="audience-grid">
@@ -322,11 +321,11 @@ export default function Home() {
           </div>
           <div className="evidence-layout">
             <article className="evidence-note">
-              <h3>What the homepage can safely claim</h3>
+              <h3>Validated software scope</h3>
               <p>
                 DotMatch is a deterministic known-target assignment system for short
                 read windows. It records explicit read outcomes and writes ordinary
-                workflow artifacts that can be inspected outside the homepage.
+                workflow artifacts that can be inspected independently.
               </p>
               <p>
                 Broader claims about alignment, basecalling, downstream screen

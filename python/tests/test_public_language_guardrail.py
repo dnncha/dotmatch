@@ -39,6 +39,13 @@ FORBIDDEN_PHRASES = [
     "adoption " + "kpi",
     "pilot " + "scorecard",
     "release communications " + "calendar",
+    "routes into industry " + "workflows",
+    "give each evaluator a " + "next step",
+    "people who can " + "spread dotmatch",
+    "what the homepage can safely " + "claim",
+    "copy-paste " + "ready",
+    "workflow & pipeline " + "penetration",
+    "pypi and bioconda are verified for v0." + "1.8",
 ]
 
 
