@@ -2,19 +2,19 @@ import { MobileNavigation } from "./mobile-navigation";
 
 const repoUrl = "https://github.com/dnncha/dotmatch";
 const docsUrl = "https://dotmatch.readthedocs.io/en/latest/";
-const scientificClaimsUrl = `${docsUrl}scientific-claims.html`;
-const evidenceGalleryUrl = `${docsUrl}evidence-gallery/README.html`;
+const scopeUrl = `${docsUrl}trust-and-scope.html`;
+const benchmarksUrl = `${docsUrl}benchmarks/README.html`;
+const schemasUrl = `${docsUrl}schemas.html`;
+const commandReferenceUrl = `${docsUrl}command-reference.html`;
 const methodsUrl = `${docsUrl}methods-and-citation.html`;
 const packagingUrl = `${docsUrl}packaging.html`;
-const evaluationUrl = `${docsUrl}bioinformatics-evaluation.html`;
-const reviewPacketUrl = `${docsUrl}external-review-packet.html`;
-const integrationKitUrl = `${docsUrl}workflow-integration-kit.html`;
-const workflowSubmissionsUrl = `${docsUrl}workflow-submissions.html`;
-const workflowAdoptionUrl = `${docsUrl}workflow-integration-roadmap.html`;
 const distributionUrl = `${docsUrl}release-process.html`;
 const pypiUrl = "https://pypi.org/project/dotmatch/";
 const biocondaUrl = "https://anaconda.org/bioconda/dotmatch";
-const doiUrl = "https://doi.org/10.5281/zenodo.21413295";
+const releaseUrl = `${repoUrl}/releases/tag/v0.2.1`;
+const containerUrl = `${repoUrl}/pkgs/container/dotmatch`;
+const workflowExamplesUrl = `${repoUrl}/tree/main/examples/workflows`;
+const doiUrl = "https://doi.org/10.5281/zenodo.21415103";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const assignmentWorkflowImage = `${basePath}/dotmatch-read-assignment.svg`;
@@ -36,7 +36,7 @@ const structuredData = {
       name: "DotMatch",
       applicationCategory: "Bioinformatics software",
       operatingSystem: "Linux, macOS",
-      softwareVersion: "0.2.0",
+      softwareVersion: "0.2.1",
       softwareHelp: docsUrl,
       codeRepository: repoUrl,
       downloadUrl: pypiUrl,
@@ -119,8 +119,8 @@ const audienceRoutes = [
     title: "Workflow maintainers",
     body:
       "Wrap stable TSV, JSON, FASTQ, and HTML artifacts in nf-core, Galaxy, Snakemake, MultiQC, or institutional pipeline templates.",
-    link: "Use the submission pack",
-    href: workflowSubmissionsUrl
+    link: "See workflow examples",
+    href: workflowExamplesUrl
   },
   {
     title: "Assay developers",
@@ -140,19 +140,18 @@ const contexts = [
 ] as const;
 
 const evidenceLinks = [
-  ["Bioinformatics evaluation packet", evaluationUrl],
-  ["External review packet", reviewPacketUrl],
-  ["Validated scope", scientificClaimsUrl],
-  ["Evidence gallery", evidenceGalleryUrl],
+  ["Scope and limitations", scopeUrl],
+  ["Benchmarks", benchmarksUrl],
+  ["Output schemas", schemasUrl],
   ["Methods and citation", methodsUrl],
-  ["Packaging notes", packagingUrl]
+  ["Packaging and installation", packagingUrl]
 ] as const;
 
-const evaluationItems = [
+const releaseItems = [
   {
     title: "Published release",
     body:
-      "DotMatch v0.2.0 is verified on PyPI and GHCR. Bioconda currently publishes v0.1.9 while its v0.2.0 recipe is under review."
+      "DotMatch v0.2.1 is published on PyPI, GitHub Releases, GHCR, and Zenodo. Bioconda remains on v0.1.9 while its v0.2.0 recipe is under review."
   },
   {
     title: "Defined scope",
@@ -165,9 +164,9 @@ const evaluationItems = [
       "TSV, JSON, FASTQ, and HTML outputs are documented, alongside methods text, citation metadata, and recorded software versions."
   },
   {
-    title: "Reproducible checks",
+    title: "Release checks",
     body:
-      "Correctness, performance, and packaging statements link to the repository artifacts and checks used to support them."
+      "The source archive, platform wheels, container image, documentation, and test matrix are checked before publication."
   },
   {
     title: "Workflow examples",
@@ -177,7 +176,7 @@ const evaluationItems = [
 ] as const;
 
 const trustFacts = [
-  ["Release", "v0.2.0 on PyPI and GHCR"],
+  ["Release", "v0.2.1 on PyPI and GHCR"],
   ["License", "Apache-2.0 open source"],
   ["Data", "Runs locally on your machine"],
   ["Citation", "Archived release with DOI"]
@@ -195,7 +194,7 @@ const navigationLinks = [
   ["How it works", "#workflow"],
   ["Reliability", "#failure-modes"],
   ["Uses", "#use-cases"],
-  ["Evidence", "#evidence"],
+  ["Methods", "#evidence"],
   ["Install", "#install"]
 ] as const;
 
@@ -354,7 +353,7 @@ export default function Home() {
               <p>
                 It is not a general aligner, basecaller, variant caller, UMI pipeline,
                 or downstream CRISPR screen-analysis package. The linked scientific
-                scope explains the current evidence in detail.
+                scope page describes the tested workflows and remaining limits.
               </p>
             </article>
             <div className="evidence-links" aria-label="Evidence and packaging links">
@@ -367,29 +366,29 @@ export default function Home() {
 
         <section id="evaluation" className="section evaluation-section" aria-labelledby="evaluation-title">
           <div className="section-heading">
-            <p className="section-kicker">Current package status</p>
-            <h2 id="evaluation-title">What you can verify today.</h2>
+            <p className="section-kicker">Release and support</p>
+            <h2 id="evaluation-title">Published package, documented scope.</h2>
             <p>
-              Release records, package channels, output formats, scientific scope,
-              and repository checks are available for independent review.
+              The current release, its files, output formats, methods, and known
+              limits are all linked here.
             </p>
           </div>
           <div className="evaluation-layout">
             <ol className="evaluation-list">
-              {evaluationItems.map((action) => (
+              {releaseItems.map((action) => (
                 <li key={action.title}>
                   <strong>{action.title}</strong>
                   <p>{action.body}</p>
                 </li>
               ))}
             </ol>
-            <aside className="evaluation-links" aria-label="Evaluation and evidence links">
-              <a href={evaluationUrl}>Bioinformatics evaluation packet</a>
-              <a href={reviewPacketUrl}>External review packet</a>
-              <a href={distributionUrl}>Distribution status record</a>
-              <a href={workflowAdoptionUrl}>Workflow integration roadmap</a>
-              <a href={docsUrl}>User documentation</a>
-              <a href={scientificClaimsUrl}>Scientific scope notes</a>
+            <aside className="evaluation-links" aria-label="Release and documentation links">
+              <a href={pypiUrl}>PyPI 0.2.1</a>
+              <a href={releaseUrl}>GitHub release</a>
+              <a href={containerUrl}>Container image</a>
+              <a href={doiUrl}>Zenodo archive</a>
+              <a href={distributionUrl}>Distribution status</a>
+              <a href={docsUrl}>Documentation</a>
             </aside>
           </div>
         </section>
@@ -417,9 +416,9 @@ export default function Home() {
                 maintained DotMatch examples unless an external project records an
                 accepted integration.
               </p>
-              <a href={workflowSubmissionsUrl}>Workflow submission pack</a>
-              <a href={integrationKitUrl}>Workflow integration kit</a>
-              <a href={workflowAdoptionUrl}>Workflow integration roadmap</a>
+              <a href={workflowExamplesUrl}>Workflow examples</a>
+              <a href={schemasUrl}>Output schemas</a>
+              <a href={commandReferenceUrl}>Command reference</a>
             </aside>
           </div>
         </section>
@@ -458,7 +457,7 @@ dotmatch dist ACGT AGGT`}</code></pre>
         <nav aria-label="Footer navigation">
           <a href={docsUrl}>Documentation</a>
           <a href={repoUrl}>GitHub</a>
-          <a href={scientificClaimsUrl}>Scientific claims</a>
+          <a href={scopeUrl}>Scope and limitations</a>
           <a href={methodsUrl}>Methods</a>
           <a href={doiUrl}>DOI</a>
         </nav>
