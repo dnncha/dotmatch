@@ -1,4 +1,4 @@
-# DotMatch AssaySpec v1
+# AssaySpec workflows
 
 AssaySpec is a TOML workflow layer for fixed-window known-target assays. It
 does not replace the native matching/counting code; it validates a declarative

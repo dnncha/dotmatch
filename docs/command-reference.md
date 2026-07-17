@@ -1,4 +1,4 @@
-# Command Reference
+# Command reference
 
 This page is a compact map of the installed `dotmatch` command surface. Use
 `dotmatch <command> --help` for option defaults and full argument details.

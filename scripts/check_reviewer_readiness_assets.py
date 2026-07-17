@@ -245,15 +245,13 @@ def _check_docs_wiring(result: AuditResult) -> None:
     page = _read(Path("app/page.tsx"))
     public_text = readme + index + page
     for path in [
-        "docs/external-review-packet.md",
-        "docs/integration-targets.json",
-        "docs/pilot-program.md",
-        "docs/reviewer-readiness.json",
-        "docs/workflow-integration-kit.md",
-        "docs/workflow-integration-roadmap.md",
+        "getting-started",
+        "command-reference",
+        "schemas",
+        "methods-and-citation",
     ]:
         if path not in public_text:
-            result.failures.append(f"public docs do not link {path}")
+            result.failures.append(f"public docs do not provide a user route to {path}")
 
 
 def _check_public_language(result: AuditResult) -> None:

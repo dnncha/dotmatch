@@ -1,153 +1,102 @@
-# DotMatch Documentation
+# DotMatch
 
-![Cinematic DotMatch workflow: sequencing reads flow through a precise known-target matching gate into count matrices, demultiplexed barcode lanes, QC panels, and visible ambiguity diagnostics.](_static/dotmatch-header-cinematic.png)
+DotMatch assigns a short window from each FASTQ read to a known list of DNA
+sequences. It is made for CRISPR guides, sample barcodes, feature tags, primers,
+adapter checks, and other assays where the expected targets are already known.
 
-DotMatch is a deterministic command-line and Python toolkit for known-target
-short-DNA assignment. It is designed for computational biologists and
-bioinformaticians who already have a table of expected sequences and need to
-count, demultiplex, audit, or diagnose reads without hiding ambiguous cases.
+For every read, DotMatch records one of four outcomes:
 
-Use DotMatch when the biological question is:
+- `unique`: exactly one target is compatible;
+- `ambiguous`: several targets are compatible;
+- `none`: no target is within the selected distance;
+- `invalid`: the requested window could not be extracted.
 
-> Which known guide, barcode, primer, feature tag, adapter, or panel target did
-> this read contain?
+Ambiguous and invalid reads stay visible in the outputs. They are not quietly
+added to a target count.
 
-DotMatch is intentionally narrower than a genome aligner, basecaller, UMI
-pipeline, or screen-level statistics package. It works on extracted short
-windows and known target lists. That narrow scope is what makes its assignment
-contract easy to inspect: each read is reported as `unique`, `ambiguous`,
-`none`, or `invalid`.
+## Start with a real run
 
-Evidence boundary: performance statements are scoped to the benchmark reports
-and readiness gates in [DotMatch Evidence Notes](scientific-claims.md).
-The strongest current evidence is native fixed-window indexed assignment,
-public CRISPR guide-counting comparisons, and checked public inline-barcode lanes;
-broader alignment, demultiplexing, screen-analysis, or BCL replacement claims
-need their own gates before they are public claims.
+Install the current PyPI package:
 
-## Start Here
+```bash
+python3 -m pip install dotmatch
+dotmatch --version
+```
 
-- New evaluators should begin with [Getting Started](getting-started.md).
-- Use [Command Reference](command-reference.md) when choosing the right
-  namespace or compatibility entrypoint.
-- CRISPR teams can follow the [first-run CRISPR guide-counting tutorial](tutorials/crispr-count-first-run.md).
-- Labs evaluating scientific claims should read [Trust, Scope, and Evidence](trust-and-scope.md).
-- Workflow and pipeline authors should use the [public output schemas](schemas.md).
-- Bioinformatics teams evaluating package maturity, workflow fit, and current
-  public limitations should read the
-  [Bioinformatics Evaluation Packet](bioinformatics-evaluation.md).
-- External reviewers should use the
-  [External Review Packet](external-review-packet.md), the
-  [Integration Target Tracker](integration-targets.json), and the
-  [DotMatch Evaluation Protocol](pilot-program.md) for a structured technical
-  review.
-- Maintainers can verify these reviewer materials with
-  `make reviewer-readiness-ready`, which checks the
-  [Reviewer Readiness Record](reviewer-readiness.json).
-- Industry evaluators and maintainers should use the
-  [Workflow Integration Kit](workflow-integration-kit.md) to route citations,
-  evaluations, and workflow submissions.
-- Maintainers pushing the next adoption layer should use the
-  [Workflow Integration Roadmap](workflow-integration-roadmap.md) and the checked
-  `workflow-integration-plan.json` tracker.
-- Teams evaluating the open-core boundary should read
-  [Commercial Boundary](commercial-boundary.md) and
-  [Evidence Packet v1](evidence-packet-v1.md).
+Then follow [Getting started](getting-started.md) for a small count or
+demultiplexing run. If you already know which command you need, go straight to
+the [command reference](command-reference.md).
 
-## Core Ideas
+## Choose a workflow
 
-DotMatch compares a fixed read window with a known target table under explicit
-edit-distance rules. By default, a read is counted only when exactly one target
-falls inside the configured radius. If several targets are compatible, the read
-is reported as ambiguous rather than assigned by accident.
+| I want to… | Start here |
+| --- | --- |
+| Count guides from a CRISPR screen | [CRISPR first run](tutorials/crispr-count-first-run.md) |
+| Build a checked assay project | [AssaySpec workflows](assayspec.md) |
+| Split reads by inline barcode | [Getting started: demultiplexing](getting-started.md#demultiplex-inline-barcodes) |
+| Diagnose barcode failures | [Barcode run diagnosis](getting-started.md#diagnose-a-barcode-run) |
+| Design or check a barcode panel | [Barcode panel design](barcode-panel-design.md) |
+| Use DotMatch from Python | [Streaming Python API](streaming-api.md) |
+| Add DotMatch to a pipeline | [Output schemas](schemas.md) |
+| Record the software in a methods section | [Methods and citation](methods-and-citation.md) |
 
-This behavior matters in real assays. Unsafe one-mismatch correction, shifted
-barcode positions, duplicate targets, low-quality rescued bases, and ambiguous
-near-neighbors can all create plausible but wrong counts. DotMatch makes those
-states visible in TSV, JSON, and HTML reports so results can be reviewed by
-people and consumed by workflow systems.
+## Scope and limitations
+
+DotMatch compares fixed read windows with a finite target list. It is not a
+genome aligner, basecaller, UMI pipeline, variant caller, or downstream screen
+analysis package.
+
+Performance and correctness results are tied to the commands, datasets, and
+hardware recorded in the [benchmark reports](benchmarks/README.md). The most
+developed paths are native fixed-window assignment, public CRISPR guide-counting
+comparisons, and checked inline-barcode examples. Other assay types and
+experimental backends have narrower test coverage; those limits are described
+in [Scope and limitations](trust-and-scope.md).
+
+## Help and citation
+
+- Report a bug or request a feature on
+  [GitHub Issues](https://github.com/dnncha/dotmatch/issues).
+- Use `dotmatch citation` for the installed release.
+- See [Methods and citation](methods-and-citation.md) for `CITATION.cff`, DOI,
+  and methods text.
+- See [Packaging](packaging.md) for PyPI, Bioconda, containers, and source
+  builds.
 
 ```{toctree}
 :maxdepth: 2
-:caption: User Guide
+:caption: Getting started
 
 getting-started
-assaycode
 command-reference
 tutorials/crispr-count-first-run
 tutorials/scverse-perturb-seq
-streaming-api
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Workflows
+
 assayspec
 crispr-qc
 barcode-panel-design
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: APIs and integration
+
+streaming-api
+schemas
 workbench
-proposals-and-roadmap
 ```
 
 ```{toctree}
 :maxdepth: 2
 :caption: Reference
 
-schemas
-methods-and-citation
-citation-flywheel
-bioinformatics-evaluation
-external-review-packet
-pilot-program
-workflow-integration-kit
-workflow-integration-roadmap
-packaging
-release-process
-workflow-submissions
-resubmission-evidence
-commercial-boundary
-evidence-packet-v1
-```
-
-```{toctree}
-:maxdepth: 2
-:caption: Evidence and Boundaries
-
 trust-and-scope
-scientific-claims
-barcode-science-readiness
-usability-comparison
-native-comparator-scope
 benchmarks/README
-evidence-gallery/README
-```
-
-```{toctree}
-:maxdepth: 1
-:caption: Detailed Reports
-:hidden:
-
-benchmarks/amplicon_panel/README
-benchmarks/barcode_demux/README
-benchmarks/barcode_panel_design/README
-benchmarks/bcl_demux/README
-benchmarks/crispr_comparison/README
-benchmarks/feature_barcode/README
-benchmarks/gpu/README
-benchmarks/gpu/production_crispr_cpu_metal
-benchmarks/performance-improvements-2026-07-05
-benchmarks/native/README
-benchmarks/oligo_adapter/README
-benchmarks/perturb_seq/README
-benchmarks/public_crispr/README
-benchmarks/real/README
-evidence-gallery/report-zoo/README
-evidence-gallery/scenarios/amplicon_artic_primer_start
-evidence-gallery/scenarios/barcode_autopsy_review
-evidence-gallery/scenarios/barcode_srp009896_comparator
-evidence-gallery/scenarios/barcode_unsafe_correction
-evidence-gallery/scenarios/barcode_wrong_offset_fixture
-evidence-gallery/scenarios/bcl_tiny_classic
-evidence-gallery/scenarios/feature_barcode_10x
-evidence-gallery/scenarios/oligo_adapter_truseq_prefix
-evidence-gallery/scenarios/perturb_seq_10x_guide_capture
-evidence-gallery/scenarios/public_crispr_yusa
-evidence-gallery/snapshots/barcode_autopsy/report
-adopters/README
-adopters/record-template
+methods-and-citation
+packaging
 ```

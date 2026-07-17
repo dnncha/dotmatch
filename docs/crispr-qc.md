@@ -1,4 +1,4 @@
-# DotMatch CRISPR Count QC
+# CRISPR count QC
 
 DotMatch CRISPR QC evaluates guide-counting and representation diagnostics for
 a pooled CRISPR screen. It does not replace MAGeCK, BAGEL, drugZ, CERES,

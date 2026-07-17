@@ -1,4 +1,4 @@
-# Streaming Python API
+# Python API
 
 `dotmatch.stream_assign` is the Python API for notebook and workflow code that
 needs row-level FASTQ assignment without loading a full run into memory. It uses

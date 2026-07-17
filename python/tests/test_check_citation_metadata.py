@@ -29,10 +29,10 @@ def _write_repo(root: Path, *, version: str = "0.1.0") -> None:
             '    "Topic :: Scientific/Engineering :: Bio-Informatics",\n'
             "]\n"
             "[project.urls]\n"
-            'Homepage = "https://github.com/dnncha/dotmatch"\n'
+            'Homepage = "https://dnncha.github.io/dotmatch/"\n'
             'Repository = "https://github.com/dnncha/dotmatch"\n'
             'Issues = "https://github.com/dnncha/dotmatch/issues"\n'
-            'Documentation = "https://dotmatch.readthedocs.io/"\n'
+            'Documentation = "https://dotmatch.readthedocs.io/en/latest/"\n'
         ),
         "CITATION.cff": (
             "cff-version: 1.2.0\n"
@@ -214,7 +214,7 @@ def test_citation_metadata_rejects_weak_pyproject_discovery_metadata(tmp_path):
     assert any("pyproject.toml missing discovery keyword: CRISPR" in failure for failure in result.failures)
     assert any("pyproject.toml description must mention known-target short-DNA assignment" in failure for failure in result.failures)
     assert any("pyproject.toml classifiers must include Topic :: Scientific/Engineering :: Bio-Informatics" in failure for failure in result.failures)
-    assert any("pyproject.toml project URLs must include Repository" in failure for failure in result.failures)
+    assert any("pyproject.toml Repository must point to GitHub" in failure for failure in result.failures)
 
 
 def test_citation_metadata_rejects_unresolved_doi_field(tmp_path):

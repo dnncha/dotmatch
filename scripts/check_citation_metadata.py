@@ -167,12 +167,13 @@ def _check_pyproject_discovery(root: Path, result: AuditResult) -> None:
         result.failures.append("pyproject.toml classifiers must include Topic :: Scientific/Engineering :: Bio-Informatics")
     if "Intended Audience :: Science/Research" not in classifiers:
         result.failures.append("pyproject.toml classifiers must include Intended Audience :: Science/Research")
-    for key in ["Homepage", "Repository"]:
-        if urls.get(key) != REPOSITORY_URL:
-            result.failures.append(f"pyproject.toml project URLs must include {key}")
+    if urls.get("Homepage") != "https://dnncha.github.io/dotmatch/":
+        result.failures.append("pyproject.toml Homepage must point to the DotMatch site")
+    if urls.get("Repository") != REPOSITORY_URL:
+        result.failures.append("pyproject.toml Repository must point to GitHub")
     if urls.get("Issues") != f"{REPOSITORY_URL}/issues":
         result.failures.append("pyproject.toml project URLs must include Issues")
-    if urls.get("Documentation") != "https://dotmatch.readthedocs.io/":
+    if urls.get("Documentation") != "https://dotmatch.readthedocs.io/en/latest/":
         result.failures.append("pyproject.toml project URLs must include Documentation")
 
 

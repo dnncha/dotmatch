@@ -5,17 +5,17 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://dnncha.github.io/do
 const socialImageUrl = `${siteUrl}/dotmatch-og.png`;
 const twitterImageUrl = `${siteUrl}/dotmatch-twitter.png`;
 const socialImageAlt =
-  "AssayCode preview showing the DotMatch assignment outcomes for known-target sequencing assays";
+  "DotMatch workflow showing known-target assignment outcomes from FASTQ reads";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  applicationName: "AssayCode",
-  title: "AssayCode - Design, Decode, and Diagnose Known-Target Assays",
+  applicationName: "DotMatch",
+  title: "DotMatch - Known-target assignment from FASTQ",
   description:
-    "AssayCode compiles, validates, decodes, and diagnoses known-target sequencing assays with the DotMatch engine.",
+    "Assign fixed FASTQ read windows to known guides, barcodes, feature tags, primers, and other short DNA targets without hiding ambiguous reads.",
   authors: [{ name: "DotMatch maintainers", url: "https://github.com/dnncha/dotmatch" }],
   creator: "DotMatch maintainers",
-  publisher: "AssayCode",
+  publisher: "DotMatch",
   category: "Bioinformatics software",
   alternates: {
     canonical: siteUrl
@@ -26,27 +26,20 @@ export const metadata: Metadata = {
     "CRISPR",
     "FASTQ",
     "known-target sequencing",
-    "assay compiler",
-    "AssayScript",
-    "assignment reliability",
+    "known-target assignment",
     "barcode demultiplexing",
     "barcode panel design",
     "barcode troubleshooting",
     "FASTQ sequence matching",
-    "nf-core",
-    "MultiQC",
-    "Galaxy workflows",
-    "Snakemake",
-    "core facility sequencing",
-    "bioinformatics workflow adoption",
-    "sequencing core facility QC"
+    "CRISPR guide counting",
+    "feature barcode assignment"
   ],
   openGraph: {
-    title: "AssayCode - Assay Reliability",
+    title: "DotMatch - Known-target assignment from FASTQ",
     description:
-      "Design the assay and trust the assignment with AssayCode, powered by DotMatch.",
+      "Count guides, split inline barcodes, and inspect ambiguous or unmatched reads with an explicit target list.",
     type: "website",
-    siteName: "AssayCode",
+    siteName: "DotMatch",
     locale: "en_US",
     url: siteUrl,
     images: [
@@ -62,9 +55,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "AssayCode - Assay Reliability",
+    title: "DotMatch - Known-target assignment from FASTQ",
     description:
-      "Design the assay and trust the assignment with AssayCode, powered by DotMatch.",
+      "Count guides, split inline barcodes, and inspect ambiguous or unmatched reads with an explicit target list.",
     images: [
       {
         url: twitterImageUrl,

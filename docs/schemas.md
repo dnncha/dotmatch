@@ -1,4 +1,4 @@
-# DotMatch Public Schemas
+# Output schemas
 
 These are the open file contracts for DotMatch Core. They are intentionally plain TSV/JSON so workflow systems, MultiQC custom content, notebooks, and future workbench layers can consume them without linking to the C library.
 

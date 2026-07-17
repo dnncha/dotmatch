@@ -403,9 +403,8 @@ def check_open_core_governance(root: Path, result: AuditResult) -> None:
     _require_text(
         root / "README.md",
         [
-            "## DotMatch Pro",
-            "DotMatch Pro is the commercial assay reliability workbench for teams that need",
-            "The open-source DotMatch engine remains available under Apache-2.0.",
+            "dotmatch-community",
+            "Apache-2.0",
         ],
         result,
     )

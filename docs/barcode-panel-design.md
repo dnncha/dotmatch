@@ -1,4 +1,4 @@
-# DotMatch Barcode Panel Design
+# Barcode panel design
 
 DotMatch does not merely design barcodes. It designs barcode panels that come with proof of how they will behave during assignment.
 

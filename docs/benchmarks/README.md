@@ -1,4 +1,4 @@
-# Benchmark Report
+# Benchmarks
 
 - Platform: `macOS-26.2-arm64-arm-64bit`
 - Python: `3.9.6`

@@ -89,10 +89,8 @@ def _write_repo(root: Path, manifest: Optional[dict] = None) -> None:
         ),
         "README.md": (
             "# DotMatch\n\n"
-            "Deterministic known-target assignment.\n\n"
-            "Evidence boundary: see DotMatch Evidence Notes. The strongest current evidence is native fixed-window indexed assignment, "
-            "public CRISPR guide-counting comparisons, and checked public inline-barcode lanes; broader alignment, demultiplexing, "
-            "screen-analysis, or BCL replacement claims need their own gates.\n"
+            "DotMatch is not a genome aligner. Read the benchmark reports with their recorded commands. "
+            "Those reports cover the tested workloads.\n"
         ),
         "docs/scientific-readiness.json": json.dumps(manifest or _manifest(), indent=2) + "\n",
         "tests/test_cli_fastq.sh": "#!/bin/sh\n",
@@ -137,9 +135,8 @@ def _write_repo(root: Path, manifest: Optional[dict] = None) -> None:
         ),
         "docs/index.md": (
             "# DotMatch Documentation\n\n"
-            "Evidence boundary: see DotMatch Evidence Notes. The strongest current evidence is native fixed-window indexed assignment, "
-            "public CRISPR guide-counting comparisons, and checked public inline-barcode lanes; broader alignment, demultiplexing, "
-            "screen-analysis, or BCL replacement claims need their own gates.\n"
+            "DotMatch compares fixed read windows with a finite target list. Read the benchmark reports with their recorded commands. "
+            "Other assay types and experimental backends have narrower test coverage.\n"
         ),
     }
     for path, text in files.items():
@@ -261,9 +258,9 @@ def test_scientific_readiness_rejects_missing_readme_evidence_boundary(tmp_path)
 
     result = checker.audit(tmp_path)
 
-    assert any("README.md" in failure and "Evidence boundary:" in failure for failure in result.failures)
-    assert any("README.md" in failure and "public CRISPR" in failure for failure in result.failures)
-    assert any("README.md" in failure and "guide-counting comparisons" in failure for failure in result.failures)
+    assert any("README.md" in failure and "not a genome aligner" in failure for failure in result.failures)
+    assert any("README.md" in failure and "benchmark reports" in failure for failure in result.failures)
+    assert any("README.md" in failure and "tested workloads" in failure for failure in result.failures)
 
 
 def test_scientific_readiness_rejects_missing_docs_index_evidence_boundary(tmp_path):
@@ -273,6 +270,6 @@ def test_scientific_readiness_rejects_missing_docs_index_evidence_boundary(tmp_p
 
     result = checker.audit(tmp_path)
 
-    assert any("docs/index.md" in failure and "Evidence boundary:" in failure for failure in result.failures)
-    assert any("docs/index.md" in failure and "public CRISPR" in failure for failure in result.failures)
-    assert any("docs/index.md" in failure and "BCL replacement claims" in failure for failure in result.failures)
+    assert any("docs/index.md" in failure and "finite target list" in failure for failure in result.failures)
+    assert any("docs/index.md" in failure and "benchmark reports" in failure for failure in result.failures)
+    assert any("docs/index.md" in failure and "experimental backends" in failure for failure in result.failures)

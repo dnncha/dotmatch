@@ -14,7 +14,7 @@ def test_assaycode_metapackage_contract() -> None:
 
 
 def test_handoff_renders_both_recipes_with_real_checksum(tmp_path: Path) -> None:
-    archive = tmp_path / "v0.2.0.tar.gz"
+    archive = tmp_path / "v0.2.1.tar.gz"
     archive.write_bytes(b"immutable release fixture")
 
     dotmatch_dir, assaycode_dir, digest = render(archive, tmp_path / "handoff")
@@ -33,5 +33,5 @@ def test_handoff_renders_both_recipes_with_real_checksum(tmp_path: Path) -> None
 def test_handoff_rejects_archive_for_another_version(tmp_path: Path) -> None:
     archive = tmp_path / "v9.9.9.tar.gz"
     archive.write_bytes(b"wrong release")
-    with pytest.raises(ValueError, match="must identify 0.2.0"):
+    with pytest.raises(ValueError, match="must identify 0.2.1"):
         render(archive, tmp_path / "handoff")

@@ -1,4 +1,4 @@
-# Methods and Citation Template
+# Methods and citation
 
 Use this page as a starting point for methods sections, benchmark notes, and software citations. Keep public statements aligned with `docs/scientific-claims.md`.
 
@@ -22,7 +22,7 @@ must not be used as the v0.2.0 release DOI. The version DOI for v0.2.0 is
 
 Suggested citation:
 
-> O'Toole D. DotMatch: deterministic known-target short-DNA assignment for sequencing workflows. Software release v0.2.0. https://github.com/dnncha/dotmatch
+> O'Toole D. DotMatch: deterministic known-target short-DNA assignment for sequencing workflows. Software release v0.2.1. https://github.com/dnncha/dotmatch
 
 DOI: <https://doi.org/10.5281/zenodo.21413295>
 
