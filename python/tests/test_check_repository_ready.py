@@ -62,7 +62,10 @@ def _write_minimal_repo(root: Path) -> None:
             "  - uses: actions/upload-pages-artifact@v5\n"
             "  - uses: actions/deploy-pages@v4\n"
         ),
-        ".github/workflows/release.yml": "name: release\n",
+        ".github/workflows/release.yml": (
+            "name: release\nsteps:\n  - name: Generate checksums\n    run: |\n"
+            "      cd dist\n      sha256sum *.whl *.tar.gz > SHA256SUMS.txt\n"
+        ),
         ".github/PULL_REQUEST_TEMPLATE.md": (
             "## Evidence\n\n"
             "- [ ] `make test`\n"
@@ -156,6 +159,20 @@ def test_repository_ready_reports_missing_release_workflow(tmp_path):
     result = checker.audit(tmp_path)
 
     assert any(".github/workflows/release.yml" in failure for failure in result.failures)
+
+
+def test_repository_ready_rejects_checksum_manifest_with_internal_build_records(tmp_path):
+    checker = _load_checker()
+    _write_minimal_repo(tmp_path)
+    (tmp_path / ".github" / "workflows" / "release.yml").write_text(
+        "name: release\nsteps:\n  - name: Generate checksums\n    run: |\n"
+        "      cd dist\n      sha256sum * > SHA256SUMS.txt\n",
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("downloadable wheel and source-distribution assets" in failure for failure in result.failures)
 
 
 def test_repository_ready_reports_missing_codeql_workflow(tmp_path):
