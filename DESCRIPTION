@@ -1,6 +1,6 @@
 Package: dotmatch
 Title: R Interface to DotMatch (Deterministic Short-DNA Assignment)
-Version: 0.2.0
+Version: 0.2.1
 Authors@R: 
     person("DotMatch Contributors", email = "donncha@example.com", role = c("aut", "cre"))
 Description: Provides R wrappers around the Python dotmatch package via

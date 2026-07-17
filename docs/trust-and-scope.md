@@ -1,4 +1,4 @@
-# Trust, Scope, and Evidence
+# Scope and limitations
 
 DotMatch is built around a small promise: for a configured short read window and
 a known target table, it reports how each read relates to the targets under
@@ -6,7 +6,7 @@ explicit edit-distance rules. The software is useful when that promise matches
 the assay. It should not be stretched into claims about tasks it does not
 perform.
 
-## What DotMatch Does
+## What DotMatch does
 
 DotMatch supports deterministic known-target assignment for workflows such as:
 
@@ -26,7 +26,7 @@ Each read is assigned one of four states:
 - `none`: no target is close enough.
 - `invalid`: the requested read window could not be extracted.
 
-## What DotMatch Does Not Do
+## What DotMatch does not do
 
 DotMatch is not a genome aligner, basecaller, adapter trimmer, cell/UMI
 quantifier, variant caller, consensus builder, or screen-level statistical
@@ -43,7 +43,7 @@ For CRISPR screens, DotMatch stops at guide assignment, count matrices, and QC.
 Use tools such as MAGeCK, BAGEL, drugZ, CERES, or other appropriate downstream
 methods for biological effect analysis.
 
-## Why Ambiguity Is Not Hidden
+## Why ambiguous reads remain separate
 
 Many short-target workflows fail quietly when a read is compatible with more
 than one target. DotMatch treats that as a first-class output state. Under the
@@ -54,11 +54,11 @@ This makes correction auditable. If one-mismatch rescue would cause collisions,
 the target audit and run outputs show that risk rather than converting it into
 apparently confident counts.
 
-## Evidence Boundaries
+## Benchmarks and test coverage
 
 The repository keeps benchmark reports, public-data examples, comparator notes,
-and gate scripts alongside the code. Public claims should stay within that
-checked evidence.
+and their checks alongside the code. Read each result with its recorded command,
+dataset, hardware, and limitations.
 
 Important evidence pages:
 
@@ -73,7 +73,7 @@ Important evidence pages:
 - [Methods and Citation](methods-and-citation.md): methods text that matches
   the current assignment semantics.
 
-## Practical Review Checklist
+## Before using a run downstream
 
 Before trusting a production run, check:
 

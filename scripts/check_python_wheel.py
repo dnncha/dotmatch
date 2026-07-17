@@ -178,7 +178,7 @@ def check_distribution_metadata(artifact: Path, expected_version: str) -> None:
         failures.append("Name must be dotmatch")
     if metadata.get("Version") != expected_version:
         failures.append(f"Version must be {expected_version}")
-    if "known-target short-DNA assignment" not in str(metadata.get("Summary", "")):
+    if "known-target short-dna assignment" not in str(metadata.get("Summary", "")).lower():
         failures.append("Summary must mention known-target short-DNA assignment")
 
     license_text = "\n".join(_metadata_values(metadata, "License-Expression") + _metadata_values(metadata, "License"))

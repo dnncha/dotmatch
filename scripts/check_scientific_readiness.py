@@ -56,27 +56,15 @@ SCIENTIFIC_CLAIMS_REQUIRED_FRAGMENTS = [
 ]
 
 README_REQUIRED_EVIDENCE_FRAGMENTS = [
-    "Evidence boundary:",
-    "DotMatch Evidence Notes",
-    "strongest",
-    "native fixed-window indexed assignment",
-    "public CRISPR",
-    "guide-counting comparisons",
-    "checked public inline-barcode lanes",
-    "broader",
-    "BCL replacement claims need their",
+    "DotMatch is not a genome aligner",
+    "benchmark reports",
+    "Those reports cover the tested workloads",
 ]
 
 DOCS_INDEX_REQUIRED_EVIDENCE_FRAGMENTS = [
-    "Evidence boundary:",
-    "DotMatch Evidence Notes",
-    "strongest",
-    "native fixed-window indexed assignment",
-    "public CRISPR",
-    "guide-counting comparisons",
-    "checked public inline-barcode lanes",
-    "broader",
-    "BCL replacement claims",
+    "DotMatch compares fixed read windows with a finite target list",
+    "benchmark reports",
+    "experimental backends have narrower",
 ]
 
 

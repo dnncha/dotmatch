@@ -23,6 +23,7 @@ def _write_minimal_repo(root: Path) -> None:
             "DotMatch Pro is the commercial assay reliability workbench for teams that need "
             "run registries, signed reports, private assay specs, audit trails, and support.\n"
             "The open-source DotMatch engine remains available under Apache-2.0.\n\n"
+            "The desktop app is maintained in dotmatch-community.\n\n"
             "See the docs directory for packaging, release, and benchmark notes.\n"
         ),
         "CHANGELOG.md": "# Changelog\n\n## 0.1.0\n\n- Initial release.\n",

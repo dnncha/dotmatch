@@ -2,7 +2,25 @@
 
 All notable user-facing changes are tracked here. Public statements in release notes must stay aligned with `docs/scientific-claims.md`.
 
-## 0.2.0 - Unreleased
+## 0.2.1 - 2026-07-17
+
+### Fixed
+
+- Replaced repository-relative README links with stable documentation and
+  project URLs so links work when the README is rendered on PyPI.
+- Corrected the package homepage, documentation, changelog, and social-card
+  metadata.
+
+### Changed
+
+- Rewrote the README, documentation landing page, package description, and
+  website around the tasks DotMatch performs.
+- Reduced the documentation navigation to runnable guides, workflow pages,
+  APIs, file formats, benchmarks, packaging, and citation.
+- Added checks for PyPI-safe README links, missing local documentation links,
+  inconsistent public product names, and internal or inflated public wording.
+
+## 0.2.0 - 2026-07-17
 
 - Added a compatibility-safe AssayCode Bioconda metapackage template and a deterministic two-recipe release-handoff generator while preserving `dotmatch` as the engine package.
 

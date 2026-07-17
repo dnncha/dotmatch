@@ -1,7 +1,7 @@
 {
   "title": "DotMatch: deterministic known-target short-DNA assignment for sequencing workflows",
   "upload_type": "software",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "conceptdoi": "10.5281/zenodo.20541628",
   "creators": [
     {
@@ -10,7 +10,7 @@
       "affiliation": "Independent researcher"
     }
   ],
-  "description": "DotMatch is a deterministic known-target short-DNA assignment engine for CRISPR guides, barcodes, primers, panels, and whitelist-style target sets.",
+  "description": "DotMatch assigns short FASTQ read windows to known CRISPR guides, barcodes, feature tags, primers, and other DNA targets.",
   "license": "Apache-2.0",
   "access_right": "open",
   "keywords": [

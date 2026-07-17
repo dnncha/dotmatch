@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dotmatch"
-version = "0.2.0"
-description = "AssayCode workflows and the DotMatch engine for auditable known-target short-DNA assignment across CRISPR, barcode, and FASTQ assays"
+version = "0.2.1"
+description = "Known-target short-DNA assignment from FASTQ for CRISPR guides, barcodes, feature tags, primers, and other targets"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
@@ -22,8 +22,8 @@ keywords = [
     "CRISPR",
     "FASTQ",
     "known-target assignment",
-    "assay compiler",
-    "assay QC",
+    "feature barcodes",
+    "sequencing QC",
     "barcode demultiplexing",
     "edit distance",
 ]
@@ -49,10 +49,11 @@ multiqc = ["multiqc>=1.20"]
 dev = ["pytest", "pandas>=1.0", "anndata>=0.8", "polars>=0.19", "multiqc>=1.20"]
 
 [project.urls]
-Homepage = "https://github.com/dnncha/dotmatch"
+Homepage = "https://dnncha.github.io/dotmatch/"
 Repository = "https://github.com/dnncha/dotmatch"
 Issues = "https://github.com/dnncha/dotmatch/issues"
-Documentation = "https://dotmatch.readthedocs.io/"
+Documentation = "https://dotmatch.readthedocs.io/en/latest/"
+Changelog = "https://github.com/dnncha/dotmatch/blob/main/CHANGELOG.md"
 
 [tool.setuptools]
 package-dir = {"" = "python"}

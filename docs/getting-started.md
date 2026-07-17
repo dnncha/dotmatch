@@ -1,4 +1,4 @@
-# Getting Started
+# Getting started
 
 This page is the fastest useful path from installation to a checked DotMatch
 run. It assumes you have FASTQ or FASTQ.gz reads and a table of expected short
@@ -10,14 +10,15 @@ adapter prefixes.
 For the current PyPI release:
 
 ```bash
-python3 -m pip install dotmatch==0.1.9
+python3 -m pip install dotmatch==0.2.1
 dotmatch --version
 ```
 
-For Conda-based environments, use the 0.1.9 Bioconda package:
+For Conda-based environments, install the version currently published by
+Bioconda:
 
 ```bash
-conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.9
+conda create -n dotmatch -c conda-forge -c bioconda dotmatch
 conda activate dotmatch
 dotmatch --version
 ```
@@ -35,10 +36,9 @@ dotmatch --version
 The source build needs a C compiler, `make`, Python 3.9 or newer, and zlib for
 FASTQ.gz support.
 
-PyPI remains the simplest cross-platform Python install path. Bioconda is the
-preferred package-manager path for Conda-based bioinformatics environments after
-the release package appears in Bioconda repodata and passes a clean install
-smoke test.
+PyPI is normally the first channel to receive a new release. Bioconda can lag a
+tag while its recipe is reviewed and built, so check the version printed by
+`dotmatch --version` when an exact release matters.
 
 ## Recommended Workflow: Assay Project
 
@@ -218,9 +218,8 @@ The most important files are:
 - HTML reports: human-readable review pages for assay, barcode, panel, and QC
   workflows.
 
-Ambiguous reads are intentionally visible and are not added silently to target
-counts under the default policy. This is the central trust contract of
-DotMatch.
+Ambiguous reads remain visible and are not added to target counts under the
+default policy.
 
 ## Next Steps
 

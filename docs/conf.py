@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 project = "DotMatch"
 author = "Donncha O'Toole"
 copyright = "2026, Donncha O'Toole"
-release = "0.2.0"
+release = "0.2.1"
 version = release
 
 extensions = [
@@ -40,7 +40,37 @@ myst_enable_extensions = [
 myst_heading_anchors = 3
 
 nitpicky = True
+show_warning_types = True
 suppress_warnings = [
     "myst.header",
     "myst.xref_missing",
 ]
+
+
+NAVIGATION_DOCS = {
+    "index",
+    "getting-started",
+    "command-reference",
+    "tutorials/crispr-count-first-run",
+    "tutorials/scverse-perturb-seq",
+    "assayspec",
+    "crispr-qc",
+    "barcode-panel-design",
+    "streaming-api",
+    "schemas",
+    "workbench",
+    "trust-and-scope",
+    "benchmarks/README",
+    "methods-and-citation",
+    "packaging",
+}
+
+
+def _mark_detail_page_as_orphan(app, docname, source):
+    """Build detailed reports without placing them in the main user navigation."""
+    if docname not in NAVIGATION_DOCS:
+        source[0] = "---\norphan: true\n---\n\n" + source[0]
+
+
+def setup(app):
+    app.connect("source-read", _mark_detail_page_as_orphan)

@@ -1,5 +1,5 @@
 {% set name = "dotmatch" %}
-{% set version = "0.2.0" %}
+{% set version = "0.2.1" %}
 {% set sha256 = "REPLACE_WITH_RELEASE_TARBALL_SHA256" %}
 
 package:
@@ -82,17 +82,18 @@ test:
     - chmod -R a+rwX panel_out
 
 about:
-  home: https://github.com/dnncha/dotmatch
+  home: https://dnncha.github.io/dotmatch/
   license: Apache-2.0
   license_file: LICENSE
-  summary: Deterministic short-DNA known-target assignment
+  summary: Known-target short-DNA assignment from FASTQ
   description: |
-    The distribution installs AssayCode, the assay-level platform identity, and
-    DotMatch, its deterministic known-target short-DNA assignment engine for
-    CRISPR guides, barcodes, primers, panels, and whitelist-style target sets.
-    It is not a genome aligner and does not emit SAM/BAM or CIGAR output.
+    DotMatch assigns fixed FASTQ read windows to known CRISPR guides, barcodes,
+    feature tags, primers, panels, and other finite target lists. It reports
+    unique, ambiguous, unmatched, and invalid reads and writes ordinary TSV,
+    JSON, FASTQ, and HTML outputs. It is not a genome aligner and does not emit
+    SAM/BAM or CIGAR output.
   dev_url: https://github.com/dnncha/dotmatch
-  doc_url: https://dotmatch.readthedocs.io/
+  doc_url: https://dotmatch.readthedocs.io/en/latest/
 
 extra:
   additional-platforms:

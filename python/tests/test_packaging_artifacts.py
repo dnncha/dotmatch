@@ -28,7 +28,7 @@ def test_bioconda_recipe_tracks_release_metadata() -> None:
     assert "https://github.com/dnncha/dotmatch/archive/refs/tags/v{{ version }}.tar.gz" in text
     assert "license: Apache-2.0" in text
     assert "license_file: LICENSE" in text
-    assert "summary: Deterministic short-DNA known-target assignment" in text
+    assert "summary: Known-target short-DNA assignment from FASTQ" in text
     assert "recipe-maintainers:" in text
 
 
@@ -173,7 +173,8 @@ def test_release_workflow_builds_and_smoke_tests_container() -> None:
     assert "docker/metadata-action" in workflow
     assert "docker/build-push-action" in workflow
     assert "ghcr.io/dnncha/dotmatch" in workflow
-    assert f"docker run --rm dotmatch:ci --version | grep '^dotmatch {_pyproject_version()}$'" in workflow
+    assert "VERSION=$(python -c" in workflow
+    assert 'docker run --rm dotmatch:ci --version | grep "^dotmatch ${VERSION}$"' in workflow
     assert "docker run --rm dotmatch:ci dist ACGT AGGT | grep '^1$'" in workflow
     assert "docker image inspect dotmatch:ci" in workflow
     assert "org.opencontainers.image.version" in workflow
@@ -211,7 +212,8 @@ def test_release_workflow_publishes_pypi_sdist_and_repaired_linux_wheels() -> No
     assert "packages-dir: dist-pypi" in workflow
     assert "dotmatch-wheel-Linux" not in workflow
     assert "trusted publishing" in packaging
-    assert "publishes the source distribution, the native macOS wheel, and repaired manylinux/musllinux Linux wheels" in packaging
+    assert "source distribution plus a macOS wheel and" in packaging
+    assert "repaired manylinux/musllinux wheels" in packaging
 
 
 def test_cibuildwheel_linux_repaired_wheel_path_is_configured() -> None:
@@ -228,12 +230,9 @@ def test_cibuildwheel_linux_repaired_wheel_path_is_configured() -> None:
     assert "dotmatch-linux-repaired-wheels" in workflow
     assert "dist-linux/*.whl" in workflow
     assert "manylinux/musllinux" in packaging
-    assert "repaired Linux wheel artifacts" in packaging
-    readme_normalized = _squash_ws(readme)
-    assert "GitHub release workflow builds and smoke-tests repaired manylinux/musllinux" in readme_normalized
-    assert "PyPI trusted publishing is configured" in readme_normalized
-    assert "PyPI wheel availability" in readme_normalized
-    assert "visible on PyPI" in readme_normalized
+    assert "repaired manylinux/musllinux wheels" in packaging
+    assert "https://pypi.org/project/dotmatch/" in readme
+    assert "packaging.html" in readme
 
 
 def test_release_workflow_publishing_jobs_depend_on_preflight() -> None:
@@ -260,7 +259,8 @@ def test_distribution_docs_include_clean_pypi_install_verification() -> None:
     assert "pip install dotmatch==" in checker
     assert "must include repaired manylinux and musllinux wheels" in checker
     assert "must not include raw linux_x86_64 wheels" in checker
-    assert "source distribution plus a macOS wheel and repaired manylinux/musllinux wheels" in packaging
+    assert "source distribution plus a macOS wheel" in packaging
+    assert "repaired manylinux/musllinux wheels" in packaging
     assert "rejects raw" in packaging and "linux_x86_64" in packaging
     assert "clean virtual environment" in packaging
     assert "pip install dotmatch==<version>" in packaging
@@ -292,4 +292,4 @@ def test_distribution_docs_include_biocontainers_runtime_verification() -> None:
     assert '"docker", "run", "--rm", image, "dotmatch", "leq", "1", "ACGT", "AGGT"' in checker
     assert "quay.io/biocontainers/dotmatch:<version>--<build>" in packaging
     assert "BioContainers images for DotMatch are generated from the accepted Bioconda" in packaging
-    assert f"quay.io/biocontainers/dotmatch:{version}--<build>" in readme
+    assert "newly tagged version has not reached Bioconda yet" in readme

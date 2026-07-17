@@ -1,4 +1,4 @@
-# DotMatch Workbench
+# Workbench desktop app
 
 DotMatch Workbench is an optional local desktop app for reviewing and running
 AssaySpec workflows. It is designed for labs that want a guided interface for

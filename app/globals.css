@@ -94,6 +94,11 @@ figure {
   font-weight: 680;
 }
 
+.site-header nav a {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .site-header a:hover,
 .site-footer a:hover {
   color: var(--green);
@@ -128,18 +133,18 @@ figure {
 h1 {
   max-width: 760px;
   margin-top: 1rem;
-  font-size: clamp(3.15rem, 7vw, 7.2rem);
+  font-size: clamp(3.15rem, 6vw, 5.5rem);
   font-weight: 820;
-  line-height: 0.94;
+  line-height: 0.96;
   letter-spacing: 0;
 }
 
 .hero-lede {
   max-width: 690px;
   margin-top: 1.35rem;
-  font-size: clamp(1.22rem, 2.2vw, 1.9rem);
-  font-weight: 720;
-  line-height: 1.15;
+  font-size: clamp(1.18rem, 1.8vw, 1.55rem);
+  font-weight: 650;
+  line-height: 1.25;
 }
 
 .hero-text,
@@ -445,6 +450,10 @@ h3 {
   background: var(--line);
 }
 
+.workflow-section .evidence-links {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .evidence-links a {
   display: flex;
   align-items: center;
@@ -735,6 +744,10 @@ h3 {
     grid-template-columns: 1fr;
   }
 
+  .workflow-section .evidence-links {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .ecosystem-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -816,7 +829,8 @@ h3 {
 
   .outcome-grid,
   .failure-grid,
-  .audience-grid {
+  .audience-grid,
+  .workflow-section .evidence-links {
     grid-template-columns: 1fr;
   }
 
