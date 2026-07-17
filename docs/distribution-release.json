@@ -1,63 +1,71 @@
 {
   "schema_version": 1,
-  "status": "not_released",
+  "status": "partially_verified",
   "release_version": "0.2.0",
   "post_release_gate": "make distribution-channels",
   "channels": [
     {
       "id": "pypi",
-      "status": "prepared",
+      "status": "verified",
       "expected_url": "https://pypi.org/project/dotmatch/0.2.0/",
-      "verification_command": "make distribution-channels",
-      "blocker": "The AssayCode/DotMatch 0.2.0 source distribution and repaired wheel artifacts require a tagged immutable release.",
-      "next_action": "Pass make pretag-ready, tag v0.2.0, publish the source distribution and repaired wheels, then rerun make distribution-channels."
+      "public_url": "https://pypi.org/project/dotmatch/0.2.0/",
+      "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/29577798802",
+      "verified_date": "2026-07-17",
+      "verification_command": "make distribution-channels"
     },
     {
       "id": "bioconda",
-      "status": "prepared",
+      "status": "blocked",
       "expected_url": "https://anaconda.org/bioconda/dotmatch",
       "latest_published_version": "0.1.9",
       "observed_date": "2026-07-17",
-      "recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/66914",
+      "recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/67282",
       "verification_command": "make distribution-channels",
-      "blocker": "Bioconda currently publishes dotmatch 0.1.9. Version 0.2.0 needs an immutable release tarball checksum and a joint recipe PR that smoke-tests both command surfaces.",
-      "next_action": "After v0.2.0 is tagged, run scripts/prepare_bioconda_handoff.py and submit the rendered dotmatch update with the assaycode metapackage."
+      "blocker": "Bioconda recipe checks and maintainer review are in progress for DotMatch 0.2.0.",
+      "next_action": "After the recipe is accepted and the channel publishes 0.2.0, verify a clean installation with make distribution-channels."
     },
     {
       "id": "bioconda-assaycode",
-      "status": "prepared",
+      "status": "blocked",
       "expected_url": "https://anaconda.org/bioconda/assaycode",
+      "recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/67282",
       "verification_command": "make distribution-channels",
-      "blocker": "The AssayCode metapackage cannot resolve until DotMatch 0.2.0 has an immutable tag, checksum, and accepted Bioconda build.",
-      "next_action": "Submit recipes/assaycode together with the rendered recipes/dotmatch 0.2.0 update, then verify conda create -n assaycode -c conda-forge -c bioconda assaycode=0.2.0."
+      "blocker": "The AssayCode metapackage is part of the pending Bioconda recipe submission.",
+      "next_action": "After publication, verify that assaycode=0.2.0 installs DotMatch 0.2.0 and exposes both command surfaces."
     },
     {
       "id": "ghcr",
-      "status": "prepared",
+      "status": "verified",
       "expected_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
-      "verification_command": "make distribution-channels",
-      "blocker": "The 0.2.0 GHCR image has not been published or runtime-smoke-tested.",
-      "next_action": "Publish ghcr.io/dnncha/dotmatch:v0.2.0 from the tagged workflow, then test assaycode and dotmatch identities."
+      "public_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
+      "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/29577798802",
+      "verified_date": "2026-07-17",
+      "manifest_digest": "sha256:5a839be29ca03912e2f77f1675785e5a6f517bf454351182ef3e443a5464ff60",
+      "verification_command": "make distribution-channels"
     },
     {
       "id": "biocontainers",
-      "status": "prepared",
+      "status": "blocked",
       "expected_url": "https://quay.io/repository/biocontainers/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "BioContainers 0.2.0 cannot propagate until the Bioconda 0.2.0 recipe is accepted.",
-      "next_action": "After Bioconda publishes 0.2.0, smoke-test the selected quay.io/biocontainers/dotmatch:0.2.0--<build> image."
+      "blocker": "BioContainers 0.2.0 propagation depends on the pending Bioconda 0.2.0 recipe.",
+      "next_action": "After Bioconda publication, verify the generated 0.2.0 image tag and run both command-surface smoke tests."
     },
     {
       "id": "zenodo",
-      "status": "prepared",
-      "expected_url": "https://zenodo.org/records/20541628",
-      "verification_command": "make distribution-channels",
-      "blocker": "The Zenodo archive for v0.2.0 does not exist before the immutable tag.",
-      "next_action": "Tag v0.2.0, verify the archived release metadata and DOI resolution, then rerun make distribution-channels."
+      "status": "verified",
+      "expected_url": "https://zenodo.org/records/21413295",
+      "public_url": "https://zenodo.org/records/21413295",
+      "evidence_url": "https://zenodo.org/records/21413295",
+      "verified_date": "2026-07-17",
+      "doi": "10.5281/zenodo.21413295",
+      "concept_doi": "10.5281/zenodo.20541628",
+      "verification_command": "make distribution-channels"
     }
   ],
   "blockers": [
-    "AssayCode/DotMatch 0.2.0 is not tagged; PyPI, GHCR, Zenodo, Bioconda, and BioContainers publication cannot be claimed before immutable artifacts and channel verification exist."
+    "Bioconda review and channel publication are pending for DotMatch 0.2.0 and AssayCode 0.2.0.",
+    "BioContainers 0.2.0 can be verified after the Bioconda package propagates."
   ],
-  "next_action": "Pass CI and make pretag-ready, tag v0.2.0, render both Bioconda recipes, submit the DotMatch update and AssayCode metapackage together, then rerun make distribution-channels."
+  "next_action": "Track bioconda-recipes pull request 67282 through acceptance, then rerun make distribution-channels after Bioconda and BioContainers propagation."
 }
