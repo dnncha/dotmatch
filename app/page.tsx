@@ -1,7 +1,20 @@
+import { MobileNavigation } from "./mobile-navigation";
+
 const repoUrl = "https://github.com/dnncha/dotmatch";
 const docsUrl = "https://dotmatch.readthedocs.io/en/latest/";
+const scientificClaimsUrl = `${docsUrl}scientific-claims.html`;
+const evidenceGalleryUrl = `${docsUrl}evidence-gallery/README.html`;
+const methodsUrl = `${docsUrl}methods-and-citation.html`;
+const packagingUrl = `${docsUrl}packaging.html`;
+const evaluationUrl = `${docsUrl}bioinformatics-evaluation.html`;
+const reviewPacketUrl = `${docsUrl}external-review-packet.html`;
+const integrationKitUrl = `${docsUrl}workflow-integration-kit.html`;
+const workflowSubmissionsUrl = `${docsUrl}workflow-submissions.html`;
+const workflowAdoptionUrl = `${docsUrl}workflow-integration-roadmap.html`;
+const distributionUrl = `${docsUrl}release-process.html`;
 const pypiUrl = "https://pypi.org/project/dotmatch/";
 const biocondaUrl = "https://anaconda.org/bioconda/dotmatch";
+const doiUrl = "https://doi.org/10.5281/zenodo.21413295";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const assignmentWorkflowImage = `${basePath}/dotmatch-read-assignment.svg`;
@@ -15,7 +28,7 @@ const structuredData = {
       name: "DotMatch",
       url: "https://dnncha.github.io/dotmatch",
       description:
-        "DotMatch assigns short FASTQ read windows to known DNA targets for CRISPR, barcode, and other fixed-target sequencing workflows."
+        "DotMatch is a deterministic known-target sequencing assignment toolkit for CRISPR guides, inline barcodes, feature tags, primers, and panel targets."
     },
     {
       "@type": "SoftwareApplication",
@@ -23,76 +36,167 @@ const structuredData = {
       name: "DotMatch",
       applicationCategory: "Bioinformatics software",
       operatingSystem: "Linux, macOS",
+      softwareVersion: "0.2.0",
       softwareHelp: docsUrl,
       codeRepository: repoUrl,
+      downloadUrl: pypiUrl,
+      citation: doiUrl,
       license: `${repoUrl}/blob/main/LICENSE`,
       programmingLanguage: ["C", "Python", "R"],
       description:
-        "DotMatch compares fixed read windows with known DNA targets and reports unique, ambiguous, unmatched, and invalid reads."
+        "DotMatch assigns fixed read windows to known short DNA targets and reports unique, ambiguous, none, and invalid outcomes for auditable sequencing workflows."
     }
   ]
 };
 
 const outcomes = [
-  ["unique", "One target is compatible. The read can be counted or written to that target's output."],
-  ["ambiguous", "Several targets are compatible. The read is kept out of the unique counts."],
-  ["none", "No target is within the selected distance. The read remains available for review."],
-  ["invalid", "The requested window could not be extracted. The failure appears in QC."]
+  ["unique", "Exactly one target is compatible, so the read can be counted or written to the matching output."],
+  ["ambiguous", "More than one target is compatible, so DotMatch keeps the read out of forced calls."],
+  ["none", "No target is close enough, so the read remains available for unmatched-read review."],
+  ["invalid", "The requested read window cannot be extracted, so the failure is visible in QC."]
 ] as const;
 
 const failureModes = [
   {
-    title: "A read fits more than one target",
-    body: "DotMatch reports the ambiguity instead of choosing a target arbitrarily."
+    title: "More than one target fits.",
+    body:
+      "The read is reported as ambiguous instead of being forced into one count."
   },
   {
-    title: "The target window is in the wrong place",
-    body: "Offset scans and invalid-window counts help distinguish a bad start position from genuinely unmatched reads."
+    title: "The read window is missing.",
+    body:
+      "Short reads and invalid extraction windows are reported explicitly instead of disappearing."
   },
   {
-    title: "Mismatch correction is unsafe",
-    body: "Target-library audits show duplicate and neighbouring sequences before corrected reads are counted."
+    title: "Correction could mix samples.",
+    body:
+      "Target-library checks show when an error-correction setting could assign one sequence to multiple targets."
   },
   {
-    title: "Unmatched reads repeat",
-    body: "Frequent unmatched windows are written to a table so adapter, assay, and sample-sheet problems can be inspected."
+    title: "No expected target fits.",
+    body:
+      "Unmatched-read tables preserve recurring sequences for assay, adapter, and off-target review."
   }
 ] as const;
 
-const workflows = [
+const workflowSteps = [
   {
-    title: "CRISPR guide counting",
-    body: "Count known guide windows, write MAGeCK-compatible tables, and retain ambiguous and unmatched reads in QC outputs.",
+    step: "1",
+    title: "Provide the sequences you expect.",
+    body:
+      "Start with a table of guides, inline barcodes, feature tags, primers, panel targets, or whitelist sequences."
+  },
+  {
+    step: "2",
+    title: "Choose where to look in each read.",
+    body:
+      "DotMatch extracts the same configured position from every read and compares it with the expected sequences."
+  },
+  {
+    step: "3",
+    title: "Review every outcome.",
+    body:
+      "Each read is unique, ambiguous, unmatched, or invalid. Counts, FASTQs, QC tables, and reports preserve that decision."
+  }
+] as const;
+
+const audienceRoutes = [
+  {
+    title: "Core facilities",
+    body:
+      "Use DotMatch when sample barcodes, guide libraries, or panel targets need visible ambiguity and unmatched-read review before a result leaves the core.",
+    link: "Start with barcode troubleshooting",
+    href: `${docsUrl}crispr-qc.html`
+  },
+  {
+    title: "CRISPR screen teams",
+    body:
+      "Count known guide windows, keep MAGeCK-compatible outputs, and preserve assignment failures for methods review and downstream screen analysis.",
     link: "Run the CRISPR tutorial",
     href: `${docsUrl}tutorials/crispr-count-first-run.html`
   },
   {
-    title: "Inline barcode demultiplexing",
-    body: "Split FASTQ reads by fixed-position sample barcodes and inspect offsets, near neighbours, and recurring unmatched sequences.",
-    link: "Start with a demultiplexing run",
-    href: `${docsUrl}getting-started.html#demultiplex-inline-barcodes`
+    title: "Workflow maintainers",
+    body:
+      "Wrap stable TSV, JSON, FASTQ, and HTML artifacts in nf-core, Galaxy, Snakemake, MultiQC, or institutional pipeline templates.",
+    link: "Use the submission pack",
+    href: workflowSubmissionsUrl
   },
   {
-    title: "Feature tags and fixed targets",
-    body: "Assign feature barcodes, guide-capture reads, primers, adapters, amplicon starts, or another finite target list.",
-    link: "Read the command reference",
-    href: `${docsUrl}command-reference.html`
-  },
-  {
-    title: "Barcode panel checks",
-    body: "Design a panel or check whether the selected correction radius can create ambiguous or incorrect assignments.",
-    link: "Open the panel guide",
+    title: "Assay developers",
+    body:
+      "Design and audit barcode panels, test correction radius safety, and export lab-ready panel records before sequencing starts.",
+    link: "Review panel design",
     href: `${docsUrl}barcode-panel-design.html`
   }
 ] as const;
 
-const documentationLinks = [
-  ["Getting started", `${docsUrl}getting-started.html`],
-  ["Command reference", `${docsUrl}command-reference.html`],
-  ["Output schemas", `${docsUrl}schemas.html`],
-  ["Python API", `${docsUrl}streaming-api.html`],
-  ["Benchmarks", `${docsUrl}benchmarks/README.html`],
-  ["Methods and citation", `${docsUrl}methods-and-citation.html`]
+const contexts = [
+  "CRISPR guides",
+  "inline barcodes",
+  "feature tags",
+  "primers / panels",
+  "whitelists"
+] as const;
+
+const evidenceLinks = [
+  ["Bioinformatics evaluation packet", evaluationUrl],
+  ["External review packet", reviewPacketUrl],
+  ["Validated scope", scientificClaimsUrl],
+  ["Evidence gallery", evidenceGalleryUrl],
+  ["Methods and citation", methodsUrl],
+  ["Packaging notes", packagingUrl]
+] as const;
+
+const evaluationItems = [
+  {
+    title: "Published release",
+    body:
+      "DotMatch v0.2.0 is verified on PyPI and GHCR. Bioconda currently publishes v0.1.9 while its v0.2.0 recipe is under review."
+  },
+  {
+    title: "Defined scope",
+    body:
+      "The documented scope is fixed-position assignment against known short DNA targets. DotMatch is not presented as a genome aligner, basecaller, or downstream analysis package."
+  },
+  {
+    title: "Inspectable outputs",
+    body:
+      "TSV, JSON, FASTQ, and HTML outputs are documented, alongside methods text, citation metadata, and recorded software versions."
+  },
+  {
+    title: "Reproducible checks",
+    body:
+      "Correctness, performance, and packaging statements link to the repository artifacts and checks used to support them."
+  },
+  {
+    title: "Workflow examples",
+    body:
+      "The repository includes nf-core, MultiQC, Galaxy, and Snakemake examples. They are examples maintained here, not claims of accepted upstream integration."
+  }
+] as const;
+
+const trustFacts = [
+  ["Release", "v0.2.0 on PyPI and GHCR"],
+  ["License", "Apache-2.0 open source"],
+  ["Data", "Runs locally on your machine"],
+  ["Citation", "Archived release with DOI"]
+] as const;
+
+const outputTypes = [
+  "count tables",
+  "split FASTQs",
+  "QC tables",
+  "JSON summaries",
+  "HTML reports"
+] as const;
+
+const navigationLinks = [
+  ["How it works", "#workflow"],
+  ["Reliability", "#failure-modes"],
+  ["Uses", "#use-cases"],
+  ["Evidence", "#evidence"],
+  ["Install", "#install"]
 ] as const;
 
 export default function Home() {
@@ -102,44 +206,55 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
+      <a className="skip-link" href="#main-content">Skip to main content</a>
       <header className="site-header">
         <a className="brand" href="#top" aria-label="DotMatch home">
           <span className="brand-mark" aria-hidden="true" />
           <span>DotMatch</span>
         </a>
-        <nav aria-label="Primary navigation">
-          <a href="#how-it-works">How it works</a>
-          <a href="#workflows">Workflows</a>
-          <a href="#documentation">Documentation</a>
-          <a href="#install">Install</a>
+        <nav className="desktop-nav" aria-label="Primary navigation">
+          {navigationLinks.map(([label, href]) => (
+            <a key={href} href={href}>{label}</a>
+          ))}
+          <a href={docsUrl}>Docs</a>
           <a href={repoUrl}>GitHub</a>
         </nav>
+        <MobileNavigation links={navigationLinks} docsUrl={docsUrl} repoUrl={repoUrl} />
       </header>
 
-      <main id="top">
-        <section className="hero" aria-labelledby="hero-title">
+      <main id="main-content">
+        <section id="top" className="hero" aria-labelledby="hero-title">
           <div className="hero-copy">
-            <p className="positioning">Known-target assignment from FASTQ</p>
-            <h1 id="hero-title">Keep ambiguous reads out of your counts.</h1>
+            <p className="positioning">Open-source known-target read assignment</p>
+            <h1 id="hero-title">See which sequencing reads match—and which do not.</h1>
             <p className="hero-lede">
-              DotMatch compares a fixed read window with the guides, barcodes,
-              feature tags, primers, or other short DNA targets you expect.
+              DotMatch compares a chosen part of each read with a list of short DNA
+              sequences you expect. Every read gets one clear outcome: unique,
+              ambiguous, no match, or invalid.
             </p>
             <p className="hero-text">
-              Each read is recorded as unique, ambiguous, unmatched, or invalid.
-              The result is a set of ordinary FASTQ, TSV, JSON, and HTML files that
-              can be reviewed by a person or passed into a pipeline.
+              Use it for CRISPR guides, inline barcodes, feature tags, primers,
+              panel targets, and whitelist-style assays. DotMatch is not a genome
+              aligner or basecaller.
             </p>
             <div className="hero-actions">
-              <a className="button primary" href="#install">Install DotMatch</a>
-              <a className="button secondary" href={`${docsUrl}getting-started.html`}>Read the guide</a>
+              <a className="button primary" href="#install">Try DotMatch</a>
+              <a className="button secondary" href="#workflow">See how it works</a>
             </div>
+            <dl className="trust-list" aria-label="DotMatch package facts">
+              {trustFacts.map(([term, detail]) => (
+                <div key={term}>
+                  <dt>{term}</dt>
+                  <dd>{detail}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
-          <div className="hero-panel" aria-label="DotMatch read outcomes">
+          <div className="hero-panel" aria-label="DotMatch assignment outcomes">
             <figure className="assignment-figure">
               <img
                 src={assignmentWorkflowImage}
-                alt="FASTQ reads and a known target table are compared at a fixed read window and written to counts, split FASTQs, QC tables, and reports"
+                alt="DotMatch workflow showing FASTQ reads, a known target list, a read slice, and unique, ambiguous, none, and invalid outcomes"
                 decoding="async"
                 fetchPriority="high"
               />
@@ -155,14 +270,13 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="how-it-works" className="section failure-section" aria-labelledby="how-title">
+        <section id="failure-modes" className="section failure-section" aria-labelledby="failure-title">
           <div className="section-heading">
-            <p className="section-kicker">What stays visible</p>
-            <h2 id="how-title">The difficult reads are part of the result.</h2>
+            <p className="section-kicker">Uncertainty stays visible</p>
+            <h2 id="failure-title">Uncertain reads stay uncertain.</h2>
             <p>
-              A known target list does not make every assignment safe. DotMatch
-              writes the cases that need attention instead of hiding them inside a
-              count matrix.
+              A target list does not make every read safe to count. DotMatch keeps
+              the difficult cases separate so they can be reviewed instead of hidden.
             </p>
           </div>
           <div className="failure-grid">
@@ -175,99 +289,178 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="workflows" className="section audience-section" aria-labelledby="workflow-title">
+        <section id="workflow" className="section workflow-section" aria-labelledby="workflow-title">
           <div className="section-heading">
-            <p className="section-kicker">Workflows</p>
-            <h2 id="workflow-title">One assignment rule, several assay types.</h2>
+            <p className="section-kicker">How it works</p>
+            <h2 id="workflow-title">Three steps, one clear result per read.</h2>
             <p>
-              DotMatch is deliberately narrow: it works when the expected short
-              sequences are known and the read window can be stated explicitly.
+              The scientific question can vary, but the assignment is simple: provide
+              expected sequences, choose a position in the read, and inspect the result.
             </p>
           </div>
-          <div className="audience-grid">
-            {workflows.map((workflow) => (
-              <article key={workflow.title}>
-                <h3>{workflow.title}</h3>
-                <p>{workflow.body}</p>
-                <a href={workflow.href}>{workflow.link}</a>
+          <div className="context-rail" aria-label="Supported known-target assay contexts">
+            {contexts.map((context) => (
+              <span key={context}>{context}</span>
+            ))}
+          </div>
+          <div className="workflow-grid">
+            {workflowSteps.map((item) => (
+              <article key={item.step}>
+                <span aria-hidden="true">{item.step}</span>
+                <h3>{item.title}</h3>
+                <p>{item.body}</p>
               </article>
             ))}
           </div>
         </section>
 
-        <section id="example" className="section evidence-section" aria-labelledby="example-title">
+        <section id="use-cases" className="section audience-section" aria-labelledby="audience-title">
           <div className="section-heading">
-            <p className="section-kicker">A direct count</p>
-            <h2 id="example-title">State the target window and keep the outputs.</h2>
+            <p className="section-kicker">Where it fits</p>
+            <h2 id="audience-title">Built for familiar assay problems.</h2>
             <p>
-              This example assigns a 20-base guide beginning at read position 23.
-              Hamming distance allows substitutions but not insertions or deletions.
+              DotMatch is useful when the expected short sequences are already known
+              and the assignment decision needs to remain inspectable.
             </p>
           </div>
-          <div className="terminal" aria-label="DotMatch count example">
-            <div className="terminal-bar" aria-hidden="true"><span /><span /><span /></div>
-            <pre><code>{`dotmatch count \\
-  --targets guides.tsv \\
-  --reads sample_R1.fastq.gz \\
-  --sample-label sample_1 \\
-  --target-start 23 \\
-  --target-length 20 \\
-  --k 1 --metric hamming \\
-  --out counts.tsv \\
-  --sample-qc sample_qc.tsv \\
-  --summary summary.json`}</code></pre>
-            <div className="terminal-links">
-              <a href={`${docsUrl}getting-started.html`}>Explain this example</a>
-              <a href={`${docsUrl}command-reference.html`}>See every command</a>
+          <div className="audience-grid">
+            {audienceRoutes.map((route) => (
+              <article key={route.title}>
+                <h3>{route.title}</h3>
+                <p>{route.body}</p>
+                <a href={route.href}>{route.link}</a>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section id="evidence" className="section evidence-section" aria-labelledby="evidence-title">
+          <div className="section-heading">
+            <p className="section-kicker">Methods and evidence</p>
+            <h2 id="evidence-title">Inspect the methods, limits, and outputs.</h2>
+            <p>
+              The package documents what it does, what it does not do, how releases
+              are checked, and which artifacts support scientific and performance statements.
+            </p>
+          </div>
+          <div className="evidence-layout">
+            <article className="evidence-note">
+              <h3>Scope, stated plainly</h3>
+              <p>
+                DotMatch performs deterministic assignment of a fixed read window
+                against a known list of short DNA sequences. It keeps ambiguous,
+                unmatched, and invalid reads visible alongside unique matches.
+              </p>
+              <p>
+                It is not a general aligner, basecaller, variant caller, UMI pipeline,
+                or downstream CRISPR screen-analysis package. The linked scientific
+                scope explains the current evidence in detail.
+              </p>
+            </article>
+            <div className="evidence-links" aria-label="Evidence and packaging links">
+              {evidenceLinks.map(([label, href]) => (
+                <a key={label} href={href}>{label}</a>
+              ))}
             </div>
           </div>
         </section>
 
-        <section id="documentation" className="section workflow-section" aria-labelledby="docs-title">
+        <section id="evaluation" className="section evaluation-section" aria-labelledby="evaluation-title">
           <div className="section-heading">
-            <p className="section-kicker">Documentation</p>
-            <h2 id="docs-title">Start with the job you need to do.</h2>
+            <p className="section-kicker">Current package status</p>
+            <h2 id="evaluation-title">What you can verify today.</h2>
             <p>
-              The user guide begins with runnable commands. File formats, APIs,
-              benchmarks, and citation details live in separate reference pages.
+              Release records, package channels, output formats, scientific scope,
+              and repository checks are available for independent review.
             </p>
           </div>
-          <div className="evidence-links" aria-label="DotMatch documentation links">
-            {documentationLinks.map(([label, href]) => (
-              <a key={label} href={href}>{label}</a>
-            ))}
+          <div className="evaluation-layout">
+            <ol className="evaluation-list">
+              {evaluationItems.map((action) => (
+                <li key={action.title}>
+                  <strong>{action.title}</strong>
+                  <p>{action.body}</p>
+                </li>
+              ))}
+            </ol>
+            <aside className="evaluation-links" aria-label="Evaluation and evidence links">
+              <a href={evaluationUrl}>Bioinformatics evaluation packet</a>
+              <a href={reviewPacketUrl}>External review packet</a>
+              <a href={distributionUrl}>Distribution status record</a>
+              <a href={workflowAdoptionUrl}>Workflow integration roadmap</a>
+              <a href={docsUrl}>User documentation</a>
+              <a href={scientificClaimsUrl}>Scientific scope notes</a>
+            </aside>
+          </div>
+        </section>
+
+        <section id="ecosystem" className="section ecosystem-section" aria-labelledby="ecosystem-title">
+          <div className="section-heading">
+            <p className="section-kicker">Workflow-friendly outputs</p>
+            <h2 id="ecosystem-title">Use ordinary files in ordinary workflows.</h2>
+            <p>
+              DotMatch writes familiar, inspectable files rather than requiring a
+              proprietary project format.
+            </p>
+          </div>
+          <div className="ecosystem-layout">
+            <ul className="ecosystem-grid" aria-label="DotMatch output types">
+              {outputTypes.map((output) => (
+                <li key={output}>{output}</li>
+              ))}
+            </ul>
+            <aside className="ecosystem-note">
+              <h3>Pipeline examples</h3>
+              <p>
+                The repository includes examples for nf-core, MultiQC, Galaxy, and
+                Snakemake, plus documented schemas for workflow authors. These are
+                maintained DotMatch examples unless an external project records an
+                accepted integration.
+              </p>
+              <a href={workflowSubmissionsUrl}>Workflow submission pack</a>
+              <a href={integrationKitUrl}>Workflow integration kit</a>
+              <a href={workflowAdoptionUrl}>Workflow integration roadmap</a>
+            </aside>
           </div>
         </section>
 
         <section id="install" className="section install-section" aria-labelledby="install-title">
           <div className="install-copy">
-            <p className="section-kicker">Install locally</p>
-            <h2 id="install-title">Run DotMatch where the FASTQ files live.</h2>
+            <p className="section-kicker">Try it locally</p>
+            <h2 id="install-title">Start with a two-sequence check.</h2>
             <p>
-              Wheels are published for supported Linux and macOS platforms. Conda
-              users can use the Bioconda package when the required release is present.
+              Install the command-line and Python package, then run a small distance
+              check before working with FASTQ data. Your sequencing files remain on
+              your machine.
             </p>
           </div>
           <div className="terminal" aria-label="Install DotMatch">
-            <div className="terminal-bar" aria-hidden="true"><span /><span /><span /></div>
+            <div className="terminal-bar" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </div>
             <pre><code>{`python3 -m pip install dotmatch
-dotmatch --version`}</code></pre>
+dotmatch dist ACGT AGGT`}</code></pre>
             <div className="terminal-links">
-              <a href={pypiUrl}>PyPI</a>
-              <a href={biocondaUrl}>Bioconda</a>
-              <a href={`${docsUrl}packaging.html`}>Other installation routes</a>
+              <a href={pypiUrl}>PyPI package</a>
+              <a href={biocondaUrl}>Bioconda package</a>
+              <a href={docsUrl}>Getting started</a>
+              <a href={packagingUrl}>Packaging documentation</a>
+              <a href={methodsUrl}>Citation guidance</a>
             </div>
           </div>
         </section>
       </main>
 
       <footer className="site-footer">
-        <span>DotMatch</span>
+        <span>DotMatch · Apache-2.0</span>
         <nav aria-label="Footer navigation">
           <a href={docsUrl}>Documentation</a>
           <a href={repoUrl}>GitHub</a>
-          <a href={`${docsUrl}methods-and-citation.html`}>Citation</a>
-          <a href={`${repoUrl}/blob/main/LICENSE`}>Apache-2.0</a>
+          <a href={scientificClaimsUrl}>Scientific claims</a>
+          <a href={methodsUrl}>Methods</a>
+          <a href={doiUrl}>DOI</a>
         </nav>
       </footer>
     </>

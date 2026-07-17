@@ -2,8 +2,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from textwrap import wrap
-
 from PIL import Image, ImageDraw, ImageFont
 
 
@@ -28,14 +26,20 @@ RED = (168, 61, 54)
 
 def font(size: int, *, weight: str = "regular") -> ImageFont.FreeTypeFont:
     candidates = [
+        Path("/System/Library/Fonts/Supplemental/Arial.ttf"),
+        Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+        Path("/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf"),
         Path("/System/Library/Fonts/SFNS.ttf"),
         Path("/System/Library/Fonts/HelveticaNeue.ttc"),
         Path("/Library/Fonts/Arial.ttf"),
     ]
     bold_candidates = [
         Path("/System/Library/Fonts/Supplemental/Arial Bold.ttf"),
-        Path("/Library/Fonts/Arial Bold.ttf"),
+        Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
+        Path("/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf"),
+        Path("/System/Library/Fonts/SFNS.ttf"),
         Path("/System/Library/Fonts/HelveticaNeue.ttc"),
+        Path("/Library/Fonts/Arial Bold.ttf"),
     ]
     for path in bold_candidates if weight == "bold" else candidates:
         if path.exists():
@@ -54,11 +58,24 @@ def text_block(
     line_gap: int,
 ) -> int:
     x, y = xy
-    avg_char = max(font_obj.getlength("abcdefghijklmnopqrstuvwxyz") / 26, 1)
-    chars = max(int(width / avg_char), 10)
-    for line in wrap(text, chars):
+    words = text.split()
+    lines: list[str] = []
+    current = ""
+    for word in words:
+        candidate = f"{current} {word}".strip()
+        if current and font_obj.getlength(candidate) > width:
+            lines.append(current)
+            current = word
+        else:
+            current = candidate
+    if current:
+        lines.append(current)
+
+    bbox = font_obj.getbbox("Ag")
+    line_height = bbox[3] - bbox[1]
+    for line in lines:
         draw.text((x, y), line, font=font_obj, fill=fill)
-        y += font_obj.size + line_gap
+        y += line_height + line_gap
     return y
 
 
@@ -91,27 +108,38 @@ def render_card() -> Image.Image:
     draw.line((mark_x + 31, mark_y + 8, mark_x + 31, mark_y + 54), fill=(15, 107, 87), width=5)
     draw.line((mark_x + 8, mark_y + 31, mark_x + 54, mark_y + 31), fill=(23, 79, 134), width=5)
     draw.text((178, 88), "DotMatch", font=font(38, weight="bold"), fill=INK)
-    draw.text((180, 134), "Known-target assignment from FASTQ", font=font(23), fill=GREEN)
+    draw.text(
+        (180, 132),
+        "Known-target read assignment",
+        font=font(23, weight="bold"),
+        fill=GREEN,
+    )
 
-    draw.multiline_text(
-        (96, 218),
-        "Keep ambiguous reads\nout of your counts.",
-        font=font(62, weight="bold"),
+    heading_end = text_block(
+        draw,
+        (96, 210),
+        "See which reads match—and which do not.",
+        font_obj=font(62, weight="bold"),
         fill=INK,
-        spacing=6,
+        width=610,
+        line_gap=7,
     )
-    draw.multiline_text(
-        (100, 420),
-        "Guides, barcodes, feature tags, primers,\nand other short DNA targets.",
-        font=font(28),
+    support_end = text_block(
+        draw,
+        (100, heading_end + 22),
+        "Unique, ambiguous, unmatched, and invalid outcomes stay visible.",
+        font_obj=font(26),
         fill=MUTED,
-        spacing=7,
+        width=610,
+        line_gap=7,
     )
+    if support_end > 540:
+        raise ValueError(f"Social card copy exceeds the safe area: y={support_end}")
 
-    panel = (785, 128, 1088, 504)
+    panel = (760, 128, 1088, 520)
     rounded_box(draw, panel, fill=(250, 253, 251), outline=LINE, radius=8)
-    draw.text((815, 160), "read outcome", font=font(26, weight="bold"), fill=INK)
-    draw.text((815, 198), "one explicit target window", font=font(18), fill=MUTED)
+    draw.text((790, 158), "ONE OUTCOME PER READ", font=font(16, weight="bold"), fill=GREEN)
+    draw.text((790, 187), "known target window", font=font(22, weight="bold"), fill=INK)
 
     outcomes = [
         ("unique", GREEN, (236, 248, 241)),
@@ -119,12 +147,12 @@ def render_card() -> Image.Image:
         ("none", PURPLE, (244, 241, 251)),
         ("invalid", RED, (255, 242, 240)),
     ]
-    y = 248
+    y = 232
     for label, color, fill in outcomes:
-        rounded_box(draw, (820, y, 1054, y + 56), fill=fill, outline=color, radius=8)
-        draw.rectangle((842, y + 18, 858, y + 38), fill=color)
-        draw.text((878, y + 14), label, font=font(23), fill=INK)
-        y += 68
+        rounded_box(draw, (790, y, 1058, y + 58), fill=fill, outline=color, radius=8)
+        draw.rectangle((813, y + 19, 831, y + 39), fill=color)
+        draw.text((852, y + 14), label, font=font(22, weight="bold"), fill=INK)
+        y += 69
 
     return card
 
