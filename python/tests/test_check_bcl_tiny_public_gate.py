@@ -92,7 +92,7 @@ def test_bcl_tiny_public_gate_accepts_public_dotmatch_and_validated_bcl2fastq_ro
         "Rows with exit code `127` are environment records for missing competitors, not runtime comparisons.\n"
         "Run `make bcl-tiny-public-gate` to verify the narrow public 10x tiny-BCL classic per-cycle milestone. "
         "This gate checks bcl2fastq count-total validation when bcl2fastq is available; "
-        "an explicit `not_installed` environment row keeps the boundary visible without turning it into a false comparison.\n"
+        "an explicit `not_installed` environment row keeps the limitation visible without creating a false comparison.\n"
         "Broader raw-BCL evaluation needs real classic-BCL and CBCL run-folder rows, a successful DotMatch CBCL row, "
         "and `dotmatch bcl-validate` zero-mismatch evidence.\n",
         encoding="utf-8",

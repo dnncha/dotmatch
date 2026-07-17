@@ -6,7 +6,7 @@ All performance or comparative statements must be backed by checked artifacts un
 
 ## 1. Performance Enhancements (High Impact, Low Risk)
 
-- **Default auto-threads (done)**: `--threads 0` (and omitted) now detects `sysconf(_SC_NPROCESSORS_ONLN)` (capped). Transparent fallback to 1 for diagnostic outputs. Out-of-box wins on 8–128 core analysis nodes common in bioinfo.
+- **Default auto-threads (done)**: `--threads 0` (and omitted) now detects `sysconf(_SC_NPROCESSORS_ONLN)` (capped). Transparent fallback to 1 for diagnostic outputs. This improves out-of-box throughput on 8-128 core analysis nodes common in bioinformatics.
 - **Multi-word / wide Myers bit-parallel (implemented)**: Generalized `qdaln_edit_distance_myers64` (now handles nwords>1 for patterns up to 512bp) with portable carry propagation (no __int128). Routes >64bp Levenshtein (k>=2) and general distance to fast path; oracle-matched vs DP in tests + explicit 72/129bp checks. Part of best-of-n perf round.
 - **SIMD hamming / popcount acceleration (implemented)**: `same_length_hamming_distance_within_k` + hot paths use AVX2 (256-bit xor+movemask pop) or NEON (aarch64) with scalar fallback. Applied in index seeding too (prefetch). Orthogonal to Myers. Verified bit-identical counts on hamming k=0/1/2 paths.
 - **Allocator / batch tuning + IO reuse (implemented)**: BATCH 1M reads, `seq_buffer` static reuse + `reset_seq_buffer` (reclaims only var-len xstrndup, keeps fixed block for common uniform case). Used in both direct count and threaded read paths. Throughput win on large gz with modest RSS. All three landed cleanly after best-of-n (N=3 candidates in isolated worktrees, evaluated for correctness/safety/no overlap, all applied).
@@ -17,7 +17,7 @@ All performance or comparative statements must be backed by checked artifacts un
 
 Target: keep or improve the current "hundreds of k reads/sec per core" while handling 100M–1B read production lanes with < few GB RSS.
 
-## 2. Python / Data Science Adoption (Immediate Wins)
+## 2. Python / Data Science Adoption
 
 - **pandas / polars interop (implemented + expanded)**: `targets_from_dataframe`, `results_to_dataframe`, `assign_dataframe` with column heuristics + polars support (via `_to_pandas` converter). Exposed under `dotmatch[pandas]` and `dotmatch[polars]` extras.
 - **scverse / AnnData + tl (implemented + UX hardened)**: Full `dotmatch.tl` submodule (`tl.assign_features`, `tl.feature_counts`, aliases for crispr/feature). In-place or copy, adds provenance. Plus the anndata bridges. `dotmatch[anndata]`. Pure parsers in multiqc for notebook use too.

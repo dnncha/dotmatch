@@ -12,7 +12,7 @@ one of these submissions is accepted or released outside this repository.
    container automation.
 2. **MultiQC module**: makes DotMatch outputs recognizable in existing pipeline
    reports without per-project custom content.
-3. **Galaxy / IUC wrappers**: reaches core facilities and wet-lab users through
+3. **Galaxy / IUC wrappers**: reaches core facilities and wet-lab teams through
    ToolShed-reviewed tools.
 4. **Snakemake handoff**: lower review overhead, strong for lab
    workflow adoption and QC report visibility.
@@ -54,12 +54,16 @@ External target:
 
 Reviewer notes:
 
-- Pin the container to a public DotMatch Bioconda/BioContainers release after
-  `make distribution-channels` verifies that release.
+- The payload uses the public DotMatch 0.1.9 BioContainers build
+  `0.1.9--py311h13f8228_0`, which is available from Quay and the Galaxy
+  Singularity depot.
+- Change the container only after the replacement release passes
+  `make distribution-channels` and is available from both registries.
 - Preserve DotMatch's `unique`, `ambiguous`, `none`, and `invalid` assignment
   semantics in module docs.
 - Keep `task.ext.args` available for command-specific options.
-- Use the tiny fixtures already included in each upstream module test directory.
+- Use the tiny fixtures included in each upstream module test directory so
+  nf-test does not depend on a sibling DotMatch checkout.
 
 Adoption record:
 
@@ -132,7 +136,7 @@ Source payload:
 External target:
 
 - MultiQC plugin packaging or upstream module discussion after public workflow
-  users confirm the report shape.
+  maintainers confirm the report shape.
 
 Reviewer notes:
 

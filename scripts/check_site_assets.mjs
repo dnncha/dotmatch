@@ -7,9 +7,14 @@ const requiredFiles = [
   "../app/sitemap.ts",
   "../app/globals.css",
   "../next.config.ts",
-  "../docs/industry-exposure.md",
-  "../docs/industry-exposure-plan.json",
-  "../docs/industry-next-wins.md",
+  "../docs/bioinformatics-evaluation.md",
+  "../docs/external-review-packet.md",
+  "../docs/integration-targets.json",
+  "../docs/pilot-program.md",
+  "../docs/reviewer-readiness.json",
+  "../docs/workflow-integration-kit.md",
+  "../docs/workflow-integration-plan.json",
+  "../docs/workflow-integration-roadmap.md",
   "../public/dotmatch-read-assignment.svg",
   "../public/dotmatch-og.png",
   "../public/dotmatch-twitter.png",
@@ -29,11 +34,16 @@ const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8")
 const layout = readFileSync(new URL("../app/layout.tsx", import.meta.url), "utf8");
 const robots = readFileSync(new URL("../app/robots.ts", import.meta.url), "utf8");
 const sitemap = readFileSync(new URL("../app/sitemap.ts", import.meta.url), "utf8");
-const exposureKit = readFileSync(new URL("../docs/industry-exposure.md", import.meta.url), "utf8");
-const nextWinsDoc = readFileSync(new URL("../docs/industry-next-wins.md", import.meta.url), "utf8");
-const exposurePlan = JSON.parse(readFileSync(new URL("../docs/industry-exposure-plan.json", import.meta.url), "utf8"));
+const evaluationPacket = readFileSync(new URL("../docs/bioinformatics-evaluation.md", import.meta.url), "utf8");
+const reviewPacket = readFileSync(new URL("../docs/external-review-packet.md", import.meta.url), "utf8");
+const integrationTargets = JSON.parse(readFileSync(new URL("../docs/integration-targets.json", import.meta.url), "utf8"));
+const reviewerReadiness = JSON.parse(readFileSync(new URL("../docs/reviewer-readiness.json", import.meta.url), "utf8"));
+const integrationKit = readFileSync(new URL("../docs/workflow-integration-kit.md", import.meta.url), "utf8");
+const integrationRoadmap = readFileSync(new URL("../docs/workflow-integration-roadmap.md", import.meta.url), "utf8");
+const integrationPlan = JSON.parse(readFileSync(new URL("../docs/workflow-integration-plan.json", import.meta.url), "utf8"));
 const socialRenderer = readFileSync(new URL("../scripts/render_social_images.py", import.meta.url), "utf8");
 const nextConfig = readFileSync(new URL("../next.config.ts", import.meta.url), "utf8");
+const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");
 
 for (const anchor of [
   'id="top"',
@@ -41,8 +51,8 @@ for (const anchor of [
   'id="workflow"',
   'id="industry-routes"',
   'id="evidence"',
-  'id="exposure"',
-  'id="next-wins"',
+  'id="evaluation"',
+  'id="ecosystem"',
   'id="install"'
 ]) {
   if (!page.includes(anchor)) {
@@ -61,9 +71,10 @@ for (const selector of [
   ".context-rail",
   ".audience-grid",
   ".evidence-layout",
-  ".exposure-list",
-  ".next-wins-grid",
-  ".next-wins-note",
+  ".evaluation-list",
+  ".evaluation-links",
+  ".ecosystem-grid",
+  ".ecosystem-note",
   ".terminal",
   ".site-footer"
 ]) {
@@ -74,13 +85,13 @@ for (const selector of [
 }
 
 const h1Matches = page.match(/<h1\b/g) ?? [];
-if (h1Matches.length !== 1 || !page.includes("Know which read assignments you can trust.")) {
+if (h1Matches.length !== 1 || !page.includes("Design the assay. Trust the assignment.")) {
   console.error("Homepage must have exactly one required H1.");
   process.exit(1);
 }
 
 for (const phrase of [
-  "Assignment reliability for known-target sequencing assays.",
+  "Assay compilation and reliability for known-target sequencing.",
   "unique, ambiguous, none, or invalid",
   "CRISPR guides",
   "inline barcodes",
@@ -91,11 +102,22 @@ for (const phrase of [
   "CRISPR screen teams",
   "Workflow maintainers",
   "Assay developers",
-  "Industry exposure kit",
+  "Bioinformatics evaluation packet",
+  "External review packet",
+  "Package channels",
+  "Validated scope",
+  "Output contracts",
+  "Workflow status",
+  "Distribution status record",
+  "Workflow adoption status",
+  "Integration target tracker",
+  "DotMatch evaluation protocol",
+  "Reviewer readiness record",
   "Workflow submission pack",
-  "Next 10 exposure wins",
-  "Decision tree",
-  "Release calendar",
+  "nf-core modules",
+  "MultiQC module",
+  "Galaxy / IUC",
+  "bio.tools record",
   "pip install dotmatch"
 ]) {
   if (!normalizedPage.includes(phrase)) {
@@ -109,10 +131,16 @@ for (const phrase of [
   "docs/evidence-gallery/README.md",
   "docs/methods-and-citation.md",
   "docs/packaging.md",
-  "docs/industry-exposure.md",
-  "docs/industry-next-wins.md",
+  "docs/bioinformatics-evaluation.md",
+  "docs/external-review-packet.md",
+  "docs/integration-targets.json",
+  "docs/pilot-program.md",
+  "docs/reviewer-readiness.json",
+  "docs/workflow-integration-kit.md",
   "docs/workflow-submissions.md",
-  "docs/adopters/README.md"
+  "docs/adopters/README.md",
+  "docs/workflow-adoption.json",
+  "docs/distribution-release.json"
 ]) {
   if (!page.includes(phrase)) {
     console.error(`Missing evidence boundary link: ${phrase}`);
@@ -140,7 +168,15 @@ for (const stale of [
   "Fast FASTQ " + "matching",
   "Design panels. " + "Count guides",
   "guide counts and barcode QC",
-  "331k reads" + "/s"
+  "331k reads" + "/s",
+  "Next 10 exposure wins",
+  "big wins",
+  "massive industry impact",
+  "Adoption trust plan",
+  "External integration kit",
+  "industry-" + "exposure.md",
+  "industry-" + "next-wins.md",
+  "adoption-" + "trust-plan.json"
 ]) {
   if (page.includes(stale) || layout.includes(stale) || socialRenderer.includes(stale)) {
     console.error(`Stale homepage positioning remains: ${stale}`);
@@ -153,8 +189,8 @@ if (!layout.includes("export const metadata") || !layout.includes("openGraph") |
   process.exit(1);
 }
 
-if (!layout.includes("Assignment Reliability") || !layout.includes("Know which read assignments you can trust")) {
-  console.error("Site metadata must match the new assignment reliability positioning.");
+if (!layout.includes("AssayCode") || !layout.includes("Design the assay and trust the assignment")) {
+  console.error("Site metadata must match the AssayCode positioning.");
   process.exit(1);
 }
 
@@ -186,52 +222,118 @@ if (!sitemap.includes("MetadataRoute.Sitemap") || !sitemap.includes("changeFrequ
 }
 
 for (const phrase of [
-  "The Big 5 Wins",
-  "Next 10 Wins",
+  "Priority Integration Work",
+  "Workflow Integration Roadmap",
   "Workflow distribution handoff",
-  "Citation and methods flywheel",
-  "Evidence-first launch packet",
-  "Public adopter record",
+  "Methods and citation artifacts",
+  "Reviewer packet",
+  "Public use records",
   "Copy-Paste Outreach"
 ]) {
-  if (!exposureKit.includes(phrase)) {
-    console.error(`Exposure kit is missing required section: ${phrase}`);
+  if (!integrationKit.includes(phrase)) {
+    console.error(`Workflow integration kit is missing required section: ${phrase}`);
     process.exit(1);
   }
 }
 
-if (!Array.isArray(exposurePlan.items) || exposurePlan.items.length !== 10) {
-  console.error("Industry exposure plan must contain exactly 10 next-win items.");
+if (!Array.isArray(integrationPlan.items) || integrationPlan.items.length !== 10) {
+  console.error("Workflow integration plan must contain exactly 10 reviewer/integration items.");
   process.exit(1);
 }
 
-for (const item of exposurePlan.items) {
+for (const item of integrationPlan.items) {
   for (const field of ["id", "title", "primary_audience", "asset", "done_when"]) {
     if (!item[field]) {
-      console.error(`Industry exposure plan item missing ${field}.`);
+      console.error(`Workflow integration plan item missing ${field}.`);
       process.exit(1);
     }
   }
-  if (!nextWinsDoc.includes(item.title)) {
-    console.error(`Next-win doc missing plan title: ${item.title}`);
+  if (!integrationRoadmap.includes(item.title)) {
+    console.error(`Workflow integration roadmap missing plan title: ${item.title}`);
     process.exit(1);
   }
 }
 
 for (const phrase of [
-  "Evaluator Decision Tree",
+  "Bioinformatics Evaluation Packet",
+  "Current Package Surface",
+  "Validated Assay Scope",
+  "Minimum Local Evaluation",
+  "Outputs To Inspect",
+  "Workflow Integration Status",
+  "Language Rules For Public Surfaces"
+]) {
+  if (!evaluationPacket.includes(phrase)) {
+    console.error(`Evaluation packet is missing required section: ${phrase}`);
+    process.exit(1);
+  }
+}
+
+const credibilitySurfaces = [
+  ["homepage", page],
+  ["layout metadata", layout],
+  ["README", readme],
+  ["evaluation packet", evaluationPacket],
+  ["external review packet", reviewPacket],
+  ["integration kit", integrationKit],
+  ["integration roadmap", integrationRoadmap]
+];
+
+for (const [label, content] of credibilitySurfaces) {
+  for (const phrase of [
+    "massive industry impact",
+    "AI slop",
+    "game-changing",
+    "revolutionary",
+    "world-class",
+    "best-in-class",
+    "enterprise-grade",
+    "production-ready",
+    "just works",
+    "magic",
+    "adoption evidence",
+    "adoption trust",
+    "evidence-bounded",
+    "industry exposure",
+    "next wins",
+    "pilot conversations",
+    "private feedback",
+    "private pilot",
+    "quote-approved",
+    "turning private",
+    "without turning"
+  ]) {
+    if (content.toLowerCase().includes(phrase.toLowerCase())) {
+      console.error(`${label} contains hype or unsupported credibility language: ${phrase}`);
+      process.exit(1);
+    }
+  }
+}
+
+if (!Array.isArray(reviewerReadiness.items) || reviewerReadiness.items.length !== 10) {
+  console.error("Reviewer readiness record must contain exactly 10 concrete assets.");
+  process.exit(1);
+}
+
+if (!Array.isArray(integrationTargets.targets) || integrationTargets.targets.length !== 5) {
+  console.error("Integration target tracker must contain exactly five ecosystem targets.");
+  process.exit(1);
+}
+
+for (const phrase of [
+  "Reviewer Decision Tree",
   "Persona One-Pagers",
   "Integration Target Tracker",
-  "Reviewer Evidence Packet",
+  "Reviewer Packet",
   "Conference Abstracts",
-  "Social And Forum Pack",
+  "Technical Communication Pack",
   "Maintainer Issue Templates",
-  "Pilot Scorecard",
-  "Adoption KPI Dashboard Spec",
-  "Release Communications Calendar"
+  "Evaluation Scorecard",
+  "Integration Tracking Metrics",
+  "Release Publication Checklist"
 ]) {
-  if (!nextWinsDoc.includes(phrase)) {
-    console.error(`Next-win doc is missing required section: ${phrase}`);
+  if (!integrationRoadmap.includes(phrase)) {
+    console.error(`Workflow integration roadmap is missing required section: ${phrase}`);
     process.exit(1);
   }
 }

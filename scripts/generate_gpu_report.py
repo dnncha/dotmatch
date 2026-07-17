@@ -198,7 +198,7 @@ def main() -> None:
         "",
         "This report is a skunk-works GPU evidence lane. It is intentionally not a production speed claim: the Metal path brute-forces packed Hamming `k=1` distances and is compared against DotMatch's existing CPU indexed Hamming assignment with identical output checks.",
         "",
-        "The decision rule is simple: GPU rows must have zero mismatches before any speed result is considered, and CPU-indexed throughput remains the production baseline unless the GPU path wins end-to-end on real workloads.",
+        "The decision rule is simple: GPU rows must have zero mismatches before any speed result is considered, and CPU-indexed throughput remains the production baseline unless the GPU path is faster end-to-end on real workloads.",
         "",
     ]
     if unavailable:

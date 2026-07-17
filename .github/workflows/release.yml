@@ -16,7 +16,7 @@ jobs:
     name: Release preflight gates
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
@@ -49,7 +49,7 @@ jobs:
             label: macOS
             artifact_name: dotmatch-wheel-macos
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
@@ -67,12 +67,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: [preflight]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
       - name: Build and test repaired Linux wheels
-        uses: pypa/cibuildwheel@v3.4.1
+        uses: pypa/cibuildwheel@v4.1.0
         env:
           CIBW_PLATFORM: linux
         with:
@@ -89,7 +89,7 @@ jobs:
     needs: [preflight]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
@@ -107,16 +107,16 @@ jobs:
     needs: [preflight]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: docker/setup-buildx-action@v4
       - name: Build local smoke-test image
         run: docker build -t dotmatch:ci .
       - name: Smoke test container
         run: |
-          docker run --rm dotmatch:ci --version | grep '^dotmatch 0.1.8$'
+          docker run --rm dotmatch:ci --version | grep '^dotmatch 0.2.0$'
           docker run --rm dotmatch:ci dist ACGT AGGT | grep '^1$'
           docker run --rm dotmatch:ci leq 1 ACGT AGGT | grep '^true$'
-          docker image inspect dotmatch:ci --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' | grep '^0.1.8$'
+          docker image inspect dotmatch:ci --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' | grep '^0.2.0$'
       - uses: docker/metadata-action@v6
         id: meta
         with:

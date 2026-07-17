@@ -14,7 +14,7 @@ and kept current as evidence changes.
 | Public CRISPR example | Public Yusa/CRISPR guide-counting fixture and comparison reports | See `examples/crispr_guides/`, `examples/crispr_sanson_brunello/`, and `docs/benchmarks/public_crispr/README.md` |
 | Workflow reuse | nf-core-style, Snakemake, MultiQC, and Galaxy integration examples | See `examples/workflows/` and `docs/workflow-adoption.json` |
 | Citation and archival record | CITATION metadata and Zenodo DOI badge | See `CITATION.cff` and `docs/methods-and-citation.md` |
-| Independent adoption | External confirmations | Track quote-approved confirmations in `docs/adopters/README.md`; do not count unapproved private emails |
+| Public use records | External confirmations | Track approved public confirmations in `docs/adopters/README.md` |
 
 ## Minimal Reproduction Command
 
@@ -41,7 +41,7 @@ artifact from a dedicated Linux job.
 
 `repro/small/resubmission-matrix.csv` is generated from
 `docs/assay-evidence.json`. Each row ties an assay lane to its current support
-status, gate command, public claim boundary, and next public-evidence item.
+status, gate command, validated scope, and next public-evidence item.
 The compact target runs native C tests, CLI fixture tests, scientific-readiness
 guardrails, evidence-gallery validation, and assay-evidence validation. Full
 public-data regeneration and comparator-backed gates remain in the
@@ -50,8 +50,8 @@ can require larger downloads or external comparators.
 
 Workflow adoption is tracked separately in `docs/workflow-adoption.json`.
 Current in-repository Galaxy, Nextflow, nf-core-style, Snakemake, and MultiQC
-examples are workflow-example evidence, not external adopter evidence. The
-adoption manifest remains `not_ready` until an external workflow record is
+examples are workflow-example evidence, not accepted external integrations. The
+workflow manifest remains `not_ready` until an external workflow record is
 accepted, released, or published.
 
 ## Resubmission Checklist
@@ -60,7 +60,6 @@ accepted, released, or published.
 - Run `make repro`, `make repository-ready`, and the relevant evidence gates for
   any claim being made in the submission text.
 - Link to release artifacts: PyPI, Bioconda, GitHub Release, and Zenodo DOI.
-- Add only quote-approved, independent adopter statements to
-  `docs/adopters/README.md`.
+- Add only approved public use records to `docs/adopters/README.md`.
 - Keep claims aligned with `docs/scientific-claims.md`; move aspirational or
   unverified statements to roadmap text.

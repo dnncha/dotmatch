@@ -53,6 +53,8 @@ def test_distribution_channels_accepts_mocked_public_release(tmp_path, monkeypat
             }
         if url == "https://api.anaconda.org/package/bioconda/dotmatch":
             return {"files": [{"version": "0.1.0", "basename": "dotmatch-0.1.0-0.tar.bz2"}]}
+        if url == "https://api.anaconda.org/package/bioconda/assaycode":
+            return {"files": [{"version": "0.1.0", "basename": "assaycode-0.1.0-0.tar.bz2"}]}
         if url == "https://quay.io/api/v1/repository/biocontainers/dotmatch/tag/?onlyActiveTags=true&page=1&limit=100":
             return {"tags": [{"name": "0.1.0--h123_0"}], "has_additional": False}
         if url == "https://zenodo.org/api/records/1234567":
@@ -76,6 +78,7 @@ def test_distribution_channels_accepts_mocked_public_release(tmp_path, monkeypat
         "pypi",
         "pypi-install",
         "bioconda",
+        "bioconda-assaycode",
         "bioconda-install",
         "biocontainers",
         "biocontainers-run",

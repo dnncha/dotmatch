@@ -22,6 +22,7 @@ from typing import Optional
 
 PYPI_URL = "https://pypi.org/pypi/dotmatch/{version}/json"
 BIOCONDA_URL = "https://api.anaconda.org/package/bioconda/dotmatch"
+ASSAYCODE_BIOCONDA_URL = "https://api.anaconda.org/package/bioconda/assaycode"
 GHCR_IMAGE = "ghcr.io/dnncha/dotmatch:v{version}"
 GHCR_TOKEN_URL = "https://ghcr.io/token?service=ghcr.io&scope=repository:{repository}:pull"
 BIOCONTAINERS_TAGS_URL = (
@@ -270,6 +271,38 @@ def verify_bioconda_install(version: str) -> None:
             raise RuntimeError("Bioconda guide-counter stats smoke test produced unexpected stats")
 
 
+        assaycode_prefix = root / "assaycode-env"
+        run_checked(
+            [conda, "create", "-y", "-p", str(assaycode_prefix), *channels, f"assaycode={version}"],
+            cwd=root,
+            env=env,
+        )
+        observed_assaycode = run_checked(
+            [conda, "run", "-p", str(assaycode_prefix), "assaycode", "--version"],
+            cwd=root,
+            env=env,
+        )
+        expected_assaycode = f"assaycode {version} (DotMatch engine {version})"
+        if observed_assaycode != expected_assaycode:
+            raise RuntimeError(
+                f"Bioconda assaycode --version reported {observed_assaycode!r}, "
+                f"expected {expected_assaycode!r}"
+            )
+        run_checked(
+            [
+                conda,
+                "run",
+                "-p",
+                str(assaycode_prefix),
+                "python",
+                "-c",
+                "import assaycode, dotmatch; assert assaycode.engine is dotmatch",
+            ],
+            cwd=root,
+            env=env,
+        )
+
+
 def verify_biocontainers_run(image: str, version: str) -> None:
     env = os.environ.copy()
     cwd = Path.cwd()
@@ -338,12 +371,31 @@ def check_bioconda(version: str, result: AuditResult) -> None:
         return
     result.passed.append(ChannelMessage(channel, f"Bioconda package is available for {version}"))
     try:
+        assaycode_data = fetch_json(ASSAYCODE_BIOCONDA_URL)
+    except Exception as exc:
+        result.failures.append(
+            ChannelMessage("bioconda-assaycode", f"AssayCode Bioconda metadata is not reachable: {exc}")
+        )
+        return
+    assaycode_files = assaycode_data.get("files") or []
+    if not any(item.get("version") == version for item in assaycode_files if isinstance(item, dict)):
+        result.failures.append(
+            ChannelMessage("bioconda-assaycode", f"AssayCode Bioconda version {version} is not available")
+        )
+        return
+    result.passed.append(
+        ChannelMessage("bioconda-assaycode", f"AssayCode metapackage is available for {version}")
+    )
+    try:
         verify_bioconda_install(version)
     except Exception as exc:
         result.failures.append(ChannelMessage("bioconda-install", f"Bioconda one-command install failed for {version}: {exc}"))
         return
     result.passed.append(
-        ChannelMessage("bioconda-install", f"Bioconda install, CLI, and GuideCounter-compatible smoke tests pass for {version}")
+        ChannelMessage(
+            "bioconda-install",
+            f"DotMatch and AssayCode clean installs, CLIs, identity, and GuideCounter-compatible smoke tests pass for {version}",
+        )
     )
 
 

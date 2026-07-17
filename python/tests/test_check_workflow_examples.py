@@ -405,6 +405,9 @@ def _write_workflow_repo(root: Path) -> None:
         if (target_modules / module_name).exists():
             shutil.rmtree(target_modules / module_name)
         shutil.copytree(source_modules / module_name, target_modules / module_name)
+    source_upstream_modules = ROOT / "examples" / "workflows" / "nf-core" / "upstream" / "modules" / "nf-core" / "dotmatch"
+    target_upstream_modules = root / "examples" / "workflows" / "nf-core" / "upstream" / "modules" / "nf-core" / "dotmatch"
+    shutil.copytree(source_upstream_modules, target_upstream_modules)
     source_snakemake = ROOT / "examples" / "workflows" / "snakemake"
     target_snakemake = root / "examples" / "workflows" / "snakemake"
     shutil.copyfile(source_snakemake / "Snakefile", target_snakemake / "Snakefile")
@@ -427,6 +430,29 @@ def test_workflow_examples_ready_accepts_complete_local_examples(tmp_path):
     assert any("nf-core" in item for item in result.passed)
     assert any("MultiQC" in item for item in result.passed)
     assert any("Galaxy" in item for item in result.passed)
+
+
+def test_workflow_examples_ready_rejects_placeholder_nfcore_container(tmp_path):
+    checker = _load_checker()
+    _write_workflow_repo(tmp_path)
+    module_path = (
+        tmp_path
+        / "examples"
+        / "workflows"
+        / "nf-core"
+        / "upstream"
+        / "modules"
+        / "nf-core"
+        / "dotmatch"
+        / "count"
+        / "main.nf"
+    )
+    module = module_path.read_text(encoding="utf-8")
+    module_path.write_text(module.replace(checker.NFCORE_CONTAINER_TAG, "0.1.9--h*"), encoding="utf-8")
+
+    result = checker.audit(tmp_path)
+
+    assert any("immutable nf-core container tag" in failure for failure in result.failures)
 
 
 def test_workflow_examples_ready_requires_assayspec_workflow_pack(tmp_path):

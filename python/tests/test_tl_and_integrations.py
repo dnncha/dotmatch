@@ -115,6 +115,19 @@ def test_stream_assign_loads_targets_and_summarizes_without_loading_reads(tmp_pa
     assert summary["assignment_rate"] == 0.5
 
 
+def test_stream_assign_metric_hamming_does_not_rescue_indels(tmp_path):
+    import dotmatch
+
+    reads = tmp_path / "reads.fastq"
+    reads.write_text("@indel\nACGTT\n+\nIIIII\n", encoding="utf-8")
+
+    hamming = list(dotmatch.stream_assign(reads, [("guide_1", "ACGT")], target_length=5, k=1, metric="hamming"))
+    levenshtein = list(dotmatch.stream_assign(reads, [("guide_1", "ACGT")], target_length=5, k=1))
+
+    assert hamming[0].status_name == "none"
+    assert levenshtein[0].status_name == "unique"
+
+
 def test_write_assignments_tsv_returns_summary(tmp_path):
     import dotmatch
 

@@ -1,50 +1,45 @@
-# DotMatch modules prepared for nf-core/modules PR
+# nf-core/modules submission payload
 
-This directory contains the **exact tree** that can be copied into a fork of https://github.com/nf-core/modules for a PR.
+This directory is a self-contained candidate payload for DotMatch modules in
+`nf-core/modules`. It is prepared against DotMatch 0.1.9 and uses the immutable
+BioContainers build `0.1.9--py311h13f8228_0`, which is available from Quay and
+the Galaxy Singularity depot.
 
-Structure matches nf-core convention:
-- modules/nf-core/dotmatch/count/main.nf
-- modules/nf-core/dotmatch/count/meta.yml
-- modules/nf-core/dotmatch/count/tests/main.nf.test
-- modules/nf-core/dotmatch/demux/main.nf
-- modules/nf-core/dotmatch/demux/meta.yml
-- modules/nf-core/dotmatch/demux/tests/main.nf.test
-- modules/nf-core/dotmatch/audit/main.nf
-- modules/nf-core/dotmatch/audit/meta.yml
-- modules/nf-core/dotmatch/audit/tests/main.nf.test
-- modules/nf-core/dotmatch/panel_check/main.nf
-- modules/nf-core/dotmatch/panel_check/meta.yml
-- modules/nf-core/dotmatch/panel_check/tests/main.nf.test
-- modules/nf-core/dotmatch/crispr_count/main.nf
-- modules/nf-core/dotmatch/crispr_count/meta.yml
-- modules/nf-core/dotmatch/crispr_count/tests/main.nf.test
-- modules/nf-core/dotmatch/assay_run/main.nf
-- modules/nf-core/dotmatch/assay_run/meta.yml
-- modules/nf-core/dotmatch/assay_run/tests/main.nf.test
+## Included modules
 
-## How to use for PR
+- `dotmatch/count`
+- `dotmatch/demux`
+- `dotmatch/audit`
+- `dotmatch/panel_check`
+- `dotmatch/crispr_count`
+- `dotmatch/assay_run`
 
-1. Clone nf-core/modules
-2. cp -r <this-dir>/modules/nf-core/dotmatch/* modules/nf-core/dotmatch/
-3. Update container hashes to the exact ones from the Bioconda release you are pinning (see packaging/bioconda or bioconda-recipes).
-4. Run `nf-core modules lint dotmatch/crispr_count` and fix any issues.
-5. Adapt tests if needed (the current tests reference this repo's fixtures; for upstream, nf-core often uses a test-datasets submodule or small embedded data).
-6. Submit PR following nf-core contributing guide.
-7. Once merged, record in this repo's docs/workflow-adoption.json with the PR URL as adoption_url and a usage example or the module page as evidence_url.
+Each module includes `main.nf`, `meta.yml`, an nf-test definition, and the small
+fixtures required by its test. The payload preserves DotMatch's `unique`,
+`ambiguous`, `none`, and `invalid` assignment outcomes and exposes
+`task.ext.args` for module-specific options.
 
-See the parent ../README.md for the full contribution guide and checklist.
+## Local verification
 
-These modules were prepped with:
-- nf-core style container conditional
-- cpus/memory/time resource labels
-- when directive
-- full ext.args support
-- threads forwarding (auto CPU detection)
-- versions.yml
-- nf-test candidates using self-contained test data/ (copied fixtures for standalone PR)
-- Standard nf-core meta.yml fields (authors, maintainers, license)
-- Comprehensive meta.yml
+From the DotMatch repository root, run:
 
-After PR, update `make workflow-adoption-status` will pass and scientific claims can reference the integration.
+```bash
+make workflow-examples-ready
+make workflow-integration-test
+make reviewer-readiness-ready
+```
 
-This is the actionable step for "nf-core module upstreaming" in the roadmap.
+The integration test requires the workflow tools named by the target. Check
+that `nf-test`, Nextflow, Snakemake, Planemo, and MultiQC are available before
+interpreting a missing-command failure as a module failure.
+
+## Upstream verification
+
+Copy `modules/nf-core/dotmatch/` into a current `nf-core/modules` checkout and
+run the repository's formatter, module lint, and nf-test commands for each
+module. Keep the exact container tag unless a later DotMatch release has passed
+the distribution checks and is present in both Quay and the Galaxy Singularity
+depot.
+
+After an upstream pull request is accepted, add its public URL to
+`docs/workflow-adoption.json` and run `make workflow-adoption-status`.

@@ -3,10 +3,16 @@ const scientificClaimsUrl = `${repoUrl}/blob/main/docs/scientific-claims.md`;
 const evidenceGalleryUrl = `${repoUrl}/blob/main/docs/evidence-gallery/README.md`;
 const methodsUrl = `${repoUrl}/blob/main/docs/methods-and-citation.md`;
 const packagingUrl = `${repoUrl}/blob/main/docs/packaging.md`;
-const exposureUrl = `${repoUrl}/blob/main/docs/industry-exposure.md`;
-const nextWinsUrl = `${repoUrl}/blob/main/docs/industry-next-wins.md`;
+const evaluationUrl = `${repoUrl}/blob/main/docs/bioinformatics-evaluation.md`;
+const reviewPacketUrl = `${repoUrl}/blob/main/docs/external-review-packet.md`;
+const integrationTargetsUrl = `${repoUrl}/blob/main/docs/integration-targets.json`;
+const pilotProgramUrl = `${repoUrl}/blob/main/docs/pilot-program.md`;
+const reviewerReadinessUrl = `${repoUrl}/blob/main/docs/reviewer-readiness.json`;
+const integrationKitUrl = `${repoUrl}/blob/main/docs/workflow-integration-kit.md`;
 const workflowSubmissionsUrl = `${repoUrl}/blob/main/docs/workflow-submissions.md`;
 const adoptersUrl = `${repoUrl}/blob/main/docs/adopters/README.md`;
+const workflowAdoptionUrl = `${repoUrl}/blob/main/docs/workflow-adoption.json`;
+const distributionUrl = `${repoUrl}/blob/main/docs/distribution-release.json`;
 const pypiUrl = "https://pypi.org/project/dotmatch/";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -130,51 +136,48 @@ const contexts = [
 ] as const;
 
 const evidenceLinks = [
-  ["Claim boundaries", scientificClaimsUrl],
+  ["Bioinformatics evaluation packet", evaluationUrl],
+  ["External review packet", reviewPacketUrl],
+  ["Validated scope", scientificClaimsUrl],
   ["Evidence gallery", evidenceGalleryUrl],
   ["Methods and citation", methodsUrl],
   ["Packaging notes", packagingUrl]
 ] as const;
 
-const exposureActions = [
+const evaluationItems = [
   {
-    title: "Evaluate",
+    title: "Package channels",
     body:
-      "Install the released package, run the tutorial, and compare the explicit assignment outcomes against your current known-target workflow."
+      "PyPI and Bioconda are verified for v0.1.8. GHCR and BioContainers have public records, with runtime smoke tests still pending on a host with Docker or another OCI runtime."
   },
   {
-    title: "Integrate",
+    title: "Validated scope",
     body:
-      "Use the workflow submission pack to make DotMatch visible in nf-core, MultiQC, Galaxy, Snakemake, and institutional pipeline reports."
+      "Public statements are scoped to checked assay lanes, raw artifacts, generated reports, and gate scripts. Broader workflow claims stay out of release copy."
   },
   {
-    title: "Cite",
+    title: "Output contracts",
     body:
-      "Copy methods language from the citation guidance so external reports describe assignment windows, ambiguity policy, and software version."
+      "TSV, JSON, FASTQ, HTML, methods, citation, and software-version artifacts are documented for workflow systems and reviewer handoff."
   },
   {
-    title: "Pilot",
+    title: "Workflow status",
     body:
-      "Record quote-approved external pilots only after a public lab, workflow, or package integration can be linked and reviewed."
+      "Local nf-core, MultiQC, Galaxy, and Snakemake examples exist. External workflow integration is recorded only after an accepted public record exists."
   },
   {
-    title: "Share",
+    title: "Public use records",
     body:
-      "Use the industry exposure kit for conference abstracts, repository announcements, short social copy, and direct maintainer outreach."
+      "Named labs, projects, organizations, and quotes appear only with approved wording and a public URL."
   }
 ] as const;
 
-const nextWins = [
-  "Decision tree",
-  "Persona one-pagers",
-  "Integration tracker",
-  "Reviewer packet",
-  "Conference abstracts",
-  "Social pack",
-  "Maintainer templates",
-  "Pilot scorecard",
-  "Adoption KPIs",
-  "Release calendar"
+const ecosystemTargets = [
+  "nf-core modules",
+  "MultiQC module",
+  "Galaxy / IUC",
+  "Snakemake wrapper",
+  "bio.tools record"
 ] as const;
 
 export default function Home() {
@@ -185,17 +188,17 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       <header className="site-header">
-        <a className="brand" href="#top" aria-label="DotMatch home">
+        <a className="brand" href="#top" aria-label="AssayCode home">
           <span className="brand-mark" aria-hidden="true" />
-          <span>DotMatch</span>
+          <span>AssayCode</span>
         </a>
         <nav aria-label="Primary navigation">
           <a href="#failure-modes">Reliability</a>
           <a href="#workflow">Workflow</a>
-          <a href="#industry-routes">Audiences</a>
+          <a href="#industry-routes">Use cases</a>
           <a href="#evidence">Evidence</a>
-          <a href="#exposure">Adoption</a>
-          <a href="#next-wins">Next wins</a>
+          <a href="#evaluation">Evaluation</a>
+          <a href="#ecosystem">Ecosystem</a>
           <a href="#install">Install</a>
           <a href={repoUrl}>GitHub</a>
         </nav>
@@ -204,11 +207,11 @@ export default function Home() {
       <main id="top">
         <section className="hero" aria-labelledby="hero-title">
           <div className="hero-copy">
-            <p className="positioning">Assignment reliability for known-target sequencing assays.</p>
-            <h1 id="hero-title">Know which read assignments you can trust.</h1>
+            <p className="positioning">Assay compilation and reliability for known-target sequencing.</p>
+            <h1 id="hero-title">Design the assay. Trust the assignment.</h1>
             <p className="hero-lede">
-              DotMatch assigns fixed read windows to known short DNA targets and keeps
-              the outcome visible for every read: unique, ambiguous, none, or invalid.
+              AssayCode turns known-target assay descriptions into reviewable plans, then uses
+              the DotMatch engine to keep every read outcome visible: unique, ambiguous, none, or invalid.
             </p>
             <p className="hero-text">
               Use it when the guide, inline barcode, feature tag, primer or panel
@@ -220,7 +223,7 @@ export default function Home() {
               <a className="button secondary" href="#evidence">Review evidence</a>
             </div>
           </div>
-          <div className="hero-panel" aria-label="DotMatch assignment outcomes">
+          <div className="hero-panel" aria-label="AssayCode assignment outcomes">
             <figure className="assignment-figure">
               <img
                 src={assignmentWorkflowImage}
@@ -329,7 +332,7 @@ export default function Home() {
                 Broader claims about alignment, basecalling, downstream screen
                 analysis, production demultiplexing replacement, calibrated
                 probabilities, or unbounded assay coverage remain outside the public
-                claim boundary unless the linked evidence says otherwise.
+                validated scope unless the linked evidence says otherwise.
               </p>
             </article>
             <div className="evidence-links" aria-label="Evidence and packaging links">
@@ -340,59 +343,65 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="exposure" className="section exposure-section" aria-labelledby="exposure-title">
+        <section id="evaluation" className="section evaluation-section" aria-labelledby="evaluation-title">
           <div className="section-heading">
-            <p className="section-kicker">Adoption flywheel</p>
-            <h2 id="exposure-title">Five moves turn a useful tool into a visible one.</h2>
+            <p className="section-kicker">Bioinformatics evaluation</p>
+            <h2 id="evaluation-title">Start from package status and output evidence.</h2>
             <p>
-              DotMatch is easier to recommend when every external mention points
-              to runnable examples, scoped evidence, citation text, and a public
-              record of accepted integrations.
+              A serious evaluation should begin with install channels, workflow
+              artifacts, claim boundaries, and the exact places where verification
+              is still incomplete.
             </p>
           </div>
-          <div className="exposure-layout">
-            <ol className="exposure-list">
-              {exposureActions.map((action) => (
+          <div className="evaluation-layout">
+            <ol className="evaluation-list">
+              {evaluationItems.map((action) => (
                 <li key={action.title}>
                   <strong>{action.title}</strong>
                   <p>{action.body}</p>
                 </li>
               ))}
             </ol>
-            <aside className="exposure-links" aria-label="Adoption and exposure links">
-              <a href={exposureUrl}>Industry exposure kit</a>
-              <a href={workflowSubmissionsUrl}>Workflow submission pack</a>
-              <a href={methodsUrl}>Methods and citation text</a>
-              <a href={adoptersUrl}>Used-by record policy</a>
+            <aside className="evaluation-links" aria-label="Evaluation and evidence links">
+              <a href={evaluationUrl}>Bioinformatics evaluation packet</a>
+              <a href={reviewPacketUrl}>External review packet</a>
+              <a href={distributionUrl}>Distribution status record</a>
+              <a href={workflowAdoptionUrl}>Workflow adoption status</a>
+              <a href={integrationTargetsUrl}>Integration target tracker</a>
+              <a href={scientificClaimsUrl}>Scientific scope notes</a>
             </aside>
           </div>
         </section>
 
-        <section id="next-wins" className="section next-wins-section" aria-labelledby="next-wins-title">
+        <section id="ecosystem" className="section ecosystem-section" aria-labelledby="ecosystem-title">
           <div className="section-heading">
-            <p className="section-kicker">Next 10 exposure wins</p>
-            <h2 id="next-wins-title">Turn interest into repeatable distribution.</h2>
+            <p className="section-kicker">Workflow ecosystem</p>
+            <h2 id="ecosystem-title">Integrations are tracked separately from scientific claims.</h2>
             <p>
-              The next adoption layer is a checked playbook: decision paths,
-              persona-specific handoffs, maintainer-ready templates, pilot scoring,
-              and release communication assets that can be reused without widening
-              the scientific claim boundary.
+              DotMatch has local workflow examples and submission payloads, but
+              external integration is recorded only after a public integration is
+              accepted or released outside this repository.
             </p>
           </div>
-          <div className="next-wins-layout">
-            <ol className="next-wins-grid" aria-label="Next 10 industry exposure wins">
-              {nextWins.map((win) => (
-                <li key={win}>{win}</li>
+          <div className="ecosystem-layout">
+            <ol className="ecosystem-grid" aria-label="Priority workflow integration targets">
+              {ecosystemTargets.map((target) => (
+                <li key={target}>{target}</li>
               ))}
             </ol>
-            <aside className="next-wins-note">
-              <h3>Checked source of truth</h3>
+            <aside className="ecosystem-note">
+              <h3>Current rule</h3>
               <p>
-                The playbook and machine-readable tracker must stay aligned before
-                release. Private outreach and unmerged PRs remain activity, not
-                adoption evidence.
+                Bioconda package availability is distribution evidence, not an
+                accepted workflow integration. Accepted integrations belong in
+                the machine-readable workflow status record.
               </p>
-              <a href={nextWinsUrl}>Open the next 10 playbook</a>
+              <a href={workflowSubmissionsUrl}>Workflow submission pack</a>
+              <a href={integrationKitUrl}>Workflow integration kit</a>
+              <a href={pilotProgramUrl}>DotMatch evaluation protocol</a>
+              <a href={reviewerReadinessUrl}>Reviewer readiness record</a>
+              <a href={methodsUrl}>Methods and citation text</a>
+              <a href={adoptersUrl}>Public use record policy</a>
             </aside>
           </div>
         </section>
@@ -425,7 +434,7 @@ dotmatch --help`}</code></pre>
       </main>
 
       <footer className="site-footer">
-        <span>DotMatch</span>
+        <span>AssayCode</span>
         <nav aria-label="Footer navigation">
           <a href={repoUrl}>GitHub</a>
           <a href={scientificClaimsUrl}>Scientific claims</a>

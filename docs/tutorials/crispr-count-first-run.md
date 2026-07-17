@@ -42,7 +42,7 @@ Key outputs under the configured `out_dir`:
 - `counts.mageck.tsv` — MAGeCK-style count matrix
 - `sample_qc.tsv` — per-sample assignment and representation QC
 - `summary.json` — run metadata and assignment rates
-- `reliability_report.html` — evidence-bounded preflight/postrun review
+- `reliability_report.html` — evidence-backed preflight/postrun review
 - `crispr_qc.json` — guide-level QC summary
 
 CPU remains the assignment authority. GPU Metal is opt-in via `[backend]` in the

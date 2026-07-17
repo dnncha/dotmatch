@@ -17,6 +17,8 @@ from .core import (
     alphabet_policy,
     assign,
     assign_dataframe,
+    assign_exact,
+    assign_hamming,
     assignment_summary,
     assign_posterior,
     assignments_to_anndata,
@@ -50,7 +52,7 @@ def _source_tree_version() -> Optional[str]:
 try:
     __version__ = _source_tree_version() or _metadata_version("dotmatch")
 except PackageNotFoundError:
-    __version__ = "0.1.8"
+    __version__ = "0.2.0"
 
 __all__ = [
     "__version__",
@@ -67,6 +69,8 @@ __all__ = [
     "alphabet_policy",
     "assign",
     "assign_dataframe",
+    "assign_exact",
+    "assign_hamming",
     "assignment_summary",
     "assign_posterior",
     "assignments_to_anndata",

@@ -29,7 +29,7 @@ PUBLIC_CLAIM_FILES = [
 FORBIDDEN_PUBLIC_CLAIM_PATTERNS = [
     (
         re.compile(r"\bfast exact short-dna known-target assignment\b", re.IGNORECASE),
-        "use deterministic/evidence-bounded assignment language instead of broad fast-exact positioning",
+        "use deterministic, evidence-backed assignment language instead of broad fast-exact positioning",
     ),
     (
         re.compile(r"\b(?:sota|state[- ]of[- ]the[- ]art)\b", re.IGNORECASE),

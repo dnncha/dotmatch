@@ -14,18 +14,17 @@ listed in `docs/scientific-claims.md`.
 | P1 | Publish Galaxy and Snakemake wrappers | Reviewed wrappers are available outside this repository, with tiny fixtures and documented outputs. |
 | P1 | Generate run citation artifacts | Done in AssaySpec runs: each production run writes `methods.md`, `CITATION.bib`, and `software_versions.yml` beside summary and report outputs. |
 | P1 | Add copyable methods and citation UI | Workbench and generated HTML reports expose a single "Copy methods and citation" action backed by the generated methods artifact. |
-| P1 | Recruit documented external pilots | Three to five independent labs, cores, or workflow maintainers approve public pilot records with scope notes. |
-| P1 | Maintain the industry exposure kit | Homepage audience routes, outreach copy, workflow handoffs, citation links, and adopter-record rules stay aligned in `docs/industry-exposure.md`. |
-| P1 | Execute the next 10 exposure wins | `docs/industry-next-wins.md`, `docs/industry-exposure-plan.json`, and the homepage "Next 10 exposure wins" section stay aligned. |
+| P1 | Document external evaluations | Three to five independent labs, cores, or workflow maintainers approve public use records with scope notes. |
+| P1 | Maintain the workflow integration kit | Homepage audience routes, workflow handoffs, citation links, and public-use record rules stay aligned in `docs/workflow-integration-kit.md`. |
+| P1 | Maintain the workflow integration roadmap | `docs/workflow-integration-roadmap.md`, `docs/workflow-integration-plan.json`, and the homepage evaluation surface stay aligned. |
 | P2 | Publish a methods and benchmark preprint | The manuscript demonstrates speed and the consequences of ambiguity, unsafe rescue, and incorrect barcode windows. |
-| P2 | Maintain a public used-by page | Quote-approved independent examples are listed in `docs/adopters/` and mirrored in the public docs. |
+| P2 | Maintain public use records | Approved independent examples are listed in `docs/adopters/` and mirrored in the public docs. |
 
 ## Operating Rules
 
-- Do not count private conversations, internal examples, or unmerged PRs as
-  adoption evidence.
 - Record external integrations in `docs/workflow-adoption.json` only after they
   are accepted, released, or published outside this repository.
+- Add public use records only with approved wording and a public URL.
 - Keep citation text generated from checked project metadata, not manually
   copied into each report surface.
 - Treat ambiguity, unsafe rescue, shifted windows, and barcode-window mistakes
@@ -37,8 +36,8 @@ listed in `docs/scientific-claims.md`.
   [Workflow Submission Pack](workflow-submissions.md).
 - Methods and citation language:
   [Methods and Citation Template](methods-and-citation.md).
-- Quote-approved adoption records:
-  [DotMatch Adopter Notes](adopters/README.md).
+- Public use records:
+  [DotMatch Public Use Records](adopters/README.md).
 - Evidence limits for public claims:
   [DotMatch Evidence Notes](scientific-claims.md).
 

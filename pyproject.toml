@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dotmatch"
-version = "0.1.8"
-description = "Deterministic known-target short-DNA assignment for CRISPR guide counting, barcode demultiplexing, and FASTQ workflows"
+version = "0.2.0"
+description = "AssayCode workflows and the DotMatch engine for auditable known-target short-DNA assignment across CRISPR, barcode, and FASTQ assays"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
@@ -22,6 +22,8 @@ keywords = [
     "CRISPR",
     "FASTQ",
     "known-target assignment",
+    "assay compiler",
+    "assay QC",
     "barcode demultiplexing",
     "edit distance",
 ]
@@ -60,13 +62,14 @@ dotmatch = "dotmatch.multiqc:DotMatchModule"
 
 [tool.setuptools.packages.find]
 where = ["python"]
-include = ["dotmatch*", "quickdna*"]
+include = ["assaycode*", "dotmatch*", "quickdna*"]
 
 [project.scripts]
+assaycode = "assaycode.cli:main"
 dotmatch = "dotmatch.cli:main"
 quickdna = "dotmatch.cli:main"
 
 [tool.cibuildwheel]
 build = "cp39-manylinux_x86_64 cp310-manylinux_x86_64 cp311-manylinux_x86_64 cp312-manylinux_x86_64 cp39-musllinux_x86_64 cp310-musllinux_x86_64 cp311-musllinux_x86_64 cp312-musllinux_x86_64"
 skip = "pp*"
-test-command = "python -c \"import dotmatch, quickdna; assert dotmatch.distance('ACGT', 'AGGT') == 1; assert quickdna.distance_leq('ACGT', 'AGGT', 1)\" && dotmatch --version && dotmatch dist ACGT AGGT"
+test-command = "python -c \"import dotmatch, quickdna; assert dotmatch.distance('ACGT', 'AGGT') == 1; assert quickdna.distance_leq('ACGT', 'AGGT', 1)\" && assaycode --version && dotmatch --version && dotmatch dist ACGT AGGT"

@@ -7,8 +7,8 @@ process DOTMATCH_PANEL_CHECK {
     time   { task.ext.time   ?: 2.h  }
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/dotmatch:0.1.8--h*' :
-        'biocontainers/dotmatch:0.1.8--h*' }"
+        'https://depot.galaxyproject.org/singularity/dotmatch:0.1.9--py311h13f8228_0' :
+        'biocontainers/dotmatch:0.1.9--py311h13f8228_0' }"
 
     input:
     tuple val(meta), path(panel)

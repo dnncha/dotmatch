@@ -17,7 +17,7 @@
 
 ## What It Does Not Show
 
-- The review status is intentional and should not be interpreted as a production-ready barcode assignment.
+- The review status is intentional and should not be interpreted as production barcode assignment evidence.
 - Users must correct the assay specification or barcode design before trusting rescued reads.
 
 ## Comparator And Validation

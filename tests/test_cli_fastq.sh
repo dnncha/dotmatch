@@ -1539,6 +1539,62 @@ grep '^g_other	GENE_OTHER	1$' "$TMPDIR/gc_short_alias.counts.txt" >/dev/null
 diff -u "$TMPDIR/counts_hamming_mageck.tsv" "$TMPDIR/counts_hamming_threads.tsv"
 grep '"read_threads": 2' "$TMPDIR/summary_hamming_threads.json" >/dev/null
 
+cat > "$TMPDIR/offset_exact_targets.tsv" <<'OFFSETTARGETS'
+target_id	target_seq
+offset_a	ACGT
+offset_b	TTTT
+OFFSETTARGETS
+
+cat > "$TMPDIR/offset_exact_reads.fastq" <<'OFFSETREADS'
+@offset_a_1
+GGGACGTAAAA
++
+IIIIIIIIIII
+@offset_b_1
+GGGTTTTAAAA
++
+IIIIIIIIIII
+@offset_a_2
+GGGACGTCCCC
++
+IIIIIIIIIII
+@offset_none
+GGGGGGGAAAA
++
+IIIIIIIIIII
+OFFSETREADS
+
+"$DOTMATCH_BIN" count \
+  --targets "$TMPDIR/offset_exact_targets.tsv" \
+  --reads "$TMPDIR/offset_exact_reads.fastq" \
+  --sample-label offset_exact \
+  --target-start 3 \
+  --target-length 4 \
+  --k 0 \
+  --metric hamming \
+  --ambiguity-policy best \
+  --threads 1 \
+  --out "$TMPDIR/offset_exact_counts.tsv" \
+  --summary "$TMPDIR/offset_exact_summary.json"
+
+"$DOTMATCH_BIN" count \
+  --targets "$TMPDIR/offset_exact_targets.tsv" \
+  --reads "$TMPDIR/offset_exact_reads.fastq" \
+  --sample-label offset_exact \
+  --target-start 3 \
+  --target-length 4 \
+  --k 0 \
+  --metric hamming \
+  --ambiguity-policy best \
+  --threads 3 \
+  --out "$TMPDIR/offset_exact_counts_threads.tsv" \
+  --summary "$TMPDIR/offset_exact_summary_threads.json"
+
+diff -u "$TMPDIR/offset_exact_counts.tsv" "$TMPDIR/offset_exact_counts_threads.tsv"
+grep '"read_threads": 3' "$TMPDIR/offset_exact_summary_threads.json" >/dev/null
+grep '"total_reads": 4, "assigned_unique": 3, "assigned_exact": 3' "$TMPDIR/offset_exact_summary_threads.json" >/dev/null
+grep '"unmatched": 1' "$TMPDIR/offset_exact_summary_threads.json" >/dev/null
+
 python3 - "$TMPDIR/sparse_targets.tsv" "$TMPDIR/sparse_reads.fastq" <<'PY'
 import random
 import sys

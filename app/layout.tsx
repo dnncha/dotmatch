@@ -5,17 +5,17 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://dnncha.github.io/do
 const socialImageUrl = `${siteUrl}/dotmatch-og.png`;
 const twitterImageUrl = `${siteUrl}/dotmatch-twitter.png`;
 const socialImageAlt =
-  "DotMatch preview showing assignment reliability outcomes for known-target sequencing assays";
+  "AssayCode preview showing the DotMatch assignment outcomes for known-target sequencing assays";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  applicationName: "DotMatch",
-  title: "DotMatch - Assignment Reliability for Known-Target Sequencing Assays",
+  applicationName: "AssayCode",
+  title: "AssayCode - Design, Decode, and Diagnose Known-Target Assays",
   description:
-    "DotMatch shows which known-target read assignments are unique, ambiguous, unmatched, or invalid.",
+    "AssayCode compiles, validates, decodes, and diagnoses known-target sequencing assays with the DotMatch engine.",
   authors: [{ name: "DotMatch maintainers", url: "https://github.com/dnncha/dotmatch" }],
   creator: "DotMatch maintainers",
-  publisher: "DotMatch",
+  publisher: "AssayCode",
   category: "Bioinformatics software",
   alternates: {
     canonical: siteUrl
@@ -26,6 +26,8 @@ export const metadata: Metadata = {
     "CRISPR",
     "FASTQ",
     "known-target sequencing",
+    "assay compiler",
+    "AssayScript",
     "assignment reliability",
     "barcode demultiplexing",
     "barcode panel design",
@@ -40,11 +42,11 @@ export const metadata: Metadata = {
     "sequencing core facility QC"
   ],
   openGraph: {
-    title: "DotMatch - Assignment Reliability",
+    title: "AssayCode - Assay Reliability",
     description:
-      "Know which read assignments you can trust for known-target sequencing assays.",
+      "Design the assay and trust the assignment with AssayCode, powered by DotMatch.",
     type: "website",
-    siteName: "DotMatch",
+    siteName: "AssayCode",
     locale: "en_US",
     url: siteUrl,
     images: [
@@ -60,9 +62,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "DotMatch - Assignment Reliability",
+    title: "AssayCode - Assay Reliability",
     description:
-      "Know which read assignments you can trust for known-target sequencing assays.",
+      "Design the assay and trust the assignment with AssayCode, powered by DotMatch.",
     images: [
       {
         url: twitterImageUrl,
