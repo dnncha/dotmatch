@@ -331,6 +331,25 @@ def check_pages_workflow(root: Path, result: AuditResult) -> None:
         result.passed.append("GitHub Pages workflow uses the supported deployment action")
 
 
+def check_release_workflow(root: Path, result: AuditResult) -> None:
+    path = root / ".github" / "workflows" / "release.yml"
+    try:
+        workflow = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        result.failures.append(f".github/workflows/release.yml could not be read: {exc}")
+        return
+
+    if "sha256sum *.whl *.tar.gz > SHA256SUMS.txt" not in workflow:
+        result.failures.append(
+            "release workflow must checksum only downloadable wheel and source-distribution assets"
+        )
+        return
+    if "sha256sum * > SHA256SUMS.txt" in workflow:
+        result.failures.append("release workflow must not checksum internal build records")
+        return
+    result.passed.append("release checksum manifest contains only downloadable artifacts")
+
+
 def _require_text(path: Path, needles: list[str], result: AuditResult) -> None:
     rel_path = path.relative_to(path.parents[1]).as_posix() if path.parent.name == "docs" else path.name
     try:
@@ -504,6 +523,7 @@ def audit(root: Path) -> AuditResult:
     check_manifest(root, result)
     check_pull_request_template(root, result)
     check_pages_workflow(root, result)
+    check_release_workflow(root, result)
     check_open_core_governance(root, result)
     check_repository_tree(root, result)
     check_no_local_absolute_paths(root, result)
