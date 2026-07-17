@@ -17,7 +17,8 @@ const workflowExamplesUrl = `${repoUrl}/tree/main/examples/workflows`;
 const doiUrl = "https://doi.org/10.5281/zenodo.21415103";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
-const assignmentWorkflowImage = `${basePath}/dotmatch-read-assignment.svg`;
+const assignmentWorkflowImage = `${basePath}/dotmatch-read-assignment-v2.webp`;
+const assignmentWorkflowMobileImage = `${basePath}/dotmatch-read-assignment-mobile-v2.webp`;
 
 const structuredData = {
   "@context": "https://schema.org",
@@ -251,12 +252,22 @@ export default function Home() {
           </div>
           <div className="hero-panel" aria-label="DotMatch assignment outcomes">
             <figure className="assignment-figure">
-              <img
-                src={assignmentWorkflowImage}
-                alt="DotMatch workflow showing FASTQ reads, a known target list, a read slice, and unique, ambiguous, none, and invalid outcomes"
-                decoding="async"
-                fetchPriority="high"
-              />
+              <picture>
+                <source
+                  media="(max-width: 520px)"
+                  srcSet={assignmentWorkflowMobileImage}
+                  width="864"
+                  height="1821"
+                />
+                <img
+                  src={assignmentWorkflowImage}
+                  width="1825"
+                  height="862"
+                  alt="DotMatch takes FASTQ reads and a known target list, compares the same fixed-position window in every read, and reports each read as unique, ambiguous, unmatched, or invalid"
+                  decoding="async"
+                  fetchPriority="high"
+                />
+              </picture>
             </figure>
             <div className="outcome-grid" aria-label="Per-read assignment outcomes">
               {outcomes.map(([label, detail]) => (
