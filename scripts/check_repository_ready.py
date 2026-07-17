@@ -33,6 +33,7 @@ REQUIRED_FILES = [
     ".editorconfig",
     ".github/workflows/ci.yml",
     ".github/workflows/codeql.yml",
+    ".github/workflows/pages.yml",
     ".github/workflows/release.yml",
     ".github/PULL_REQUEST_TEMPLATE.md",
     ".github/ISSUE_TEMPLATE/bug_report.yml",
@@ -306,6 +307,30 @@ def check_pull_request_template(root: Path, result: AuditResult) -> None:
         result.passed.append("pull request template evidence checklist present")
 
 
+def check_pages_workflow(root: Path, result: AuditResult) -> None:
+    failures_before = len(result.failures)
+    path = root / ".github" / "workflows" / "pages.yml"
+    try:
+        workflow = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        result.failures.append(f".github/workflows/pages.yml could not be read: {exc}")
+        return
+
+    for fragment in [
+        "actions/configure-pages@v6",
+        "actions/upload-pages-artifact@v5",
+        "actions/deploy-pages@v4",
+        "pages: write",
+        "id-token: write",
+    ]:
+        if fragment not in workflow:
+            result.failures.append(f"pages workflow must include: {fragment}")
+    if "repos/${GITHUB_REPOSITORY}/pages/deployments" in workflow:
+        result.failures.append("pages workflow must use actions/deploy-pages instead of a custom deployment API call")
+    if len(result.failures) == failures_before:
+        result.passed.append("GitHub Pages workflow uses the supported deployment action")
+
+
 def _require_text(path: Path, needles: list[str], result: AuditResult) -> None:
     rel_path = path.relative_to(path.parents[1]).as_posix() if path.parent.name == "docs" else path.name
     try:
@@ -478,6 +503,7 @@ def audit(root: Path) -> AuditResult:
     check_readme_distribution_status(root, result)
     check_manifest(root, result)
     check_pull_request_template(root, result)
+    check_pages_workflow(root, result)
     check_open_core_governance(root, result)
     check_repository_tree(root, result)
     check_no_local_absolute_paths(root, result)

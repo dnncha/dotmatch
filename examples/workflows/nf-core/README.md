@@ -52,7 +52,7 @@ pipelines, reproducibility, MultiQC integration, etc.):
 
 3. **Enhance for Upstream (Recommended Polish)**
    - Use exact bioconda/singularity container hashes from a released version
-     (update the placeholder `0.1.9--h*` after a tagged release passes Bioconda).
+     (`0.1.9--py311h13f8228_0`, verified in both Quay and the Galaxy Singularity depot).
    - The upstream tree already includes: maintainers + license in meta.yml, stub test case, self-contained tests/data/.
    - Add more nf-test cases (different k, metrics, full vs stub runs) if needed.
    - Support additional common params via `task.ext` (e.g. `--auto-offset`,
@@ -101,11 +101,11 @@ cd examples/workflows/nf-core/pipeline
 nextflow run main.nf --outdir results
 ```
 
-It exercises the CRISPR and AssaySpec modules against the shared fixtures and produces the expected artifacts. This serves as a "copy-paste ready" template for real pipelines and as the basis for an upstream nf-core pipeline subworkflow or module usage example.
+It exercises the CRISPR and AssaySpec modules against the shared fixtures and produces the expected artifacts. It can be used as a reference when integrating the modules into a Nextflow pipeline or preparing an nf-core module submission.
 
-See the main [DotMatch docs/proposals-and-roadmap.md](https://github.com/dnncha/dotmatch/blob/main/docs/proposals-and-roadmap.md) for the full adoption roadmap. nf-core integration is one of the highest-leverage steps for "massive industry penetration" because nf-core is the standard for reproducible bioinformatics workflows.
+See the main [DotMatch workflow integration roadmap](https://github.com/dnncha/dotmatch/blob/main/docs/workflow-integration-roadmap.md) for the planned submission and validation sequence.
 
-**Status**: The `upstream/` tree is the **exact, self-contained payload** ready to drop into a PR to nf-core/modules (modules/nf-core/dotmatch/... ). 
+**Status**: The `upstream/` tree is a self-contained candidate payload for `nf-core/modules` under `modules/nf-core/dotmatch/`.
 
 The `modules/local/` versions are the maintained source for this repo's internal checks (check_workflow_examples.py) and examples.
 

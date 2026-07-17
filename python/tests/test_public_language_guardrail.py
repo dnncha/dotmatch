@@ -5,13 +5,16 @@ ROOT = Path(__file__).resolve().parents[2]
 
 PUBLIC_PATHS = [
     ROOT / "README.md",
+    ROOT / "DESCRIPTION",
     ROOT / "docs",
+    ROOT / "examples",
     ROOT / "app",
     ROOT / "public",
+    ROOT / "python" / "dotmatch",
     ROOT / ".github",
 ]
 
-PUBLIC_SUFFIXES = {".css", ".html", ".json", ".md", ".mdx", ".ts", ".tsx", ".yaml", ".yml"}
+PUBLIC_SUFFIXES = {".css", ".html", ".json", ".md", ".mdx", ".nf", ".py", ".ts", ".tsx", ".yaml", ".yml"}
 SKIP_PARTS = {"_build", "node_modules", "__pycache__"}
 
 FORBIDDEN_PHRASES = [

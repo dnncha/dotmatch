@@ -56,6 +56,12 @@ def _write_minimal_repo(root: Path) -> None:
         ),
         ".github/workflows/ci.yml": "name: ci\n",
         ".github/workflows/codeql.yml": "name: codeql\n",
+        ".github/workflows/pages.yml": (
+            "name: pages\npermissions:\n  pages: write\n  id-token: write\nsteps:\n"
+            "  - uses: actions/configure-pages@v6\n"
+            "  - uses: actions/upload-pages-artifact@v5\n"
+            "  - uses: actions/deploy-pages@v4\n"
+        ),
         ".github/workflows/release.yml": "name: release\n",
         ".github/PULL_REQUEST_TEMPLATE.md": (
             "## Evidence\n\n"
@@ -160,6 +166,23 @@ def test_repository_ready_reports_missing_codeql_workflow(tmp_path):
     result = checker.audit(tmp_path)
 
     assert any(".github/workflows/codeql.yml" in failure for failure in result.failures)
+
+
+def test_repository_ready_rejects_custom_pages_deployment(tmp_path):
+    checker = _load_checker()
+    _write_minimal_repo(tmp_path)
+    (tmp_path / ".github" / "workflows" / "pages.yml").write_text(
+        "name: pages\npermissions:\n  pages: write\n  id-token: write\nsteps:\n"
+        "  - uses: actions/configure-pages@v6\n"
+        "  - uses: actions/upload-pages-artifact@v5\n"
+        "  - run: gh api repos/${GITHUB_REPOSITORY}/pages/deployments\n",
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("actions/deploy-pages@v4" in failure for failure in result.failures)
+    assert any("custom deployment API call" in failure for failure in result.failures)
 
 
 def test_repository_ready_reports_incomplete_pull_request_template(tmp_path):

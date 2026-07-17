@@ -30,6 +30,8 @@ GALAXY_TEST_DATA = [
     "sample_b.fastq",
     "expected_counts.mageck.tsv",
 ]
+NFCORE_MODULES = ["count", "demux", "audit", "panel_check", "crispr_count", "assay_run"]
+NFCORE_CONTAINER_TAG = "0.1.9--py311h13f8228_0"
 
 
 class WorkflowAudit:
@@ -258,6 +260,29 @@ def check_nfcore(root: Path, result: WorkflowAudit) -> None:
 
     if not any("nf-core" in failure for failure in result.failures):
         result.passed.append("nf-core-style module candidate present")
+
+
+def check_nfcore_container_pins(root: Path, result: WorkflowAudit) -> None:
+    base = root / "examples" / "workflows" / "nf-core"
+    module_roots = [
+        base / "modules" / "local" / "dotmatch",
+        base / "upstream" / "modules" / "nf-core" / "dotmatch",
+    ]
+    expected_singularity = f"https://depot.galaxyproject.org/singularity/dotmatch:{NFCORE_CONTAINER_TAG}"
+    expected_docker = f"biocontainers/dotmatch:{NFCORE_CONTAINER_TAG}"
+
+    for module_root in module_roots:
+        for module_name in NFCORE_MODULES:
+            module_path = module_root / module_name / "main.nf"
+            module = _read(module_path, result)
+            if expected_singularity not in module or expected_docker not in module:
+                result.failures.append(
+                    f"{module_path.as_posix()} must use the verified immutable nf-core container tag "
+                    f"{NFCORE_CONTAINER_TAG} for both Singularity and Docker"
+                )
+
+    if not any("immutable nf-core container tag" in failure for failure in result.failures):
+        result.passed.append(f"nf-core modules use immutable container tag {NFCORE_CONTAINER_TAG}")
 
 
 def _check_nfcore_tool_module(
@@ -692,6 +717,7 @@ def audit(root: Path) -> WorkflowAudit:
     check_snakemake(root, result)
     check_nextflow(root, result)
     check_nfcore(root, result)
+    check_nfcore_container_pins(root, result)
     check_nfcore_dotmatch_modules(root, result)
     check_multiqc(root, result)
     check_galaxy(root, result)

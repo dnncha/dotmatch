@@ -170,10 +170,9 @@ def _multiqc_file_path(record: Any) -> Path:
     return Path(record)
 
 
-# Pure, dependency-free parsers. These can be used from any Python code (notebooks,
-# custom pipelines, other report generators) for excellent UX and to guarantee
-# that the exact DotMatch semantics (unique-only counts, documented rates, etc.)
-# are preserved when consuming the TSV artifacts outside MultiQC.
+# Pure, dependency-free parsers. These can be used from Python code (notebooks,
+# custom pipelines, or other report generators) while preserving the documented
+# DotMatch semantics when consuming TSV artifacts outside MultiQC.
 def parse_sample_qc_tsv(path: str | Path) -> dict[str, dict[str, Any]]:
     """Parse DotMatch sample_qc.tsv into dict of per-sample metrics.
 

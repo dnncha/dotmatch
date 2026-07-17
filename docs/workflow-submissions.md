@@ -54,18 +54,22 @@ External target:
 
 Reviewer notes:
 
-- Pin the container to a public DotMatch Bioconda/BioContainers release after
-  `make distribution-channels` verifies that release.
+- The payload uses the public DotMatch 0.1.9 BioContainers build
+  `0.1.9--py311h13f8228_0`, which is available from Quay and the Galaxy
+  Singularity depot.
+- Change the container only after the replacement release passes
+  `make distribution-channels` and is available from both registries.
 - Preserve DotMatch's `unique`, `ambiguous`, `none`, and `invalid` assignment
   semantics in module docs.
 - Keep `task.ext.args` available for command-specific options.
-- Use the tiny fixtures already included in each upstream module test directory.
+- Use the tiny fixtures included in each upstream module test directory so
+  nf-test does not depend on a sibling DotMatch checkout.
 
 Adoption record:
 
 - Add a `nf_core_module` entry to `docs/workflow-adoption.json` only after the
   nf-core PR is merged or released.
-- Use the merged PR or nf-core module page as `integration_url`, and CI/lint
+- Use the merged PR or nf-core module page as `adoption_url`, and CI/lint
   evidence as `evidence_url`.
 
 ## Galaxy / IUC

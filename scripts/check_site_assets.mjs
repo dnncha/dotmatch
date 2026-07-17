@@ -330,7 +330,7 @@ for (const phrase of [
   "Maintainer Issue Templates",
   "Evaluation Scorecard",
   "Integration Tracking Metrics",
-  "Release Communications Calendar"
+  "Release Publication Checklist"
 ]) {
   if (!integrationRoadmap.includes(phrase)) {
     console.error(`Workflow integration roadmap is missing required section: ${phrase}`);

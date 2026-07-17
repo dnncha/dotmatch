@@ -24,7 +24,7 @@ input:
       pattern: "*"
   - threads:  # via task.cpus / ext.cpus
       type: integer
-      description: Threads for parallel steps inside the AssaySpec run (DotMatch uses auto CPU count by default for excellent UX on multi-core hardware).
+      description: Threads for parallel steps inside the AssaySpec run; DotMatch uses the available CPU count by default.
 output:
   - assay_report:
       type: file

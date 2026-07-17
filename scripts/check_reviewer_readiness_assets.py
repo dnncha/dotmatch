@@ -40,7 +40,7 @@ EXPECTED_WORKFLOW_PLAN_IDS = {
     "maintainer_issue_templates",
     "evaluation_scorecard",
     "integration_tracking_metrics",
-    "release_communications_calendar",
+    "release_publication_checklist",
 }
 
 EXPECTED_INTEGRATION_IDS = {

@@ -131,7 +131,7 @@ def assign_features(
     -----
     Only 'unique' assignments receive the target id in result_col.
     For ambiguous / none, result_col will be empty or NaN and status_col will reflect it.
-    This preserves perfect scientific accuracy: no silent assignment of ambiguous reads.
+    This prevents silent assignment of ambiguous reads.
     """
     _ensure_anndata()
     if copy:
