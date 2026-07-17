@@ -10,7 +10,7 @@ statements should remain tied to `docs/scientific-claims.md`,
 
 | Work item | Relevant reviewers | Asset in this repository | Done when |
 | --- | --- | --- | --- |
-| Homepage routes | Core facility leads, CRISPR screen teams, assay developers, workflow maintainers | Public homepage section: "Routes into industry workflows" | Each reviewer has a clear use case, proof path, and next-click destination. |
+| Use-case documentation | Core facility leads, CRISPR screen teams, assay developers, workflow maintainers | Public homepage section: "Known-target assay contexts" | Each workflow has a concrete use case, relevant output artifacts, and technical documentation. |
 | Workflow distribution handoff | nf-core, MultiQC, Galaxy/IUC, Snakemake, institutional pipeline owners | `docs/workflow-submissions.md` | At least one external PR, package, or reviewed wrapper is public and tracked in `docs/workflow-adoption.json`. |
 | Methods and citation artifacts | PIs, methods writers, bioinformatics leads, paper authors | `docs/methods-and-citation.md`, `docs/citation-flywheel.md` | Runs can produce copyable methods and citation artifacts, and reviewers know how to cite the exact release. |
 | Reviewer packet | Technical reviewers, core facilities, procurement reviewers | Evidence gallery, benchmark docs, scientific scope notes | Public statements link to scoped evidence instead of broad claims. |
@@ -41,7 +41,7 @@ them for the exact release and setting:
 - "guaranteed production demultiplexing replacement";
 - broad speed claims without benchmark scope, hardware, command, and comparator.
 
-## Launch Checklist
+## Publication Checklist
 
 Use this checklist when announcing a release, opening an integration PR, or
 asking an external maintainer to evaluate DotMatch.
@@ -56,7 +56,7 @@ asking an external maintainer to evaluate DotMatch.
 - Add public use records to `docs/adopters/` only with approved wording and a
   public URL.
 
-## Copy-Paste Outreach
+## Maintainer Request Templates
 
 ### Repository announcement
 

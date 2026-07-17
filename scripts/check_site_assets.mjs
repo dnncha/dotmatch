@@ -49,7 +49,7 @@ for (const anchor of [
   'id="top"',
   'id="failure-modes"',
   'id="workflow"',
-  'id="industry-routes"',
+  'id="use-cases"',
   'id="evidence"',
   'id="evaluation"',
   'id="ecosystem"',
@@ -228,7 +228,7 @@ for (const phrase of [
   "Methods and citation artifacts",
   "Reviewer packet",
   "Public use records",
-  "Copy-Paste Outreach"
+  "Maintainer Request Templates"
 ]) {
   if (!integrationKit.includes(phrase)) {
     console.error(`Workflow integration kit is missing required section: ${phrase}`);

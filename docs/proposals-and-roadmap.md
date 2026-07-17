@@ -27,16 +27,16 @@ Target: keep or improve the current "hundreds of k reads/sec per core" while han
 
 These let data scientists stay in notebooks without shelling out or writing glue.
 
-## 3. Workflow & Pipeline Penetration
+## 3. Workflow and Pipeline Integration
 
 - **nf-core**: Current examples are local modules. Goal: contribute official `nf-core/modules` for `DOTMATCH_CRISPR_COUNT`, `DOTMATCH_ASSAY_RUN`, barcode demux, etc. Requires:
   - Full `meta.yml`, `tests/`, container directive (bioconda or multi-arch), resource labels that scale with `task.ext.args`.
   - Example full pipeline under `examples/workflows/nf-core/pipeline/`.
-  - Update `docs/workflow-adoption.json` and run the gate once a public nf-core PR merges or a high-profile pipeline uses it.
-- **MultiQC module**: Beyond the custom-content example, ship a small `multiqc_dotmatch` Python package (or contrib to MultiQC) that auto-discovers `sample_qc.tsv`, `crispr_qc.*`, `assay_manifest.*`, unmatched summaries, and renders nice tables/plots + links to the HTML reports. pip-installable, auto in nf-core MultiQC.
-- **Snakemake / Nextflow / Galaxy polish**: Make the existing examples "copy-paste ready" with test data + CI that runs them. Add a small nf-core-like test profile.
+  - Update `docs/workflow-adoption.json` and run the gate after a public nf-core PR merges or a released pipeline records the integration.
+- **MultiQC module**: Beyond the custom-content example, provide a `multiqc_dotmatch` Python package or upstream MultiQC contribution that discovers `sample_qc.tsv`, `crispr_qc.*`, `assay_manifest.*`, and unmatched summaries, then renders tables, plots, and links to the HTML reports.
+- **Snakemake / Nextflow / Galaxy validation**: Keep the examples self-contained with test data and CI execution. Add an nf-core-compatible test profile.
 - **HPC modules / EasyBuild / Spack**: Recipes or docs so institutional clusters can `module load dotmatch`.
-- **Docker / Singularity / Apptainer**: Official multi-arch images on GHCR (already in Dockerfile + release?); document for cloud batch (AWS, GCP, Azure Life Sciences).
+- **Docker / Singularity / Apptainer**: Publish multi-architecture images on GHCR and document their use in cloud batch systems.
 
 ## 4. Assay & Domain Features
 
