@@ -38,7 +38,14 @@ The integration test runs:
 
 ## nf-core Modules
 
-Source payload:
+The first external submission is intentionally limited to one component:
+
+- draft pull request: [nf-core/modules #12156](https://github.com/nf-core/modules/pull/12156);
+- component: `modules/nf-core/dotmatch/crispr_count/`;
+- DotMatch release: `0.2.1`;
+- BioContainers image: `quay.io/biocontainers/dotmatch:0.2.1--py314h118bc1c_0`.
+
+Additional local source payloads remain available for separate review:
 
 - `examples/workflows/nf-core/upstream/modules/nf-core/dotmatch/count/`
 - `examples/workflows/nf-core/upstream/modules/nf-core/dotmatch/demux/`
@@ -54,16 +61,15 @@ External target:
 
 Reviewer notes:
 
-- The payload uses the public DotMatch 0.1.9 BioContainers build
-  `0.1.9--py311h13f8228_0`, which is available from Quay and the Galaxy
-  Singularity depot.
+- The open CRISPR count submission uses the public DotMatch 0.2.1
+  BioContainers build `0.2.1--py314h118bc1c_0`.
 - Change the container only after the replacement release passes
   `make distribution-channels` and is available from both registries.
 - Preserve DotMatch's `unique`, `ambiguous`, `none`, and `invalid` assignment
   semantics in module docs.
 - Keep `task.ext.args` available for command-specific options.
-- Use the tiny fixtures included in each upstream module test directory so
-  nf-test does not depend on a sibling DotMatch checkout.
+- Use established nf-core CRISPR guide-counting fixtures so the module is
+  checked against the same small public inputs as comparable modules.
 
 Adoption record:
 

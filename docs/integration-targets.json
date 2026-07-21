@@ -7,11 +7,12 @@
       "id": "nf_core_modules",
       "name": "nf-core modules",
       "type": "nf_core_module",
-      "status": "local_payload_ready",
-      "prepared_for_version": "0.1.9",
+      "status": "external_pr_open",
+      "prepared_for_version": "0.2.1",
       "upstream_payload": "examples/workflows/nf-core/upstream/",
-      "container_tag": "quay.io/biocontainers/dotmatch:0.1.9--py311h13f8228_0",
+      "container_tag": "quay.io/biocontainers/dotmatch:0.2.1--py314h118bc1c_0",
       "external_target": "https://github.com/nf-core/modules",
+      "external_record": "https://github.com/nf-core/modules/pull/12156",
       "source_assets": [
         "examples/workflows/nf-core/upstream/README.md",
         "examples/workflows/nf-core/upstream/modules/nf-core/dotmatch/count/",
@@ -27,7 +28,7 @@
         "make workflow-integration-test",
         "make reviewer-readiness-ready"
       ],
-      "next_action": "Run the local workflow gates, then open a scoped upstream nf-core/modules PR using the self-contained payload.",
+      "next_action": "Address maintainer review on the scoped dotmatch/crispr_count pull request; record integration only after merge.",
       "public_record_required": true
     },
     {

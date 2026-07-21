@@ -46,6 +46,8 @@ FORBIDDEN_PHRASES = [
     "copy-paste " + "ready",
     "workflow & pipeline " + "penetration",
     "pypi and bioconda are verified for v0." + "1.8",
+    "community " + "traction",
+    "evaluator " + "campaign",
 ]
 
 

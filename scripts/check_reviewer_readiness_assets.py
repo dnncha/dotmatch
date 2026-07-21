@@ -52,6 +52,7 @@ EXPECTED_INTEGRATION_IDS = {
 }
 
 ALLOWED_INTEGRATION_STATUSES = {
+    "external_pr_open",
     "local_payload_ready",
     "local_parser_ready",
     "local_wrapper_ready",
@@ -113,6 +114,8 @@ INTERNAL_PROCESS_PHRASES = [
     "quote-approved",
     "turning private",
     "without turning",
+    "community traction",
+    "evaluator campaign",
 ]
 
 
