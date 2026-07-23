@@ -109,11 +109,12 @@ payloads are available for review, but external workflow status requires an
 accepted PR, package, ToolShed record, wrapper, or public pipeline outside this
 repository.
 
-The first external submission is a draft nf-core/modules pull request for
-`dotmatch/crispr_count`. It is not an accepted integration until the pull
-request is reviewed and merged. Remaining integration targets are:
+The first external submission is an nf-core/modules pull request for
+`dotmatch/crispr_count` that is ready for maintainer review. It is not an
+accepted integration until the pull request is reviewed and merged. Remaining
+integration targets are:
 
-1. Complete review of the scoped nf-core module.
+1. Complete upstream review of the scoped nf-core module.
 2. Released or upstreamed MultiQC module.
 3. Galaxy/IUC wrappers.
 4. Snakemake wrapper or public lab workflow.

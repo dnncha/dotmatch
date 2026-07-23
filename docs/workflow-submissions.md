@@ -40,7 +40,7 @@ The integration test runs:
 
 The first external submission is intentionally limited to one component:
 
-- draft pull request: [nf-core/modules #12156](https://github.com/nf-core/modules/pull/12156);
+- review-ready pull request: [nf-core/modules #12156](https://github.com/nf-core/modules/pull/12156);
 - component: `modules/nf-core/dotmatch/crispr_count/`;
 - DotMatch release: `0.2.1`;
 - BioContainers image: `quay.io/biocontainers/dotmatch:0.2.1--py314h118bc1c_0`.
@@ -63,6 +63,9 @@ Reviewer notes:
 
 - The open CRISPR count submission uses the public DotMatch 0.2.1
   BioContainers build `0.2.1--py314h118bc1c_0`.
+- The module head at `2441f466b4c86aadf8be79ccd43dd5607bdeb621`
+  passes 55 nf-core lint checks and three repeatable Conda nf-tests. Docker and
+  Singularity checks remain pending.
 - Change the container only after the replacement release passes
   `make distribution-channels` and is available from both registries.
 - Preserve DotMatch's `unique`, `ambiguous`, `none`, and `invalid` assignment
