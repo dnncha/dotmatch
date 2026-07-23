@@ -314,16 +314,16 @@ PAIRFASTQ
   --summary "$TMPDIR/pair_paired_summary.json" \
   --assignments "$TMPDIR/pair_paired_assignments.tsv"
 
-grep '^L0\tR0\t1$' "$TMPDIR/pair_paired_counts.tsv" >/dev/null
-grep '^L1\tR1\t1$' "$TMPDIR/pair_paired_counts.tsv" >/dev/null
+grep '^L0	R0	1$' "$TMPDIR/pair_paired_counts.tsv" >/dev/null
+grep '^L1	R1	1$' "$TMPDIR/pair_paired_counts.tsv" >/dev/null
 grep '"input_mode": "paired-fastq"' "$TMPDIR/pair_paired_summary.json" >/dev/null
 grep '"input_sync": "canonical-read-id"' "$TMPDIR/pair_paired_summary.json" >/dev/null
 grep '"total_pairs": 4' "$TMPDIR/pair_paired_summary.json" >/dev/null
 grep '"left_invalid": 1' "$TMPDIR/pair_paired_summary.json" >/dev/null
 grep '"right_invalid": 1' "$TMPDIR/pair_paired_summary.json" >/dev/null
-grep '^pair_a\tACGT\t0\tL0\tunique\t0\tGGAA\t0\tR0\tunique\t0\tunique$' "$TMPDIR/pair_paired_assignments.tsv" >/dev/null
-grep '^pair_c\t\t-1\t\tinvalid\t-1\tGGAA\t0\tR0\tunique\t0\tinvalid$' "$TMPDIR/pair_paired_assignments.tsv" >/dev/null
-grep '^pair_d\tACGT\t0\tL0\tunique\t0\t\t-1\t\tinvalid\t-1\tinvalid$' "$TMPDIR/pair_paired_assignments.tsv" >/dev/null
+grep '^pair_a	ACGT	0	L0	unique	0	GGAA	0	R0	unique	0	unique$' "$TMPDIR/pair_paired_assignments.tsv" >/dev/null
+grep '^pair_c		-1		invalid	-1	GGAA	0	R0	unique	0	invalid$' "$TMPDIR/pair_paired_assignments.tsv" >/dev/null
+grep '^pair_d	ACGT	0	L0	unique	0		-1		invalid	-1	invalid$' "$TMPDIR/pair_paired_assignments.tsv" >/dev/null
 
 if "$DOTMATCH_BIN" pair-count \
   --left-targets "$TMPDIR/pair_left.tsv" \
