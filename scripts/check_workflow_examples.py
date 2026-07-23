@@ -580,8 +580,8 @@ def check_galaxy(root: Path, result: WorkflowAudit) -> None:
         elif sample_qc.find("./assert_contents/has_text[@text='assignment_rate']") is None:
             result.failures.append("Galaxy Planemo test must assert sample_qc assignment_rate content")
     expected_counts = test_data / "expected_counts.mageck.tsv"
-    if expected_counts.is_file() and "guide_a\tGENEA\t1\t0" not in expected_counts.read_text(encoding="utf-8"):
-        result.failures.append("Galaxy expected counts must retain the exact guide_a assignment")
+    if expected_counts.is_file() and "guide_a\tGENEA\t0\t0" not in expected_counts.read_text(encoding="utf-8"):
+        result.failures.append("Galaxy expected counts must match the pinned dotmatch=0.2.1 guide_a assignment")
     for filename in GALAXY_TEST_DATA:
         if not (test_data / filename).is_file():
             result.failures.append(f"Galaxy Planemo test-data file is missing: {filename}")

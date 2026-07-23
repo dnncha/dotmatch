@@ -373,7 +373,7 @@ def _write_workflow_repo(root: Path) -> None:
         ),
         "examples/workflows/galaxy/test-data/expected_counts.mageck.tsv": (
             "sgRNA\tGene\tsample_a\tsample_b\n"
-            "guide_a\tGENEA\t1\t0\n"
+            "guide_a\tGENEA\t0\t0\n"
             "guide_b\tGENEB\t0\t0\n"
             "guide_c\tGENEC\t0\t1\n"
         ),
