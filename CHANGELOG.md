@@ -2,6 +2,15 @@
 
 All notable user-facing changes are tracked here. Public statements in release notes must stay aligned with `docs/scientific-claims.md`.
 
+## 0.2.2 - 2026-07-23
+
+### Changed
+
+- Documented the scoped nf-core CRISPR guide-counting module and its
+  maintainer-review status, with repeatable Conda-profile module tests.
+- Updated the public site dependencies to patched Next.js, React, React DOM,
+  and Sharp releases.
+
 ## 0.2.1 - 2026-07-17
 
 ### Fixed

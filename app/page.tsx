@@ -11,10 +11,10 @@ const packagingUrl = `${docsUrl}packaging.html`;
 const distributionUrl = `${docsUrl}release-process.html`;
 const pypiUrl = "https://pypi.org/project/dotmatch/";
 const biocondaUrl = "https://anaconda.org/bioconda/dotmatch";
-const releaseUrl = `${repoUrl}/releases/tag/v0.2.1`;
+const releaseUrl = `${repoUrl}/releases`;
 const containerUrl = `${repoUrl}/pkgs/container/dotmatch`;
 const workflowExamplesUrl = `${repoUrl}/tree/main/examples/workflows`;
-const doiUrl = "https://doi.org/10.5281/zenodo.21415103";
+const doiUrl = "https://doi.org/10.5281/zenodo.20541628";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const assignmentWorkflowImage = `${basePath}/dotmatch-read-assignment-v2.webp`;
@@ -37,7 +37,7 @@ const structuredData = {
       name: "DotMatch",
       applicationCategory: "Bioinformatics software",
       operatingSystem: "Linux, macOS",
-      softwareVersion: "0.2.1",
+      softwareVersion: "0.2.2",
       softwareHelp: docsUrl,
       codeRepository: repoUrl,
       downloadUrl: pypiUrl,
@@ -152,7 +152,7 @@ const releaseItems = [
   {
     title: "Published release",
     body:
-      "DotMatch v0.2.1 is published on PyPI, GitHub Releases, GHCR, and Zenodo. Bioconda remains on v0.1.9 while its v0.2.0 recipe is under review."
+      "Versioned packages are available through PyPI, GitHub Releases, GHCR, Zenodo, and Bioconda. Check the release and package pages when pinning a version."
   },
   {
     title: "Defined scope",
@@ -177,7 +177,7 @@ const releaseItems = [
 ] as const;
 
 const trustFacts = [
-  ["Release", "v0.2.1 on PyPI and GHCR"],
+  ["Release", "Versioned packages on PyPI and GHCR"],
   ["License", "Apache-2.0 open source"],
   ["Data", "Runs locally on your machine"],
   ["Citation", "Archived release with DOI"]
@@ -394,7 +394,7 @@ export default function Home() {
               ))}
             </ol>
             <aside className="evaluation-links" aria-label="Release and documentation links">
-              <a href={pypiUrl}>PyPI 0.2.1</a>
+              <a href={pypiUrl}>PyPI</a>
               <a href={releaseUrl}>GitHub release</a>
               <a href={containerUrl}>Container image</a>
               <a href={doiUrl}>Zenodo archive</a>

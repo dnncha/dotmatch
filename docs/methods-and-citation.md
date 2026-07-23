@@ -16,21 +16,18 @@ compatibility mode.
 If you use DotMatch, cite the software release through `CITATION.cff`.
 Installed packages also provide `dotmatch citation` for a copyable citation.
 Use the Zenodo concept DOI `10.5281/zenodo.20541628` for general software
-citation. The DOI `10.5281/zenodo.20541629` is the version DOI for v0.1.7,
-and `10.5281/zenodo.21413295` is the version DOI for v0.2.0. The version DOI
-for v0.2.1 is `10.5281/zenodo.21415103`.
+citation. The version-specific DOI for the current release is recorded in
+`CITATION.cff` after the Zenodo archive is minted.
 
 Suggested citation:
 
-> O'Toole D. DotMatch: deterministic known-target short-DNA assignment for sequencing workflows. Software release v0.2.1. https://github.com/dnncha/dotmatch
-
-DOI: <https://doi.org/10.5281/zenodo.21415103>
+> O'Toole D. DotMatch: deterministic known-target short-DNA assignment for sequencing workflows. Software release v0.2.2. https://github.com/dnncha/dotmatch
 
 ## Methods Sentence
 
 For CRISPR guide-counting workflows:
 
-> Reads were assigned to the guide library using DotMatch v0.2.1 with known-target assignment, literal-byte sequence semantics, and the radius ambiguity policy. Count matrices retained only reads for which exactly one guide lay inside the configured edit-distance radius; ambiguous and unmatched reads were excluded from target counts and retained in diagnostic summaries.
+> Reads were assigned to the guide library using DotMatch v0.2.2 with known-target assignment, literal-byte sequence semantics, and the radius ambiguity policy. Count matrices retained only reads for which exactly one guide lay inside the configured edit-distance radius; ambiguous and unmatched reads were excluded from target counts and retained in diagnostic summaries.
 
 For one-edit Levenshtein rescue:
 
@@ -122,7 +119,7 @@ statements out until real-data comparator evidence is in the repository.
 
 ## Evidence Boundary
 
-Describe DotMatch v0.2.1 as a known-target short-DNA assignment engine. It is
+Describe DotMatch v0.2.2 as a known-target short-DNA assignment engine. It is
 not a genome aligner, general Edlib replacement, production Illumina
 demultiplexer, full Perturb-seq analysis pipeline, adapter trimmer, UMI grouper,
 read merger, or amplicon consensus/variant-calling workflow. Current public

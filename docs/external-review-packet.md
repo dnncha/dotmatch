@@ -38,7 +38,7 @@ variant caller, UMI/cell quantifier, or screen-level statistics package.
 ## Minimum Review Commands
 
 ```bash
-python3 -m pip install dotmatch==0.2.1
+python3 -m pip install dotmatch==0.2.2
 dotmatch --version
 dotmatch dist ACGT AGGT
 ```
@@ -74,8 +74,8 @@ Ask these before recommending DotMatch for a workflow:
 
 - `docs/workflow-adoption.json` is still `not_ready`; local examples are not
   accepted external workflow integrations.
-- The nf-core `dotmatch/crispr_count` submission is a draft pull request; it is
-  not an accepted workflow integration unless it is reviewed and merged.
+- The nf-core `dotmatch/crispr_count` submission is ready for maintainer review;
+  it is not an accepted workflow integration unless it is reviewed and merged.
 - The bio.tools metadata is prepared locally, but no public registry record
   exists yet.
 - A local BioContainers runtime check still needs a Docker or OCI host; the

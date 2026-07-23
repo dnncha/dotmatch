@@ -20,7 +20,7 @@ for Linux and macOS. Python 3.9 or newer is required.
 To install an exact release:
 
 ```bash
-python3 -m pip install dotmatch==0.2.1
+python3 -m pip install dotmatch==0.2.2
 ```
 
 The PyPI page is <https://pypi.org/project/dotmatch/>.
@@ -54,8 +54,8 @@ installing it outside a package manager.
 Release images are published to GitHub Container Registry:
 
 ```bash
-docker pull ghcr.io/dnncha/dotmatch:0.2.1
-docker run --rm ghcr.io/dnncha/dotmatch:0.2.1 dist ACGT AGGT
+docker pull ghcr.io/dnncha/dotmatch:0.2.2
+docker run --rm ghcr.io/dnncha/dotmatch:0.2.2 dist ACGT AGGT
 ```
 
 BioContainers images are generated after the corresponding Bioconda package is
