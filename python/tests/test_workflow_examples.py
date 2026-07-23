@@ -175,12 +175,19 @@ def test_galaxy_wrapper_has_dotmatch_crispr_count_surface() -> None:
 
     assert root.tag == "tool"
     assert root.attrib["id"] == "dotmatch_crispr_count"
+    assert root.attrib["version"] == "0.2.1+galaxy0"
 
-    requirement_names = [node.text for node in root.findall("./requirements/requirement")]
-    assert "dotmatch" in requirement_names
+    requirements = {node.text: node.attrib.get("version") for node in root.findall("./requirements/requirement")}
+    assert requirements["dotmatch"] == "0.2.1"
+
+    reads = root.find("./inputs/param[@name='reads']")
+    assert reads is not None
+    assert reads.attrib["multiple"] == "true"
 
     command = root.findtext("command") or ""
     assert "dotmatch crispr-count" in command
+    assert "element_identifier" in command
+    assert "ln -s" in command
     assert "--ambiguous" in command
     assert "--summary" in command
     assert "--sample-qc" in command
@@ -197,13 +204,17 @@ def test_galaxy_wrapper_has_planemo_fixture_test() -> None:
     assert test is not None
     params = {node.attrib["name"]: node.attrib.get("value", "") for node in test.findall("param")}
     assert params["library"] == "crispr_library.csv"
-    assert params["sample1_fastq"] == "sample_a.fastq"
-    assert params["sample2_fastq"] == "sample_b.fastq"
+    assert params["reads"] == "sample_a.fastq,sample_b.fastq"
     outputs = {node.attrib["name"]: node.attrib.get("file", "") for node in test.findall("output")}
     assert outputs["counts"] == "expected_counts.mageck.tsv"
     sample_qc = next(node for node in test.findall("output") if node.attrib["name"] == "sample_qc")
     assert sample_qc.find("./assert_contents/has_text[@text='assignment_rate']") is not None
     assert sample_qc.find("./assert_contents/has_text[@text='sample_a']") is not None
+
+
+def test_galaxy_count_fixture_keeps_the_exact_guide_assignment() -> None:
+    expected = ROOT / "examples" / "workflows" / "galaxy" / "test-data" / "expected_counts.mageck.tsv"
+    assert "guide_a\tGENEA\t1\t0" in expected.read_text(encoding="utf-8")
 
 
 def test_workflow_fixtures_cover_core_outcomes() -> None:

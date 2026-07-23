@@ -14,7 +14,7 @@ PUBLIC_PATHS = [
     ROOT / ".github",
 ]
 
-PUBLIC_SUFFIXES = {".css", ".html", ".json", ".md", ".mdx", ".nf", ".py", ".ts", ".tsx", ".yaml", ".yml"}
+PUBLIC_SUFFIXES = {".css", ".html", ".json", ".md", ".mdx", ".nf", ".py", ".ts", ".tsx", ".xml", ".yaml", ".yml"}
 SKIP_PARTS = {"_build", "node_modules", "__pycache__"}
 
 FORBIDDEN_PHRASES = [
