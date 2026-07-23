@@ -2,6 +2,7 @@ import gzip
 import importlib.util
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -74,6 +75,15 @@ def test_main_records_repo_relative_crispr_metadata(tmp_path, monkeypatch):
         ),
     )
     monkeypatch.setattr(fetcher, "md5_file", lambda path: fetcher.FEATURE_REF_MD5)
+    monkeypatch.setattr(
+        fetcher,
+        "find_tar_member",
+        lambda url, suffix, tar_bytes=None: SimpleNamespace(
+            name=fetcher.R2_SUFFIX,
+            data_offset=0,
+            size=0,
+        ),
+    )
 
     def fake_write_fastq(tar_url, suffix, dest, records, prefix_bytes=fetcher.FASTQ_PREFIX_BYTES, tar_bytes=None):
         _write_fastq(
