@@ -69,6 +69,31 @@ Only unique assignments add matrix counts. The command does not pair FASTQ
 reads, correct cell barcodes, deduplicate UMIs, or call cells; retain those
 upstream decisions and provenance with the input table.
 
+## Pair Counting Across Paired FASTQs
+
+`pair-count` assigns a left target and a right target for each record pair.
+Use `--reads` when both windows are present in one read, or give synchronized
+R1 and R2 files:
+
+```bash
+dotmatch pair-count \
+  --left-targets r1_targets.tsv \
+  --right-targets r2_targets.tsv \
+  --left-reads sample_R1.fastq.gz \
+  --right-reads sample_R2.fastq.gz \
+  --left-start 0 --left-length 20 \
+  --right-start 0 --right-length 20 \
+  --k 1 --metric hamming \
+  --out pair_counts.tsv \
+  --summary pair_summary.json \
+  --assignments pair_assignments.tsv
+```
+
+Paired inputs must contain the same number of complete FASTQ records in the
+same order. DotMatch compares the first header token after removing a terminal
+`/1` or `/2`; a mismatch stops the command before counts are written. The
+summary records the input mode and side-specific unmatched and invalid totals.
+
 ## AssaySpec Workflows
 
 ```bash

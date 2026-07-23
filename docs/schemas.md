@@ -210,7 +210,8 @@ right_id
 count
 ```
 
-Only reads with uniquely assigned left and right windows contribute to `count`.
+Only record pairs with uniquely assigned left and right windows contribute to
+`count`.
 
 ## `pair_assignments.tsv`
 
@@ -232,8 +233,9 @@ pair_status
 ```
 
 `pair_status` is `unique` only when both windows are uniquely assigned. If
-either side is ambiguous, unmatched, or invalid, the read is excluded from
-`pair_counts.tsv`.
+either side is ambiguous, unmatched, or invalid, the record pair is excluded
+from `pair_counts.tsv`. For paired FASTQ input, `read_id` is the shared
+canonical identifier after a terminal `/1` or `/2` is removed.
 
 ## `pair_summary.json`
 
@@ -241,6 +243,8 @@ Top-level fields:
 
 ```text
 workflow
+input_mode
+input_sync
 k
 metric
 alphabet_policy
@@ -251,22 +255,34 @@ right_length
 n_left_targets
 n_right_targets
 total_reads
+total_pairs
 assigned_pairs
 pair_ambiguous
 left_unmatched
 right_unmatched
 invalid
+left_invalid
+right_invalid
 candidates_considered
 candidates_verified
 ```
 
 Rules:
 
-- `assigned_pairs` counts reads where both fixed windows are uniquely assigned;
-- `pair_ambiguous` counts reads where either side is ambiguous and the read is
+- `input_mode` is `single-read` when both windows were read from `--reads` and
+  `paired-fastq` when `--left-reads` and `--right-reads` were used;
+- `input_sync` is `canonical-read-id` for paired FASTQ input and `not-applicable`
+  for single-read input;
+- `total_reads` remains the number of processed input records; `total_pairs` is the
+  number of synchronized R1/R2 records for paired input and equals `total_reads` for
+  single-read input;
+- `assigned_pairs` counts record pairs where both fixed windows are uniquely assigned;
+- `pair_ambiguous` counts record pairs where either side is ambiguous and the pair is
   excluded from pair counts;
 - `left_unmatched` and `right_unmatched` count side-specific no-match outcomes;
-- `invalid` counts reads where either fixed window cannot be extracted.
+- `invalid` counts record pairs where either fixed window cannot be extracted;
+- `left_invalid` and `right_invalid` identify the side whose window could not be
+  extracted. A pair with two invalid windows contributes to both side totals.
 
 ## `audit_summary.tsv`
 

@@ -173,6 +173,28 @@ upstream steps should remain documented with the observation table.
 See the [scverse and feature-barcode tutorial](https://dotmatch.readthedocs.io/en/latest/tutorials/scverse-perturb-seq.html)
 for the file contract and AnnData handoff.
 
+### Count target pairs across R1 and R2
+
+Use `pair-count` when a left target and a right target are sequenced in
+synchronized FASTQ mates:
+
+```bash
+dotmatch pair-count \
+  --left-targets r1_targets.tsv \
+  --right-targets r2_targets.tsv \
+  --left-reads sample_R1.fastq.gz \
+  --right-reads sample_R2.fastq.gz \
+  --left-start 0 --left-length 20 \
+  --right-start 0 --right-length 20 \
+  --k 1 --metric hamming \
+  --out pair_counts.tsv \
+  --summary pair_summary.json
+```
+
+R1 and R2 must contain the same records in the same order. DotMatch checks the
+canonical read identifier before assignment and records input synchronization,
+side-specific unmatched totals, and side-specific invalid totals in the summary.
+
 ### Check a target library
 
 Before allowing mismatch correction, check whether neighbouring targets can

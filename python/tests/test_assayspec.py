@@ -145,6 +145,57 @@ assignments = true
     return spec
 
 
+def _write_paired_pair_spec(tmp_path: Path) -> Path:
+    left = tmp_path / "paired_left.tsv"
+    right = tmp_path / "paired_right.tsv"
+    left_reads = tmp_path / "pair_R1.fastq"
+    right_reads = tmp_path / "pair_R2.fastq"
+    left.write_text("L0\tACGT\nL1\tTTTT\n", encoding="utf-8")
+    right.write_text("R0\tGGAA\nR1\tCCCC\n", encoding="utf-8")
+    left_reads.write_text(
+        "@p0/1\nACGT\n+\nIIII\n"
+        "@p1 1:N:0:1\nTTTT\n+\nIIII\n",
+        encoding="utf-8",
+    )
+    right_reads.write_text(
+        "@p0/2\nGGAA\n+\nIIII\n"
+        "@p1 2:N:0:1\nCCCC\n+\nIIII\n",
+        encoding="utf-8",
+    )
+    spec = tmp_path / "paired_pair.toml"
+    spec.write_text(
+        f"""
+schema_version = 1
+mode = "pair-count"
+assay_type = "generic"
+left_targets = "{left}"
+right_targets = "{right}"
+left_reads = "{left_reads}"
+right_reads = "{right_reads}"
+
+[run]
+out_dir = "{tmp_path / 'paired_pair_out'}"
+
+[left]
+start = 0
+length = 4
+
+[right]
+start = 0
+length = 4
+
+[assignment]
+k = 1
+metric = "hamming"
+
+[outputs]
+assignments = true
+""".lstrip(),
+        encoding="utf-8",
+    )
+    return spec
+
+
 def _write_inference_targets(tmp_path: Path) -> Path:
     targets = tmp_path / "targets.tsv"
     targets.write_text("guide_a\tACGT\tGENEA\nguide_b\tTTTT\tGENEB\n", encoding="utf-8")
@@ -661,10 +712,12 @@ def test_assay_run_demux_and_pair_count_specs(tmp_path: Path) -> None:
     subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
     demux_spec = _write_demux_spec(tmp_path)
     pair_spec = _write_pair_spec(tmp_path)
+    paired_pair_spec = _write_paired_pair_spec(tmp_path)
     env = {"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")}
 
     demux = _run_cli(["assay", "run", str(demux_spec)], env=env)
     pair = _run_cli(["assay", "run", str(pair_spec)], env=env)
+    paired_pair = _run_cli(["assay", "run", str(paired_pair_spec)], env=env)
 
     assert demux.returncode == 0, demux.stderr
     assert (tmp_path / "demux_out" / "demuxed" / "bc0.fastq").exists()
@@ -675,6 +728,34 @@ def test_assay_run_demux_and_pair_count_specs(tmp_path: Path) -> None:
     pair_reliability = json.loads((tmp_path / "pair_out" / "reliability_summary.json").read_text(encoding="utf-8"))
     assert pair_reliability["evidence_boundary"]["status"] == "smoke"
     assert any(finding["finding_id"] == "evidence_boundary_not_supported" for finding in pair_reliability["findings"])
+    assert paired_pair.returncode == 0, paired_pair.stderr
+    paired_out = tmp_path / "paired_pair_out"
+    assert "L0\tR0\t1" in (paired_out / "pair_counts.tsv").read_text(encoding="utf-8")
+    assert "L1\tR1\t1" in (paired_out / "pair_counts.tsv").read_text(encoding="utf-8")
+    paired_summary = json.loads((paired_out / "pair_summary.json").read_text(encoding="utf-8"))
+    assert paired_summary["input_mode"] == "paired-fastq"
+    assert paired_summary["input_sync"] == "canonical-read-id"
+    assert paired_summary["total_pairs"] == 2
+    assert (paired_out / "pair_assignments.tsv").read_text(encoding="utf-8").splitlines()[1].startswith("p0\t")
+    methods = (paired_out / "methods.md").read_text(encoding="utf-8")
+    assert "Left FASTQ" in methods
+    assert "Right FASTQ" in methods
+
+
+def test_pair_assayspec_rejects_mixed_fastq_layouts(tmp_path: Path) -> None:
+    from dotmatch.assayspec import AssaySpecError, load_assay_spec
+
+    spec = _write_paired_pair_spec(tmp_path)
+    spec.write_text(
+        spec.read_text(encoding="utf-8").replace(
+            f'left_reads = "{tmp_path / "pair_R1.fastq"}"',
+            f'reads = "{tmp_path / "pair_R1.fastq"}"\nleft_reads = "{tmp_path / "pair_R1.fastq"}"',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(AssaySpecError, match="must use reads or both left_reads and right_reads"):
+        load_assay_spec(spec)
 
 
 def test_demux_gpu_metadata_requires_public_gpu_gate(tmp_path: Path) -> None:
