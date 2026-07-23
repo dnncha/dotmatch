@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dotmatch"
-version = "0.2.2"
+version = "0.3.0"
 description = "Known-target short-DNA assignment from FASTQ for CRISPR guides, barcodes, feature tags, primers, and other targets"
 readme = "README.md"
 requires-python = ">=3.9"

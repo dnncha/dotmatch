@@ -10,7 +10,7 @@ match, an ambiguous match, unmatched, or invalid.
 [![Documentation](https://readthedocs.org/projects/dotmatch/badge/?version=latest)](https://dotmatch.readthedocs.io/en/latest/)
 [![Bioconda](https://img.shields.io/conda/vn/bioconda/dotmatch?label=Bioconda)](https://anaconda.org/bioconda/dotmatch)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/dnncha/dotmatch/blob/main/LICENSE)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21511337.svg)](https://doi.org/10.5281/zenodo.21511337)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20541628.svg)](https://doi.org/10.5281/zenodo.20541628)
 
 [Documentation](https://dotmatch.readthedocs.io/en/latest/) ·
 [Getting started](https://dotmatch.readthedocs.io/en/latest/getting-started.html) ·

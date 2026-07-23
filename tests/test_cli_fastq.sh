@@ -1932,7 +1932,29 @@ grep '^bc3	TTTT	G3	0	0	0	0	0	0	0$' "$TMPDIR/counts_exact_radius.tsv" >/dev/null
 grep '"count_engine": "hamming_lookup_direct_single_offset"' "$TMPDIR/summary_exact_radius.json" >/dev/null
 grep '"hamming_index": "exact"' "$TMPDIR/summary_exact_radius.json" >/dev/null
 
+METAL_AVAILABLE=0
 if [ "$(uname -s)" = "Darwin" ]; then
+  if "$DOTMATCH_BIN" count \
+    --targets "$TMPDIR/targets.csv" \
+    --reads "$TMPDIR/reads.fastq.gz" \
+    --sample-label metal_probe \
+    --target-start 0 \
+    --target-length 4 \
+    --k 1 \
+    --metric hamming \
+    --ambiguity-policy best \
+    --format mageck \
+    --backend gpu-metal-experimental \
+    --out "$TMPDIR/counts_metal_probe.tsv" \
+    --summary "$TMPDIR/summary_metal_probe.json" \
+    2> "$TMPDIR/metal_probe.err"; then
+    METAL_AVAILABLE=1
+  else
+    grep 'Metal backend unavailable' "$TMPDIR/metal_probe.err" >/dev/null
+  fi
+fi
+
+if [ "$METAL_AVAILABLE" = "1" ]; then
   "$DOTMATCH_BIN" count \
     --targets "$TMPDIR/targets.csv" \
     --reads "$TMPDIR/reads.fastq.gz" \
@@ -2484,7 +2506,7 @@ LIBRARYALIASES
 
 diff -u "$TMPDIR/expected_mageck.tsv" "$TMPDIR/crispr_mageck_reordered.tsv"
 
-if [ "$(uname -s)" = "Darwin" ]; then
+if [ "$METAL_AVAILABLE" = "1" ]; then
   "$DOTMATCH_BIN" crispr-count \
     --library "$TMPDIR/targets.csv" \
     --samples "$TMPDIR/samples.tsv" \

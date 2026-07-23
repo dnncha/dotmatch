@@ -20,15 +20,14 @@ for Linux and macOS. Python 3.9 or newer is required.
 To install an exact release:
 
 ```bash
-python3 -m pip install dotmatch==0.2.2
+python3 -m pip install dotmatch==<version>
 ```
 
 The PyPI page is <https://pypi.org/project/dotmatch/>.
 
 The release workflow is configured to build repaired `manylinux` and
-`musllinux` wheels for `x86_64` and `aarch64` on future tags. Check the
-release record for the architectures confirmed for a specific version; the
-0.2.2 record confirms `x86_64` only.
+`musllinux` wheels for `x86_64` and `aarch64`. Check the release record for
+the architectures confirmed for a specific version before pinning it.
 
 ## Bioconda
 
@@ -59,14 +58,13 @@ installing it outside a package manager.
 Release images are published to GitHub Container Registry:
 
 ```bash
-docker pull ghcr.io/dnncha/dotmatch:0.2.2
-docker run --rm ghcr.io/dnncha/dotmatch:0.2.2 dist ACGT AGGT
+docker pull ghcr.io/dnncha/dotmatch:v<version>
+docker run --rm ghcr.io/dnncha/dotmatch:v<version> dist ACGT AGGT
 ```
 
-For future tags, the release workflow is configured to publish
-`linux/amd64` and `linux/arm64` image manifests and smoke-test both native
-CLI paths. Check the release record before pinning a tag; the 0.2.2 record
-confirms `linux/amd64` only.
+The release workflow is configured to publish `linux/amd64` and `linux/arm64`
+image manifests and smoke-test both native CLI paths. Check the release record
+before pinning a tag.
 
 BioContainers images are generated after the corresponding Bioconda package is
 published. Their tags include the Bioconda build number, so use the tag shown on

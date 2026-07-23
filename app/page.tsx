@@ -14,7 +14,7 @@ const biocondaUrl = "https://anaconda.org/bioconda/dotmatch";
 const releaseUrl = `${repoUrl}/releases`;
 const containerUrl = `${repoUrl}/pkgs/container/dotmatch`;
 const workflowExamplesUrl = `${repoUrl}/tree/main/examples/workflows`;
-const doiUrl = "https://doi.org/10.5281/zenodo.21511337";
+const doiUrl = "https://doi.org/10.5281/zenodo.20541628";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const assignmentWorkflowImage = `${basePath}/dotmatch-read-assignment-v2.webp`;
@@ -37,7 +37,7 @@ const structuredData = {
       name: "DotMatch",
       applicationCategory: "Bioinformatics software",
       operatingSystem: "Linux, macOS",
-      softwareVersion: "0.2.2",
+      softwareVersion: "0.3.0",
       softwareHelp: docsUrl,
       codeRepository: repoUrl,
       downloadUrl: pypiUrl,

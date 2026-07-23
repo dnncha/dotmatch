@@ -74,7 +74,7 @@ def test_bioconda_recipe_gate_is_wired_into_release_ready() -> None:
     assert "python3 scripts/check_bioconda_recipe.py" in makefile
 
 
-def test_zenodo_metadata_tracks_minted_release_doi() -> None:
+def test_zenodo_metadata_tracks_the_concept_doi_before_release_minting() -> None:
     metadata = json.loads((ROOT / ".zenodo.json").read_text(encoding="utf-8"))
 
     assert metadata["title"] == "DotMatch: deterministic known-target short-DNA assignment for sequencing workflows"
@@ -94,7 +94,7 @@ def test_zenodo_metadata_tracks_minted_release_doi() -> None:
     assert metadata["conceptdoi"] == "10.5281/zenodo.20541628"
 
 
-def test_codemeta_tracks_package_citation_and_minted_doi() -> None:
+def test_codemeta_tracks_package_citation_and_concept_doi_before_minting() -> None:
     codemeta = json.loads((ROOT / "codemeta.json").read_text(encoding="utf-8"))
     citation = (ROOT / "CITATION.cff").read_text(encoding="utf-8")
     zenodo = json.loads((ROOT / ".zenodo.json").read_text(encoding="utf-8"))
@@ -117,7 +117,7 @@ def test_codemeta_tracks_package_citation_and_minted_doi() -> None:
         }
     ]
     assert f"version: \"{_pyproject_version()}\"" in citation
-    assert "doi: 10.5281/zenodo.21511337" in citation
+    assert "doi:" not in citation
     assert codemeta["softwareVersion"] == zenodo["version"]
     assert "known-target assignment" in codemeta["keywords"]
     assert "CRISPR" in codemeta["keywords"]
