@@ -7,6 +7,11 @@
     <command detect_errors="exit_code"><![CDATA[
 #import re
 
+#set $indel_args = ""
+#if str($metric) == 'levenshtein' and int($indel_window) > 0
+    #set $indel_args = "--indel-window '" + str($indel_window) + "'"
+#end if
+
 printf 'sample_id\tfastq\n' > samples.tsv &&
 #for $sample in $reads:
     #set $sample_id = re.sub(r'[^\w.-]', '_', str($sample.element_identifier))
@@ -18,22 +23,7 @@ printf 'sample_id\tfastq\n' > samples.tsv &&
 ln -s '$sample' '$fastq_name' &&
 printf '%s\t%s\n' '$sample_id' '$fastq_name' >> samples.tsv &&
 #end for
-dotmatch crispr-count \
-  --library '$library' \
-  --samples samples.tsv \
-  --guide-start '$guide_start' \
-  --guide-length '$guide_length' \
-  --k '$k' \
-  --metric '$metric' \
-  --ambiguity-policy radius \
-#if str($metric) == 'levenshtein' and int($indel_window) > 0
-  --indel-window '$indel_window' \
-#end if
-  --out '$counts' \
-  --summary '$summary' \
-  --sample-qc '$sample_qc' \
-  --ambiguous '$ambiguous' \
-  --no-progress
+dotmatch crispr-count --library '$library' --samples samples.tsv --guide-start '$guide_start' --guide-length '$guide_length' --k '$k' --metric '$metric' --ambiguity-policy radius $indel_args --out '$counts' --summary '$summary' --sample-qc '$sample_qc' --ambiguous '$ambiguous' --no-progress
     ]]></command>
     <inputs>
         <param name="library" type="data" format="csv,tabular,txt" label="Guide library" help="MAGeCK-style CSV or target TSV accepted by DotMatch."/>

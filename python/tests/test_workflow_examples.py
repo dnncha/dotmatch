@@ -191,6 +191,10 @@ def test_galaxy_wrapper_has_dotmatch_crispr_count_surface() -> None:
     assert "--ambiguous" in command
     assert "--summary" in command
     assert "--sample-qc" in command
+    crispr_command = next(line for line in command.splitlines() if line.startswith("dotmatch crispr-count"))
+    assert "\\" not in crispr_command
+    assert "--out" in crispr_command
+    assert "--no-progress" in crispr_command
 
     output_names = {node.attrib["name"] for node in root.findall("./outputs/data")}
     assert {"counts", "summary", "sample_qc"} <= output_names
