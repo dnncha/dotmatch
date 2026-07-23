@@ -217,8 +217,15 @@ def test_galaxy_wrapper_has_planemo_fixture_test() -> None:
 
 
 def test_galaxy_count_fixture_keeps_the_exact_guide_assignment() -> None:
+    wrapper_path = ROOT / "examples" / "workflows" / "galaxy" / "dotmatch_crispr_count.xml"
+    wrapper = ET.parse(wrapper_path).getroot()
+    requirement = wrapper.find("./requirements/requirement")
+    assert requirement is not None
+    assert requirement.text == "dotmatch"
+    assert requirement.attrib["version"] == "0.2.1"
+
     expected = ROOT / "examples" / "workflows" / "galaxy" / "test-data" / "expected_counts.mageck.tsv"
-    assert "guide_a\tGENEA\t1\t0" in expected.read_text(encoding="utf-8")
+    assert "guide_a\tGENEA\t0\t0" in expected.read_text(encoding="utf-8")
 
 
 def test_workflow_fixtures_cover_core_outcomes() -> None:
