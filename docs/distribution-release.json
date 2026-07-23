@@ -1,16 +1,19 @@
 {
   "schema_version": 1,
-  "status": "not_released",
+  "status": "partially_verified",
   "release_version": "0.2.2",
   "post_release_gate": "make distribution-channels",
   "channels": [
     {
       "id": "pypi",
-      "status": "blocked",
+      "status": "verified",
       "expected_url": "https://pypi.org/project/dotmatch/0.2.2/",
+      "public_url": "https://pypi.org/project/dotmatch/0.2.2/",
+      "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/30012092792",
+      "verified_date": "2026-07-23",
       "verification_command": "make distribution-channels",
-      "blocker": "Version 0.2.2 has not been published to PyPI.",
-      "next_action": "Publish the tagged source distribution and repaired Linux and macOS wheels, then verify the project page and files."
+      "files": 4,
+      "readme_relative_links": 0
     },
     {
       "id": "bioconda",
@@ -18,7 +21,7 @@
       "expected_url": "https://anaconda.org/bioconda/dotmatch",
       "verification_command": "make distribution-channels",
       "blocker": "A DotMatch 0.2.2 recipe has not been accepted and built by Bioconda.",
-      "next_action": "Submit the rendered recipe after the immutable source archive is available, then verify channel propagation."
+      "next_action": "Submit the rendered recipe from the immutable source archive, then verify channel propagation."
     },
     {
       "id": "bioconda-assaycode",
@@ -30,11 +33,14 @@
     },
     {
       "id": "ghcr",
-      "status": "blocked",
+      "status": "verified",
       "expected_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
+      "public_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
+      "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/30012092792",
+      "verified_date": "2026-07-23",
       "verification_command": "make distribution-channels",
-      "blocker": "The v0.2.2 GHCR image has not been published from an immutable source tag.",
-      "next_action": "Publish the tag, verify its manifest and OCI labels, then record the immutable digest."
+      "tag": "v0.2.2",
+      "digest": "sha256:dcf957f3b0c42215e714983315070a3043a56dd8b3f8fed42fe6ea0219394435"
     },
     {
       "id": "biocontainers",
@@ -46,15 +52,19 @@
     },
     {
       "id": "zenodo",
-      "status": "blocked",
-      "expected_url": "https://doi.org/10.5281/zenodo.20541628",
+      "status": "verified",
+      "expected_url": "https://doi.org/10.5281/zenodo.21511337",
+      "public_url": "https://doi.org/10.5281/zenodo.21511337",
+      "evidence_url": "https://zenodo.org/api/records/21511337",
+      "verified_date": "2026-07-23",
       "verification_command": "make distribution-channels",
-      "blocker": "The version-specific Zenodo DOI for 0.2.2 has not been minted.",
-      "next_action": "Confirm the archive for the immutable GitHub release and record its version DOI."
+      "concept_doi": "10.5281/zenodo.20541628",
+      "release_doi": "10.5281/zenodo.21511337"
     }
   ],
   "blockers": [
-    "Version 0.2.2 has not been tagged and its public distribution records have not been verified."
+    "The DotMatch and optional AssayCode Bioconda recipes are not published for 0.2.2.",
+    "BioContainers generation and an OCI runtime check remain pending the Bioconda build."
   ],
-  "next_action": "Publish v0.2.2, verify each channel with make distribution-channels, and replace this pending record with public links and dates."
+  "next_action": "Submit the DotMatch and AssayCode Bioconda recipes, then verify Bioconda and BioContainers before marking all release channels verified."
 }
