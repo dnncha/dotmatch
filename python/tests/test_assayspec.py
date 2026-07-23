@@ -574,7 +574,7 @@ def test_assay_run_count_reproduces_existing_crispr_fixture(tmp_path: Path) -> N
     assert "ambiguous reads were not silently counted" in methods
     citation = (out_dir / "CITATION.bib").read_text(encoding="utf-8")
     assert "@software{dotmatch" in citation
-    assert "doi = {10.5281/zenodo.20541628}" in citation
+    assert "doi = {10.5281/zenodo.21511337}" in citation
     versions = (out_dir / "software_versions.yml").read_text(encoding="utf-8")
     assert "dotmatch_python:" in versions
     assert "dotmatch_native:" in versions
