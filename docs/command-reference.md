@@ -46,6 +46,29 @@ dotmatch audit --targets guides.tsv --k 3 --audit-mode exact --out-dir audit/
 Proceed only when `safe_at_hamming_k2` or `safe_at_hamming_k3` is true for the
 radius you plan to use.
 
+## Pre-extracted Feature Matrices
+
+```bash
+dotmatch feature matrix \
+  --observations feature_observations.tsv \
+  --targets feature_library.tsv \
+  --id-column observation_id \
+  --cell-column cell_barcode \
+  --sequence-column feature_seq \
+  --metric hamming --k 1 --ambiguity-policy radius \
+  --out-dir feature_matrix/
+```
+
+Use `feature matrix` when an upstream workflow has already made a headered
+observation table with an explicit cell identifier and a feature sequence
+window. It writes a deterministic sparse Matrix Market matrix with cells on
+rows and features on columns, plus feature/cell axes, long-form counts,
+per-observation assignments, per-cell QC, and a JSON summary.
+
+Only unique assignments add matrix counts. The command does not pair FASTQ
+reads, correct cell barcodes, deduplicate UMIs, or call cells; retain those
+upstream decisions and provenance with the input table.
+
 ## AssaySpec Workflows
 
 ```bash

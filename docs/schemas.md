@@ -73,6 +73,98 @@ Rules:
 - `k1_rescued_reads` is retained for compatibility and equals `assigned_corrected`,
   including in Levenshtein `k=2` runs.
 
+## `feature_matrix/`
+
+Artifacts from `dotmatch feature matrix`. The input is a headered TSV/CSV of
+pre-extracted observations with explicit cell identifiers and feature-sequence
+windows. The command does not perform FASTQ pairing, barcode correction, UMI
+deduplication, or cell calling.
+
+### `matrix.mtx`
+
+A Matrix Market coordinate matrix with **cells on rows** and **features on
+columns**. Indices are one-based as required by Matrix Market.
+
+```text
+%%MatrixMarket matrix coordinate integer general
+rows columns nonzero_entries
+row_index column_index count
+```
+
+The row order is `barcodes.tsv`; the column order is `features.tsv`. Counts
+include only uniquely assigned observations.
+
+### `barcodes.tsv`
+
+```text
+cell_barcode
+```
+
+One row per matrix row, sorted lexically by the exact input cell identifier.
+
+### `features.tsv`
+
+```text
+target_id
+target_seq
+```
+
+One row per matrix column, sorted lexically by `target_id`.
+
+### `cell_feature_counts.tsv`
+
+Long-form nonzero counts, sorted by `cell_barcode` and `target_id`.
+
+```text
+cell_barcode
+target_id
+count
+```
+
+### `assignments.tsv`
+
+One row per input observation.
+
+```text
+observation_id
+cell_barcode
+observed_seq
+target_id
+target_seq
+distance
+status
+match_count
+second_best_distance
+```
+
+`target_id` and `target_seq` are empty unless the observation was uniquely
+assigned. `status` is one of `unique`, `ambiguous`, `none`, or `invalid`.
+
+### `cell_qc.tsv`
+
+One row per observed cell identifier.
+
+```text
+cell_barcode
+total_observations
+valid_observations
+assigned_unique
+ambiguous
+unmatched
+invalid
+unique_features
+assignment_rate
+```
+
+`assignment_rate = assigned_unique / valid_observations`; it is `0.0` when a
+cell has no valid feature sequence windows.
+
+### `summary.json`
+
+Records the assignment settings, input file hashes, aggregate outcome counts,
+matrix dimensions, artifact list, and explicit non-performed upstream steps.
+`matrix_orientation` is always `cells_by_features` for this schema version.
+
 ## `assay_manifest.summary.tsv`
 
 One row per `dotmatch assay run` execution, intended for workflow systems and

@@ -33,6 +33,8 @@ FORBIDDEN_PHRASES = [
     "without turning private feedback into public " + "evidence",
     "industry " + "penetration",
     "massive industry " + "penetration",
+    "international computational biology " + "infiltration",
+    "totally super " + "massive",
     "excellent " + "ux",
     "perfect scientific " + "accuracy",
     "adoption " + "flywheel",

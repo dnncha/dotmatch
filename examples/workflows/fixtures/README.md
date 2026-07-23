@@ -15,3 +15,8 @@ CI smoke checks.
 `sample_b.fastq` adds a second sample with one unique exact `guide_c`
 assignment and one unmatched read so MAGeCK-style multi-sample output is
 exercised.
+
+`feature_observations.tsv` and `feature_library.tsv` exercise the
+pre-extracted cell-by-feature matrix command. They include unique exact and
+corrected observations, an ambiguous observation, an unmatched observation,
+and an empty feature window recorded as invalid.

@@ -33,6 +33,7 @@ from .core import (
     targets_from_dataframe,
     write_assignments_tsv,
 )
+from .feature_matrix import FeatureMatrixResult, build_feature_matrix
 
 # Advanced / optional integrations (import submodules to avoid heavy dep cost)
 # from . import anndata as anndata  # if you have the extra
@@ -84,5 +85,7 @@ __all__ = [
     "stream_assign",
     "targets_from_dataframe",
     "write_assignments_tsv",
+    "FeatureMatrixResult",
+    "build_feature_matrix",
     "tl",
 ]

@@ -36,6 +36,7 @@ the [command reference](command-reference.md).
 | Split reads by inline barcode | [Getting started: demultiplexing](getting-started.md#demultiplex-inline-barcodes) |
 | Diagnose barcode failures | [Barcode run diagnosis](getting-started.md#diagnose-a-barcode-run) |
 | Design or check a barcode panel | [Barcode panel design](barcode-panel-design.md) |
+| Build a cell-by-feature matrix from extracted observations | [scverse and feature barcodes](tutorials/scverse-perturb-seq.md) |
 | Use DotMatch from Python | [Streaming Python API](streaming-api.md) |
 | Add DotMatch to a pipeline | [Output schemas](schemas.md) |
 | Evaluate DotMatch for a workflow | [Bioinformatics evaluation](bioinformatics-evaluation.md) |

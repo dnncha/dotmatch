@@ -148,6 +148,31 @@ dotmatch barcode autopsy \
 Open `autopsy/report.html` first. The tables beside it record offset scans,
 near-neighbour barcodes, correction safety, and frequent unmatched windows.
 
+### Build a cell-by-feature matrix from extracted observations
+
+When an upstream workflow has already extracted feature windows and attached an
+explicit cell identifier, DotMatch can write a sparse cells × features matrix:
+
+```bash
+dotmatch feature matrix \
+  --observations feature_observations.tsv \
+  --targets feature_library.tsv \
+  --id-column observation_id \
+  --cell-column cell_barcode \
+  --sequence-column feature_seq \
+  --metric hamming --k 1 \
+  --out-dir feature_matrix/
+```
+
+The output directory contains `matrix.mtx`, cell and feature axes, long-form
+counts, per-observation assignments, per-cell QC, and a JSON summary. Only
+unique assignments add a matrix count. This command does not perform FASTQ
+pairing, cell-barcode correction, UMI deduplication, or cell calling; those
+upstream steps should remain documented with the observation table.
+
+See the [scverse and feature-barcode tutorial](https://dotmatch.readthedocs.io/en/latest/tutorials/scverse-perturb-seq.html)
+for the file contract and AnnData handoff.
+
 ### Check a target library
 
 Before allowing mismatch correction, check whether neighbouring targets can
