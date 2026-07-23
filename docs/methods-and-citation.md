@@ -16,12 +16,14 @@ compatibility mode.
 If you use DotMatch, cite the software release through `CITATION.cff`.
 Installed packages also provide `dotmatch citation` for a copyable citation.
 Use the Zenodo concept DOI `10.5281/zenodo.20541628` for general software
-citation. The version-specific DOI for the current release is recorded in
-`CITATION.cff` after the Zenodo archive is minted.
+citation. The version-specific DOI for v0.2.2 is
+`10.5281/zenodo.21511337` and is recorded in `CITATION.cff`.
 
 Suggested citation:
 
 > O'Toole D. DotMatch: deterministic known-target short-DNA assignment for sequencing workflows. Software release v0.2.2. https://github.com/dnncha/dotmatch
+
+DOI: <https://doi.org/10.5281/zenodo.21511337>
 
 ## Methods Sentence
 

@@ -14,7 +14,7 @@ const biocondaUrl = "https://anaconda.org/bioconda/dotmatch";
 const releaseUrl = `${repoUrl}/releases`;
 const containerUrl = `${repoUrl}/pkgs/container/dotmatch`;
 const workflowExamplesUrl = `${repoUrl}/tree/main/examples/workflows`;
-const doiUrl = "https://doi.org/10.5281/zenodo.20541628";
+const doiUrl = "https://doi.org/10.5281/zenodo.21511337";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const assignmentWorkflowImage = `${basePath}/dotmatch-read-assignment-v2.webp`;

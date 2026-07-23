@@ -115,7 +115,7 @@ def test_codemeta_tracks_package_citation_and_minted_doi() -> None:
         }
     ]
     assert f"version: \"{_pyproject_version()}\"" in citation
-    assert "doi:" not in citation
+    assert "doi: 10.5281/zenodo.21511337" in citation
     assert codemeta["softwareVersion"] == zenodo["version"]
     assert "known-target assignment" in codemeta["keywords"]
     assert "CRISPR" in codemeta["keywords"]
