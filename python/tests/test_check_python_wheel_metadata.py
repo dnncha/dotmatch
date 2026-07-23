@@ -171,6 +171,46 @@ def test_existing_wheel_clean_install_skips_unsupported_linux_libc_tags(monkeypa
     checker = _load_checker()
     monkeypatch.setattr(checker.platform, "system", lambda: "Linux")
     monkeypatch.setattr(checker.platform, "libc_ver", lambda: ("glibc", "2.39"))
+    monkeypatch.setattr(checker.platform, "machine", lambda: "x86_64")
 
     assert checker.wheel_supported_by_current_platform(Path("dotmatch-0.1.0-py3-none-manylinux_2_28_x86_64.whl"))
     assert not checker.wheel_supported_by_current_platform(Path("dotmatch-0.1.0-py3-none-musllinux_1_2_x86_64.whl"))
+
+
+def test_existing_wheel_clean_install_skips_non_native_linux_architecture(monkeypatch):
+    checker = _load_checker()
+    monkeypatch.setattr(checker.platform, "system", lambda: "Linux")
+    monkeypatch.setattr(checker.platform, "libc_ver", lambda: ("glibc", "2.39"))
+    monkeypatch.setattr(checker.platform, "machine", lambda: "x86_64")
+
+    assert not checker.wheel_supported_by_current_platform(
+        Path("dotmatch-0.1.0-py3-none-manylinux_2_28_aarch64.whl")
+    )
+
+
+def test_repaired_linux_wheel_coverage_requires_each_family_and_architecture() -> None:
+    checker = _load_checker()
+    wheels = [
+        Path("dotmatch-0.1.0-py3-none-manylinux_2_28_x86_64.manylinux2014_x86_64.whl"),
+        Path("dotmatch-0.1.0-py3-none-manylinux_2_28_aarch64.whl"),
+        Path("dotmatch-0.1.0-py3-none-musllinux_1_2_x86_64.whl"),
+        Path("dotmatch-0.1.0-py3-none-musllinux_1_2_aarch64.whl"),
+    ]
+
+    checker.require_repaired_linux_wheel_architectures(wheels, ["x86_64", "aarch64"])
+
+
+def test_repaired_linux_wheel_coverage_rejects_missing_arm64_wheels() -> None:
+    checker = _load_checker()
+    wheels = [
+        Path("dotmatch-0.1.0-py3-none-manylinux_2_28_x86_64.whl"),
+        Path("dotmatch-0.1.0-py3-none-musllinux_1_2_x86_64.whl"),
+    ]
+
+    try:
+        checker.require_repaired_linux_wheel_architectures(wheels, ["x86_64", "aarch64"])
+    except SystemExit as exc:
+        assert "manylinux_aarch64" in str(exc)
+        assert "musllinux_aarch64" in str(exc)
+    else:
+        raise AssertionError("expected missing aarch64 repaired wheels to fail")

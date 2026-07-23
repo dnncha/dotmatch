@@ -25,6 +25,11 @@ python3 -m pip install dotmatch==0.2.2
 
 The PyPI page is <https://pypi.org/project/dotmatch/>.
 
+The release workflow is configured to build repaired `manylinux` and
+`musllinux` wheels for `x86_64` and `aarch64` on future tags. Check the
+release record for the architectures confirmed for a specific version; the
+0.2.2 record confirms `x86_64` only.
+
 ## Bioconda
 
 When the required version is available in Bioconda:
@@ -57,6 +62,11 @@ Release images are published to GitHub Container Registry:
 docker pull ghcr.io/dnncha/dotmatch:0.2.2
 docker run --rm ghcr.io/dnncha/dotmatch:0.2.2 dist ACGT AGGT
 ```
+
+For future tags, the release workflow is configured to publish
+`linux/amd64` and `linux/arm64` image manifests and smoke-test both native
+CLI paths. Check the release record before pinning a tag; the 0.2.2 record
+confirms `linux/amd64` only.
 
 BioContainers images are generated after the corresponding Bioconda package is
 published. Their tags include the Bioconda build number, so use the tag shown on
@@ -117,16 +127,17 @@ make release-ready
 ```
 
 The release workflow builds the source distribution and platform wheels,
-repairs Linux wheels, checks their contents, publishes through PyPI trusted
-publishing, and uploads the same artifacts to the GitHub release. See
-[Release process](release-process.md) for the complete maintainer sequence.
+repairs Linux wheels for `x86_64` and `aarch64`, checks their contents,
+publishes through PyPI trusted publishing, and uploads the same artifacts to
+the GitHub release. See [Release process](release-process.md) for the complete
+maintainer sequence.
 
 ### Verify published artifacts
 
 PyPI trusted publishing uploads a source distribution plus a macOS wheel and
-repaired manylinux/musllinux wheels. The channel check rejects raw
-`linux_x86_64` wheels, creates a clean virtual environment, and runs an exact
-install such as:
+repaired manylinux/musllinux wheels. The channel check rejects raw Linux wheels
+(`linux_x86_64` or `linux_aarch64`) for the recorded architectures, creates a
+clean virtual environment, and runs an exact install such as:
 
 ```bash
 pip install dotmatch==<version>
@@ -136,6 +147,13 @@ Check the GitHub Container Registry image with:
 
 ```bash
 docker run --rm ghcr.io/dnncha/dotmatch:v<version> --version
+```
+
+For a multi-architecture release, inspect the image index and confirm both
+recorded platforms are present:
+
+```bash
+docker buildx imagetools inspect ghcr.io/dnncha/dotmatch:v<version>
 ```
 
 Check the Bioconda package in a new prefix:

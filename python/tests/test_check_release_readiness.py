@@ -16,7 +16,12 @@ def _load_checker():
 
 def _write_release_repo(root: Path) -> None:
     files = {
-        "pyproject.toml": '[project]\nname = "dotmatch"\nversion = "0.1.0"\nlicense = "Apache-2.0"\n',
+        "pyproject.toml": (
+            '[project]\nname = "dotmatch"\nversion = "0.1.0"\nlicense = "Apache-2.0"\n'
+            "[tool.cibuildwheel]\n"
+            'build = "cp39-manylinux_aarch64 cp312-manylinux_aarch64 cp39-musllinux_aarch64 cp312-musllinux_aarch64"\n'
+            'test-command = "dotmatch leq 1 ACGT AGGT"\n'
+        ),
         "package.json": '{"version": "0.1.0", "license": "Apache-2.0"}\n',
         "CITATION.cff": (
             'cff-version: 1.2.0\n'
@@ -100,6 +105,8 @@ def _write_release_repo(root: Path) -> None:
             "  container:\n"
             "    needs: [preflight]\n"
             "    steps:\n"
+            "      - uses: docker/setup-qemu-action@v4\n"
+            "      - run: docker buildx build --platform linux/arm64 --load -t dotmatch:ci-arm64 .\n"
             "      - uses: docker/metadata-action@v5\n"
             "        with:\n"
             "          images: ghcr.io/dnncha/dotmatch\n"
@@ -117,6 +124,10 @@ def _write_release_repo(root: Path) -> None:
             "          username: ${{ github.actor }}\n"
             "          password: ${{ secrets.GITHUB_TOKEN }}\n"
             "      - uses: docker/build-push-action@v6\n"
+            "        with:\n"
+            "          platforms: linux/amd64,linux/arm64\n"
+            "      - run: docker buildx imagetools inspect ghcr.io/dnncha/dotmatch:v0.1.0 --raw > ghcr-manifest.json\n"
+            "      - run: python scripts/check_oci_manifest.py ghcr-manifest.json --require-platform linux/amd64 --require-platform linux/arm64\n"
             "      - run: docker image inspect dotmatch:ci --format '{{ index .Config.Labels \"org.opencontainers.image.version\" }}'\n"
             "  sdist:\n"
             "    steps:\n"
@@ -135,8 +146,11 @@ def _write_release_repo(root: Path) -> None:
             "  linux-repaired-wheels:\n"
             "    needs: [preflight]\n"
             "    steps:\n"
+            "      - uses: docker/setup-qemu-action@v4\n"
             "      - uses: pypa/cibuildwheel@v3.3.0\n"
-            "      - run: python scripts/check_python_wheel.py --wheel-only --out-dir dist-linux\n"
+            "        env:\n"
+            "          CIBW_ARCHS_LINUX: \"x86_64 aarch64\"\n"
+            "      - run: python scripts/check_python_wheel.py --wheel-only --out-dir dist-linux --require-repaired-linux-architectures x86_64 aarch64\n"
             "      - uses: actions/upload-artifact@v7\n"
             "        with:\n"
             "          name: dotmatch-linux-repaired-wheels\n"
@@ -258,6 +272,20 @@ def test_release_readiness_rejects_unaligned_container_label(tmp_path):
     result = checker.audit(tmp_path)
 
     assert any("Dockerfile" in failure and "version" in failure for failure in result.failures)
+
+
+def test_release_readiness_requires_linux_arm64_distribution_configuration(tmp_path):
+    checker = _load_checker()
+    _write_release_repo(tmp_path)
+    workflow_path = tmp_path / ".github" / "workflows" / "release.yml"
+    workflow_path.write_text(
+        workflow_path.read_text(encoding="utf-8").replace("platforms: linux/amd64,linux/arm64", "platforms: linux/amd64"),
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("platforms: linux/amd64,linux/arm64" in failure for failure in result.failures)
 
 
 def test_release_readiness_rejects_stale_container_smoke_version(tmp_path):

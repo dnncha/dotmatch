@@ -27,6 +27,15 @@ def _write_repo(root: Path, doi: str = "10.5281/zenodo.1234567") -> None:
         full.write_text(text, encoding="utf-8")
 
 
+def _write_distribution_record(root: Path, channels: list[dict]) -> None:
+    path = root / "docs" / "distribution-release.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"schema_version": 1, "release_version": "0.1.0", "channels": channels}),
+        encoding="utf-8",
+    )
+
+
 def test_distribution_channels_accepts_mocked_public_release(tmp_path, monkeypatch):
     checker = _load_checker()
     _write_repo(tmp_path)
@@ -278,6 +287,112 @@ def test_distribution_channels_rejects_raw_pypi_linux_wheel(tmp_path, monkeypatc
     result = checker.audit(tmp_path)
 
     assert any("must not include raw linux_x86_64 wheels" in failure.message for failure in result.failures)
+
+
+def test_distribution_channels_requires_recorded_arm64_pypi_wheels(tmp_path, monkeypatch):
+    checker = _load_checker()
+    _write_repo(tmp_path)
+    _write_distribution_record(
+        tmp_path,
+        [{"id": "pypi", "linux_wheel_architectures": ["x86_64", "aarch64"]}],
+    )
+
+    monkeypatch.setattr(
+        checker,
+        "fetch_json",
+        lambda url: {
+            "info": {"version": "0.1.0"},
+            "urls": [
+                {"packagetype": "sdist", "filename": "dotmatch-0.1.0.tar.gz"},
+                {"packagetype": "bdist_wheel", "filename": "dotmatch-0.1.0-py3-none-macosx_11_0_universal2.whl"},
+                {"packagetype": "bdist_wheel", "filename": "dotmatch-0.1.0-py3-none-manylinux_2_28_x86_64.whl"},
+                {"packagetype": "bdist_wheel", "filename": "dotmatch-0.1.0-py3-none-musllinux_1_2_x86_64.whl"},
+            ],
+        },
+    )
+
+    result = checker.AuditResult()
+    checker.check_pypi(tmp_path, "0.1.0", result)
+
+    assert any("manylinux_aarch64" in failure.message for failure in result.failures)
+    assert any("musllinux_aarch64" in failure.message for failure in result.failures)
+
+
+def test_distribution_channels_rejects_raw_arm64_pypi_wheel(tmp_path, monkeypatch):
+    checker = _load_checker()
+    _write_repo(tmp_path)
+    _write_distribution_record(
+        tmp_path,
+        [{"id": "pypi", "linux_wheel_architectures": ["x86_64", "aarch64"]}],
+    )
+
+    monkeypatch.setattr(
+        checker,
+        "fetch_json",
+        lambda url: {
+            "info": {"version": "0.1.0"},
+            "urls": [
+                {"packagetype": "sdist", "filename": "dotmatch-0.1.0.tar.gz"},
+                {"packagetype": "bdist_wheel", "filename": "dotmatch-0.1.0-py3-none-macosx_11_0_universal2.whl"},
+                {"packagetype": "bdist_wheel", "filename": "dotmatch-0.1.0-py3-none-manylinux_2_28_x86_64.whl"},
+                {"packagetype": "bdist_wheel", "filename": "dotmatch-0.1.0-py3-none-manylinux_2_28_aarch64.whl"},
+                {"packagetype": "bdist_wheel", "filename": "dotmatch-0.1.0-py3-none-musllinux_1_2_x86_64.whl"},
+                {"packagetype": "bdist_wheel", "filename": "dotmatch-0.1.0-py3-none-musllinux_1_2_aarch64.whl"},
+                {"packagetype": "bdist_wheel", "filename": "dotmatch-0.1.0-py3-none-linux_aarch64.whl"},
+            ],
+        },
+    )
+
+    result = checker.AuditResult()
+    checker.check_pypi(tmp_path, "0.1.0", result)
+
+    assert any("must not include raw linux_aarch64 wheels" in failure.message for failure in result.failures)
+
+
+def test_ghcr_manifest_requires_every_recorded_platform(monkeypatch):
+    checker = _load_checker()
+    manifest = {
+        "schemaVersion": 2,
+        "manifests": [
+            {"platform": {"os": "linux", "architecture": "amd64"}},
+            {"platform": {"os": "unknown", "architecture": "unknown"}},
+        ],
+    }
+    monkeypatch.setattr(checker, "fetch_registry_manifest", lambda image: (manifest, "sha256:" + "0" * 64))
+
+    try:
+        checker.verify_ghcr_manifest("ghcr.io/dnncha/dotmatch:v0.1.0", ("linux/amd64", "linux/arm64"))
+    except RuntimeError as exc:
+        assert "linux/arm64" in str(exc)
+    else:
+        raise AssertionError("expected missing linux/arm64 GHCR manifest descriptor to fail")
+
+
+def test_distribution_channels_uses_recorded_ghcr_platforms(tmp_path, monkeypatch):
+    checker = _load_checker()
+    _write_repo(tmp_path)
+    _write_distribution_record(
+        tmp_path,
+        [{"id": "ghcr", "platforms": ["linux/amd64", "linux/arm64"]}],
+    )
+    observed: dict[str, object] = {}
+
+    def fake_verify(image: str, required_platforms=checker.DEFAULT_GHCR_PLATFORMS) -> str:
+        observed["image"] = image
+        observed["platforms"] = required_platforms
+        return "sha256:" + "0" * 64
+
+    monkeypatch.setattr(checker, "verify_ghcr_manifest", fake_verify)
+    monkeypatch.setattr(checker, "verify_ghcr_run", lambda image, version: None)
+
+    result = checker.AuditResult()
+    checker.check_ghcr(tmp_path, "0.1.0", result)
+
+    assert result.failures == []
+    assert observed == {
+        "image": "ghcr.io/dnncha/dotmatch:v0.1.0",
+        "platforms": ("linux/amd64", "linux/arm64"),
+    }
 
 
 def test_distribution_channels_reports_bioconda_missing_version(tmp_path, monkeypatch):

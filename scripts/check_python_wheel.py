@@ -20,6 +20,13 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+REPAIRED_LINUX_WHEEL_ARCHITECTURES = ("x86_64", "aarch64")
+HOST_ARCHITECTURE_ALIASES = {
+    "amd64": "x86_64",
+    "arm64": "aarch64",
+    "x86_64": "x86_64",
+    "aarch64": "aarch64",
+}
 
 
 def run(cmd: list[str], *, cwd: Path | None = None, env: dict[str, str] | None = None) -> None:
@@ -464,14 +471,49 @@ def check_macos_architecture(wheel: Path, native_member: str) -> None:
             )
 
 
+def wheel_platform_tags(wheel: Path) -> list[str]:
+    if not wheel.name.endswith(".whl"):
+        return []
+    fields = wheel.name[:-4].rsplit("-", 3)
+    if len(fields) != 4:
+        return []
+    return fields[-1].split(".")
+
+
+def repaired_linux_wheel_architectures(wheel: Path, family: str) -> set[str]:
+    return {
+        architecture
+        for architecture in REPAIRED_LINUX_WHEEL_ARCHITECTURES
+        if any(
+            tag.startswith(family) and tag.endswith(f"_{architecture}")
+            for tag in wheel_platform_tags(wheel)
+        )
+    }
+
+
+def require_repaired_linux_wheel_architectures(wheels: list[Path], required_architectures: list[str]) -> None:
+    missing = [
+        f"{family}_{architecture}"
+        for family in ["manylinux", "musllinux"]
+        for architecture in required_architectures
+        if not any(architecture in repaired_linux_wheel_architectures(wheel, family) for wheel in wheels)
+    ]
+    if missing:
+        raise SystemExit("missing repaired Linux wheel coverage: " + ", ".join(missing))
+
+
 def wheel_supported_by_current_platform(wheel: Path) -> bool:
     name = wheel.name
     system = platform.system()
     libc_name = platform.libc_ver()[0].lower()
     if "musllinux" in name:
-        return system == "Linux" and libc_name == "musl"
+        architectures = repaired_linux_wheel_architectures(wheel, "musllinux")
+        host_architecture = HOST_ARCHITECTURE_ALIASES.get(platform.machine().lower(), platform.machine().lower())
+        return system == "Linux" and libc_name == "musl" and host_architecture in architectures
     if "manylinux" in name:
-        return system == "Linux" and libc_name == "glibc"
+        architectures = repaired_linux_wheel_architectures(wheel, "manylinux")
+        host_architecture = HOST_ARCHITECTURE_ALIASES.get(platform.machine().lower(), platform.machine().lower())
+        return system == "Linux" and libc_name == "glibc" and host_architecture in architectures
     if "macosx" in name:
         return system == "Darwin"
     if "win_" in name or "win32" in name or "win_amd64" in name:
@@ -544,6 +586,13 @@ def main() -> int:
     parser.add_argument("--out-dir", default="", help="optional wheel output directory")
     parser.add_argument("--sdist-only", action="store_true", help="build and verify only the source distribution")
     parser.add_argument("--wheel-only", action="store_true", help="verify existing wheels in --out-dir without building")
+    parser.add_argument(
+        "--require-repaired-linux-architectures",
+        choices=REPAIRED_LINUX_WHEEL_ARCHITECTURES,
+        metavar="ARCH",
+        nargs="+",
+        help="require repaired manylinux and musllinux wheels for each architecture",
+    )
     args = parser.parse_args()
 
     if args.out_dir:
@@ -560,6 +609,8 @@ def main() -> int:
             expected_version = project_version()
             if args.wheel_only:
                 wheels = verify_existing_wheels(out_dir, install_root / "existing-wheel-install", expected_version)
+                if args.require_repaired_linux_architectures:
+                    require_repaired_linux_wheel_architectures(wheels, args.require_repaired_linux_architectures)
                 print("verified existing wheels: " + ", ".join(wheel.name for wheel in wheels))
                 return 0
             sdist_out_dir = out_dir if args.sdist_only else install_root / "sdist"

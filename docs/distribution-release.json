@@ -13,7 +13,10 @@
       "verified_date": "2026-07-23",
       "verification_command": "make distribution-channels",
       "files": 4,
-      "readme_relative_links": 0
+      "readme_relative_links": 0,
+      "linux_wheel_architectures": [
+        "x86_64"
+      ]
     },
     {
       "id": "bioconda",
@@ -40,7 +43,10 @@
       "verified_date": "2026-07-23",
       "verification_command": "make distribution-channels",
       "tag": "v0.2.2",
-      "digest": "sha256:dcf957f3b0c42215e714983315070a3043a56dd8b3f8fed42fe6ea0219394435"
+      "digest": "sha256:dcf957f3b0c42215e714983315070a3043a56dd8b3f8fed42fe6ea0219394435",
+      "platforms": [
+        "linux/amd64"
+      ]
     },
     {
       "id": "biocontainers",
