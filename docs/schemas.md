@@ -161,8 +161,9 @@ cell has no valid feature sequence windows.
 
 ### `summary.json`
 
-Records the assignment settings, input file hashes, aggregate outcome counts,
-matrix dimensions, artifact list, and explicit non-performed upstream steps.
+Records the assignment settings, the target-file hash, an observation-content
+hash computed while the input is streamed, aggregate outcome counts, matrix
+dimensions, artifact list, and explicit non-performed upstream steps.
 `matrix_orientation` is always `cells_by_features` for this schema version.
 
 ## `assay_manifest.summary.tsv`

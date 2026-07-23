@@ -75,10 +75,17 @@ def _read_observations(
     cell_column: str,
     sequence_column: str,
     id_column: str | None,
+    content_digest: Any | None = None,
 ) -> Iterator[_Observation]:
     source = Path(path)
     with _open_text(source) as fh:
-        reader = csv.DictReader(fh, delimiter=_delimiter(source))
+        def lines() -> Iterator[str]:
+            for line in fh:
+                if content_digest is not None:
+                    content_digest.update(line.encode("utf-8"))
+                yield line
+
+        reader = csv.DictReader(lines(), delimiter=_delimiter(source))
         if not reader.fieldnames:
             raise ValueError(f"observation table has no header: {source}")
         fieldnames = {
@@ -247,6 +254,7 @@ def build_feature_matrix(
     if metric == "hamming" and len({len(sequence) for sequence in target_sequences}) != 1:
         raise ValueError("hamming feature assignment requires target sequences with one shared length")
     target_by_index = dict(enumerate(normalized_targets))
+    observation_digest = hashlib.sha256()
 
     final_dir.parent.mkdir(parents=True, exist_ok=True)
     staging_dir = Path(tempfile.mkdtemp(prefix=f".{final_dir.name}.tmp-", dir=final_dir.parent))
@@ -265,7 +273,7 @@ def build_feature_matrix(
         "id_column": id_column,
         "inputs": {
             "observations": str(observation_path),
-            "observations_sha256": _sha256(observation_path),
+            "observations_content_sha256": "",
             "targets": str(target_path),
             "targets_sha256": _sha256(target_path),
         },
@@ -310,6 +318,7 @@ def build_feature_matrix(
                         cell_column=cell_column,
                         sequence_column=sequence_column,
                         id_column=id_column,
+                        content_digest=observation_digest,
                     ),
                     batch_size,
                 ):
@@ -378,6 +387,7 @@ def build_feature_matrix(
             cell_feature_sets[cell].add(feature)
 
         summary["valid_observations"] = summary["total_observations"] - summary["invalid"]
+        summary["inputs"]["observations_content_sha256"] = observation_digest.hexdigest()
         summary["cells"] = len(cells)
         summary["nonzero_entries"] = len(counts)
         summary["assignment_rate"] = (
