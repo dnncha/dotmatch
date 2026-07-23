@@ -17,12 +17,14 @@
     },
     {
       "id": "bioconda",
-      "status": "blocked",
+      "status": "verified",
       "expected_url": "https://anaconda.org/bioconda/dotmatch",
+      "public_url": "https://anaconda.org/bioconda/dotmatch",
+      "evidence_url": "https://github.com/bioconda/bioconda-recipes/pull/67282",
       "recipe_pr_url": "https://github.com/bioconda/bioconda-recipes/pull/67282",
       "verification_command": "make distribution-channels",
-      "blocker": "The Bioconda 0.2.0 recipe is still under maintainer review; a 0.2.1 recipe has not been submitted.",
-      "next_action": "Finish the 0.2.0 recipe review, then submit the 0.2.1 checksum update and test a clean installation after it is published."
+      "verified_date": "2026-07-21",
+      "platforms": ["linux-64", "osx-64", "osx-arm64"]
     },
     {
       "id": "bioconda-assaycode",
@@ -46,11 +48,13 @@
     },
     {
       "id": "biocontainers",
-      "status": "blocked",
+      "status": "manifest_verified",
       "expected_url": "https://quay.io/repository/biocontainers/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "A BioContainers 0.2.1 image depends on a published Bioconda 0.2.1 package.",
-      "next_action": "Verify the generated image after the Bioconda build propagates."
+      "tag": "0.2.1--py314h118bc1c_0",
+      "digest": "sha256:220917a1d715b56bef4eada0bf925050e660fe53c8fc81ee5e2575bc313773",
+      "blocker": "The public image manifest is verified, but the local runtime smoke test needs Docker or another OCI host.",
+      "next_action": "Run make distribution-channels on a Docker host and record the runtime result."
     },
     {
       "id": "zenodo",
@@ -65,7 +69,8 @@
     }
   ],
   "blockers": [
-    "Bioconda 0.2.1 work follows the pending 0.2.0 maintainer review."
+    "The optional AssayCode Bioconda metapackage is not available for 0.2.1.",
+    "Local GHCR and BioContainers runtime checks need a Docker or OCI host."
   ],
-  "next_action": "Finish the Bioconda 0.2.0 review, submit the 0.2.1 checksum update, and verify the resulting Bioconda and BioContainers builds."
+  "next_action": "Publish the optional AssayCode 0.2.1 Bioconda metapackage and run container runtime checks on a Docker or OCI host."
 }

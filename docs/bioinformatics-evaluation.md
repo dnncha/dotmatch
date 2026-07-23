@@ -13,14 +13,14 @@ quantifier, or screen-level statistical analysis package.
 
 ## Current Package Surface
 
-For release `0.1.9`, the package surface is:
+For release `0.2.1`, the package surface is:
 
 | Surface | Current state | Evidence or source |
 | --- | --- | --- |
 | PyPI | Published and smoke-tested from a clean virtual environment | `docs/distribution-release.json` |
-| Bioconda | Published for linux-64, osx-64, and osx-arm64; clean install and CLI smoke tests pass | `docs/distribution-release.json` |
-| GHCR container | Public v0.1.9 tag, digest, and linux/amd64 metadata verified; local runtime smoke test runs when Docker is available | `docs/distribution-release.json` |
-| BioContainers | 0.1.9 tags are visible on Quay; Docker-backed manifest and runtime smoke tests still need an OCI host | `docs/distribution-release.json` |
+| Bioconda | Version 0.2.1 is published for linux-64, osx-64, and osx-arm64; the install and CLI checks pass | `docs/distribution-release.json` |
+| GHCR container | Public v0.2.1 tag, digest, and linux/amd64 metadata verified | `docs/distribution-release.json` |
+| BioContainers | The 0.2.1 linux-64 image and manifest digest are public on Quay; a local runtime check still needs an OCI host | `docs/distribution-release.json` |
 | Documentation | Sphinx docs and public schemas in repository | `docs/index.md`, `docs/schemas.md` |
 | Citation | `CITATION.cff`, Zenodo concept DOI, and generated run artifacts | `docs/methods-and-citation.md` |
 | Python API | `dotmatch` package, streaming helpers, pandas/polars/AnnData interop, MultiQC parser entry point | `pyproject.toml`, `docs/streaming-api.md` |
@@ -54,7 +54,7 @@ Start from the released package, not an unpublished checkout, unless the
 evaluation is explicitly for development work:
 
 ```bash
-python3 -m pip install dotmatch==0.1.9
+python3 -m pip install dotmatch==0.2.1
 dotmatch --version
 dotmatch dist ACGT AGGT
 ```
@@ -62,7 +62,7 @@ dotmatch dist ACGT AGGT
 For Conda-based environments:
 
 ```bash
-conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.1.9
+conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.2.1
 conda activate dotmatch
 dotmatch --version
 ```
@@ -109,9 +109,12 @@ payloads are available for review, but external workflow status requires an
 accepted PR, package, ToolShed record, wrapper, or public pipeline outside this
 repository.
 
-Priority integration targets remain:
+The first external submission is an nf-core/modules pull request for
+`dotmatch/crispr_count` that is ready for maintainer review. It is not an
+accepted integration until the pull request is reviewed and merged. Remaining
+integration targets are:
 
-1. nf-core modules.
+1. Complete upstream review of the scoped nf-core module.
 2. Released or upstreamed MultiQC module.
 3. Galaxy/IUC wrappers.
 4. Snakemake wrapper or public lab workflow.
