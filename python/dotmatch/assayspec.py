@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 import gzip
+import hashlib
 import html
 import json
 import math
@@ -556,6 +557,16 @@ def command_assay(argv: Sequence[str]) -> int:
     autopsy.add_argument("spec")
     autopsy.add_argument("--out-dir", required=True)
 
+    handoff = sub.add_parser(
+        "handoff",
+        help="assemble a review bundle with run outputs, input checksums, and the reliability verdict",
+    )
+    handoff.add_argument("spec")
+    handoff.add_argument(
+        "--out-dir",
+        help="empty directory for the bundle (default: <assay output>/handoff)",
+    )
+
     workflow_help = {
         "check": "validate an AssaySpec and write preflight reliability artifacts",
         "optimize": "write a benchmark-informed CPU/GPU backend recommendation",
@@ -584,6 +595,12 @@ def command_assay(argv: Sequence[str]) -> int:
         assay = load_assay_spec(args.spec)
         if args.command == "autopsy":
             run_autopsy(assay, Path(args.out_dir))
+            return 0
+        if args.command == "handoff":
+            plan = compile_assay_plan(assay)
+            out_dir = Path(args.out_dir) if args.out_dir else plan.spec.out_dir / "handoff"
+            _write_handoff_bundle(plan, out_dir)
+            print(out_dir / "README_FOR_REVIEW.md")
             return 0
         if args.command == "check":
             plan = compile_assay_plan(assay)
@@ -2142,6 +2159,170 @@ def _write_citation_artifacts(plan: AssayPlan, manifest: Mapping[str, Any]) -> N
     _write_methods_md(plan.artifacts["methods"], plan, manifest, metadata)
     _write_citation_bib(plan.artifacts["citation_bib"], metadata)
     _write_software_versions_yml(plan.artifacts["software_versions"], plan, manifest)
+
+
+def _write_handoff_bundle(plan: AssayPlan, out_dir: Path) -> None:
+    """Write a portable, review-sized record for a completed AssaySpec run.
+
+    Raw reads are deliberately not copied: they can be large or sensitive. The
+    bundle names and hashes every declared input so a reviewer can establish
+    which local data were used without moving those reads outside the lab.
+    """
+    manifest_path = plan.artifacts["manifest"]
+    reliability_path = plan.artifacts["reliability_summary"]
+    if not manifest_path.is_file() or not reliability_path.is_file():
+        raise AssaySpecError(
+            "handoff requires a completed assay run with assay_manifest.json and "
+            "reliability_summary.json; run 'dotmatch assay start <spec>' first"
+        )
+    if out_dir.exists() and any(out_dir.iterdir()):
+        raise AssaySpecError(f"handoff output directory must be empty: {out_dir}")
+
+    manifest = _read_json_object(manifest_path, "assay manifest")
+    reliability = _read_json_object(reliability_path, "reliability summary")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    review_dir = out_dir / "review"
+    review_dir.mkdir()
+
+    copied: list[dict[str, object]] = []
+    # These are the files a PI, core facility, or pipeline maintainer normally
+    # needs to judge configuration, QC, outputs, and citation without raw reads.
+    for key in (
+        "normalized_spec",
+        "manifest",
+        "manifest_summary",
+        "reliability_summary",
+        "reliability_findings",
+        "reliability_report",
+        "reliability_manifest_summary",
+        "assay_fixes",
+        "methods",
+        "citation_bib",
+        "software_versions",
+        "assay_report",
+        "counts",
+        "sample_qc",
+        "summary",
+        "report",
+        "crispr_qc",
+        "crispr_qc_summary",
+        "crispr_qc_report",
+        "target_counts_long",
+    ):
+        source = plan.artifacts.get(key)
+        if source is None or not source.is_file():
+            continue
+        destination = review_dir / source.name
+        shutil.copy2(source, destination)
+        copied.append(
+            {
+                "role": key,
+                "path": str(destination.relative_to(out_dir)),
+                "sha256": _sha256_file(destination),
+                "bytes": destination.stat().st_size,
+            }
+        )
+
+    input_files = [
+        {
+            "role": role,
+            "declared_path": declared,
+            "sha256": _sha256_file(path),
+            "bytes": path.stat().st_size,
+        }
+        for role, declared, path in _handoff_inputs(plan.spec)
+    ]
+    bundle_manifest = {
+        "schema_version": 1,
+        "bundle_type": "dotmatch_assay_handoff",
+        "assay_type": plan.spec.assay_type,
+        "mode": plan.spec.mode,
+        "assay_status": plan.spec.status,
+        "reliability_status": reliability.get("overall_status", "unknown"),
+        "native_version": manifest.get("native_version", ""),
+        "inputs": input_files,
+        "review_files": copied,
+        "review_boundary": (
+            "Raw reads are not copied into this bundle. Verify the declared input "
+            "hashes in the originating controlled workspace."
+        ),
+    }
+    (out_dir / "handoff_manifest.json").write_text(
+        json.dumps(bundle_manifest, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    _write_handoff_readme(out_dir, bundle_manifest)
+    checksum_rows = [f"{entry['sha256']}  {entry['path']}" for entry in copied]
+    (out_dir / "SHA256SUMS").write_text(
+        "\n".join(checksum_rows) + ("\n" if checksum_rows else ""),
+        encoding="utf-8",
+    )
+
+
+def _handoff_inputs(assay: AssaySpec) -> list[tuple[str, str, Path]]:
+    if assay.mode == "count":
+        items = [("targets", str(assay.data["targets"]))]
+        items.extend(
+            (f"sample:{sample['id']}", str(sample["fastq"])) for sample in _samples(assay.data)
+        )
+    elif assay.mode == "demux":
+        items = [
+            ("barcodes", str(assay.data["barcodes"])),
+            ("reads", str(assay.data["reads"])),
+        ]
+    else:
+        items = [
+            ("left_targets", str(assay.data["left_targets"])),
+            ("right_targets", str(assay.data["right_targets"])),
+            ("reads", str(assay.data["reads"])),
+        ]
+    return [
+        (role, declared, _path_from_spec(assay.path, declared, allow_absolute=True, name=role))
+        for role, declared in items
+    ]
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as fh:
+        for block in iter(lambda: fh.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _read_json_object(path: Path, label: str) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise AssaySpecError(f"invalid {label}: {path}") from exc
+    if not isinstance(value, dict):
+        raise AssaySpecError(f"invalid {label}: {path}")
+    return value
+
+
+def _write_handoff_readme(out_dir: Path, bundle_manifest: Mapping[str, Any]) -> None:
+    verdict = str(bundle_manifest["reliability_status"])
+    text = "\n".join(
+        [
+            "# DotMatch Assay Handoff",
+            "",
+            f"Reliability verdict: **{verdict}**.",
+            "",
+            "This is a review bundle for a completed known-target assay run. It includes the configuration, QC findings, reports, count outputs, methods, and citation material needed for technical review. It does not include raw reads.",
+            "",
+            "## Review order",
+            "",
+            "1. Read `review/reliability_report.html` and resolve every `error` or `blocked` finding before using counts for a downstream decision.",
+            "2. Inspect `review/assay.normalized.json`, `review/assay_manifest.json`, and `review/sample_qc.tsv` against the assay design and sample sheet.",
+            "3. Inspect `review/counts.mageck.tsv` or the equivalent primary output, then `review/assay_report.html` and `review/methods.md`.",
+            "4. In the originating controlled workspace, recompute the SHA-256 hashes for every input in `handoff_manifest.json`. Raw reads were intentionally left in that workspace.",
+            "5. Verify copied review files with `shasum -a 256 -c SHA256SUMS` from this directory.",
+            "",
+            "A `passed` verdict means the configured DotMatch checks passed; it does not replace assay-specific controls, sample identity checks, downstream screen statistics, or clinical validation.",
+            "",
+        ]
+    )
+    (out_dir / "README_FOR_REVIEW.md").write_text(text, encoding="utf-8")
 
 
 def _project_root() -> Path:

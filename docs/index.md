@@ -41,6 +41,7 @@ predates that installed command.
 | Try the workflow without a local install | [Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb) or [Google Colab](https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb) |
 | Compare guide-counting workflows | [Guide-counting workflow comparison](usability-comparison.md) |
 | Build a checked assay project | [AssaySpec workflows](assayspec.md) |
+| Evaluate and hand off a run | [Lab evaluation and handoff](lab-evaluation.md) |
 | Split reads by inline barcode | [Getting started: demultiplexing](getting-started.md#demultiplex-inline-barcodes) |
 | Assign feature-barcode reads | [Feature-barcode and guide-capture tutorial](tutorials/scverse-perturb-seq.md#count-guide-or-feature-barcode-reads) |
 | Assign Perturb-seq guide-capture reads | [Feature-barcode and guide-capture tutorial](tutorials/scverse-perturb-seq.md) |
@@ -89,6 +90,7 @@ agent-guide
 command-reference
 tutorials/crispr-count-first-run
 tutorials/scverse-perturb-seq
+lab-evaluation
 ```
 
 ```{toctree}
