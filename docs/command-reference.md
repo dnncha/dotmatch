@@ -56,11 +56,16 @@ dotmatch assay optimize assay.toml
 dotmatch assay plan assay.toml
 dotmatch assay run assay.toml
 dotmatch assay autopsy assay.toml --out-dir autopsy/
+dotmatch assay handoff assay.toml
 ```
 
 `start` is the production entrypoint: it checks the spec, runs assignment, and
 prints the reliability verdict. `optimize` writes an advisory CPU/GPU backend
 recommendation; it does not change the count authority.
+
+`handoff` creates a review bundle after a completed run. It includes the
+configuration, reports, QC, count outputs, methods, citation material, and
+SHA-256 records for inputs and copied files, without copying raw FASTQs.
 
 Supported templates include `crispr`, `feature-barcode`,
 `inline-barcode-count`, `inline-barcode-demux`, `amplicon-panel`,

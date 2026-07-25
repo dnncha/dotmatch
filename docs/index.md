@@ -33,6 +33,7 @@ the [command reference](command-reference.md).
 | --- | --- |
 | Count guides from a CRISPR screen | [CRISPR first run](tutorials/crispr-count-first-run.md) |
 | Build a checked assay project | [AssaySpec workflows](assayspec.md) |
+| Evaluate and hand off a run | [Lab evaluation and handoff](lab-evaluation.md) |
 | Split reads by inline barcode | [Getting started: demultiplexing](getting-started.md#demultiplex-inline-barcodes) |
 | Diagnose barcode failures | [Barcode run diagnosis](getting-started.md#diagnose-a-barcode-run) |
 | Design or check a barcode panel | [Barcode panel design](barcode-panel-design.md) |
@@ -72,6 +73,7 @@ getting-started
 command-reference
 tutorials/crispr-count-first-run
 tutorials/scverse-perturb-seq
+lab-evaluation
 ```
 
 ```{toctree}
