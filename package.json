@@ -19,14 +19,14 @@
     "sharp": "^0.35.3"
   },
   "dependencies": {
-    "next": "^16.2.11",
+    "next": "^16.2.12",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "@types/node": "^25.9.1",
-    "@types/react": "^19.2.16",
+    "@types/node": "^26.1.2",
+    "@types/react": "^19.2.17",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^6.0.3"
+    "typescript": "^7.0.2"
   }
 }
