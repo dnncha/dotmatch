@@ -16,7 +16,9 @@ match, an ambiguous match, unmatched, or invalid.
 [Getting started](https://dotmatch.readthedocs.io/en/latest/getting-started.html) ·
 [Command reference](https://dotmatch.readthedocs.io/en/latest/command-reference.html) ·
 [Examples](https://github.com/dnncha/dotmatch/tree/main/examples) ·
-[Citation](https://dotmatch.readthedocs.io/en/latest/methods-and-citation.html)
+[Citation](https://dotmatch.readthedocs.io/en/latest/methods-and-citation.html) ·
+[Try the notebook in Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb) ·
+[Try the notebook in Google Colab](https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb)
 
 ![FASTQ reads and a target table are compared at a fixed read window. DotMatch writes counts, split FASTQs, QC tables, and reports.](https://raw.githubusercontent.com/dnncha/dotmatch/main/public/dotmatch-read-assignment.svg)
 
@@ -39,6 +41,13 @@ conda activate dotmatch
 The Bioconda recipe supports Linux, Intel macOS, and Apple Silicon
 (`osx-arm64`). If a newly tagged version has not reached Bioconda yet, use the
 PyPI package or install from source.
+
+The [Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb)
+and [Colab](https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb)
+notebooks run a small synthetic smoke demo without requiring a local install.
+They check mechanics only, not biological validation. If you work with a
+shareable or de-identified guide, barcode, or other fixed-target fixture, see
+the [public validation request](https://github.com/dnncha/dotmatch/issues/82).
 
 ## A small example
 
