@@ -1,3 +1,6 @@
+#if defined(__APPLE__) && !defined(_DARWIN_C_SOURCE)
+#define _DARWIN_C_SOURCE
+#endif
 #define _POSIX_C_SOURCE 199309L
 
 #include "qdalign.h"
@@ -6,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/resource.h>
 #include <time.h>
 
 static uint64_t rng_state = UINT64_C(0x13198a2e03707344);
@@ -39,6 +43,16 @@ static double monotonic_seconds(void) {
     struct timespec now;
     if (clock_gettime(CLOCK_MONOTONIC, &now) != 0) return 0.0;
     return (double)now.tv_sec + (double)now.tv_nsec / 1e9;
+}
+
+static long peak_rss_kb(void) {
+    struct rusage usage;
+    if (getrusage(RUSAGE_SELF, &usage) != 0) return -1;
+#ifdef __APPLE__
+    return (long)(usage.ru_maxrss / 1024);
+#else
+    return (long)usage.ru_maxrss;
+#endif
 }
 
 static int parse_size(const char *text, size_t *value) {
@@ -148,7 +162,7 @@ int main(int argc, char **argv) {
     free(scan);
     free(indexed);
 
-    printf("run,n_reads,n_targets,length,k,seconds,reads_per_sec,candidates_per_read,verified_per_read,checksum\n");
+    printf("run,n_reads,n_targets,length,k,seconds,reads_per_sec,candidates_per_read,verified_per_read,peak_rss_kb,checksum\n");
     for (size_t repeat = 0; repeat < repeats; ++repeat) {
         qdaln_index_stats stats = {0, 0};
         double start = monotonic_seconds();
@@ -163,11 +177,11 @@ int main(int argc, char **argv) {
             qdaln_index_free(index);
             return 1;
         }
-        printf("%zu,%zu,%zu,%zu,%d,%.9f,%.3f,%.3f,%.3f,%ld\n",
+        printf("%zu,%zu,%zu,%zu,%d,%.9f,%.3f,%.3f,%.3f,%ld,%ld\n",
                repeat, n_reads, n_targets, length, k, elapsed, (double)n_reads / elapsed,
                (double)stats.candidates_considered / (double)n_reads,
                (double)stats.candidates_verified / (double)n_reads,
-               checksum_results(results, n_reads));
+               peak_rss_kb(), checksum_results(results, n_reads));
     }
 
     qdaln_index_free(index);
