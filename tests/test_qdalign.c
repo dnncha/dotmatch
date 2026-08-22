@@ -1247,6 +1247,48 @@ static void index_fuzz_tests(void) {
     }
 }
 
+static void random_literal_sequence(char *sequence, size_t length) {
+    static const char alphabet[] = "ACGTNRYacgtX-";
+    for (size_t i = 0; i < length; ++i) {
+        sequence[i] = alphabet[xorshift64() % (sizeof(alphabet) - 1U)];
+    }
+    sequence[length] = '\0';
+}
+
+static void literal_alphabet_index_fuzz_tests(void) {
+    char reads_buf[8][41];
+    char targets_buf[8][41];
+    const char *reads[8];
+    const char *targets[8];
+    size_t read_lens[8];
+    size_t target_lens[8];
+    qdaln_match_result scan[8];
+    qdaln_match_result indexed[8];
+
+    for (size_t trial = 0; trial < 10000; ++trial) {
+        size_t n_reads = 1 + (size_t)(xorshift64() % 8ULL);
+        size_t n_targets = 1 + (size_t)(xorshift64() % 8ULL);
+        int k = (int)(xorshift64() % 4ULL);
+        for (size_t i = 0; i < n_reads; ++i) {
+            read_lens[i] = (size_t)(xorshift64() % 41ULL);
+            random_literal_sequence(reads_buf[i], read_lens[i]);
+            reads[i] = reads_buf[i];
+        }
+        for (size_t i = 0; i < n_targets; ++i) {
+            target_lens[i] = (size_t)(xorshift64() % 41ULL);
+            random_literal_sequence(targets_buf[i], target_lens[i]);
+            targets[i] = targets_buf[i];
+        }
+
+        qdaln_index *idx = qdaln_index_build(targets, target_lens, n_targets);
+        assert(idx != NULL);
+        assert(qdaln_match_many(reads, read_lens, n_reads, targets, target_lens, n_targets, k, scan) == 0);
+        assert(qdaln_index_assign(idx, reads, read_lens, n_reads, k, indexed) == 0);
+        for (size_t i = 0; i < n_reads; ++i) assert_match_result(indexed[i], scan[i]);
+        qdaln_index_free(idx);
+    }
+}
+
 int main(void) {
     fixed_tests();
     alphabet_policy_tests();
@@ -1276,6 +1318,7 @@ int main(void) {
     fuzz_tests();
     batch_fuzz_tests();
     index_fuzz_tests();
+    literal_alphabet_index_fuzz_tests();
     puts("qdalign tests passed");
     return 0;
 }

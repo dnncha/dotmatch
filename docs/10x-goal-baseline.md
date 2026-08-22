@@ -24,6 +24,10 @@ it contains unrelated uncommitted changes.
 - The two public CRISPR datasets and existing benchmark lanes demonstrate
   scoped scientific evidence; they do not establish universal accuracy or
   superiority.
+- The local differential-fuzz suite now exercises literal ambiguity symbols,
+  lowercase bytes, mixed target lengths, and targets beyond the 32-base encoded
+  path. It is a regression guard, not independent scientific validation, and
+  does not count toward the 600,000-read target.
 - A zero-mismatch result is retained as zero mismatches. It is not converted
   into a claim of perfect accuracy.
 - Speed comparisons must preserve input data, target set, read window, metric,
