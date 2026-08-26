@@ -18,6 +18,8 @@ FASTQ_URLS = {
     "ERR376998": "https://ftp.sra.ebi.ac.uk/vol1/fastq/ERR376/ERR376998/ERR376998.fastq.gz",
     "ERR376999": "https://ftp.sra.ebi.ac.uk/vol1/fastq/ERR376/ERR376999/ERR376999.fastq.gz",
 }
+YUSA_LIBRARY_MEMBER = "yusa_library.csv"
+MAX_YUSA_LIBRARY_BYTES = 16 * 1024 * 1024
 
 
 def write_small(out_dir: Path) -> None:
@@ -73,7 +75,19 @@ def fetch_library(out_dir: Path) -> None:
         zip_path.unlink()
     download(YUSA_URL, zip_path)
     with zipfile.ZipFile(zip_path) as zf:
-        zf.extractall(out_dir)
+        try:
+            member = zf.getinfo(YUSA_LIBRARY_MEMBER)
+        except KeyError as exc:
+            raise RuntimeError(f"archive is missing {YUSA_LIBRARY_MEMBER}") from exc
+        if member.is_dir() or member.file_size > MAX_YUSA_LIBRARY_BYTES:
+            raise RuntimeError(f"archive member is not a valid {YUSA_LIBRARY_MEMBER}")
+        tmp = library.with_suffix(library.suffix + ".tmp")
+        try:
+            with zf.open(member) as source, tmp.open("wb") as destination:
+                shutil.copyfileobj(source, destination)
+            tmp.replace(library)
+        finally:
+            tmp.unlink(missing_ok=True)
 
 
 def download_fastq_subsample(url: str, dest: Path, records: int) -> None:

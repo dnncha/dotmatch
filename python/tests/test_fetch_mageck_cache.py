@@ -1,5 +1,7 @@
 import gzip
+import io
 import importlib.util
+import zipfile
 from pathlib import Path
 
 
@@ -70,3 +72,38 @@ def test_full_download_replaces_smaller_cached_subsample(tmp_path, monkeypatch):
     fetcher.download("https://example.test/full.fastq.gz", dest)
 
     assert dest.read_bytes() == payload
+
+
+def _zip_payload(files: dict[str, bytes]) -> bytes:
+    payload = io.BytesIO()
+    with zipfile.ZipFile(payload, "w") as archive:
+        for name, content in files.items():
+            archive.writestr(name, content)
+    return payload.getvalue()
+
+
+def test_fetch_library_extracts_only_expected_member(tmp_path, monkeypatch):
+    fetcher = _load_fetcher()
+    payload = _zip_payload({
+        "yusa_library.csv": b"id,gRNA.sequence,Gene\n" + b"guide,ACGT,GENE\n" * 101,
+        "../outside.txt": b"must not be extracted",
+    })
+    monkeypatch.setattr(fetcher.urllib.request, "urlopen", lambda url: FakeResponse(payload))
+
+    fetcher.fetch_library(tmp_path / "data")
+
+    assert (tmp_path / "data" / "yusa_library.csv").exists()
+    assert not (tmp_path / "outside.txt").exists()
+
+
+def test_fetch_library_rejects_archive_without_expected_member(tmp_path, monkeypatch):
+    fetcher = _load_fetcher()
+    payload = _zip_payload({"../yusa_library.csv": b"unexpected"})
+    monkeypatch.setattr(fetcher.urllib.request, "urlopen", lambda url: FakeResponse(payload))
+
+    try:
+        fetcher.fetch_library(tmp_path / "data")
+    except RuntimeError as exc:
+        assert "missing yusa_library.csv" in str(exc)
+    else:
+        raise AssertionError("unsafe archive should be rejected")

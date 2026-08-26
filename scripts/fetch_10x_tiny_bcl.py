@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import shutil
 import tarfile
 import urllib.request
 from pathlib import Path
@@ -34,6 +35,8 @@ LEGACY_10X_INDEX_SETS = {
     "SI-P03-C9": ["SI-GA-E3", "SI-GA-F3", "SI-GA-G3", "SI-GA-H3"],
 }
 
+TINY_BCL_ARCHIVE_PREFIX = "cellranger-tiny-bcl-1.2.0"
+
 
 def download(url: str, dest: Path) -> None:
     if dest.exists() and dest.stat().st_size > 0:
@@ -41,13 +44,55 @@ def download(url: str, dest: Path) -> None:
         return
     dest.parent.mkdir(parents=True, exist_ok=True)
     req = urllib.request.Request(url, headers={"User-Agent": "DotMatch benchmark fetcher"})
-    with urllib.request.urlopen(req) as response, dest.open("wb") as fh:
-        while True:
-            chunk = response.read(1024 * 1024)
-            if not chunk:
-                break
-            fh.write(chunk)
+    tmp = dest.with_suffix(dest.suffix + ".tmp")
+    try:
+        with urllib.request.urlopen(req) as response, tmp.open("wb") as fh:
+            while True:
+                chunk = response.read(1024 * 1024)
+                if not chunk:
+                    break
+                fh.write(chunk)
+        tmp.replace(dest)
+    finally:
+        tmp.unlink(missing_ok=True)
     print(dest)
+
+
+def extract_tiny_bcl(archive: Path, destination: Path) -> None:
+    """Extract regular files beneath the expected dataset directory only."""
+    root = destination.resolve()
+    with tarfile.open(archive, "r:gz") as tf:
+        members = tf.getmembers()
+        for member in members:
+            member_path = Path(member.name)
+            if member_path.is_absolute() or ".." in member_path.parts:
+                raise RuntimeError(f"unsafe archive member: {member.name}")
+            if not member_path.parts or member_path.parts[0] != TINY_BCL_ARCHIVE_PREFIX:
+                raise RuntimeError(f"unexpected archive member: {member.name}")
+            target = (destination / member_path).resolve()
+            if target != root and root not in target.parents:
+                raise RuntimeError(f"unsafe archive member: {member.name}")
+            if member.isdir():
+                continue
+            if not member.isfile():
+                raise RuntimeError(f"unsupported archive member: {member.name}")
+        for member in members:
+            member_path = Path(member.name)
+            target = (destination / member_path).resolve()
+            if member.isdir():
+                target.mkdir(parents=True, exist_ok=True)
+                continue
+            source = tf.extractfile(member)
+            if source is None:
+                raise RuntimeError(f"could not read archive member: {member.name}")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            tmp = target.with_suffix(target.suffix + ".tmp")
+            try:
+                with source, tmp.open("wb") as output:
+                    shutil.copyfileobj(source, output)
+                tmp.replace(target)
+            finally:
+                tmp.unlink(missing_ok=True)
 
 
 def load_10x_i7(path: Path) -> dict[str, list[str]]:
@@ -130,8 +175,7 @@ def main() -> None:
     archive = DATA / "cellranger-tiny-bcl-1.2.0.tar.gz"
     download(URLS["archive"], archive)
     if args.extract:
-        with tarfile.open(archive, "r:gz") as tf:
-            tf.extractall(DATA)
+        extract_tiny_bcl(archive, DATA)
         print(DATA / "cellranger-tiny-bcl-1.2.0")
 
 
