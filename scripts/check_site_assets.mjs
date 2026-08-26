@@ -32,6 +32,7 @@ const page = read("app/page.tsx");
 const layout = read("app/layout.tsx");
 const readme = read("README.md");
 const docsIndex = read("docs/index.md");
+const packageMetadata = JSON.parse(read("package.json"));
 const normalizedPage = page.replace(/\s+/g, " ");
 
 for (const anchor of [
@@ -65,6 +66,7 @@ for (const phrase of [
   "inline barcodes",
   "DotMatch is not a genome aligner or basecaller.",
   "python3 -m pip install dotmatch",
+  "getting-started.html",
   "https://dotmatch.readthedocs.io/en/latest/"
 ]) {
   if (!normalizedPage.includes(phrase)) {
@@ -103,6 +105,31 @@ if (!layout.includes('applicationName: "DotMatch"') ||
 if (!page.includes('type="application/ld+json"') || !page.includes("SoftwareApplication")) {
   console.error("Homepage must include SoftwareApplication structured data.");
   process.exit(1);
+}
+
+if (!page.includes('import packageMetadata from "../package.json"') ||
+    !page.includes("softwareVersion: releaseVersion") ||
+    !page.includes("v${releaseVersion}")) {
+  console.error("Homepage release claims must come from package.json metadata.");
+  process.exit(1);
+}
+
+if (typeof packageMetadata.version !== "string" || !/^\d+\.\d+\.\d+/.test(packageMetadata.version)) {
+  console.error("package.json must declare a semantic release version.");
+  process.exit(1);
+}
+
+const css = read("app/globals.css");
+for (const accessibilityRule of [
+  ".skip-link",
+  ":focus-visible",
+  "prefers-reduced-motion",
+  ".install-copy a"
+]) {
+  if (!css.includes(accessibilityRule)) {
+    console.error(`Homepage accessibility rule is missing: ${accessibilityRule}`);
+    process.exit(1);
+  }
 }
 
 const markdownLinkPattern = /!?\[[^\]]*\]\(([^)\s]+)(?:\s+[^)]*)?\)/g;

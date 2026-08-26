@@ -10,6 +10,7 @@
   --amber: #996b13;
   --purple: #66509d;
   --red: #a83d36;
+  --focus: #147f69;
   --shadow: 0 22px 64px rgba(16, 21, 19, 0.1);
 }
 
@@ -40,7 +41,7 @@ a {
 a:focus-visible,
 .button:focus-visible,
 summary:focus-visible {
-  outline: 3px solid rgba(15, 107, 87, 0.42);
+  outline: 3px solid var(--focus);
   outline-offset: 3px;
   border-radius: 8px;
 }
@@ -694,6 +695,14 @@ h3 {
   color: rgba(255, 255, 255, 0.74);
 }
 
+.install-copy a {
+  color: #d9f9eb;
+  font-weight: 720;
+  text-decoration: underline;
+  text-decoration-thickness: 0.1em;
+  text-underline-offset: 0.18em;
+}
+
 .install-section .section-kicker {
   color: #83d8b8;
 }
@@ -749,7 +758,7 @@ h3 {
 .terminal-links a {
   display: inline-flex;
   align-items: center;
-  min-height: 34px;
+  min-height: 44px;
   padding: 0 0.68rem;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 7px;
@@ -852,7 +861,7 @@ h3 {
   }
 
   .mobile-nav summary {
-    min-height: 42px;
+    min-height: 44px;
     padding: 0.62rem 0.78rem;
     border: 1px solid var(--line);
     border-radius: 8px;
@@ -1011,5 +1020,11 @@ h3 {
 @media (max-width: 520px) {
   .hero-panel .outcome-grid {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
 }

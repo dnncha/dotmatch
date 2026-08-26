@@ -78,8 +78,9 @@ docker run --rm quay.io/biocontainers/dotmatch:0.2.2--py311h13f8228_1 dotmatch -
 See the [BioContainers package](https://quay.io/repository/biocontainers/dotmatch)
 for the other Python-build tags.
 
-Maintainers can refresh the [download metrics snapshot](docs/download-metrics.md)
-with `make download-metrics`. It records provider-reported package retrievals by
+Maintainers can refresh the [download metrics
+snapshot](https://dotmatch.readthedocs.io/en/latest/download-metrics.html) with
+`make download-metrics`. It records provider-reported package retrievals by
 channel, version, platform, and Python build; it does not estimate unique users.
 
 ## A small example
@@ -127,7 +128,8 @@ DOTMATCH_BIN=dotmatch ./examples/crispr_guides/run.sh
 This downloads a small public fixture and writes the count matrix, per-read
 assignments, and summary under `examples/crispr_guides/output/`. The example
 README explains how to fetch the full public data and links to the recorded
-[CRISPR comparison report](docs/benchmarks/public_crispr/README.md).
+[CRISPR comparison
+report](https://dotmatch.readthedocs.io/en/latest/benchmarks/public_crispr/README.html).
 
 For a browser-based smoke demo, launch the [Runnable DotMatch notebook in
 Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb) or
@@ -151,8 +153,10 @@ asks for a short trial and concrete input/output feedback. Please do not post
 private reads or unpublished guide libraries.
 
 If you are choosing a CRISPR guide-counting workflow, see the
-[workflow comparison](docs/usability-comparison.md) for the documented fit and
-scope of DotMatch, guide-counter, MAGeCK, and alignment-based alternatives.
+[workflow
+comparison](https://dotmatch.readthedocs.io/en/latest/usability-comparison.html)
+for the documented fit and scope of DotMatch, guide-counter, MAGeCK, and
+alignment-based alternatives.
 
 DotMatch is not a genome aligner, basecaller, UMI pipeline, variant caller, or
 screen-level statistics package. It compares short read windows with a finite

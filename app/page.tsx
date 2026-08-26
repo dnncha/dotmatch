@@ -1,7 +1,10 @@
 import { MobileNavigation } from "./mobile-navigation";
+import packageMetadata from "../package.json";
 
 const repoUrl = "https://github.com/dnncha/dotmatch";
 const docsUrl = "https://dotmatch.readthedocs.io/en/latest/";
+const gettingStartedUrl = `${docsUrl}getting-started.html`;
+const barcodeTroubleshootingUrl = `${gettingStartedUrl}#diagnose-a-barcode-run`;
 const scopeUrl = `${docsUrl}trust-and-scope.html`;
 const benchmarksUrl = `${docsUrl}benchmarks/README.html`;
 const schemasUrl = `${docsUrl}schemas.html`;
@@ -18,6 +21,7 @@ const workflowExamplesUrl = `${repoUrl}/tree/main/examples/workflows`;
 const doiUrl = "https://doi.org/10.5281/zenodo.21511337";
 const binderUrl = "https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb";
 const colabUrl = "https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb";
+const releaseVersion = packageMetadata.version;
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const assignmentWorkflowImage = `${basePath}/dotmatch-read-assignment-v2.webp`;
@@ -40,7 +44,7 @@ const structuredData = {
       name: "DotMatch",
       applicationCategory: "Bioinformatics software",
       operatingSystem: "Linux, macOS",
-      softwareVersion: "0.2.2",
+      softwareVersion: releaseVersion,
       softwareHelp: docsUrl,
       codeRepository: repoUrl,
       downloadUrl: pypiUrl,
@@ -110,7 +114,7 @@ const audienceRoutes = [
     body:
       "Use DotMatch when sample barcodes, guide libraries, or panel targets need visible ambiguity and unmatched-read review before a result leaves the core.",
     link: "Start with barcode troubleshooting",
-    href: `${docsUrl}crispr-qc.html`
+    href: barcodeTroubleshootingUrl
   },
   {
     title: "CRISPR screen teams",
@@ -180,7 +184,7 @@ const releaseItems = [
 ] as const;
 
 const trustFacts = [
-  ["Release", "Versioned packages on PyPI and GHCR"],
+  ["Release", `Version ${releaseVersion} on PyPI and GHCR`],
   ["License", "Apache-2.0 open source"],
   ["Data", "Runs locally on your machine"],
   ["Citation", "Archived release with DOI"]
@@ -463,13 +467,15 @@ export default function Home() {
 dotmatch dist ACGT AGGT
 
 # or use the pinned release container
-docker run --rm ghcr.io/dnncha/dotmatch:v0.2.2 dist ACGT AGGT`}</code></pre>
+docker run --rm \\
+  ghcr.io/dnncha/dotmatch:v${releaseVersion} \\
+  dist ACGT AGGT`}</code></pre>
             <div className="terminal-links">
               <a href={pypiUrl}>PyPI package</a>
               <a href={biocondaUrl}>Bioconda package</a>
               <a href={containerUrl}>GHCR container</a>
               <a href={biocontainersUrl}>BioContainers image</a>
-              <a href={docsUrl}>Getting started</a>
+              <a href={gettingStartedUrl}>Getting started</a>
               <a href={packagingUrl}>Packaging documentation</a>
               <a href={methodsUrl}>Citation guidance</a>
               <a href={binderUrl}>Launch Binder demo</a>
