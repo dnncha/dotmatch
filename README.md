@@ -1,9 +1,10 @@
 # DotMatch
 
-DotMatch assigns short FASTQ read windows to a known list of DNA sequences. It
-is useful when you already know the guides, barcodes, feature tags, primers, or
-other targets that may be present and want every read reported as a unique
-match, an ambiguous match, unmatched, or invalid.
+DotMatch is a deterministic CRISPR guide-counting and known-target short-DNA
+assignment tool. It assigns short FASTQ read windows to a known list of DNA
+sequences and reports every read as a unique match, an ambiguous match,
+unmatched, or invalid. It also supports barcodes, feature tags, primers, and
+other known targets.
 
 [![CI](https://github.com/dnncha/dotmatch/actions/workflows/ci.yml/badge.svg)](https://github.com/dnncha/dotmatch/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/dotmatch?label=PyPI)](https://pypi.org/project/dotmatch/)
@@ -16,7 +17,9 @@ match, an ambiguous match, unmatched, or invalid.
 [Getting started](https://dotmatch.readthedocs.io/en/latest/getting-started.html) ·
 [Command reference](https://dotmatch.readthedocs.io/en/latest/command-reference.html) ·
 [Examples](https://github.com/dnncha/dotmatch/tree/main/examples) ·
-[Citation](https://dotmatch.readthedocs.io/en/latest/methods-and-citation.html)
+[Citation](https://dotmatch.readthedocs.io/en/latest/methods-and-citation.html) ·
+[Try the notebook in Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb) ·
+[Try the notebook in Google Colab](https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb)
 
 ![FASTQ reads and a target table are compared at a fixed read window. DotMatch writes counts, split FASTQs, QC tables, and reports.](https://raw.githubusercontent.com/dnncha/dotmatch/main/public/dotmatch-read-assignment.svg)
 
@@ -39,6 +42,45 @@ conda activate dotmatch
 The Bioconda recipe supports Linux, Intel macOS, and Apple Silicon
 (`osx-arm64`). If a newly tagged version has not reached Bioconda yet, use the
 PyPI package or install from source.
+
+macOS users who want the native CPU command without Python can use the
+[third-party Homebrew tap](https://github.com/dnncha/homebrew-tap):
+
+```bash
+brew tap dnncha/tap
+brew install dnncha/tap/dotmatch
+dotmatch --version
+```
+
+This tap is maintained outside Homebrew's official repositories and installs
+the native `dotmatch` command from a pinned release source archive. Use PyPI or
+Bioconda when you need the Python bindings, AssayCode, or the optional Metal
+backend.
+
+For containerised workflows, the current release is also published to GHCR:
+
+```bash
+docker pull ghcr.io/dnncha/dotmatch:v0.2.2
+docker run --rm ghcr.io/dnncha/dotmatch:v0.2.2 --version
+```
+
+The [container package](https://github.com/dnncha/dotmatch/pkgs/container/dotmatch)
+is useful when a workflow should pin the release without installing Python or
+Conda on the host.
+
+BioContainers also publishes the Bioconda-derived image for workflow runners:
+
+```bash
+docker pull quay.io/biocontainers/dotmatch:0.2.2--py311h13f8228_1
+docker run --rm quay.io/biocontainers/dotmatch:0.2.2--py311h13f8228_1 dotmatch --version
+```
+
+See the [BioContainers package](https://quay.io/repository/biocontainers/dotmatch)
+for the other Python-build tags.
+
+Maintainers can refresh the [download metrics snapshot](docs/download-metrics.md)
+with `make download-metrics`. It records provider-reported package retrievals by
+channel, version, platform, and Python build; it does not estimate unique users.
 
 ## A small example
 
@@ -70,6 +112,29 @@ DotMatch only counts a read when exactly one target is compatible under the
 selected matching rule. Reads that fit several targets remain visible as
 ambiguous instead of being assigned arbitrarily.
 
+## Try a public CRISPR dataset
+
+After installing the published package, reproduce the checked public
+MAGeCK/Yusa guide-counting example from the repository:
+
+```bash
+git clone https://github.com/dnncha/dotmatch.git
+cd dotmatch
+python3 -m pip install dotmatch
+DOTMATCH_BIN=dotmatch ./examples/crispr_guides/run.sh
+```
+
+This downloads a small public fixture and writes the count matrix, per-read
+assignments, and summary under `examples/crispr_guides/output/`. The example
+README explains how to fetch the full public data and links to the recorded
+[CRISPR comparison report](docs/benchmarks/public_crispr/README.md).
+
+For a browser-based smoke demo, launch the [Runnable DotMatch notebook in
+Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb) or
+[Google Colab](https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb).
+It uses a small synthetic fixture and is intended for workflow orientation, not
+biological validation.
+
 ## What it is for
 
 - counting CRISPR guides and writing MAGeCK-compatible count tables;
@@ -79,6 +144,15 @@ ambiguous instead of being assigned arbitrarily.
 - auditing target lists before enabling mismatch correction;
 - designing and checking barcode panels;
 - writing TSV, JSON, FASTQ, and HTML results for pipelines and lab review.
+
+If you work with guide-capture or perturb-seq data and can share a tiny
+synthetic or de-identified fixture, the [public validation invitation](https://github.com/dnncha/dotmatch/issues/82)
+asks for a short trial and concrete input/output feedback. Please do not post
+private reads or unpublished guide libraries.
+
+If you are choosing a CRISPR guide-counting workflow, see the
+[workflow comparison](docs/usability-comparison.md) for the documented fit and
+scope of DotMatch, guide-counter, MAGeCK, and alignment-based alternatives.
 
 DotMatch is not a genome aligner, basecaller, UMI pipeline, variant caller, or
 screen-level statistics package. It compares short read windows with a finite

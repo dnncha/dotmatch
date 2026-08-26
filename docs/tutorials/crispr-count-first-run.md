@@ -1,4 +1,4 @@
-# CRISPR Count First Run
+# CRISPR Guide Counting with DotMatch
 
 This tutorial uses the tiny checked workflow fixtures under
 `examples/workflows/fixtures/`. It does not download public data. The goal is to

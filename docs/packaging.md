@@ -1,8 +1,8 @@
 # Packaging and installation
 
-DotMatch is distributed through PyPI, GitHub releases, and containers. A
-Bioconda recipe is maintained separately and can arrive later than a PyPI
-release while its build is reviewed.
+DotMatch is distributed through PyPI, GitHub releases, Bioconda, and
+containers. The current 0.2.2 release is available through the package
+channels below; a new version can arrive at different times on each channel.
 
 ## PyPI
 
@@ -61,6 +61,16 @@ docker run --rm ghcr.io/dnncha/dotmatch:0.2.2 dist ACGT AGGT
 BioContainers images are generated after the corresponding Bioconda package is
 published. Their tags include the Bioconda build number, so use the tag shown on
 the package page rather than guessing it.
+
+For the current release, one available Linux/Python 3.11 tag is:
+
+```bash
+docker pull quay.io/biocontainers/dotmatch:0.2.2--py311h13f8228_1
+docker run --rm quay.io/biocontainers/dotmatch:0.2.2--py311h13f8228_1 dotmatch --version
+```
+
+See the [BioContainers package page](https://quay.io/repository/biocontainers/dotmatch)
+for the other build tags.
 
 ## Build from source
 

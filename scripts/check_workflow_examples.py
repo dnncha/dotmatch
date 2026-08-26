@@ -31,7 +31,7 @@ GALAXY_TEST_DATA = [
     "expected_counts.mageck.tsv",
 ]
 NFCORE_MODULES = ["count", "demux", "audit", "panel_check", "crispr_count", "assay_run"]
-NFCORE_CONTAINER_TAG = "0.1.9--py311h13f8228_0"
+NFCORE_CONTAINER_TAG = "0.2.2--py311h13f8228_1"
 
 
 class WorkflowAudit:
@@ -588,7 +588,7 @@ def check_galaxy(root: Path, result: WorkflowAudit) -> None:
         if assay_wrapper.tag != "tool" or assay_wrapper.attrib.get("id") != "dotmatch_assay_run":
             result.failures.append("Galaxy AssaySpec wrapper must be tool id dotmatch_assay_run")
         assay_command = assay_wrapper.findtext("command") or ""
-        _require(assay_command, "cat > assay.toml", "Galaxy AssaySpec wrapper command must generate an AssaySpec from staged inputs", result)
+        _require(assay_command, "printf '%s\\n'", "Galaxy AssaySpec wrapper command must generate an AssaySpec from staged inputs", result)
         _require(assay_command, 'ambiguity_policy = "radius"', "Galaxy AssaySpec wrapper command must keep assignment ambiguity policy explicit", result)
         _require(assay_command, "dotmatch assay run assay.toml", "Galaxy AssaySpec wrapper command must run dotmatch assay run", result)
         assay_input_names = {node.attrib.get("name", "") for node in assay_wrapper.findall("./inputs/param")}

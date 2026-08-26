@@ -13,8 +13,11 @@ const pypiUrl = "https://pypi.org/project/dotmatch/";
 const biocondaUrl = "https://anaconda.org/bioconda/dotmatch";
 const releaseUrl = `${repoUrl}/releases`;
 const containerUrl = `${repoUrl}/pkgs/container/dotmatch`;
+const biocontainersUrl = "https://quay.io/repository/biocontainers/dotmatch";
 const workflowExamplesUrl = `${repoUrl}/tree/main/examples/workflows`;
 const doiUrl = "https://doi.org/10.5281/zenodo.21511337";
+const binderUrl = "https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb";
+const colabUrl = "https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const assignmentWorkflowImage = `${basePath}/dotmatch-read-assignment-v2.webp`;
@@ -152,7 +155,7 @@ const releaseItems = [
   {
     title: "Published release",
     body:
-      "Versioned packages are available through PyPI, GitHub Releases, GHCR, Zenodo, and Bioconda. Check the release and package pages when pinning a version."
+      "Versioned packages are available through PyPI, GitHub Releases, GHCR, BioContainers, Zenodo, and Bioconda. Check the release and package pages when pinning a version."
   },
   {
     title: "Defined scope",
@@ -397,6 +400,7 @@ export default function Home() {
               <a href={pypiUrl}>PyPI</a>
               <a href={releaseUrl}>GitHub release</a>
               <a href={containerUrl}>Container image</a>
+              <a href={biocontainersUrl}>BioContainers</a>
               <a href={doiUrl}>Zenodo archive</a>
               <a href={distributionUrl}>Distribution status</a>
               <a href={docsUrl}>Documentation</a>
@@ -443,6 +447,11 @@ export default function Home() {
               check before working with FASTQ data. Your sequencing files remain on
               your machine.
             </p>
+            <p>
+              Prefer to try it in a browser? Launch the small synthetic DotMatch
+              notebook in <a href={binderUrl}>Binder</a> or <a href={colabUrl}>Google
+              Colab</a> before installing locally.
+            </p>
           </div>
           <div className="terminal" aria-label="Install DotMatch">
             <div className="terminal-bar" aria-hidden="true">
@@ -451,13 +460,20 @@ export default function Home() {
               <span />
             </div>
             <pre><code>{`python3 -m pip install dotmatch
-dotmatch dist ACGT AGGT`}</code></pre>
+dotmatch dist ACGT AGGT
+
+# or use the pinned release container
+docker run --rm ghcr.io/dnncha/dotmatch:v0.2.2 dist ACGT AGGT`}</code></pre>
             <div className="terminal-links">
               <a href={pypiUrl}>PyPI package</a>
               <a href={biocondaUrl}>Bioconda package</a>
+              <a href={containerUrl}>GHCR container</a>
+              <a href={biocontainersUrl}>BioContainers image</a>
               <a href={docsUrl}>Getting started</a>
               <a href={packagingUrl}>Packaging documentation</a>
               <a href={methodsUrl}>Citation guidance</a>
+              <a href={binderUrl}>Launch Binder demo</a>
+              <a href={colabUrl}>Launch Colab demo</a>
             </div>
           </div>
         </section>

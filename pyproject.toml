@@ -54,6 +54,9 @@ Repository = "https://github.com/dnncha/dotmatch"
 Issues = "https://github.com/dnncha/dotmatch/issues"
 Documentation = "https://dotmatch.readthedocs.io/en/latest/"
 Changelog = "https://github.com/dnncha/dotmatch/blob/main/CHANGELOG.md"
+Examples = "https://github.com/dnncha/dotmatch/tree/main/examples"
+Bioconda = "https://anaconda.org/bioconda/dotmatch"
+Container = "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch"
 
 [tool.setuptools]
 package-dir = {"" = "python"}

@@ -5,6 +5,7 @@ ROOT=$(CDPATH= cd -- "$(dirname "$0")/../.." && pwd)
 HERE=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 DATA="${DOTMATCH_EXAMPLE_DATA_DIR:-$HERE/data}"
 OUT="${DOTMATCH_EXAMPLE_OUT_DIR:-$HERE/output}"
+DOTMATCH_BIN="${DOTMATCH_BIN:-$ROOT/dotmatch}"
 mkdir -p "$OUT"
 
 if [ ! -f "$DATA/yusa_library.csv" ]; then
@@ -15,7 +16,7 @@ READ1="$DATA/ERR376998.fastq.gz"
 READ2="$DATA/ERR376999.fastq.gz"
 TARGETS="$DATA/yusa_library.csv"
 
-"$ROOT/dotmatch" count \
+"$DOTMATCH_BIN" count \
   --targets "$TARGETS" \
   --reads "$READ1" \
   --reads "$READ2" \
@@ -33,7 +34,7 @@ TARGETS="$DATA/yusa_library.csv"
   --ambiguous-out "$OUT/ambiguous.tsv" \
   --unmatched-out "$OUT/unmatched.tsv"
 
-"$ROOT/dotmatch" count \
+"$DOTMATCH_BIN" count \
   --targets "$TARGETS" \
   --reads "$READ1" \
   --reads "$READ2" \

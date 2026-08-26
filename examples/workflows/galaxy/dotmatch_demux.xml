@@ -1,22 +1,10 @@
-<tool id="dotmatch_demux" name="DotMatch demux" version="0.1.0+galaxy0" profile="22.05" license="Apache-2.0">
+<tool id="dotmatch_demux" name="DotMatch demux" version="0.2.2+galaxy0" profile="22.05" license="Apache-2.0">
     <description>demultiplex fixed-window inline barcodes</description>
     <requirements>
-        <requirement type="package" version="0.1.0">dotmatch</requirement>
+        <requirement type="package" version="0.2.2">dotmatch</requirement>
     </requirements>
     <command detect_errors="exit_code"><![CDATA[
-dotmatch demux \
-  --barcodes '$barcodes' \
-  --reads '$reads' \
-  --barcode-start '$barcode_start' \
-  --barcode-length '$barcode_length' \
-  --k '$k' \
-  --metric '$metric' \
-  --ambiguity-policy radius \
-  --out-dir demuxed \
-  --summary '$summary' \
-  --assignments '$assignments'
-
-tar -czf '$demuxed_fastqs' demuxed
+	dotmatch demux --barcodes '$barcodes' --reads '$reads' --barcode-start '$barcode_start' --barcode-length '$barcode_length' --k '$k' --metric '$metric' --ambiguity-policy radius --out-dir demuxed --summary '$summary' --assignments '$assignments' && tar -czf '$demuxed_fastqs' demuxed
     ]]></command>
     <inputs>
         <param name="barcodes" type="data" format="tabular,csv,txt" label="Barcode table" help="Table with id and sequence columns."/>
@@ -65,7 +53,7 @@ uniquely assigned barcode and writes explicit unmatched/ambiguous diagnostics.
 @software{dotmatch_2026,
   title = {DotMatch: deterministic known-target short-DNA assignment for sequencing workflows},
   author = {O'Toole, Donncha},
-  version = {0.1.0},
+  version = {0.2.2},
   url = {https://github.com/Dnncha/dotmatch}
 }
         ]]></citation>

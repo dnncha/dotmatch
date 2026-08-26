@@ -39,7 +39,7 @@ download:
   - type: Package
     url: https://anaconda.org/bioconda/dotmatch
 publication:
-  - doi: 10.5281/zenodo.20541628
+  - doi: 10.5281/zenodo.21511337
 credit:
   - name: Donncha O'Toole
     orcid: https://orcid.org/0009-0003-5012-7229

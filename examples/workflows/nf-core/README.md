@@ -52,7 +52,7 @@ pipelines, reproducibility, MultiQC integration, etc.):
 
 3. **Enhance for Upstream (Recommended Polish)**
    - Use exact bioconda/singularity container hashes from a released version
-     (`0.1.9--py311h13f8228_0`, verified in both Quay and the Galaxy Singularity depot).
+     (`0.2.2--py311h13f8228_1`, verified in both Quay and the Galaxy Singularity depot).
    - The upstream tree already includes: maintainers + license in meta.yml, stub test case, self-contained tests/data/.
    - Add more nf-test cases (different k, metrics, full vs stub runs) if needed.
    - Support additional common params via `task.ext` (e.g. `--auto-offset`,

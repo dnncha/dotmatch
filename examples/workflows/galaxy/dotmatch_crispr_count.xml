@@ -1,13 +1,13 @@
-<tool id="dotmatch_crispr_count" name="DotMatch CRISPR count" version="0.1.0+galaxy0" profile="22.05" license="Apache-2.0">
+<tool id="dotmatch_crispr_count" name="DotMatch CRISPR count" version="0.2.2+galaxy0" profile="22.05" license="Apache-2.0">
     <description>assign CRISPR guide reads to a known guide library</description>
     <requirements>
-        <requirement type="package" version="0.1.0">dotmatch</requirement>
+        <requirement type="package" version="0.2.2">dotmatch</requirement>
     </requirements>
     <command detect_errors="exit_code"><![CDATA[
 printf 'sample_id\tfastq\n%s\t%s\n%s\t%s\n' \
   '$sample1_label' '$sample1_fastq' \
   '$sample2_label' '$sample2_fastq' \
-  > samples.tsv
+  > samples.tsv &&
 
 dotmatch crispr-count \
   --library '$library' \
@@ -92,7 +92,7 @@ does not produce SAM/BAM, CIGAR strings, or reference mapping output.
 @software{dotmatch_2026,
   title = {DotMatch: deterministic known-target short-DNA assignment for sequencing workflows},
   author = {O'Toole, Donncha},
-  version = {0.1.0},
+  version = {0.2.2},
   url = {https://github.com/Dnncha/dotmatch}
 }
         ]]></citation>

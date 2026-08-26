@@ -1,45 +1,37 @@
-<tool id="dotmatch_assay_run" name="DotMatch AssaySpec run" version="0.1.0+galaxy0" profile="22.05" license="Apache-2.0">
+<tool id="dotmatch_assay_run" name="DotMatch AssaySpec run" version="0.2.2+galaxy0" profile="22.05" license="Apache-2.0">
     <description>run a fixed-window DotMatch AssaySpec and emit workflow reports</description>
     <requirements>
-        <requirement type="package" version="0.1.0">dotmatch</requirement>
+        <requirement type="package" version="0.2.2">dotmatch</requirement>
     </requirements>
     <command detect_errors="exit_code"><![CDATA[
-cat > assay.toml <<'ASSAY'
-schema_version = 1
-status = "ready"
-mode = "count"
-assay_type = "crispr"
-targets = "$library"
-
-[[samples]]
-id = "$sample1_label"
-fastq = "$sample1_fastq"
-
-[[samples]]
-id = "$sample2_label"
-fastq = "$sample2_fastq"
-
-[run]
-out_dir = "assay_out"
-threads = 1
-
-[extract]
-start = $guide_start
-length = $guide_length
-
-[assignment]
-k = $k
-metric = "$metric"
-ambiguity_policy = "radius"
-ambiguous = "$ambiguous"
+printf '%s\n' \
+  'schema_version = 1' \
+  'status = "ready"' \
+  'mode = "count"' \
+  'assay_type = "crispr"' \
+  'targets = "$library"' \
+  '[[samples]]' \
+  'id = "$sample1_label"' \
+  'fastq = "$sample1_fastq"' \
+  '[[samples]]' \
+  'id = "$sample2_label"' \
+  'fastq = "$sample2_fastq"' \
+  '[run]' \
+  'out_dir = "assay_out"' \
+  'threads = 1' \
+  '[extract]' \
+  'start = $guide_start' \
+  'length = $guide_length' \
+  '[assignment]' \
+  'k = $k' \
+  'metric = "$metric"' \
+  'ambiguity_policy = "radius"' \
+  'ambiguous = "$ambiguous"' \
 #if str($metric) == 'levenshtein' and int($indel_window) > 0
-indel_window = $indel_window
+  'indel_window = $indel_window' \
 #end if
-
-[outputs]
-format = "mageck"
-ASSAY
-
+  '[outputs]' \
+  'format = "mageck"' > assay.toml &&
 dotmatch assay run assay.toml
     ]]></command>
     <inputs>

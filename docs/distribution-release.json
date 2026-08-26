@@ -10,45 +10,58 @@
       "expected_url": "https://pypi.org/project/dotmatch/0.2.2/",
       "public_url": "https://pypi.org/project/dotmatch/0.2.2/",
       "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/30012092792",
-      "verified_date": "2026-07-23",
+      "verified_date": "2026-08-22",
       "verification_command": "make distribution-channels",
       "files": 4,
       "readme_relative_links": 0
     },
     {
       "id": "bioconda",
-      "status": "blocked",
+      "status": "verified",
       "expected_url": "https://anaconda.org/bioconda/dotmatch",
+      "public_url": "https://anaconda.org/bioconda/dotmatch",
+      "evidence_url": "https://api.anaconda.org/package/bioconda/dotmatch",
+      "verified_date": "2026-08-22",
       "verification_command": "make distribution-channels",
-      "blocker": "A DotMatch 0.2.2 recipe has not been accepted and built by Bioconda.",
-      "next_action": "Submit the rendered recipe from the immutable source archive, then verify channel propagation."
+      "version": "0.2.2",
+      "clean_install": true
     },
     {
       "id": "bioconda-assaycode",
-      "status": "blocked",
+      "status": "verified",
       "expected_url": "https://anaconda.org/bioconda/assaycode",
+      "public_url": "https://anaconda.org/bioconda/assaycode",
+      "evidence_url": "https://api.anaconda.org/package/bioconda/assaycode",
+      "verified_date": "2026-08-22",
       "verification_command": "make distribution-channels",
-      "blocker": "The optional AssayCode compatibility metapackage has not been published for 0.2.2.",
-      "next_action": "Update the metapackage after the matching DotMatch 0.2.2 Bioconda build is available."
+      "version": "0.2.2",
+      "clean_install": true
     },
     {
       "id": "ghcr",
-      "status": "verified",
+      "status": "manifest_verified",
       "expected_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
       "public_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
-      "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/30012092792",
-      "verified_date": "2026-07-23",
+      "evidence_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
+      "verified_date": "2026-08-22",
       "verification_command": "make distribution-channels",
       "tag": "v0.2.2",
-      "digest": "sha256:dcf957f3b0c42215e714983315070a3043a56dd8b3f8fed42fe6ea0219394435"
+      "digest": "sha256:dcf957f3b0c42215e714983315070a3043a56dd8b3f8fed42fe6ea0219394435",
+      "blocker": "The public GHCR manifest is available, but this verifier host has no Docker executable for the runtime smoke test.",
+      "next_action": "Run make distribution-channels on a host with Docker and retain the --version and dist smoke-test result."
     },
     {
       "id": "biocontainers",
-      "status": "blocked",
+      "status": "manifest_verified",
       "expected_url": "https://quay.io/repository/biocontainers/dotmatch",
+      "public_url": "https://quay.io/repository/biocontainers/dotmatch",
+      "evidence_url": "https://quay.io/api/v1/repository/biocontainers/dotmatch/tag/?onlyActiveTags=true&page=1&limit=100",
+      "verified_date": "2026-08-22",
       "verification_command": "make distribution-channels",
-      "blocker": "The BioContainers image depends on the matching Bioconda package and has not been generated for 0.2.2.",
-      "next_action": "Verify the generated image after Bioconda propagation, including a runtime check on an OCI host."
+      "tag": "0.2.2--py311h13f8228_1",
+      "manifest_digest": "sha256:220f55c0fb16c418386c1fe883565da32236eac5dd8b0f87e15607f04c7f18b0",
+      "blocker": "The public tag and OCI manifest are available, but this verifier host has no Docker executable for the runtime smoke test.",
+      "next_action": "Run make distribution-channels on a host with Docker and retain the dotmatch dist and leq smoke-test results."
     },
     {
       "id": "zenodo",
@@ -56,15 +69,14 @@
       "expected_url": "https://doi.org/10.5281/zenodo.21511337",
       "public_url": "https://doi.org/10.5281/zenodo.21511337",
       "evidence_url": "https://zenodo.org/api/records/21511337",
-      "verified_date": "2026-07-23",
+      "verified_date": "2026-08-22",
       "verification_command": "make distribution-channels",
       "concept_doi": "10.5281/zenodo.20541628",
       "release_doi": "10.5281/zenodo.21511337"
     }
   ],
   "blockers": [
-    "The DotMatch and optional AssayCode Bioconda recipes are not published for 0.2.2.",
-    "BioContainers generation and an OCI runtime check remain pending the Bioconda build."
+    "Docker runtime smoke tests for GHCR and BioContainers remain unrun because the verifier host does not have Docker installed."
   ],
-  "next_action": "Submit the DotMatch and AssayCode Bioconda recipes, then verify Bioconda and BioContainers before marking all release channels verified."
+  "next_action": "Run make distribution-channels on a host with Docker, then replace manifest_verified with verified if both container smoke tests pass."
 }

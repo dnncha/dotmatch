@@ -14,7 +14,7 @@ planemo lint examples/workflows/galaxy/dotmatch_assay_run.xml
 planemo test examples/workflows/galaxy/dotmatch_assay_run.xml
 ```
 
-The wrapper exposes a two-sample CRISPR guide-counting surface: guide library,
+The wrapper targets the published DotMatch 0.2.2 package and exposes a two-sample CRISPR guide-counting surface: guide library,
 two FASTQ inputs, sample labels, guide offset, guide length, edit-distance
 threshold, metric, ambiguity policy, and optional one-base Levenshtein indel
 window. It writes a MAGeCK-compatible count table, DotMatch summary JSON, and a

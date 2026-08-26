@@ -37,6 +37,9 @@ jobs:
             -c conda-forge
             -c bioconda
             openjdk=17
+            galaxy-tool-util=25.0.4
+            galaxy-tool-util-models=25.0.4
+            galaxy-util=25.0.3
             nextflow
             nf-test
             snakemake-minimal

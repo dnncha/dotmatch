@@ -1,8 +1,8 @@
 # nf-core/modules submission payload
 
 This directory is a self-contained candidate payload for DotMatch modules in
-`nf-core/modules`. It is prepared against DotMatch 0.1.9 and uses the immutable
-BioContainers build `0.1.9--py311h13f8228_0`, which is available from Quay and
+`nf-core/modules`. It is prepared against DotMatch 0.2.2 and uses the immutable
+BioContainers build `0.2.2--py311h13f8228_1`, which is available from Quay and
 the Galaxy Singularity depot.
 
 ## Included modules

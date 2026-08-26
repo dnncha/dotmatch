@@ -31,7 +31,10 @@ the [command reference](command-reference.md).
 
 | I want to… | Start here |
 | --- | --- |
-| Count guides from a CRISPR screen | [CRISPR first run](tutorials/crispr-count-first-run.md) |
+| Count guides from a CRISPR screen | [CRISPR guide-counting first run](tutorials/crispr-count-first-run.md) |
+| Reproduce a public CRISPR example | [Public CRISPR guide-counting example](../examples/crispr_guides/README.md) |
+| Try the workflow without a local install | [Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb) or [Google Colab](https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb) |
+| Compare guide-counting workflows | [Guide-counting workflow comparison](usability-comparison.md) |
 | Build a checked assay project | [AssaySpec workflows](assayspec.md) |
 | Split reads by inline barcode | [Getting started: demultiplexing](getting-started.md#demultiplex-inline-barcodes) |
 | Diagnose barcode failures | [Barcode run diagnosis](getting-started.md#diagnose-a-barcode-run) |
@@ -81,6 +84,7 @@ tutorials/scverse-perturb-seq
 assayspec
 crispr-qc
 barcode-panel-design
+usability-comparison
 ```
 
 ```{toctree}
