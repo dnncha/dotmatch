@@ -49,10 +49,11 @@ benchmark-specific `make bench-*` and `make *-gate` targets because those runs
 can require larger downloads or external comparators.
 
 Workflow adoption is tracked separately in `docs/workflow-adoption.json`.
-Current in-repository Galaxy, Nextflow, nf-core-style, Snakemake, and MultiQC
-examples are workflow-example evidence, not accepted external integrations. The
+The repository examples remain workflow-example evidence. Public Galaxy IUC,
+nf-core, Snakemake wrappers, and MultiQC pull requests are open, but none is an
+accepted integration. The exact states are in `docs/ecosystem-status.md`; the
 workflow manifest remains `not_ready` until an external workflow record is
-accepted, released, or published.
+accepted and released or published.
 
 ## Resubmission Checklist
 

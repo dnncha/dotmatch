@@ -42,6 +42,7 @@ the [command reference](command-reference.md).
 | Use DotMatch from Python | [Streaming Python API](streaming-api.md) |
 | Add DotMatch to a pipeline | [Output schemas](schemas.md) |
 | Evaluate DotMatch for a workflow | [Bioinformatics evaluation](bioinformatics-evaluation.md) |
+| Check package and upstream integration status | [Ecosystem status](ecosystem-status.md) |
 | Record the software in a methods section | [Methods and citation](methods-and-citation.md) |
 
 ## Scope and limitations
@@ -96,6 +97,7 @@ schemas
 workbench
 bioinformatics-evaluation
 external-review-packet
+ecosystem-status
 ```
 
 ```{toctree}

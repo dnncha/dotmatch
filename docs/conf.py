@@ -59,6 +59,7 @@ NAVIGATION_DOCS = {
     "streaming-api",
     "schemas",
     "workbench",
+    "ecosystem-status",
     "trust-and-scope",
     "benchmarks/README",
     "methods-and-citation",

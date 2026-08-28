@@ -66,7 +66,9 @@ PUBLIC_LANGUAGE_FILES = [
     Path("app/page.tsx"),
     Path("app/layout.tsx"),
     Path("docs/bioinformatics-evaluation.md"),
+    Path("docs/ecosystem-status.md"),
     Path("docs/external-review-packet.md"),
+    Path("docs/workflow-submissions.md"),
     Path("docs/workflow-integration-kit.md"),
     Path("docs/workflow-integration-roadmap.md"),
     Path("docs/pilot-program.md"),
@@ -80,6 +82,7 @@ REQUIRED_FILES = [
     INTEGRATIONS,
     BIOTOOLS,
     Path("docs/bioinformatics-evaluation.md"),
+    Path("docs/ecosystem-status.md"),
     Path("docs/external-review-packet.md"),
     Path("docs/workflow-integration-kit.md"),
     Path("docs/workflow-integration-roadmap.md"),
@@ -173,8 +176,10 @@ def _check_integrations(result: AuditResult) -> None:
     data = read_json(INTEGRATIONS)
     if data.get("schema_version") != 1:
         result.failures.append("integration target tracker must declare schema_version 1")
-    if data.get("status") != "planned":
-        result.failures.append("integration target tracker must remain planned until external records exist")
+    if data.get("status") not in {"planned", "active_external_review"}:
+        result.failures.append("integration target tracker has an unsupported overall status")
+    if data.get("status") == "active_external_review" and not str(data.get("verified_on") or "").strip():
+        result.failures.append("active integration target tracker must declare verified_on")
     if data.get("adoption_record") != "docs/workflow-adoption.json":
         result.failures.append("integration tracker must point at docs/workflow-adoption.json")
     targets = data.get("targets")
@@ -198,6 +203,15 @@ def _check_integrations(result: AuditResult) -> None:
             result.failures.append(f"{target_id} must require a public record before integration claims")
         if not str(target.get("next_action") or "").strip():
             result.failures.append(f"{target_id} must declare next_action")
+        if status == "external_pr_open":
+            record = str(target.get("external_record") or "").strip()
+            commit = str(target.get("external_record_commit") or "").strip()
+            if not is_https_url(record) or uses_placeholder_host(record):
+                result.failures.append(f"{target_id} open PR must declare external_record")
+            if len(commit) != 40:
+                result.failures.append(f"{target_id} open PR must declare a full external_record_commit")
+            if target.get("accepted") is not False or target.get("released") is not False:
+                result.failures.append(f"{target_id} open PR must not be marked accepted or released")
         for asset in target.get("source_assets") or []:
             asset_path = Path(str(asset))
             if not asset_path.exists():

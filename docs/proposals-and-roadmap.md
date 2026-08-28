@@ -89,10 +89,10 @@ Keep scope: stop at assignment + QC + audit. Leave UMI dedup, cell calling, hit 
 1. Land pandas + AnnData + tl + MultiQC (full parsers + entrypoint) + nf-core + R (skeleton + polish: more functions, Matcher wrapper, expanded vignette) (done).
 2. Auto-threads UX/perf (done).
 3. Perf round: multi-word Myers (portable) + SIMD hamming (AVX2/NEON) + 1M batch/seq_buffer reuse (all 3 best-of-n candidates evaluated in isolated worktrees for correctness, safety, no overlap; all applied after verification; see "Performance Enhancements" section). (done).
-4. nf-core module upstreaming (local + upstream/ self-contained PR payload + playbook ready; external PR + workflow-adoption.json update pending to flip gate). More public evidence lanes.
+4. Complete review of the open nf-core, Galaxy IUC, Snakemake wrappers, and MultiQC submissions; keep `workflow-adoption.json` closed until an integration is accepted and released.
 4. One additional large public evidence lane + gate (to safely broaden claims).
 5. R package + vignette (done; in tree + docs).
-6. nf-core upstream PR + record in workflow-adoption.json (local+upstream payload + playbook ready in examples/workflows/nf-core/upstream/).
+6. Record the exact accepted workflow integration in `workflow-adoption.json` after its public release.
 7. Production GPU lane (or decide not to for v1 scope).
 8. BCL expansion if demand appears.
 

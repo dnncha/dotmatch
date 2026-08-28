@@ -64,6 +64,9 @@ package-dir = {"" = "python"}
 [project.entry-points."multiqc.modules.v1"]
 dotmatch = "dotmatch.multiqc:DotMatchModule"
 
+[project.entry-points."multiqc.hooks.v1"]
+before_config = "dotmatch.multiqc:load_config"
+
 [tool.setuptools.packages.find]
 where = ["python"]
 include = ["assaycode*", "dotmatch*", "quickdna*"]

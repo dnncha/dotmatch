@@ -1,19 +1,23 @@
 {
   "schema_version": 1,
-  "status": "planned",
+  "status": "active_external_review",
+  "verified_on": "2026-08-28",
   "adoption_record": "docs/workflow-adoption.json",
   "targets": [
     {
       "id": "nf_core_modules",
       "name": "nf-core modules",
       "type": "nf_core_module",
-      "status": "external_pr_review_ready",
-      "prepared_for_version": "0.2.1",
+      "status": "external_pr_open",
+      "prepared_for_version": "0.2.2",
       "upstream_payload": "examples/workflows/nf-core/upstream/",
-      "container_tag": "quay.io/biocontainers/dotmatch:0.2.1--py314h118bc1c_0",
+      "container_tag": "quay.io/biocontainers/dotmatch:0.2.2--py311h13f8228_1",
       "external_target": "https://github.com/nf-core/modules",
       "external_record": "https://github.com/nf-core/modules/pull/12156",
-      "external_record_commit": "2441f466b4c86aadf8be79ccd43dd5607bdeb621",
+      "external_record_commit": "77e849b86cae10557a8b17f9c86fa87f6833ece2",
+      "external_record_state": "open",
+      "accepted": false,
+      "released": false,
       "source_assets": [
         "examples/workflows/nf-core/upstream/README.md",
         "examples/workflows/nf-core/upstream/modules/nf-core/dotmatch/count/",
@@ -29,30 +33,42 @@
         "make workflow-integration-test",
         "make reviewer-readiness-ready"
       ],
-      "next_action": "Address maintainer review on the scoped dotmatch/crispr_count pull request; record integration only after merge.",
+      "next_action": "Wait for maintainer review on the scoped dotmatch/crispr_count pull request; record integration only after merge.",
       "public_record_required": true
     },
     {
       "id": "multiqc_module",
       "name": "MultiQC module",
       "type": "multiqc_plugin",
-      "status": "local_parser_ready",
+      "status": "external_pr_open",
+      "prepared_for_version": "next release after 0.2.2",
       "external_target": "https://github.com/MultiQC/MultiQC",
+      "external_record": "https://github.com/MultiQC/MultiQC/pull/3629",
+      "external_record_commit": "166f94ce70f2bc1fdbc94f460a4c857511bf1416",
+      "external_record_state": "open",
+      "accepted": false,
+      "released": false,
       "source_assets": [
         "python/dotmatch/multiqc.py",
         "examples/workflows/multiqc/multiqc_config.yaml",
         "examples/workflows/multiqc/data/"
       ],
-      "review_command": "make workflow-examples-ready",
-      "next_action": "Package or upstream the module after public workflow maintainers confirm report shape.",
+      "review_command": "python3 scripts/run_workflow_integration_tests.py --skip-nf-test --skip-nextflow --skip-snakemake --skip-planemo",
+      "next_action": "Wait for MultiQC maintainer review; release the independent before_config discovery hook in DotMatch only after its source checks pass.",
       "public_record_required": true
     },
     {
       "id": "galaxy_iuc",
       "name": "Galaxy / IUC wrappers",
       "type": "galaxy_toolshed",
-      "status": "local_wrapper_ready",
+      "status": "external_pr_open",
+      "prepared_for_version": "0.2.2",
       "external_target": "https://github.com/galaxyproject/tools-iuc",
+      "external_record": "https://github.com/galaxyproject/tools-iuc/pull/8336",
+      "external_record_commit": "b547330d0b3f9fb38368eac3a94fd84098d51031",
+      "external_record_state": "open",
+      "accepted": false,
+      "released": false,
       "source_assets": [
         "examples/workflows/galaxy/dotmatch_crispr_count.xml",
         "examples/workflows/galaxy/dotmatch_demux.xml",
@@ -60,22 +76,28 @@
         "examples/workflows/galaxy/dotmatch_assay_run.xml"
       ],
       "review_command": "make workflow-examples-ready",
-      "next_action": "Run Planemo checks in an IUC checkout and open a scoped wrapper PR.",
+      "next_action": "Wait for IUC maintainer review; after merge, verify ToolShed publication before describing the wrappers as installable.",
       "public_record_required": true
     },
     {
       "id": "snakemake_wrapper",
       "name": "Snakemake wrapper",
       "type": "snakemake_workflow",
-      "status": "local_workflow_ready",
+      "status": "external_pr_open",
+      "prepared_for_version": "0.2.2",
       "external_target": "https://github.com/snakemake/snakemake-wrappers",
+      "external_record": "https://github.com/snakemake/snakemake-wrappers/pull/5825",
+      "external_record_commit": "a72d2bb8bdeb97d8ac506cbc249925f969888b6f",
+      "external_record_state": "open_checks_require_maintainer_approval",
+      "accepted": false,
+      "released": false,
       "source_assets": [
         "examples/workflows/snakemake/Snakefile",
         "examples/workflows/snakemake/config.json",
         "examples/workflows/fixtures/"
       ],
       "review_command": "make workflow-examples-ready",
-      "next_action": "Convert the local workflow into an external wrapper or public lab workflow.",
+      "next_action": "An upstream maintainer must approve the Code quality and Tests workflow runs; then wait for review and verify the released wrapper record after merge.",
       "public_record_required": true
     },
     {
@@ -84,13 +106,17 @@
       "type": "registry_record",
       "status": "draft_metadata_ready",
       "external_target": "https://bio.tools/",
+      "external_record": null,
+      "external_record_state": "not_submitted",
+      "accepted": false,
+      "released": false,
       "source_assets": [
         "docs/registries/biotools.yml",
         "codemeta.json",
         "CITATION.cff"
       ],
       "review_command": "make reviewer-readiness-ready",
-      "next_action": "Submit registry metadata and record only the accepted public URL after review.",
+      "next_action": "Submit the registry metadata through an authenticated bio.tools account and record only the accepted public URL after review.",
       "public_record_required": true
     }
   ]

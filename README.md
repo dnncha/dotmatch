@@ -267,6 +267,9 @@ and self-contained HTML reports. The formats are documented in the
 
 Examples for Nextflow, nf-core, Snakemake, Galaxy, and MultiQC live under
 [`examples/workflows`](https://github.com/dnncha/dotmatch/tree/main/examples/workflows).
+The [ecosystem status ledger](https://dotmatch.readthedocs.io/en/latest/ecosystem-status.html)
+separates local examples, open upstream submissions, accepted contributions,
+released integrations, and installable package-manager channels.
 The desktop Workbench is maintained separately in
 [`dotmatch-community`](https://github.com/dnncha/dotmatch-community).
 

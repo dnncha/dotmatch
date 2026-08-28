@@ -16,7 +16,7 @@ It parses:
 - assay_manifest.summary.tsv
 - panel_summary.json
 - top_unmatched.tsv-style diagnostics
-and adds nice tables + plots to the MultiQC report.
+and adds summary tables and plots to the MultiQC report.
 
 See examples/workflows/multiqc/ for the simple custom-content alternative
 that works today with no extra code.
@@ -34,8 +34,8 @@ log = logging.getLogger(__name__)
 
 # Lazy imports: only fail when actually using the MultiQC integration
 # (users who want it do: pip install multiqc "dotmatch[multiqc]" or similar)
-# This enables first-class MultiQC support in nf-core / industry pipelines while keeping
-# the core package lightweight.
+# This keeps the core package lightweight while allowing MultiQC to load the
+# integration when the optional dependency is installed.
 #
 # Registration happens via pyproject.toml entry point:
 #   [project.entry-points."multiqc.modules.v1"]
@@ -45,8 +45,8 @@ log = logging.getLogger(__name__)
 _HAS_MULTIQC = False
 try:
     from multiqc import BaseMultiqcModule  # type: ignore
+    from multiqc import config as _mqc_config  # type: ignore
     from multiqc.plots import table as _mqc_table  # type: ignore
-    from multiqc.utils import config as _mqc_config  # type: ignore
     _HAS_MULTIQC = True
 except Exception:  # noqa: BLE001
     BaseMultiqcModule = object  # type: ignore
@@ -56,10 +56,16 @@ except Exception:  # noqa: BLE001
 
 DOTMATCH_SEARCH_PATTERNS: dict[str, dict[str, Any]] = {
     "dotmatch/sample_qc": {"fn": "*sample_qc.tsv"},
-    "dotmatch/summary_json": {"fn": "*summary.json"},
+    # Keep the specific panel pattern before the generic summary pattern.
+    # MultiQC stops after the first non-shared filename match, including an
+    # excluded generic match.
+    "dotmatch/panel_summary": {"fn": "*panel_summary.json"},
+    "dotmatch/summary_json": {
+        "fn": "*summary.json",
+        "exclude_fn": "*panel_summary.json",
+    },
     "dotmatch/crispr_qc": {"fn": "*crispr_qc.summary.tsv"},
     "dotmatch/assay_manifest": {"fn": "*assay_manifest.summary.tsv"},
-    "dotmatch/panel_summary": {"fn": "*panel_summary.json"},
     "dotmatch/top_unmatched": {"fn": "*top_unmatched.tsv"},
 }
 
@@ -110,8 +116,8 @@ FLOAT_FIELDS = {
 }
 
 
-def _install_search_patterns() -> None:
-    """Register DotMatch file patterns when MultiQC imports this entry point."""
+def load_config() -> None:
+    """Register DotMatch search patterns before MultiQC indexes input files."""
     if _mqc_config is None:
         return
     search_patterns = getattr(_mqc_config, "sp", None)
@@ -120,9 +126,6 @@ def _install_search_patterns() -> None:
     for key, pattern in DOTMATCH_SEARCH_PATTERNS.items():
         search_patterns.setdefault(key, pattern)
 
-
-if _HAS_MULTIQC:
-    _install_search_patterns()
 
 def _get_table_plot():
     if not _HAS_MULTIQC or _mqc_table is None:
@@ -352,7 +355,7 @@ class DotMatchModule(BaseMultiqcModule):
             # Add more metadata as desired
         )
 
-        _install_search_patterns()
+        load_config()
 
         # Find files
         self.sample_qc_files: list[Any] = list(self.find_log_files(
@@ -416,7 +419,7 @@ class DotMatchModule(BaseMultiqcModule):
             self.add_section(
                 name="DotMatch Sample QC",
                 anchor="dotmatch-sample-qc",
-                description="Per-sample assignment outcomes from DotMatch. Only uniquely assigned reads contribute to counts (ambiguous reads are excluded by design for scientific accuracy).",
+                description="Per-sample assignment outcomes from DotMatch. Ambiguous reads are excluded from unique counts.",
                 plot=_get_table_plot()(data, {
                     "assigned_reads": {"title": "Assigned"},
                     "exact_reads": {"title": "Exact"},
@@ -424,6 +427,9 @@ class DotMatchModule(BaseMultiqcModule):
                     "no_match_reads": {"title": "No Match"},
                     "assignment_rate": {"title": "Assign Rate"},
                     "ambiguous_rate": {"title": "Ambig Rate"},
+                }, {
+                    "id": "dotmatch_sample_qc_table",
+                    "title": "DotMatch Sample QC",
                 }),
             )
             self.general_stats_addcols(data, {
@@ -454,6 +460,9 @@ class DotMatchModule(BaseMultiqcModule):
                     "invalid": {"title": "Invalid"},
                     "assignment_rate": {"title": "Assign Rate"},
                     "assignment_engine": {"title": "Engine"},
+                }, {
+                    "id": "dotmatch_assignment_summary_table",
+                    "title": "DotMatch Assignment Summary",
                 }),
             )
 
@@ -470,7 +479,7 @@ class DotMatchModule(BaseMultiqcModule):
             self.add_section(
                 name="DotMatch CRISPR QC",
                 anchor="dotmatch-crispr-qc",
-                description="CRISPR guide-count library QC and representation from DotMatch (zero-count guides, Gini, top 1% dominance, assignment rates). High zero-count or high Gini indicates poor library coverage or skew, which is important for screen interpretability.",
+                description="CRISPR guide-count library QC from DotMatch, including coverage, zero-count guides, Gini, top 1% dominance, and assignment rates.",
                 plot=_get_table_plot()(data, {
                     "qc_status": {"title": "QC"},
                     "total_count": {"title": "Total Guides"},
@@ -479,11 +488,14 @@ class DotMatchModule(BaseMultiqcModule):
                     "gini_index": {"title": "Gini"},
                     "top_1pct_fraction": {"title": "Top 1%"},
                     "assignment_rate": {"title": "Assign Rate"},
+                }, {
+                    "id": "dotmatch_crispr_qc_table",
+                    "title": "DotMatch CRISPR QC",
                 }),
             )
             self.general_stats_addcols(data, {
                 "coverage_fraction": {"title": "Cov %", "description": "Fraction of guide library observed in unique counts", "max": 1, "min": 0, "scale": "YlGn"},
-                "zero_count_fraction": {"title": "Zero %", "description": "Fraction of guides with zero unique counts (bad for screens)", "max": 1, "min": 0, "scale": "OrRd"},
+                "zero_count_fraction": {"title": "Zero %", "description": "Fraction of guides with zero unique counts", "max": 1, "min": 0, "scale": "OrRd"},
             })
 
     def _parse_assay_manifest(self) -> None:
@@ -499,13 +511,16 @@ class DotMatchModule(BaseMultiqcModule):
             self.add_section(
                 name="DotMatch Assay Manifest",
                 anchor="dotmatch-assay-manifest",
-                description="Provenance and summary from `dotmatch assay run`. Links to full HTML report and JSON for full audit trail and reproducibility (critical for scientific accuracy and industry use).",
+                description="Provenance and summary from `dotmatch assay run`, with paths to the full report and manifest.",
                 plot=_get_table_plot()(data, {
                     "assay_type": {"title": "Type"},
                     "status": {"title": "Status"},
                     "sample_count": {"title": "Samples"},
                     "autopsy_triggered": {"title": "Autopsy"},
                     "warning_count": {"title": "Warnings"},
+                }, {
+                    "id": "dotmatch_assay_manifest_table",
+                    "title": "DotMatch Assay Manifest",
                 }),
             )
 
@@ -523,7 +538,10 @@ class DotMatchModule(BaseMultiqcModule):
                 name="DotMatch Top Unmatched",
                 anchor="dotmatch-top-unmatched",
                 description="Most frequent unassigned observed sequences from DotMatch diagnostics.",
-                plot=_get_table_plot()(data),
+                plot=_get_table_plot()(data, None, {
+                    "id": "dotmatch_top_unmatched_table",
+                    "title": "DotMatch Top Unmatched",
+                }),
             )
 
     def _parse_panel_summary(self) -> None:
@@ -539,7 +557,7 @@ class DotMatchModule(BaseMultiqcModule):
             self.add_section(
                 name="DotMatch Panel Safety",
                 anchor="dotmatch-panel-safety",
-                description="Barcode panel safety certificate summaries from DotMatch panel check.",
+                description="Barcode panel check summaries from DotMatch.",
                 plot=_get_table_plot()(data, {
                     "status": {"title": "Status"},
                     "panel_grade": {"title": "Grade"},
@@ -550,6 +568,9 @@ class DotMatchModule(BaseMultiqcModule):
                     "collision_pairs": {"title": "Collisions"},
                     "ambiguous_error_spheres": {"title": "Ambig Spheres"},
                     "silent_assignment_risk": {"title": "Silent Risk"},
+                }, {
+                    "id": "dotmatch_panel_safety_table",
+                    "title": "DotMatch Panel Safety",
                 }),
             )
 
@@ -557,4 +578,4 @@ class DotMatchModule(BaseMultiqcModule):
 # For users who want to register without subclassing the whole thing
 def load_dotmatch_multiqc() -> None:
     """Helper to make the module discoverable in some MultiQC setups."""
-    _install_search_patterns()
+    load_config()

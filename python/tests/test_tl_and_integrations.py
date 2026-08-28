@@ -1,7 +1,9 @@
 """Light tests for tl and pure parsers (no heavy optional deps required for basic paths)."""
 
 import gzip
+from types import SimpleNamespace
 
+import dotmatch.multiqc as multiqc_module
 import pytest
 
 from dotmatch.multiqc import (
@@ -37,7 +39,7 @@ def test_pure_parsers_on_fixtures():
     assert "status" in row
     assert "primary_report" in row
 
-    summary = parse_summary_json(ROOT / "examples/workflows/fixtures/assay_out/summary.json")
+    summary = parse_summary_json(ROOT / "examples/workflows/multiqc/data/assignment_summary.json")
     row = next(iter(summary.values()))
     assert "assigned_unique" in row
     assert "ambiguous" in row
@@ -50,6 +52,10 @@ def test_pure_parsers_on_fixtures():
 
 def test_native_multiqc_parser_contract() -> None:
     assert DOTMATCH_SEARCH_PATTERNS["dotmatch/sample_qc"]["fn"] == "*sample_qc.tsv"
+    assert list(DOTMATCH_SEARCH_PATTERNS).index("dotmatch/panel_summary") < list(
+        DOTMATCH_SEARCH_PATTERNS
+    ).index("dotmatch/summary_json")
+    assert DOTMATCH_SEARCH_PATTERNS["dotmatch/summary_json"]["exclude_fn"] == "*panel_summary.json"
     assert DOTMATCH_SEARCH_PATTERNS["dotmatch/crispr_qc"]["fn"] == "*crispr_qc.summary.tsv"
     assert DOTMATCH_SEARCH_PATTERNS["dotmatch/top_unmatched"]["fn"] == "*top_unmatched.tsv"
 
@@ -58,11 +64,35 @@ def test_native_multiqc_parser_contract() -> None:
             ROOT / "examples/workflows/multiqc/data/sample_qc.tsv",
             ROOT / "examples/workflows/multiqc/data/crispr_qc.summary.tsv",
             ROOT / "examples/workflows/multiqc/data/assay_manifest.summary.tsv",
+            ROOT / "examples/workflows/multiqc/data/assignment_summary.json",
             ROOT / "examples/workflows/multiqc/data/panel_summary.json",
+            ROOT / "examples/workflows/multiqc/data/sample_top_unmatched.tsv",
         ]
     )
-    assert {"sample_qc", "crispr_qc", "assay_manifest", "panel_summary"} <= set(parsed)
+    assert {
+        "sample_qc",
+        "summary",
+        "crispr_qc",
+        "assay_manifest",
+        "panel_summary",
+        "top_unmatched",
+    } <= set(parsed)
+    assert parsed["summary"]["fixture_sample"]["assigned_unique"] == 9700
+    assert len(parsed["top_unmatched"]) == 2
     assert isinstance(next(iter(parsed["crispr_qc"].values()))["coverage_fraction"], float)
+
+
+def test_multiqc_before_config_hook_registers_patterns_without_overriding_user_config(
+    monkeypatch,
+) -> None:
+    config = SimpleNamespace(sp={"dotmatch/sample_qc": {"fn": "custom_sample_qc.tsv"}})
+    monkeypatch.setattr(multiqc_module, "_mqc_config", config)
+
+    multiqc_module.load_config()
+
+    assert config.sp["dotmatch/sample_qc"]["fn"] == "custom_sample_qc.tsv"
+    assert config.sp["dotmatch/panel_summary"]["fn"] == "*panel_summary.json"
+    assert config.sp["dotmatch/summary_json"]["exclude_fn"] == "*panel_summary.json"
 
 
 def test_multiqc_file_path_accepts_common_record_shapes() -> None:

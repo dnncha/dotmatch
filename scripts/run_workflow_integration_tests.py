@@ -160,8 +160,6 @@ def run_multiqc(tmp: Path, env: dict[str, str]) -> None:
         [
             "multiqc",
             str(ROOT / "examples" / "workflows" / "multiqc" / "data"),
-            "-c",
-            str(ROOT / "examples" / "workflows" / "multiqc" / "multiqc_config.yaml"),
             "--module",
             "dotmatch",
             "-o",

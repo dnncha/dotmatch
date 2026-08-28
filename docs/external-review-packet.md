@@ -30,8 +30,9 @@ variant caller, UMI/cell quantifier, or screen-level statistics package.
 | Installation | `docs/bioinformatics-evaluation.md` | PyPI and Bioconda install checks are verified after public channel propagation; container runtime proof needs an OCI runtime. |
 | Validated scope | `docs/scientific-claims.md` | Public claims must stay inside checked lanes and gates. |
 | Output contracts | `docs/schemas.md` | TSV/JSON/HTML artifacts are intentionally plain for workflow systems. |
-| Workflow handoff | `docs/workflow-submissions.md` | Local nf-core, MultiQC, Galaxy, and Snakemake assets exist. |
+| Workflow handoff | `docs/workflow-submissions.md` | Links exact open nf-core, MultiQC, Galaxy, and Snakemake submissions and their remaining gates. |
 | Workflow status | `docs/workflow-adoption.json` | External workflow integration is listed only after acceptance outside this repository. |
+| Ecosystem status | `docs/ecosystem-status.md` | Separates local, submitted, accepted, released, and installable states. |
 | Registry status | `docs/registries/biotools.yml` | Draft metadata only; not an accepted bio.tools record. |
 | Citation | `docs/methods-and-citation.md` | Use release-specific citation text and generated methods artifacts. |
 
@@ -74,8 +75,12 @@ Ask these before recommending DotMatch for a workflow:
 
 - `docs/workflow-adoption.json` is still `not_ready`; local examples are not
   accepted external workflow integrations.
-- The nf-core `dotmatch/crispr_count` submission is ready for maintainer review;
-  it is not an accepted workflow integration unless it is reviewed and merged.
+- The nf-core, Galaxy IUC, Snakemake wrappers, and MultiQC submissions are open;
+  none is an accepted workflow integration unless it is reviewed and merged.
+- The Spack package recipe is merged in `spack-packages` `develop`; no dated
+  Spack release containing it is claimed here.
+- The MultiQC plugin discovery fix is source-only until a later DotMatch
+  release includes it.
 - The bio.tools metadata is prepared locally, but no public registry record
   exists yet.
 - A local BioContainers runtime check still needs a Docker or OCI host; the
