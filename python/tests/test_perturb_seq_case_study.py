@@ -28,6 +28,14 @@ def test_access_record_does_not_overstate_source_rights() -> None:
     assert record["repository_redistribution"]["publisher_workbook"] is False
 
 
+def test_repo_relative_executable_resolves_to_exact_worktree_binary() -> None:
+    executable = case_study.command_path("./dotmatch")
+    assert executable == (ROOT / "dotmatch").resolve()
+    assert case_study.public_command([str(executable), "--version"]) == (
+        "./dotmatch --version"
+    )
+
+
 def test_fixture_oracle_exercises_all_outcomes() -> None:
     fixture = ROOT / "examples" / "perturb_seq_gse146194" / "fixture"
     targets = case_study.load_targets(fixture / "targets.tsv")

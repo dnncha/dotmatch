@@ -57,9 +57,9 @@
   "protocol": "examples/perturb_seq_gse146194/protocol.json",
   "resources": {
     "host": "macOS-26.2-arm64-arm-64bit",
-    "peak_rss_mib": 133.734375,
+    "peak_rss_mib": 134.171875,
     "python": "3.9.6",
-    "wall_seconds": 12.707588791000001
+    "wall_seconds": 6.998000416999999
   },
   "runs": [
     {
@@ -122,7 +122,7 @@
           "UFM1": 1266,
           "YIPF5": 586
         },
-        "seconds": 1.9689984999999997,
+        "seconds": 1.9151433329999996,
         "top_unmatched_windows": [
           {
             "count": 68,
@@ -177,7 +177,7 @@
         "assigned_unique": 46189,
         "assignment_rate": 0.9622708333333333,
         "assignments": "examples/perturb_seq_gse146194/work/dotmatch.k0.assignments.tsv",
-        "command": "dotmatch count --targets examples/perturb_seq_gse146194/work/targets.tsv --reads examples/perturb_seq_gse146194/work/evaluation.fastq.gz --sample-label GSE146194_SRR11214031_heldout_prefix --target-start 41 --target-length 18 --k 0 --metric hamming --ambiguity-policy radius --format dotmatch --out examples/perturb_seq_gse146194/work/dotmatch.k0.counts.tsv --summary examples/perturb_seq_gse146194/work/dotmatch.k0.summary.json --assignments examples/perturb_seq_gse146194/work/dotmatch.k0.assignments.tsv --ambiguous report --sample-qc examples/perturb_seq_gse146194/work/dotmatch.k0.sample_qc.tsv",
+        "command": "./dotmatch count --targets examples/perturb_seq_gse146194/work/targets.tsv --reads examples/perturb_seq_gse146194/work/evaluation.fastq.gz --sample-label GSE146194_SRR11214031_heldout_prefix --target-start 41 --target-length 18 --k 0 --metric hamming --ambiguity-policy radius --format dotmatch --out examples/perturb_seq_gse146194/work/dotmatch.k0.counts.tsv --summary examples/perturb_seq_gse146194/work/dotmatch.k0.summary.json --assignments examples/perturb_seq_gse146194/work/dotmatch.k0.assignments.tsv --ambiguous report --sample-qc examples/perturb_seq_gse146194/work/dotmatch.k0.sample_qc.tsv",
         "counts": "examples/perturb_seq_gse146194/work/dotmatch.k0.counts.tsv",
         "distinct_assigned_targets": 32,
         "invalid": 0,
@@ -217,7 +217,7 @@
           "YIPF5": 586
         },
         "sample_qc": "examples/perturb_seq_gse146194/work/dotmatch.k0.sample_qc.tsv",
-        "seconds": 0.0342610419999998,
+        "seconds": 0.030446208000000308,
         "stderr": "",
         "stdout": "",
         "summary": "examples/perturb_seq_gse146194/work/dotmatch.k0.summary.json",
@@ -330,7 +330,7 @@
           "UFM1": 1286,
           "YIPF5": 598
         },
-        "seconds": 2.5018453340000004,
+        "seconds": 1.9018432919999997,
         "top_unmatched_windows": [
           {
             "count": 68,
@@ -385,7 +385,7 @@
         "assigned_unique": 46910,
         "assignment_rate": 0.9772916666666667,
         "assignments": "examples/perturb_seq_gse146194/work/dotmatch.k1.assignments.tsv",
-        "command": "dotmatch count --targets examples/perturb_seq_gse146194/work/targets.tsv --reads examples/perturb_seq_gse146194/work/evaluation.fastq.gz --sample-label GSE146194_SRR11214031_heldout_prefix --target-start 41 --target-length 18 --k 1 --metric hamming --ambiguity-policy radius --format dotmatch --out examples/perturb_seq_gse146194/work/dotmatch.k1.counts.tsv --summary examples/perturb_seq_gse146194/work/dotmatch.k1.summary.json --assignments examples/perturb_seq_gse146194/work/dotmatch.k1.assignments.tsv --ambiguous report --sample-qc examples/perturb_seq_gse146194/work/dotmatch.k1.sample_qc.tsv",
+        "command": "./dotmatch count --targets examples/perturb_seq_gse146194/work/targets.tsv --reads examples/perturb_seq_gse146194/work/evaluation.fastq.gz --sample-label GSE146194_SRR11214031_heldout_prefix --target-start 41 --target-length 18 --k 1 --metric hamming --ambiguity-policy radius --format dotmatch --out examples/perturb_seq_gse146194/work/dotmatch.k1.counts.tsv --summary examples/perturb_seq_gse146194/work/dotmatch.k1.summary.json --assignments examples/perturb_seq_gse146194/work/dotmatch.k1.assignments.tsv --ambiguous report --sample-qc examples/perturb_seq_gse146194/work/dotmatch.k1.sample_qc.tsv",
         "counts": "examples/perturb_seq_gse146194/work/dotmatch.k1.counts.tsv",
         "distinct_assigned_targets": 32,
         "invalid": 0,
@@ -425,7 +425,7 @@
           "YIPF5": 598
         },
         "sample_qc": "examples/perturb_seq_gse146194/work/dotmatch.k1.sample_qc.tsv",
-        "seconds": 0.04023662500000036,
+        "seconds": 0.036599665999999864,
         "stderr": "",
         "stdout": "",
         "summary": "examples/perturb_seq_gse146194/work/dotmatch.k1.summary.json",

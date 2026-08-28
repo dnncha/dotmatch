@@ -80,7 +80,7 @@ The workflow extracts `32` 18-base GBCs from Supplementary Table 2, scans every 
 - k=0: assignment `96.23%`, ambiguous `0.00%`, unmatched `3.77%`, invalid `0.00%`; `32` distinct guides received unique reads.
 - k=1: assignment `97.73%`, ambiguous `0.00%`, unmatched `2.27%`, invalid `0.00%`; `32` distinct guides received unique reads.
 - Guide-library audit: minimum pairwise Hamming distance `8`; `0` pairs within distance 1 and `0` pairs within distance 2.
-- Resource record for this bounded run: `12.708` wall seconds, `133.7` MiB peak RSS, and `1094540` compressed bytes read from the FASTQ stream.
+- Resource record for this bounded run: `6.998` wall seconds, `134.2` MiB peak RSS, and `1094540` compressed bytes read from the FASTQ stream.
 
 ## What this proves
 

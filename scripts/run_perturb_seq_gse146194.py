@@ -20,6 +20,7 @@ import os
 import platform
 import re
 import resource
+import shlex
 import subprocess
 import sys
 import time
@@ -130,6 +131,23 @@ def public_path(path: Path) -> str:
         return str(path.resolve().relative_to(ROOT))
     except ValueError:
         return str(path)
+
+
+def public_command(command: Sequence[str]) -> str:
+    displayed: list[str] = []
+    for index, argument in enumerate(command):
+        path = Path(argument)
+        if path.is_absolute():
+            try:
+                relative = path.resolve().relative_to(ROOT)
+            except ValueError:
+                displayed.append(argument)
+            else:
+                prefix = "./" if index == 0 else ""
+                displayed.append(prefix + relative.as_posix())
+        else:
+            displayed.append(argument)
+    return shlex.join(displayed)
 
 
 def stable_json(path: Path, value: object) -> None:
@@ -661,7 +679,8 @@ def run_command(command: list[str]) -> tuple[float, str, str]:
 
 
 def dotmatch_version(dotmatch: Path) -> str:
-    _seconds, stdout, stderr = run_command([str(dotmatch), "--version"])
+    resolved = command_path(str(dotmatch))
+    _seconds, stdout, stderr = run_command([str(resolved), "--version"])
     return stdout or stderr
 
 
@@ -711,7 +730,7 @@ def run_dotmatch(
     assignments = Path(str(prefix) + ".assignments.tsv")
     return summarize_assignments(read_assignment_rows(assignments)), {
         "seconds": seconds,
-        "command": " ".join(public_path(Path(arg)) if arg.startswith(str(ROOT)) else arg for arg in command),
+        "command": public_command(command),
         "stdout": stdout,
         "stderr": stderr,
         "assignments": public_path(assignments),
@@ -758,6 +777,7 @@ def run_analysis(
     length: int,
     work: Path,
 ) -> list[dict]:
+    dotmatch = command_path(str(dotmatch))
     runs: list[dict] = []
     for k, comparator in [(0, "exact_slice_hash"), (1, "exhaustive_hamming_radius")]:
         dotmatch_summary, command = run_dotmatch(
@@ -788,7 +808,7 @@ def run_analysis(
 
 def command_path(path_text: str) -> Path:
     path = Path(path_text)
-    return path if path.is_absolute() else ROOT / path
+    return path.resolve() if path.is_absolute() else (ROOT / path).resolve()
 
 
 def write_csv(path: Path, results: dict) -> None:
