@@ -22,30 +22,30 @@ provider records on 2026-08-28.
 PyPI:
 
 ```bash
-python3 -m venv /tmp/dotmatch-pypi-smoke
-/tmp/dotmatch-pypi-smoke/bin/pip install dotmatch==0.2.2
-/tmp/dotmatch-pypi-smoke/bin/dotmatch --version
-/tmp/dotmatch-pypi-smoke/bin/dotmatch dist ACGT AGGT
+python3 -m venv .dotmatch-pypi-smoke
+.dotmatch-pypi-smoke/bin/pip install dotmatch==0.2.2
+.dotmatch-pypi-smoke/bin/dotmatch --version
+.dotmatch-pypi-smoke/bin/dotmatch dist ACGT AGGT
 ```
 
 Bioconda:
 
 ```bash
-conda create -y -p /tmp/dotmatch-bioconda-smoke \
+conda create -y -p .dotmatch-bioconda-smoke \
   -c conda-forge -c bioconda dotmatch=0.2.2
-conda run -p /tmp/dotmatch-bioconda-smoke dotmatch --version
-conda run -p /tmp/dotmatch-bioconda-smoke dotmatch dist ACGT AGGT
+conda run -p .dotmatch-bioconda-smoke dotmatch --version
+conda run -p .dotmatch-bioconda-smoke dotmatch dist ACGT AGGT
 ```
 
 The MultiQC plugin fix can be checked from this source tree without a custom
 search-pattern configuration:
 
 ```bash
-python3 -m venv /tmp/dotmatch-multiqc-smoke
-/tmp/dotmatch-multiqc-smoke/bin/pip install ".[multiqc]"
-/tmp/dotmatch-multiqc-smoke/bin/multiqc \
+python3 -m venv .dotmatch-multiqc-smoke
+.dotmatch-multiqc-smoke/bin/pip install ".[multiqc]"
+.dotmatch-multiqc-smoke/bin/multiqc \
   examples/workflows/multiqc/data --module dotmatch \
-  -o /tmp/dotmatch-multiqc-report
+  -o .dotmatch-multiqc-report
 ```
 
 An open pull request is not an accepted or released integration. A merged
