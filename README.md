@@ -131,6 +131,27 @@ README explains how to fetch the full public data and links to the recorded
 [CRISPR comparison
 report](https://dotmatch.readthedocs.io/en/latest/benchmarks/public_crispr/README.html).
 
+## Reproduce the public Perturb-seq case study
+
+The [GSE146194 direct-guide-capture case
+study](examples/perturb_seq_gse146194/README.md) uses 32 published guide
+barcodes and a bounded, held-out prefix of SRR11214031:
+
+```bash
+git clone https://github.com/dnncha/dotmatch.git
+cd dotmatch
+make bench-perturb-seq-case-study-public
+make perturb-seq-case-study-public-gate
+```
+
+The workflow verifies the publisher workbook, streams only the first 50,000
+FASTQ records, excludes 2,000 discovery reads, and checks 48,000 evaluation
+reads against independent exact and exhaustive Hamming oracles. The report
+includes unmatched and ambiguous outcomes, hashes, commands, software versions,
+and resource measurements. This is per-read fixed-window guide assignment
+evidence; it is not guide-per-cell, UMI, expression, perturbation-effect, or
+speed-comparison evidence.
+
 For a browser-based smoke demo, launch the [Runnable DotMatch notebook in
 Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb) or
 [Google Colab](https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb).
@@ -147,10 +168,11 @@ biological validation.
 - designing and checking barcode panels;
 - writing TSV, JSON, FASTQ, and HTML results for pipelines and lab review.
 
-If you work with guide-capture or perturb-seq data and can share a tiny
-synthetic or de-identified fixture, the [public validation invitation](https://github.com/dnncha/dotmatch/issues/82)
-asks for a short trial and concrete input/output feedback. Please do not post
-private reads or unpublished guide libraries.
+If you work with guide-capture or perturb-seq data, the public case study above
+provides a checked starting point. The [public validation
+invitation](https://github.com/dnncha/dotmatch/issues/82) also asks for a short
+trial and concrete input/output feedback. Please do not post private reads or
+unpublished guide libraries.
 
 If you are choosing a CRISPR guide-counting workflow, see the
 [workflow

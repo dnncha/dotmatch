@@ -30,6 +30,7 @@
 - [Barcode demultiplexing report](barcode_demux/README.md)
 - [Raw BCL demultiplexing report](bcl_demux/README.md)
 - [Oligo/adapter public prefix-assignment report](oligo_adapter/README.md)
+- [GSE146194 multi-guide direct-capture Perturb-seq case study](perturb_seq_gse146194/README.md)
 - [Perturb-seq/CRISPR guide-capture public assignment report](perturb_seq/README.md)
 - [Feature-barcode public assignment report](feature_barcode/README.md)
 - [Amplicon/panel public primer-start assignment report](amplicon_panel/README.md)

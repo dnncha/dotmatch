@@ -10,6 +10,7 @@ Use them to compare a new run against a known-good lane or a known failure patte
 - [Public CRISPR guide counting: Yusa/MAGeCK lane](../scenarios/public_crispr_yusa.md): Known-good guide-counting lane with count agreement and Edlib validation.
 - [Public barcode demux: SRP009896 exact-prefix lane](../scenarios/barcode_srp009896_comparator.md): Exact fixed-position barcode demultiplexing with documented Cutadapt and hash baselines.
 - [Feature barcode assignment: 10x TotalSeq-B public lane](../scenarios/feature_barcode_10x.md): Per-read fixed-window feature-barcode assignment with exact-slice baseline agreement.
+- [Direct-guide-capture Perturb-seq: GSE146194 held-out case study](../scenarios/perturb_seq_gse146194.md): Thirty-two-guide fixed-window assignment on 48,000 held-out reads with matched independent oracles.
 - [CRISPR guide capture extraction: 10x GEM-X public lane](../scenarios/perturb_seq_10x_guide_capture.md): Single-guide fixed-window guide-capture extraction with exact-slice baseline agreement.
 - [Amplicon primer-start assignment: ARTIC V3 public lane](../scenarios/amplicon_artic_primer_start.md): Fixed-window primer-start assignment with exact-prefix baseline agreement.
 - [Oligo/adapter prefix assignment: TruSeq R1 public lane](../scenarios/oligo_adapter_truseq_prefix.md): Fixed-window adapter-prefix assignment with exact-slice baseline agreement.

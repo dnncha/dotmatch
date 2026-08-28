@@ -46,6 +46,7 @@ def _write_gallery_repo(root: Path) -> None:
         _scenario("barcode_wrong_offset_fixture", "wrong_offset"),
         _scenario("barcode_unsafe_correction", "unsafe_correction"),
         _scenario("feature_barcode_10x", "known_good"),
+        _scenario("perturb_seq_gse146194", "known_good"),
         _scenario("perturb_seq_10x_guide_capture", "known_good"),
         _scenario("amplicon_artic_primer_start", "known_good"),
         _scenario("oligo_adapter_truseq_prefix", "known_good"),

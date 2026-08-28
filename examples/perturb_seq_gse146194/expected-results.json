@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "established_on": "2026-08-28",
+  "basis": "Initial bounded public run with zero matched-oracle differences; timing and network byte counts are intentionally excluded from this deterministic contract.",
+  "protocol_sha256": "b9f080ef932b6500ca9156c65e6c3383896cb86395cc8b9df769467ce100bb6c",
+  "guide_library": {
+    "target_count": 32,
+    "workbook_sha256": "3dd53733987890bb7577c3dac77215c9874267d4d69f732ddf7525f356914085",
+    "targets_sha256": "cc17aef8352611de2fa3d51007792b2721d159205ab393b1268db2486d499629",
+    "minimum_pairwise_hamming_distance": 8
+  },
+  "input_slice": {
+    "selected_records": 50000,
+    "discovery_records": 2000,
+    "evaluation_records": 48000,
+    "selected_prefix_uncompressed_sha256": "8346a01785a1cf65e38789b3ae703353734e24df9bf14775ea31e7825dab7b01",
+    "evaluation_uncompressed_sha256": "47b39eb617f3760b6f25b26d05814e6529750adefdadd8ee95976055ec997c86",
+    "evaluation_gzip_sha256": "93ed9633f44e2ba0c60b1312492e90b101aa6249ea45766ce753c2908b410fe5"
+  },
+  "window_discovery": {
+    "orientation": "forward",
+    "target_start": 41,
+    "target_length": 18,
+    "exact_unique_assignments": 1922,
+    "distinct_exact_targets": 32
+  },
+  "runs": {
+    "k0": {
+      "total_reads": 48000,
+      "assigned_unique": 46189,
+      "assigned_exact": 46189,
+      "assigned_corrected": 0,
+      "ambiguous": 0,
+      "unmatched": 1811,
+      "invalid": 0,
+      "distinct_assigned_targets": 32,
+      "checked_records": 48000,
+      "validation_mismatches": 0,
+      "agreement_rate": 1.0
+    },
+    "k1": {
+      "total_reads": 48000,
+      "assigned_unique": 46910,
+      "assigned_exact": 46189,
+      "assigned_corrected": 721,
+      "ambiguous": 0,
+      "unmatched": 1090,
+      "invalid": 0,
+      "distinct_assigned_targets": 32,
+      "checked_records": 48000,
+      "validation_mismatches": 0,
+      "agreement_rate": 1.0
+    }
+  }
+}

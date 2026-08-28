@@ -33,6 +33,7 @@ the [command reference](command-reference.md).
 | --- | --- |
 | Count guides from a CRISPR screen | [CRISPR guide-counting first run](tutorials/crispr-count-first-run.md) |
 | Reproduce a public CRISPR example | [Public CRISPR guide-counting example](../examples/crispr_guides/README.md) |
+| Reproduce the multi-guide Perturb-seq case study | [GSE146194 direct-guide-capture report](benchmarks/perturb_seq_gse146194/README.md) |
 | Try the workflow without a local install | [Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb) or [Google Colab](https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb) |
 | Compare guide-counting workflows | [Guide-counting workflow comparison](usability-comparison.md) |
 | Build a checked assay project | [AssaySpec workflows](assayspec.md) |
@@ -53,7 +54,8 @@ analysis package.
 Performance and correctness results are tied to the commands, datasets, and
 hardware recorded in the [benchmark reports](benchmarks/README.md). The most
 developed paths are native fixed-window assignment, public CRISPR guide-counting
-comparisons, and checked inline-barcode examples. Other assay types and
+comparisons, checked inline-barcode examples, and the bounded GSE146194
+multi-guide direct-capture case study. Other assay types and
 experimental backends have narrower test coverage; those limits are described
 in [Scope and limitations](trust-and-scope.md).
 

@@ -74,6 +74,7 @@ examples/workflows/snakemake/output/
 # Large public datasets are fetched by scripts instead of committed.
 artifacts/
 benchmarks/work/
+examples/perturb_seq_gse146194/work/
 examples/crispr_guides/data/
 examples/crispr_guides/output/
 examples/crispr_sanson_brunello/data/
