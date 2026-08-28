@@ -1,6 +1,8 @@
 include LICENSE
 include CITATION.cff
 include codemeta.json
+include agent-capabilities.json
+include agent-capabilities.schema.json
 include docs/assay-evidence.json
 include README.md
 include pyproject.toml

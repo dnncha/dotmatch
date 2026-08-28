@@ -26,6 +26,9 @@ export const metadata: Metadata = {
     "FASTQ",
     "known-target sequencing",
     "barcode demultiplexing",
+    "feature-barcode assignment",
+    "guide capture",
+    "Perturb-seq",
     "barcode panel design",
     "FASTQ sequence matching"
   ],
@@ -76,6 +79,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="describedby" href={`${siteUrl}/llms.txt`} />
+      </head>
       <body>{children}</body>
     </html>
   );

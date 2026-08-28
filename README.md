@@ -15,7 +15,9 @@ other known targets.
 
 [Documentation](https://dotmatch.readthedocs.io/en/latest/) ·
 [Getting started](https://dotmatch.readthedocs.io/en/latest/getting-started.html) ·
+[Agent guide](https://dotmatch.readthedocs.io/en/latest/agent-guide.html) ·
 [Command reference](https://dotmatch.readthedocs.io/en/latest/command-reference.html) ·
+[Capability JSON](https://dnncha.github.io/dotmatch/agent-capabilities.json) ·
 [Examples](https://github.com/dnncha/dotmatch/tree/main/examples) ·
 [Citation](https://dotmatch.readthedocs.io/en/latest/methods-and-citation.html) ·
 [Try the notebook in Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb) ·
@@ -82,6 +84,26 @@ Maintainers can refresh the [download metrics
 snapshot](https://dotmatch.readthedocs.io/en/latest/download-metrics.html) with
 `make download-metrics`. It records provider-reported package retrievals by
 channel, version, platform, and Python build; it does not estimate unique users.
+
+## Choose by task
+
+| Intent or search phrase | Entry point | Important limit |
+| --- | --- | --- |
+| CRISPR guide counting; MAGeCK-compatible counts | `dotmatch crispr-count` | Counting only; no downstream screen statistics |
+| Inline barcode demultiplexing; split FASTQ by barcode | `dotmatch demux` | Starts from FASTQ; no basecalling |
+| Feature-barcode assignment; TotalSeq feature reads | `dotmatch count` | Per-read assignment; no cell/UMI quantification |
+| Perturb-seq guide capture | `dotmatch count` | No guide-per-cell, expression, or perturbation-effect analysis |
+| Barcode panel design or collision checking | `dotmatch panel design` or `dotmatch panel check` | Short barcode sets, not probe or full assay design |
+| Known-target FASTQ matching; whitelist counting | `dotmatch count` | Finite known targets and one reviewed fixed window |
+| High unmatched or ambiguous barcode rate | `dotmatch barcode autopsy` | Diagnostic suggestions require assay-context review |
+
+The [Agent guide](https://dotmatch.readthedocs.io/en/latest/agent-guide.html)
+provides copy-paste commands, inputs, outputs, recovery steps, and evidence
+limits. Agents and workflow tools can read the same routes from
+[`agent-capabilities.json`](https://dnncha.github.io/dotmatch/agent-capabilities.json)
+or, once a package release includes it, the installed
+`dotmatch capabilities --json` command. PyPI 0.2.2 predates that installed
+command; use the public JSON manifest with that release.
 
 ## A small example
 
@@ -287,6 +309,7 @@ replaces general alignment or every demultiplexing workflow.
 
 ## Documentation
 
+- [Agent guide](https://dotmatch.readthedocs.io/en/latest/agent-guide.html)
 - [Getting started](https://dotmatch.readthedocs.io/en/latest/getting-started.html)
 - [Command reference](https://dotmatch.readthedocs.io/en/latest/command-reference.html)
 - [AssaySpec workflows](https://dotmatch.readthedocs.io/en/latest/assayspec.html)

@@ -1,0 +1,218 @@
+# DotMatch agent reference
+
+> DotMatch performs deterministic fixed-window known-target short-DNA assignment from FASTQ. It compares one configured read window with a finite table of expected sequences and reports every read as `unique`, `ambiguous`, `none`, or `invalid`.
+
+## Scope
+
+Use DotMatch when the target sequences are known before analysis: CRISPR guides, inline sample barcodes, feature barcodes, guide-capture sequences, primers, adapters, short panel targets, or whitelist sequences.
+
+Do not use DotMatch as a genome aligner, basecaller, adapter trimmer, variant caller, cell-barcode or UMI quantifier, or downstream CRISPR screen-statistics package. Feature-barcode and Perturb-seq support is per-read fixed-window assignment only. The checked public Perturb-seq guide-capture lane contains one guide and does not establish useful multi-guide, guide-per-cell, expression, or perturbation-effect performance.
+
+## Install and verify
+
+Linux x86_64 and macOS 11 or newer:
+
+```bash
+mkdir -p smoke-output
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install dotmatch==0.2.2
+dotmatch --version
+```
+
+Published Python wheels currently cover glibc and musl Linux x86_64 plus universal macOS. Windows wheels are not published. Bioconda may lag PyPI, so check the installed version when pinning a release. PyPI 0.2.2 predates the installed `dotmatch capabilities --json` command; use https://dnncha.github.io/dotmatch/agent-capabilities.json until a later package release includes it.
+
+## Input contract
+
+- Reads: FASTQ or FASTQ.gz.
+- Targets: TSV or CSV containing an identifier and a short DNA sequence. Common headers include `target_id` and `sequence` or `target_seq`; workflow-specific library headers are also documented.
+- Coordinates: zero-based start plus explicit window length.
+- Matching: use Hamming distance for equal-length windows and substitution correction; use Levenshtein only when short insertion or deletion rescue is intended.
+- Safety: start with `k=0`. Before using `k>=1`, audit the same target list and correction radius.
+
+## Choose by task
+
+### CRISPR guide counting
+
+Use `dotmatch crispr-count` for a direct MAGeCK-compatible count matrix:
+
+```bash
+dotmatch crispr-count \
+  --library guides.tsv \
+  --samples samples.tsv \
+  --guide-start 23 \
+  --guide-length 20 \
+  --k 1 \
+  --out counts.mageck.tsv \
+  --summary summary.json \
+  --sample-qc sample_qc.tsv
+```
+
+Use `dotmatch crispr quickstart` when the guide window must first be inferred and reviewed. DotMatch does not perform downstream screen statistics.
+
+### Inline barcode demultiplexing
+
+Use `dotmatch demux` to split FASTQ reads by known fixed-position barcodes:
+
+```bash
+dotmatch demux \
+  --barcodes barcodes.tsv \
+  --reads pooled.fastq.gz \
+  --barcode-start 0 \
+  --barcode-length 8 \
+  --k 1 \
+  --metric hamming \
+  --out-dir demuxed \
+  --summary demux.summary.json
+```
+
+This path starts from FASTQ; it does not perform basecalling.
+
+### Feature-barcode assignment
+
+Use `dotmatch count` with the reviewed feature window:
+
+```bash
+dotmatch count \
+  --targets features.tsv \
+  --reads feature_R2.fastq.gz \
+  --sample-label sample \
+  --target-start 0 \
+  --target-length 15 \
+  --k 1 \
+  --metric hamming \
+  --out feature_counts.tsv \
+  --assignments feature_assignments.tsv \
+  --summary feature_summary.json
+```
+
+This is per-read feature assignment, not cell-barcode, UMI, CITE-seq, or Cell Ranger quantification.
+
+### Perturb-seq or CRISPR guide capture
+
+Use `dotmatch count` for a known guide-capture window:
+
+```bash
+dotmatch count \
+  --targets guides.tsv \
+  --reads guide_capture_R2.fastq.gz \
+  --sample-label sample \
+  --target-start 63 \
+  --target-length 19 \
+  --k 0 \
+  --metric hamming \
+  --out guide_counts.tsv \
+  --assignments guide_assignments.tsv \
+  --summary guide_summary.json
+```
+
+DotMatch does not call guides per cell or process expression, cell barcodes, UMIs, or perturbation effects. The public lane currently validates fixed-window extraction against one observed guide only.
+
+### Barcode panel design
+
+Use `dotmatch panel design` for short barcode sets:
+
+```bash
+dotmatch panel design \
+  --n 96 \
+  --length 16 \
+  --preset illumina-inline-96 \
+  --out-dir panel
+```
+
+Use `dotmatch panel check existing.tsv --k 1 --metric hamming --out-dir panel_check` for an existing panel. This does not design hybrid-capture probes, PCR primers, or a full sequencing assay.
+
+### General known-target FASTQ matching
+
+Use `dotmatch count`:
+
+```bash
+dotmatch count \
+  --targets targets.tsv \
+  --reads sample.fastq.gz \
+  --sample-label sample \
+  --target-start 0 \
+  --target-length 20 \
+  --k 0 \
+  --metric hamming \
+  --out counts.tsv \
+  --sample-qc sample_qc.tsv \
+  --summary summary.json
+```
+
+This is fixed-window matching to a finite known target list, not general sequence alignment.
+
+## Outcome semantics
+
+- `unique`: exactly one target is compatible; this read may contribute to that target count.
+- `ambiguous`: more than one target is compatible; the read is not forced into a count.
+- `none`: no target is compatible within the configured distance.
+- `invalid`: the configured window cannot be extracted from the read.
+
+## Error recovery
+
+High unmatched rate:
+
+```bash
+dotmatch inspect-unmatched --targets targets.tsv --reads sample.fastq.gz \
+  --target-start 0 --target-length 20 --k 0 --top 50 \
+  --out top_unmatched.tsv
+```
+
+Check the read side, zero-based start, length, orientation, trimming, and target table.
+
+High ambiguous rate or uncertain correction safety:
+
+```bash
+dotmatch audit --targets targets.tsv --k 1 --audit-mode auto --out-dir audit
+```
+
+Lower `k` or redesign colliding targets when the audit is unsafe.
+
+Many invalid windows: confirm that start plus length fits post-trimming reads. Use `dotmatch count --help` for current option details.
+
+Uncertain task or command: run `dotmatch capabilities --json`, then select an intent by `id` and use its exact `entrypoint`, `command`, `inputs`, `outputs`, and `limitations`.
+
+## Outputs and schemas
+
+Counts contain unique assignments only. Request `--assignments` and `--summary` when an agent or pipeline needs row-level states and machine-readable provenance. Common outputs include counts TSV, sample QC TSV, assignment TSV, summary JSON, split FASTQ, and HTML reports.
+
+- Schema reference: https://dotmatch.readthedocs.io/en/latest/schemas.html
+- Machine capability manifest: https://dnncha.github.io/dotmatch/agent-capabilities.json
+- Capability JSON Schema: https://dnncha.github.io/dotmatch/agent-capabilities.schema.json
+
+## Clean-environment smoke workflow
+
+After cloning this repository, this recipe installs the release into a new virtual environment and completes a real fixed-window FASTQ count:
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install dotmatch==0.2.2
+dotmatch count \
+  --targets demo-data/crispr_guides.tsv \
+  --reads demo-data/reads.fastq \
+  --sample-label smoke \
+  --target-start 0 \
+  --target-length 4 \
+  --k 0 \
+  --metric hamming \
+  --out smoke-output/counts.tsv \
+  --summary smoke-output/summary.json
+```
+
+Expected summary facts: three total reads, one unique exact assignment, zero ambiguous reads, and two unmatched reads at `k=0`. The package gate builds an sdist and wheel, installs each in a fresh virtual environment, runs an equivalent fixture, and checks the output before release.
+
+## Evidence boundaries
+
+Every task in the capability manifest links to repository tests, checked example output, or public benchmark artifacts. A test or benchmark supports only the conditions it records. Package retrieval counts are download events, not unique users or adoption. Maintained workflow examples are not described as accepted external integrations unless `docs/workflow-adoption.json` records one.
+
+## References
+
+- Agent guide: https://dotmatch.readthedocs.io/en/latest/agent-guide.html
+- Command reference: https://dotmatch.readthedocs.io/en/latest/command-reference.html
+- Getting started: https://dotmatch.readthedocs.io/en/latest/getting-started.html
+- Scope and limitations: https://dotmatch.readthedocs.io/en/latest/trust-and-scope.html
+- Scientific claims: https://dotmatch.readthedocs.io/en/latest/scientific-claims.html
+- Repository: https://github.com/dnncha/dotmatch
+- PyPI: https://pypi.org/project/dotmatch/

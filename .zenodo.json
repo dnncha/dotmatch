@@ -19,6 +19,10 @@
     "CRISPR",
     "FASTQ",
     "barcode demultiplexing",
+    "feature barcodes",
+    "guide capture",
+    "Perturb-seq",
+    "barcode panel design",
     "edit distance",
     "known-target assignment",
     "sequence analysis"

@@ -24,6 +24,7 @@ Project-URL: Homepage, https://github.com/dnncha/dotmatch
 Project-URL: Repository, https://github.com/dnncha/dotmatch
 Project-URL: Issues, https://github.com/dnncha/dotmatch/issues
 Project-URL: Documentation, https://dotmatch.readthedocs.io/
+Project-URL: Agent guide, https://dotmatch.readthedocs.io/en/latest/agent-guide.html
 
 Long description.
 """
@@ -104,6 +105,7 @@ def test_distribution_metadata_requires_discovery_fields(tmp_path):
         .replace("known-target assignment,", "")
         .replace("Classifier: Topic :: Scientific/Engineering :: Bio-Informatics\n", "")
         .replace("Project-URL: Repository, https://github.com/dnncha/dotmatch\n", "")
+        .replace("Project-URL: Agent guide, https://dotmatch.readthedocs.io/en/latest/agent-guide.html\n", "")
     )
     wheel = _write_wheel(tmp_path, weak)
 
@@ -115,6 +117,7 @@ def test_distribution_metadata_requires_discovery_fields(tmp_path):
         assert "Keywords must include known-target assignment" in message
         assert "Classifier must include Topic :: Scientific/Engineering :: Bio-Informatics" in message
         assert "Project-URL must include Repository" in message
+        assert "Project-URL must include Agent guide" in message
     else:
         raise AssertionError("expected weak discovery metadata to fail")
 
