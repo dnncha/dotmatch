@@ -11,7 +11,7 @@ statements should remain tied to `docs/scientific-claims.md`,
 | Work item | Relevant reviewers | Asset in this repository | Done when |
 | --- | --- | --- | --- |
 | Use-case documentation | Core facility leads, CRISPR screen teams, assay developers, workflow maintainers | Public homepage section: "Known-target assay contexts" | Each workflow has a concrete use case, relevant output artifacts, and technical documentation. |
-| Workflow distribution handoff | nf-core, MultiQC, Galaxy/IUC, Snakemake, institutional pipeline owners | `docs/workflow-submissions.md` | At least one external PR, package, or reviewed wrapper is public and tracked in `docs/workflow-adoption.json`. |
+| Workflow distribution handoff | nf-core, MultiQC, Galaxy/IUC, Snakemake, institutional pipeline owners | `docs/workflow-submissions.md`, `docs/ecosystem-status.md` | Open submissions are recorded in `docs/integration-targets.json`; only accepted and released workflow records enter `docs/workflow-adoption.json`. |
 | Methods and citation artifacts | PIs, methods writers, bioinformatics leads, paper authors | `docs/methods-and-citation.md`, `docs/citation-flywheel.md` | Runs can produce copyable methods and citation artifacts, and reviewers know how to cite the exact release. |
 | Reviewer packet | Technical reviewers, core facilities, procurement reviewers | Evidence gallery, benchmark docs, scientific scope notes | Public statements link to scoped evidence instead of broad claims. |
 | Public use records | Labs, cores, CROs, biotech, pharma teams, workflow projects | `docs/adopters/README.md` | Independent use is listed only after the named party approves the wording and public URL. |

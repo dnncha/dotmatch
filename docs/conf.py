@@ -32,6 +32,12 @@ master_doc = "index"
 html_theme = "sphinx_rtd_theme"
 html_title = "DotMatch documentation"
 html_static_path = ["_static"]
+html_extra_path = [
+    "llms.txt",
+    "llms-full.txt",
+    "agent-capabilities.json",
+    "agent-capabilities.schema.json",
+]
 
 myst_enable_extensions = [
     "colon_fence",
@@ -50,6 +56,8 @@ suppress_warnings = [
 NAVIGATION_DOCS = {
     "index",
     "getting-started",
+    "agent-guide",
+    "agent-discovery-audit",
     "command-reference",
     "tutorials/crispr-count-first-run",
     "tutorials/scverse-perturb-seq",
@@ -59,6 +67,7 @@ NAVIGATION_DOCS = {
     "streaming-api",
     "schemas",
     "workbench",
+    "ecosystem-status",
     "trust-and-scope",
     "benchmarks/README",
     "methods-and-citation",

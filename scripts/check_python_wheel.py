@@ -90,6 +90,15 @@ def wheel_assay_evidence_members(wheel: Path) -> list[str]:
         return [name for name in archive.namelist() if name == "dotmatch/data/assay-evidence.json"]
 
 
+def wheel_agent_discovery_members(wheel: Path) -> list[str]:
+    required = {
+        "dotmatch/data/agent-capabilities.json",
+        "dotmatch/data/agent-capabilities.schema.json",
+    }
+    with zipfile.ZipFile(wheel) as archive:
+        return sorted(required.intersection(archive.namelist()))
+
+
 def check_sdist_members(sdist: Path) -> None:
     required_suffixes = [
         "/src/qdalign.c",
@@ -102,6 +111,8 @@ def check_sdist_members(sdist: Path) -> None:
         "/README.md",
         "/CITATION.cff",
         "/codemeta.json",
+        "/agent-capabilities.json",
+        "/agent-capabilities.schema.json",
         "/docs/assay-evidence.json",
         "/LICENSE",
     ]
@@ -199,7 +210,7 @@ def check_distribution_metadata(artifact: Path, expected_version: str) -> None:
             failures.append(f"Classifier must include {classifier}")
 
     project_urls = _project_url_labels(metadata)
-    for label in ["Homepage", "Repository", "Issues", "Documentation"]:
+    for label in ["Homepage", "Repository", "Issues", "Documentation", "Agent guide"]:
         if label not in project_urls:
             failures.append(f"Project-URL must include {label}")
 
@@ -252,6 +263,30 @@ def verify_clean_install(artifact: Path, install_root: Path, expected_version: s
         if observed != expected:
             raise SystemExit(f"{artifact.name} {label} reported {observed!r}, expected {expected!r}")
 
+    capability_text = run_text(
+        [str(venv_script(env_dir, "dotmatch")), "capabilities", "--json"],
+        cwd=probe_dir,
+        env=env,
+    )
+    capability_data = json.loads(capability_text)
+    if capability_data.get("generated_for_version") != expected_version:
+        raise SystemExit(f"{artifact.name} installed capability version does not match {expected_version}")
+    capability_ids = {
+        item.get("id")
+        for item in capability_data.get("intents", [])
+        if isinstance(item, dict)
+    }
+    for required_id in [
+        "crispr-guide-counting",
+        "inline-barcode-demultiplexing",
+        "feature-barcode-assignment",
+        "perturb-seq-guide-capture",
+        "barcode-panel-design",
+        "known-target-fastq-matching",
+    ]:
+        if required_id not in capability_ids:
+            raise SystemExit(f"{artifact.name} installed capabilities are missing {required_id}")
+
     dist_observed = run_text([str(venv_script(env_dir, "dotmatch")), "dist", "ACGT", "AGGT"], cwd=probe_dir, env=env)
     if dist_observed != "1":
         raise SystemExit(f"{artifact.name} console CLI distance smoke test returned {dist_observed!r}")
@@ -273,6 +308,41 @@ def verify_clean_install(artifact: Path, install_root: Path, expected_version: s
         "@r3\nACGG\n+\nIIII\n",
         encoding="utf-8",
     )
+
+    agent_smoke_counts = probe_dir / "agent_smoke_counts.tsv"
+    agent_smoke_summary = probe_dir / "agent_smoke_summary.json"
+    run(
+        [
+            str(venv_script(env_dir, "dotmatch")),
+            "count",
+            "--targets",
+            str(targets),
+            "--reads",
+            str(reads),
+            "--sample-label",
+            "agent-smoke",
+            "--target-start",
+            "0",
+            "--target-length",
+            "4",
+            "--k",
+            "0",
+            "--metric",
+            "hamming",
+            "--out",
+            str(agent_smoke_counts),
+            "--summary",
+            str(agent_smoke_summary),
+        ],
+        cwd=probe_dir,
+        env=env,
+    )
+    agent_summary = json.loads(agent_smoke_summary.read_text(encoding="utf-8"))
+    samples = agent_summary.get("samples", [])
+    if len(samples) != 1 or samples[0].get("total_reads") != 4 or samples[0].get("assigned_unique") != 4:
+        raise SystemExit(f"{artifact.name} clean-install FASTQ count returned unexpected summary: {samples!r}")
+    if "g1\tACGT\tG1" not in agent_smoke_counts.read_text(encoding="utf-8"):
+        raise SystemExit(f"{artifact.name} clean-install FASTQ count did not write the expected target")
     spec.write_text(
         f"""
 schema_version = 1
@@ -510,11 +580,14 @@ def build_and_verify_wheel(out_dir: Path, install_root: Path, expected_version: 
     assay_evidence_members = wheel_assay_evidence_members(wheel)
     if not assay_evidence_members:
         raise SystemExit(f"{wheel.name} does not contain dotmatch/data/assay-evidence.json")
+    agent_discovery_members = wheel_agent_discovery_members(wheel)
+    if len(agent_discovery_members) != 2:
+        raise SystemExit(f"{wheel.name} does not contain both installed agent discovery JSON files")
     check_distribution_metadata(wheel, expected_version)
     check_macos_tag(wheel)
     check_macos_architecture(wheel, native_members[0])
     verify_clean_install(wheel, install_root, expected_version)
-    return wheel, native_members + native_cli_members + assay_evidence_members
+    return wheel, native_members + native_cli_members + assay_evidence_members + agent_discovery_members
 
 
 def verify_existing_wheels(wheel_dir: Path, install_root: Path, expected_version: str) -> list[Path]:
@@ -530,6 +603,8 @@ def verify_existing_wheels(wheel_dir: Path, install_root: Path, expected_version
             raise SystemExit(f"{wheel.name} does not contain dotmatch-native")
         if not wheel_assay_evidence_members(wheel):
             raise SystemExit(f"{wheel.name} does not contain dotmatch/data/assay-evidence.json")
+        if len(wheel_agent_discovery_members(wheel)) != 2:
+            raise SystemExit(f"{wheel.name} does not contain both installed agent discovery JSON files")
         check_distribution_metadata(wheel, expected_version)
         if not wheel_supported_by_current_platform(wheel):
             print(f"skipping clean install for unsupported wheel tag on this host: {wheel.name}")

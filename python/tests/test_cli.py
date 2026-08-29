@@ -53,6 +53,14 @@ def test_cli_top_level_help_lists_python_namespaces():
     assert "  panel" in rc.stdout
     assert "dotmatch citation" in rc.stdout
     assert "dotmatch manual" in rc.stdout
+    assert "Choose by task:" in rc.stdout
+    assert "CRISPR guide counting" in rc.stdout
+    assert "Inline barcode demultiplexing" in rc.stdout
+    assert "Feature-barcode assignment" in rc.stdout
+    assert "Perturb-seq guide capture" in rc.stdout
+    assert "Barcode panel design or checking" in rc.stdout
+    assert "Known-target FASTQ matching" in rc.stdout
+    assert "dotmatch capabilities --json" in rc.stdout
     assert "Hamming k=2/k=3 safety" in rc.stdout
     assert "Packaging note:" not in rc.stdout
 
@@ -91,6 +99,68 @@ def test_cli_manual_rejects_extra_args():
     assert rc.returncode == 2
     assert rc.stdout == ""
     assert rc.stderr.strip() == "usage: dotmatch manual"
+
+
+def test_cli_capabilities_json_routes_supported_intents():
+    rc = subprocess.run(
+        [sys.executable, "-m", "dotmatch.cli", "capabilities", "--json"],
+        check=False,
+        env=LEGACY_ENV,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    assert rc.returncode == 0, rc.stderr
+    assert rc.stderr == ""
+    payload = json.loads(rc.stdout)
+    assert payload["generated_for_version"] == _pyproject_version()
+    intents = {intent["id"]: intent for intent in payload["intents"]}
+    assert {
+        "crispr-guide-counting",
+        "inline-barcode-demultiplexing",
+        "feature-barcode-assignment",
+        "perturb-seq-guide-capture",
+        "barcode-panel-design",
+        "known-target-fastq-matching",
+    } <= set(intents)
+    for intent in intents.values():
+        assert intent["command"].startswith(intent["entrypoint"])
+        assert intent["inputs"]
+        assert intent["outputs"]
+        assert intent["limitations"]
+
+
+def test_cli_capabilities_human_output_is_concise():
+    rc = subprocess.run(
+        [sys.executable, "-m", "dotmatch.cli", "capabilities"],
+        check=False,
+        env=LEGACY_ENV,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    assert rc.returncode == 0, rc.stderr
+    assert "capability routes" in rc.stdout
+    assert "crispr-guide-counting" in rc.stdout
+    assert "Start: dotmatch crispr-count" in rc.stdout
+    assert "Machine-readable form: dotmatch capabilities --json" in rc.stdout
+
+
+def test_cli_capabilities_rejects_unknown_option():
+    rc = subprocess.run(
+        [sys.executable, "-m", "dotmatch.cli", "capabilities", "--yaml"],
+        check=False,
+        env=LEGACY_ENV,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    assert rc.returncode == 2
+    assert rc.stdout == ""
+    assert rc.stderr.strip() == "usage: dotmatch capabilities [--json]"
 
 
 def test_cli_reports_citation_text():

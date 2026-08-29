@@ -12,6 +12,8 @@ const commandReferenceUrl = `${docsUrl}command-reference.html`;
 const methodsUrl = `${docsUrl}methods-and-citation.html`;
 const packagingUrl = `${docsUrl}packaging.html`;
 const distributionUrl = `${docsUrl}release-process.html`;
+const agentGuideUrl = `${docsUrl}agent-guide.html`;
+const capabilityManifestUrl = "https://dnncha.github.io/dotmatch/agent-capabilities.json";
 const pypiUrl = "https://pypi.org/project/dotmatch/";
 const biocondaUrl = "https://anaconda.org/bioconda/dotmatch";
 const releaseUrl = `${repoUrl}/releases`;
@@ -51,6 +53,15 @@ const structuredData = {
       citation: doiUrl,
       license: `${repoUrl}/blob/main/LICENSE`,
       programmingLanguage: ["C", "Python", "R"],
+      featureList: [
+        "CRISPR guide counting",
+        "inline barcode demultiplexing",
+        "feature-barcode assignment",
+        "CRISPR guide-capture assignment",
+        "barcode panel design",
+        "known-target FASTQ matching"
+      ],
+      subjectOf: capabilityManifestUrl,
       description:
         "DotMatch assigns fixed read windows to known short DNA targets and reports unique, ambiguous, none, and invalid outcomes for auditable sequencing workflows."
     }
@@ -148,6 +159,8 @@ const contexts = [
 ] as const;
 
 const evidenceLinks = [
+  ["Agent task guide", agentGuideUrl],
+  ["Machine-readable capabilities", capabilityManifestUrl],
   ["Scope and limitations", scopeUrl],
   ["Benchmarks", benchmarksUrl],
   ["Output schemas", schemasUrl],

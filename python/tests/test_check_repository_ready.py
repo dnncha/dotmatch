@@ -441,3 +441,21 @@ def test_repository_ready_allows_public_synthetic_raw_data_paths(tmp_path):
     result = checker.audit(tmp_path)
 
     assert not any("raw biological data fixture" in failure for failure in result.failures)
+
+
+def test_repository_ready_allows_perturb_seq_contract_fixture(tmp_path):
+    checker = _load_checker()
+    _write_minimal_repo(tmp_path)
+    raw = (
+        tmp_path
+        / "examples"
+        / "perturb_seq_gse146194"
+        / "fixture"
+        / "reads.fastq"
+    )
+    raw.parent.mkdir(parents=True, exist_ok=True)
+    raw.write_text("@synthetic_exact\nACGT\n+\nIIII\n", encoding="utf-8")
+
+    result = checker.audit(tmp_path)
+
+    assert not any("raw biological data fixture" in failure for failure in result.failures)

@@ -101,6 +101,13 @@ The Python distribution provides:
 - the optional `assaycode` compatibility command for assay-specification work;
 - entry points for supported workflow integrations.
 
+The optional MultiQC integration in the public 0.2.2 wheel includes the module
+entry point, but direct file discovery with MultiQC 1.35 needs the
+`before_config` search-pattern hook added after that release. Use the custom
+configuration in `examples/workflows/multiqc/` with 0.2.2, or install the
+current source candidate when reviewing the fix. See `ecosystem-status.md` for
+the exact upstream and release states.
+
 The desktop Workbench is not included. It is maintained in the separate
 [`dotmatch-community`](https://github.com/dnncha/dotmatch-community) repository.
 

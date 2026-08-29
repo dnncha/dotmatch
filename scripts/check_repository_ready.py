@@ -99,6 +99,7 @@ RAW_DATA_SUFFIXES = (".fastq", ".fq", ".fastq.gz", ".fq.gz", ".bam", ".bcl")
 ALLOWED_RAW_DATA_PREFIXES = (
     "demo-data/",
     "examples/barcode_autopsy/failure_modes/",
+    "examples/perturb_seq_gse146194/fixture/",
     "examples/workflows/fixtures/",
     "examples/workflows/galaxy/test-data/",
     "examples/workflows/nf-core/upstream/modules/nf-core/dotmatch/",

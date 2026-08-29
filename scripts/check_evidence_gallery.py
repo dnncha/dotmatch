@@ -26,6 +26,7 @@ REQUIRED_SCENARIOS = {
     "barcode_wrong_offset_fixture",
     "barcode_unsafe_correction",
     "feature_barcode_10x",
+    "perturb_seq_gse146194",
     "perturb_seq_10x_guide_capture",
     "amplicon_artic_primer_start",
     "oligo_adapter_truseq_prefix",

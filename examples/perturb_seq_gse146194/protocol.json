@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "protocol_status": "frozen_before_read_inspection",
+  "frozen_on": "2026-08-27",
+  "case_study_id": "gse146194_srr11214031_upr_gbc",
+  "scientific_question": "On an accessioned multi-guide direct-capture Perturb-seq guide-enrichment run, can DotMatch reproduce independent fixed-window per-read guide-barcode assignments while keeping ambiguous and unmatched reads explicit?",
+  "dataset": {
+    "title": "Combinatorial single-cell CRISPR screens by direct guide RNA capture and targeted sequencing",
+    "organism": "Homo sapiens",
+    "cell_line": "K562",
+    "screen": "UPR GBC",
+    "crispr_system": "CRISPRi",
+    "guide_count_expected": 32,
+    "accessions": {
+      "geo_series": "GSE146194",
+      "geo_sample": "GSM4367979",
+      "sra_study": "SRP251252",
+      "sra_experiment": "SRX7826824",
+      "sra_run": "SRR11214031",
+      "bioproject": "PRJNA609688",
+      "biosample": "SAMN14258014",
+      "pmid": "32231336",
+      "pmcid": "PMC7416462",
+      "doi": "10.1038/s41587-020-0470-y"
+    },
+    "public_access": "unrestricted public GEO/SRA records; the workflow retrieves source artifacts and does not redistribute raw reads",
+    "primary_sources": [
+      "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE146194",
+      "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM4367979",
+      "https://www.ncbi.nlm.nih.gov/sra/SRX7826824",
+      "https://pubmed.ncbi.nlm.nih.gov/32231336/",
+      "https://doi.org/10.1038/s41587-020-0470-y"
+    ]
+  },
+  "inputs": {
+    "guide_library": {
+      "url": "https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs41587-020-0470-y/MediaObjects/41587_2020_470_MOESM3_ESM.xlsx",
+      "sha256": "3dd53733987890bb7577c3dac77215c9874267d4d69f732ddf7525f356914085",
+      "worksheet": "Supplementary Table 2",
+      "id_column": "sgRNA",
+      "sequence_column": "Sequence of GBC (only used for GBC Perturb-seq)",
+      "target_length": 18
+    },
+    "fastq": {
+      "url": "https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR112/031/SRR11214031/SRR11214031.fastq.gz",
+      "archive_reported_md5": "70c19207449f453a096e905e2f236a77",
+      "archive_reported_bytes": 423103639,
+      "archive_reported_reads": 19791676,
+      "selection": "first 50000 complete FASTQ records from the gzip stream",
+      "retrieval_boundary": "the bounded stream is stopped after the selected prefix; the reported full-archive MD5 is recorded but is not reverified unless the optional full-download mode is used"
+    }
+  },
+  "analysis_plan": {
+    "total_prefix_records": 50000,
+    "discovery_records": 2000,
+    "evaluation_records": 48000,
+    "window_discovery": {
+      "sequence_length": 18,
+      "orientations": [
+        "forward",
+        "reverse_complement"
+      ],
+      "starts": "all valid fixed-window starts shared by the discovery records",
+      "score": "number of discovery records with exactly one exact target match",
+      "tie_breaks": [
+        "forward orientation",
+        "smallest zero-based start"
+      ],
+      "minimum_distinct_exact_targets": 5,
+      "minimum_exact_assignment_fraction": 0.01,
+      "held_out_rule": "discovery records select the orientation and start but are excluded from all reported agreement and QC metrics"
+    },
+    "dotmatch_rules": [
+      {
+        "metric": "hamming",
+        "k": 0,
+        "ambiguity_policy": "radius"
+      },
+      {
+        "metric": "hamming",
+        "k": 1,
+        "ambiguity_policy": "radius"
+      }
+    ],
+    "comparators": [
+      {
+        "name": "exact_slice_hash",
+        "applies_to_k": 0,
+        "rule": "classify the fixed window by exact target-sequence multiplicity"
+      },
+      {
+        "name": "exhaustive_hamming_radius",
+        "applies_to_k": 1,
+        "rule": "compute Hamming distance to every target and classify by the number of targets within radius one"
+      }
+    ],
+    "agreement_criterion": "zero per-read differences in status, target identifier, and distance between DotMatch and the matched independent comparator on all held-out evaluation records",
+    "reported_qc": [
+      "unique exact",
+      "unique corrected",
+      "ambiguous",
+      "unmatched",
+      "invalid",
+      "distinct assigned guides",
+      "per-guide counts",
+      "agreement count and rate",
+      "derived-input SHA-256 checksums",
+      "wall time and peak RSS for the complete bounded workflow"
+    ]
+  },
+  "exclusions": [
+    "the 2000 discovery records from correctness and QC estimates",
+    "cell-barcode correction",
+    "UMI deduplication",
+    "guide-per-cell calls",
+    "gene-expression quantification",
+    "perturbation-effect inference",
+    "Cell Ranger parity",
+    "biological validity or efficacy claims",
+    "full-run prevalence estimates",
+    "speed or memory comparisons against unmatched tools or settings"
+  ],
+  "known_failure_modes": [
+    "the archive mirror or publisher workbook changes without its recorded checksum changing in the manifest",
+    "the stream is truncated or does not contain complete four-line FASTQ records",
+    "guide barcodes are not at one fixed position or orientation in the selected run",
+    "the discovery prefix contains fewer than five distinct exact guide targets or less than one percent exact assignments",
+    "the selected prefix is not representative of the complete run",
+    "duplicate or one-neighbour guide barcodes create expected ambiguity under the declared radius",
+    "non-ACGT windows are treated literally rather than as IUPAC wildcards",
+    "the paper supplement and deposited run encode different library revisions"
+  ],
+  "resource_bounds": {
+    "reason": "the host had 11 GiB free before retrieval",
+    "full_archive_download": false,
+    "maximum_prefix_records": 50000,
+    "maximum_local_work_bytes": 52428800,
+    "network_timeout_seconds": 120
+  },
+  "expected_outputs": {
+    "targets": "work/targets.tsv",
+    "evaluation_fastq": "work/evaluation.fastq.gz",
+    "dotmatch_assignments_k0": "work/dotmatch.k0.assignments.tsv",
+    "dotmatch_assignments_k1": "work/dotmatch.k1.assignments.tsv",
+    "oracle_assignments_k0": "work/oracle.k0.assignments.tsv",
+    "oracle_assignments_k1": "work/oracle.k1.assignments.tsv",
+    "results": "work/results.json",
+    "report": "work/report.md",
+    "provenance": "work/provenance.json"
+  }
+}

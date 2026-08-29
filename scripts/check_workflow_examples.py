@@ -448,6 +448,7 @@ def check_nfcore_dotmatch_modules(root: Path, result: WorkflowAudit) -> None:
 
 def check_multiqc(root: Path, result: WorkflowAudit) -> None:
     config = _read(root / "examples" / "workflows" / "multiqc" / "multiqc_config.yaml", result)
+    data_dir = root / "examples" / "workflows" / "multiqc" / "data"
     sample_qc_path = root / "examples" / "workflows" / "multiqc" / "data" / "sample_qc.tsv"
     sample_qc = _read(sample_qc_path, result)
 
@@ -522,6 +523,29 @@ def check_multiqc(root: Path, result: WorkflowAudit) -> None:
     ]:
         if column not in crispr_qc_header:
             result.failures.append(f"MultiQC crispr_qc.summary.tsv missing {column}")
+
+    summary_path = data_dir / "assignment_summary.json"
+    try:
+        summary = json.loads(_read(summary_path, result))
+    except json.JSONDecodeError as exc:
+        result.failures.append(f"MultiQC assignment_summary.json is invalid JSON: {exc}")
+        summary = {}
+    for field in [
+        "sample_label",
+        "total_reads",
+        "assigned_unique",
+        "ambiguous",
+        "unmatched",
+        "assignment_rate",
+    ]:
+        if field not in summary:
+            result.failures.append(f"MultiQC assignment_summary.json missing {field}")
+
+    top_unmatched = _read(data_dir / "sample_top_unmatched.tsv", result)
+    top_unmatched_header = top_unmatched.splitlines()[0].split("\t") if top_unmatched.splitlines() else []
+    for column in ["sequence", "count"]:
+        if column not in top_unmatched_header:
+            result.failures.append(f"MultiQC sample_top_unmatched.tsv missing {column}")
 
     if not any("MultiQC" in failure for failure in result.failures):
         result.passed.append("MultiQC custom-content example present")

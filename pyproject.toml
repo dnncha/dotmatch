@@ -25,6 +25,9 @@ keywords = [
     "feature barcodes",
     "sequencing QC",
     "barcode demultiplexing",
+    "guide capture",
+    "Perturb-seq",
+    "barcode panel design",
     "edit distance",
 ]
 classifiers = [
@@ -53,6 +56,7 @@ Homepage = "https://dnncha.github.io/dotmatch/"
 Repository = "https://github.com/dnncha/dotmatch"
 Issues = "https://github.com/dnncha/dotmatch/issues"
 Documentation = "https://dotmatch.readthedocs.io/en/latest/"
+"Agent guide" = "https://dotmatch.readthedocs.io/en/latest/agent-guide.html"
 Changelog = "https://github.com/dnncha/dotmatch/blob/main/CHANGELOG.md"
 Examples = "https://github.com/dnncha/dotmatch/tree/main/examples"
 Bioconda = "https://anaconda.org/bioconda/dotmatch"
@@ -63,6 +67,9 @@ package-dir = {"" = "python"}
 
 [project.entry-points."multiqc.modules.v1"]
 dotmatch = "dotmatch.multiqc:DotMatchModule"
+
+[project.entry-points."multiqc.hooks.v1"]
+before_config = "dotmatch.multiqc:load_config"
 
 [tool.setuptools.packages.find]
 where = ["python"]

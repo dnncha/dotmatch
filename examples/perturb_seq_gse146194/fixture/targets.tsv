@@ -1,0 +1,5 @@
+target_id	target_seq	gene
+guide_a	ACGTACGTACGTACGTAC	fixture_a
+guide_b	ACGTACGTACGTACGTTC	fixture_b
+guide_c	TTTTCCCCAAAAGGGGTT	fixture_c
+guide_d	GGGGAAAACCCCTTTTGG	fixture_d

@@ -3,7 +3,7 @@
   "status": "not_ready",
   "integrations": [],
   "blockers": [
-    "No external workflow-manager integration record is listed yet. Bioconda package availability is distribution evidence, not an accepted workflow integration."
+    "No external workflow-manager integration has been accepted yet. The nf-core, Galaxy IUC, Snakemake wrappers, and MultiQC records are open pull requests. Spack package acceptance and PyPI or Bioconda availability are distribution evidence, not accepted workflow-manager integration."
   ],
-  "next_action": "After a stable Galaxy, Nextflow, Snakemake, nf-core, MultiQC, or other external workflow record is public, add an integration entry with integration and evidence URLs, then run make workflow-adoption-status."
+  "next_action": "After an open Galaxy, Snakemake, nf-core, MultiQC, or other external workflow contribution is accepted and publicly released, add an integration entry with integration and evidence URLs, then run make workflow-adoption-status."
 }

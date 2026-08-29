@@ -14,6 +14,11 @@ const requiredFiles = [
   "docs/index.md",
   "docs/getting-started.md",
   "docs/command-reference.md",
+  "docs/agent-guide.md",
+  "public/llms.txt",
+  "public/llms-full.txt",
+  "public/agent-capabilities.json",
+  "public/agent-capabilities.schema.json",
   "public/dotmatch-read-assignment-v2.webp",
   "public/dotmatch-read-assignment-mobile-v2.webp",
   "public/dotmatch-og.png",
@@ -104,6 +109,16 @@ if (!layout.includes('applicationName: "DotMatch"') ||
 
 if (!page.includes('type="application/ld+json"') || !page.includes("SoftwareApplication")) {
   console.error("Homepage must include SoftwareApplication structured data.");
+  process.exit(1);
+}
+
+if (!layout.includes('rel="describedby"') || !layout.includes("llms.txt")) {
+  console.error("Homepage metadata must point agents to llms.txt.");
+  process.exit(1);
+}
+
+if (!page.includes("featureList") || !page.includes("agent-capabilities.json")) {
+  console.error("Homepage structured data must expose agent task vocabulary and capability JSON.");
   process.exit(1);
 }
 

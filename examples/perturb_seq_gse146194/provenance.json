@@ -1,0 +1,79 @@
+{
+  "access_and_reuse": {
+    "publisher_supplement": {
+      "access": "direct publisher download linked to the primary article",
+      "license_status": "source terms apply; this workflow asserts no redistribution license",
+      "policy_url": "https://support.springernature.com/en/support/solutions/articles/6000210902-supplementary-information"
+    },
+    "repository_redistribution": {
+      "committed_material": "aggregate results, hashes, protocol, provenance, and a synthetic contract fixture",
+      "publisher_workbook": false,
+      "raw_reads": false
+    },
+    "sequence_data": {
+      "access": "unrestricted public NCBI SRA record mirrored by ENA; no credentials required",
+      "policy": "NCBI places no restrictions on molecular-data use or distribution but cannot transfer any rights claimed by submitters",
+      "policy_url": "https://www.ncbi.nlm.nih.gov/home/about/policies/"
+    }
+  },
+  "case_study_id": "gse146194_srr11214031_upr_gbc",
+  "commands": [
+    "./dotmatch count --targets examples/perturb_seq_gse146194/work/targets.tsv --reads examples/perturb_seq_gse146194/work/evaluation.fastq.gz --sample-label GSE146194_SRR11214031_heldout_prefix --target-start 41 --target-length 18 --k 0 --metric hamming --ambiguity-policy radius --format dotmatch --out examples/perturb_seq_gse146194/work/dotmatch.k0.counts.tsv --summary examples/perturb_seq_gse146194/work/dotmatch.k0.summary.json --assignments examples/perturb_seq_gse146194/work/dotmatch.k0.assignments.tsv --ambiguous report --sample-qc examples/perturb_seq_gse146194/work/dotmatch.k0.sample_qc.tsv",
+    "./dotmatch count --targets examples/perturb_seq_gse146194/work/targets.tsv --reads examples/perturb_seq_gse146194/work/evaluation.fastq.gz --sample-label GSE146194_SRR11214031_heldout_prefix --target-start 41 --target-length 18 --k 1 --metric hamming --ambiguity-policy radius --format dotmatch --out examples/perturb_seq_gse146194/work/dotmatch.k1.counts.tsv --summary examples/perturb_seq_gse146194/work/dotmatch.k1.summary.json --assignments examples/perturb_seq_gse146194/work/dotmatch.k1.assignments.tsv --ambiguous report --sample-qc examples/perturb_seq_gse146194/work/dotmatch.k1.sample_qc.tsv"
+  ],
+  "derived_artifacts": {
+    "evaluation_fastq": {
+      "path": "examples/perturb_seq_gse146194/work/evaluation.fastq.gz",
+      "sha256": "93ed9633f44e2ba0c60b1312492e90b101aa6249ea45766ce753c2908b410fe5"
+    },
+    "oriented_targets": {
+      "path": "examples/perturb_seq_gse146194/work/targets.tsv",
+      "sha256": "cc17aef8352611de2fa3d51007792b2721d159205ab393b1268db2486d499629"
+    },
+    "published_targets": {
+      "path": "examples/perturb_seq_gse146194/work/targets.published.tsv",
+      "sha256": "cc17aef8352611de2fa3d51007792b2721d159205ab393b1268db2486d499629"
+    }
+  },
+  "dotmatch_version": "dotmatch 0.2.2",
+  "evidence_boundary": {
+    "does_not_prove": [
+      "the 2000 discovery records from correctness and QC estimates",
+      "cell-barcode correction",
+      "UMI deduplication",
+      "guide-per-cell calls",
+      "gene-expression quantification",
+      "perturbation-effect inference",
+      "Cell Ranger parity",
+      "biological validity or efficacy claims",
+      "full-run prevalence estimates",
+      "speed or memory comparisons against unmatched tools or settings"
+    ],
+    "proves": "matched-rule per-read fixed-window guide-barcode assignment on the held-out bounded SRR11214031 prefix"
+  },
+  "protocol_sha256": "b9f080ef932b6500ca9156c65e6c3383896cb86395cc8b9df769467ce100bb6c",
+  "schema_version": 1,
+  "software": {
+    "host": "macOS-26.2-arm64-arm-64bit",
+    "peak_rss_mib": 134.171875,
+    "python": "3.9.6",
+    "wall_seconds": 6.998000416999999
+  },
+  "source_artifacts": {
+    "fastq": {
+      "archive_reported_bytes": 423103639,
+      "archive_reported_md5": "70c19207449f453a096e905e2f236a77",
+      "archive_reported_reads": 19791676,
+      "retrieval_boundary": "the bounded stream is stopped after the selected prefix; the reported full-archive MD5 is recorded but is not reverified unless the optional full-download mode is used",
+      "selection": "first 50000 complete FASTQ records from the gzip stream",
+      "url": "https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR112/031/SRR11214031/SRR11214031.fastq.gz"
+    },
+    "guide_workbook": {
+      "bytes": 1755444,
+      "cache": "verified_reuse",
+      "path": "examples/perturb_seq_gse146194/work/guide_library.xlsx",
+      "sha256": "3dd53733987890bb7577c3dac77215c9874267d4d69f732ddf7525f356914085",
+      "url": "https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs41587-020-0470-y/MediaObjects/41587_2020_470_MOESM3_ESM.xlsx"
+    }
+  }
+}
