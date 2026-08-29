@@ -564,8 +564,8 @@ def check_galaxy(root: Path, result: WorkflowAudit) -> None:
 
     if wrapper.tag != "tool" or wrapper.attrib.get("id") != "dotmatch_crispr_count":
         result.failures.append("Galaxy wrapper must be tool id dotmatch_crispr_count")
-    if wrapper.attrib.get("version") != "0.2.1+galaxy0":
-        result.failures.append("Galaxy CRISPR wrapper must track the public Bioconda 0.2.1 package")
+    if wrapper.attrib.get("version") != "0.3.0+galaxy0":
+        result.failures.append("Galaxy CRISPR wrapper must track the 0.3.0 release candidate")
     command = wrapper.findtext("command") or ""
     _require(command, "dotmatch crispr-count", "Galaxy wrapper command must run dotmatch crispr-count", result)
     _require(command, "--ambiguity-policy radius", "Galaxy wrapper command must keep assignment ambiguity policy explicit", result)
@@ -575,8 +575,8 @@ def check_galaxy(root: Path, result: WorkflowAudit) -> None:
     _require(command, "element_identifier", "Galaxy wrapper command must derive sample IDs from Galaxy datasets", result)
     _require(command, "ln -s", "Galaxy wrapper command must stage input FASTQs", result)
     requirements = {node.text: node.attrib.get("version", "") for node in wrapper.findall("./requirements/requirement")}
-    if requirements.get("dotmatch") != "0.2.1":
-        result.failures.append("Galaxy wrapper must require public Bioconda dotmatch=0.2.1")
+    if requirements.get("dotmatch") != "0.3.0":
+        result.failures.append("Galaxy wrapper must require candidate dotmatch=0.3.0")
     reads = wrapper.find("./inputs/param[@name='reads']")
     if reads is None or reads.attrib.get("multiple") != "true":
         result.failures.append("Galaxy wrapper must accept one or more FASTQ datasets through reads")
@@ -604,8 +604,8 @@ def check_galaxy(root: Path, result: WorkflowAudit) -> None:
         elif sample_qc.find("./assert_contents/has_text[@text='assignment_rate']") is None:
             result.failures.append("Galaxy Planemo test must assert sample_qc assignment_rate content")
     expected_counts = test_data / "expected_counts.mageck.tsv"
-    if expected_counts.is_file() and "guide_a\tGENEA\t0\t0" not in expected_counts.read_text(encoding="utf-8"):
-        result.failures.append("Galaxy expected counts must match the pinned dotmatch=0.2.1 guide_a assignment")
+    if expected_counts.is_file() and "guide_a\tGENEA\t1\t0" not in expected_counts.read_text(encoding="utf-8"):
+        result.failures.append("Galaxy expected counts must retain the exact guide_a assignment")
     for filename in GALAXY_TEST_DATA:
         if not (test_data / filename).is_file():
             result.failures.append(f"Galaxy Planemo test-data file is missing: {filename}")
