@@ -48,6 +48,8 @@ def test_bioconda_recipe_builds_python_console_script_and_smoke_tests() -> None:
     assert "dotmatch leq 1 ACGT AGGT | grep '^true$'" in recipe
     assert "dotmatch assay --help" in recipe
     assert "dotmatch barcode --help" in recipe
+    assert "dotmatch feature --help" in recipe
+    assert "dotmatch feature matrix" in recipe
     assert "dotmatch panel --help" in recipe
     assert "dotmatch assay init" in recipe
     assert "dotmatch barcode infer" in recipe
@@ -72,7 +74,7 @@ def test_bioconda_recipe_gate_is_wired_into_release_ready() -> None:
     assert "python3 scripts/check_bioconda_recipe.py" in makefile
 
 
-def test_zenodo_metadata_tracks_minted_release_doi() -> None:
+def test_zenodo_metadata_tracks_the_concept_doi_before_release_minting() -> None:
     metadata = json.loads((ROOT / ".zenodo.json").read_text(encoding="utf-8"))
 
     assert metadata["title"] == "DotMatch: deterministic known-target short-DNA assignment for sequencing workflows"
@@ -92,7 +94,7 @@ def test_zenodo_metadata_tracks_minted_release_doi() -> None:
     assert metadata["conceptdoi"] == "10.5281/zenodo.20541628"
 
 
-def test_codemeta_tracks_package_citation_and_minted_doi() -> None:
+def test_codemeta_tracks_package_citation_and_concept_doi_before_minting() -> None:
     codemeta = json.loads((ROOT / "codemeta.json").read_text(encoding="utf-8"))
     citation = (ROOT / "CITATION.cff").read_text(encoding="utf-8")
     zenodo = json.loads((ROOT / ".zenodo.json").read_text(encoding="utf-8"))
@@ -115,7 +117,7 @@ def test_codemeta_tracks_package_citation_and_minted_doi() -> None:
         }
     ]
     assert f"version: \"{_pyproject_version()}\"" in citation
-    assert "doi: 10.5281/zenodo.21511337" in citation
+    assert "doi:" not in citation
     assert codemeta["softwareVersion"] == zenodo["version"]
     assert "known-target assignment" in codemeta["keywords"]
     assert "CRISPR" in codemeta["keywords"]
@@ -151,6 +153,19 @@ def test_python_package_verifier_checks_installed_cli_version() -> None:
     assert '"crispr-qc"' in verifier
     assert '"infer"' in verifier
     assert '"autopsy"' in verifier
+
+
+def test_python_package_verifier_smokes_feature_matrix_and_paired_fastq() -> None:
+    verifier = (ROOT / "scripts" / "check_python_wheel.py").read_text(encoding="utf-8")
+
+    assert '"feature",' in verifier
+    assert '"matrix",' in verifier
+    assert "feature_matrix" in verifier
+    assert "matrix.mtx" in verifier
+    assert '"pair-count",' in verifier
+    assert '"--left-reads",' in verifier
+    assert '"--right-reads",' in verifier
+    assert "paired FASTQ pair-count" in verifier
 
 
 def test_python_package_build_bundles_native_cli() -> None:
@@ -258,7 +273,7 @@ def test_distribution_docs_include_clean_pypi_install_verification() -> None:
 
     assert "pip install dotmatch==" in checker
     assert "must include repaired manylinux and musllinux wheels" in checker
-    assert "must not include raw linux_x86_64 wheels" in checker
+    assert "must not include raw" in checker
     assert "source distribution plus a macOS wheel" in packaging
     assert "repaired manylinux/musllinux wheels" in packaging
     assert "rejects raw" in packaging and "linux_x86_64" in packaging

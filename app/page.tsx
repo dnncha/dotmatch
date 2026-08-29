@@ -20,7 +20,7 @@ const releaseUrl = `${repoUrl}/releases`;
 const containerUrl = `${repoUrl}/pkgs/container/dotmatch`;
 const biocontainersUrl = "https://quay.io/repository/biocontainers/dotmatch";
 const workflowExamplesUrl = `${repoUrl}/tree/main/examples/workflows`;
-const doiUrl = "https://doi.org/10.5281/zenodo.21511337";
+const doiUrl = "https://doi.org/10.5281/zenodo.20541628";
 const binderUrl = "https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb";
 const colabUrl = "https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb";
 const releaseVersion = packageMetadata.version;

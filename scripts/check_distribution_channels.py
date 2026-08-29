@@ -30,6 +30,11 @@ BIOCONTAINERS_TAGS_URL = (
 )
 BIOCONTAINERS_IMAGE = "quay.io/biocontainers/dotmatch:{tag}"
 ZENODO_RECORD_URL = "https://zenodo.org/api/records/{record_id}"
+DISTRIBUTION_RECORD_PATH = Path("docs") / "distribution-release.json"
+DEFAULT_PYPI_LINUX_WHEEL_ARCHITECTURES = ("x86_64",)
+DEFAULT_GHCR_PLATFORMS = ("linux/amd64",)
+SUPPORTED_PYPI_LINUX_WHEEL_ARCHITECTURES = {"x86_64", "aarch64"}
+SUPPORTED_GHCR_PLATFORMS = {"linux/amd64", "linux/arm64"}
 
 
 @dataclass(frozen=True)
@@ -102,6 +107,61 @@ def project_version(root: Path) -> str:
     if match is None:
         raise ValueError("pyproject.toml does not declare project version")
     return match.group(1)
+
+
+def release_channel_record(root: Path, version: str, channel_id: str) -> dict[str, object]:
+    path = root / DISTRIBUTION_RECORD_PATH
+    if not path.is_file():
+        return {}
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"{DISTRIBUTION_RECORD_PATH.as_posix()} could not be read: {exc}") from exc
+    if not isinstance(manifest, dict) or str(manifest.get("release_version") or "") != version:
+        return {}
+    channels = manifest.get("channels")
+    if not isinstance(channels, list):
+        return {}
+    for item in channels:
+        if isinstance(item, dict) and str(item.get("id") or "") == channel_id:
+            return item
+    return {}
+
+
+def recorded_string_list(
+    record: dict[str, object],
+    field: str,
+    default: tuple[str, ...],
+    supported_values: set[str],
+) -> tuple[str, ...]:
+    if field not in record:
+        return default
+    value = record[field]
+    if not isinstance(value, list) or not value or not all(isinstance(item, str) and item for item in value):
+        raise ValueError(f"distribution record field {field} must be a non-empty list of strings")
+    values = tuple(dict.fromkeys(value))
+    invalid = sorted(set(values) - supported_values)
+    if invalid:
+        raise ValueError(f"distribution record field {field} contains unsupported value(s): {', '.join(invalid)}")
+    return values
+
+
+def required_pypi_linux_wheel_architectures(root: Path, version: str) -> tuple[str, ...]:
+    return recorded_string_list(
+        release_channel_record(root, version, "pypi"),
+        "linux_wheel_architectures",
+        DEFAULT_PYPI_LINUX_WHEEL_ARCHITECTURES,
+        SUPPORTED_PYPI_LINUX_WHEEL_ARCHITECTURES,
+    )
+
+
+def required_ghcr_platforms(root: Path, version: str) -> tuple[str, ...]:
+    return recorded_string_list(
+        release_channel_record(root, version, "ghcr"),
+        "platforms",
+        DEFAULT_GHCR_PLATFORMS,
+        SUPPORTED_GHCR_PLATFORMS,
+    )
 
 
 def citation_doi(root: Path) -> str:
@@ -187,22 +247,25 @@ def verify_ghcr_run(image: str, version: str) -> None:
         raise RuntimeError(f"docker image dist smoke test reported {observed_distance!r}, expected '1'")
 
 
-def verify_ghcr_manifest(image: str) -> str:
+def verify_ghcr_manifest(image: str, required_platforms: tuple[str, ...] = DEFAULT_GHCR_PLATFORMS) -> str:
     data, digest = fetch_registry_manifest(image)
     if int(data.get("schemaVersion") or 0) != 2:
         raise RuntimeError("GHCR manifest must use schemaVersion 2")
-    manifests = data.get("manifests") or []
-    if manifests:
-        linux_amd64 = [
-            item
-            for item in manifests
-            if isinstance(item, dict)
-            and isinstance(item.get("platform"), dict)
-            and item["platform"].get("os") == "linux"
-            and item["platform"].get("architecture") == "amd64"
-        ]
-        if not linux_amd64:
-            raise RuntimeError("GHCR manifest list must include linux/amd64")
+    manifests = data.get("manifests")
+    if not isinstance(manifests, list):
+        raise RuntimeError("GHCR image must publish an OCI image index or Docker manifest list")
+    platforms = {
+        f"{platform.get('os')}/{platform.get('architecture')}"
+        for item in manifests
+        if isinstance(item, dict)
+        and isinstance(item.get("platform"), dict)
+        and (platform := item["platform"])
+        and platform.get("os")
+        and platform.get("architecture")
+    }
+    missing = sorted(set(required_platforms) - platforms)
+    if missing:
+        raise RuntimeError(f"GHCR manifest list must include {', '.join(missing)}")
     if not digest:
         digest = str(data.get("config", {}).get("digest") or "")
     if not digest.startswith("sha256:"):
@@ -314,8 +377,40 @@ def verify_biocontainers_run(image: str, version: str) -> None:
         raise RuntimeError(f"BioContainers dotmatch leq smoke test reported {observed_threshold!r}, expected 'true'")
 
 
-def check_pypi(version: str, result: AuditResult) -> None:
+def wheel_platform_tags(filename: str) -> list[str]:
+    if not filename.endswith(".whl"):
+        return []
+    fields = filename[:-4].rsplit("-", 3)
+    if len(fields) != 4:
+        return []
+    return fields[-1].split(".")
+
+
+def has_repaired_linux_wheel(wheels: list[dict], family: str, architecture: str) -> bool:
+    return any(
+        any(tag.startswith(family) and tag.endswith(f"_{architecture}") for tag in wheel_platform_tags(str(item.get("filename") or "")))
+        for item in wheels
+    )
+
+
+def raw_linux_wheel_architectures(wheels: list[dict]) -> set[str]:
+    return {
+        architecture
+        for architecture in SUPPORTED_PYPI_LINUX_WHEEL_ARCHITECTURES
+        if any(
+            f"linux_{architecture}" in wheel_platform_tags(str(item.get("filename") or ""))
+            for item in wheels
+        )
+    }
+
+
+def check_pypi(root: Path, version: str, result: AuditResult) -> None:
     channel = "pypi"
+    try:
+        required_architectures = required_pypi_linux_wheel_architectures(root, version)
+    except ValueError as exc:
+        result.failures.append(ChannelMessage(channel, str(exc)))
+        return
     try:
         data = fetch_json(PYPI_URL.format(version=version))
     except Exception as exc:
@@ -325,30 +420,37 @@ def check_pypi(version: str, result: AuditResult) -> None:
     has_sdist = any(item.get("packagetype") == "sdist" for item in urls if isinstance(item, dict))
     wheels = [item for item in urls if isinstance(item, dict) and item.get("packagetype") == "bdist_wheel"]
     has_macos_wheel = any("macosx_" in str(item.get("filename") or "") for item in wheels)
-    has_manylinux_wheel = any("manylinux" in str(item.get("filename") or "") for item in wheels)
-    has_musllinux_wheel = any("musllinux" in str(item.get("filename") or "") for item in wheels)
-    has_raw_linux_wheel = any(
-        "linux_x86_64" in str(item.get("filename") or "")
-        and "manylinux" not in str(item.get("filename") or "")
-        and "musllinux" not in str(item.get("filename") or "")
-        for item in wheels
-    )
     if data.get("info", {}).get("version") != version or not has_sdist:
         result.failures.append(ChannelMessage(channel, f"PyPI version {version} is not available as an sdist"))
         return
     if not has_macos_wheel:
         result.failures.append(ChannelMessage(channel, f"PyPI version {version} must include a macOS wheel"))
         return
-    if not has_manylinux_wheel or not has_musllinux_wheel:
+    missing_repaired_wheels = [
+        f"{family}_{architecture}"
+        for family in ["manylinux", "musllinux"]
+        for architecture in required_architectures
+        if not has_repaired_linux_wheel(wheels, family, architecture)
+    ]
+    if missing_repaired_wheels:
         result.failures.append(
-            ChannelMessage(channel, f"PyPI version {version} must include repaired manylinux and musllinux wheels")
+            ChannelMessage(
+                channel,
+                f"PyPI version {version} must include repaired manylinux and musllinux wheels "
+                f"for {', '.join(required_architectures)} (missing: {', '.join(missing_repaired_wheels)})",
+            )
         )
         return
-    if has_raw_linux_wheel:
-        result.failures.append(ChannelMessage(channel, f"PyPI version {version} must not include raw linux_x86_64 wheels"))
+    raw_architectures = raw_linux_wheel_architectures(wheels)
+    if raw_architectures:
+        formatted = ", ".join(f"linux_{architecture}" for architecture in sorted(raw_architectures))
+        result.failures.append(ChannelMessage(channel, f"PyPI version {version} must not include raw {formatted} wheels"))
         return
     result.passed.append(
-        ChannelMessage(channel, f"PyPI sdist, macOS wheel, and repaired Linux wheels are available for {version}")
+        ChannelMessage(
+            channel,
+            f"PyPI sdist, macOS wheel, and repaired Linux wheels ({', '.join(required_architectures)}) are available for {version}",
+        )
     )
     try:
         verify_pypi_install(version)
@@ -453,15 +555,21 @@ def check_biocontainers(version: str, result: AuditResult) -> None:
     result.passed.append(ChannelMessage("biocontainers-run", f"BioContainers docker run smoke tests pass for {image}"))
 
 
-def check_ghcr(version: str, result: AuditResult) -> None:
+def check_ghcr(root: Path, version: str, result: AuditResult) -> None:
     channel = "ghcr"
     image = GHCR_IMAGE.format(version=version)
     try:
-        digest = verify_ghcr_manifest(image)
+        required_platforms = required_ghcr_platforms(root, version)
+        if required_platforms == DEFAULT_GHCR_PLATFORMS:
+            digest = verify_ghcr_manifest(image)
+        else:
+            digest = verify_ghcr_manifest(image, required_platforms)
     except Exception as exc:
         result.failures.append(ChannelMessage(channel, f"GHCR image tag {image} is not available: {exc}"))
         return
-    result.passed.append(ChannelMessage(channel, f"GHCR image tag is available: {image} ({digest})"))
+    result.passed.append(
+        ChannelMessage(channel, f"GHCR image tag is available: {image} ({digest}; {', '.join(required_platforms)})")
+    )
     try:
         verify_ghcr_run(image, version)
     except FileNotFoundError:
@@ -516,10 +624,10 @@ def audit(root: Path, version: Optional[str] = None) -> AuditResult:
     except Exception as exc:
         result.failures.append(ChannelMessage("metadata", str(exc)))
         return result
-    check_pypi(release_version, result)
+    check_pypi(root, release_version, result)
     check_bioconda(release_version, result)
     check_biocontainers(release_version, result)
-    check_ghcr(release_version, result)
+    check_ghcr(root, release_version, result)
     check_zenodo(root, release_version, result)
     return result
 

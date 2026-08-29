@@ -120,6 +120,7 @@ def _write_minimal_repo(root: Path) -> None:
         "scripts/check_citation_metadata.py": "#!/usr/bin/env python3\n",
         "scripts/check_distribution_channels.py": "#!/usr/bin/env python3\n",
         "scripts/check_distribution_record.py": "#!/usr/bin/env python3\n",
+        "scripts/check_oci_manifest.py": "#!/usr/bin/env python3\n",
         "scripts/check_bioconda_recipe.py": "#!/usr/bin/env python3\n",
         "scripts/check_native_comparator_scope.py": "#!/usr/bin/env python3\n",
         "scripts/check_workflow_adoption.py": "#!/usr/bin/env python3\n",
@@ -276,6 +277,16 @@ def test_repository_ready_reports_missing_distribution_channel_verifier(tmp_path
     result = checker.audit(tmp_path)
 
     assert any("scripts/check_distribution_channels.py" in failure for failure in result.failures)
+
+
+def test_repository_ready_reports_missing_oci_manifest_verifier(tmp_path):
+    checker = _load_checker()
+    _write_minimal_repo(tmp_path)
+    (tmp_path / "scripts" / "check_oci_manifest.py").unlink()
+
+    result = checker.audit(tmp_path)
+
+    assert any("scripts/check_oci_manifest.py" in failure for failure in result.failures)
 
 
 def test_repository_ready_reports_missing_alphabet_policy_verifier(tmp_path):

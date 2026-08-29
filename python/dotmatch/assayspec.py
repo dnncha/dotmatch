@@ -315,7 +315,18 @@ def validate_assay_spec(assay: AssaySpec) -> None:
     else:
         _require_path(assay, "left_targets")
         _require_path(assay, "right_targets")
-        _require_path(assay, "reads")
+        has_single_reads = "reads" in data
+        has_left_reads = "left_reads" in data
+        has_right_reads = "right_reads" in data
+        if has_single_reads and (has_left_reads or has_right_reads):
+            raise AssaySpecError(
+                "pair-count must use reads or both left_reads and right_reads, not both input layouts"
+            )
+        if has_single_reads:
+            _require_path(assay, "reads")
+        else:
+            _require_path(assay, "left_reads")
+            _require_path(assay, "right_reads")
         _require_extract(data, "left")
         _require_extract(data, "right")
 
@@ -1649,10 +1660,11 @@ def _autopsy_pair(assay: AssaySpec, native: Path, out_dir: Path, findings: list[
         )
         _add_audit_findings(audit_dir / "audit_summary.json", findings, side)
         extract = _table(assay.data, extract_key)
+        reads_key = "reads" if "reads" in assay.data else f"{side}_reads"
         top = out_dir / f"top_unmatched.{side}.tsv"
         artifacts[f"top_unmatched_{side}"] = top
         cmd = [
-            str(native), "inspect-unmatched", "--targets", str(_spec_path(assay, target_key)), "--reads", str(_spec_path(assay, "reads")),
+            str(native), "inspect-unmatched", "--targets", str(_spec_path(assay, target_key)), "--reads", str(_spec_path(assay, reads_key)),
             "--target-start", str(extract["start"]), "--target-length", str(extract["length"]), "--k", str(min(int(assignment.get("k", 1)), 1)),
             "--offset-window", "5", "--top", "100", "--out", str(top),
         ]
@@ -2046,25 +2058,38 @@ def _compile_pair(assay: AssaySpec, steps: list[PlanStep], artifacts: dict[str, 
         str(_spec_path(assay, "left_targets")),
         "--right-targets",
         str(_spec_path(assay, "right_targets")),
-        "--reads",
-        str(_spec_path(assay, "reads")),
-        "--left-start",
-        str(left["start"]),
-        "--left-length",
-        str(left["length"]),
-        "--right-start",
-        str(right["start"]),
-        "--right-length",
-        str(right["length"]),
-        "--k",
-        str(assignment.get("k", 1)),
-        "--metric",
-        str(assignment.get("metric", "levenshtein")),
-        "--out",
-        str(artifacts["pair_counts"]),
-        "--summary",
-        str(artifacts["pair_summary"]),
     ]
+    if "reads" in data:
+        cmd.extend(["--reads", str(_spec_path(assay, "reads"))])
+    else:
+        cmd.extend(
+            [
+                "--left-reads",
+                str(_spec_path(assay, "left_reads")),
+                "--right-reads",
+                str(_spec_path(assay, "right_reads")),
+            ]
+        )
+    cmd.extend(
+        [
+            "--left-start",
+            str(left["start"]),
+            "--left-length",
+            str(left["length"]),
+            "--right-start",
+            str(right["start"]),
+            "--right-length",
+            str(right["length"]),
+            "--k",
+            str(assignment.get("k", 1)),
+            "--metric",
+            str(assignment.get("metric", "levenshtein")),
+            "--out",
+            str(artifacts["pair_counts"]),
+            "--summary",
+            str(artifacts["pair_summary"]),
+        ]
+    )
     cmd.extend(["--ambiguity-policy", str(assignment.get("ambiguity_policy", "radius"))])
     if outputs.get("assignments"):
         artifacts["pair_assignments"] = out_dir / "pair_assignments.tsv"
@@ -2249,6 +2274,11 @@ def _methods_sample_lines(assay: AssaySpec) -> list[str]:
         return [
             f"- Sample `{sample.get('id', '')}` FASTQ: `{sample.get('fastq', '')}`"
             for sample in _samples(assay.data)
+        ]
+    if assay.mode == "pair-count" and "reads" not in assay.data:
+        return [
+            f"- Left FASTQ: `{assay.data.get('left_reads', '')}`",
+            f"- Right FASTQ: `{assay.data.get('right_reads', '')}`",
         ]
     return [f"- Reads: `{assay.data.get('reads', '')}`"]
 
@@ -4033,12 +4063,19 @@ def _samples_table(assay: AssaySpec) -> str:
                     html.escape(Path(str(sample.get("fastq", ""))).name),
                 )
             )
+    elif assay.mode == "pair-count" and "reads" not in assay.data:
+        for side, key in [("left", "left_reads"), ("right", "right_reads")]:
+            rows.append(
+                "<tr><td>{}</td><td>{}</td></tr>".format(
+                    html.escape(side),
+                    html.escape(Path(str(assay.data.get(key, ""))).name),
+                )
+            )
     else:
-        reads_key = "reads"
         rows.append(
             "<tr><td>{}</td><td>{}</td></tr>".format(
                 html.escape(assay.mode),
-                html.escape(Path(str(assay.data.get(reads_key, ""))).name),
+                html.escape(Path(str(assay.data.get("reads", ""))).name),
             )
         )
     rows.append("</table>")
@@ -4235,7 +4272,11 @@ mode = "pair-count"
 assay_type = "generic"
 left_targets = "left_targets.tsv"
 right_targets = "right_targets.tsv"
+# Use one reads input when both windows are present in the same read.
 reads = "reads.fastq.gz"
+# Or use synchronized paired FASTQs and remove the reads line above:
+# left_reads = "sample_R1.fastq.gz"
+# right_reads = "sample_R2.fastq.gz"
 
 [run]
 out_dir = "dotmatch_pair_out"

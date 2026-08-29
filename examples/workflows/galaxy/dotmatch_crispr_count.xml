@@ -1,47 +1,45 @@
-<tool id="dotmatch_crispr_count" name="DotMatch CRISPR count" version="0.2.2+galaxy0" profile="22.05" license="Apache-2.0">
-    <description>assign CRISPR guide reads to a known guide library</description>
+<tool id="dotmatch_crispr_count" name="DotMatch CRISPR count" version="0.2.2+galaxy1" profile="24.0" license="Apache-2.0">
+    <description>count guides from known-target FASTQ reads</description>
     <requirements>
         <requirement type="package" version="0.2.2">dotmatch</requirement>
     </requirements>
+    <version_command>dotmatch --version</version_command>
     <command detect_errors="exit_code"><![CDATA[
-printf 'sample_id\tfastq\n%s\t%s\n%s\t%s\n' \
-  '$sample1_label' '$sample1_fastq' \
-  '$sample2_label' '$sample2_fastq' \
-  > samples.tsv &&
+#import re
 
-dotmatch crispr-count \
-  --library '$library' \
-  --samples samples.tsv \
-  --guide-start '$guide_start' \
-  --guide-length '$guide_length' \
-  --k '$k' \
-  --metric '$metric' \
-  --ambiguity-policy radius \
+#set $indel_args = ""
 #if str($metric) == 'levenshtein' and int($indel_window) > 0
-  --indel-window '$indel_window' \
+    #set $indel_args = "--indel-window '" + str($indel_window) + "'"
 #end if
-  --out '$counts' \
-  --summary '$summary' \
-  --sample-qc '$sample_qc' \
-  --ambiguous '$ambiguous'
+
+printf 'sample_id\tfastq\n' > samples.tsv &&
+#for $sample in $reads:
+    #set $sample_label = re.sub(r'(?i)\.(?:fastq|fastqsanger)(?:\.gz)?$', '', str($sample.element_identifier))
+    #set $sample_id = re.sub(r'[^\w.-]', '_', str($sample_label))
+    #if $sample.is_of_type('fastq.gz', 'fastqsanger.gz'):
+        #set $fastq_name = $sample_id + '.fastq.gz'
+    #else:
+        #set $fastq_name = $sample_id + '.fastq'
+    #end if
+ln -s '$sample' '$fastq_name' &&
+printf '%s\t%s\n' '$sample_id' '$fastq_name' >> samples.tsv &&
+#end for
+dotmatch crispr-count --library '$library' --samples samples.tsv --guide-start '$guide_start' --guide-length '$guide_length' --k '$k' --metric '$metric' --ambiguity-policy radius $indel_args --out '$counts' --summary '$summary' --sample-qc '$sample_qc' --ambiguous '$ambiguous' --no-progress
     ]]></command>
     <inputs>
         <param name="library" type="data" format="csv,tabular,txt" label="Guide library" help="MAGeCK-style CSV or target TSV accepted by DotMatch."/>
-        <param name="sample1_fastq" type="data" format="fastq,fastqsanger,fastq.gz,fastqsanger.gz" label="Sample 1 FASTQ"/>
-        <param name="sample1_label" type="text" value="sample_1" label="Sample 1 label"/>
-        <param name="sample2_fastq" type="data" format="fastq,fastqsanger,fastq.gz,fastqsanger.gz" label="Sample 2 FASTQ"/>
-        <param name="sample2_label" type="text" value="sample_2" label="Sample 2 label"/>
+        <param name="reads" type="data" format="fastq,fastqsanger,fastq.gz,fastqsanger.gz" multiple="true" label="CRISPR guide FASTQ reads" help="Provide one FASTQ dataset per sample. Galaxy dataset names become sample IDs in the count and QC outputs."/>
         <param name="guide_start" type="integer" value="23" min="0" label="Guide start" help="Zero-based start position of the guide window in each read."/>
         <param name="guide_length" type="integer" value="19" min="1" label="Guide length"/>
-        <param name="k" type="integer" value="1" min="0" max="1" label="Edit-distance threshold"/>
-        <param name="metric" type="select" label="Metric">
+        <param name="k" type="integer" value="1" min="0" max="1" label="Maximum correction radius"/>
+        <param name="metric" type="select" label="Distance metric">
             <option value="levenshtein" selected="true">Levenshtein</option>
             <option value="hamming">Hamming</option>
         </param>
-        <param name="indel_window" type="integer" value="1" min="0" max="1" label="Levenshtein indel window" help="Used only when metric is Levenshtein."/>
+        <param name="indel_window" type="integer" value="1" min="0" max="1" label="Levenshtein indel window" help="Used only with the Levenshtein metric."/>
         <param name="ambiguous" type="select" label="Ambiguous read handling">
-            <option value="discard" selected="true">Discard from counts</option>
-            <option value="report">Report diagnostics</option>
+            <option value="discard" selected="true">Exclude ambiguous reads from counts</option>
+            <option value="report">Keep ambiguity diagnostics in the run outputs</option>
         </param>
     </inputs>
     <outputs>
@@ -52,10 +50,7 @@ dotmatch crispr-count \
     <tests>
         <test expect_num_outputs="3">
             <param name="library" value="crispr_library.csv"/>
-            <param name="sample1_fastq" value="sample_a.fastq"/>
-            <param name="sample1_label" value="sample_a"/>
-            <param name="sample2_fastq" value="sample_b.fastq"/>
-            <param name="sample2_label" value="sample_b"/>
+            <param name="reads" value="sample_a.fastq,sample_b.fastq" ftype="fastqsanger"/>
             <param name="guide_start" value="0"/>
             <param name="guide_length" value="4"/>
             <param name="k" value="1"/>
@@ -72,29 +67,36 @@ dotmatch crispr-count \
             </output>
             <output name="summary">
                 <assert_contents>
-                    <has_text text="&quot;samples&quot;"/>
-                    <has_text text="sample_a"/>
-                    <has_text text="sample_b"/>
+                    <has_text text="&quot;metric&quot;: &quot;hamming&quot;"/>
+                    <has_text text="&quot;sample&quot;: &quot;sample_a&quot;"/>
+                    <has_text text="&quot;sample&quot;: &quot;sample_b&quot;"/>
                 </assert_contents>
             </output>
         </test>
     </tests>
     <help><![CDATA[
-DotMatch assigns short reads to a known CRISPR guide library and writes a
-MAGeCK-compatible count table. Assignments are deterministic: ambiguous reads
-are not silently counted for a target.
+**What it does**
 
-DotMatch is a known-target short-DNA assignment engine, not a genome aligner. It
-does not produce SAM/BAM, CIGAR strings, or reference mapping output.
+DotMatch counts CRISPR guide reads against a supplied known guide library. It
+writes a MAGeCK-compatible count table together with a JSON run summary and a
+per-sample QC table.
+
+**Inputs**
+
+Provide a guide library and one or more single-end FASTQ datasets. The Galaxy
+dataset names are used as sample IDs in the output count matrix and QC table.
+Set the zero-based guide start and guide length to the fixed read window used by
+the assay.
+
+**Assignment and QC**
+
+The wrapper keeps the radius ambiguity policy explicit. Unique, ambiguous,
+unmatched, and invalid read outcomes remain visible in the run summary and
+sample QC table. The count table can be passed to an appropriate downstream
+screen-analysis workflow; DotMatch does not perform gene-level statistical
+testing.
     ]]></help>
     <citations>
-        <citation type="bibtex"><![CDATA[
-@software{dotmatch_2026,
-  title = {DotMatch: deterministic known-target short-DNA assignment for sequencing workflows},
-  author = {O'Toole, Donncha},
-  version = {0.2.2},
-  url = {https://github.com/Dnncha/dotmatch}
-}
-        ]]></citation>
+        <citation type="doi">10.5281/zenodo.20541628</citation>
     </citations>
 </tool>

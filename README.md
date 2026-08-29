@@ -11,7 +11,7 @@ other known targets.
 [![Documentation](https://readthedocs.org/projects/dotmatch/badge/?version=latest)](https://dotmatch.readthedocs.io/en/latest/)
 [![Bioconda](https://img.shields.io/conda/vn/bioconda/dotmatch?label=Bioconda)](https://anaconda.org/bioconda/dotmatch)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/dnncha/dotmatch/blob/main/LICENSE)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21511337.svg)](https://doi.org/10.5281/zenodo.21511337)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20541628.svg)](https://doi.org/10.5281/zenodo.20541628)
 
 [Documentation](https://dotmatch.readthedocs.io/en/latest/) ·
 [Getting started](https://dotmatch.readthedocs.io/en/latest/getting-started.html) ·
@@ -269,6 +269,53 @@ dotmatch barcode autopsy \
 
 Open `autopsy/report.html` first. The tables beside it record offset scans,
 near-neighbour barcodes, correction safety, and frequent unmatched windows.
+
+### Build a cell-by-feature matrix from extracted observations
+
+When an upstream workflow has already extracted feature windows and attached an
+explicit cell identifier, DotMatch can write a sparse cells × features matrix:
+
+```bash
+dotmatch feature matrix \
+  --observations feature_observations.tsv \
+  --targets feature_library.tsv \
+  --id-column observation_id \
+  --cell-column cell_barcode \
+  --sequence-column feature_seq \
+  --metric hamming --k 1 \
+  --out-dir feature_matrix/
+```
+
+The output directory contains `matrix.mtx`, cell and feature axes, long-form
+counts, per-observation assignments, per-cell QC, and a JSON summary. Only
+unique assignments add a matrix count. This command does not perform FASTQ
+pairing, cell-barcode correction, UMI deduplication, or cell calling; those
+upstream steps should remain documented with the observation table.
+
+See the [scverse and feature-barcode tutorial](https://dotmatch.readthedocs.io/en/latest/tutorials/scverse-perturb-seq.html)
+for the file contract and AnnData handoff.
+
+### Count target pairs across R1 and R2
+
+Use `pair-count` when a left target and a right target are sequenced in
+synchronized FASTQ mates:
+
+```bash
+dotmatch pair-count \
+  --left-targets r1_targets.tsv \
+  --right-targets r2_targets.tsv \
+  --left-reads sample_R1.fastq.gz \
+  --right-reads sample_R2.fastq.gz \
+  --left-start 0 --left-length 20 \
+  --right-start 0 --right-length 20 \
+  --k 1 --metric hamming \
+  --out pair_counts.tsv \
+  --summary pair_summary.json
+```
+
+R1 and R2 must contain the same records in the same order. DotMatch checks the
+canonical read identifier before assignment and records input synchronization,
+side-specific unmatched totals, and side-specific invalid totals in the summary.
 
 ### Check a target library
 

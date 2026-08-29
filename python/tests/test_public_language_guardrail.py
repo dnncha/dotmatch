@@ -14,7 +14,7 @@ PUBLIC_PATHS = [
     ROOT / ".github",
 ]
 
-PUBLIC_SUFFIXES = {".css", ".html", ".json", ".md", ".mdx", ".nf", ".py", ".ts", ".tsx", ".yaml", ".yml"}
+PUBLIC_SUFFIXES = {".css", ".html", ".json", ".md", ".mdx", ".nf", ".py", ".ts", ".tsx", ".xml", ".yaml", ".yml"}
 SKIP_PARTS = {"_build", "node_modules", "__pycache__"}
 
 FORBIDDEN_PHRASES = [
@@ -33,6 +33,8 @@ FORBIDDEN_PHRASES = [
     "without turning private feedback into public " + "evidence",
     "industry " + "penetration",
     "massive industry " + "penetration",
+    "international computational biology " + "infiltration",
+    "totally super " + "massive",
     "excellent " + "ux",
     "perfect scientific " + "accuracy",
     "adoption " + "flywheel",

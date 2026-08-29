@@ -1,69 +1,101 @@
-# DotMatch to scverse for Perturb-seq and Feature Barcodes
+# DotMatch and scverse for Perturb-seq and Feature Barcodes
 
-This tutorial shows the intended handoff from DotMatch assignment artifacts to
-AnnData/scverse objects. Use the CLI for FASTQ-scale assignment, then load the
-small, stable TSV outputs into Python.
+This tutorial covers the handoff from DotMatch feature assignments to
+AnnData/scverse objects. Use `dotmatch feature matrix` when another workflow
+has already produced one row per observation with an explicit cell identifier
+and an extracted feature sequence.
 
-## 1. Count guide or feature-barcode reads
+## 1. Build a cell-by-feature matrix
+
+The input table must be headered TSV (or CSV) and include a cell identifier and
+the feature sequence window. A minimal table looks like this:
+
+```text
+observation_id	cell_barcode	feature_seq
+read_001	AAACCTGAGAAACCAT	ACGTACGTACGTACGTACG
+read_002	AAACCTGAGAAACCAT	ACGTACGTACGTACGTACG
+read_003	AAACCTGAGCTAACAA	TGCATGCATGCATGCATGC
+```
+
+Run the matrix command with the input column names explicitly:
 
 ```bash
-dotmatch count \
-  --targets guides.tsv \
-  --reads guide_capture_R2.fastq.gz \
-  --sample-label guide_capture \
-  --target-start 63 \
-  --target-length 19 \
-  --k 1 \
+dotmatch feature matrix \
+  --observations feature_observations.tsv \
+  --targets feature_library.tsv \
+  --id-column observation_id \
+  --cell-column cell_barcode \
+  --sequence-column feature_seq \
   --metric hamming \
+  --k 1 \
   --ambiguity-policy radius \
-  --ambiguous discard \
-  --out guide_counts.tsv \
-  --summary guide_summary.json \
-  --sample-qc guide_sample_qc.tsv \
-  --assignments guide_assignments.tsv
+  --out-dir feature_matrix/
 ```
 
-For TotalSeq/CITE-seq-style feature barcodes, use the feature-barcode table as
-`--targets` and set `--target-start` / `--target-length` to the antibody or
-feature barcode window.
+`feature_matrix/matrix.mtx` is a sparse **cells × features** Matrix Market
+matrix. Its row order is recorded in `barcodes.tsv`; its column order and
+target sequences are recorded in `features.tsv`. `cell_feature_counts.tsv` is
+the same unique-assignment result in long TSV form. `assignments.tsv`,
+`cell_qc.tsv`, and `summary.json` retain the full outcome and run settings.
 
-## 2. Load counts into AnnData
+Only `unique` assignments add counts. `ambiguous`, `none`, and `invalid`
+observations remain in the diagnostic artifacts instead of being forced into a
+feature.
+
+This command does not extract reads from FASTQ, pair read sides, correct cell
+barcodes, deduplicate UMIs, or call cells. Perform those steps in the upstream
+workflow before writing the observation table, and retain their provenance next
+to the DotMatch output directory.
+
+## 2. Load the matrix into AnnData
 
 ```python
-import dotmatch
+from pathlib import Path
 
-guide_adata = dotmatch.counts_tsv_to_anndata("guide_counts.tsv")
-guide_adata.uns["dotmatch_summary_json"] = "guide_summary.json"
-guide_adata.uns["dotmatch_sample_qc_tsv"] = "guide_sample_qc.tsv"
+import anndata as ad
+import pandas as pd
+from scipy.io import mmread
+
+run = Path("feature_matrix")
+cells = pd.read_csv(run / "barcodes.tsv", sep="\t")
+features = pd.read_csv(run / "features.tsv", sep="\t")
+
+feature_adata = ad.AnnData(
+    X=mmread(run / "matrix.mtx").tocsr(),
+    obs=cells.set_index("cell_barcode"),
+    var=features.set_index("target_id"),
+)
+feature_adata.uns["dotmatch"] = {
+    "summary": str(run / "summary.json"),
+    "assignments": str(run / "assignments.tsv"),
+    "cell_qc": str(run / "cell_qc.tsv"),
+    "ambiguity_policy": "radius",
+    "ambiguous_observations_counted": False,
+}
 ```
 
-The count matrix contains uniquely assigned targets only. Ambiguous reads are
-reported in `summary.json`, `sample_qc.tsv`, and `assignments.tsv`; they are not
-silently assigned to a guide or feature.
+## 3. Attach assignment rows when needed
 
-## 3. Attach per-read assignments when cell barcodes are available
-
-If your assignment table includes a cell barcode column, convert it to an
-AnnData observation-level table:
+For a smaller assignment table, `assignments_to_anndata` can build the same
+kind of count matrix. Keep the `status` column and request unique-only counts:
 
 ```python
+import pandas as pd
 import dotmatch
 
-assign_adata = dotmatch.assignments_to_anndata(
-    "guide_assignments.tsv",
+assignments = pd.read_csv("feature_matrix/assignments.tsv", sep="\t")
+feature_adata = dotmatch.assignments_to_anndata(
+    assignments,
     cell_col="cell_barcode",
-    target_col="target_id",
+    feature_col="target_id",
+    status_col="status",
+    count_unique_only=True,
 )
 ```
 
-For custom pipelines, join DotMatch assignments to cell barcodes before this
-step. Keep `assignment_status` so downstream filtering can distinguish unique,
-ambiguous, unmatched, and invalid reads.
-
-## 4. Use scanpy-style helpers
+## 4. Use scanpy-style helpers for notebook-scale work
 
 ```python
-import scanpy as sc
 import dotmatch.tl as dm_tl
 
 library = [
@@ -82,31 +114,21 @@ dm_tl.assign_features(
 feature_adata = dm_tl.feature_counts(
     adata,
     seq_col="guide_sequence",
+    cell_col="cell_barcode",
     library=library,
     k=1,
     metric="hamming",
 )
 ```
 
-Use this path for notebook-scale inspection and prototypes. For production
-FASTQ processing, prefer `dotmatch count` so the exact command, assignment
-engine, ambiguity policy, and QC summaries are written as reproducible files.
+Use the command-line matrix writer for reproducible table-to-matrix runs. Use
+the `dotmatch.tl` helpers for notebook-scale inspection where the observations
+are already in AnnData.
 
-## 5. Recommended scverse metadata
+## 5. Review per-cell assignment QC
 
-Store DotMatch provenance in `.uns`:
-
-```python
-adata.uns["dotmatch"] = {
-    "summary": "guide_summary.json",
-    "sample_qc": "guide_sample_qc.tsv",
-    "assignments": "guide_assignments.tsv",
-    "ambiguity_policy": "radius",
-    "ambiguous_reads_counted": False,
-}
-```
-
-For Perturb-seq analysis, keep guide assignment QC next to standard scRNA-seq
-QC. A high ambiguous or unmatched rate usually means the guide window, barcode
-library, or correction radius should be checked before interpreting guide-level
-effects.
+For Perturb-seq and feature-barcode analysis, review `cell_qc.tsv` alongside
+standard scRNA-seq QC. A high ambiguous or unmatched rate can indicate an
+incorrect feature window, target library, orientation, or correction radius.
+The feature matrix alone does not establish cell identity or UMI-collapsed
+molecule counts.

@@ -34,6 +34,9 @@ def _channel(channel_id: str, **overrides) -> dict:
     if channel_id == "pypi":
         item["blocker"] = "The source distribution and repaired manylinux/musllinux wheels are not public yet."
         item["next_action"] = "Publish the source distribution and repaired Linux wheels, then rerun make distribution-channels."
+        item["linux_wheel_architectures"] = ["x86_64"]
+    if channel_id == "ghcr":
+        item["platforms"] = ["linux/amd64"]
     item.update(overrides)
     return item
 
@@ -296,3 +299,45 @@ def test_distribution_record_rejects_invalid_verified_date(tmp_path):
     result = checker.audit(tmp_path)
 
     assert any("pypi must declare verified_date as YYYY-MM-DD" in failure for failure in result.failures)
+
+
+def test_distribution_record_requires_declared_verified_linux_architectures(tmp_path):
+    checker = _load_checker()
+    manifest = _manifest(status="partially_verified")
+    manifest["channels"][0].update(
+        {
+            "status": "verified",
+            "public_url": "https://pypi.org/project/dotmatch/0.1.0/",
+            "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/123456",
+            "verified_date": "2026-07-23",
+            "blocker": "",
+            "linux_wheel_architectures": ["arm64"],
+        }
+    )
+    _write_repo(tmp_path, manifest)
+
+    result = checker.audit(tmp_path)
+
+    assert any("pypi linux_wheel_architectures contains unsupported value(s): arm64" in failure for failure in result.failures)
+    assert any("pypi linux_wheel_architectures must include x86_64" in failure for failure in result.failures)
+
+
+def test_distribution_record_requires_declared_verified_ghcr_platforms(tmp_path):
+    checker = _load_checker()
+    manifest = _manifest(status="partially_verified")
+    ghcr = next(channel for channel in manifest["channels"] if channel["id"] == "ghcr")
+    ghcr.update(
+        {
+            "status": "verified",
+            "public_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
+            "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/123456",
+            "verified_date": "2026-07-23",
+            "blocker": "",
+            "platforms": ["linux/arm64"],
+        }
+    )
+    _write_repo(tmp_path, manifest)
+
+    result = checker.audit(tmp_path)
+
+    assert any("ghcr platforms must include linux/amd64" in failure for failure in result.failures)

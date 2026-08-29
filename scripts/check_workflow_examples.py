@@ -564,15 +564,23 @@ def check_galaxy(root: Path, result: WorkflowAudit) -> None:
 
     if wrapper.tag != "tool" or wrapper.attrib.get("id") != "dotmatch_crispr_count":
         result.failures.append("Galaxy wrapper must be tool id dotmatch_crispr_count")
+    if wrapper.attrib.get("version") != "0.2.2+galaxy1":
+        result.failures.append("Galaxy CRISPR wrapper must track the public Bioconda 0.2.2 package")
     command = wrapper.findtext("command") or ""
     _require(command, "dotmatch crispr-count", "Galaxy wrapper command must run dotmatch crispr-count", result)
     _require(command, "--ambiguity-policy radius", "Galaxy wrapper command must keep assignment ambiguity policy explicit", result)
     _require(command, "--ambiguous", "Galaxy wrapper command must expose --ambiguous", result)
     _require(command, "--summary", "Galaxy wrapper command must include --summary", result)
     _require(command, "--sample-qc", "Galaxy wrapper command must include --sample-qc", result)
-    requirements = [node.text for node in wrapper.findall("./requirements/requirement")]
-    if "dotmatch" not in requirements:
-        result.failures.append("Galaxy wrapper requirements must include dotmatch")
+    _require(command, "element_identifier", "Galaxy wrapper command must derive sample IDs from Galaxy datasets", result)
+    _require(command, "(?:fastq|fastqsanger)", "Galaxy wrapper must remove FASTQ suffixes from sample IDs", result)
+    _require(command, "ln -s", "Galaxy wrapper command must stage input FASTQs", result)
+    requirements = {node.text: node.attrib.get("version", "") for node in wrapper.findall("./requirements/requirement")}
+    if requirements.get("dotmatch") != "0.2.2":
+        result.failures.append("Galaxy wrapper must require public Bioconda dotmatch=0.2.2")
+    reads = wrapper.find("./inputs/param[@name='reads']")
+    if reads is None or reads.attrib.get("multiple") != "true":
+        result.failures.append("Galaxy wrapper must accept one or more FASTQ datasets through reads")
     output_names = {node.attrib.get("name", "") for node in wrapper.findall("./outputs/data")}
     if not {"counts", "summary", "sample_qc"} <= output_names:
         result.failures.append("Galaxy wrapper outputs must include counts, summary, and sample_qc")
@@ -583,10 +591,7 @@ def check_galaxy(root: Path, result: WorkflowAudit) -> None:
         params = {node.attrib.get("name", ""): node.attrib.get("value", "") for node in test.findall("param")}
         for name, value in [
             ("library", "crispr_library.csv"),
-            ("sample1_fastq", "sample_a.fastq"),
-            ("sample1_label", "sample_a"),
-            ("sample2_fastq", "sample_b.fastq"),
-            ("sample2_label", "sample_b"),
+            ("reads", "sample_a.fastq,sample_b.fastq"),
         ]:
             if params.get(name) != value:
                 result.failures.append(f"Galaxy Planemo test must set {name}={value}")
@@ -599,6 +604,9 @@ def check_galaxy(root: Path, result: WorkflowAudit) -> None:
             result.failures.append("Galaxy Planemo test must assert sample_qc output")
         elif sample_qc.find("./assert_contents/has_text[@text='assignment_rate']") is None:
             result.failures.append("Galaxy Planemo test must assert sample_qc assignment_rate content")
+    expected_counts = test_data / "expected_counts.mageck.tsv"
+    if expected_counts.is_file() and "guide_a\tGENEA\t1\t0" not in expected_counts.read_text(encoding="utf-8"):
+        result.failures.append("Galaxy expected counts must retain the exact guide_a assignment")
     for filename in GALAXY_TEST_DATA:
         if not (test_data / filename).is_file():
             result.failures.append(f"Galaxy Planemo test-data file is missing: {filename}")

@@ -71,14 +71,19 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
+      - name: Set up QEMU for Linux aarch64 wheel tests
+        uses: docker/setup-qemu-action@v4
+        with:
+          platforms: arm64
       - name: Build and test repaired Linux wheels
         uses: pypa/cibuildwheel@v4.1.0
         env:
           CIBW_PLATFORM: linux
+          CIBW_ARCHS_LINUX: "x86_64 aarch64"
         with:
           output-dir: dist-linux
       - name: Verify repaired Linux wheels
-        run: python scripts/check_python_wheel.py --wheel-only --out-dir dist-linux
+        run: python scripts/check_python_wheel.py --wheel-only --out-dir dist-linux --require-repaired-linux-architectures x86_64 aarch64
       - uses: actions/upload-artifact@v7
         with:
           name: dotmatch-linux-repaired-wheels
@@ -108,6 +113,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - name: Set up QEMU for Linux arm64 container tests
+        uses: docker/setup-qemu-action@v4
+        with:
+          platforms: arm64
       - uses: docker/setup-buildx-action@v4
       - name: Build local smoke-test image
         run: docker build -t dotmatch:ci .
@@ -118,6 +127,14 @@ jobs:
           docker run --rm dotmatch:ci dist ACGT AGGT | grep '^1$'
           docker run --rm dotmatch:ci leq 1 ACGT AGGT | grep '^true$'
           docker image inspect dotmatch:ci --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' | grep "^${VERSION}$"
+      - name: Build Linux arm64 smoke-test image
+        run: docker buildx build --platform linux/arm64 --load -t dotmatch:ci-arm64 .
+      - name: Smoke test Linux arm64 container
+        run: |
+          VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          docker run --rm --platform linux/arm64 dotmatch:ci-arm64 --version | grep "^dotmatch ${VERSION}$"
+          docker run --rm --platform linux/arm64 dotmatch:ci-arm64 dist ACGT AGGT | grep '^1$'
+          docker run --rm --platform linux/arm64 dotmatch:ci-arm64 leq 1 ACGT AGGT | grep '^true$'
       - uses: docker/metadata-action@v6
         id: meta
         with:
@@ -143,8 +160,18 @@ jobs:
         with:
           context: .
           push: ${{ startsWith(github.ref, 'refs/tags/') }}
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+      - name: Verify published multi-architecture manifest
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          docker buildx imagetools inspect "ghcr.io/dnncha/dotmatch:${VERSION}" --raw > ghcr-manifest.json
+          python scripts/check_oci_manifest.py ghcr-manifest.json \
+            --require-platform linux/amd64 \
+            --require-platform linux/arm64
 
   pypi-sdist:
     name: Publish PyPI sdist, macOS wheel, and repaired Linux wheels

@@ -30,6 +30,7 @@ from .core import (
     assign_posterior,
     distance,
 )
+from .feature_matrix import build_feature_matrix
 from .native import find_native_cli, run_native_cli
 
 
@@ -483,6 +484,57 @@ def command_count(args: argparse.Namespace) -> int:
     else:
         print(json.dumps(summary, sort_keys=True))
     return 0
+
+
+def command_feature_namespace(argv: Sequence[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="dotmatch feature",
+        description="Assign pre-extracted feature observations and write a sparse cell-by-feature matrix.",
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+    matrix = sub.add_parser(
+        "matrix",
+        help="write a deterministic cell-by-feature matrix from an observation table",
+        description=(
+            "Input rows must already contain an explicit cell identifier and feature sequence. "
+            "This command does not perform FASTQ pairing, barcode correction, UMI deduplication, or cell calling."
+        ),
+    )
+    matrix.add_argument("--observations", required=True, help="headered TSV/CSV with one pre-extracted observation per row")
+    matrix.add_argument("--targets", required=True, help="feature library TSV/CSV with target_id and target_seq")
+    matrix.add_argument("--cell-column", required=True, help="explicit input column containing cell identifiers")
+    matrix.add_argument("--sequence-column", required=True, help="input column containing feature sequence windows")
+    matrix.add_argument("--id-column", help="optional input column retained as observation_id in assignments.tsv")
+    matrix.add_argument("--k", type=int, default=1, help="maximum edit distance; exact requires 0")
+    matrix.add_argument("--metric", choices=["hamming", "levenshtein", "exact"], default="hamming")
+    matrix.add_argument("--ambiguity-policy", choices=["radius", "best"], default="radius")
+    matrix.add_argument("--batch-size", type=int, default=4096)
+    matrix.add_argument("--out-dir", required=True, help="new output directory for matrix and QC artifacts")
+
+    args = parser.parse_args(list(argv))
+    try:
+        if args.command == "matrix":
+            result = build_feature_matrix(
+                args.observations,
+                args.targets,
+                args.out_dir,
+                cell_column=args.cell_column,
+                sequence_column=args.sequence_column,
+                id_column=args.id_column,
+                k=args.k,
+                metric=args.metric,
+                ambiguity_policy=args.ambiguity_policy,
+                batch_size=args.batch_size,
+            )
+            print(json.dumps(result.summary, indent=2, sort_keys=True))
+            return 0
+    except BrokenPipeError:
+        return 1
+    except Exception as exc:
+        print(f"dotmatch feature: {exc}", file=sys.stderr)
+        return 2
+    parser.error("unreachable")
+    return 2
 
 
 def command_audit_targets(args: argparse.Namespace) -> int:
@@ -2395,6 +2447,8 @@ Workflow namespaces:
       Validate, plan, and run AssaySpec TOML workflows.
   barcode
       Infer barcode windows, audit barcode sets, demultiplex reads, and write autopsy reports.
+  feature
+      Build a cell-by-feature matrix from pre-extracted observations with explicit cell identifiers.
   panel
       Design, certify, simulate, lay out, and export barcode panels.
   crispr
@@ -2430,6 +2484,8 @@ Examples:
       --target-start 23 --target-length 20 --k 1 --metric hamming --out counts.tsv
   dotmatch assay check assay.toml
   dotmatch barcode infer --barcodes barcodes.tsv --reads pooled.fastq.gz --out offset_scan.tsv
+  dotmatch feature matrix --observations observations.tsv --targets features.tsv \\
+      --cell-column cell_barcode --sequence-column feature_seq --out-dir feature_matrix
   dotmatch panel design --preset illumina-inline-96 --out-dir panel
 """
     )
@@ -2475,6 +2531,7 @@ COMMAND GROUPS
   Workflow namespaces:
     assay                validate, plan, and run AssaySpec TOML workflows
     barcode              infer barcode windows, audit, demux, and write reports
+    feature              build a cell-by-feature matrix from pre-extracted observations
     panel                design, check, optimize, simulate, lay out, and export barcode panels
     crispr               CRISPR guide-count project helpers and QC
 
@@ -2509,6 +2566,12 @@ INPUT FILES
     TOML workflow specification consumed by dotmatch assay. Start with
     dotmatch assay new, dotmatch crispr new, or an example under examples/.
 
+  Feature observations:
+    Headered TSV/CSV with one pre-extracted observation per row. Supply the
+    explicit cell and sequence column names to `dotmatch feature matrix`.
+    It does not perform FASTQ pairing, barcode correction, UMI deduplication,
+    or cell calling.
+
 OUTPUTS
   count:
     Counts TSV, optional per-read assignments TSV, optional JSON summary.
@@ -2520,6 +2583,11 @@ OUTPUTS
   barcode autopsy:
     offset_scan.tsv, collision/safety audit outputs, demux outputs, top_unmatched.tsv,
     findings.tsv, provenance.json, report.md, report.html, and MultiQC custom content.
+
+  feature matrix:
+    matrix.mtx (cells x features), barcodes.tsv, features.tsv,
+    cell_feature_counts.tsv, assignments.tsv, cell_qc.tsv, and summary.json.
+    Only uniquely assigned observations contribute to the matrix.
 
 COMMON RECIPES
   Count fixed-window CRISPR guides:
@@ -2534,6 +2602,11 @@ COMMON RECIPES
   Troubleshoot barcode assignment:
     dotmatch barcode autopsy --barcodes barcodes.tsv --reads pooled.fastq.gz \\
       --scan-starts 0:30 --barcode-length auto --k-values 0,1 --out-dir barcode_report/
+
+  Build a feature matrix from extracted observations:
+    dotmatch feature matrix --observations observations.tsv --targets features.tsv \\
+      --cell-column cell_barcode --sequence-column feature_seq --metric hamming --k 1 \\
+      --out-dir feature_matrix/
 
   Validate and run an assay workflow:
     dotmatch assay check assay.toml
@@ -2654,6 +2727,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return command_crispr_namespace(raw_args[1:])
     if raw_args and raw_args[0] == "barcode":
         return command_barcode_namespace(raw_args[1:])
+    if raw_args and raw_args[0] == "feature":
+        return command_feature_namespace(raw_args[1:])
     if raw_args and raw_args[0] == "panel":
         from .panel import command_panel_namespace
 

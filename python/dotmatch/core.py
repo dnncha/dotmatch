@@ -1168,6 +1168,7 @@ def assignments_to_anndata(
     *,
     cell_col: str = "cell_barcode",
     feature_col: str = "target_name",
+    status_col: str | None = None,
     count_unique_only: bool = True,
     include_ambiguous_per_cell: bool = False,
 ) -> Any:
@@ -1180,7 +1181,12 @@ def assignments_to_anndata(
     By default (count_unique_only=True) only status==unique reads contribute to the count matrix.
     This preserves DotMatch's core scientific contract: ambiguous reads are never silently assigned.
 
-    If your assignments came from the CLI, the read_id often encodes cell info (parse or supply cell_col).
+    ``status_col`` defaults to ``status_name`` or ``status`` when either is
+    present. Text outcomes (``unique``/``ambiguous``) and native numeric status
+    values are both accepted.
+
+    If your assignments came from the CLI, provide an explicit cell column from
+    the upstream workflow rather than inferring it from a read identifier.
     """
     _ensure_anndata()
     _ensure_pandas()
@@ -1208,13 +1214,21 @@ def assignments_to_anndata(
         else:
             feature_col = "target_index"  # fallback
 
-    # Always compute per-cell stats for QC/accuracy visibility
-    if "status_name" in df.columns:
-        unique_mask = df["status_name"].isin(["unique"])
-        ambig_mask = df["status_name"].isin(["ambiguous"])
-    else:
-        unique_mask = df.get("status", 0) == 1
-        ambig_mask = df.get("status", 0) == 2
+    # Always compute per-cell stats for QC/accuracy visibility. The native API
+    # has historically emitted integer status values while table artifacts use
+    # the readable names, so accept both forms without silently dropping rows.
+    if status_col is None:
+        if "status_name" in df.columns:
+            status_col = "status_name"
+        elif "status" in df.columns:
+            status_col = "status"
+        else:
+            raise ValueError("Could not find assignment status column; pass status_col=")
+    if status_col not in df.columns:
+        raise ValueError(f"Could not find status column '{status_col}'")
+    statuses = df[status_col].astype(str).str.strip().str.lower()
+    unique_mask = statuses.isin(["unique", "1", "1.0"])
+    ambig_mask = statuses.isin(["ambiguous", "2", "2.0"])
 
     if count_unique_only:
         df_unique = df[unique_mask]
