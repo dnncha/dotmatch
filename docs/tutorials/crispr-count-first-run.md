@@ -48,6 +48,17 @@ Key outputs under the configured `out_dir`:
 CPU remains the assignment authority. GPU Metal is opt-in via `[backend]` in the
 assay spec and requires `--metal-validate` when enabled.
 
+After a completed run, create a review package without copying raw FASTQs:
+
+```bash
+dotmatch assay handoff crispr_assay.toml
+```
+
+This writes `assay_out/handoff/`, including reports, primary outputs, methods,
+citation material, and SHA-256 records for the declared inputs. See [Lab
+Evaluation and Handoff](../lab-evaluation.md) for the review order and
+acceptance record.
+
 ## 3. Direct `crispr-count` (single command)
 
 For a minimal single command without the full assay wrapper:

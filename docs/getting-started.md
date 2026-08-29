@@ -225,6 +225,8 @@ default policy.
 
 - Use [AssaySpec](assayspec.md) for the full `assay new`, `start`, `check`, and
   `run` command reference.
+- Use [Lab Evaluation and Handoff](lab-evaluation.md) when a completed run
+  needs a review package without moving raw reads.
 - Use [Command Reference](command-reference.md) for the current command map.
 - Use [CRISPR Count QC](crispr-qc.md) before downstream screen statistics.
 - Use [Barcode Panel Design](barcode-panel-design.md) when creating or checking

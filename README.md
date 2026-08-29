@@ -245,6 +245,18 @@ Review `crispr_screen/inference_report.json` and `assay.toml`, then run:
 dotmatch assay start crispr_screen/assay.toml
 ```
 
+After a completed run, create a compact technical review bundle without copying
+raw FASTQs:
+
+```bash
+dotmatch assay handoff crispr_screen/assay.toml
+```
+
+The bundle includes configuration, QC, reports, methods, citation material, and
+checksums for declared inputs and copied outputs. See the [lab evaluation and
+handoff guide](https://dotmatch.readthedocs.io/en/latest/lab-evaluation.html)
+for the review sequence and data-handling boundary.
+
 For an explicit one-command run, use `dotmatch crispr-count`. The
 [CRISPR tutorial](https://dotmatch.readthedocs.io/en/latest/tutorials/crispr-count-first-run.html)
 covers both routes.
@@ -392,6 +404,7 @@ replaces general alignment or every demultiplexing workflow.
 - [Getting started](https://dotmatch.readthedocs.io/en/latest/getting-started.html)
 - [Command reference](https://dotmatch.readthedocs.io/en/latest/command-reference.html)
 - [AssaySpec workflows](https://dotmatch.readthedocs.io/en/latest/assayspec.html)
+- [Lab evaluation and handoff](https://dotmatch.readthedocs.io/en/latest/lab-evaluation.html)
 - [CRISPR count QC](https://dotmatch.readthedocs.io/en/latest/crispr-qc.html)
 - [Barcode panel design](https://dotmatch.readthedocs.io/en/latest/barcode-panel-design.html)
 - [Output schemas](https://dotmatch.readthedocs.io/en/latest/schemas.html)

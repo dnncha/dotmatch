@@ -19,6 +19,8 @@ All notable user-facing changes are tracked here. Public statements in release n
 - Added a reproducible 32-guide GSE146194 Perturb-seq case study with 48,000
   held-out reads and zero assignment differences from matched independent
   oracles.
+- Added `dotmatch assay handoff` to create review-sized, checksummed bundles
+  for completed assay runs without copying raw reads.
 
 ### Fixed
 
@@ -35,6 +37,7 @@ All notable user-facing changes are tracked here. Public statements in release n
 - Configured tagged releases to build repaired Linux `x86_64` and `aarch64`
   wheels and publish multi-architecture `linux/amd64` and `linux/arm64`
   container manifests after their checks pass.
+- Updated the supported GitHub Actions and site type-checking dependencies.
 
 ## 0.2.2 - 2026-07-23
 

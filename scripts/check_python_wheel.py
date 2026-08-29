@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 from email.parser import Parser
 from email.message import Message
+import hashlib
 import json
 import os
 import platform
@@ -479,6 +480,34 @@ metric = "hamming"
     ]:
         if not (reliability_dir / required).exists():
             raise SystemExit(f"{artifact.name} installed assay run did not write {required}")
+    handoff_dir = probe_dir / "handoff"
+    run(
+        [
+            str(venv_script(env_dir, "dotmatch")),
+            "assay",
+            "handoff",
+            str(spec),
+            "--out-dir",
+            str(handoff_dir),
+        ],
+        cwd=probe_dir,
+        env=env,
+    )
+    handoff = json.loads((handoff_dir / "handoff_manifest.json").read_text(encoding="utf-8"))
+    if handoff.get("bundle_type") != "dotmatch_assay_handoff":
+        raise SystemExit(f"{artifact.name} installed assay handoff manifest is invalid: {handoff!r}")
+    input_roles = {str(item.get("role")) for item in handoff.get("inputs", []) if isinstance(item, dict)}
+    if input_roles != {"targets", "sample:sample"}:
+        raise SystemExit(f"{artifact.name} installed assay handoff inputs are invalid: {input_roles!r}")
+    review_files = [item for item in handoff.get("review_files", []) if isinstance(item, dict)]
+    review_paths = {str(item.get("path")) for item in review_files}
+    if "review/reliability_report.html" not in review_paths or "review/counts.mageck.tsv" not in review_paths:
+        raise SystemExit(f"{artifact.name} installed assay handoff is missing required review files: {review_paths!r}")
+    for item in review_files:
+        review_path = handoff_dir / str(item["path"])
+        observed_hash = hashlib.sha256(review_path.read_bytes()).hexdigest()
+        if observed_hash != item.get("sha256"):
+            raise SystemExit(f"{artifact.name} installed assay handoff checksum is invalid for {review_path}")
     counts = probe_dir / "counts.mageck.tsv"
     sample_qc = probe_dir / "sample_qc.tsv"
     crispr_qc = probe_dir / "crispr_qc.json"

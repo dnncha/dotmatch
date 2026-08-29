@@ -689,6 +689,62 @@ def test_assay_run_count_reproduces_existing_crispr_fixture(tmp_path: Path) -> N
     assert "sample_a.fastq" in report
 
 
+def test_assay_handoff_writes_review_bundle_with_input_and_output_hashes(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_count_spec(tmp_path)
+    env = {"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")}
+
+    run = _run_cli(["assay", "run", str(spec)], env=env)
+    assert run.returncode == 0, run.stderr
+    handoff = _run_cli(["assay", "handoff", str(spec)], env=env)
+
+    assert handoff.returncode == 0, handoff.stderr
+    bundle = tmp_path / "assay_out" / "handoff"
+    record = json.loads((bundle / "handoff_manifest.json").read_text(encoding="utf-8"))
+    assert record["bundle_type"] == "dotmatch_assay_handoff"
+    assert record["reliability_status"] == "failed"
+    assert {item["role"] for item in record["inputs"]} == {
+        "targets",
+        "sample:sample_a",
+        "sample:sample_b",
+    }
+    assert all(len(item["sha256"]) == 64 for item in record["inputs"])
+    assert any(item["role"] == "counts" for item in record["review_files"])
+    assert (bundle / "review" / "reliability_report.html").exists()
+    assert (bundle / "review" / "counts.mageck.tsv").exists()
+    assert "It does not include raw reads" in (bundle / "README_FOR_REVIEW.md").read_text(
+        encoding="utf-8"
+    )
+    assert "review/counts.mageck.tsv" in (bundle / "SHA256SUMS").read_text(encoding="utf-8")
+
+
+def test_assay_handoff_requires_a_completed_run(tmp_path: Path) -> None:
+    spec = _write_count_spec(tmp_path)
+
+    result = _run_cli(["assay", "handoff", str(spec)])
+
+    assert result.returncode == 2
+    assert "requires a completed assay run" in result.stderr
+
+
+def test_assay_handoff_rejects_an_output_path_that_is_a_file(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_count_spec(tmp_path)
+    env = {"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")}
+    run = _run_cli(["assay", "run", str(spec)], env=env)
+    assert run.returncode == 0, run.stderr
+    output_path = tmp_path / "handoff-file"
+    output_path.write_text("not a directory\n", encoding="utf-8")
+
+    result = _run_cli(
+        ["assay", "handoff", str(spec), "--out-dir", str(output_path)],
+        env=env,
+    )
+
+    assert result.returncode == 2
+    assert "handoff output path must be a directory" in result.stderr
+
+
 def test_assay_run_manifest_records_configured_reliability_thresholds(tmp_path: Path) -> None:
     subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
     spec = _write_count_spec(tmp_path)

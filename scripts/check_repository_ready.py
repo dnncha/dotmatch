@@ -321,7 +321,7 @@ def check_pages_workflow(root: Path, result: AuditResult) -> None:
     for fragment in [
         "actions/configure-pages@v6",
         "actions/upload-pages-artifact@v5",
-        "actions/deploy-pages@v4",
+        "actions/deploy-pages@v5",
         "pages: write",
         "id-token: write",
     ]:
