@@ -80,12 +80,11 @@ before adding a
 - Upstream checks: eight checks pass; one additional Python 3.9 check is
   recorded as cancelled
 
-DotMatch also exposes its parser as a package plugin. The source tree now uses
-a `before_config` hook so search patterns are present before MultiQC indexes
-input files. The next-release source candidate discovers `sample_qc.tsv`,
+DotMatch also exposes its parser as a package plugin. Release 0.3.0 uses a
+`before_config` hook so search patterns are present before MultiQC indexes
+input files. The packaged plugin discovers `sample_qc.tsv`,
 `summary.json`, `panel_summary.json`, `crispr_qc.summary.tsv`,
 `assay_manifest.summary.tsv`, and `top_unmatched.tsv` without a custom config.
-This fix is not part of the public 0.2.2 package.
 
 Acceptance gates are separate: merge and release of the upstream MultiQC
 module, or a DotMatch release containing the independently packaged plugin fix.

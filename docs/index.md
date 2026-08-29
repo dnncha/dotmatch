@@ -27,9 +27,9 @@ Then follow [Getting started](getting-started.md) for a small count or
 demultiplexing run. If you already know which command you need, go straight to
 the [command reference](command-reference.md). Coding and scientific agents can
 use the [Agent guide](agent-guide.md) or the public capability manifest for
-versioned task routing with explicit inputs, outputs, and limitations. The
-source candidate also exposes `dotmatch capabilities --json`; PyPI 0.2.2
-predates that installed command.
+versioned task routing with explicit inputs, outputs, and limitations. DotMatch
+0.3.0 and later also expose `dotmatch capabilities --json` from an installed
+package.
 
 ## Choose a workflow
 

@@ -1,8 +1,9 @@
 # Packaging and installation
 
 DotMatch is distributed through PyPI, GitHub releases, Bioconda, and
-containers. The current 0.2.2 release is available through the package
-channels below; a new version can arrive at different times on each channel.
+containers. Release 0.3.0 is available from PyPI, GitHub releases, and GHCR.
+Bioconda and its generated BioContainers images can lag those channels, so
+check the provider records before pinning a version.
 
 ## PyPI
 
@@ -70,7 +71,8 @@ BioContainers images are generated after the corresponding Bioconda package is
 published. Their tags include the Bioconda build number, so use the tag shown on
 the package page rather than guessing it.
 
-For the current release, one available Linux/Python 3.11 tag is:
+For the latest BioContainers release currently verified here, one available
+Linux/Python 3.11 tag is:
 
 ```bash
 docker pull quay.io/biocontainers/dotmatch:0.2.2--py311h13f8228_1
@@ -109,12 +111,10 @@ The Python distribution provides:
 - the optional `assaycode` compatibility command for assay-specification work;
 - entry points for supported workflow integrations.
 
-The optional MultiQC integration in the public 0.2.2 wheel includes the module
-entry point, but direct file discovery with MultiQC 1.35 needs the
-`before_config` search-pattern hook added after that release. Use the custom
-configuration in `examples/workflows/multiqc/` with 0.2.2, or install the
-current source candidate when reviewing the fix. See `ecosystem-status.md` for
-the exact upstream and release states.
+The optional MultiQC integration in DotMatch 0.3.0 includes the module entry
+point and the `before_config` search-pattern hook needed for direct file
+discovery with MultiQC 1.35. See `ecosystem-status.md` for the separate state
+of the upstream MultiQC submission.
 
 The desktop Workbench is not included. It is maintained in the separate
 [`dotmatch-community`](https://github.com/dnncha/dotmatch-community) repository.

@@ -1,24 +1,28 @@
 {
   "schema_version": 1,
-  "status": "not_released",
+  "status": "partially_verified",
   "release_version": "0.3.0",
+  "release_tag": "v0.3.0",
+  "release_commit": "fce7415597f34611e4e850128ee929ab6d7e3a1e",
+  "tag_object": "76929bfa229e1464f15ec002ee4e365056aa85f3",
   "post_release_gate": "make distribution-channels",
   "channels": [
     {
       "id": "pypi",
-      "status": "prepared",
+      "status": "verified",
       "expected_url": "https://pypi.org/project/dotmatch/0.3.0/",
+      "public_url": "https://pypi.org/project/dotmatch/0.3.0/",
+      "evidence_url": "https://pypi.org/pypi/dotmatch/0.3.0/json",
+      "verified_date": "2026-08-30",
       "verification_command": "make distribution-channels",
       "linux_wheel_architectures": [
         "x86_64",
         "aarch64"
-      ],
-      "blocker": "The 0.3.0 source distribution and repaired manylinux/musllinux wheels are not public yet.",
-      "next_action": "Publish the source distribution and repaired wheels, then run make distribution-channels."
+      ]
     },
     {
       "id": "bioconda",
-      "status": "prepared",
+      "status": "blocked",
       "expected_url": "https://anaconda.org/bioconda/dotmatch",
       "public_url": "https://anaconda.org/bioconda/dotmatch",
       "evidence_url": "https://api.anaconda.org/package/bioconda/dotmatch",
@@ -29,7 +33,7 @@
     },
     {
       "id": "bioconda-assaycode",
-      "status": "prepared",
+      "status": "blocked",
       "expected_url": "https://anaconda.org/bioconda/assaycode",
       "public_url": "https://anaconda.org/bioconda/assaycode",
       "evidence_url": "https://api.anaconda.org/package/bioconda/assaycode",
@@ -40,19 +44,21 @@
     },
     {
       "id": "ghcr",
-      "status": "prepared",
+      "status": "verified",
       "expected_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
+      "public_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
+      "evidence_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch/versions",
+      "verified_date": "2026-08-30",
+      "manifest_digest": "sha256:4b6811bf31e31139d67c5804833f2c9b4930350d9b29efaf302ca64cc3aeafe6",
       "verification_command": "make distribution-channels",
       "platforms": [
         "linux/amd64",
         "linux/arm64"
-      ],
-      "blocker": "The multi-architecture 0.3.0 image manifest has not been published.",
-      "next_action": "Publish the tag, inspect the manifest, and run the OCI runtime checks."
+      ]
     },
     {
       "id": "biocontainers",
-      "status": "prepared",
+      "status": "blocked",
       "expected_url": "https://quay.io/repository/biocontainers/dotmatch",
       "public_url": "https://quay.io/repository/biocontainers/dotmatch",
       "evidence_url": "https://quay.io/api/v1/repository/biocontainers/dotmatch/tag/?onlyActiveTags=true&page=1&limit=100",
@@ -63,17 +69,20 @@
     },
     {
       "id": "zenodo",
-      "status": "prepared",
+      "status": "verified",
       "expected_url": "https://doi.org/10.5281/zenodo.20541628",
+      "public_url": "https://zenodo.org/records/22167027",
+      "evidence_url": "https://zenodo.org/api/records/22167027",
+      "verified_date": "2026-08-30",
       "verification_command": "make distribution-channels",
       "concept_doi": "10.5281/zenodo.20541628",
-      "blocker": "A version-specific Zenodo record for 0.3.0 has not been minted.",
-      "next_action": "Publish the archived release, record its minted DOI, and run make distribution-channels."
+      "version_doi": "10.5281/zenodo.22167027"
     }
   ],
   "blockers": [
-    "The 0.3.0 tag has not been published to public package channels.",
-    "Bioconda, BioContainers, and the version-specific Zenodo record require external publication or archival steps."
+    "A DotMatch 0.3.0 recipe has not been accepted and built by Bioconda.",
+    "The optional AssayCode compatibility metapackage depends on the matching DotMatch 0.3.0 Bioconda build.",
+    "The BioContainers image depends on Bioconda propagation and has not been generated for 0.3.0."
   ],
-  "next_action": "Publish v0.3.0, verify each public channel, and replace this prepared record only with observed URLs and digests."
+  "next_action": "Submit the immutable 0.3.0 Bioconda recipe, then verify the DotMatch and AssayCode packages and generated BioContainers image after upstream propagation."
 }

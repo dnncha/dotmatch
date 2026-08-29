@@ -16,11 +16,11 @@ Linux x86_64 and macOS 11 or newer:
 mkdir -p smoke-output
 python3 -m venv .venv
 . .venv/bin/activate
-python3 -m pip install dotmatch==0.2.2
+python3 -m pip install dotmatch==0.3.0
 dotmatch --version
 ```
 
-Published Python wheels currently cover glibc and musl Linux x86_64 plus universal macOS. Windows wheels are not published. Bioconda may lag PyPI, so check the installed version when pinning a release. PyPI 0.2.2 predates the installed `dotmatch capabilities --json` command; use https://dnncha.github.io/dotmatch/agent-capabilities.json until a later package release includes it.
+Published Python wheels currently cover glibc and musl Linux x86_64 and aarch64 plus universal macOS. Windows wheels are not published. Bioconda may lag PyPI, so check the installed version when pinning a release. DotMatch 0.3.0 and later include `dotmatch capabilities --json`.
 
 ## Input contract
 
@@ -188,7 +188,7 @@ After cloning this repository, this recipe installs the release into a new virtu
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
-python3 -m pip install dotmatch==0.2.2
+python3 -m pip install dotmatch==0.3.0
 dotmatch count \
   --targets demo-data/crispr_guides.tsv \
   --reads demo-data/reads.fastq \

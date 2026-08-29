@@ -27,16 +27,15 @@
     ]
   },
   "install": {
-    "recommended": "python3 -m pip install dotmatch==0.2.2",
+    "recommended": "python3 -m pip install dotmatch==0.3.0",
     "verify": "dotmatch --version",
     "platforms": [
-      "Linux x86_64 with glibc or musl",
+      "Linux x86_64 or aarch64 with glibc or musl",
       "macOS 11 or newer on Apple Silicon or Intel"
     ],
     "limitations": [
       "The published Python wheels do not currently include Windows.",
-      "Check dotmatch --version when an exact release matters; Bioconda can lag PyPI.",
-      "PyPI 0.2.2 predates the installed capabilities command; use the public manifest until a later package release."
+      "Check dotmatch --version when an exact release matters; Bioconda can lag PyPI."
     ]
   },
   "outcomes": {

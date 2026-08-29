@@ -62,8 +62,8 @@ backend.
 For containerised workflows, the current release is also published to GHCR:
 
 ```bash
-docker pull ghcr.io/dnncha/dotmatch:v0.2.2
-docker run --rm ghcr.io/dnncha/dotmatch:v0.2.2 --version
+docker pull ghcr.io/dnncha/dotmatch:v0.3.0
+docker run --rm ghcr.io/dnncha/dotmatch:v0.3.0 --version
 ```
 
 The [container package](https://github.com/dnncha/dotmatch/pkgs/container/dotmatch)
@@ -101,9 +101,8 @@ The [Agent guide](https://dotmatch.readthedocs.io/en/latest/agent-guide.html)
 provides copy-paste commands, inputs, outputs, recovery steps, and evidence
 limits. Agents and workflow tools can read the same routes from
 [`agent-capabilities.json`](https://dnncha.github.io/dotmatch/agent-capabilities.json)
-or, once a package release includes it, the installed
-`dotmatch capabilities --json` command. PyPI 0.2.2 predates that installed
-command; use the public JSON manifest with that release.
+or the installed `dotmatch capabilities --json` command in DotMatch 0.3.0 and
+later.
 
 The [Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb)
 and [Colab](https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb)
