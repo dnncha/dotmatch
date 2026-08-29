@@ -260,8 +260,8 @@ def _write_workflow_repo(root: Path) -> None:
             "# Galaxy Wrapper\n\nLocal Galaxy XML examples for DotMatch native and AssaySpec runs.\n"
         ),
         "examples/workflows/galaxy/dotmatch_crispr_count.xml": (
-            "<tool id=\"dotmatch_crispr_count\" version=\"0.3.0+galaxy0\">\n"
-            "  <requirements><requirement type=\"package\" version=\"0.3.0\">dotmatch</requirement></requirements>\n"
+            "<tool id=\"dotmatch_crispr_count\" version=\"0.2.2+galaxy1\">\n"
+            "  <requirements><requirement type=\"package\" version=\"0.2.2\">dotmatch</requirement></requirements>\n"
             "  <command>#for $sample in $reads:\nln -s '$sample' '$sample.element_identifier'\n#end for\ndotmatch crispr-count --ambiguity-policy radius --ambiguous discard --summary '$summary' --sample-qc '$sample_qc'</command>\n"
             "  <inputs><param name=\"reads\" multiple=\"true\"/></inputs>\n"
             "  <outputs><data name=\"counts\"/><data name=\"summary\"/><data name=\"sample_qc\"/></outputs>\n"

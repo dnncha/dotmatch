@@ -175,10 +175,10 @@ def test_galaxy_wrapper_has_dotmatch_crispr_count_surface() -> None:
 
     assert root.tag == "tool"
     assert root.attrib["id"] == "dotmatch_crispr_count"
-    assert root.attrib["version"] == "0.3.0+galaxy0"
+    assert root.attrib["version"] == "0.2.2+galaxy1"
 
     requirements = {node.text: node.attrib.get("version") for node in root.findall("./requirements/requirement")}
-    assert requirements["dotmatch"] == "0.3.0"
+    assert requirements["dotmatch"] == "0.2.2"
 
     reads = root.find("./inputs/param[@name='reads']")
     assert reads is not None
@@ -222,7 +222,7 @@ def test_galaxy_count_fixture_keeps_the_exact_guide_assignment() -> None:
     requirement = wrapper.find("./requirements/requirement")
     assert requirement is not None
     assert requirement.text == "dotmatch"
-    assert requirement.attrib["version"] == "0.3.0"
+    assert requirement.attrib["version"] == "0.2.2"
 
     expected = ROOT / "examples" / "workflows" / "galaxy" / "test-data" / "expected_counts.mageck.tsv"
     assert "guide_a\tGENEA\t1\t0" in expected.read_text(encoding="utf-8")

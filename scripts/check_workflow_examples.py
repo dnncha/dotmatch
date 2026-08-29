@@ -564,8 +564,8 @@ def check_galaxy(root: Path, result: WorkflowAudit) -> None:
 
     if wrapper.tag != "tool" or wrapper.attrib.get("id") != "dotmatch_crispr_count":
         result.failures.append("Galaxy wrapper must be tool id dotmatch_crispr_count")
-    if wrapper.attrib.get("version") != "0.3.0+galaxy0":
-        result.failures.append("Galaxy CRISPR wrapper must track the 0.3.0 release candidate")
+    if wrapper.attrib.get("version") != "0.2.2+galaxy1":
+        result.failures.append("Galaxy CRISPR wrapper must track the public Bioconda 0.2.2 package")
     command = wrapper.findtext("command") or ""
     _require(command, "dotmatch crispr-count", "Galaxy wrapper command must run dotmatch crispr-count", result)
     _require(command, "--ambiguity-policy radius", "Galaxy wrapper command must keep assignment ambiguity policy explicit", result)
@@ -575,8 +575,8 @@ def check_galaxy(root: Path, result: WorkflowAudit) -> None:
     _require(command, "element_identifier", "Galaxy wrapper command must derive sample IDs from Galaxy datasets", result)
     _require(command, "ln -s", "Galaxy wrapper command must stage input FASTQs", result)
     requirements = {node.text: node.attrib.get("version", "") for node in wrapper.findall("./requirements/requirement")}
-    if requirements.get("dotmatch") != "0.3.0":
-        result.failures.append("Galaxy wrapper must require candidate dotmatch=0.3.0")
+    if requirements.get("dotmatch") != "0.2.2":
+        result.failures.append("Galaxy wrapper must require public Bioconda dotmatch=0.2.2")
     reads = wrapper.find("./inputs/param[@name='reads']")
     if reads is None or reads.attrib.get("multiple") != "true":
         result.failures.append("Galaxy wrapper must accept one or more FASTQ datasets through reads")

@@ -1,7 +1,7 @@
-<tool id="dotmatch_crispr_count" name="DotMatch CRISPR count" version="0.3.0+galaxy0" profile="24.0" license="Apache-2.0">
+<tool id="dotmatch_crispr_count" name="DotMatch CRISPR count" version="0.2.2+galaxy1" profile="24.0" license="Apache-2.0">
     <description>count guides from known-target FASTQ reads</description>
     <requirements>
-        <requirement type="package" version="0.3.0">dotmatch</requirement>
+        <requirement type="package" version="0.2.2">dotmatch</requirement>
     </requirements>
     <version_command>dotmatch --version</version_command>
     <command detect_errors="exit_code"><![CDATA[

@@ -15,7 +15,7 @@ planemo lint examples/workflows/galaxy/dotmatch_assay_run.xml
 planemo test examples/workflows/galaxy/dotmatch_assay_run.xml
 ```
 
-The candidate DotMatch 0.3.0 CRISPR wrapper exposes a guide library, one or more FASTQ inputs, guide
+The wrapper targets the published DotMatch 0.2.2 Bioconda package and exposes a guide library, one or more FASTQ inputs, guide
 offset, guide length, edit-distance threshold, metric, ambiguity policy, and an
 optional one-base Levenshtein indel window. It writes a MAGeCK-compatible count
 table, DotMatch summary JSON, and a `sample_qc.tsv` table suitable for MultiQC
