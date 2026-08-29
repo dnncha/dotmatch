@@ -1,13 +1,19 @@
 # MultiQC Example
 
-DotMatch ships a native MultiQC module in `dotmatch.multiqc`. After installing
-the optional MultiQC extra, MultiQC can discover DotMatch outputs directly:
+DotMatch ships a native MultiQC module in `dotmatch.multiqc`. The current source
+tree registers its search patterns before MultiQC indexes input files. Install
+the source candidate to check plugin discovery without a custom config:
 
 ```bash
-pip install "dotmatch[multiqc]"
+pip install ".[multiqc]"
 multiqc examples/workflows/multiqc/data --module dotmatch \
   -o examples/workflows/multiqc/output
 ```
+
+The public 0.2.2 wheel contains the module entry point but not the early search
+registration hook. Direct discovery with MultiQC 1.35 therefore remains a
+next-release fix. For 0.2.2, use the custom-content configuration below from a
+matching source checkout.
 
 The native parser handles `sample_qc.tsv`, `crispr_qc.summary.tsv`,
 `assay_manifest.summary.tsv`, `summary.json`, `panel_summary.json`, and
@@ -38,5 +44,5 @@ include a `DotMatch Assay Manifest` table that links the workflow run back to
 the primary `assay_report.html` and `assay_manifest.json` artifacts.
 
 For the native parser implementation and dependency-free parser helpers, see
-`python/dotmatch/multiqc.py`. The custom-content approach above remains the
-simplest zero-dependency option.
+`python/dotmatch/multiqc.py`. The custom-content approach above remains
+available when the plugin cannot be installed.

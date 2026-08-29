@@ -15,7 +15,9 @@ other known targets.
 
 [Documentation](https://dotmatch.readthedocs.io/en/latest/) ·
 [Getting started](https://dotmatch.readthedocs.io/en/latest/getting-started.html) ·
+[Agent guide](https://dotmatch.readthedocs.io/en/latest/agent-guide.html) ·
 [Command reference](https://dotmatch.readthedocs.io/en/latest/command-reference.html) ·
+[Capability JSON](https://dnncha.github.io/dotmatch/agent-capabilities.json) ·
 [Examples](https://github.com/dnncha/dotmatch/tree/main/examples) ·
 [Citation](https://dotmatch.readthedocs.io/en/latest/methods-and-citation.html) ·
 [Try the notebook in Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb) ·
@@ -83,6 +85,26 @@ snapshot](https://dotmatch.readthedocs.io/en/latest/download-metrics.html) with
 `make download-metrics`. It records provider-reported package retrievals by
 channel, version, platform, and Python build; it does not estimate unique users.
 
+## Choose by task
+
+| Intent or search phrase | Entry point | Important limit |
+| --- | --- | --- |
+| CRISPR guide counting; MAGeCK-compatible counts | `dotmatch crispr-count` | Counting only; no downstream screen statistics |
+| Inline barcode demultiplexing; split FASTQ by barcode | `dotmatch demux` | Starts from FASTQ; no basecalling |
+| Feature-barcode assignment; TotalSeq feature reads | `dotmatch count` | Per-read assignment; no cell/UMI quantification |
+| Perturb-seq guide capture | `dotmatch count` | No guide-per-cell, expression, or perturbation-effect analysis |
+| Barcode panel design or collision checking | `dotmatch panel design` or `dotmatch panel check` | Short barcode sets, not probe or full assay design |
+| Known-target FASTQ matching; whitelist counting | `dotmatch count` | Finite known targets and one reviewed fixed window |
+| High unmatched or ambiguous barcode rate | `dotmatch barcode autopsy` | Diagnostic suggestions require assay-context review |
+
+The [Agent guide](https://dotmatch.readthedocs.io/en/latest/agent-guide.html)
+provides copy-paste commands, inputs, outputs, recovery steps, and evidence
+limits. Agents and workflow tools can read the same routes from
+[`agent-capabilities.json`](https://dnncha.github.io/dotmatch/agent-capabilities.json)
+or, once a package release includes it, the installed
+`dotmatch capabilities --json` command. PyPI 0.2.2 predates that installed
+command; use the public JSON manifest with that release.
+
 ## A small example
 
 Prepare a tab-separated target file:
@@ -131,6 +153,27 @@ README explains how to fetch the full public data and links to the recorded
 [CRISPR comparison
 report](https://dotmatch.readthedocs.io/en/latest/benchmarks/public_crispr/README.html).
 
+## Reproduce the public Perturb-seq case study
+
+The [GSE146194 direct-guide-capture case
+study](https://github.com/dnncha/dotmatch/blob/main/examples/perturb_seq_gse146194/README.md) uses 32 published guide
+barcodes and a bounded, held-out prefix of SRR11214031:
+
+```bash
+git clone https://github.com/dnncha/dotmatch.git
+cd dotmatch
+make bench-perturb-seq-case-study-public
+make perturb-seq-case-study-public-gate
+```
+
+The workflow verifies the publisher workbook, streams only the first 50,000
+FASTQ records, excludes 2,000 discovery reads, and checks 48,000 evaluation
+reads against independent exact and exhaustive Hamming oracles. The report
+includes unmatched and ambiguous outcomes, hashes, commands, software versions,
+and resource measurements. This is per-read fixed-window guide assignment
+evidence; it is not guide-per-cell, UMI, expression, perturbation-effect, or
+speed-comparison evidence.
+
 For a browser-based smoke demo, launch the [Runnable DotMatch notebook in
 Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb) or
 [Google Colab](https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb).
@@ -147,10 +190,11 @@ biological validation.
 - designing and checking barcode panels;
 - writing TSV, JSON, FASTQ, and HTML results for pipelines and lab review.
 
-If you work with guide-capture or perturb-seq data and can share a tiny
-synthetic or de-identified fixture, the [public validation invitation](https://github.com/dnncha/dotmatch/issues/82)
-asks for a short trial and concrete input/output feedback. Please do not post
-private reads or unpublished guide libraries.
+If you work with guide-capture or perturb-seq data, the public case study above
+provides a checked starting point. The [public validation
+invitation](https://github.com/dnncha/dotmatch/issues/82) also asks for a short
+trial and concrete input/output feedback. Please do not post private reads or
+unpublished guide libraries.
 
 If you are choosing a CRISPR guide-counting workflow, see the
 [workflow
@@ -267,6 +311,9 @@ and self-contained HTML reports. The formats are documented in the
 
 Examples for Nextflow, nf-core, Snakemake, Galaxy, and MultiQC live under
 [`examples/workflows`](https://github.com/dnncha/dotmatch/tree/main/examples/workflows).
+The [ecosystem status ledger](https://dotmatch.readthedocs.io/en/latest/ecosystem-status.html)
+separates local examples, open upstream submissions, accepted contributions,
+released integrations, and installable package-manager channels.
 The desktop Workbench is maintained separately in
 [`dotmatch-community`](https://github.com/dnncha/dotmatch-community).
 
@@ -287,6 +334,7 @@ replaces general alignment or every demultiplexing workflow.
 
 ## Documentation
 
+- [Agent guide](https://dotmatch.readthedocs.io/en/latest/agent-guide.html)
 - [Getting started](https://dotmatch.readthedocs.io/en/latest/getting-started.html)
 - [Command reference](https://dotmatch.readthedocs.io/en/latest/command-reference.html)
 - [AssaySpec workflows](https://dotmatch.readthedocs.io/en/latest/assayspec.html)

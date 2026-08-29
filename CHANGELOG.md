@@ -2,6 +2,21 @@
 
 All notable user-facing changes are tracked here. Public statements in release notes must stay aligned with `docs/scientific-claims.md`.
 
+## Unreleased
+
+### Fixed
+
+- Registered DotMatch MultiQC search patterns through the `before_config` hook
+  so an installed plugin is discoverable before MultiQC indexes input files.
+- Kept panel summaries out of the generic summary match and added fixtures for
+  assignment summaries and top-unmatched diagnostics.
+
+### Changed
+
+- Added a public-record ecosystem status ledger and updated workflow
+  submission records to distinguish open, accepted, released, and installable
+  states.
+
 ## 0.2.2 - 2026-07-23
 
 ### Changed

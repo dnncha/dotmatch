@@ -3,6 +3,18 @@
 This page is a compact map of the installed `dotmatch` command surface. Use
 `dotmatch <command> --help` for option defaults and full argument details.
 
+## Agent task routing
+
+```bash
+dotmatch capabilities
+dotmatch capabilities --json
+```
+
+The human form lists each supported intent and entry point. The JSON form emits
+the installed version's task queries, command template, inputs, outputs,
+limitations, evidence paths, recovery routes, and public discovery URLs. Its
+schema is published with the [Agent guide](agent-guide.md).
+
 ## Core Utilities
 
 ```bash

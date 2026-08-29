@@ -11,6 +11,7 @@
 - [ ] `make asan` if native C code, memory ownership, parsing, indexing, or allocation behavior changed.
 - [ ] `make scientific-readiness-ready` if claims, gates, packaging, release process, or evidence boundaries changed.
 - [ ] `make repository-ready` if governance, security, licensing, trademark, public docs, or commercial-boundary wording changed.
+- [ ] `make agent-discovery-ready` if README, PyPI metadata, command help, agent routes, schemas, or public web discovery changed.
 - [ ] Relevant benchmark/report gate, if claims or artifacts changed:
 
 ## Validated Scope

@@ -13,17 +13,17 @@ quantifier, or screen-level statistical analysis package.
 
 ## Current Package Surface
 
-For release `0.2.1`, the package surface is:
+For release `0.2.2`, the package surface is:
 
 | Surface | Current state | Evidence or source |
 | --- | --- | --- |
 | PyPI | Published and smoke-tested from a clean virtual environment | `docs/distribution-release.json` |
-| Bioconda | Version 0.2.1 is published for linux-64, osx-64, and osx-arm64; the install and CLI checks pass | `docs/distribution-release.json` |
-| GHCR container | Public v0.2.1 tag, digest, and linux/amd64 metadata verified | `docs/distribution-release.json` |
-| BioContainers | The 0.2.1 linux-64 image and manifest digest are public on Quay; a local runtime check still needs an OCI host | `docs/distribution-release.json` |
+| Bioconda | Version 0.2.2 is published for linux-64, linux-aarch64, osx-64, and osx-arm64; the install and CLI checks pass | `docs/distribution-release.json` |
+| GHCR container | Public v0.2.2 tag and manifest digest verified; a local runtime check still needs an OCI host | `docs/distribution-release.json` |
+| BioContainers | The 0.2.2 image and manifest digest are public on Quay; a local runtime check still needs an OCI host | `docs/distribution-release.json` |
 | Documentation | Sphinx docs and public schemas in repository | `docs/index.md`, `docs/schemas.md` |
 | Citation | `CITATION.cff`, Zenodo concept DOI, and generated run artifacts | `docs/methods-and-citation.md` |
-| Python API | `dotmatch` package, streaming helpers, pandas/polars/AnnData interop, MultiQC parser entry point | `pyproject.toml`, `docs/streaming-api.md` |
+| Python API | `dotmatch` package, streaming helpers, pandas/polars/AnnData interop, and a MultiQC parser entry point; automatic MultiQC discovery is fixed in the next-release source candidate | `pyproject.toml`, `docs/streaming-api.md`, `docs/ecosystem-status.md` |
 | R interface | Reticulate-backed package skeleton and vignette | `R/`, `vignettes/dotmatch.Rmd` |
 
 Do not describe a channel as verified until `make distribution-channels` passes
@@ -54,7 +54,7 @@ Start from the released package, not an unpublished checkout, unless the
 evaluation is explicitly for development work:
 
 ```bash
-python3 -m pip install dotmatch==0.2.1
+python3 -m pip install dotmatch==0.2.2
 dotmatch --version
 dotmatch dist ACGT AGGT
 ```
@@ -62,7 +62,7 @@ dotmatch dist ACGT AGGT
 For Conda-based environments:
 
 ```bash
-conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.2.1
+conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.2.2
 conda activate dotmatch
 dotmatch --version
 ```
@@ -104,21 +104,15 @@ visible instead of being silently collapsed into target counts.
 ## Workflow Integration Status
 
 `docs/workflow-adoption.json` is currently `not_ready` because no external
-workflow-manager integration has been accepted yet. Local examples and upstream
-payloads are available for review, but external workflow status requires an
-accepted PR, package, ToolShed record, wrapper, or public pipeline outside this
-repository.
+workflow-manager integration has been accepted yet. This is separate from
+Spack package-recipe acceptance and from PyPI or Bioconda distribution.
 
-The first external submission is an nf-core/modules pull request for
-`dotmatch/crispr_count` that is ready for maintainer review. It is not an
-accepted integration until the pull request is reviewed and merged. Remaining
-integration targets are:
-
-1. Complete upstream review of the scoped nf-core module.
-2. Released or upstreamed MultiQC module.
-3. Galaxy/IUC wrappers.
-4. Snakemake wrapper or public lab workflow.
-5. bio.tools registry record.
+Public submissions are open in nf-core/modules, Galaxy IUC, Snakemake wrappers,
+and MultiQC. Their exact heads, check state, and acceptance gates are recorded
+in `docs/ecosystem-status.md` and `docs/workflow-submissions.md`. None of those
+open pull requests is described as accepted or released. The bio.tools metadata
+remains an unsubmitted local draft, and no exact DotMatch workflow was found in
+WorkflowHub on 2026-08-28.
 
 Record accepted integrations only in `docs/workflow-adoption.json`. Public use
 records require approved wording and a public URL.

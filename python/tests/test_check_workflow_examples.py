@@ -249,6 +249,13 @@ def _write_workflow_repo(root: Path) -> None:
             "top_1pct_fraction\tassignment_rate\tambiguous_rate\tno_match_rate\tinvalid_rate\n"
             "plasmid\tpass\t9\t0.9\t0.1\t0.2\t0.05\t0.9\t0.0\t0.1\t0.0\n"
         ),
+        "examples/workflows/multiqc/data/assignment_summary.json": (
+            '{"sample_label":"plasmid","total_reads":10,"assigned_unique":9,'
+            '"ambiguous":0,"unmatched":1,"assignment_rate":0.9}\n'
+        ),
+        "examples/workflows/multiqc/data/sample_top_unmatched.tsv": (
+            "sequence\tcount\nACGT\t1\n"
+        ),
         "examples/workflows/galaxy/README.md": (
             "# Galaxy Wrapper\n\nLocal Galaxy XML examples for DotMatch native and AssaySpec runs.\n"
         ),

@@ -1,25 +1,13 @@
-# Workflow Submission Pack
+# Workflow Submission Records
 
-DotMatch keeps runnable local workflow examples in `examples/workflows/`. This
-page is the external handoff checklist for turning those examples into reviewed
-community integrations. Do not mark `docs/workflow-adoption.json` as ready until
-one of these submissions is accepted or released outside this repository.
+DotMatch keeps runnable examples in `examples/workflows/`. This page links the
+corresponding public upstream records and names the remaining acceptance gates.
+The records were checked on 2026-08-28. An open pull request is not an accepted
+or released integration.
 
-## Current Submission Priority
+See `docs/ecosystem-status.md` for package-manager and registry status.
 
-1. **nf-core modules**: highest leverage after PyPI/Bioconda because accepted
-   modules become reusable in nf-core pipelines and inherit nf-core update and
-   container automation.
-2. **MultiQC module**: makes DotMatch outputs recognizable in existing pipeline
-   reports without per-project custom content.
-3. **Galaxy / IUC wrappers**: reaches core facilities and wet-lab teams through
-   ToolShed-reviewed tools.
-4. **Snakemake handoff**: lower review overhead, strong for lab
-   workflow adoption and QC report visibility.
-
-## Shared Preflight
-
-Before submitting any external integration:
+## Shared preflight
 
 ```bash
 make workflow-examples-ready
@@ -27,134 +15,84 @@ make workflow-integration-test
 make release-ready
 ```
 
-The integration test runs:
+The integration test covers the local nf-test modules and minimal Nextflow
+pipeline, the Snakemake workflow, Galaxy wrapper lint, and both MultiQC custom
+content and plugin discovery.
 
-- nf-test for `dotmatch/count`, `dotmatch/demux`, `dotmatch/audit`,
-  `dotmatch/panel_check`, `dotmatch/crispr_count`, and `dotmatch/assay_run`;
-- the minimal Nextflow pipeline in `examples/workflows/nf-core/pipeline`;
-- the Snakemake workflow in `examples/workflows/snakemake`;
-- Planemo lint for the Galaxy CRISPR count, demux, and panel-check wrappers;
-- MultiQC custom-content and registered plugin smoke tests.
+## nf-core modules
 
-## nf-core Modules
+- Public record: [nf-core/modules #12156](https://github.com/nf-core/modules/pull/12156)
+- State: open, not accepted or released
+- Checked head: `77e849b86cae10557a8b17f9c86fa87f6833ece2`
+- Scope: `modules/nf-core/dotmatch/crispr_count/`
+- DotMatch release: 0.2.2
+- Container: `quay.io/biocontainers/dotmatch:0.2.2--py311h13f8228_1`
 
-The first external submission is intentionally limited to one component:
+Additional local module payloads remain under
+`examples/workflows/nf-core/upstream/modules/nf-core/dotmatch/`. Keep separate
+subtools as separately reviewed changes. Preserve `unique`, `ambiguous`,
+`none`, and `invalid` semantics, expose `task.ext.args`, and record the exact
+DotMatch version in `versions.yml`.
 
-- review-ready pull request: [nf-core/modules #12156](https://github.com/nf-core/modules/pull/12156);
-- component: `modules/nf-core/dotmatch/crispr_count/`;
-- DotMatch release: `0.2.1`;
-- BioContainers image: `quay.io/biocontainers/dotmatch:0.2.1--py314h118bc1c_0`.
-
-Additional local source payloads remain available for separate review:
-
-- `examples/workflows/nf-core/upstream/modules/nf-core/dotmatch/count/`
-- `examples/workflows/nf-core/upstream/modules/nf-core/dotmatch/demux/`
-- `examples/workflows/nf-core/upstream/modules/nf-core/dotmatch/audit/`
-- `examples/workflows/nf-core/upstream/modules/nf-core/dotmatch/panel_check/`
-- `examples/workflows/nf-core/upstream/modules/nf-core/dotmatch/crispr_count/`
-- `examples/workflows/nf-core/upstream/modules/nf-core/dotmatch/assay_run/`
-
-External target:
-
-- repository: `https://github.com/nf-core/modules`
-- target path: `modules/nf-core/dotmatch/<subtool>/`
-
-Reviewer notes:
-
-- The open CRISPR count submission uses the public DotMatch 0.2.1
-  BioContainers build `0.2.1--py314h118bc1c_0`.
-- The module head at `2441f466b4c86aadf8be79ccd43dd5607bdeb621`
-  passes 55 nf-core lint checks and three repeatable Conda nf-tests. Docker and
-  Singularity checks remain pending.
-- Change the container only after the replacement release passes
-  `make distribution-channels` and is available from both registries.
-- Preserve DotMatch's `unique`, `ambiguous`, `none`, and `invalid` assignment
-  semantics in module docs.
-- Keep `task.ext.args` available for command-specific options.
-- Use established nf-core CRISPR guide-counting fixtures so the module is
-  checked against the same small public inputs as comparable modules.
-
-Adoption record:
-
-- Add a `nf_core_module` entry to `docs/workflow-adoption.json` only after the
-  nf-core PR is merged or released.
-- Use the merged PR or nf-core module page as `adoption_url`, and CI/lint
-  evidence as `evidence_url`.
+Acceptance gate: merge into `nf-core/modules`, followed by verification of the
+published module record. Only then add an `nf_core_module` entry to
+`docs/workflow-adoption.json`.
 
 ## Galaxy / IUC
 
-Source payload:
+- Public record: [galaxyproject/tools-iuc #8336](https://github.com/galaxyproject/tools-iuc/pull/8336)
+- State: open, not accepted or published to a ToolShed
+- Checked head: `b547330d0b3f9fb38368eac3a94fd84098d51031`
+- Upstream checks: wrapper lint, containerized Planemo tests, and result
+  aggregation pass at the checked head
+- Scope: CRISPR count, demultiplexing, panel check, and assay-run wrappers
 
-- `examples/workflows/galaxy/dotmatch_crispr_count.xml`
-- `examples/workflows/galaxy/dotmatch_demux.xml`
-- `examples/workflows/galaxy/dotmatch_panel_check.xml`
-- `examples/workflows/galaxy/test-data/`
+Source wrappers and fixtures are in `examples/workflows/galaxy/`. Keep outputs
+as plain TSV, JSON, FASTQ, and HTML datasets so Galaxy histories expose both
+human reports and workflow-readable files.
 
-External target:
+Acceptance gate: IUC merge, then ToolShed publication. These are separate
+states; add `galaxy_toolshed` to `docs/workflow-adoption.json` only after the
+public ToolShed record is verified.
 
-- repository: `https://github.com/galaxyproject/tools-iuc`
-- suggested path: `tools/dotmatch/`
+## Snakemake wrappers
 
-Reviewer notes:
+- Public record: [snakemake/snakemake-wrappers #5825](https://github.com/snakemake/snakemake-wrappers/pull/5825)
+- State: open, not accepted or released
+- Checked head: `a72d2bb8bdeb97d8ac506cbc249925f969888b6f`
+- Local check: Black passes for `bio/dotmatch/crispr-count/wrapper.py`
+- Upstream checks: the Code quality and Tests runs require upstream maintainer
+  approval at the checked head
 
-- Use the Bioconda package requirement once the intended DotMatch version is
-  visible on Anaconda.
-- Keep wrapper outputs plain TSV/JSON/FASTQ/HTML so Galaxy histories expose both
-  the human report and workflow-readable tables.
-- Run Planemo lint and tests in the IUC checkout before opening the PR.
+The repository workflow remains under `examples/workflows/snakemake/`. Keep
+`metric`, `k`, `ambiguity_policy`, and ambiguous-output handling explicit.
 
-Adoption record:
-
-- Add a `galaxy_toolshed` entry only after IUC acceptance or ToolShed
-  publication.
-
-## Snakemake
-
-Source payload:
-
-- `examples/workflows/snakemake/Snakefile`
-- `examples/workflows/snakemake/config.json`
-- `examples/workflows/fixtures/`
-
-External targets:
-
-- Snakemake wrapper repository if converted to a reusable wrapper.
-- Lab pipeline templates if maintained as a complete workflow example.
-
-Reviewer notes:
-
-- Keep `metric`, `k`, `ambiguity_policy`, and `ambiguous` explicit in config.
-- Use `assay_k` separately from standalone CRISPR counting when a production
-  assay needs stricter preflight semantics than the raw count rule.
-- Keep absolute paths in generated AssaySpec TOML files.
-
-Adoption record:
-
-- Add `snakemake_workflow` or `independent_workflow` only for a public external
-  repository or accepted wrapper.
+Acceptance gate: an upstream maintainer must approve the workflow runs; after
+checks pass, obtain review and merge, then verify the released wrapper record
+before adding a
+`snakemake_workflow` entry to `docs/workflow-adoption.json`.
 
 ## MultiQC
 
-Source payload:
+- Public record: [MultiQC/MultiQC #3629](https://github.com/MultiQC/MultiQC/pull/3629)
+- State: open, not accepted or released
+- Checked head: `166f94ce70f2bc1fdbc94f460a4c857511bf1416`
+- Upstream checks: eight checks pass; one additional Python 3.9 check is
+  recorded as cancelled
 
-- custom content: `examples/workflows/multiqc/multiqc_config.yaml`
-- registered plugin: `python/dotmatch/multiqc.py`
-- fixtures: `examples/workflows/multiqc/data/` and
-  `examples/workflows/fixtures/assay_out/`
+DotMatch also exposes its parser as a package plugin. The source tree now uses
+a `before_config` hook so search patterns are present before MultiQC indexes
+input files. The next-release source candidate discovers `sample_qc.tsv`,
+`summary.json`, `panel_summary.json`, `crispr_qc.summary.tsv`,
+`assay_manifest.summary.tsv`, and `top_unmatched.tsv` without a custom config.
+This fix is not part of the public 0.2.2 package.
 
-External target:
+Acceptance gates are separate: merge and release of the upstream MultiQC
+module, or a DotMatch release containing the independently packaged plugin fix.
+Record only the state that has actually been published.
 
-- MultiQC plugin packaging or upstream module discussion after public workflow
-  maintainers confirm the report shape.
+## bio.tools and WorkflowHub
 
-Reviewer notes:
-
-- The plugin parses `summary.json`, `sample_qc.tsv`, top-unmatched tables, and
-  panel-safety summaries.
-- Keep sample assignment rate, ambiguity rate, unmatched rate, and panel-safety
-  status visible in general stats or module sections.
-
-Adoption record:
-
-- Add `multiqc_plugin` after a plugin package or upstream MultiQC integration is
-  published outside this repository.
+`docs/registries/biotools.yml` is draft metadata. No accepted DotMatch record
+was found in bio.tools on 2026-08-28. No exact DotMatch workflow record was
+found in WorkflowHub. Neither surface is recorded as submitted or accepted.

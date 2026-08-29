@@ -25,7 +25,11 @@ dotmatch --version
 
 Then follow [Getting started](getting-started.md) for a small count or
 demultiplexing run. If you already know which command you need, go straight to
-the [command reference](command-reference.md).
+the [command reference](command-reference.md). Coding and scientific agents can
+use the [Agent guide](agent-guide.md) or the public capability manifest for
+versioned task routing with explicit inputs, outputs, and limitations. The
+source candidate also exposes `dotmatch capabilities --json`; PyPI 0.2.2
+predates that installed command.
 
 ## Choose a workflow
 
@@ -33,15 +37,20 @@ the [command reference](command-reference.md).
 | --- | --- |
 | Count guides from a CRISPR screen | [CRISPR guide-counting first run](tutorials/crispr-count-first-run.md) |
 | Reproduce a public CRISPR example | [Public CRISPR guide-counting example](../examples/crispr_guides/README.md) |
+| Reproduce the multi-guide Perturb-seq case study | [GSE146194 direct-guide-capture report](benchmarks/perturb_seq_gse146194/README.md) |
 | Try the workflow without a local install | [Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb) or [Google Colab](https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb) |
 | Compare guide-counting workflows | [Guide-counting workflow comparison](usability-comparison.md) |
 | Build a checked assay project | [AssaySpec workflows](assayspec.md) |
 | Split reads by inline barcode | [Getting started: demultiplexing](getting-started.md#demultiplex-inline-barcodes) |
+| Assign feature-barcode reads | [Feature-barcode and guide-capture tutorial](tutorials/scverse-perturb-seq.md#count-guide-or-feature-barcode-reads) |
+| Assign Perturb-seq guide-capture reads | [Feature-barcode and guide-capture tutorial](tutorials/scverse-perturb-seq.md) |
 | Diagnose barcode failures | [Barcode run diagnosis](getting-started.md#diagnose-a-barcode-run) |
 | Design or check a barcode panel | [Barcode panel design](barcode-panel-design.md) |
+| Route an agent to a checked command | [Agent guide](agent-guide.md) |
 | Use DotMatch from Python | [Streaming Python API](streaming-api.md) |
 | Add DotMatch to a pipeline | [Output schemas](schemas.md) |
 | Evaluate DotMatch for a workflow | [Bioinformatics evaluation](bioinformatics-evaluation.md) |
+| Check package and upstream integration status | [Ecosystem status](ecosystem-status.md) |
 | Record the software in a methods section | [Methods and citation](methods-and-citation.md) |
 
 ## Scope and limitations
@@ -53,7 +62,8 @@ analysis package.
 Performance and correctness results are tied to the commands, datasets, and
 hardware recorded in the [benchmark reports](benchmarks/README.md). The most
 developed paths are native fixed-window assignment, public CRISPR guide-counting
-comparisons, and checked inline-barcode examples. Other assay types and
+comparisons, checked inline-barcode examples, and the bounded GSE146194
+multi-guide direct-capture case study. Other assay types and
 experimental backends have narrower test coverage; those limits are described
 in [Scope and limitations](trust-and-scope.md).
 
@@ -72,6 +82,7 @@ in [Scope and limitations](trust-and-scope.md).
 :caption: Getting started
 
 getting-started
+agent-guide
 command-reference
 tutorials/crispr-count-first-run
 tutorials/scverse-perturb-seq
@@ -96,6 +107,8 @@ schemas
 workbench
 bioinformatics-evaluation
 external-review-packet
+agent-discovery-audit
+ecosystem-status
 ```
 
 ```{toctree}

@@ -179,25 +179,37 @@
     {
       "id": "perturb_seq",
       "label": "Perturb-seq guide or feature assignment",
-      "status": "gated",
+      "status": "supported",
       "raw_artifacts": [
         "benchmarks/raw/perturb_seq.csv",
-        "examples/perturb_seq/data/metadata.json"
+        "benchmarks/raw/perturb_seq_gse146194.csv",
+        "examples/perturb_seq/data/metadata.json",
+        "examples/perturb_seq_gse146194/protocol.json",
+        "examples/perturb_seq_gse146194/expected-results.json",
+        "examples/perturb_seq_gse146194/results.json",
+        "examples/perturb_seq_gse146194/provenance.json"
       ],
       "reports": [
-        "docs/benchmarks/perturb_seq/README.md"
+        "docs/benchmarks/perturb_seq/README.md",
+        "docs/benchmarks/perturb_seq_gse146194/README.md",
+        "docs/benchmarks/perturb_seq_gse146194/report.html"
       ],
       "gates": [
-        "make perturb-seq-public-gate"
+        "make perturb-seq-public-gate",
+        "make perturb-seq-case-study-fixture-gate",
+        "make perturb-seq-case-study-public-gate"
       ],
       "commands": [
         "make fetch-perturb-seq-demo",
         "make bench-perturb-seq",
         "make bench-perturb-seq-public",
-        "make perturb-seq-public-gate"
+        "make perturb-seq-public-gate",
+        "make bench-perturb-seq-case-study-public",
+        "make perturb-seq-case-study-fixture-gate",
+        "make perturb-seq-case-study-public-gate"
       ],
-      "comparator_semantics": "The checked public lane uses a 10x Genomics CRISPR Guide Capture R2 subsample, an observed fixed guide window, and a transparent exact-slice hash baseline for per-read fixed-window assignment. The synthetic row still checks pair-count side diagnostics.",
-      "validation": "The public gate requires the synthetic diagnostic row, public DotMatch k=0 and k=1 rows, zero validation mismatches, exact agreement between DotMatch k=0 and the exact-slice baseline, and k=1 assignment count no lower than k=0.",
+      "comparator_semantics": "The strongest checked public lane uses 32 published 18-base guide barcodes from Replogle et al. GSE146194/SRR11214031, a frozen discovery prefix to select the fixed window, and 48,000 held-out reads. DotMatch Hamming radius k=0 is compared record-for-record with a transparent exact-slice hash oracle; k=1 is compared with an independent exhaustive Hamming-radius oracle. The older 10x single-guide lane remains an extraction milestone, and the synthetic row checks pair-count side diagnostics.",
+      "validation": "The GSE146194 gate pins the protocol and derived-input SHA-256 values, requires all 32 guide targets in the held-out prefix, checks exact expected QC counts at k=0 and k=1, and requires zero differences in per-read status, target identifier, and distance across 48,000 matched-rule comparisons for each radius. The no-network fixture separately requires exact, corrected, ambiguous, unmatched, and invalid outcomes. These checks validate per-read assignment, not cell/UMI guide calling.",
       "biological_unit": "per-read fixed-window CRISPR guide-capture assignment",
       "unsupported_claims": [
         "guide-per-cell quantification",
@@ -209,8 +221,7 @@
         "exact-slice oracle agreement",
         "Cell Ranger or equivalent comparator before cell-level claims"
       ],
-      "claim_boundary": "Gated evidence for the checked 10x GEM-X A375 public CRISPR Guide Capture R2 fixed-window single-guide extraction lane and the synthetic pair-count diagnostic lane. It is not yet a useful multi-guide perturb-seq assignment benchmark.",
-      "next_public_evidence": "Add a multi-guide public guide-capture target set with at least two observed assigned guide targets plus Cell Ranger or equivalent comparator semantics before promoting broader Perturb-seq claims."
+      "claim_boundary": "Supported for per-read fixed-window assignment on the checked 32-guide GSE146194/SRR11214031 held-out prefix, with exact and exhaustive Hamming-radius oracle agreement. The older 10x single-guide extraction and synthetic pair-count lanes remain narrower evidence. No cell/UMI, guide-per-cell, expression, perturbation-effect, full-run prevalence, biological-validity, or speed claim is made."
     },
     {
       "id": "feature_barcode",

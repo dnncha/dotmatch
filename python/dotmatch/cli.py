@@ -13,6 +13,7 @@ import subprocess
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
+from importlib import resources
 from pathlib import Path
 from typing import Iterable, Iterator, Sequence, TextIO
 
@@ -2354,7 +2355,27 @@ Usage:
   dotmatch --version
   dotmatch manual
   dotmatch citation
+  dotmatch capabilities --json
   dotmatch <command> [options]
+
+Choose by task:
+  CRISPR guide counting
+      dotmatch crispr-count
+  Inline barcode demultiplexing
+      dotmatch demux
+  Feature-barcode assignment
+      dotmatch count
+  Perturb-seq guide capture
+      dotmatch count
+  Barcode panel design or checking
+      dotmatch panel design | dotmatch panel check
+  Known-target FASTQ matching
+      dotmatch count
+  High unmatched or ambiguous barcode rate
+      dotmatch barcode autopsy
+
+Run `dotmatch capabilities --json` for versioned task queries, command
+templates, inputs, outputs, limitations, evidence paths, and recovery routes.
 
 Core commands:
   dist SEQ1 SEQ2
@@ -2404,6 +2425,7 @@ Examples:
   dotmatch leq 1 ACGT AGGT
   dotmatch citation
   dotmatch manual
+  dotmatch capabilities --json
   dotmatch count --targets guides.tsv --reads sample.fastq.gz --sample-label sample \\
       --target-start 23 --target-length 20 --k 1 --metric hamming --out counts.tsv
   dotmatch assay check assay.toml
@@ -2520,6 +2542,9 @@ COMMON RECIPES
   Cite DotMatch:
     dotmatch citation
 
+  Route an agent or workflow tool:
+    dotmatch capabilities --json
+
 SAFETY CHECKS
   Use k=0 for exact-only assignment. Use k=1 only after checking that the target
   set has no duplicate or one-edit collisions under the selected metric. For
@@ -2562,6 +2587,40 @@ DOI URL: https://doi.org/{SOFTWARE_DOI}"""
     )
 
 
+def _agent_capabilities() -> dict[str, object]:
+    data_path = resources.files("dotmatch").joinpath("data", "agent-capabilities.json")
+    value = json.loads(data_path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise ValueError("installed agent capability manifest must contain a JSON object")
+    return value
+
+
+def print_capabilities(*, as_json: bool) -> None:
+    manifest = _agent_capabilities()
+    if as_json:
+        print(json.dumps(manifest, indent=2, sort_keys=True))
+        return
+
+    scope = manifest.get("scope")
+    scope_summary = scope.get("summary", "") if isinstance(scope, dict) else ""
+    print(f"DotMatch {manifest.get('generated_for_version', __version__)} capability routes")
+    print("Scope: " + str(scope_summary))
+    print()
+    intents = manifest.get("intents", [])
+    for intent in intents if isinstance(intents, list) else []:
+        if not isinstance(intent, dict):
+            continue
+        limitations = intent.get("limitations", [])
+        first_limit = limitations[0] if isinstance(limitations, list) and limitations else ""
+        print(str(intent.get("id", "unknown")))
+        print("  Task: " + str(intent.get("task", "")))
+        print("  Start: " + str(intent.get("entrypoint", "")))
+        if first_limit:
+            print("  Limit: " + str(first_limit))
+        print()
+    print("Machine-readable form: dotmatch capabilities --json")
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     raw_args = list(sys.argv[1:] if argv is None else argv)
     if raw_args and raw_args[0] in {"-h", "--help", "help"}:
@@ -2578,6 +2637,16 @@ def main(argv: Sequence[str] | None = None) -> int:
             print("usage: dotmatch manual", file=sys.stderr)
             return 2
         print_manual()
+        return 0
+    if raw_args and raw_args[0] in {"capabilities", "capability"}:
+        if raw_args[1:] not in ([], ["--json"]):
+            print("usage: dotmatch capabilities [--json]", file=sys.stderr)
+            return 2
+        try:
+            print_capabilities(as_json=raw_args[1:] == ["--json"])
+        except Exception as exc:
+            print(f"dotmatch: could not load installed capabilities: {exc}", file=sys.stderr)
+            return 2
         return 0
     if raw_args and raw_args[0] == "assay":
         return command_assay(raw_args[1:])
