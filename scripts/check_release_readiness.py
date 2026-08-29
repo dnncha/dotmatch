@@ -213,6 +213,10 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
     required_workflow_fragments = [
         "id-token: write",
         "packages: write",
+        "actions/checkout@v7",
+        "actions/upload-artifact@v7",
+        "actions/download-artifact@v8",
+        "pypa/cibuildwheel@v4.1.0",
         "pypa/gh-action-pypi-publish@release/v1",
         "packages-dir: dist-pypi",
         "docker/metadata-action",
@@ -226,6 +230,12 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
     for fragment in required_workflow_fragments:
         if fragment not in workflow:
             result.failures.append(f"release workflow missing {fragment}")
+    for obsolete_pin in [
+        "actions/checkout@v6",
+        "pypa/cibuildwheel@v3.4.1",
+    ]:
+        if obsolete_pin in workflow:
+            result.failures.append(f"release workflow must not pin obsolete action {obsolete_pin}")
     if "dotmatch-wheel-Linux" in workflow:
         result.failures.append("release workflow must not publish raw Linux wheels to PyPI")
     preflight = _workflow_job_block(workflow, "preflight")

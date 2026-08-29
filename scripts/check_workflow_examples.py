@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -30,6 +31,27 @@ GALAXY_TEST_DATA = [
     "sample_b.fastq",
     "expected_counts.mageck.tsv",
 ]
+NFCORE_UPSTREAM_MODULES = {
+    "count": "DOTMATCH_COUNT",
+    "demux": "DOTMATCH_DEMUX",
+    "audit": "DOTMATCH_AUDIT",
+    "panel_check": "DOTMATCH_PANEL_CHECK",
+    "crispr_count": "DOTMATCH_CRISPR_COUNT",
+    "assay_run": "DOTMATCH_ASSAY_RUN",
+}
+BARCODE_FIXTURE_FILES = [
+    "barcodes.tsv",
+    "barcode_reads.fastq",
+    "panel_barcodes.tsv",
+]
+CRISPR_FIXTURE_FILES = [
+    "crispr_assay.toml",
+    "crispr_library.csv",
+    "expected_counts.mageck.tsv",
+    "expected_sample_qc.tsv",
+    "sample_a.fastq",
+    "sample_b.fastq",
+]
 
 
 class WorkflowAudit:
@@ -53,6 +75,26 @@ def _read(path: Path, result: WorkflowAudit) -> str:
 def _require(text: str, needle: str, message: str, result: WorkflowAudit) -> None:
     if needle not in text:
         result.failures.append(message)
+
+
+def _project_version(root: Path, result: WorkflowAudit) -> str:
+    pyproject = _read(root / "pyproject.toml", result)
+    match = re.search(r'^version = "([^"]+)"', pyproject, flags=re.MULTILINE)
+    if not match:
+        result.failures.append("pyproject.toml must declare project version")
+        return ""
+    return match.group(1)
+
+
+def _require_same_file(source: Path, copied: Path, label: str, result: WorkflowAudit) -> None:
+    if not source.is_file():
+        result.failures.append(f"{label} source fixture is missing: {source.as_posix()}")
+        return
+    if not copied.is_file():
+        result.failures.append(f"{label} copied fixture is missing: {copied.as_posix()}")
+        return
+    if source.read_bytes() != copied.read_bytes():
+        result.failures.append(f"{label} copied fixture differs from shared fixture: {copied.as_posix()}")
 
 
 def check_snakemake(root: Path, result: WorkflowAudit) -> None:
@@ -421,6 +463,92 @@ def check_nfcore_dotmatch_modules(root: Path, result: WorkflowAudit) -> None:
         result.passed.append("nf-core DotMatch count/demux/audit/panel_check modules present")
 
 
+def check_nfcore_upstream_payload(root: Path, result: WorkflowAudit) -> None:
+    version = _project_version(root, result)
+    if not version:
+        return
+    base = root / "examples" / "workflows" / "nf-core" / "upstream"
+    module_root = base / "modules" / "nf-core" / "dotmatch"
+    readme = _read(base / "README.md", result)
+    tag_template = f"{version}--<bioconda_build>"
+
+    for needle, message in [
+        (f"DotMatch {version}", "nf-core upstream README must name the prepared DotMatch version"),
+        (tag_template, "nf-core upstream README must document the container tag template"),
+        ("Do not submit the placeholder", "nf-core upstream README must require exact container tags before PR"),
+        ("make reviewer-readiness-ready", "nf-core upstream README must include reviewer-readiness gate"),
+        ("adoption_url", "nf-core upstream README must use workflow-adoption adoption_url schema"),
+    ]:
+        _require(readme, needle, message, result)
+
+    for module_name, process_name in NFCORE_UPSTREAM_MODULES.items():
+        module_dir = module_root / module_name
+        main_nf = _read(module_dir / "main.nf", result)
+        meta = _read(module_dir / "meta.yml", result)
+        nf_test = _read(module_dir / "tests" / "main.nf.test", result)
+        for needle, message in [
+            (f"process {process_name}", f"nf-core upstream {module_name} missing {process_name}"),
+            (tag_template, f"nf-core upstream {module_name} container must target DotMatch {version} template"),
+            ("dotmatch --version", f"nf-core upstream {module_name} must record dotmatch --version"),
+            ("versions.yml", f"nf-core upstream {module_name} must emit versions.yml"),
+        ]:
+            _require(main_nf, needle, message, result)
+        if "0.1.8" in main_nf or "--h*" in main_nf:
+            result.failures.append(f"nf-core upstream {module_name} contains stale container placeholder")
+        for needle in [
+            "homepage: https://github.com/dnncha/dotmatch",
+            "license: \"Apache-2.0\"",
+        ]:
+            _require(meta, needle, f"nf-core upstream {module_name} metadata missing {needle}", result)
+        for needle, message in [
+            ("nextflow_process", f"nf-core upstream {module_name} test must define a nextflow_process"),
+            (f'process "{process_name}"', f"nf-core upstream {module_name} test must cover {process_name}"),
+            (f'dotmatch: "{version}"', f"nf-core upstream {module_name} test must assert DotMatch {version}"),
+        ]:
+            _require(nf_test, needle, message, result)
+
+    fixtures = root / "examples" / "workflows" / "fixtures"
+    for module_name in ["count", "demux", "audit", "panel_check"]:
+        data = module_root / module_name / "tests" / "data"
+        for filename in BARCODE_FIXTURE_FILES:
+            _require_same_file(fixtures / filename, data / filename, f"nf-core upstream {module_name}", result)
+    for module_name in ["crispr_count", "assay_run"]:
+        data = module_root / module_name / "tests" / "data"
+        data_readme = _read(data / "README.md", result)
+        _require(data_readme, "CRISPR subset of `examples/workflows/fixtures/`", f"nf-core upstream {module_name} fixture README must record provenance", result)
+        for filename in CRISPR_FIXTURE_FILES:
+            _require_same_file(fixtures / filename, data / filename, f"nf-core upstream {module_name}", result)
+
+    integration_targets_path = root / "docs" / "integration-targets.json"
+    try:
+        integration_targets = json.loads(_read(integration_targets_path, result))
+    except json.JSONDecodeError as exc:
+        result.failures.append(f"docs/integration-targets.json is invalid JSON: {exc}")
+        return
+    nf_core_targets = [
+        target for target in integration_targets.get("targets", [])
+        if isinstance(target, dict) and target.get("id") == "nf_core_modules"
+    ]
+    if len(nf_core_targets) != 1:
+        result.failures.append("integration target tracker must contain one nf_core_modules target")
+    else:
+        target = nf_core_targets[0]
+        expected_template = f"quay.io/biocontainers/dotmatch:{tag_template}"
+        if target.get("prepared_for_version") != version:
+            result.failures.append("nf_core_modules target must record prepared_for_version matching pyproject")
+        if target.get("upstream_payload") != "examples/workflows/nf-core/upstream/":
+            result.failures.append("nf_core_modules target must point at upstream payload directory")
+        if target.get("container_tag_template") != expected_template:
+            result.failures.append(f"nf_core_modules target must record container_tag_template {expected_template}")
+        checks = target.get("pre_pr_checks")
+        exact_container_check = f"replace {tag_template} with exact BioContainers tags"
+        if not isinstance(checks, list) or exact_container_check not in checks:
+            result.failures.append("nf_core_modules target must include the exact-container pre-PR check")
+
+    if not any("nf-core upstream" in failure or "nf_core_modules" in failure for failure in result.failures):
+        result.passed.append("nf-core upstream payload prepared for current DotMatch release")
+
+
 def check_multiqc(root: Path, result: WorkflowAudit) -> None:
     config = _read(root / "examples" / "workflows" / "multiqc" / "multiqc_config.yaml", result)
     sample_qc_path = root / "examples" / "workflows" / "multiqc" / "data" / "sample_qc.tsv"
@@ -693,6 +821,7 @@ def audit(root: Path) -> WorkflowAudit:
     check_nextflow(root, result)
     check_nfcore(root, result)
     check_nfcore_dotmatch_modules(root, result)
+    check_nfcore_upstream_payload(root, result)
     check_multiqc(root, result)
     check_galaxy(root, result)
     return result

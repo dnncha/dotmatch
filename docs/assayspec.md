@@ -21,6 +21,7 @@ dotmatch assay run assay.toml
 dotmatch assay init --template crispr --out assay.toml
 dotmatch assay infer --mode count --assay-type crispr --targets guides.csv --reads sample.fastq.gz --out assay.toml --report inference_report.json
 dotmatch assay autopsy assay.toml --out-dir autopsy/
+dotmatch assay handoff assay.toml
 ```
 
 `start` is the default production entrypoint: it runs `check`, then `run`, and
@@ -70,6 +71,12 @@ relaxed with `[reliability] fail_on_draft_inference = false`.
 `inspect-unmatched`. It writes `autopsy_summary.json`, `findings.tsv`, and
 `top_unmatched.*.tsv` files. `run` also triggers autopsy automatically when
 sample QC crosses conservative thresholds.
+
+`handoff` creates `<out_dir>/handoff/` after a completed run. It copies a
+review-sized set of reports, configuration, QC, count, methods, and citation
+files; writes `SHA256SUMS`; and records SHA-256 hashes for every declared input.
+It does not copy FASTQ files, so raw reads remain in the originating controlled
+workspace. Use `--out-dir PATH` to write the bundle to an empty directory.
 
 ## Count Example
 

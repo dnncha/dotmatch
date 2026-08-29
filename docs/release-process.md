@@ -107,7 +107,9 @@ Avoid:
   propagation, verify with
   `make distribution-channels` before announcing conda install instructions or
   BioContainers availability.
-- Confirm the GHCR image labels and tag after the source tag is immutable.
+- Confirm the GHCR public tag, digest, and platform metadata after the source
+  tag is immutable. Run the Docker-backed GHCR smoke test where a local OCI
+  runtime is available.
 - Run `make distribution-channels` after PyPI, Bioconda, GHCR, and Zenodo are public.
 - Update `docs/distribution-release.json` with verified public and evidence links after public channels are live.
 - Update `docs/scientific-claims.md` only when new evidence is committed and a corresponding gate passes.

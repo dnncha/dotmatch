@@ -31,6 +31,8 @@ need their own gates before they are public claims.
 - Use [Command Reference](command-reference.md) when choosing the right
   namespace or compatibility entrypoint.
 - CRISPR teams can follow the [first-run CRISPR guide-counting tutorial](tutorials/crispr-count-first-run.md).
+- Teams evaluating an assay with their own FASTQs can use [Lab Evaluation and
+  Handoff](lab-evaluation.md) for preflight, review, and reproducible handoff.
 - Labs evaluating scientific claims should read [Trust, Scope, and Evidence](trust-and-scope.md).
 - Workflow and pipeline authors should use the [public output schemas](schemas.md).
 - Bioinformatics teams evaluating package maturity, workflow fit, and current
@@ -75,6 +77,7 @@ getting-started
 command-reference
 tutorials/crispr-count-first-run
 tutorials/scverse-perturb-seq
+lab-evaluation
 streaming-api
 assayspec
 crispr-qc

@@ -235,7 +235,40 @@ def test_distribution_channels_reports_missing_docker_for_ghcr_runtime_after_man
     result = checker.audit(tmp_path)
 
     assert any(item.channel == "ghcr" for item in result.passed)
-    assert any("docker is required to run GHCR image smoke tests" in failure.message for failure in result.failures)
+    assert not any(item.channel == "ghcr-run" for item in result.failures)
+    assert any(
+        "GHCR runtime smoke test was not run locally because Docker is unavailable" in note.message
+        for note in result.notes
+    )
+
+
+def test_distribution_channels_uses_public_ghcr_metadata_fallback(monkeypatch):
+    checker = _load_checker()
+
+    def fake_fetch_text(url: str):
+        if url == "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch/versions":
+            return '<a href="/users/dnncha/packages/container/dotmatch/123?tag=v0.1.0">v0.1.0</a>'
+        if url == "https://github.com/users/dnncha/packages/container/dotmatch/123?tag=v0.1.0":
+            return (
+                "<h1>v0.1.0</h1>"
+                "<code>sha256:" + "2" * 64 + "</code>"
+                "<small>linux/amd64</small>"
+            )
+        raise AssertionError(url)
+
+    monkeypatch.setattr(
+        checker,
+        "verify_ghcr_manifest",
+        lambda image: (_ for _ in ()).throw(RuntimeError("registry token lacks package access")),
+        raising=False,
+    )
+    monkeypatch.setattr(checker, "fetch_text", fake_fetch_text, raising=False)
+
+    metadata = checker.verify_ghcr_metadata("ghcr.io/dnncha/dotmatch:v0.1.0")
+
+    assert metadata.digest == "sha256:" + "2" * 64
+    assert "GitHub Packages public metadata fallback" in metadata.source
+    assert metadata.public_url.endswith("?tag=v0.1.0")
 
 
 def test_distribution_channels_rejects_raw_pypi_linux_wheel(tmp_path, monkeypatch):
@@ -392,6 +425,12 @@ def test_distribution_channels_reports_missing_ghcr_manifest(tmp_path, monkeypat
     monkeypatch.setattr(checker, "fetch_json", fake_fetch_json)
     monkeypatch.setattr(checker, "verify_pypi_install", lambda version: None, raising=False)
     monkeypatch.setattr(checker, "verify_bioconda_install", lambda version: None, raising=False)
+    monkeypatch.setattr(
+        checker,
+        "verify_ghcr_metadata",
+        lambda image: (_ for _ in ()).throw(RuntimeError("manifest unknown")),
+        raising=False,
+    )
     monkeypatch.setattr(checker.subprocess, "run", lambda *args, **kwargs: failed)
     monkeypatch.setattr(checker, "url_ok", lambda url: True)
 

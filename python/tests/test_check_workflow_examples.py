@@ -17,6 +17,24 @@ def _load_checker():
 
 def _write_workflow_repo(root: Path) -> None:
     files = {
+        "pyproject.toml": (
+            "[project]\n"
+            "version = \"0.1.9\"\n"
+        ),
+        "docs/integration-targets.json": (
+            "{\n"
+            "  \"schema_version\": 1,\n"
+            "  \"targets\": [\n"
+            "    {\n"
+            "      \"id\": \"nf_core_modules\",\n"
+            "      \"prepared_for_version\": \"0.1.9\",\n"
+            "      \"upstream_payload\": \"examples/workflows/nf-core/upstream/\",\n"
+            "      \"container_tag_template\": \"quay.io/biocontainers/dotmatch:0.1.9--<bioconda_build>\",\n"
+            "      \"pre_pr_checks\": [\"replace 0.1.9--<bioconda_build> with exact BioContainers tags\"]\n"
+            "    }\n"
+            "  ]\n"
+            "}\n"
+        ),
         "examples/workflows/snakemake/config.json": (
             '{"library": "examples/crispr_guides/data/yusa_library.csv", '
             '"samples": {"plasmid": "examples/crispr_guides/data/ERR376998.fastq.gz"}, '
@@ -399,6 +417,16 @@ def _write_workflow_repo(root: Path) -> None:
         full = root / path
         full.parent.mkdir(parents=True, exist_ok=True)
         full.write_text(text, encoding="utf-8")
+    source_fixtures = ROOT / "examples" / "workflows" / "fixtures"
+    target_fixtures = root / "examples" / "workflows" / "fixtures"
+    if target_fixtures.exists():
+        shutil.rmtree(target_fixtures)
+    shutil.copytree(source_fixtures, target_fixtures)
+    source_upstream = ROOT / "examples" / "workflows" / "nf-core" / "upstream"
+    target_upstream = root / "examples" / "workflows" / "nf-core" / "upstream"
+    if target_upstream.exists():
+        shutil.rmtree(target_upstream)
+    shutil.copytree(source_upstream, target_upstream)
     source_modules = ROOT / "examples" / "workflows" / "nf-core" / "modules" / "local" / "dotmatch"
     target_modules = root / "examples" / "workflows" / "nf-core" / "modules" / "local" / "dotmatch"
     for module_name in ["count", "demux", "audit", "panel_check", "crispr_count", "assay_run"]:
@@ -589,3 +617,29 @@ def test_workflow_examples_ready_requires_nfcore_nf_test_candidate(tmp_path):
     result = checker.audit(tmp_path)
 
     assert any("nf-core module must include an nf-test candidate" in failure for failure in result.failures)
+
+
+def test_workflow_examples_ready_rejects_stale_nfcore_upstream_container(tmp_path):
+    checker = _load_checker()
+    _write_workflow_repo(tmp_path)
+    module_path = (
+        tmp_path
+        / "examples"
+        / "workflows"
+        / "nf-core"
+        / "upstream"
+        / "modules"
+        / "nf-core"
+        / "dotmatch"
+        / "count"
+        / "main.nf"
+    )
+    module = module_path.read_text(encoding="utf-8")
+    module_path.write_text(
+        module.replace("0.1.9--<bioconda_build>", "0.1.8--h*"),
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("nf-core upstream count contains stale container placeholder" in failure for failure in result.failures)

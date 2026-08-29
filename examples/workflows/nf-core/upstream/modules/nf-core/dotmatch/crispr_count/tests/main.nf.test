@@ -25,7 +25,7 @@ nextflow_process {
             assert path(process.out.counts[0][1]).toFile().name.endsWith(".counts.mageck.tsv")
             assert path(process.out.sample_qc[0][1]).text.contains("assignment_rate")
             assert path(process.out.versions[0]).toFile().name == "versions.yml"
-            assert path(process.out.versions[0]).text.contains("dotmatch")
+            assert path(process.out.versions[0]).text.contains('dotmatch: "0.1.9"')
             assert path(process.out.summary[0][1]).text.contains("count_engine")
         }
     }
@@ -50,6 +50,7 @@ nextflow_process {
         then {
             assert process.success
             assert path(process.out.counts[0][1]).toFile().name.endsWith(".counts.mageck.tsv")
+            assert path(process.out.versions[0]).text.contains('dotmatch: "0.1.9"')
         }
     }
 
@@ -74,6 +75,7 @@ nextflow_process {
             assert process.success
             assert path(process.out.counts[0][1]).toFile().name.endsWith(".counts.mageck.tsv")
             assert path(process.out.versions[0]).toFile().name == "versions.yml"
+            assert path(process.out.versions[0]).text.contains('dotmatch: "0.1.9"')
         }
     }
 }

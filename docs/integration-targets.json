@@ -8,8 +8,12 @@
       "name": "nf-core modules",
       "type": "nf_core_module",
       "status": "local_payload_ready",
+      "prepared_for_version": "0.1.9",
+      "upstream_payload": "examples/workflows/nf-core/upstream/",
+      "container_tag_template": "quay.io/biocontainers/dotmatch:0.1.9--<bioconda_build>",
       "external_target": "https://github.com/nf-core/modules",
       "source_assets": [
+        "examples/workflows/nf-core/upstream/README.md",
         "examples/workflows/nf-core/upstream/modules/nf-core/dotmatch/count/",
         "examples/workflows/nf-core/upstream/modules/nf-core/dotmatch/demux/",
         "examples/workflows/nf-core/upstream/modules/nf-core/dotmatch/audit/",
@@ -18,7 +22,13 @@
         "examples/workflows/nf-core/upstream/modules/nf-core/dotmatch/assay_run/"
       ],
       "review_command": "make workflow-examples-ready",
-      "next_action": "Open or update an upstream nf-core modules PR after local workflow integration tests pass.",
+      "pre_pr_checks": [
+        "make workflow-examples-ready",
+        "make workflow-integration-test",
+        "make reviewer-readiness-ready",
+        "replace 0.1.9--<bioconda_build> with exact BioContainers tags"
+      ],
+      "next_action": "Replace the DotMatch 0.1.9 BioContainers tag templates with exact build tags, run the local workflow gates, then open a scoped upstream nf-core/modules PR.",
       "public_record_required": true
     },
     {

@@ -2,6 +2,8 @@ import { existsSync, readFileSync } from "node:fs";
 
 const requiredFiles = [
   "../app/page.tsx",
+  "../app/mobile-navigation.tsx",
+  "../app/icon.png",
   "../app/layout.tsx",
   "../app/robots.ts",
   "../app/sitemap.ts",
@@ -63,7 +65,10 @@ for (const anchor of [
 
 for (const selector of [
   ".hero",
+  ".skip-link",
+  ".mobile-nav",
   ".positioning",
+  ".trust-list",
   ".assignment-figure",
   ".outcome-grid",
   ".failure-grid",
@@ -85,14 +90,20 @@ for (const selector of [
 }
 
 const h1Matches = page.match(/<h1\b/g) ?? [];
-if (h1Matches.length !== 1 || !page.includes("Know which read assignments you can trust.")) {
+if (h1Matches.length !== 1 || !page.includes("See which sequencing reads match—and which do not.")) {
   console.error("Homepage must have exactly one required H1.");
   process.exit(1);
 }
 
 for (const phrase of [
-  "Assignment reliability for known-target sequencing assays.",
-  "unique, ambiguous, none, or invalid",
+  "Open-source known-target read assignment",
+  "Skip to main content",
+  "Three steps, one clear result per read.",
+  "Uncertain reads stay uncertain.",
+  "Every read gets one clear outcome",
+  "v0.2.2 on PyPI and Bioconda",
+  "Apache-2.0 open source",
+  "Runs locally on your machine",
   "CRISPR guides",
   "inline barcodes",
   "feature tags",
@@ -104,21 +115,19 @@ for (const phrase of [
   "Assay developers",
   "Bioinformatics evaluation packet",
   "External review packet",
-  "Package channels",
-  "Validated scope",
-  "Output contracts",
-  "Workflow status",
+  "Published release",
+  "Defined scope",
+  "Inspectable outputs",
+  "Reproducible checks",
   "Distribution status record",
   "Workflow adoption status",
-  "Integration target tracker",
-  "DotMatch evaluation protocol",
-  "Reviewer readiness record",
   "Workflow submission pack",
-  "nf-core modules",
-  "MultiQC module",
-  "Galaxy / IUC",
-  "bio.tools record",
-  "pip install dotmatch"
+  "count tables",
+  "split FASTQs",
+  "HTML reports",
+  "python -m pip install dotmatch",
+  "dotmatch dist ACGT AGGT",
+  "https://dotmatch.readthedocs.io/en/latest/getting-started.html"
 ]) {
   if (!normalizedPage.includes(phrase)) {
     console.error(`Missing repositioning copy: ${phrase}`);
@@ -133,12 +142,8 @@ for (const phrase of [
   "docs/packaging.md",
   "docs/bioinformatics-evaluation.md",
   "docs/external-review-packet.md",
-  "docs/integration-targets.json",
-  "docs/pilot-program.md",
-  "docs/reviewer-readiness.json",
   "docs/workflow-integration-kit.md",
   "docs/workflow-submissions.md",
-  "docs/adopters/README.md",
   "docs/workflow-adoption.json",
   "docs/distribution-release.json"
 ]) {
@@ -173,6 +178,11 @@ for (const stale of [
   "big wins",
   "massive industry impact",
   "Adoption trust plan",
+  "AssayCode",
+  "What the homepage can safely claim",
+  "Give each evaluator a next step",
+  "A serious evaluation should begin",
+  "The people who can spread " + "DotMatch",
   "External integration kit",
   "industry-" + "exposure.md",
   "industry-" + "next-wins.md",
@@ -189,8 +199,8 @@ if (!layout.includes("export const metadata") || !layout.includes("openGraph") |
   process.exit(1);
 }
 
-if (!layout.includes("Assignment Reliability") || !layout.includes("Know which read assignments you can trust")) {
-  console.error("Site metadata must match the new assignment reliability positioning.");
+if (!layout.includes("Clear Read Assignment") || !layout.includes("See which sequencing reads match known DNA targets")) {
+  console.error("Site metadata must match the clear read-assignment positioning.");
   process.exit(1);
 }
 
@@ -340,6 +350,26 @@ for (const phrase of [
 
 if (!nextConfig.includes("devIndicators: false")) {
   console.error("Next.js dev indicator should be disabled for local screenshots.");
+  process.exit(1);
+}
+
+if (css.includes("width: 190%") || css.includes("translateX(-6%)")) {
+  console.error("Mobile workflow image must remain fully visible instead of being cropped.");
+  process.exit(1);
+}
+
+if (!css.includes(".site-header nav a") || !css.includes("white-space: nowrap")) {
+  console.error("Mobile navigation labels must not be split or clipped.");
+  process.exit(1);
+}
+
+if (!css.includes("scroll-padding-top")) {
+  console.error("Sticky-header anchor navigation must reserve scroll padding.");
+  process.exit(1);
+}
+
+if (/font-size:\s*clamp\([^;]*(?:vw|vh|vmin|vmax)/.test(css)) {
+  console.error("Font sizes must not scale directly with viewport units.");
   process.exit(1);
 }
 

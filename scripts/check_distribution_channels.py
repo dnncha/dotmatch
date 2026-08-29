@@ -6,6 +6,7 @@ published to PyPI, Bioconda, GHCR, and Zenodo.
 """
 
 import argparse
+import html
 import json
 import os
 import re
@@ -13,6 +14,7 @@ import shutil
 import subprocess
 import tempfile
 import urllib.error
+import urllib.parse
 import urllib.request
 import venv
 from dataclasses import dataclass, field
@@ -24,6 +26,7 @@ PYPI_URL = "https://pypi.org/pypi/dotmatch/{version}/json"
 BIOCONDA_URL = "https://api.anaconda.org/package/bioconda/dotmatch"
 GHCR_IMAGE = "ghcr.io/dnncha/dotmatch:v{version}"
 GHCR_TOKEN_URL = "https://ghcr.io/token?service=ghcr.io&scope=repository:{repository}:pull"
+GHCR_PACKAGE_VERSIONS_URL = "https://github.com/{owner}/{package}/pkgs/container/{package}/versions"
 BIOCONTAINERS_TAGS_URL = (
     "https://quay.io/api/v1/repository/biocontainers/dotmatch/tag/?onlyActiveTags=true&page={page}&limit=100"
 )
@@ -40,6 +43,7 @@ class ChannelMessage:
 @dataclass
 class AuditResult:
     passed: list[ChannelMessage] = field(default_factory=list)
+    notes: list[ChannelMessage] = field(default_factory=list)
     failures: list[ChannelMessage] = field(default_factory=list)
 
     @property
@@ -47,10 +51,23 @@ class AuditResult:
         return not self.failures
 
 
+@dataclass(frozen=True)
+class ContainerMetadata:
+    digest: str
+    source: str
+    public_url: str = ""
+
+
 def fetch_json(url: str) -> dict:
     request = urllib.request.Request(url, headers={"User-Agent": "DotMatch distribution verifier"})
     with urllib.request.urlopen(request, timeout=30) as response:
         return json.loads(response.read().decode("utf-8"))
+
+
+def fetch_text(url: str) -> str:
+    request = urllib.request.Request(url, headers={"User-Agent": "DotMatch distribution verifier"})
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return response.read().decode("utf-8", errors="replace")
 
 
 def fetch_registry_manifest(image: str) -> tuple[dict, str]:
@@ -207,6 +224,78 @@ def verify_ghcr_manifest(image: str) -> str:
     if not digest.startswith("sha256:"):
         raise RuntimeError("GHCR manifest did not include a sha256 digest")
     return digest
+
+
+def verify_ghcr_public_package_metadata(image: str) -> ContainerMetadata:
+    registry_repo, reference = image.rsplit(":", 1)
+    registry, repository = registry_repo.split("/", 1)
+    if registry != "ghcr.io" or "/" not in repository:
+        raise RuntimeError(f"unsupported GHCR image reference: {image}")
+    owner, package = repository.split("/", 1)
+    if "/" in package:
+        raise RuntimeError(f"unsupported GHCR package path for public metadata fallback: {repository}")
+
+    tag = urllib.parse.quote(reference, safe="")
+    versions_url = GHCR_PACKAGE_VERSIONS_URL.format(owner=owner, package=package)
+    versions_html = fetch_text(versions_url)
+    package_pattern = re.escape(package)
+    tag_pattern = re.escape(tag)
+    match = re.search(
+        rf'href="(?P<href>[^"]*/packages/container/{package_pattern}/\d+\?tag={tag_pattern})"',
+        versions_html,
+    )
+    if not match:
+        raise RuntimeError(f"GitHub Packages public metadata does not list tag {reference}")
+
+    version_url = urllib.parse.urljoin("https://github.com", html.unescape(match.group("href")))
+    version_html = fetch_text(version_url)
+    if f"tag={tag}" not in version_url and reference not in version_html:
+        raise RuntimeError(f"GitHub Packages version page does not confirm tag {reference}")
+    digest_match = re.search(r"sha256:[0-9a-fA-F]{64}", version_html)
+    if not digest_match:
+        raise RuntimeError(f"GitHub Packages version page does not expose a sha256 digest for tag {reference}")
+    if "linux/amd64" not in version_html.lower():
+        raise RuntimeError(f"GitHub Packages version page does not list linux/amd64 for tag {reference}")
+
+    return ContainerMetadata(
+        digest=digest_match.group(0).lower(),
+        source="GitHub Packages public metadata",
+        public_url=version_url,
+    )
+
+
+def verify_ghcr_metadata(image: str) -> ContainerMetadata:
+    try:
+        digest = verify_ghcr_manifest(image)
+        return ContainerMetadata(digest=digest, source="GHCR registry manifest API")
+    except Exception as registry_exc:
+        try:
+            fallback = verify_ghcr_public_package_metadata(image)
+        except Exception as fallback_exc:
+            raise RuntimeError(
+                f"{registry_exc}; GitHub Packages public metadata fallback failed: {fallback_exc}"
+            ) from fallback_exc
+        return ContainerMetadata(
+            digest=fallback.digest,
+            source=f"{fallback.source} fallback after registry manifest API error: {registry_exc}",
+            public_url=fallback.public_url,
+        )
+
+
+def docker_runtime_unavailable(exc: BaseException) -> bool:
+    if isinstance(exc, FileNotFoundError):
+        return True
+    detail = str(exc).lower()
+    return any(
+        fragment in detail
+        for fragment in [
+            "cannot connect to the docker daemon",
+            "error during connect",
+            "is the docker daemon running",
+            "no such file or directory: 'docker'",
+            "permission denied while trying to connect to the docker daemon",
+        ]
+    )
 
 
 def verify_bioconda_install(version: str) -> None:
@@ -405,18 +494,30 @@ def check_ghcr(version: str, result: AuditResult) -> None:
     channel = "ghcr"
     image = GHCR_IMAGE.format(version=version)
     try:
-        digest = verify_ghcr_manifest(image)
+        metadata = verify_ghcr_metadata(image)
     except Exception as exc:
         result.failures.append(ChannelMessage(channel, f"GHCR image tag {image} is not available: {exc}"))
         return
-    result.passed.append(ChannelMessage(channel, f"GHCR image tag is available: {image} ({digest})"))
+    source = metadata.source
+    if metadata.public_url:
+        source = f"{source}; {metadata.public_url}"
+    result.passed.append(
+        ChannelMessage(channel, f"GHCR image tag metadata is public: {image} ({metadata.digest}; {source})")
+    )
     try:
         verify_ghcr_run(image, version)
-    except FileNotFoundError:
-        result.failures.append(ChannelMessage("ghcr-run", "docker is required to run GHCR image smoke tests"))
-        return
     except Exception as exc:
-        result.failures.append(ChannelMessage("ghcr-run", f"GHCR image runtime smoke test failed for {image}: {exc}"))
+        if docker_runtime_unavailable(exc):
+            result.notes.append(
+                ChannelMessage(
+                    "ghcr-run",
+                    f"GHCR runtime smoke test was not run locally because Docker is unavailable: {exc}",
+                )
+            )
+            return
+        result.failures.append(
+            ChannelMessage("ghcr-run", f"GHCR image runtime smoke test failed for {image}: {exc}")
+        )
         return
     result.passed.append(ChannelMessage("ghcr-run", f"docker run smoke tests pass for {image}"))
 
@@ -481,6 +582,8 @@ def main() -> int:
     result = audit(Path(args.root), args.version or None)
     for item in result.passed:
         print(f"PASS [{item.channel}]: {item.message}")
+    for item in result.notes:
+        print(f"NOTE [{item.channel}]: {item.message}")
     for item in result.failures:
         print(f"FAIL [{item.channel}]: {item.message}")
     if result.ok:

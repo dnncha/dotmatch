@@ -7,7 +7,7 @@ keywords:
 tools:
   - dotmatch:
       description: Deterministic known-target short-DNA assignment workflows.
-      homepage: https://github.com/Dnncha/dotmatch
+      homepage: https://github.com/dnncha/dotmatch
       licence:
         - Apache-2.0
 input:

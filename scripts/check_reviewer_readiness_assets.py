@@ -67,9 +67,13 @@ PUBLIC_LANGUAGE_FILES = [
     Path("docs/external-review-packet.md"),
     Path("docs/workflow-integration-kit.md"),
     Path("docs/workflow-integration-roadmap.md"),
+    Path("docs/workflow-submissions.md"),
+    Path("docs/integration-targets.json"),
     Path("docs/pilot-program.md"),
     Path("docs/adopters/README.md"),
     Path("docs/adopters/record-template.md"),
+    Path("examples/workflows/nf-core/README.md"),
+    Path("examples/workflows/nf-core/upstream/README.md"),
 ]
 
 REQUIRED_FILES = [
@@ -90,7 +94,10 @@ REQUIRED_FILES = [
 
 HYPE_PHRASES = [
     "massive industry impact",
+    "massive industry adoption",
+    "massive industry penetration",
     "ai slop",
+    "big wins",
     "game-changing",
     "revolutionary",
     "world-class",
@@ -106,6 +113,7 @@ INTERNAL_PROCESS_PHRASES = [
     "adoption trust",
     "evidence-bounded",
     "industry exposure",
+    "industry exposure plan",
     "next wins",
     "pilot conversations",
     "private feedback",
@@ -196,6 +204,15 @@ def _check_integrations(result: AuditResult) -> None:
             asset_path = Path(str(asset))
             if not asset_path.exists():
                 result.failures.append(f"{target_id} source asset missing: {asset_path.as_posix()}")
+        if target_id == "nf_core_modules":
+            for field in ["prepared_for_version", "upstream_payload", "container_tag_template"]:
+                if not str(target.get(field) or "").strip():
+                    result.failures.append(f"{target_id} must declare {field}")
+            checks = target.get("pre_pr_checks")
+            if not isinstance(checks, list) or not checks:
+                result.failures.append(f"{target_id} must declare pre_pr_checks")
+            elif not any("exact BioContainers tags" in str(check) for check in checks):
+                result.failures.append(f"{target_id} pre_pr_checks must require exact BioContainers tags")
     missing = EXPECTED_INTEGRATION_IDS - seen
     extra = seen - EXPECTED_INTEGRATION_IDS
     if missing:

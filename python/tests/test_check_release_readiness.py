@@ -88,6 +88,7 @@ def _write_release_repo(root: Path) -> None:
             "  preflight:\n"
             "    name: Release preflight gates\n"
             "    steps:\n"
+            "      - uses: actions/checkout@v7\n"
             "      - run: python -m pip install build pytest\n"
             "      - run: python -m pip install -r docs/requirements.txt\n"
             "      - run: make test\n"
@@ -135,7 +136,7 @@ def _write_release_repo(root: Path) -> None:
             "  linux-repaired-wheels:\n"
             "    needs: [preflight]\n"
             "    steps:\n"
-            "      - uses: pypa/cibuildwheel@v3.3.0\n"
+            "      - uses: pypa/cibuildwheel@v4.1.0\n"
             "      - run: python scripts/check_python_wheel.py --wheel-only --out-dir dist-linux\n"
             "      - uses: actions/upload-artifact@v7\n"
             "        with:\n"
@@ -392,6 +393,25 @@ def test_release_readiness_requires_verified_sdist_job(tmp_path):
     result = checker.audit(tmp_path)
 
     assert any("sdist job must verify the PyPI source distribution artifact" in failure for failure in result.failures)
+
+
+def test_release_readiness_requires_current_release_workflow_action_pins(tmp_path):
+    checker = _load_checker()
+    _write_release_repo(tmp_path)
+    workflow = (tmp_path / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+    (tmp_path / ".github" / "workflows" / "release.yml").write_text(
+        workflow
+        .replace("actions/checkout@v7", "actions/checkout@v6")
+        .replace("pypa/cibuildwheel@v4.1.0", "pypa/cibuildwheel@v3.4.1"),
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("release workflow must not pin obsolete action actions/checkout@v6" in failure for failure in result.failures)
+    assert any("release workflow must not pin obsolete action pypa/cibuildwheel@v3.4.1" in failure for failure in result.failures)
+    assert any("release workflow missing actions/checkout@v7" in failure for failure in result.failures)
+    assert any("release workflow missing pypa/cibuildwheel@v4.1.0" in failure for failure in result.failures)
 
 
 def test_release_readiness_requires_bioconda_osx_arm64_opt_in(tmp_path):

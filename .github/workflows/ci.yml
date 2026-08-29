@@ -11,7 +11,7 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
@@ -58,16 +58,16 @@ jobs:
         if: runner.os == 'Linux'
         run: npm run build
       - name: Workbench install
-        if: runner.os == 'Linux' && hashFiles('apps/workbench/package.json') != ''
+        if: runner.os == 'Linux' && hashFiles('apps/workbench/package-lock.json') != ''
         run: npm --prefix apps/workbench ci
       - name: Workbench lint
-        if: runner.os == 'Linux' && hashFiles('apps/workbench/package.json') != ''
+        if: runner.os == 'Linux' && hashFiles('apps/workbench/package-lock.json') != ''
         run: npm --prefix apps/workbench run lint
       - name: Workbench tests
-        if: runner.os == 'Linux' && hashFiles('apps/workbench/package.json') != ''
+        if: runner.os == 'Linux' && hashFiles('apps/workbench/package-lock.json') != ''
         run: npm --prefix apps/workbench run test
       - name: Workbench web build
-        if: runner.os == 'Linux' && hashFiles('apps/workbench/package.json') != ''
+        if: runner.os == 'Linux' && hashFiles('apps/workbench/package-lock.json') != ''
         run: npm --prefix apps/workbench run build
       - uses: dtolnay/rust-toolchain@stable
         if: runner.os == 'Linux' && hashFiles('apps/workbench/src-tauri/Cargo.toml') != ''
@@ -106,7 +106,7 @@ jobs:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
@@ -121,7 +121,7 @@ jobs:
     name: Reviewer reproducibility packet
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"

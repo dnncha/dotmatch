@@ -34,10 +34,9 @@ All module candidates:
 - Emit `versions.yml` for nf-core version tracking.
 - Include `when` directive and nf-test stubs using shared fixtures.
 
-## nf-core Upstream Contribution Prep (High-Impact Steps)
+## nf-core Upstream Contribution Prep
 
-To turn these into an official nf-core module (massive industry adoption via
-pipelines, reproducibility, MultiQC integration, etc.):
+To turn these into reviewed nf-core modules:
 
 1. **Fork & PR to nf-core/modules**
    - Copy `modules/local/dotmatch/*` (without the `local/` prefix) into
@@ -50,10 +49,12 @@ pipelines, reproducibility, MultiQC integration, etc.):
    - Run `nf-test` on the module tests (adapt paths in `tests/main.nf.test`).
    - Add to the main nf-core CI (they have automated linting + Docker builds).
 
-3. **Enhance for Upstream (Recommended Polish)**
+3. **Prepare for Upstream Review**
    - Use exact bioconda/singularity container hashes from a released version
-     (update the placeholder `0.1.8--h*` after a tagged release passes Bioconda).
-   - The upstream tree already includes: maintainers + license in meta.yml, stub test case, self-contained tests/data/.
+     (replace the `0.1.9--<bioconda_build>` template after the accepted
+     Bioconda release is visible in BioContainers).
+   - The upstream tree already includes maintainers, license metadata, test
+     cases, and self-contained `tests/data/` fixtures.
    - Add more nf-test cases (different k, metrics, full vs stub runs) if needed.
    - Support additional common params via `task.ext` (e.g. `--auto-offset`,
      `--max-correction-qual`, `--format`).
@@ -101,11 +102,16 @@ cd examples/workflows/nf-core/pipeline
 nextflow run main.nf --outdir results
 ```
 
-It exercises the CRISPR and AssaySpec modules against the shared fixtures and produces the expected artifacts. This serves as a "copy-paste ready" template for real pipelines and as the basis for an upstream nf-core pipeline subworkflow or module usage example.
+It exercises the CRISPR and AssaySpec modules against the shared fixtures and
+produces the expected artifacts. This gives pipeline maintainers a concrete
+usage example and a basis for an upstream nf-core subworkflow or module example.
 
-See the main [DotMatch docs/proposals-and-roadmap.md](https://github.com/dnncha/dotmatch/blob/main/docs/proposals-and-roadmap.md) for the full adoption roadmap. nf-core integration is one of the highest-leverage steps for "massive industry penetration" because nf-core is the standard for reproducible bioinformatics workflows.
+See [Workflow Submission Pack](../../../docs/workflow-submissions.md) for the
+external submission checklist and tracking rules.
 
-**Status**: The `upstream/` tree is the **exact, self-contained payload** ready to drop into a PR to nf-core/modules (modules/nf-core/dotmatch/... ). 
+**Status**: The `upstream/` tree is the self-contained DotMatch 0.1.9 payload
+for an nf-core/modules PR after exact BioContainers tags replace the local
+templates.
 
 The `modules/local/` versions are the maintained source for this repo's internal checks (check_workflow_examples.py) and examples.
 
@@ -123,6 +129,8 @@ Current state after prep:
 The main remaining work is the actual PR + linting in the nf-core org (see upstream/README.md for exact copy steps). Once merged, record in docs/workflow-adoption.json to unlock "ready" status.
 
 Before opening an upstream PR:
-- Pin a specific DotMatch version/container that has passed all release gates.
+- Pin a specific DotMatch version/container that has passed the release and
+  distribution gates.
 - Align any changes with current evidence boundaries in this repository.
-- Update the DotMatch CHANGELOG and `docs/workflow-adoption.json` once merged (to record the nf_core_module integration and move the adoption status to ready).
+- Update the DotMatch changelog and `docs/workflow-adoption.json` only after
+  the external PR is merged or an official module page is public.

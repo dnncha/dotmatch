@@ -24,6 +24,7 @@ Before submitting any external integration:
 ```bash
 make workflow-examples-ready
 make workflow-integration-test
+make reviewer-readiness-ready
 make release-ready
 ```
 
@@ -54,18 +55,23 @@ External target:
 
 Reviewer notes:
 
-- Pin the container to a public DotMatch Bioconda/BioContainers release after
-  `make distribution-channels` verifies that release.
+- The upstream payload is prepared for DotMatch 0.1.9. Replace
+  `0.1.9--<bioconda_build>` container templates with exact BioContainers tags
+  before opening an nf-core/modules PR.
+- Pin the container to a public DotMatch Bioconda/BioContainers release only
+  after `make distribution-channels` verifies that release.
 - Preserve DotMatch's `unique`, `ambiguous`, `none`, and `invalid` assignment
   semantics in module docs.
 - Keep `task.ext.args` available for command-specific options.
-- Use the tiny fixtures already included in each upstream module test directory.
+- Use the tiny fixtures already included in each upstream module test directory;
+  they are copied into the upstream tree so nf-test can run without a sibling
+  DotMatch checkout.
 
 Adoption record:
 
 - Add a `nf_core_module` entry to `docs/workflow-adoption.json` only after the
   nf-core PR is merged or released.
-- Use the merged PR or nf-core module page as `integration_url`, and CI/lint
+- Use the merged PR or nf-core module page as `adoption_url`, and CI/lint
   evidence as `evidence_url`.
 
 ## Galaxy / IUC

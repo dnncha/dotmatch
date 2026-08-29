@@ -224,7 +224,7 @@ def test_cibuildwheel_linux_repaired_wheel_path_is_configured() -> None:
     assert "cp39-manylinux_x86_64" in pyproject
     assert "cp312-musllinux_x86_64" in pyproject
     assert "dotmatch dist ACGT AGGT" in pyproject
-    assert "pypa/cibuildwheel" in workflow
+    assert "pypa/cibuildwheel@v4.1.0" in workflow
     assert "dotmatch-linux-repaired-wheels" in workflow
     assert "dist-linux/*.whl" in workflow
     assert "manylinux/musllinux" in packaging
@@ -266,11 +266,15 @@ def test_distribution_docs_include_clean_pypi_install_verification() -> None:
     assert "pip install dotmatch==<version>" in packaging
 
 
-def test_distribution_docs_include_ghcr_runtime_verification() -> None:
+def test_distribution_docs_include_ghcr_metadata_fallback_and_runtime_verification() -> None:
     packaging = (ROOT / "docs" / "packaging.md").read_text(encoding="utf-8")
     checker = (ROOT / "scripts" / "check_distribution_channels.py").read_text(encoding="utf-8")
 
+    assert "GitHub Packages public metadata fallback" in checker
+    assert "GHCR image tag metadata is public" in checker
     assert '"docker", "run", "--rm", image, "--version"' in checker
+    assert "does not block GHCR metadata verification" in packaging
+    assert "metadata from the GitHub Packages page" in packaging
     assert "docker run --rm ghcr.io/dnncha/dotmatch:v<version>" in packaging
 
 

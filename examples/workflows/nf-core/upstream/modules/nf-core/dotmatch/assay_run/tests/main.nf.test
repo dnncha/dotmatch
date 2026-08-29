@@ -28,6 +28,7 @@ nextflow_process {
             assert path(process.out.crispr_qc_summary[0][1]).text.contains("qc_status")
             assert path(process.out.crispr_qc_report[0][1]).text.contains("DotMatch CRISPR QC")
             assert path(process.out.versions[0]).toFile().name == "versions.yml"
+            assert path(process.out.versions[0]).text.contains('dotmatch: "0.1.9"')
         }
     }
 }

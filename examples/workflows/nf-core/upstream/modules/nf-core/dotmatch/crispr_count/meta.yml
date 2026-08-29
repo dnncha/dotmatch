@@ -7,8 +7,8 @@ keywords:
   - known-target assignment
 tools:
   - dotmatch:
-      description: Fast exact matching for short DNA reads against known targets.
-      homepage: https://github.com/Dnncha/dotmatch
+      description: Deterministic known-target short-DNA assignment workflows.
+      homepage: https://github.com/dnncha/dotmatch
       licence:
         - Apache-2.0
 input:
@@ -37,7 +37,7 @@ input:
       description: Assignment metric, hamming or levenshtein.
   - threads:  # via task.cpus / ext.cpus
       type: integer
-      description: Threads for parallel read processing (defaults to auto-detect in DotMatch).
+      description: Threads for parallel read processing.
 output:
   - counts:
       type: file

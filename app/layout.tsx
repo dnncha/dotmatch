@@ -5,14 +5,14 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://dnncha.github.io/do
 const socialImageUrl = `${siteUrl}/dotmatch-og.png`;
 const twitterImageUrl = `${siteUrl}/dotmatch-twitter.png`;
 const socialImageAlt =
-  "DotMatch preview showing assignment reliability outcomes for known-target sequencing assays";
+  "DotMatch preview showing unique, ambiguous, unmatched, and invalid read assignments";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: "DotMatch",
-  title: "DotMatch - Assignment Reliability for Known-Target Sequencing Assays",
+  title: "DotMatch - Clear Read Assignment for Known DNA Targets",
   description:
-    "DotMatch shows which known-target read assignments are unique, ambiguous, unmatched, or invalid.",
+    "DotMatch compares a chosen part of each sequencing read with known short DNA targets and keeps uncertain or invalid assignments visible.",
   authors: [{ name: "DotMatch maintainers", url: "https://github.com/dnncha/dotmatch" }],
   creator: "DotMatch maintainers",
   publisher: "DotMatch",
@@ -40,9 +40,9 @@ export const metadata: Metadata = {
     "sequencing core facility QC"
   ],
   openGraph: {
-    title: "DotMatch - Assignment Reliability",
+    title: "DotMatch - Clear Read Assignment",
     description:
-      "Know which read assignments you can trust for known-target sequencing assays.",
+      "See which sequencing reads match known DNA targets and which remain ambiguous, unmatched, or invalid.",
     type: "website",
     siteName: "DotMatch",
     locale: "en_US",
@@ -60,9 +60,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "DotMatch - Assignment Reliability",
+    title: "DotMatch - Clear Read Assignment",
     description:
-      "Know which read assignments you can trust for known-target sequencing assays.",
+      "See which sequencing reads match known DNA targets and which remain ambiguous, unmatched, or invalid.",
     images: [
       {
         url: twitterImageUrl,

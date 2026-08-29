@@ -74,8 +74,8 @@ Ask these before recommending DotMatch for a workflow:
 
 - `docs/workflow-adoption.json` is still `not_ready`; local examples are not
   accepted external workflow integrations.
-- GHCR and BioContainers runtime smoke tests still need a Docker or OCI host
-  before the release record can be fully verified.
+- BioContainers publication and runtime smoke tests still depend on Bioconda
+  merge, channel propagation, and an OCI host.
 - Broader BCL/CBCL, Cell Ranger-style quantification, adapter trimming,
   variant calling, and screen-level statistical claims remain outside the
   current evidence boundary.

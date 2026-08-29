@@ -4,6 +4,11 @@ These tiny CRISPR guide-counting fixtures are shared by local workflow examples
 and wrapper tests. They are intentionally small enough for Planemo, nf-test, and
 CI smoke checks.
 
+These files are the CRISPR subset of `examples/workflows/fixtures/`, copied
+into the upstream module tree so an nf-core/modules checkout can run nf-test
+without a sibling DotMatch checkout. Keep this copy aligned with the shared
+fixture before opening an upstream PR.
+
 `sample_a.fastq` covers the core DotMatch outcomes:
 
 - `ambiguous`: `ACGT` exactly matches `guide_a`, but `guide_b` is inside the

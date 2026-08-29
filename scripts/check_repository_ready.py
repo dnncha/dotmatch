@@ -306,6 +306,80 @@ def check_pull_request_template(root: Path, result: AuditResult) -> None:
         result.passed.append("pull request template evidence checklist present")
 
 
+def check_workflow_action_pins(root: Path, result: AuditResult) -> None:
+    failures_before = len(result.failures)
+    workflow_paths = [
+        ".github/workflows/ci.yml",
+        ".github/workflows/codeql.yml",
+        ".github/workflows/pages.yml",
+        ".github/workflows/release.yml",
+        ".github/workflows/workflow-ecosystem.yml",
+    ]
+    workflows: dict[str, str] = {}
+    for relative in workflow_paths:
+        path = root / relative
+        if not path.is_file():
+            continue
+        try:
+            workflows[relative] = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            result.failures.append(f"{relative} could not be read: {exc}")
+
+    required_fragments = {
+        ".github/workflows/ci.yml": [
+            "actions/checkout@v7",
+            "actions/upload-artifact@v7",
+        ],
+        ".github/workflows/codeql.yml": [
+            "actions/checkout@v7",
+        ],
+        ".github/workflows/pages.yml": [
+            "actions/checkout@v7",
+            "actions/upload-pages-artifact@v5",
+        ],
+        ".github/workflows/release.yml": [
+            "actions/checkout@v7",
+            "actions/upload-artifact@v7",
+            "actions/download-artifact@v8",
+            "pypa/cibuildwheel@v4.1.0",
+        ],
+        ".github/workflows/workflow-ecosystem.yml": [
+            "actions/checkout@v7",
+            "mamba-org/setup-micromamba@v3",
+            "python=3.11",
+            "\n            pip\n",
+        ],
+    }
+    for relative, fragments in required_fragments.items():
+        text = workflows.get(relative)
+        if text is None:
+            continue
+        for fragment in fragments:
+            if fragment not in text:
+                display = fragment.strip() or fragment
+                result.failures.append(f"{relative} must include {display}")
+
+    obsolete_pins = [
+        "actions/checkout@v6",
+        "mamba-org/setup-micromamba@v2",
+        "pypa/cibuildwheel@v3.4.1",
+    ]
+    for relative, text in workflows.items():
+        for obsolete_pin in obsolete_pins:
+            if obsolete_pin in text:
+                result.failures.append(f"{relative} must not pin obsolete action {obsolete_pin}")
+
+    ci_workflow = workflows.get(".github/workflows/ci.yml", "")
+    if (
+        "npm --prefix apps/workbench ci" in ci_workflow
+        and "hashFiles('apps/workbench/package-lock.json') != ''" not in ci_workflow
+    ):
+        result.failures.append("CI Workbench npm steps must require apps/workbench/package-lock.json")
+
+    if len(result.failures) == failures_before:
+        result.passed.append("GitHub Actions workflow pins current")
+
+
 def _require_text(path: Path, needles: list[str], result: AuditResult) -> None:
     rel_path = path.relative_to(path.parents[1]).as_posix() if path.parent.name == "docs" else path.name
     try:
@@ -478,6 +552,7 @@ def audit(root: Path) -> AuditResult:
     check_readme_distribution_status(root, result)
     check_manifest(root, result)
     check_pull_request_template(root, result)
+    check_workflow_action_pins(root, result)
     check_open_core_governance(root, result)
     check_repository_tree(root, result)
     check_no_local_absolute_paths(root, result)

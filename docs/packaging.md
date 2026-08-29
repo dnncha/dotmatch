@@ -126,6 +126,20 @@ version, license, and authorship. The release workflow smoke-tests both CLI
 behavior and the `org.opencontainers.image.version` label before pushing tagged
 images to `ghcr.io/dnncha/dotmatch`.
 
+`make distribution-channels` verifies GHCR publication through public metadata:
+it first reads the GHCR registry manifest API, then falls back to public
+metadata from the GitHub Packages page when the registry API is unavailable
+without package-read credentials. The GHCR check requires the release tag, a
+`sha256` digest, and a `linux/amd64` platform entry. When Docker is available
+locally, the same command also runs:
+
+```bash
+docker run --rm ghcr.io/dnncha/dotmatch:v<version> --version
+```
+
+It also runs a CLI distance smoke test. Missing local Docker is reported as a
+note and does not block GHCR metadata verification.
+
 ## BioContainers
 
 BioContainers images for DotMatch are generated from the accepted Bioconda
@@ -179,12 +193,13 @@ This checks that the release version is visible on PyPI as a source distribution
 `micromamba`, runs the Bioconda `--version`/CLI and GuideCounter-compatible smoke tests, has a matching BioContainers
 tag such as `quay.io/biocontainers/dotmatch:<version>--<build>` that runs CLI
 distance and threshold smoke tests, is published as
-`ghcr.io/dnncha/dotmatch:vX.Y.Z`, runs with
-`docker run --rm ghcr.io/dnncha/dotmatch:v<version> --version` and a CLI distance
-smoke test, and is backed by a DOI in `CITATION.cff` that resolves through
-`doi.org`, and reports the same release version from Zenodo record metadata. It
-is not part of `make release-ready` because it should fail until public
-publication has actually happened.
+`ghcr.io/dnncha/dotmatch:vX.Y.Z` with public tag/digest/platform metadata,
+optionally runs `docker run --rm ghcr.io/dnncha/dotmatch:v<version> --version`
+and a CLI distance smoke test when Docker is available locally, and is backed
+by a DOI in `CITATION.cff` that resolves through `doi.org`, and reports the
+same release version from Zenodo record metadata. It is not part of
+`make release-ready` because it should fail until public publication has
+actually happened.
 
 ## Zenodo
 

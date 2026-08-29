@@ -21,7 +21,7 @@ nextflow_process {
             assert process.success
             assert path(process.out.panel_summary[0][1]).text.contains("status")
             assert path(process.out.target_safety[0][1]).text.contains("barcode_id")
-            assert path(process.out.versions[0]).text.contains("dotmatch")
+            assert path(process.out.versions[0]).text.contains('dotmatch: "0.1.9"')
         }
     }
 }

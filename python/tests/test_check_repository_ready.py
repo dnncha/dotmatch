@@ -54,9 +54,55 @@ def _write_minimal_repo(root: Path) -> None:
             '{"title": "DotMatch", "upload_type": "software", "version": "0.1.0", '
             '"license": "Apache-2.0", "keywords": ["bioinformatics"]}\n'
         ),
-        ".github/workflows/ci.yml": "name: ci\n",
-        ".github/workflows/codeql.yml": "name: codeql\n",
-        ".github/workflows/release.yml": "name: release\n",
+        ".github/workflows/ci.yml": (
+            "name: ci\n"
+            "jobs:\n"
+            "  build-test:\n"
+            "    steps:\n"
+            "      - uses: actions/checkout@v7\n"
+            "      - uses: actions/upload-artifact@v7\n"
+            "        with:\n"
+            "          name: reviewer-repro-packet\n"
+        ),
+        ".github/workflows/codeql.yml": (
+            "name: codeql\n"
+            "jobs:\n"
+            "  analyze:\n"
+            "    steps:\n"
+            "      - uses: actions/checkout@v7\n"
+        ),
+        ".github/workflows/release.yml": (
+            "name: release\n"
+            "jobs:\n"
+            "  wheel:\n"
+            "    steps:\n"
+            "      - uses: actions/checkout@v7\n"
+            "      - uses: pypa/cibuildwheel@v4.1.0\n"
+            "      - uses: actions/upload-artifact@v7\n"
+            "  publish:\n"
+            "    steps:\n"
+            "      - uses: actions/download-artifact@v8\n"
+        ),
+        ".github/workflows/pages.yml": (
+            "name: pages\n"
+            "jobs:\n"
+            "  build:\n"
+            "    steps:\n"
+            "      - uses: actions/checkout@v7\n"
+            "      - uses: actions/upload-pages-artifact@v5\n"
+        ),
+        ".github/workflows/workflow-ecosystem.yml": (
+            "name: workflow-ecosystem\n"
+            "jobs:\n"
+            "  workflow-ecosystem:\n"
+            "    steps:\n"
+            "      - uses: actions/checkout@v7\n"
+            "      - uses: mamba-org/setup-micromamba@v3\n"
+            "        with:\n"
+            "          create-args: >-\n"
+            "            python=3.11\n"
+            "            pip\n"
+        ),
         ".github/PULL_REQUEST_TEMPLATE.md": (
             "## Evidence\n\n"
             "- [ ] `make test`\n"
@@ -160,6 +206,54 @@ def test_repository_ready_reports_missing_codeql_workflow(tmp_path):
     result = checker.audit(tmp_path)
 
     assert any(".github/workflows/codeql.yml" in failure for failure in result.failures)
+
+
+def test_repository_ready_rejects_obsolete_workflow_action_pins(tmp_path):
+    checker = _load_checker()
+    _write_minimal_repo(tmp_path)
+    ci = (tmp_path / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    release = (tmp_path / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+    ecosystem = (tmp_path / ".github" / "workflows" / "workflow-ecosystem.yml").read_text(encoding="utf-8")
+    (tmp_path / ".github" / "workflows" / "ci.yml").write_text(
+        ci.replace("actions/checkout@v7", "actions/checkout@v6"),
+        encoding="utf-8",
+    )
+    (tmp_path / ".github" / "workflows" / "release.yml").write_text(
+        release.replace("pypa/cibuildwheel@v4.1.0", "pypa/cibuildwheel@v3.4.1"),
+        encoding="utf-8",
+    )
+    (tmp_path / ".github" / "workflows" / "workflow-ecosystem.yml").write_text(
+        ecosystem
+        .replace("mamba-org/setup-micromamba@v3", "mamba-org/setup-micromamba@v2")
+        .replace("            python=3.11\n", "")
+        .replace("            pip\n", ""),
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("ci.yml must not pin obsolete action actions/checkout@v6" in failure for failure in result.failures)
+    assert any("release.yml must not pin obsolete action pypa/cibuildwheel@v3.4.1" in failure for failure in result.failures)
+    assert any("workflow-ecosystem.yml must not pin obsolete action mamba-org/setup-micromamba@v2" in failure for failure in result.failures)
+    assert any("workflow-ecosystem.yml must include python=3.11" in failure for failure in result.failures)
+    assert any("workflow-ecosystem.yml must include pip" in failure for failure in result.failures)
+
+
+def test_repository_ready_requires_workbench_lockfile_condition(tmp_path):
+    checker = _load_checker()
+    _write_minimal_repo(tmp_path)
+    ci = (tmp_path / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    (tmp_path / ".github" / "workflows" / "ci.yml").write_text(
+        ci
+        + "      - name: Workbench install\n"
+        + "        if: runner.os == 'Linux' && hashFiles('apps/workbench/package.json') != ''\n"
+        + "        run: npm --prefix apps/workbench ci\n",
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert any("Workbench npm steps must require apps/workbench/package-lock.json" in failure for failure in result.failures)
 
 
 def test_repository_ready_reports_incomplete_pull_request_template(tmp_path):
