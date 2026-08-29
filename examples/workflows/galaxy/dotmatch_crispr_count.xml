@@ -14,7 +14,8 @@
 
 printf 'sample_id\tfastq\n' > samples.tsv &&
 #for $sample in $reads:
-    #set $sample_id = re.sub(r'[^\w.-]', '_', str($sample.element_identifier))
+    #set $sample_label = re.sub(r'(?i)\.(?:fastq|fastqsanger)(?:\.gz)?$', '', str($sample.element_identifier))
+    #set $sample_id = re.sub(r'[^\w.-]', '_', str($sample_label))
     #if $sample.is_of_type('fastq.gz', 'fastqsanger.gz'):
         #set $fastq_name = $sample_id + '.fastq.gz'
     #else:

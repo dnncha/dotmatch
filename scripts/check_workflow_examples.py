@@ -573,6 +573,7 @@ def check_galaxy(root: Path, result: WorkflowAudit) -> None:
     _require(command, "--summary", "Galaxy wrapper command must include --summary", result)
     _require(command, "--sample-qc", "Galaxy wrapper command must include --sample-qc", result)
     _require(command, "element_identifier", "Galaxy wrapper command must derive sample IDs from Galaxy datasets", result)
+    _require(command, "(?:fastq|fastqsanger)", "Galaxy wrapper must remove FASTQ suffixes from sample IDs", result)
     _require(command, "ln -s", "Galaxy wrapper command must stage input FASTQs", result)
     requirements = {node.text: node.attrib.get("version", "") for node in wrapper.findall("./requirements/requirement")}
     if requirements.get("dotmatch") != "0.2.2":

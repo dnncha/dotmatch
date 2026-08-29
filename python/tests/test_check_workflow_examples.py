@@ -262,7 +262,7 @@ def _write_workflow_repo(root: Path) -> None:
         "examples/workflows/galaxy/dotmatch_crispr_count.xml": (
             "<tool id=\"dotmatch_crispr_count\" version=\"0.2.2+galaxy1\">\n"
             "  <requirements><requirement type=\"package\" version=\"0.2.2\">dotmatch</requirement></requirements>\n"
-            "  <command>#for $sample in $reads:\nln -s '$sample' '$sample.element_identifier'\n#end for\ndotmatch crispr-count --ambiguity-policy radius --ambiguous discard --summary '$summary' --sample-qc '$sample_qc'</command>\n"
+            "  <command>#for $sample in $reads:\n#set $sample_id = re.sub(r'(?i)\\.(?:fastq|fastqsanger)(?:\\.gz)?$', '', str($sample.element_identifier))\nln -s '$sample' '$sample.element_identifier'\n#end for\ndotmatch crispr-count --ambiguity-policy radius --ambiguous discard --summary '$summary' --sample-qc '$sample_qc'</command>\n"
             "  <inputs><param name=\"reads\" multiple=\"true\"/></inputs>\n"
             "  <outputs><data name=\"counts\"/><data name=\"summary\"/><data name=\"sample_qc\"/></outputs>\n"
             "  <tests><test><param name=\"library\" value=\"crispr_library.csv\"/><param name=\"reads\" value=\"sample_a.fastq,sample_b.fastq\"/><output name=\"counts\" file=\"expected_counts.mageck.tsv\"/><output name=\"sample_qc\"><assert_contents><has_text text=\"assignment_rate\"/><has_text text=\"sample_a\"/><has_text text=\"sample_b\"/></assert_contents></output></test></tests>\n"

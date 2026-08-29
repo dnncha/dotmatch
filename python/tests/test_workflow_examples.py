@@ -187,6 +187,7 @@ def test_galaxy_wrapper_has_dotmatch_crispr_count_surface() -> None:
     command = root.findtext("command") or ""
     assert "dotmatch crispr-count" in command
     assert "element_identifier" in command
+    assert "(?:fastq|fastqsanger)" in command
     assert "ln -s" in command
     assert "--ambiguous" in command
     assert "--summary" in command
