@@ -23,10 +23,8 @@ The same record is published as
 and validated against
 [`agent-capabilities.schema.json`](https://dnncha.github.io/dotmatch/agent-capabilities.schema.json).
 Use an intent's exact `entrypoint`, then read its `inputs`, `outputs`, and
-`limitations` before constructing a command. PyPI 0.2.2 predates the installed
-`capabilities` command, so agents using that release should read the public JSON
-record instead. The package command becomes public only after a later versioned
-release passes the distribution gates.
+`limitations` before constructing a command. DotMatch 0.3.0 and later include
+the same capability record in the installed package.
 
 ## Choose by task
 
@@ -45,12 +43,13 @@ release passes the distribution gates.
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
-python3 -m pip install dotmatch==0.2.2
+python3 -m pip install dotmatch==0.3.0
 dotmatch --version
 ```
 
-Published Python wheels currently cover x86_64 Linux with glibc or musl and
-macOS 11 or newer on Apple Silicon or Intel. Windows wheels are not published.
+Published Python wheels currently cover x86_64 and aarch64 Linux with glibc or
+musl and macOS 11 or newer on Apple Silicon or Intel. Windows wheels are not
+published.
 Bioconda can lag PyPI, so inspect `dotmatch --version` when a workflow pins an
 exact release.
 
