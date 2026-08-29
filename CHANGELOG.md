@@ -2,6 +2,20 @@
 
 All notable user-facing changes are tracked here. Public statements in release notes must stay aligned with `docs/scientific-claims.md`.
 
+## 0.3.1 - 2026-08-30
+
+### Fixed
+
+- Updated the installed agent capability record to recommend the current
+  release instead of the previous package version.
+- Removed an obsolete cibuildwheel skip selector that produced a warning with
+  current cibuildwheel releases; the explicit CPython build matrix is unchanged.
+
+### Changed
+
+- Recorded the observed 0.3.0 PyPI, GHCR, and Zenodo publication state and
+  aligned public installation guidance with the released package.
+
 ## 0.3.0 - 2026-08-29
 
 ### Added

@@ -1,7 +1,7 @@
 {
   "$schema": "https://dnncha.github.io/dotmatch/agent-capabilities.schema.json",
   "schema_version": "1.0",
-  "generated_for_version": "0.3.0",
+  "generated_for_version": "0.3.1",
   "project": {
     "name": "DotMatch",
     "package": "dotmatch",
@@ -27,7 +27,7 @@
     ]
   },
   "install": {
-    "recommended": "python3 -m pip install dotmatch==0.3.0",
+    "recommended": "python3 -m pip install dotmatch==0.3.1",
     "verify": "dotmatch --version",
     "platforms": [
       "Linux x86_64 or aarch64 with glibc or musl",

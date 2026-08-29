@@ -13,17 +13,17 @@ quantifier, or screen-level statistical analysis package.
 
 ## Current Package Surface
 
-For release `0.3.0`, the package surface is:
+For release `0.3.1`, the package surface is:
 
 | Surface | Current state | Evidence or source |
 | --- | --- | --- |
-| PyPI | Version 0.3.0 is published; release CI smoke-tested the sdist and platform wheels | `docs/distribution-release.json` |
-| Bioconda | Version 0.2.2 remains published for linux-64, linux-aarch64, osx-64, and osx-arm64; 0.3.0 is not published there yet | `docs/distribution-release.json` |
-| GHCR container | Public v0.3.0 multi-architecture manifest is verified; release CI smoke-tested the amd64 and arm64 native CLI paths | `docs/distribution-release.json` |
-| BioContainers | The 0.2.2 images remain public on Quay; 0.3.0 depends on Bioconda propagation | `docs/distribution-release.json` |
+| PyPI | Version 0.3.1 is prepared for remote release validation | `docs/distribution-release.json` |
+| Bioconda | Version 0.2.2 remains published for linux-64, linux-aarch64, osx-64, and osx-arm64; 0.3.1 is not published there yet | `docs/distribution-release.json` |
+| GHCR container | Version 0.3.1 is prepared for remote multi-architecture publication | `docs/distribution-release.json` |
+| BioContainers | The 0.2.2 images remain public on Quay; 0.3.1 depends on Bioconda propagation | `docs/distribution-release.json` |
 | Documentation | Sphinx docs and public schemas in repository | `docs/index.md`, `docs/schemas.md` |
 | Citation | `CITATION.cff`, Zenodo concept DOI, and generated run artifacts | `docs/methods-and-citation.md` |
-| Python API | `dotmatch` package, streaming helpers, pandas/polars/AnnData interop, and a MultiQC parser entry point; 0.3.0 includes automatic MultiQC discovery | `pyproject.toml`, `docs/streaming-api.md`, `docs/ecosystem-status.md` |
+| Python API | `dotmatch` package, streaming helpers, pandas/polars/AnnData interop, and a MultiQC parser entry point; 0.3.1 includes automatic MultiQC discovery | `pyproject.toml`, `docs/streaming-api.md`, `docs/ecosystem-status.md` |
 | R interface | Reticulate-backed package skeleton and vignette | `R/`, `vignettes/dotmatch.Rmd` |
 
 Do not describe a channel as verified until `make distribution-channels` passes
@@ -54,7 +54,7 @@ Start from the released package, not an unpublished checkout, unless the
 evaluation is explicitly for development work:
 
 ```bash
-python3 -m pip install dotmatch==0.3.0
+python3 -m pip install dotmatch==0.3.1
 dotmatch --version
 dotmatch dist ACGT AGGT
 ```
