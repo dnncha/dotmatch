@@ -39,7 +39,7 @@ variant caller, UMI/cell quantifier, or screen-level statistics package.
 ## Minimum Review Commands
 
 ```bash
-python3 -m pip install dotmatch==0.2.2
+python3 -m pip install dotmatch
 dotmatch --version
 dotmatch dist ACGT AGGT
 ```

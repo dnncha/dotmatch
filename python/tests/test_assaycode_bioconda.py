@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from scripts.check_assaycode_bioconda_recipe import audit
-from scripts.prepare_bioconda_handoff import PLACEHOLDER, render
+from scripts.prepare_bioconda_handoff import PLACEHOLDER, _project_version, render
 
 
 def test_assaycode_metapackage_contract() -> None:
@@ -14,7 +14,7 @@ def test_assaycode_metapackage_contract() -> None:
 
 
 def test_handoff_renders_both_recipes_with_real_checksum(tmp_path: Path) -> None:
-    archive = tmp_path / "v0.2.2.tar.gz"
+    archive = tmp_path / f"v{_project_version()}.tar.gz"
     archive.write_bytes(b"immutable release fixture")
 
     dotmatch_dir, assaycode_dir, digest = render(archive, tmp_path / "handoff")
@@ -33,5 +33,6 @@ def test_handoff_renders_both_recipes_with_real_checksum(tmp_path: Path) -> None
 def test_handoff_rejects_archive_for_another_version(tmp_path: Path) -> None:
     archive = tmp_path / "v9.9.9.tar.gz"
     archive.write_bytes(b"wrong release")
-    with pytest.raises(ValueError, match="must identify 0.2.2"):
+    with pytest.raises(ValueError) as exc_info:
         render(archive, tmp_path / "handoff")
+    assert f"must identify {_project_version()}" in str(exc_info.value)

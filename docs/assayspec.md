@@ -165,9 +165,25 @@ Demux mode uses `mode = "demux"`, `barcodes`, `reads`, `[extract]`, and writes
 `demuxed/`, `summary.json`, optional `assignments.tsv`, `ambiguous.fastq`, and
 `unmatched.fastq`.
 
-Pair mode uses `mode = "pair-count"`, `left_targets`, `right_targets`, `reads`,
-`[left]`, and `[right]`. It writes `pair_counts.tsv`, `pair_summary.json`, and
-optional `pair_assignments.tsv`.
+Pair mode uses `mode = "pair-count"`, `left_targets`, `right_targets`, `[left]`, and `[right]`.
+It accepts one of two input layouts:
+
+```toml
+# Both target windows occur in one read.
+reads = "reads.fastq.gz"
+
+# Or, remove reads and use synchronized mates.
+left_reads = "sample_R1.fastq.gz"
+right_reads = "sample_R2.fastq.gz"
+```
+
+For paired inputs, left extraction coordinates apply to `left_reads` and right
+coordinates apply to `right_reads`. The two files must have the same number of
+complete records in matching order. DotMatch compares canonical read IDs and
+stops on the first mismatch. It writes `pair_counts.tsv`, `pair_summary.json`, and
+optional `pair_assignments.tsv`. The summary records the input layout and
+side-specific unmatched and invalid outcomes; methods and assay reports list
+both FASTQ inputs.
 
 ## Safety Policy
 

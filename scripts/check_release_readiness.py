@@ -203,6 +203,7 @@ def check_sdist_metadata(root: Path, result: ReleaseAudit) -> None:
 
 def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
     workflow = _read(root / ".github" / "workflows" / "release.yml")
+    pyproject = _read(root / "pyproject.toml")
     dockerfile = _read(root / "Dockerfile")
     bioconda = _read(root / "packaging" / "bioconda" / "meta.yaml")
     packaging = _read(root / "docs" / "packaging.md")
@@ -221,22 +222,39 @@ def check_distribution_surfaces(root: Path, result: ReleaseAudit) -> None:
         "docker/build-push-action",
         "ghcr.io/dnncha/dotmatch",
         "python scripts/check_python_wheel.py --wheel-only --out-dir dist-linux",
+        "CIBW_ARCHS_LINUX: \"x86_64 aarch64\"",
+        "--require-repaired-linux-architectures x86_64 aarch64",
+        "docker/setup-qemu-action@v4",
+        "docker buildx build --platform linux/arm64",
+        "platforms: linux/amd64,linux/arm64",
+        "docker buildx imagetools inspect",
+        "scripts/check_oci_manifest.py",
         "docker image inspect dotmatch:ci",
         "SHA256SUMS.txt",
     ]
     for fragment in required_workflow_fragments:
         if fragment not in workflow:
             result.failures.append(f"release workflow missing {fragment}")
+    required_cibuildwheel_fragments = [
+        "cp39-manylinux_aarch64",
+        "cp312-manylinux_aarch64",
+        "cp39-musllinux_aarch64",
+        "cp312-musllinux_aarch64",
+        "test-command",
+        "dotmatch leq 1 ACGT AGGT",
+    ]
+    for fragment in required_cibuildwheel_fragments:
+        if fragment not in pyproject:
+            result.failures.append(f"pyproject.toml cibuildwheel configuration missing {fragment}")
     if "dotmatch-wheel-Linux" in workflow:
         result.failures.append("release workflow must not publish raw Linux wheels to PyPI")
     container_version_check = re.search(
-        r"docker image inspect dotmatch:ci.*?\| grep '\^([^']+)\$'",
+        r"docker image inspect dotmatch:ci[^\n]*\| grep [\"']\^([^\"']+)\$[\"']",
         workflow,
-        flags=re.S,
     )
     if container_version_check and project_version:
         workflow_version = container_version_check.group(1)
-        if workflow_version != project_version:
+        if workflow_version not in {project_version, "${VERSION}"}:
             result.failures.append(
                 "release workflow container version smoke test must match "
                 f"pyproject.toml ({project_version}); saw {workflow_version}"

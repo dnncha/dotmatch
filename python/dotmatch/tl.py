@@ -35,6 +35,7 @@ All operations respect the radius ambiguity policy by default and only count
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -66,7 +67,7 @@ def _ensure_anndata() -> None:
 
 
 def _load_library(library: Any) -> list[tuple[str, str]]:
-    """Accept path, DataFrame, list of tuples, or list of seqs (auto ids)."""
+    """Accept a path, DataFrame, mappings, tuples, or sequences (auto ids)."""
     if isinstance(library, (str, Path)):
         # Assume tsv/csv with id,seq or just seqs
         try:
@@ -84,6 +85,31 @@ def _load_library(library: Any) -> list[tuple[str, str]]:
     if isinstance(library, (list, tuple)):
         if library and isinstance(library[0], (list, tuple)) and len(library[0]) == 2:
             return list(library)
+        if library and isinstance(library[0], Mapping):
+            normalized: list[tuple[str, str]] = []
+            for index, item in enumerate(library):
+                if not isinstance(item, Mapping):
+                    raise TypeError("library mappings cannot be mixed with other entry types")
+                target_id = next(
+                    (
+                        item[key]
+                        for key in ("target_id", "id", "guide_id", "feature_id", "name")
+                        if key in item and str(item[key]).strip()
+                    ),
+                    f"target_{index}",
+                )
+                sequence = next(
+                    (
+                        item[key]
+                        for key in ("target_seq", "sequence", "seq", "guide_seq", "feature_seq")
+                        if key in item and str(item[key]).strip()
+                    ),
+                    None,
+                )
+                if sequence is None:
+                    raise ValueError(f"library mapping at position {index} has no sequence field")
+                normalized.append((str(target_id), str(sequence)))
+            return normalized
         else:
             return [(f"target_{i}", str(s)) for i, s in enumerate(library)]
     raise TypeError("library must be path, DataFrame, or list of (id,seq) / seqs")

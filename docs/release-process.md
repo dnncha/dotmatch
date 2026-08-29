@@ -71,8 +71,8 @@ The workflow builds:
 - raw Linux wheel release artifact;
 - macOS wheel;
 - source distribution;
-- repaired manylinux/musllinux Linux wheels for PyPI;
-- GHCR container image;
+- repaired manylinux/musllinux Linux wheels for `x86_64` and `aarch64` for PyPI;
+- GHCR container image index for `linux/amd64` and `linux/arm64`;
 - `SHA256SUMS.txt`;
 - PyPI publication through trusted publishing for the sdist, macOS wheel, and repaired Linux wheels;
 - a draft GitHub release with generated notes.
@@ -99,7 +99,7 @@ Avoid:
 
 - Confirm the Zenodo archive for the tagged release and add the release DOI to
   `CITATION.cff` when available.
-- Publish the PyPI source distribution, native macOS wheel, and repaired manylinux/musllinux wheels through trusted publishing; do not upload raw `linux_x86_64` wheels. The PyPI project must have a trusted publisher matching repository `dnncha/dotmatch`, workflow `.github/workflows/release.yml`, and environment `pypi`.
+- Publish the PyPI source distribution, native macOS wheel, and repaired manylinux/musllinux wheels for `x86_64` and `aarch64` through trusted publishing; do not upload raw Linux wheels. The PyPI project must have a trusted publisher matching repository `dnncha/dotmatch`, workflow `.github/workflows/release.yml`, and environment `pypi`.
 - For Bioconda updates, submit or update the `bioconda-recipes` recipe after
   `make bioconda-recipe-ready`. Keep the `osx-arm64` additional-platforms opt-in
   in that recipe copy so Bioconda CI validates the Apple Silicon build. Replace
@@ -107,7 +107,7 @@ Avoid:
   propagation, verify with
   `make distribution-channels` before announcing conda install instructions or
   BioContainers availability.
-- Confirm the GHCR image labels and tag after the source tag is immutable.
+- Confirm the GHCR image labels, tag, and `linux/amd64` plus `linux/arm64` manifest descriptors after the source tag is immutable.
 - Run `make distribution-channels` after PyPI, Bioconda, GHCR, and Zenodo are public.
-- Update `docs/distribution-release.json` with verified public and evidence links after public channels are live.
+- Update `docs/distribution-release.json` with verified public and evidence links, exact PyPI Linux wheel architectures, and exact GHCR platforms after public channels are live.
 - Update `docs/scientific-claims.md` only when new evidence is committed and a corresponding gate passes.

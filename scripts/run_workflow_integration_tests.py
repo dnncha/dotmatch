@@ -3,7 +3,8 @@
 
 This runner keeps the expensive ecosystem checks in one place so local release
 work and CI exercise the same artifacts: nf-test modules, the small Nextflow
-pipeline, Snakemake, Galaxy wrapper linting, and MultiQC custom/plugin reports.
+pipeline, Snakemake, Galaxy wrapper linting and CRISPR-count execution, and
+MultiQC custom/plugin reports.
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ GALAXY_WRAPPERS = [
     ROOT / "examples" / "workflows" / "galaxy" / "dotmatch_demux.xml",
     ROOT / "examples" / "workflows" / "galaxy" / "dotmatch_panel_check.xml",
 ]
+GALAXY_CRISPR_WRAPPER = GALAXY_WRAPPERS[0]
 
 
 class Failure(Exception):
@@ -132,9 +134,14 @@ def run_snakemake(tmp: Path, env: dict[str, str]) -> None:
     )
 
 
-def run_planemo_lint(env: dict[str, str]) -> None:
+def run_planemo(env: dict[str, str]) -> None:
     _tool("planemo")
     _run(["planemo", "lint", *[str(path) for path in GALAXY_WRAPPERS]], cwd=ROOT, env=env)
+    _run(
+        ["planemo", "test", "--install_galaxy", str(GALAXY_CRISPR_WRAPPER)],
+        cwd=ROOT,
+        env=env,
+    )
 
 
 def run_multiqc(tmp: Path, env: dict[str, str]) -> None:
@@ -178,7 +185,11 @@ def main() -> int:
     parser.add_argument("--skip-nf-test", action="store_true", help="skip nf-test module checks")
     parser.add_argument("--skip-nextflow", action="store_true", help="skip the Nextflow pipeline check")
     parser.add_argument("--skip-snakemake", action="store_true", help="skip the Snakemake workflow check")
-    parser.add_argument("--skip-planemo", action="store_true", help="skip Galaxy wrapper linting")
+    parser.add_argument(
+        "--skip-planemo",
+        action="store_true",
+        help="skip Galaxy wrapper linting and CRISPR-count execution",
+    )
     parser.add_argument("--skip-multiqc", action="store_true", help="skip MultiQC report checks")
     args = parser.parse_args()
 
@@ -193,7 +204,7 @@ def main() -> int:
             if not args.skip_snakemake:
                 run_snakemake(tmp, env)
             if not args.skip_planemo:
-                run_planemo_lint(env)
+                run_planemo(env)
             if not args.skip_multiqc:
                 run_multiqc(tmp, env)
     except subprocess.CalledProcessError as exc:

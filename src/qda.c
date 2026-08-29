@@ -75,7 +75,7 @@ static void usage(const char *argv0) {
     fprintf(stderr, "  %s assign K barcodes.txt reads.txt [--ambiguity-policy radius|best]\n", argv0);
     fprintf(stderr, "  %s match K targets.txt reads.txt [--ambiguity-policy radius|best]\n", argv0);
     fprintf(stderr, "  %s fastq-assign --barcodes barcodes.tsv --reads reads.fastq[.gz] --barcode-start N --barcode-length L --k 0|1 [--ambiguity-policy radius|best] --out assignments.tsv\n", argv0);
-    fprintf(stderr, "  %s pair-count --left-targets left.tsv --right-targets right.tsv --reads reads.fastq[.gz] --left-start N --left-length L --right-start N --right-length L --k 0|1|2 --metric hamming|levenshtein [--ambiguity-policy radius|best] --out pair_counts.tsv [--summary summary.json]\n", argv0);
+    fprintf(stderr, "  %s pair-count --left-targets left.tsv --right-targets right.tsv (--reads reads.fastq[.gz] | --left-reads left.fastq[.gz] --right-reads right.fastq[.gz]) --left-start N --left-length L --right-start N --right-length L --k 0|1|2 --metric hamming|levenshtein [--ambiguity-policy radius|best] --out pair_counts.tsv [--summary summary.json]\n", argv0);
     fprintf(stderr, "  %s demux --barcodes barcodes.tsv|barcodes.csv --reads reads.fastq[.gz] --barcode-start N --barcode-length L|auto --k 0|1|2 --metric hamming|levenshtein [--ambiguity-policy radius|best] [--max-correction-qual Q] --out-dir demux_dir [--summary qc.json]\n", argv0);
     fprintf(stderr, "  %s bcl-demux --run-folder RUN --sample-sheet SampleSheet.csv --out-dir demux_dir --barcode-mismatches 0|1|1,1 [--threads N] (0=auto) [--gzip-level 0..9] [--emit-index-fastqs] [--summary summary.json]\n", argv0);
     fprintf(stderr, "  %s bcl-validate --dotmatch-out DIR --truth-out DIR\n", argv0);
@@ -126,9 +126,10 @@ static void help_manual(FILE *out, const char *argv0) {
     fprintf(out, "  demux --barcodes barcodes.tsv|barcodes.csv --reads reads.fastq[.gz] \\\n");
     fprintf(out, "      --barcode-start N --barcode-length L|auto --k 0|1|2 --out-dir demux_dir\n");
     fprintf(out, "      Split reads by fixed-position inline barcodes.\n");
-    fprintf(out, "  pair-count --left-targets left.tsv --right-targets right.tsv --reads reads.fastq[.gz] \\\n");
+    fprintf(out, "  pair-count --left-targets left.tsv --right-targets right.tsv \\\n");
+    fprintf(out, "      (--reads reads.fastq[.gz] | --left-reads left.fastq[.gz] --right-reads right.fastq[.gz]) \\\n");
     fprintf(out, "      --left-start N --left-length L --right-start N --right-length L --out pair_counts.tsv\n");
-    fprintf(out, "      Count pairs of independent fixed-window targets.\n");
+    fprintf(out, "      Count independent fixed-window targets from one read or synchronized FASTQ mates.\n");
     fprintf(out, "\n");
     fprintf(out, "Diagnostics and validation:\n");
     fprintf(out, "  audit --targets targets.tsv|targets.csv --k K --out-dir audit_dir\n");
@@ -892,6 +893,20 @@ static void fastq_read_id(const char *header, char *out, size_t out_cap) {
     if (n >= out_cap) n = out_cap - 1;
     memcpy(out, start, n);
     out[n] = '\0';
+}
+
+/*
+ * Paired FASTQ files commonly use either a shared Illumina identifier followed
+ * by a read-number field, or a terminal /1 and /2 suffix. Compare the stable
+ * identifier in both forms while retaining fastq_read_id behavior for
+ * single-read commands.
+ */
+static void fastq_pair_read_id(const char *header, char *out, size_t out_cap) {
+    fastq_read_id(header, out, out_cap);
+    size_t n = strlen(out);
+    if (n >= 2 && out[n - 2] == '/' && (out[n - 1] == '1' || out[n - 1] == '2')) {
+        out[n - 2] = '\0';
+    }
 }
 
 static void print_fastq_row(FILE *out, const seq_table *targets, const char *read_id,
@@ -7475,6 +7490,8 @@ typedef struct pair_count_stats {
     unsigned long long left_unmatched;
     unsigned long long right_unmatched;
     unsigned long long invalid;
+    unsigned long long left_invalid;
+    unsigned long long right_invalid;
     unsigned long long candidates_considered;
     unsigned long long candidates_verified;
 } pair_count_stats;
@@ -7503,6 +7520,8 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
     const char *left_path = NULL;
     const char *right_path = NULL;
     const char *reads_path = NULL;
+    const char *left_reads_path = NULL;
+    const char *right_reads_path = NULL;
     const char *out_path = NULL;
     const char *summary_path = NULL;
     const char *assignments_path = NULL;
@@ -7523,6 +7542,10 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
             right_path = argv[i++];
         } else if (strcmp(arg, "--reads") == 0 && i < argc) {
             reads_path = argv[i++];
+        } else if (strcmp(arg, "--left-reads") == 0 && i < argc) {
+            left_reads_path = argv[i++];
+        } else if (strcmp(arg, "--right-reads") == 0 && i < argc) {
+            right_reads_path = argv[i++];
         } else if (strcmp(arg, "--left-start") == 0 && i < argc) {
             if (parse_size_value(argv[i++], &left_start) != 0) {
                 usage(argv0);
@@ -7580,8 +7603,11 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
         }
     }
 
-    if (left_path == NULL || right_path == NULL || reads_path == NULL || out_path == NULL ||
-        left_len == 0 || right_len == 0 || k < 0) {
+    int paired_fastq = reads_path == NULL;
+    if (left_path == NULL || right_path == NULL || out_path == NULL || left_len == 0 || right_len == 0 || k < 0 ||
+        (reads_path != NULL && (left_reads_path != NULL || right_reads_path != NULL)) ||
+        (paired_fastq && (left_reads_path == NULL || right_reads_path == NULL))) {
+        fprintf(stderr, "pair-count requires --reads or both --left-reads and --right-reads\n");
         usage(argv0);
         return 2;
     }
@@ -7598,7 +7624,8 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
     size_t *right_lens = NULL;
     qdaln_index *left_index = NULL;
     qdaln_index *right_index = NULL;
-    fastq_reader reader = {0};
+    fastq_reader left_reader = {0};
+    fastq_reader right_reader = {0};
     FILE *out = NULL;
     FILE *summary = NULL;
     FILE *assignments = NULL;
@@ -7642,7 +7669,8 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
         fprintf(stderr, "out of memory\n");
         goto done;
     }
-    if (fastq_reader_open(&reader, reads_path) != 0) {
+    if (fastq_reader_open(&left_reader, paired_fastq ? left_reads_path : reads_path) != 0 ||
+        (paired_fastq && fastq_reader_open(&right_reader, right_reads_path) != 0)) {
         fprintf(stderr, "failed to open FASTQ input\n");
         goto done;
     }
@@ -7655,30 +7683,67 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
         fprintf(assignments, "read_id\tleft_observed\tleft_index\tleft_id\tleft_status\tleft_distance\tright_observed\tright_index\tright_id\tright_status\tright_distance\tpair_status\n");
     }
 
-    char header[8192];
-    char seq[8192];
-    char plus[8192];
-    char qual[8192];
+    char left_header[8192];
+    char left_seq[8192];
+    char left_plus[8192];
+    char left_qual[8192];
+    char right_header[8192];
+    char right_seq[8192];
+    char right_plus[8192];
+    char right_qual[8192];
     char read_id[8192];
+    char right_read_id[8192];
     char left_observed[8192];
     char right_observed[8192];
-    size_t seq_len = 0;
-    int got = 0;
-    while ((got = fastq_read_record_len(&reader, header, seq, plus, qual, sizeof(header), &seq_len)) == 1) {
-        (void)plus;
-        (void)qual;
+    for (;;) {
+        size_t left_seq_len = 0;
+        size_t right_seq_len = 0;
+        int left_got = fastq_read_record_len(&left_reader, left_header, left_seq, left_plus, left_qual,
+                                             sizeof(left_header), &left_seq_len);
+        if (left_got < 0) {
+            fprintf(stderr, "malformed FASTQ input\n");
+            goto done;
+        }
+        const char *right_seq_ptr = left_seq;
+        if (paired_fastq) {
+            int right_got = fastq_read_record_len(&right_reader, right_header, right_seq, right_plus, right_qual,
+                                                  sizeof(right_header), &right_seq_len);
+            if (right_got < 0) {
+                fprintf(stderr, "malformed paired FASTQ input\n");
+                goto done;
+            }
+            if (left_got != right_got) {
+                fprintf(stderr, "paired FASTQ inputs have different record counts\n");
+                goto done;
+            }
+            if (left_got == 0) break;
+            fastq_pair_read_id(left_header, read_id, sizeof(read_id));
+            fastq_pair_read_id(right_header, right_read_id, sizeof(right_read_id));
+            if (read_id[0] == '\0' || right_read_id[0] == '\0') {
+                fprintf(stderr, "paired FASTQ records require non-empty read IDs\n");
+                goto done;
+            }
+            if (strcmp(read_id, right_read_id) != 0) {
+                fprintf(stderr, "paired FASTQ read IDs do not match: %s != %s\n", read_id, right_read_id);
+                goto done;
+            }
+            right_seq_ptr = right_seq;
+        } else {
+            if (left_got == 0) break;
+            right_seq_len = left_seq_len;
+            fastq_read_id(left_header, read_id, sizeof(read_id));
+        }
         qdaln_match_result left = {-1, -1, -1, 0, QDALN_MATCH_INVALID};
         qdaln_match_result right = {-1, -1, -1, 0, QDALN_MATCH_INVALID};
         qdaln_index_stats left_stats = {0, 0};
         qdaln_index_stats right_stats = {0, 0};
-        fastq_read_id(header, read_id, sizeof(read_id));
         left_observed[0] = '\0';
         right_observed[0] = '\0';
         ++stats.total_reads;
 
-        if (assign_count_window(left_index, seq, seq_len, left_start, left_len, k, metric, 0,
+        if (assign_count_window(left_index, left_seq, left_seq_len, left_start, left_len, k, metric, 0,
                                 &left, &left_stats, left_observed, sizeof(left_observed), 0) != 0 ||
-            assign_count_window(right_index, seq, seq_len, right_start, right_len, k, metric, 0,
+            assign_count_window(right_index, right_seq_ptr, right_seq_len, right_start, right_len, k, metric, 0,
                                 &right, &right_stats, right_observed, sizeof(right_observed), 0) != 0) {
             fprintf(stderr, "FASTQ pair assignment failed\n");
             goto done;
@@ -7695,6 +7760,8 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
             ++stats.assigned_pairs;
         } else if (strcmp(pair_status, "invalid") == 0) {
             ++stats.invalid;
+            if (left.status == QDALN_MATCH_INVALID) ++stats.left_invalid;
+            if (right.status == QDALN_MATCH_INVALID) ++stats.right_invalid;
         } else {
             if (left.status == QDALN_MATCH_AMBIGUOUS || right.status == QDALN_MATCH_AMBIGUOUS) ++stats.pair_ambiguous;
             if (left.status == QDALN_MATCH_NONE) ++stats.left_unmatched;
@@ -7704,10 +7771,6 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
             print_pair_assignment_row(assignments, read_id, &left_targets, &right_targets,
                                       left_observed, left, right_observed, right);
         }
-    }
-    if (got < 0) {
-        fprintf(stderr, "malformed FASTQ input\n");
-        goto done;
     }
 
     out = open_output_file(out_path);
@@ -7731,11 +7794,12 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
             goto done;
         }
         fprintf(summary,
-                "{\n  \"workflow\": \"pair-count\",\n  \"k\": %d,\n  \"metric\": \"%s\",\n  \"ambiguity_policy\": \"%s\",\n  \"alphabet_policy\": \"%s\",\n  \"left_start\": %zu,\n  \"left_length\": %zu,\n  \"right_start\": %zu,\n  \"right_length\": %zu,\n  \"n_left_targets\": %zu,\n  \"n_right_targets\": %zu,\n  \"total_reads\": %llu,\n  \"assigned_pairs\": %llu,\n  \"pair_ambiguous\": %llu,\n  \"left_unmatched\": %llu,\n  \"right_unmatched\": %llu,\n  \"invalid\": %llu,\n  \"candidates_considered\": %llu,\n  \"candidates_verified\": %llu\n}\n",
+                "{\n  \"workflow\": \"pair-count\",\n  \"input_mode\": \"%s\",\n  \"input_sync\": \"%s\",\n  \"k\": %d,\n  \"metric\": \"%s\",\n  \"ambiguity_policy\": \"%s\",\n  \"alphabet_policy\": \"%s\",\n  \"left_start\": %zu,\n  \"left_length\": %zu,\n  \"right_start\": %zu,\n  \"right_length\": %zu,\n  \"n_left_targets\": %zu,\n  \"n_right_targets\": %zu,\n  \"total_reads\": %llu,\n  \"total_pairs\": %llu,\n  \"assigned_pairs\": %llu,\n  \"pair_ambiguous\": %llu,\n  \"left_unmatched\": %llu,\n  \"right_unmatched\": %llu,\n  \"invalid\": %llu,\n  \"left_invalid\": %llu,\n  \"right_invalid\": %llu,\n  \"candidates_considered\": %llu,\n  \"candidates_verified\": %llu\n}\n",
+                paired_fastq ? "paired-fastq" : "single-read", paired_fastq ? "canonical-read-id" : "not-applicable",
                 k, metric_name(metric), ambiguity_policy_name(assignment_policy), qdaln_alphabet_policy(), left_start, left_len, right_start, right_len,
-                left_targets.count, right_targets.count, stats.total_reads, stats.assigned_pairs,
+                left_targets.count, right_targets.count, stats.total_reads, stats.total_reads, stats.assigned_pairs,
                 stats.pair_ambiguous, stats.left_unmatched, stats.right_unmatched, stats.invalid,
-                stats.candidates_considered, stats.candidates_verified);
+                stats.left_invalid, stats.right_invalid, stats.candidates_considered, stats.candidates_verified);
     }
 
     rc = 0;
@@ -7744,7 +7808,8 @@ done:
     if (out != NULL) fclose(out);
     if (summary != NULL) fclose(summary);
     if (assignments != NULL) fclose(assignments);
-    fastq_reader_close(&reader);
+    fastq_reader_close(&left_reader);
+    fastq_reader_close(&right_reader);
     qdaln_index_free(left_index);
     qdaln_index_free(right_index);
     free(left_ptrs);

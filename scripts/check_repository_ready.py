@@ -67,6 +67,7 @@ REQUIRED_FILES = [
     "scripts/check_citation_metadata.py",
     "scripts/check_distribution_channels.py",
     "scripts/check_distribution_record.py",
+    "scripts/check_oci_manifest.py",
     "scripts/check_bioconda_recipe.py",
     "scripts/check_native_comparator_scope.py",
     "scripts/check_workflow_adoption.py",

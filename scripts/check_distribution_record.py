@@ -17,6 +17,9 @@ MANIFEST = Path("docs") / "distribution-release.json"
 REQUIRED_CHANNELS = ["pypi", "bioconda", "ghcr", "biocontainers", "zenodo"]
 VALID_OVERALL_STATUSES = {"not_released", "partially_verified", "released"}
 VALID_CHANNEL_STATUSES = {"prepared", "blocked", "manifest_verified", "verified"}
+VERIFIED_CHANNEL_STATUSES = {"manifest_verified", "verified"}
+SUPPORTED_PYPI_LINUX_WHEEL_ARCHITECTURES = {"x86_64", "aarch64"}
+SUPPORTED_GHCR_PLATFORMS = {"linux/amd64", "linux/arm64"}
 
 
 def _project_version(root: Path) -> str:
@@ -27,6 +30,28 @@ def _project_version(root: Path) -> str:
 
 def _check_https_url(channel_id: str, field: str, value: str, result: AuditResult) -> bool:
     return check_https_url(channel_id, field, value, result)
+
+
+def _check_declared_values(
+    channel_id: str,
+    item: dict[str, object],
+    field: str,
+    supported_values: set[str],
+    required_value: str,
+    result: AuditResult,
+) -> None:
+    value = item.get(field)
+    if not isinstance(value, list) or not value or not all(isinstance(entry, str) and entry for entry in value):
+        result.failures.append(f"{channel_id} must declare {field} as a non-empty list of strings")
+        return
+    entries = [str(entry) for entry in value]
+    if len(entries) != len(set(entries)):
+        result.failures.append(f"{channel_id} {field} must not contain duplicates")
+    invalid = sorted(set(entries) - supported_values)
+    if invalid:
+        result.failures.append(f"{channel_id} {field} contains unsupported value(s): {', '.join(invalid)}")
+    if required_value not in entries:
+        result.failures.append(f"{channel_id} {field} must include {required_value}")
 
 
 def _check_channel(item: object, overall_status: str, result: AuditResult) -> str:
@@ -40,6 +65,25 @@ def _check_channel(item: object, overall_status: str, result: AuditResult) -> st
     status = str(item.get("status") or "").strip()
     if status not in VALID_CHANNEL_STATUSES:
         result.failures.append(f"{channel_id} has invalid distribution channel status: {status}")
+    if status in VERIFIED_CHANNEL_STATUSES:
+        if channel_id == "pypi":
+            _check_declared_values(
+                channel_id,
+                item,
+                "linux_wheel_architectures",
+                SUPPORTED_PYPI_LINUX_WHEEL_ARCHITECTURES,
+                "x86_64",
+                result,
+            )
+        elif channel_id == "ghcr":
+            _check_declared_values(
+                channel_id,
+                item,
+                "platforms",
+                SUPPORTED_GHCR_PLATFORMS,
+                "linux/amd64",
+                result,
+            )
 
     verification = str(item.get("verification_command") or "").strip()
     if verification != "make distribution-channels":

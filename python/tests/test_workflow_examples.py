@@ -175,15 +175,26 @@ def test_galaxy_wrapper_has_dotmatch_crispr_count_surface() -> None:
 
     assert root.tag == "tool"
     assert root.attrib["id"] == "dotmatch_crispr_count"
+    assert root.attrib["version"] == "0.3.0+galaxy0"
 
-    requirement_names = [node.text for node in root.findall("./requirements/requirement")]
-    assert "dotmatch" in requirement_names
+    requirements = {node.text: node.attrib.get("version") for node in root.findall("./requirements/requirement")}
+    assert requirements["dotmatch"] == "0.3.0"
+
+    reads = root.find("./inputs/param[@name='reads']")
+    assert reads is not None
+    assert reads.attrib["multiple"] == "true"
 
     command = root.findtext("command") or ""
     assert "dotmatch crispr-count" in command
+    assert "element_identifier" in command
+    assert "ln -s" in command
     assert "--ambiguous" in command
     assert "--summary" in command
     assert "--sample-qc" in command
+    crispr_command = next(line for line in command.splitlines() if line.startswith("dotmatch crispr-count"))
+    assert "\\" not in crispr_command
+    assert "--out" in crispr_command
+    assert "--no-progress" in crispr_command
 
     output_names = {node.attrib["name"] for node in root.findall("./outputs/data")}
     assert {"counts", "summary", "sample_qc"} <= output_names
@@ -197,13 +208,24 @@ def test_galaxy_wrapper_has_planemo_fixture_test() -> None:
     assert test is not None
     params = {node.attrib["name"]: node.attrib.get("value", "") for node in test.findall("param")}
     assert params["library"] == "crispr_library.csv"
-    assert params["sample1_fastq"] == "sample_a.fastq"
-    assert params["sample2_fastq"] == "sample_b.fastq"
+    assert params["reads"] == "sample_a.fastq,sample_b.fastq"
     outputs = {node.attrib["name"]: node.attrib.get("file", "") for node in test.findall("output")}
     assert outputs["counts"] == "expected_counts.mageck.tsv"
     sample_qc = next(node for node in test.findall("output") if node.attrib["name"] == "sample_qc")
     assert sample_qc.find("./assert_contents/has_text[@text='assignment_rate']") is not None
     assert sample_qc.find("./assert_contents/has_text[@text='sample_a']") is not None
+
+
+def test_galaxy_count_fixture_keeps_the_exact_guide_assignment() -> None:
+    wrapper_path = ROOT / "examples" / "workflows" / "galaxy" / "dotmatch_crispr_count.xml"
+    wrapper = ET.parse(wrapper_path).getroot()
+    requirement = wrapper.find("./requirements/requirement")
+    assert requirement is not None
+    assert requirement.text == "dotmatch"
+    assert requirement.attrib["version"] == "0.3.0"
+
+    expected = ROOT / "examples" / "workflows" / "galaxy" / "test-data" / "expected_counts.mageck.tsv"
+    assert "guide_a\tGENEA\t1\t0" in expected.read_text(encoding="utf-8")
 
 
 def test_workflow_fixtures_cover_core_outcomes() -> None:

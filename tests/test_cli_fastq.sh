@@ -250,6 +250,9 @@ PAIRFASTQ
 
 grep '^L0	R0	2$' "$TMPDIR/pair_counts.tsv" >/dev/null
 grep '^L1	R1	1$' "$TMPDIR/pair_counts.tsv" >/dev/null
+grep '"input_mode": "single-read"' "$TMPDIR/pair_summary.json" >/dev/null
+grep '"input_sync": "not-applicable"' "$TMPDIR/pair_summary.json" >/dev/null
+grep '"total_pairs": 7' "$TMPDIR/pair_summary.json" >/dev/null
 grep '"assigned_pairs": 3' "$TMPDIR/pair_summary.json" >/dev/null
 grep '"pair_ambiguous": 1' "$TMPDIR/pair_summary.json" >/dev/null
 grep '"left_unmatched": 1' "$TMPDIR/pair_summary.json" >/dev/null
@@ -257,6 +260,137 @@ grep '"right_unmatched": 1' "$TMPDIR/pair_summary.json" >/dev/null
 grep '"invalid": 1' "$TMPDIR/pair_summary.json" >/dev/null
 grep '^p5	AGGT	0	L0	ambiguous	1	GGAA	0	R0	unique	0	ambiguous$' "$TMPDIR/pair_assignments.tsv" >/dev/null
 grep '^p6		-1		invalid	-1		-1		invalid	-1	invalid$' "$TMPDIR/pair_assignments.tsv" >/dev/null
+
+cat > "$TMPDIR/pair_left_reads.fastq" <<'PAIRFASTQ'
+@pair_a/1
+ACGT
++
+IIII
+@pair_b 1:N:0:1
+TTTT
++
+IIII
+@pair_c/1
+AC
++
+II
+@pair_d/1
+ACGT
++
+IIII
+PAIRFASTQ
+
+cat > "$TMPDIR/pair_right_reads.fastq" <<'PAIRFASTQ'
+@pair_a/2
+GGAA
++
+IIII
+@pair_b 2:N:0:1
+CCCC
++
+IIII
+@pair_c/2
+GGAA
++
+IIII
+@pair_d/2
+AC
++
+II
+PAIRFASTQ
+
+"$DOTMATCH_BIN" pair-count \
+  --left-targets "$TMPDIR/pair_left.tsv" \
+  --right-targets "$TMPDIR/pair_right.tsv" \
+  --left-reads "$TMPDIR/pair_left_reads.fastq" \
+  --right-reads "$TMPDIR/pair_right_reads.fastq" \
+  --left-start 0 \
+  --left-length 4 \
+  --right-start 0 \
+  --right-length 4 \
+  --k 1 \
+  --metric hamming \
+  --out "$TMPDIR/pair_paired_counts.tsv" \
+  --summary "$TMPDIR/pair_paired_summary.json" \
+  --assignments "$TMPDIR/pair_paired_assignments.tsv"
+
+grep '^L0	R0	1$' "$TMPDIR/pair_paired_counts.tsv" >/dev/null
+grep '^L1	R1	1$' "$TMPDIR/pair_paired_counts.tsv" >/dev/null
+grep '"input_mode": "paired-fastq"' "$TMPDIR/pair_paired_summary.json" >/dev/null
+grep '"input_sync": "canonical-read-id"' "$TMPDIR/pair_paired_summary.json" >/dev/null
+grep '"total_pairs": 4' "$TMPDIR/pair_paired_summary.json" >/dev/null
+grep '"left_invalid": 1' "$TMPDIR/pair_paired_summary.json" >/dev/null
+grep '"right_invalid": 1' "$TMPDIR/pair_paired_summary.json" >/dev/null
+grep '^pair_a	ACGT	0	L0	unique	0	GGAA	0	R0	unique	0	unique$' "$TMPDIR/pair_paired_assignments.tsv" >/dev/null
+grep '^pair_c		-1		invalid	-1	GGAA	0	R0	unique	0	invalid$' "$TMPDIR/pair_paired_assignments.tsv" >/dev/null
+grep '^pair_d	ACGT	0	L0	unique	0		-1		invalid	-1	invalid$' "$TMPDIR/pair_paired_assignments.tsv" >/dev/null
+
+if "$DOTMATCH_BIN" pair-count \
+  --left-targets "$TMPDIR/pair_left.tsv" \
+  --right-targets "$TMPDIR/pair_right.tsv" \
+  --left-reads "$TMPDIR/pair_left_reads.fastq" \
+  --left-start 0 \
+  --left-length 4 \
+  --right-start 0 \
+  --right-length 4 \
+  --k 1 \
+  --metric hamming \
+  --out "$TMPDIR/pair_missing_mate_counts.tsv" 2> "$TMPDIR/pair_missing_mate.err"; then
+  echo "pair-count accepted one paired FASTQ mate" >&2
+  exit 1
+fi
+grep 'pair-count requires --reads or both --left-reads and --right-reads' "$TMPDIR/pair_missing_mate.err" >/dev/null
+test ! -e "$TMPDIR/pair_missing_mate_counts.tsv"
+
+cat > "$TMPDIR/pair_right_mismatch.fastq" <<'PAIRFASTQ'
+@other/2
+GGAA
++
+IIII
+PAIRFASTQ
+
+if "$DOTMATCH_BIN" pair-count \
+  --left-targets "$TMPDIR/pair_left.tsv" \
+  --right-targets "$TMPDIR/pair_right.tsv" \
+  --left-reads "$TMPDIR/pair_left_reads.fastq" \
+  --right-reads "$TMPDIR/pair_right_mismatch.fastq" \
+  --left-start 0 \
+  --left-length 4 \
+  --right-start 0 \
+  --right-length 4 \
+  --k 1 \
+  --metric hamming \
+  --out "$TMPDIR/pair_mismatch_counts.tsv" 2> "$TMPDIR/pair_mismatch.err"; then
+  echo "pair-count accepted unsynchronized paired FASTQ IDs" >&2
+  exit 1
+fi
+grep 'paired FASTQ read IDs do not match: pair_a != other' "$TMPDIR/pair_mismatch.err" >/dev/null
+test ! -e "$TMPDIR/pair_mismatch_counts.tsv"
+
+cat > "$TMPDIR/pair_right_short.fastq" <<'PAIRFASTQ'
+@pair_a/2
+GGAA
++
+IIII
+PAIRFASTQ
+
+if "$DOTMATCH_BIN" pair-count \
+  --left-targets "$TMPDIR/pair_left.tsv" \
+  --right-targets "$TMPDIR/pair_right.tsv" \
+  --left-reads "$TMPDIR/pair_left_reads.fastq" \
+  --right-reads "$TMPDIR/pair_right_short.fastq" \
+  --left-start 0 \
+  --left-length 4 \
+  --right-start 0 \
+  --right-length 4 \
+  --k 1 \
+  --metric hamming \
+  --out "$TMPDIR/pair_short_counts.tsv" 2> "$TMPDIR/pair_short.err"; then
+  echo "pair-count accepted paired FASTQ files with different record counts" >&2
+  exit 1
+fi
+grep 'paired FASTQ inputs have different record counts' "$TMPDIR/pair_short.err" >/dev/null
+test ! -e "$TMPDIR/pair_short_counts.tsv"
 
 cat > "$TMPDIR/pair_left_duplicate.tsv" <<'TARGETS'
 Ldup	ACGT
@@ -1798,7 +1932,29 @@ grep '^bc3	TTTT	G3	0	0	0	0	0	0	0$' "$TMPDIR/counts_exact_radius.tsv" >/dev/null
 grep '"count_engine": "hamming_lookup_direct_single_offset"' "$TMPDIR/summary_exact_radius.json" >/dev/null
 grep '"hamming_index": "exact"' "$TMPDIR/summary_exact_radius.json" >/dev/null
 
+METAL_AVAILABLE=0
 if [ "$(uname -s)" = "Darwin" ]; then
+  if "$DOTMATCH_BIN" count \
+    --targets "$TMPDIR/targets.csv" \
+    --reads "$TMPDIR/reads.fastq.gz" \
+    --sample-label metal_probe \
+    --target-start 0 \
+    --target-length 4 \
+    --k 1 \
+    --metric hamming \
+    --ambiguity-policy best \
+    --format mageck \
+    --backend gpu-metal-experimental \
+    --out "$TMPDIR/counts_metal_probe.tsv" \
+    --summary "$TMPDIR/summary_metal_probe.json" \
+    2> "$TMPDIR/metal_probe.err"; then
+    METAL_AVAILABLE=1
+  else
+    grep 'Metal backend unavailable' "$TMPDIR/metal_probe.err" >/dev/null
+  fi
+fi
+
+if [ "$METAL_AVAILABLE" = "1" ]; then
   "$DOTMATCH_BIN" count \
     --targets "$TMPDIR/targets.csv" \
     --reads "$TMPDIR/reads.fastq.gz" \
@@ -2350,7 +2506,7 @@ LIBRARYALIASES
 
 diff -u "$TMPDIR/expected_mageck.tsv" "$TMPDIR/crispr_mageck_reordered.tsv"
 
-if [ "$(uname -s)" = "Darwin" ]; then
+if [ "$METAL_AVAILABLE" = "1" ]; then
   "$DOTMATCH_BIN" crispr-count \
     --library "$TMPDIR/targets.csv" \
     --samples "$TMPDIR/samples.tsv" \

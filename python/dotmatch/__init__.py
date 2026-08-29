@@ -33,6 +33,7 @@ from .core import (
     targets_from_dataframe,
     write_assignments_tsv,
 )
+from .feature_matrix import FeatureMatrixResult, build_feature_matrix
 
 # Advanced / optional integrations (import submodules to avoid heavy dep cost)
 # from . import anndata as anndata  # if you have the extra
@@ -52,7 +53,7 @@ def _source_tree_version() -> Optional[str]:
 try:
     __version__ = _source_tree_version() or _metadata_version("dotmatch")
 except PackageNotFoundError:
-    __version__ = "0.2.2"
+    __version__ = "0.3.0"
 
 __all__ = [
     "__version__",
@@ -84,5 +85,7 @@ __all__ = [
     "stream_assign",
     "targets_from_dataframe",
     "write_assignments_tsv",
+    "FeatureMatrixResult",
+    "build_feature_matrix",
     "tl",
 ]

@@ -47,6 +47,7 @@ predates that installed command.
 | Diagnose barcode failures | [Barcode run diagnosis](getting-started.md#diagnose-a-barcode-run) |
 | Design or check a barcode panel | [Barcode panel design](barcode-panel-design.md) |
 | Route an agent to a checked command | [Agent guide](agent-guide.md) |
+| Build a cell-by-feature matrix from extracted observations | [scverse and feature barcodes](tutorials/scverse-perturb-seq.md) |
 | Use DotMatch from Python | [Streaming Python API](streaming-api.md) |
 | Add DotMatch to a pipeline | [Output schemas](schemas.md) |
 | Evaluate DotMatch for a workflow | [Bioinformatics evaluation](bioinformatics-evaluation.md) |

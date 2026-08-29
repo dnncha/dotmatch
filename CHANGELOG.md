@@ -2,7 +2,23 @@
 
 All notable user-facing changes are tracked here. Public statements in release notes must stay aligned with `docs/scientific-claims.md`.
 
-## Unreleased
+## 0.3.0 - 2026-08-29
+
+### Added
+
+- Added `dotmatch feature matrix` for deterministic cell-by-feature matrices
+  from pre-extracted observation tables. The command retains unique,
+  ambiguous, unmatched, and invalid observations in explicit output artifacts.
+- Added strict paired R1/R2 support to `dotmatch pair-count`, including
+  canonical read-name and record-count checks before counting.
+- Added a Galaxy XML wrapper and Planemo fixtures for CRISPR guide counting.
+  The wrapper is a local integration asset and does not indicate IUC
+  acceptance.
+- Added agent-native task routing, `llms.txt`, a versioned capability manifest,
+  and `dotmatch capabilities --json` for checked local CLI discovery.
+- Added a reproducible 32-guide GSE146194 Perturb-seq case study with 48,000
+  held-out reads and zero assignment differences from matched independent
+  oracles.
 
 ### Fixed
 
@@ -16,6 +32,9 @@ All notable user-facing changes are tracked here. Public statements in release n
 - Added a public-record ecosystem status ledger and updated workflow
   submission records to distinguish open, accepted, released, and installable
   states.
+- Configured tagged releases to build repaired Linux `x86_64` and `aarch64`
+  wheels and publish multi-architecture `linux/amd64` and `linux/arm64`
+  container manifests after their checks pass.
 
 ## 0.2.2 - 2026-07-23
 

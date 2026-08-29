@@ -10,7 +10,7 @@ adapter prefixes.
 For the current PyPI release:
 
 ```bash
-python3 -m pip install dotmatch==0.2.2
+python3 -m pip install dotmatch
 dotmatch --version
 ```
 
