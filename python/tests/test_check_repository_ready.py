@@ -61,7 +61,7 @@ def _write_minimal_repo(root: Path) -> None:
             "name: pages\npermissions:\n  pages: write\n  id-token: write\nsteps:\n"
             "  - uses: actions/configure-pages@v6\n"
             "  - uses: actions/upload-pages-artifact@v5\n"
-            "  - uses: actions/deploy-pages@v4\n"
+            "  - uses: actions/deploy-pages@v5\n"
         ),
         ".github/workflows/release.yml": (
             "name: release\nsteps:\n  - name: Generate checksums\n    run: |\n"
@@ -200,7 +200,7 @@ def test_repository_ready_rejects_custom_pages_deployment(tmp_path):
 
     result = checker.audit(tmp_path)
 
-    assert any("actions/deploy-pages@v4" in failure for failure in result.failures)
+    assert any("actions/deploy-pages@v5" in failure for failure in result.failures)
     assert any("custom deployment API call" in failure for failure in result.failures)
 
 

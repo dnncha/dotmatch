@@ -727,6 +727,24 @@ def test_assay_handoff_requires_a_completed_run(tmp_path: Path) -> None:
     assert "requires a completed assay run" in result.stderr
 
 
+def test_assay_handoff_rejects_an_output_path_that_is_a_file(tmp_path: Path) -> None:
+    subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
+    spec = _write_count_spec(tmp_path)
+    env = {"DOTMATCH_NATIVE_CLI": str(ROOT / "dotmatch")}
+    run = _run_cli(["assay", "run", str(spec)], env=env)
+    assert run.returncode == 0, run.stderr
+    output_path = tmp_path / "handoff-file"
+    output_path.write_text("not a directory\n", encoding="utf-8")
+
+    result = _run_cli(
+        ["assay", "handoff", str(spec), "--out-dir", str(output_path)],
+        env=env,
+    )
+
+    assert result.returncode == 2
+    assert "handoff output path must be a directory" in result.stderr
+
+
 def test_assay_run_manifest_records_configured_reliability_thresholds(tmp_path: Path) -> None:
     subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
     spec = _write_count_spec(tmp_path)

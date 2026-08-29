@@ -2175,8 +2175,11 @@ def _write_handoff_bundle(plan: AssayPlan, out_dir: Path) -> None:
             "handoff requires a completed assay run with assay_manifest.json and "
             "reliability_summary.json; run 'dotmatch assay start <spec>' first"
         )
-    if out_dir.exists() and any(out_dir.iterdir()):
-        raise AssaySpecError(f"handoff output directory must be empty: {out_dir}")
+    if out_dir.exists():
+        if not out_dir.is_dir():
+            raise AssaySpecError(f"handoff output path must be a directory: {out_dir}")
+        if any(out_dir.iterdir()):
+            raise AssaySpecError(f"handoff output directory must be empty: {out_dir}")
 
     manifest = _read_json_object(manifest_path, "assay manifest")
     reliability = _read_json_object(reliability_path, "reliability summary")
