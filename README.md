@@ -105,6 +105,13 @@ or, once a package release includes it, the installed
 `dotmatch capabilities --json` command. PyPI 0.2.2 predates that installed
 command; use the public JSON manifest with that release.
 
+The [Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb)
+and [Colab](https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb)
+notebooks run a small synthetic smoke demo without requiring a local install.
+They check mechanics only, not biological validation. If you work with a
+shareable or de-identified guide, barcode, or other fixed-target fixture, see
+the [public validation request](https://github.com/dnncha/dotmatch/issues/82).
+
 ## A small example
 
 Prepare a tab-separated target file:
