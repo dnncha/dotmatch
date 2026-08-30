@@ -7,7 +7,7 @@ provider records on 2026-08-30.
 
 | Surface | Version or revision | Local state | Public state | Installable from that surface? |
 | --- | --- | --- | --- | --- |
-| [PyPI](https://pypi.org/project/dotmatch/0.3.1/) | 0.3.1 | Patch release candidate prepared; remote release validation required | Not released yet | No; use published 0.3.0 until the 0.3.1 provider record is verified |
+| [PyPI](https://pypi.org/project/dotmatch/0.3.1/) | 0.3.1 | Tagged release workflow passed | Published with an sdist, a universal macOS wheel, and repaired manylinux/musllinux wheels for x86_64 and aarch64 | Yes: `python3 -m pip install dotmatch==0.3.1` |
 | [Bioconda](https://anaconda.org/bioconda/dotmatch) | 0.2.2 | Clean Conda CLI smoke passes | Released for linux-64, linux-aarch64, osx-64, and osx-arm64 | Yes: `conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.2.2` |
 | [Spack packages #6191](https://github.com/spack/spack-packages/pull/6191) | 0.2.2 | Package recipe reviewed upstream | Merged into `spack-packages` `develop`; [recipe present](https://github.com/spack/spack-packages/blob/develop/repos/spack_repo/builtin/packages/py_dotmatch/package.py) | Not recorded as released here; no dated Spack release containing the recipe was verified |
 | [Galaxy IUC #8336](https://github.com/galaxyproject/tools-iuc/pull/8336) | `b547330d0b3f9fb38368eac3a94fd84098d51031` | Four wrappers and fixtures are available | Submitted, open; lint and containerized Planemo tests pass | No; IUC merge and ToolShed publication are separate gates |

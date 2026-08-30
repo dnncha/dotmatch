@@ -17,12 +17,12 @@ For release `0.3.1`, the package surface is:
 
 | Surface | Current state | Evidence or source |
 | --- | --- | --- |
-| PyPI | Version 0.3.1 is prepared for remote release validation | `docs/distribution-release.json` |
+| PyPI | Version 0.3.1 is public with an sdist, a universal macOS wheel, and repaired manylinux/musllinux wheels for x86_64 and aarch64 | `docs/distribution-release.json` |
 | Bioconda | Version 0.2.2 remains published for linux-64, linux-aarch64, osx-64, and osx-arm64; 0.3.1 is not published there yet | `docs/distribution-release.json` |
-| GHCR container | Version 0.3.1 is prepared for remote multi-architecture publication | `docs/distribution-release.json` |
+| GHCR container | Version 0.3.1 is public for linux/amd64 and linux/arm64 at the recorded manifest digest | `docs/distribution-release.json` |
 | BioContainers | The 0.2.2 images remain public on Quay; 0.3.1 depends on Bioconda propagation | `docs/distribution-release.json` |
 | Documentation | Sphinx docs and public schemas in repository | `docs/index.md`, `docs/schemas.md` |
-| Citation | `CITATION.cff`, Zenodo concept DOI, and generated run artifacts | `docs/methods-and-citation.md` |
+| Citation | `CITATION.cff`, the 0.3.1 Zenodo release DOI, the Zenodo concept DOI, and generated run artifacts | `docs/methods-and-citation.md` |
 | Python API | `dotmatch` package, streaming helpers, pandas/polars/AnnData interop, and a MultiQC parser entry point; 0.3.1 includes automatic MultiQC discovery | `pyproject.toml`, `docs/streaming-api.md`, `docs/ecosystem-status.md` |
 | R interface | Reticulate-backed package skeleton and vignette | `R/`, `vignettes/dotmatch.Rmd` |
 
