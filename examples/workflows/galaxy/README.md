@@ -3,7 +3,7 @@
 This directory contains local example wrappers for running DotMatch from Galaxy.
 The scoped IUC candidate is `dotmatch_crispr_count.xml`, which accepts one or
 more CRISPR FASTQ datasets and is pinned to the publicly available Bioconda
-package `dotmatch=0.2.1`. `dotmatch_assay_run.xml` remains a local AssaySpec
+package `dotmatch=0.2.2`. `dotmatch_assay_run.xml` remains a local AssaySpec
 example with separate review scope.
 
 Validate the XML with Planemo from the repository root:
