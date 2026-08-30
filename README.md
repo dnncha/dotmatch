@@ -62,8 +62,8 @@ backend.
 For containerised workflows, the current release is also published to GHCR:
 
 ```bash
-docker pull ghcr.io/dnncha/dotmatch:v0.3.0
-docker run --rm ghcr.io/dnncha/dotmatch:v0.3.0 --version
+docker pull ghcr.io/dnncha/dotmatch:v0.3.1
+docker run --rm ghcr.io/dnncha/dotmatch:v0.3.1 --version
 ```
 
 The [container package](https://github.com/dnncha/dotmatch/pkgs/container/dotmatch)

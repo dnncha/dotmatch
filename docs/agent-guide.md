@@ -43,7 +43,7 @@ the same capability record in the installed package.
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
-python3 -m pip install dotmatch==0.3.0
+python3 -m pip install dotmatch==0.3.1
 dotmatch --version
 ```
 

@@ -1,7 +1,7 @@
 # Packaging and installation
 
 DotMatch is distributed through PyPI, GitHub releases, Bioconda, and
-containers. Release 0.3.0 is available from PyPI, GitHub releases, and GHCR.
+containers. Release 0.3.1 is prepared for PyPI, GitHub releases, and GHCR.
 Bioconda and its generated BioContainers images can lag those channels, so
 check the provider records before pinning a version.
 
