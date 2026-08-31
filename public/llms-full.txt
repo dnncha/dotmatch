@@ -6,7 +6,19 @@
 
 Use DotMatch when the target sequences are known before analysis: CRISPR guides, inline sample barcodes, feature barcodes, guide-capture sequences, primers, adapters, short panel targets, or whitelist sequences.
 
-Do not use DotMatch as a genome aligner, basecaller, adapter trimmer, variant caller, cell-barcode or UMI quantifier, or downstream CRISPR screen-statistics package. Feature-barcode and Perturb-seq support is per-read fixed-window assignment only. The checked public Perturb-seq guide-capture lane contains one guide and does not establish useful multi-guide, guide-per-cell, expression, or perturbation-effect performance.
+Do not use DotMatch as a genome aligner, basecaller, adapter trimmer, variant caller, cell-barcode or UMI quantifier, or downstream CRISPR screen-statistics package. Feature-barcode and Perturb-seq support is per-read fixed-window assignment only. The GSE146194 reference checks held-out per-read assignment for 32 direct-capture guides at `k=0` and `k=1`; it does not establish guide-per-cell, expression, or perturbation-effect performance.
+
+## Local agent execution
+
+DotMatch 0.4 adds six structured local tools: `discover`, `prepare_assay`, `inspect_assay`, `run_assay`, `review_assay`, and `handoff_assay`.
+
+```bash
+dotmatch agent tools --json
+dotmatch agent invoke discover --input discover.json
+dotmatch agent export-skill --target ./dotmatch-agent
+```
+
+Each invocation accepts a JSON object, returns one stable JSON envelope on stdout, and writes progress to stderr. The tools accept no shell commands, make no ordinary outbound network requests, refuse non-empty output directories, preserve ambiguous reads, cap automatic revisions at three, and never change targets or reliability thresholds. The matching Python functions are `dotmatch.agent_tools.list_tools()` and `dotmatch.agent_tools.invoke_tool()`.
 
 ## Install and verify
 
@@ -106,7 +118,7 @@ dotmatch count \
   --summary guide_summary.json
 ```
 
-DotMatch does not call guides per cell or process expression, cell barcodes, UMIs, or perturbation effects. The public lane currently validates fixed-window extraction against one observed guide only.
+DotMatch does not call guides per cell or process expression, cell barcodes, UMIs, or perturbation effects. The GSE146194 reference is a bounded 32-guide held-out per-read assignment evaluation.
 
 ### Barcode panel design
 
@@ -180,6 +192,8 @@ Counts contain unique assignments only. Request `--assignments` and `--summary` 
 - Schema reference: https://dotmatch.readthedocs.io/en/latest/schemas.html
 - Machine capability manifest: https://dnncha.github.io/dotmatch/agent-capabilities.json
 - Capability JSON Schema: https://dnncha.github.io/dotmatch/agent-capabilities.schema.json
+- Agent tool contract: https://dnncha.github.io/dotmatch/agent-tools.json
+- Agent tool JSON Schema: https://dnncha.github.io/dotmatch/agent-tools.schema.json
 
 ## Clean-environment smoke workflow
 

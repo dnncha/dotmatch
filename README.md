@@ -16,8 +16,12 @@ other known targets.
 [Documentation](https://dotmatch.readthedocs.io/en/latest/) ·
 [Getting started](https://dotmatch.readthedocs.io/en/latest/getting-started.html) ·
 [Agent guide](https://dotmatch.readthedocs.io/en/latest/agent-guide.html) ·
+[CRISPR agent route](https://dotmatch.readthedocs.io/en/latest/agent-crispr.html) ·
+[Perturb-seq agent route](https://dotmatch.readthedocs.io/en/latest/agent-perturb-seq.html) ·
 [Command reference](https://dotmatch.readthedocs.io/en/latest/command-reference.html) ·
 [Capability JSON](https://dnncha.github.io/dotmatch/agent-capabilities.json) ·
+[Agent tools JSON](https://dnncha.github.io/dotmatch/agent-tools.json) ·
+[Checked agent fixture](https://dnncha.github.io/dotmatch/agent-reference-crispr.json) ·
 [Examples](https://github.com/dnncha/dotmatch/tree/main/examples) ·
 [Citation](https://dotmatch.readthedocs.io/en/latest/methods-and-citation.html) ·
 [Try the notebook in Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb) ·
@@ -86,6 +90,17 @@ snapshot](https://dotmatch.readthedocs.io/en/latest/download-metrics.html) with
 channel, version, platform, and Python build; it does not estimate unique users.
 
 ## Choose by task
+
+For an autonomous local workflow, inspect the installed contract first:
+
+```bash
+dotmatch agent tools --json
+dotmatch agent export-skill --target ./dotmatch-agent
+```
+
+The six tools prepare, preflight, run, review, and hand off CRISPR or
+Perturb-seq direct-guide workflows using structured JSON only. They do not
+upload research data or accept free-form shell commands.
 
 | Intent or search phrase | Entry point | Important limit |
 | --- | --- | --- |

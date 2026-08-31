@@ -33,6 +33,7 @@ except ModuleNotFoundError:  # pragma: no cover - exercised on Python 3.9/3.10 t
 MODES = {"count", "demux", "pair-count"}
 ASSAY_TYPES = {"crispr", "feature_barcode", "inline_barcode", "amplicon_panel", "oligo_adapter", "generic"}
 METRICS = {"hamming", "levenshtein"}
+EXTRACT_ORIENTATIONS = {"forward", "reverse_complement"}
 AMBIGUITY_POLICIES = {"best", "radius"}
 AMBIGUOUS_OUTPUT = {"discard", "report"}
 SPEC_STATUS = {"ready", "draft"}
@@ -268,6 +269,12 @@ def validate_assay_spec(assay: AssaySpec) -> None:
     if int(assignment.get("k", 1)) == 2 and assignment.get("metric", "levenshtein") == "hamming":
         raise AssaySpecError("assignment.k=2 is only valid with assignment.metric='levenshtein'")
 
+    if assay.data.get("mode") in {"count", "demux"}:
+        extract = _table(data, "extract")
+        _require_enum(extract.get("orientation", "forward"), EXTRACT_ORIENTATIONS, "extract.orientation")
+        if assay.data.get("mode") != "count" and extract.get("orientation", "forward") != "forward":
+            raise AssaySpecError("extract.orientation reverse_complement is currently supported for count mode only")
+
     reliability = _table(data, "reliability")
     if "profile" in reliability:
         _require_enum(reliability["profile"], RELIABILITY_PROFILES, "reliability.profile")
@@ -355,6 +362,9 @@ def compile_assay_plan(assay: AssaySpec) -> AssayPlan:
     if assay.mode == "count":
         audit_dir = out_dir / "audit"
         artifacts["audit"] = audit_dir
+        if _extract_orientation(assay) == "reverse_complement":
+            for sample in _samples(assay.data):
+                artifacts[f"oriented_fastq_{sample['id']}"] = _oriented_sample_path(assay, sample)
         steps.append(PlanStep("audit", _audit_cmd(_spec_path(assay, "targets"), audit_dir, assay.k), warning_ok=True))
         samples_path = out_dir / "assay_samples.tsv"
         generated["samples"] = samples_path
@@ -397,6 +407,7 @@ def format_plan(plan: AssayPlan) -> str:
 def run_assay_plan(plan: AssayPlan, *, skip_audit: bool = False) -> int:
     out_dir = plan.spec.out_dir
     out_dir.mkdir(parents=True, exist_ok=True)
+    _write_oriented_inputs(plan)
     _write_generated_files(plan)
     _write_normalized_spec(plan)
     manifest: dict[str, Any] = {
@@ -734,7 +745,12 @@ def infer_assay_spec(
         if targets is None:
             raise AssaySpecError("--targets is required for count inference")
         target_set = _read_target_sequences(targets)
-        candidates = _score_windows(read_seqs, target_set.sequences, max_start=max_start)
+        candidates = _score_windows(
+            read_seqs,
+            target_set.sequences,
+            max_start=max_start,
+            orientations=("forward", "reverse_complement"),
+        )
         chosen, status, warnings = _choose_candidate(candidates)
         _write_inferred_count_spec(out, status, assay_type, targets, reads, sample_id, chosen)
         report_data: dict[str, Any] = {
@@ -861,8 +877,19 @@ def scaffold_assay_project(
 
     if mode == "count":
         target_set = _read_target_sequences(staged_table)
-        candidates = _score_windows(read_seqs, target_set.sequences, max_start=max_start)
+        candidates = _score_windows(
+            read_seqs,
+            target_set.sequences,
+            max_start=max_start,
+            orientations=("forward", "reverse_complement"),
+        )
         chosen, status, warnings = _choose_candidate(candidates)
+        if threads > 1:
+            warnings = [
+                *warnings,
+                "Row-level assignments, ambiguous reads, and unmatched reads are disabled when threads > 1; "
+                "aggregate ambiguity and assignment counts remain in summary.json and sample_qc.tsv.",
+            ]
         if force_draft and status == "ready":
             status = "draft"
             warnings = [*warnings, "quickstart requires explicit --accept-inference before execution"]
@@ -1049,56 +1076,75 @@ def _read_fastq_sequences(path: Path, *, max_reads: int) -> list[str]:
     return seqs
 
 
-def _score_windows(reads: Sequence[str], targets: Sequence[str], *, max_start: int) -> list[dict[str, Any]]:
+def _score_windows(
+    reads: Sequence[str],
+    targets: Sequence[str],
+    *,
+    max_start: int,
+    orientations: Sequence[str] = ("forward",),
+) -> list[dict[str, Any]]:
     lengths = sorted(set(len(seq) for seq in targets))
     matcher_by_len = {length: Matcher([seq for seq in targets if len(seq) == length]) for length in lengths}
     candidates: list[dict[str, Any]] = []
     try:
-        for length in lengths:
-            matcher = matcher_by_len[length]
-            upper = min(max_start, max((len(seq) - length for seq in reads), default=0))
-            for start in range(upper + 1):
-                observed = [seq[start : start + length] for seq in reads if start + length <= len(seq)]
-                invalid = len(reads) - len(observed)
-                if observed:
-                    results = matcher.assign_hamming(observed, k=1)
-                else:
-                    results = []
-                unique = sum(1 for result in results if result.status == MATCH_UNIQUE)
-                exact = sum(1 for result in results if result.status == MATCH_UNIQUE and result.best_distance == 0)
-                ambiguous = sum(1 for result in results if result.status == MATCH_AMBIGUOUS)
-                no_match = sum(1 for result in results if result.status == MATCH_NONE)
-                total = len(reads)
-                valid = len(observed)
-                assignment_rate = unique / total if total else 0.0
-                exact_rate = exact / total if total else 0.0
-                ambiguous_rate = ambiguous / total if total else 0.0
-                no_match_rate = no_match / total if total else 0.0
-                invalid_rate = invalid / total if total else 0.0
-                score = assignment_rate - ambiguous_rate - invalid_rate
-                candidates.append(
-                    {
-                        "start": start,
-                        "length": length,
-                        "sampled_reads": total,
-                        "valid_reads": valid,
-                        "unique": unique,
-                        "exact": exact,
-                        "ambiguous": ambiguous,
-                        "no_match": no_match,
-                        "invalid": invalid,
-                        "assignment_rate": round(assignment_rate, 8),
-                        "exact_rate": round(exact_rate, 8),
-                        "ambiguous_rate": round(ambiguous_rate, 8),
-                        "no_match_rate": round(no_match_rate, 8),
-                        "invalid_rate": round(invalid_rate, 8),
-                        "score": round(score, 8),
-                    }
-                )
+        for orientation in orientations:
+            if orientation not in EXTRACT_ORIENTATIONS:
+                raise AssaySpecError(f"unsupported inference orientation: {orientation}")
+            oriented_reads = list(reads) if orientation == "forward" else [_reverse_complement(seq) for seq in reads]
+            for length in lengths:
+                matcher = matcher_by_len[length]
+                upper = min(max_start, max((len(seq) - length for seq in oriented_reads), default=0))
+                for start in range(upper + 1):
+                    observed = [seq[start : start + length] for seq in oriented_reads if start + length <= len(seq)]
+                    invalid = len(oriented_reads) - len(observed)
+                    if observed:
+                        results = matcher.assign_hamming(observed, k=1)
+                    else:
+                        results = []
+                    unique = sum(1 for result in results if result.status == MATCH_UNIQUE)
+                    exact = sum(1 for result in results if result.status == MATCH_UNIQUE and result.best_distance == 0)
+                    ambiguous = sum(1 for result in results if result.status == MATCH_AMBIGUOUS)
+                    no_match = sum(1 for result in results if result.status == MATCH_NONE)
+                    total = len(oriented_reads)
+                    valid = len(observed)
+                    assignment_rate = unique / total if total else 0.0
+                    exact_rate = exact / total if total else 0.0
+                    ambiguous_rate = ambiguous / total if total else 0.0
+                    no_match_rate = no_match / total if total else 0.0
+                    invalid_rate = invalid / total if total else 0.0
+                    score = assignment_rate - ambiguous_rate - invalid_rate
+                    candidates.append(
+                        {
+                            "start": start,
+                            "length": length,
+                            "orientation": orientation,
+                            "metric": "hamming",
+                            "sampled_reads": total,
+                            "valid_reads": valid,
+                            "unique": unique,
+                            "exact": exact,
+                            "ambiguous": ambiguous,
+                            "no_match": no_match,
+                            "invalid": invalid,
+                            "assignment_rate": round(assignment_rate, 8),
+                            "exact_rate": round(exact_rate, 8),
+                            "ambiguous_rate": round(ambiguous_rate, 8),
+                            "no_match_rate": round(no_match_rate, 8),
+                            "invalid_rate": round(invalid_rate, 8),
+                            "score": round(score, 8),
+                        }
+                    )
     finally:
         for matcher in matcher_by_len.values():
             matcher.close()
-    candidates.sort(key=lambda item: (-float(item["score"]), int(item["start"]), int(item["length"])))
+    candidates.sort(
+        key=lambda item: (
+            -float(item["score"]),
+            0 if item.get("orientation") == "forward" else 1,
+            int(item["start"]),
+            int(item["length"]),
+        )
+    )
     if len(candidates) >= 2:
         best = candidates[0]
         second = candidates[1]
@@ -1117,7 +1163,14 @@ def _choose_candidate(candidates: list[dict[str, Any]]) -> tuple[dict[str, Any],
     if float(chosen["assignment_rate"]) < 0.80:
         warnings.append("best candidate assignment_rate is below 0.80")
     if float(chosen.get("score_margin", 0.0)) < 0.10:
-        warnings.append("best candidate is not well separated from the next candidate")
+        runner_up = candidates[1] if len(candidates) > 1 else {}
+        if runner_up.get("orientation", chosen.get("orientation")) != chosen.get("orientation"):
+            warnings.append(
+                "forward and reverse-complement candidates are not well separated; "
+                "review orientation before execution"
+            )
+        else:
+            warnings.append("best candidate is not well separated from the next candidate")
     status = "draft" if warnings else "ready"
     return chosen, status, warnings
 
@@ -1146,10 +1199,11 @@ threads = 1
 [extract]
 start = {chosen["start"]}
 length = {chosen["length"]}
+orientation = {_toml_string(str(chosen.get("orientation", "forward")))}
 
 [assignment]
 k = 1
-metric = "hamming"
+metric = {_toml_string(str(chosen.get("metric", "hamming")))}
 ambiguity_policy = "radius"
 ambiguous = "discard"
 
@@ -1180,10 +1234,11 @@ out_dir = {_toml_string(f"{out.with_suffix('').name}_out")}
 [extract]
 start = {chosen["start"]}
 length = {chosen["length"]}
+orientation = {_toml_string(str(chosen.get("orientation", "forward")))}
 
 [assignment]
 k = 1
-metric = "hamming"
+metric = {_toml_string(str(chosen.get("metric", "hamming")))}
 ambiguity_policy = "radius"
 
 [outputs]
@@ -1288,6 +1343,7 @@ def _write_scaffolded_count_spec(
     output_format: str,
     threads: int,
 ) -> None:
+    row_diagnostics = "true" if threads == 1 else "false"
     sample_blocks = []
     for sample_id, staged_fastq, _source in samples:
         _require_safe_identifier(sample_id, "sample_id")
@@ -1313,18 +1369,19 @@ threads = {threads}
 [extract]
 start = {chosen["start"]}
 length = {chosen["length"]}
+orientation = {_toml_string(str(chosen.get("orientation", "forward")))}
 
 [assignment]
 k = 1
-metric = "hamming"
+metric = {_toml_string(str(chosen.get("metric", "hamming")))}
 ambiguity_policy = "radius"
 ambiguous = "discard"
 
 [outputs]
 format = "{output_format}"
-assignments = true
-ambiguous = true
-unmatched = true
+assignments = {row_diagnostics}
+ambiguous = {row_diagnostics}
+unmatched = {row_diagnostics}
 """,
     )
 
@@ -1577,10 +1634,11 @@ def _write_candidates_tsv(path: Path, report_data: Mapping[str, Any]) -> None:
         rows.extend(("right", item) for item in report_data["right"]["candidates"])
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as fh:
-        fh.write("side\tstart\tlength\tscore\tassignment_rate\texact_rate\tambiguous_rate\tno_match_rate\tinvalid_rate\n")
+        fh.write("side\tstart\tlength\torientation\tmetric\tscore\tassignment_rate\texact_rate\tambiguous_rate\tno_match_rate\tinvalid_rate\n")
         for side, row in rows:
             fh.write(
-                f"{side}\t{row['start']}\t{row['length']}\t{row['score']}\t{row['assignment_rate']}\t"
+                f"{side}\t{row['start']}\t{row['length']}\t{row.get('orientation', 'forward')}\t"
+                f"{row.get('metric', 'hamming')}\t{row['score']}\t{row['assignment_rate']}\t"
                 f"{row['exact_rate']}\t{row['ambiguous_rate']}\t{row['no_match_rate']}\t{row['invalid_rate']}\n"
             )
 
@@ -1610,7 +1668,7 @@ def _autopsy_count(assay: AssaySpec, native: Path, out_dir: Path, findings: list
             "--targets",
             str(_spec_path(assay, "targets")),
             "--reads",
-            str(_path_from_spec(assay.path, str(sample["fastq"]), allow_absolute=True, name="samples.fastq")),
+            str(_execution_fastq(assay, sample)),
             "--target-start",
             str(extract["start"]),
             "--target-length",
@@ -2003,7 +2061,7 @@ def _compile_count(assay: AssaySpec, steps: list[PlanStep], artifacts: dict[str,
         "--targets",
         str(_spec_path(assay, "targets")),
         "--reads",
-        str(_path_from_spec(assay.path, str(first_sample["fastq"]), allow_absolute=True, name="samples.fastq")),
+        str(_execution_fastq(assay, first_sample)),
         "--target-start",
         str(extract["start"]),
         "--target-length",
@@ -2129,6 +2187,79 @@ def _add_assignment_options(cmd: list[str], assignment: Mapping[str, Any], *, in
         cmd.extend(["--auto-offset", str(assignment["auto_offset"])])
 
 
+_IUPAC_COMPLEMENT = str.maketrans(
+    "ACGTRYKMSWBDHVNacgtrykmswbdhvn",
+    "TGCAYRMKSWVHDBNtgcayrmkswvhdbn",
+)
+
+
+def _reverse_complement(sequence: str) -> str:
+    return sequence.translate(_IUPAC_COMPLEMENT)[::-1]
+
+
+def _extract_orientation(assay: AssaySpec) -> str:
+    if assay.mode not in {"count", "demux"}:
+        return "forward"
+    return str(_table(assay.data, "extract").get("orientation", "forward"))
+
+
+def _oriented_sample_path(assay: AssaySpec, sample: Mapping[str, Any]) -> Path:
+    sample_id = str(sample["id"])
+    return assay.out_dir / "oriented_inputs" / f"{sample_id}.reverse-complement.fastq"
+
+
+def _execution_fastq(assay: AssaySpec, sample: Mapping[str, Any]) -> Path:
+    if _extract_orientation(assay) == "reverse_complement":
+        return _oriented_sample_path(assay, sample)
+    return _path_from_spec(assay.path, str(sample["fastq"]), allow_absolute=True, name="samples.fastq")
+
+
+def _write_oriented_inputs(plan: AssayPlan) -> None:
+    """Write local-only reverse-complement FASTQ derivatives when requested.
+
+    The declared raw input remains immutable and is the input recorded in the
+    handoff.  Derived reads stay under the assay output directory and are never
+    included in the raw-data-free review bundle.
+    """
+
+    if plan.spec.mode != "count" or _extract_orientation(plan.spec) == "forward":
+        return
+    for sample in _samples(plan.spec.data):
+        source = _path_from_spec(
+            plan.spec.path,
+            str(sample["fastq"]),
+            allow_absolute=True,
+            name="samples.fastq",
+        )
+        destination = _oriented_sample_path(plan.spec, sample)
+        if destination.exists():
+            raise AssaySpecError(f"refusing to overwrite derived oriented FASTQ: {destination}")
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        opener = gzip.open if str(source).endswith(".gz") else Path.open
+        with opener(source, "rt", encoding="utf-8") as src, destination.open("x", encoding="utf-8", newline="\n") as dst:
+            record = 0
+            while True:
+                header = src.readline()
+                if not header:
+                    break
+                sequence = src.readline()
+                plus = src.readline()
+                quality = src.readline()
+                record += 1
+                if not sequence or not plus or not quality:
+                    raise AssaySpecError(f"truncated FASTQ record {record} in {source}")
+                if not header.startswith("@") or not plus.startswith("+"):
+                    raise AssaySpecError(f"invalid FASTQ record {record} in {source}")
+                seq = sequence.rstrip("\n\r")
+                qual = quality.rstrip("\n\r")
+                if len(seq) != len(qual):
+                    raise AssaySpecError(f"FASTQ sequence/quality length mismatch at record {record} in {source}")
+                dst.write(header.rstrip("\n\r") + "\n")
+                dst.write(_reverse_complement(seq) + "\n")
+                dst.write(plus.rstrip("\n\r") + "\n")
+                dst.write(qual[::-1] + "\n")
+
+
 def _write_generated_files(plan: AssayPlan) -> None:
     samples_path = plan.generated_files.get("samples")
     if samples_path is None:
@@ -2141,7 +2272,7 @@ def _write_generated_files(plan: AssayPlan) -> None:
             writer.writerow(
                 [
                     sample["id"],
-                    _path_from_spec(plan.spec.path, str(sample["fastq"]), allow_absolute=True, name="samples.fastq"),
+                    _execution_fastq(plan.spec, sample),
                 ]
             )
 
@@ -2439,7 +2570,10 @@ def _write_methods_md(path: Path, plan: AssayPlan, manifest: Mapping[str, Any], 
 def _methods_extract_lines(assay: AssaySpec) -> list[str]:
     if assay.mode in {"count", "demux"}:
         extract = _table(assay.data, "extract")
-        return [f"- Primary window: start `{extract.get('start')}`, length `{extract.get('length')}`"]
+        return [
+            f"- Primary window: start `{extract.get('start')}`, length `{extract.get('length')}`, "
+            f"orientation `{extract.get('orientation', 'forward')}`"
+        ]
     left = _table(assay.data, "left")
     right = _table(assay.data, "right")
     return [
@@ -3797,6 +3931,7 @@ def _build_assay_fixes(
     extract_findings = finding_ids & {
         "autopsy_wrong_offset",
         "autopsy_wrong_length",
+        "autopsy_reverse_complement_issue",
         "assignment_rate_below_min",
         "unmatched_rate_above_max",
         "invalid_rate_above_max",
@@ -3804,8 +3939,12 @@ def _build_assay_fixes(
     if candidate and extract and extract_findings:
         current_start = extract.get("start")
         current_length = extract.get("length")
+        current_orientation = extract.get("orientation", "forward")
+        current_metric = assignment.get("metric", "levenshtein")
         candidate_start = candidate.get("start")
         candidate_length = candidate.get("length")
+        candidate_orientation = candidate.get("orientation", "forward")
+        candidate_metric = candidate.get("metric", "hamming")
         if candidate_start is not None and str(candidate_start) != str(current_start):
             add(
                 "extract_start_from_inference",
@@ -3825,6 +3964,26 @@ def _build_assay_fixes(
                 current_length,
                 candidate_length,
                 "Inference ranked a different extract length; update the fixed window before rerunning.",
+            )
+        if candidate_orientation in EXTRACT_ORIENTATIONS and str(candidate_orientation) != str(current_orientation):
+            add(
+                "extract_orientation_from_inference",
+                next(iter(sorted(extract_findings))),
+                "extract",
+                "orientation",
+                current_orientation,
+                candidate_orientation,
+                "Inference ranked a different read orientation; use the locally derived oriented FASTQ before rerunning.",
+            )
+        if candidate_metric in METRICS and str(candidate_metric) != str(current_metric):
+            add(
+                "assignment_metric_from_inference",
+                next(iter(sorted(extract_findings))),
+                "assignment",
+                "metric",
+                current_metric,
+                candidate_metric,
+                "The checked inference candidate used a different assignment metric with stronger fixed-window evidence.",
             )
 
     if "ambiguous_rate_above_max" in finding_ids and int(assignment.get("k", 1)) > 0:

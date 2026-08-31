@@ -28,8 +28,8 @@ demultiplexing run. If you already know which command you need, go straight to
 the [command reference](command-reference.md). Coding and scientific agents can
 use the [Agent guide](agent-guide.md) or the public capability manifest for
 versioned task routing with explicit inputs, outputs, and limitations. DotMatch
-0.3.0 and later also expose `dotmatch capabilities --json` from an installed
-package.
+0.4 adds `dotmatch agent tools --json` and six local structured tools for a
+full prepare, preflight, run, review, and handoff workflow.
 
 ## Choose a workflow
 
@@ -48,6 +48,8 @@ package.
 | Diagnose barcode failures | [Barcode run diagnosis](getting-started.md#diagnose-a-barcode-run) |
 | Design or check a barcode panel | [Barcode panel design](barcode-panel-design.md) |
 | Route an agent to a checked command | [Agent guide](agent-guide.md) |
+| Run CRISPR counting with a local agent | [Agent CRISPR route](agent-crispr.md) |
+| Run direct-guide Perturb-seq capture with a local agent | [Agent Perturb-seq route](agent-perturb-seq.md) |
 | Build a cell-by-feature matrix from extracted observations | [scverse and feature barcodes](tutorials/scverse-perturb-seq.md) |
 | Use DotMatch from Python | [Streaming Python API](streaming-api.md) |
 | Add DotMatch to a pipeline | [Output schemas](schemas.md) |
@@ -87,6 +89,8 @@ in [Scope and limitations](trust-and-scope.md).
 
 getting-started
 agent-guide
+agent-crispr
+agent-perturb-seq
 command-reference
 tutorials/crispr-count-first-run
 tutorials/scverse-perturb-seq

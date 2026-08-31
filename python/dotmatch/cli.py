@@ -19,6 +19,7 @@ from typing import Iterable, Iterator, Sequence, TextIO
 
 from . import __version__
 from .assayspec import FASTQ_SUFFIXES, AssaySpecError, command_assay, scaffold_assay_project
+from .agent_tools import command_agent
 from .core import (
     MATCH_AMBIGUOUS,
     MATCH_INVALID,
@@ -2408,6 +2409,8 @@ Usage:
   dotmatch manual
   dotmatch citation
   dotmatch capabilities --json
+  dotmatch agent tools --json
+  dotmatch agent invoke TOOL --input request.json
   dotmatch <command> [options]
 
 Choose by task:
@@ -2428,6 +2431,7 @@ Choose by task:
 
 Run `dotmatch capabilities --json` for versioned task queries, command
 templates, inputs, outputs, limitations, evidence paths, and recovery routes.
+Run `dotmatch agent tools --json` for the local, structured execution contract.
 
 Core commands:
   dist SEQ1 SEQ2
@@ -2443,6 +2447,8 @@ Core commands:
       Split reads by fixed-position inline barcodes.
 
 Workflow namespaces:
+  agent
+      Discover and invoke structured, local-only research-agent tools.
   assay
       Validate, plan, and run AssaySpec TOML workflows.
   barcode
@@ -2480,6 +2486,7 @@ Examples:
   dotmatch citation
   dotmatch manual
   dotmatch capabilities --json
+  dotmatch agent tools --json
   dotmatch count --targets guides.tsv --reads sample.fastq.gz --sample-label sample \\
       --target-start 23 --target-length 20 --k 1 --metric hamming --out counts.tsv
   dotmatch assay check assay.toml
@@ -2510,6 +2517,7 @@ SYNOPSIS
   dotmatch assay check assay.toml
   dotmatch barcode autopsy --barcodes barcodes.tsv --reads reads.fastq.gz --out-dir report/
   dotmatch panel design --preset illumina-inline-96 --out-dir panel/
+  dotmatch agent tools --json
 
 WHAT DOTMATCH DOES
   DotMatch assigns a fixed read window to a known set of short DNA targets:
@@ -2529,6 +2537,7 @@ COMMAND GROUPS
     demux                split FASTQ reads by fixed-window barcodes
 
   Workflow namespaces:
+    agent                local structured research-agent tools and skill export
     assay                validate, plan, and run AssaySpec TOML workflows
     barcode              infer barcode windows, audit, demux, and write reports
     feature              build a cell-by-feature matrix from pre-extracted observations
@@ -2617,6 +2626,7 @@ COMMON RECIPES
 
   Route an agent or workflow tool:
     dotmatch capabilities --json
+    dotmatch agent tools --json
 
 SAFETY CHECKS
   Use k=0 for exact-only assignment. Use k=1 only after checking that the target
@@ -2721,6 +2731,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"dotmatch: could not load installed capabilities: {exc}", file=sys.stderr)
             return 2
         return 0
+    if raw_args and raw_args[0] == "agent":
+        return command_agent(raw_args[1:])
     if raw_args and raw_args[0] == "assay":
         return command_assay(raw_args[1:])
     if raw_args and raw_args[0] == "crispr":

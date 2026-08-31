@@ -2,7 +2,7 @@
 
 > DotMatch is an Apache-2.0 command-line and Python tool for deterministic fixed-window assignment of FASTQ reads to a finite list of known short DNA targets. Use it for CRISPR guide counting, inline barcode demultiplexing, per-read feature-barcode or guide-capture assignment, barcode panel design, and other known-target matching. It is not a genome aligner, basecaller, UMI or cell quantifier, variant caller, or downstream screen-statistics package.
 
-Install the current release with `python3 -m pip install dotmatch==0.3.1` and verify it with `dotmatch --version`. Use `dotmatch capabilities --json` or the public capability manifest for machine-readable task routing. Coordinates are zero-based. Count only `unique` assignments; `ambiguous`, `none`, and `invalid` remain separate. Audit a target list before enabling mismatch correction.
+Install the current public release with `python3 -m pip install dotmatch==0.3.1` and verify it with `dotmatch --version`. DotMatch 0.4 candidates add `dotmatch agent tools --json` and six structured, local-only tools. Use `dotmatch capabilities --json` or the public capability manifest for task routing. Coordinates are zero-based. Count only `unique` assignments; `ambiguous`, `none`, and `invalid` remain separate. Audit a target list before enabling mismatch correction.
 
 ## Agent start
 
@@ -10,6 +10,10 @@ Install the current release with `python3 -m pip install dotmatch==0.3.1` and ve
 - [Full agent reference](https://dnncha.github.io/dotmatch/llms-full.txt): Self-contained install, routing, input, output, and safety reference.
 - [Capability manifest](https://dnncha.github.io/dotmatch/agent-capabilities.json): Versioned JSON task routing for agents and workflow tools.
 - [Capability schema](https://dnncha.github.io/dotmatch/agent-capabilities.schema.json): JSON Schema for the capability manifest.
+- [Agent tool contract](https://dnncha.github.io/dotmatch/agent-tools.json): Six structured local execution tools and their safety policy.
+- [Agent tool schema](https://dnncha.github.io/dotmatch/agent-tools.schema.json): JSON Schema for tool inputs and the stable result envelope.
+- [CRISPR agent route](https://raw.githubusercontent.com/dnncha/dotmatch/main/docs/agent-crispr.md): Exact inputs, outputs, limits, and copyable JSON starts.
+- [Perturb-seq agent route](https://raw.githubusercontent.com/dnncha/dotmatch/main/docs/agent-perturb-seq.md): Direct-guide assignment route and evidence boundary.
 
 ## Core documentation
 

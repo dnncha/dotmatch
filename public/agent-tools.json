@@ -1,0 +1,136 @@
+{
+  "$schema": "https://dnncha.github.io/dotmatch/agent-tools.schema.json",
+  "schema_version": "1.0",
+  "tool_contract_version": "1.0",
+  "generated_for_version": "0.4.0",
+  "transport": {
+    "input": "one JSON object supplied by file, stdin, or the Python API",
+    "output": "one JSON envelope on stdout or as a Python dictionary",
+    "diagnostics": "progress and diagnostics on stderr",
+    "network": "ordinary invocations make no outbound network requests"
+  },
+  "safety": {
+    "structured_parameters_only": true,
+    "shell_commands_accepted": false,
+    "refuses_non_empty_output_directories": true,
+    "overwrites_existing_outputs": false,
+    "uploads_research_data": false,
+    "ambiguity_is_never_forced_into_counts": true,
+    "maximum_automatic_revisions": 3,
+    "allowed_evidence_backed_changes": [
+      "extract.start",
+      "extract.length",
+      "extract.orientation",
+      "assignment.metric",
+      "assignment.k",
+      "backend.mode=cpu"
+    ],
+    "forbidden_automatic_changes": [
+      "target sequences or target identities",
+      "ambiguity counting policy",
+      "reliability thresholds or profile",
+      "scientific scope",
+      "CPU authority without workload-specific GPU validation"
+    ]
+  },
+  "intents": [
+    {
+      "id": "crispr-guide-counting",
+      "boundary": "Known-guide fixed-window counting and MAGeCK-compatible counts; no downstream screen statistics."
+    },
+    {
+      "id": "perturb-seq-guide-capture",
+      "boundary": "Direct-guide fixed-window per-read assignment; no cell barcode, UMI, guide-per-cell, expression, or perturbation-effect inference."
+    }
+  ],
+  "envelope": {
+    "$ref": "https://dnncha.github.io/dotmatch/agent-tools.schema.json#/$defs/envelope"
+  },
+  "tools": [
+    {
+      "name": "discover",
+      "purpose": "Discover installed capabilities, evidence boundaries, and next local tools.",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "intent": {"enum": ["crispr-guide-counting", "perturb-seq-guide-capture"]}
+        }
+      }
+    },
+    {
+      "name": "prepare_assay",
+      "purpose": "Infer and scaffold an immutable local AssaySpec project from a target table and FASTQs.",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["intent", "targets", "reads_dir", "output_dir"],
+        "properties": {
+          "intent": {"enum": ["crispr-guide-counting", "perturb-seq-guide-capture"]},
+          "targets": {"type": "string", "minLength": 1},
+          "reads_dir": {"type": "string", "minLength": 1},
+          "output_dir": {"type": "string", "minLength": 1},
+          "link_reads": {"type": "boolean", "default": false},
+          "threads": {"type": "integer", "minimum": 1, "default": 1},
+          "max_reads": {"type": "integer", "minimum": 1, "default": 50000},
+          "max_start": {"type": "integer", "minimum": 0, "default": 32},
+          "minimum_free_bytes": {"type": "integer", "minimum": 0, "default": 1073741824}
+        }
+      }
+    },
+    {
+      "name": "inspect_assay",
+      "purpose": "Compile a deterministic plan and write target, resource, and reliability preflight evidence.",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["spec"],
+        "properties": {
+          "spec": {"type": "string", "minLength": 1},
+          "minimum_free_bytes": {"type": "integer", "minimum": 0, "default": 1073741824}
+        }
+      }
+    },
+    {
+      "name": "run_assay",
+      "purpose": "Run locally, inspect reliability, write numbered candidate specs for permitted remediations, and stop safely.",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["spec"],
+        "properties": {
+          "spec": {"type": "string", "minLength": 1},
+          "max_revisions": {"type": "integer", "minimum": 0, "maximum": 3, "default": 3},
+          "minimum_free_bytes": {"type": "integer", "minimum": 0, "default": 1073741824}
+        }
+      }
+    },
+    {
+      "name": "review_assay",
+      "purpose": "Normalize reliability findings, artifacts, scientific boundaries, and next actions.",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["spec"],
+        "properties": {
+          "spec": {"type": "string", "minLength": 1},
+          "minimum_free_bytes": {"type": "integer", "minimum": 0, "default": 1073741824}
+        }
+      }
+    },
+    {
+      "name": "handoff_assay",
+      "purpose": "Create a hashed, review-sized handoff that excludes raw FASTQ and target tables.",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["spec", "output_dir"],
+        "properties": {
+          "spec": {"type": "string", "minLength": 1},
+          "output_dir": {"type": "string", "minLength": 1},
+          "minimum_free_bytes": {"type": "integer", "minimum": 0, "default": 1073741824}
+        }
+      }
+    }
+  ]
+}

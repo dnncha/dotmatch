@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 project = "DotMatch"
 author = "Donncha O'Toole"
 copyright = "2026, Donncha O'Toole"
-release = "0.3.1"
+release = "0.4.0"
 version = release
 
 extensions = [
@@ -37,6 +37,11 @@ html_extra_path = [
     "llms-full.txt",
     "agent-capabilities.json",
     "agent-capabilities.schema.json",
+    "agent-capabilities.v1.json",
+    "agent-capabilities.v1.schema.json",
+    "agent-tools.json",
+    "agent-tools.schema.json",
+    "agent-reference-crispr.json",
 ]
 
 myst_enable_extensions = [

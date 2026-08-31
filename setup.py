@@ -4,6 +4,7 @@ import os
 import platform
 import re
 import shlex
+import shutil
 import subprocess
 import sysconfig
 from pathlib import Path
@@ -67,11 +68,28 @@ class build_py(_build_py):
         self.build_native_library()
         self.build_native_cli()
         self.copy_assay_evidence()
+        self.copy_agent_assets()
 
     def copy_assay_evidence(self) -> None:
         out_dir = Path(self.build_lib) / "dotmatch" / "data"
         out_dir.mkdir(parents=True, exist_ok=True)
         self.copy_file(str(ROOT / "docs" / "assay-evidence.json"), str(out_dir / "assay-evidence.json"))
+
+    def copy_agent_assets(self) -> None:
+        out_dir = Path(self.build_lib) / "dotmatch" / "data"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        for name in (
+            "agent-capabilities.json",
+            "agent-capabilities.schema.json",
+            "agent-tools.json",
+            "agent-tools.schema.json",
+        ):
+            self.copy_file(str(ROOT / name), str(out_dir / name))
+        source_skill = ROOT / "extensions" / "codex" / "dotmatch-agent"
+        target_skill = out_dir / "codex-skill"
+        if target_skill.exists():
+            shutil.rmtree(target_skill)
+        shutil.copytree(source_skill, target_skill)
 
     def build_native_library(self) -> None:
         system = platform.system()

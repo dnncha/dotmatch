@@ -22,7 +22,42 @@ COPY_TARGETS = {
         "public/agent-capabilities.schema.json",
         "python/dotmatch/data/agent-capabilities.schema.json",
     ],
+    "agent-capabilities.v1.json": [
+        "docs/agent-capabilities.v1.json",
+        "public/agent-capabilities.v1.json",
+    ],
+    "agent-capabilities.v1.schema.json": [
+        "docs/agent-capabilities.v1.schema.json",
+        "public/agent-capabilities.v1.schema.json",
+    ],
+    "agent-tools.json": [
+        "docs/agent-tools.json",
+        "public/agent-tools.json",
+        "python/dotmatch/data/agent-tools.json",
+    ],
+    "agent-tools.schema.json": [
+        "docs/agent-tools.schema.json",
+        "public/agent-tools.schema.json",
+        "python/dotmatch/data/agent-tools.schema.json",
+    ],
+    "agent-reference-crispr.json": [
+        "docs/agent-reference-crispr.json",
+        "public/agent-reference-crispr.json",
+    ],
 }
+SKILL_SOURCE = "extensions/codex/dotmatch-agent"
+SKILL_TARGET = "python/dotmatch/data/codex-skill"
+
+
+def _skill_files(root: Path, relative: str) -> dict[str, bytes]:
+    directory = root / relative
+    if not directory.is_dir():
+        return {}
+    return {
+        path.relative_to(directory).as_posix(): path.read_bytes()
+        for path in directory.rglob("*")
+        if path.is_file()
+    }
 
 
 def main() -> int:
@@ -42,6 +77,16 @@ def main() -> int:
             if not args.check:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(source, target)
+
+    expected_skill = _skill_files(ROOT, SKILL_SOURCE)
+    installed_skill = _skill_files(ROOT, SKILL_TARGET)
+    if expected_skill != installed_skill:
+        stale.append(SKILL_TARGET)
+        if not args.check:
+            target = ROOT / SKILL_TARGET
+            if target.exists():
+                shutil.rmtree(target)
+            shutil.copytree(ROOT / SKILL_SOURCE, target)
 
     if args.check and stale:
         print("Agent discovery copies are stale: " + ", ".join(stale))

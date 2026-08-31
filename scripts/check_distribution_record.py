@@ -18,6 +18,7 @@ REQUIRED_CHANNELS = ["pypi", "bioconda", "ghcr", "biocontainers", "zenodo"]
 VALID_OVERALL_STATUSES = {"not_released", "partially_verified", "released"}
 VALID_CHANNEL_STATUSES = {"prepared", "blocked", "manifest_verified", "verified"}
 VERIFIED_CHANNEL_STATUSES = {"manifest_verified", "verified"}
+VALID_CANDIDATE_STATUSES = {"prepared_not_published"}
 SUPPORTED_PYPI_LINUX_WHEEL_ARCHITECTURES = {"x86_64", "aarch64"}
 SUPPORTED_GHCR_PLATFORMS = {"linux/amd64", "linux/arm64"}
 
@@ -153,7 +154,18 @@ def audit(root: Path) -> AuditResult:
     if not release_version:
         result.failures.append("distribution release record must declare release_version")
     elif project_version and release_version != project_version:
-        result.failures.append(f"release_version {release_version} does not match pyproject version {project_version}")
+        candidate_version = str(manifest.get("candidate_version") or "").strip()
+        candidate_status = str(manifest.get("candidate_status") or "").strip()
+        publication_authorized = manifest.get("publication_authorized")
+        if candidate_version != project_version:
+            result.failures.append(
+                f"release_version {release_version} does not match pyproject version {project_version}; "
+                "candidate_version must identify the local package candidate"
+            )
+        if candidate_status not in VALID_CANDIDATE_STATUSES:
+            result.failures.append("an unreleased package candidate must declare candidate_status prepared_not_published")
+        if publication_authorized is not False:
+            result.failures.append("an unreleased package candidate must declare publication_authorized false")
 
     gate = str(manifest.get("post_release_gate") or "").strip()
     if gate != "make distribution-channels":

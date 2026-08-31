@@ -1,0 +1,7 @@
+interface:
+  display_name: "DotMatch Agent"
+  short_description: "Run local CRISPR and guide-capture workflows"
+  default_prompt: "Use $dotmatch-agent to prepare, run, review, and package this local DotMatch assay without uploading research data."
+
+policy:
+  allow_implicit_invocation: true

@@ -1,5 +1,6 @@
 import { MobileNavigation } from "./mobile-navigation";
 import packageMetadata from "../package.json";
+import checkedFixtureEnvelope from "../agent-reference-crispr.json";
 
 const repoUrl = "https://github.com/dnncha/dotmatch";
 const docsUrl = "https://dotmatch.readthedocs.io/en/latest/";
@@ -12,7 +13,11 @@ const commandReferenceUrl = `${docsUrl}command-reference.html`;
 const methodsUrl = `${docsUrl}methods-and-citation.html`;
 const distributionUrl = `${docsUrl}release-process.html`;
 const agentGuideUrl = `${docsUrl}agent-guide.html`;
+const agentCrisprUrl = `${docsUrl}agent-crispr.html`;
+const agentPerturbSeqUrl = `${docsUrl}agent-perturb-seq.html`;
 const capabilityManifestUrl = "https://dnncha.github.io/dotmatch/agent-capabilities.json";
+const agentToolsUrl = "https://dnncha.github.io/dotmatch/agent-tools.json";
+const agentReferenceUrl = "https://dnncha.github.io/dotmatch/agent-reference-crispr.json";
 const pypiUrl = "https://pypi.org/project/dotmatch/";
 const containerUrl = `${repoUrl}/pkgs/container/dotmatch`;
 const workflowExamplesUrl = `${repoUrl}/tree/main/examples/workflows`;
@@ -20,6 +25,7 @@ const doiUrl = "https://doi.org/10.5281/zenodo.20541628";
 const binderUrl = "https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb";
 const colabUrl = "https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb";
 const releaseVersion = packageMetadata.version;
+const publishedVersion = "0.3.1";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const assignmentWorkflowImage = `${basePath}/dotmatch-read-assignment-v2.webp`;
@@ -42,7 +48,7 @@ const structuredData = {
       name: "DotMatch",
       applicationCategory: "Bioinformatics software",
       operatingSystem: "Linux, macOS",
-      softwareVersion: releaseVersion,
+      softwareVersion: publishedVersion,
       softwareHelp: docsUrl,
       codeRepository: repoUrl,
       downloadUrl: pypiUrl,
@@ -63,6 +69,35 @@ const structuredData = {
     }
   ]
 };
+
+const agentSteps = [
+  ["01", "Discover", "Read the installed, versioned tool contract and scientific boundaries."],
+  ["02", "Prepare", "Infer a fixed window and scaffold a reviewable local AssaySpec project."],
+  ["03", "Preflight", "Audit target safety, resources, inference confidence, and the execution plan."],
+  ["04", "Run", "Count locally, inspect reliability, and write a bounded numbered revision only when evidence supports one."],
+  ["05", "Review + handoff", "Return normalized findings and a hashed bundle without copying raw FASTQ."]
+] as const;
+
+const agentTasks = [
+  {
+    id: "agent-crispr",
+    title: "CRISPR guide counting",
+    inputs: "Guide TSV/CSV, FASTQ directory, empty output directory",
+    outputs: "MAGeCK-compatible counts, sample QC, reliability evidence, hashed handoff",
+    limit: "Known-guide counting only; no downstream screen statistics.",
+    start: `dotmatch agent invoke prepare_assay \\\n  --input crispr-request.json`,
+    href: agentCrisprUrl
+  },
+  {
+    id: "agent-perturb-seq",
+    title: "Perturb-seq direct-guide capture",
+    inputs: "Known guide-barcode table, guide-capture FASTQ directory, empty output directory",
+    outputs: "Per-guide counts, per-read outcomes, reliability evidence, hashed handoff",
+    limit: "No cell/UMI processing, guide-per-cell calls, expression, or perturbation effects.",
+    start: `dotmatch agent invoke prepare_assay \\\n  --input perturb-seq-request.json`,
+    href: agentPerturbSeqUrl
+  }
+] as const;
 
 const outcomes = [
   ["unique", "One target fits. Count the read or write it to that target's output."],
@@ -177,9 +212,9 @@ const evidenceGroups = [
   },
   {
     eyebrow: "Release",
-    title: `Version ${releaseVersion}, with status you can verify`,
+    title: `Published ${publishedVersion}; candidate ${releaseVersion}`,
     body:
-      "The current release is verified on PyPI, GHCR, GitHub Releases, and Zenodo. Bioconda and BioContainers still carry an older release; check distribution status before pinning either channel.",
+      "Version 0.3.1 is the current verified release on PyPI, GHCR, GitHub Releases, and Zenodo. Version 0.4.0 is a source candidate until it is separately authorized and published; Bioconda and BioContainers remain downstream gates.",
     links: [
       ["Release status", distributionUrl],
       ["Benchmarks", benchmarksUrl]
@@ -188,13 +223,14 @@ const evidenceGroups = [
 ] as const;
 
 const trustFacts = [
-  ["Release", `Version ${releaseVersion} on PyPI and GHCR`],
+  ["Candidate", `Version ${releaseVersion} source candidate`],
   ["License", "Apache-2.0 open source"],
   ["Data", "Runs locally on your machine"],
   ["Citation", "Archived release with DOI"]
 ] as const;
 
 const navigationLinks = [
+  ["Run with an agent", "#agent-workflow"],
   ["How it works", "#workflow"],
   ["Reliability", "#failure-modes"],
   ["Uses", "#use-cases"],
@@ -240,8 +276,8 @@ export default function Home() {
               a genome aligner or basecaller.
             </p>
             <div className="hero-actions">
-              <a className="button primary" href="#install">Install DotMatch</a>
-              <a className="button secondary" href="#workflow">See the workflow</a>
+              <a className="button primary" href="#agent-workflow">Run with a local agent</a>
+              <a className="button secondary" href="#install">Install the CLI</a>
             </div>
             <dl className="trust-list" aria-label="DotMatch package facts">
               {trustFacts.map(([term, detail]) => (
@@ -279,6 +315,65 @@ export default function Home() {
                 </article>
               ))}
             </div>
+          </div>
+        </section>
+
+        <section id="agent-workflow" className="section agent-section" aria-labelledby="agent-title">
+          <div className="section-heading">
+            <p className="section-kicker">A local research agent, with evidence</p>
+            <h2 id="agent-title">From assay files to a reviewable handoff.</h2>
+            <p>
+              A Codex or other local agent can use six structured DotMatch tools to
+              prepare, run, correct, and package a known-guide workflow. It receives
+              paths and scientific parameters—not shell commands—and ordinary runs
+              make no network requests.
+            </p>
+          </div>
+          <ol className="agent-steps" aria-label="Local agent workflow">
+            {agentSteps.map(([step, title, body]) => (
+              <li key={step}>
+                <span>{step}</span>
+                <strong>{title}</strong>
+                <p>{body}</p>
+              </li>
+            ))}
+          </ol>
+          <div className="agent-start-grid">
+            <article className="agent-command">
+              <h3>Start from the installed contract</h3>
+              <pre><code>{`dotmatch agent tools --json
+dotmatch agent export-skill --target ./dotmatch-agent`}</code></pre>
+              <div className="agent-links">
+                <a href={agentGuideUrl}>Agent guide</a>
+                <a href={agentToolsUrl}>Tool contract JSON</a>
+                <a href={capabilityManifestUrl}>Capability manifest 1.1</a>
+              </div>
+            </article>
+            <article className="agent-evidence">
+              <h3>Checked executable fixture, honest verdict</h3>
+              <p>
+                This checked CRISPR fixture contains unique, ambiguous, unmatched,
+                and invalid reads. Its expected counts and sample-QC artifacts are
+                hashed; the structured verdict remains <code>failed</code>
+                because the fixture intentionally exercises unsafe and low-assignment states.
+              </p>
+              <pre><code>{JSON.stringify(checkedFixtureEnvelope, null, 2)}</code></pre>
+              <a href={agentReferenceUrl}>Open the checked fixture envelope</a>
+            </article>
+          </div>
+          <div className="agent-task-grid" aria-label="Supported agent task pages">
+            {agentTasks.map((task) => (
+              <article id={task.id} key={task.id}>
+                <h3>{task.title}</h3>
+                <dl>
+                  <div><dt>Inputs</dt><dd>{task.inputs}</dd></div>
+                  <div><dt>Outputs</dt><dd>{task.outputs}</dd></div>
+                  <div><dt>Limit</dt><dd>{task.limit}</dd></div>
+                </dl>
+                <pre><code>{task.start}</code></pre>
+                <a href={task.href}>Open the exact task page</a>
+              </article>
+            ))}
           </div>
         </section>
 
@@ -371,8 +466,13 @@ export default function Home() {
           </div>
           <p className="automation-note">
             Building an automated workflow? See the <a href={agentGuideUrl}>agent task guide</a>,
-            {" "}the <a href={capabilityManifestUrl}>machine-readable capabilities</a>, or the
+            {" "}the <a href={agentToolsUrl}>versioned tool contract</a>, the
+            {" "}<a href={capabilityManifestUrl}>machine-readable capabilities</a>, or the
             {" "}<a href={commandReferenceUrl}>command reference</a>.
+          </p>
+          <p className="automation-note">
+            Snakemake wrapper PR #5825 is accepted on its default branch but absent from
+            v9.16.0. The nf-core, Galaxy, and MultiQC contributions remain under review.
           </p>
         </section>
 

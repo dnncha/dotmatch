@@ -3,6 +3,13 @@ include CITATION.cff
 include codemeta.json
 include agent-capabilities.json
 include agent-capabilities.schema.json
+include agent-capabilities.v1.json
+include agent-capabilities.v1.schema.json
+include agent-tools.json
+include agent-tools.schema.json
+include agent-reference-crispr.json
+recursive-include extensions/codex/dotmatch-agent *
+recursive-include python/dotmatch/data *
 include docs/assay-evidence.json
 include README.md
 include pyproject.toml

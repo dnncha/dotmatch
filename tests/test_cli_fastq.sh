@@ -1913,6 +1913,33 @@ grep '^bc3	TTTT	G3	0	0	1	0	0	0	1$' "$TMPDIR/counts_radius.tsv" >/dev/null
 grep '"ambiguity_policy": "radius"' "$TMPDIR/summary_radius.json" >/dev/null
 grep '^radius	r0	ACGT	0	bc0	ACGT	0	1	3	ambiguous	ambiguous$' "$TMPDIR/ambiguous_radius.tsv" >/dev/null
 
+# Count-only execution must preserve the same radius ambiguity. An exact ACGT
+# observation is also within k=1 of ACGA, so neither target may be counted.
+cat > "$TMPDIR/count_only_radius_targets.tsv" <<'COUNTONLYTARGETS'
+exact	ACGT	G0
+near	ACGA	G1
+COUNTONLYTARGETS
+cat > "$TMPDIR/count_only_radius.fastq" <<'COUNTONLYREADS'
+@exact_plus_near
+ACGT
++
+IIII
+COUNTONLYREADS
+"$DOTMATCH_BIN" count \
+  --targets "$TMPDIR/count_only_radius_targets.tsv" \
+  --reads "$TMPDIR/count_only_radius.fastq" \
+  --sample-label count_only_radius \
+  --target-start 0 \
+  --target-length 4 \
+  --k 1 \
+  --metric hamming \
+  --ambiguity-policy radius \
+  --out "$TMPDIR/count_only_radius.tsv" \
+  --summary "$TMPDIR/count_only_radius.json"
+grep '^exact	ACGT	G0	1	0	0	0	0	0	0$' "$TMPDIR/count_only_radius.tsv" >/dev/null
+grep '^near	ACGA	G1	1	0	0	0	0	0	0$' "$TMPDIR/count_only_radius.tsv" >/dev/null
+grep '"ambiguous": 1' "$TMPDIR/count_only_radius.json" >/dev/null
+
 "$DOTMATCH_BIN" count \
   --targets "$TMPDIR/targets.csv" \
   --reads "$TMPDIR/reads.fastq.gz" \

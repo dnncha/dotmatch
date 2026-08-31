@@ -2,6 +2,35 @@
 
 All notable user-facing changes are tracked here. Public statements in release notes must stay aligned with `docs/scientific-claims.md`.
 
+## 0.4.0 - Unreleased
+
+### Added
+
+- Added six versioned, structured local-agent tools for discovering,
+  preparing, preflighting, running, reviewing, and handing off CRISPR and
+  Perturb-seq direct-guide workflows.
+- Added a stable JSON result envelope, immutable evidence-backed AssaySpec
+  revisions, explicit stop conditions, artifact hashes, and raw-data-free
+  handoffs.
+- Added an automatically discoverable Codex skill that depends only on the
+  installed local DotMatch CLI.
+- Added public CRISPR and Perturb-seq agent task routes and versioned tool
+  contract/schema artifacts.
+- Added checked forward/reverse-complement window inference for count-mode
+  AssaySpecs, with local-only oriented FASTQ derivatives excluded from handoffs.
+
+### Fixed
+
+- Preserved radius ambiguity in the optimized count-only Hamming path when an
+  exact target and a one-mismatch target are both compatible with the read.
+
+### Changed
+
+- Evolved the capability manifest to schema 1.1 while retaining immutable 1.0
+  manifest and schema snapshots.
+- Made local-agent execution the primary homepage adoption route while keeping
+  direct CLI installation available.
+
 ## 0.3.1 - 2026-08-30
 
 ### Fixed

@@ -465,6 +465,9 @@ workbench-ready:
 repository-ready:
 	python3 scripts/check_repository_ready.py
 	python3 scripts/check_agent_discovery.py
+	$(MAKE) agent-tools-ready
+	$(MAKE) agent-skill-ready
+	$(MAKE) agent-reference-workflows-ready
 	python3 scripts/check_scientific_readiness.py
 	python3 scripts/check_workbench_surface.py
 	python3 scripts/check_barcode_science_readiness.py
@@ -473,7 +476,7 @@ repository-ready:
 	python3 scripts/check_reviewer_readiness_assets.py
 	$(MAKE) docs-ready
 
-release-ready: python-test python-package-test docs-ready scientific-readiness-ready assay-evidence-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready evidence-gallery-ready distribution-record-ready bioconda-recipe-ready gpu-evidence-gate native-exact-gate public-crispr-evidence-gate crispr-comparison-gate barcode-comparison-gate feature-barcode-public-gate perturb-seq-public-gate perturb-seq-case-study-fixture-gate perturb-seq-case-study-public-gate amplicon-panel-public-gate bcl-tiny-public-gate oligo-adapter-public-gate reviewer-readiness-ready assaycode-readiness-ready
+release-ready: python-test python-package-test docs-ready scientific-readiness-ready assay-evidence-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready evidence-gallery-ready distribution-record-ready bioconda-recipe-ready gpu-evidence-gate native-exact-gate public-crispr-evidence-gate crispr-comparison-gate barcode-comparison-gate feature-barcode-public-gate perturb-seq-public-gate perturb-seq-case-study-fixture-gate perturb-seq-case-study-public-gate amplicon-panel-public-gate bcl-tiny-public-gate oligo-adapter-public-gate reviewer-readiness-ready assaycode-readiness-ready agent-tools-ready agent-skill-ready agent-reference-workflows-ready
 	python3 scripts/check_release_readiness.py
 
 pretag-ready:
@@ -522,6 +525,17 @@ reviewer-readiness-ready:
 
 agent-discovery-ready:
 	python3 scripts/check_agent_discovery.py
+
+.PHONY: agent-tools-ready agent-skill-ready agent-reference-workflows-ready
+agent-tools-ready: dotmatch shared
+	python3 scripts/check_agent_tools.py
+	PYTHONPATH=$(CURDIR)/python python3 -m pytest -q python/tests/test_agent_tools.py
+
+agent-skill-ready:
+	python3 scripts/check_agent_skill.py
+
+agent-reference-workflows-ready:
+	python3 scripts/check_agent_reference_workflows.py
 
 distribution-record-ready:
 	python3 scripts/check_distribution_record.py

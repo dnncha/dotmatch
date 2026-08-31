@@ -1,0 +1,59 @@
+{
+  "schema_version": "1.0",
+  "tool_contract_version": "1.0",
+  "dotmatch_version": "0.4.0",
+  "tool": "review_assay",
+  "status": "failed",
+  "exit_code": 2,
+  "spec": {
+    "revision": 0,
+    "path": "examples/workflows/fixtures/crispr_assay.toml",
+    "sha256": "871a58c33550d1b31e71eb03605bc7e9d2c4b3b1b3250982b5153054ea10bc9d"
+  },
+  "artifacts": [
+    {
+      "role": "counts",
+      "path": "examples/workflows/fixtures/expected_counts.mageck.tsv",
+      "exists": true,
+      "safe_to_share": true,
+      "sha256": "82c61e9c2eb2d7701fd7505f4fa466e50fdbabbaebc16c266f304e06f4c424d9",
+      "bytes": 83
+    },
+    {
+      "role": "sample_qc",
+      "path": "examples/workflows/fixtures/expected_sample_qc.tsv",
+      "exists": true,
+      "safe_to_share": true,
+      "sha256": "2d8d905ee296adfc2a3711f5ae50dd18782468c7ac704b07dee015954f77651d",
+      "bytes": 594
+    }
+  ],
+  "findings": [
+    {
+      "finding_id": "assignment_rate_below_min",
+      "severity": "error",
+      "message": "The checked sample_a fixture has assignment_rate 0.0, below the production threshold 0.8.",
+      "source_artifact": "examples/workflows/fixtures/expected_sample_qc.tsv"
+    },
+    {
+      "finding_id": "ambiguous_rate_above_max",
+      "severity": "error",
+      "message": "The checked sample_a fixture preserves ambiguous_rate 0.66666667 instead of forcing those reads into counts.",
+      "source_artifact": "examples/workflows/fixtures/expected_sample_qc.tsv"
+    }
+  ],
+  "resource_use": {
+    "record_kind": "normalized_checked_fixture"
+  },
+  "next_actions": [
+    {
+      "tool": "inspect_assay",
+      "reason": "Review unsafe correction-radius and low-assignment findings; do not force ambiguous reads."
+    }
+  ],
+  "result": {
+    "fixture": "committed synthetic CRISPR workflow fixture",
+    "outcomes_preserved": ["unique", "ambiguous", "none", "invalid"],
+    "claim_boundary": "This record checks assignment and evidence behavior; it is not biological screen evidence."
+  }
+}

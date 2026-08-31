@@ -3527,7 +3527,12 @@ static int direct_hamming_count_seq(count_sample_job *job, const char *seq, size
 
     size_t n_offsets = job->selected_offsets == NULL || job->selected_offsets->count == 0
             ? 1 : job->selected_offsets->count;
-    if (n_offsets == 1) {
+    /* The single-offset shortcut returns an exact hit before collecting its
+     * one-mismatch neighbours. That is valid for best-distance semantics, but
+     * radius semantics must retain every compatible target so an exact hit
+     * plus a distance-one hit remains ambiguous. Route that case through the
+     * merge path below. */
+    if (n_offsets == 1 && !(job->k == 1 && job->assignment_policy == AMBIGUITY_POLICY_RADIUS)) {
         size_t offset = job->selected_offsets == NULL || job->selected_offsets->count == 0
                 ? job->target_start : job->selected_offsets->items[0];
         if (offset > seq_len || job->hlookup->target_len > seq_len - offset) {

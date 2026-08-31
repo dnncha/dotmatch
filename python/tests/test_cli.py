@@ -1260,4 +1260,7 @@ def test_crispr_namespace_infer_writes_crispr_assayspec(tmp_path):
     assert 'mode = "count"' in text
     assert 'assay_type = "crispr"' in text
     assert 'start = 2' in text
-    assert json.loads(report.read_text(encoding="utf-8"))["status"] == "ready"
+    inference = json.loads(report.read_text(encoding="utf-8"))
+    assert inference["status"] == "draft"
+    assert inference["chosen"]["orientation"] == "forward"
+    assert any("review orientation" in warning for warning in inference["warnings"])

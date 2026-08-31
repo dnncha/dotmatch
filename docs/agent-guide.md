@@ -9,7 +9,33 @@ from FASTQ. It requires a finite target list and a known or reviewed read
 window. It is not a genome aligner, basecaller, adapter trimmer, variant caller,
 cell/UMI quantifier, or downstream CRISPR screen-statistics package.
 
-## Machine-readable routes
+## Machine-readable tools
+
+DotMatch 0.4 adds a local execution contract with six composable tools:
+
+```bash
+dotmatch agent tools --json
+dotmatch agent invoke discover --input discover.json
+dotmatch agent export-skill --target ./dotmatch-agent
+```
+
+`discover`, `prepare_assay`, `inspect_assay`, `run_assay`, `review_assay`, and
+`handoff_assay` all accept structured JSON. Each invocation writes one stable
+JSON envelope to stdout and progress or diagnostics to stderr. The Python API
+exposes the same contract through `dotmatch.agent_tools.list_tools()` and
+`dotmatch.agent_tools.invoke_tool()`.
+
+The canonical contract and schema are also published as
+[`agent-tools.json`](https://dnncha.github.io/dotmatch/agent-tools.json) and
+[`agent-tools.schema.json`](https://dnncha.github.io/dotmatch/agent-tools.schema.json).
+Ordinary tool invocations are local-only: they do not upload targets, FASTQ,
+results, or handoff bundles and make no outbound network requests.
+
+Start with the exact task page for
+[CRISPR guide counting](agent-crispr.md) or
+[Perturb-seq direct-guide capture](agent-perturb-seq.md).
+
+## Capability routing
 
 Packages that include the agent interface can print the versioned capability
 record:
@@ -24,7 +50,12 @@ and validated against
 [`agent-capabilities.schema.json`](https://dnncha.github.io/dotmatch/agent-capabilities.schema.json).
 Use an intent's exact `entrypoint`, then read its `inputs`, `outputs`, and
 `limitations` before constructing a command. DotMatch 0.3.0 and later include
-the same capability record in the installed package.
+the same capability record in the installed package. Consumers pinned to the
+1.0 shape can keep using the immutable
+[`agent-capabilities.v1.json`](https://dnncha.github.io/dotmatch/agent-capabilities.v1.json)
+and
+[`agent-capabilities.v1.schema.json`](https://dnncha.github.io/dotmatch/agent-capabilities.v1.schema.json)
+snapshots.
 
 ## Choose by task
 
@@ -43,7 +74,7 @@ the same capability record in the installed package.
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
-python3 -m pip install dotmatch==0.3.1
+python3 -m pip install dotmatch
 dotmatch --version
 ```
 
@@ -127,8 +158,9 @@ conditions. In particular:
 
 - the public feature-barcode lane supports fixed-window per-read assignment,
   not cell or UMI quantification;
-- the public guide-capture lane contains one observed guide and supports
-  extraction validation, not useful multi-guide or perturbation-effect claims;
+- the GSE146194 guide-capture lane supports held-out per-read assignment for
+  32 direct-capture guides at `k=0` and `k=1`, not guide-per-cell or
+  perturbation-effect claims;
 - maintained workflow examples are not accepted external integrations unless
   [`workflow-adoption.json`](workflow-adoption.json) records one;
 - package retrieval counts are download events, not unique users or adoption.
@@ -139,9 +171,7 @@ before broadening a workflow or a claim.
 
 ## Why there is no MCP server
 
-DotMatch already has a local, scriptable CLI, documented file contracts, and a
-machine-readable capability command. The repository does not currently show a
-consumer that needs a long-running tool server or remote protocol boundary.
-Adding MCP would increase installation and trust surface without improving the
-checked local workflow, so the supported agent interface remains the CLI and
-ordinary files.
+DotMatch has a local, scriptable CLI, documented file contracts, a versioned
+six-tool execution layer, and an exportable Codex skill. The checked workflow
+does not require a long-running tool server or remote protocol boundary, so the
+supported agent interface remains the installed CLI and ordinary local files.

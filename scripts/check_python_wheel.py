@@ -102,6 +102,10 @@ def wheel_agent_discovery_members(wheel: Path) -> list[str]:
     required = {
         "dotmatch/data/agent-capabilities.json",
         "dotmatch/data/agent-capabilities.schema.json",
+        "dotmatch/data/agent-tools.json",
+        "dotmatch/data/agent-tools.schema.json",
+        "dotmatch/data/codex-skill/SKILL.md",
+        "dotmatch/data/codex-skill/agents/openai.yaml",
     }
     with zipfile.ZipFile(wheel) as archive:
         return sorted(required.intersection(archive.namelist()))
@@ -121,6 +125,12 @@ def check_sdist_members(sdist: Path) -> None:
         "/codemeta.json",
         "/agent-capabilities.json",
         "/agent-capabilities.schema.json",
+        "/agent-capabilities.v1.json",
+        "/agent-capabilities.v1.schema.json",
+        "/agent-tools.json",
+        "/agent-tools.schema.json",
+        "/agent-reference-crispr.json",
+        "/extensions/codex/dotmatch-agent/SKILL.md",
         "/docs/assay-evidence.json",
         "/LICENSE",
     ]
@@ -295,6 +305,25 @@ def verify_clean_install(artifact: Path, install_root: Path, expected_version: s
         if required_id not in capability_ids:
             raise SystemExit(f"{artifact.name} installed capabilities are missing {required_id}")
 
+    tool_contract_text = run_text(
+        [str(venv_script(env_dir, "dotmatch")), "agent", "tools", "--json"],
+        cwd=probe_dir,
+        env=env,
+    )
+    tool_contract = json.loads(tool_contract_text)
+    tool_names = {item.get("name") for item in tool_contract.get("tools", []) if isinstance(item, dict)}
+    if tool_names != {"discover", "prepare_assay", "inspect_assay", "run_assay", "review_assay", "handoff_assay"}:
+        raise SystemExit(f"{artifact.name} installed agent tool contract is incomplete: {tool_names!r}")
+    exported_skill = probe_dir / "exported-dotmatch-skill"
+    export_text = run_text(
+        [str(venv_script(env_dir, "dotmatch")), "agent", "export-skill", "--target", str(exported_skill)],
+        cwd=probe_dir,
+        env=env,
+    )
+    export_result = json.loads(export_text)
+    if export_result.get("status") != "passed" or not (exported_skill / "SKILL.md").is_file():
+        raise SystemExit(f"{artifact.name} could not export the installed Codex skill")
+
     dist_observed = run_text([str(venv_script(env_dir, "dotmatch")), "dist", "ACGT", "AGGT"], cwd=probe_dir, env=env)
     if dist_observed != "1":
         raise SystemExit(f"{artifact.name} console CLI distance smoke test returned {dist_observed!r}")
@@ -460,11 +489,32 @@ metric = "hamming"
         encoding="utf-8",
     )
     run([str(venv_script(env_dir, "dotmatch")), "assay", "check", str(spec)], cwd=probe_dir, env=env)
+    inspect_input = probe_dir / "inspect-agent-input.json"
+    inspect_input.write_text(json.dumps({"spec": str(spec)}) + "\n", encoding="utf-8")
+    inspect_result = run_expect_exit(
+        [str(venv_script(env_dir, "dotmatch")), "agent", "invoke", "inspect_assay", "--input", str(inspect_input)],
+        0,
+        cwd=probe_dir,
+        env=env,
+    )
+    inspect_envelope = json.loads(inspect_result.stdout)
+    if inspect_envelope.get("status") != "passed" or inspect_envelope.get("spec", {}).get("sha256", "") == "":
+        raise SystemExit(f"{artifact.name} installed agent inspect returned invalid evidence")
     reliability_summary = json.loads((probe_dir / "assay_out" / "reliability_summary.json").read_text(encoding="utf-8"))
     evidence_boundary = reliability_summary.get("evidence_boundary", {})
     if evidence_boundary.get("status") != "supported" or evidence_boundary.get("id") != "crispr_guide_counting":
         raise SystemExit(f"{artifact.name} installed assay reliability evidence boundary is invalid: {evidence_boundary!r}")
-    run([str(venv_script(env_dir, "dotmatch")), "assay", "run", str(spec)], cwd=probe_dir, env=env)
+    run_input = probe_dir / "run-agent-input.json"
+    run_input.write_text(json.dumps({"spec": str(spec), "minimum_free_bytes": 0}) + "\n", encoding="utf-8")
+    run_result = run_expect_exit(
+        [str(venv_script(env_dir, "dotmatch")), "agent", "invoke", "run_assay", "--input", str(run_input)],
+        0,
+        cwd=probe_dir,
+        env=env,
+    )
+    run_envelope = json.loads(run_result.stdout)
+    if run_envelope.get("status") != "passed" or not run_envelope.get("result", {}).get("revision_history"):
+        raise SystemExit(f"{artifact.name} installed agent run returned invalid evidence")
     reliability_dir = probe_dir / "assay_out"
     postrun_summary = json.loads((reliability_dir / "reliability_summary.json").read_text(encoding="utf-8"))
     postrun_evidence = postrun_summary.get("evidence_boundary", {})
@@ -472,6 +522,34 @@ metric = "hamming"
         raise SystemExit(f"{artifact.name} installed assay run reliability summary is invalid: {postrun_summary!r}")
     if postrun_evidence.get("status") != "supported" or postrun_evidence.get("id") != "crispr_guide_counting":
         raise SystemExit(f"{artifact.name} installed assay run evidence boundary is invalid: {postrun_evidence!r}")
+    review_input = probe_dir / "review-agent-input.json"
+    review_input.write_text(json.dumps({"spec": str(spec)}) + "\n", encoding="utf-8")
+    review_result = run_expect_exit(
+        [str(venv_script(env_dir, "dotmatch")), "agent", "invoke", "review_assay", "--input", str(review_input)],
+        0,
+        cwd=probe_dir,
+        env=env,
+    )
+    review_envelope = json.loads(review_result.stdout)
+    if review_envelope.get("status") != "passed" or not review_envelope.get("artifacts"):
+        raise SystemExit(f"{artifact.name} installed agent review returned invalid evidence")
+    handoff_dir = probe_dir / "agent-handoff"
+    handoff_input = probe_dir / "handoff-agent-input.json"
+    handoff_input.write_text(
+        json.dumps({"spec": str(spec), "output_dir": str(handoff_dir), "minimum_free_bytes": 0}) + "\n",
+        encoding="utf-8",
+    )
+    handoff_result = run_expect_exit(
+        [str(venv_script(env_dir, "dotmatch")), "agent", "invoke", "handoff_assay", "--input", str(handoff_input)],
+        0,
+        cwd=probe_dir,
+        env=env,
+    )
+    handoff_envelope = json.loads(handoff_result.stdout)
+    if handoff_envelope.get("status") != "passed" or handoff_envelope.get("result", {}).get("raw_data_included") is not False:
+        raise SystemExit(f"{artifact.name} installed agent handoff returned invalid evidence")
+    if any(path.suffix in {".fastq", ".fq"} or path.name.endswith((".fastq.gz", ".fq.gz")) for path in handoff_dir.rglob("*")):
+        raise SystemExit(f"{artifact.name} installed agent handoff copied raw FASTQ")
     for required in [
         "reliability_summary.json",
         "reliability_findings.tsv",
@@ -736,8 +814,8 @@ def build_and_verify_wheel(out_dir: Path, install_root: Path, expected_version: 
     if not assay_evidence_members:
         raise SystemExit(f"{wheel.name} does not contain dotmatch/data/assay-evidence.json")
     agent_discovery_members = wheel_agent_discovery_members(wheel)
-    if len(agent_discovery_members) != 2:
-        raise SystemExit(f"{wheel.name} does not contain both installed agent discovery JSON files")
+    if len(agent_discovery_members) != 6:
+        raise SystemExit(f"{wheel.name} does not contain all installed agent contract and skill files")
     check_distribution_metadata(wheel, expected_version)
     check_macos_tag(wheel)
     check_macos_architecture(wheel, native_members[0])
@@ -758,8 +836,8 @@ def verify_existing_wheels(wheel_dir: Path, install_root: Path, expected_version
             raise SystemExit(f"{wheel.name} does not contain dotmatch-native")
         if not wheel_assay_evidence_members(wheel):
             raise SystemExit(f"{wheel.name} does not contain dotmatch/data/assay-evidence.json")
-        if len(wheel_agent_discovery_members(wheel)) != 2:
-            raise SystemExit(f"{wheel.name} does not contain both installed agent discovery JSON files")
+        if len(wheel_agent_discovery_members(wheel)) != 6:
+            raise SystemExit(f"{wheel.name} does not contain all installed agent contract and skill files")
         check_distribution_metadata(wheel, expected_version)
         if not wheel_supported_by_current_platform(wheel):
             print(f"skipping clean install for unsupported wheel tag on this host: {wheel.name}")

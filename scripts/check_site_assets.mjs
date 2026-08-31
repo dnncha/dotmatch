@@ -15,10 +15,15 @@ const requiredFiles = [
   "docs/getting-started.md",
   "docs/command-reference.md",
   "docs/agent-guide.md",
+  "docs/agent-crispr.md",
+  "docs/agent-perturb-seq.md",
   "public/llms.txt",
   "public/llms-full.txt",
   "public/agent-capabilities.json",
   "public/agent-capabilities.schema.json",
+  "public/agent-tools.json",
+  "public/agent-tools.schema.json",
+  "public/agent-reference-crispr.json",
   "public/dotmatch-read-assignment-v2.webp",
   "public/dotmatch-read-assignment-mobile-v2.webp",
   "public/dotmatch-og.png",
@@ -42,6 +47,7 @@ const normalizedPage = page.replace(/\s+/g, " ");
 
 for (const anchor of [
   'id="top"',
+  'id="agent-workflow"',
   'id="failure-modes"',
   'id="workflow"',
   'id="use-cases"',
@@ -70,7 +76,10 @@ for (const phrase of [
   "CRISPR guides",
   "inline barcodes",
   "It is not a genome aligner or basecaller.",
-  "Bioconda and BioContainers still carry an older release",
+  "Run with a local agent",
+  "dotmatch agent tools --json",
+  "structured verdict remains <code>failed</code>",
+  "Published ${publishedVersion}; candidate ${releaseVersion}",
   "python3 -m pip install dotmatch",
   "getting-started.html",
   "https://dotmatch.readthedocs.io/en/latest/"
@@ -124,9 +133,11 @@ if (!page.includes("featureList") || !page.includes("agent-capabilities.json")) 
 }
 
 if (!page.includes('import packageMetadata from "../package.json"') ||
-    !page.includes("softwareVersion: releaseVersion") ||
-    !page.includes("Version ${releaseVersion}, with status you can verify")) {
-  console.error("Homepage release claims must come from package.json metadata.");
+    !page.includes("softwareVersion: publishedVersion") ||
+    !page.includes('const publishedVersion = "0.3.1"') ||
+    !page.includes("Published ${publishedVersion}; candidate ${releaseVersion}") ||
+    !page.includes("Version ${releaseVersion} source candidate")) {
+  console.error("Homepage must separate candidate source metadata from the current published package.");
   process.exit(1);
 }
 

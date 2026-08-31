@@ -45,6 +45,28 @@ PUBLISHED_COPIES = {
         "public/agent-capabilities.schema.json",
         "python/dotmatch/data/agent-capabilities.schema.json",
     ],
+    "agent-capabilities.v1.json": [
+        "docs/agent-capabilities.v1.json",
+        "public/agent-capabilities.v1.json",
+    ],
+    "agent-capabilities.v1.schema.json": [
+        "docs/agent-capabilities.v1.schema.json",
+        "public/agent-capabilities.v1.schema.json",
+    ],
+    "agent-tools.json": [
+        "docs/agent-tools.json",
+        "public/agent-tools.json",
+        "python/dotmatch/data/agent-tools.json",
+    ],
+    "agent-tools.schema.json": [
+        "docs/agent-tools.schema.json",
+        "public/agent-tools.schema.json",
+        "python/dotmatch/data/agent-tools.schema.json",
+    ],
+    "agent-reference-crispr.json": [
+        "docs/agent-reference-crispr.json",
+        "public/agent-reference-crispr.json",
+    ],
 }
 
 
@@ -86,8 +108,8 @@ def validate_manifest(root: Path) -> list[str]:
     missing_top = sorted(required_top - set(manifest))
     failures.extend(f"agent-capabilities.json missing top-level field: {field}" for field in missing_top)
 
-    if manifest.get("schema_version") != "1.0":
-        failures.append("agent capability schema_version must be 1.0")
+    if manifest.get("schema_version") != "1.1":
+        failures.append("agent capability schema_version must be 1.1")
     version = _project_version(root)
     if manifest.get("generated_for_version") != version:
         failures.append("agent capability version must match pyproject.toml")
@@ -165,6 +187,40 @@ def validate_manifest(root: Path) -> list[str]:
     interfaces = manifest.get("interfaces")
     if not isinstance(interfaces, dict) or interfaces.get("machine_help") != "dotmatch capabilities --json":
         failures.append("agent capability machine_help must be dotmatch capabilities --json")
+    for key in ("agent_tools", "agent_tools_schema", "codex_skill"):
+        if not isinstance(interfaces, dict) or not str(interfaces.get(key, "")).startswith("https://"):
+            failures.append(f"agent capability interfaces must link {key}")
+    return failures
+
+
+def validate_agent_tools(root: Path) -> list[str]:
+    failures: list[str] = []
+    try:
+        contract = _json(root, "agent-tools.json")
+        schema = _json(root, "agent-tools.schema.json")
+    except Exception as exc:
+        return [f"agent tool contract is invalid: {exc}"]
+    if contract.get("tool_contract_version") != "1.0" or contract.get("schema_version") != "1.0":
+        failures.append("agent tool contract versions must be 1.0")
+    if contract.get("generated_for_version") != _project_version(root):
+        failures.append("agent tool contract version must match pyproject.toml")
+    names = [item.get("name") for item in contract.get("tools", []) if isinstance(item, dict)]
+    required = {"discover", "prepare_assay", "inspect_assay", "run_assay", "review_assay", "handoff_assay"}
+    if set(names) != required or len(names) != len(required):
+        failures.append("agent tool contract must define exactly the six supported tools")
+    if schema.get("$id") != "https://dnncha.github.io/dotmatch/agent-tools.schema.json":
+        failures.append("agent tool schema must use the public $id")
+    if not bool((contract.get("safety") or {}).get("ambiguity_is_never_forced_into_counts")):
+        failures.append("agent tool contract must preserve ambiguous assignments")
+    extension = root / "extensions/codex/dotmatch-agent"
+    packaged = root / "python/dotmatch/data/codex-skill"
+    if not extension.is_dir() or not packaged.is_dir():
+        failures.append("Codex skill must exist in extension and installed-package locations")
+    else:
+        ext_files = {p.relative_to(extension).as_posix(): p.read_bytes() for p in extension.rglob("*") if p.is_file()}
+        pkg_files = {p.relative_to(packaged).as_posix(): p.read_bytes() for p in packaged.rglob("*") if p.is_file()}
+        if ext_files != pkg_files:
+            failures.append("packaged Codex skill is stale")
     return failures
 
 
@@ -180,6 +236,24 @@ def validate_schema(root: Path) -> list[str]:
         failures.append("agent capability schema $id must use the public schema URL")
     if schema.get("type") != "object" or not isinstance(schema.get("$defs"), dict):
         failures.append("agent capability schema must define an object and reusable definitions")
+    return failures
+
+
+def validate_legacy_schema(root: Path) -> list[str]:
+    failures: list[str] = []
+    try:
+        manifest = _json(root, "agent-capabilities.v1.json")
+        schema = _json(root, "agent-capabilities.v1.schema.json")
+    except Exception as exc:
+        return [f"legacy agent capability snapshot is invalid: {exc}"]
+    if manifest.get("schema_version") != "1.0":
+        failures.append("legacy agent capability snapshot must remain schema 1.0")
+    if manifest.get("$schema") != "https://dnncha.github.io/dotmatch/agent-capabilities.v1.schema.json":
+        failures.append("legacy agent capability snapshot must use its immutable schema URL")
+    if schema.get("$id") != "https://dnncha.github.io/dotmatch/agent-capabilities.v1.schema.json":
+        failures.append("legacy agent capability schema must use its immutable $id")
+    if ((schema.get("properties") or {}).get("schema_version") or {}).get("const") != "1.0":
+        failures.append("legacy agent capability schema must remain 1.0")
     return failures
 
 
@@ -222,7 +296,7 @@ def validate_surfaces(root: Path) -> list[str]:
     if "agent-guide" not in docs_index:
         failures.append("docs/index.md must route to the agent guide")
     docs_conf = _read(root, "docs/conf.py")
-    for name in ["llms.txt", "llms-full.txt", "agent-capabilities.json", "agent-capabilities.schema.json"]:
+    for name in ["llms.txt", "llms-full.txt", "agent-capabilities.json", "agent-capabilities.schema.json", "agent-tools.json", "agent-tools.schema.json"]:
         if name not in docs_conf:
             failures.append(f"docs/conf.py html_extra_path must publish {name}")
     help_source = _read(root, "python/dotmatch/cli.py")
@@ -236,7 +310,7 @@ def validate_surfaces(root: Path) -> list[str]:
     if "agent-capabilities.json" not in page or "featureList" not in page:
         failures.append("homepage structured data must expose the capability manifest and feature list")
     manifest = _read(root, "MANIFEST.in")
-    for name in ["agent-capabilities.json", "agent-capabilities.schema.json"]:
+    for name in ["agent-capabilities.json", "agent-capabilities.schema.json", "agent-tools.json", "agent-tools.schema.json"]:
         if f"include {name}" not in manifest:
             failures.append(f"MANIFEST.in must include {name}")
     wheel_checker = _read(root, "scripts/check_python_wheel.py")
@@ -385,7 +459,7 @@ def main() -> int:
         print(json.dumps(report, indent=2) if args.json else f"Local agent discoverability: {report['score']}/{report['maximum']}")
         return 0
 
-    failures = validate_schema(root) + validate_manifest(root) + validate_copies(root) + validate_surfaces(root)
+    failures = validate_schema(root) + validate_legacy_schema(root) + validate_manifest(root) + validate_agent_tools(root) + validate_copies(root) + validate_surfaces(root)
     if failures:
         for failure in failures:
             print(f"FAIL: {failure}", file=sys.stderr)

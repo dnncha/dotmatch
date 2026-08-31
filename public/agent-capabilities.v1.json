@@ -1,0 +1,295 @@
+{
+  "$schema": "https://dnncha.github.io/dotmatch/agent-capabilities.v1.schema.json",
+  "schema_version": "1.0",
+  "generated_for_version": "0.3.1",
+  "project": {
+    "name": "DotMatch",
+    "package": "dotmatch",
+    "repository": "https://github.com/dnncha/dotmatch",
+    "documentation": "https://dotmatch.readthedocs.io/en/latest/",
+    "homepage": "https://dnncha.github.io/dotmatch/",
+    "license": "Apache-2.0"
+  },
+  "scope": {
+    "summary": "Deterministic fixed-window known-target short-DNA assignment from FASTQ.",
+    "requires": [
+      "FASTQ or FASTQ.gz reads",
+      "a finite table of expected short DNA target sequences",
+      "a known or reviewed read-window start and length"
+    ],
+    "does_not_do": [
+      "genome alignment",
+      "basecalling",
+      "adapter trimming",
+      "variant calling",
+      "cell-barcode or UMI quantification",
+      "downstream CRISPR screen statistics"
+    ]
+  },
+  "install": {
+    "recommended": "python3 -m pip install dotmatch==0.3.1",
+    "verify": "dotmatch --version",
+    "platforms": [
+      "Linux x86_64 or aarch64 with glibc or musl",
+      "macOS 11 or newer on Apple Silicon or Intel"
+    ],
+    "limitations": [
+      "The published Python wheels do not currently include Windows.",
+      "Check dotmatch --version when an exact release matters; Bioconda can lag PyPI."
+    ]
+  },
+  "outcomes": {
+    "unique": "Exactly one target is compatible; the read may contribute to that target count.",
+    "ambiguous": "More than one target is compatible; the read is not forced into a target count.",
+    "none": "No target is compatible within the configured distance.",
+    "invalid": "The requested fixed window cannot be extracted from the read."
+  },
+  "intents": [
+    {
+      "id": "crispr-guide-counting",
+      "task": "Count a CRISPR guide library and write a MAGeCK-compatible matrix",
+      "queries": [
+        "CRISPR guide counting from FASTQ",
+        "MAGeCK-compatible guide count matrix",
+        "count sgRNAs from a CRISPR screen"
+      ],
+      "entrypoint": "dotmatch crispr-count",
+      "command": "dotmatch crispr-count --library guides.tsv --samples samples.tsv --guide-start 23 --guide-length 20 --k 1 --out counts.mageck.tsv --summary summary.json --sample-qc sample_qc.tsv",
+      "inputs": [
+        "guide library TSV or CSV",
+        "sample sheet TSV or CSV pointing to FASTQ or FASTQ.gz files",
+        "zero-based guide start and guide length"
+      ],
+      "outputs": [
+        "MAGeCK-compatible count matrix TSV",
+        "run summary JSON",
+        "sample QC TSV"
+      ],
+      "limitations": [
+        "DotMatch counts known guide windows; it does not perform downstream screen statistics.",
+        "Audit the guide library before using mismatch correction."
+      ],
+      "documentation": "https://dotmatch.readthedocs.io/en/latest/tutorials/crispr-count-first-run.html",
+      "evidence": [
+        "tests/test_crispr_example_expected.sh",
+        "examples/crispr_guides/expected_output/README.md",
+        "docs/benchmarks/public_crispr/README.md"
+      ]
+    },
+    {
+      "id": "inline-barcode-demultiplexing",
+      "task": "Split FASTQ reads by fixed-position inline sample barcodes",
+      "queries": [
+        "inline barcode demultiplexing",
+        "split FASTQ by known sample barcodes",
+        "demultiplex fixed-position barcode reads"
+      ],
+      "entrypoint": "dotmatch demux",
+      "command": "dotmatch demux --barcodes barcodes.tsv --reads pooled.fastq.gz --barcode-start 0 --barcode-length 8 --k 1 --metric hamming --out-dir demuxed --summary demux.summary.json",
+      "inputs": [
+        "barcode TSV or CSV",
+        "FASTQ or FASTQ.gz reads",
+        "zero-based barcode start and barcode length"
+      ],
+      "outputs": [
+        "one split FASTQ per uniquely assigned barcode",
+        "demultiplexing summary JSON",
+        "optional ambiguous, unmatched, and assignment files"
+      ],
+      "limitations": [
+        "This path starts from FASTQ and does not perform basecalling.",
+        "High ambiguity or unmatched rates require window, orientation, and target-sheet review."
+      ],
+      "documentation": "https://dotmatch.readthedocs.io/en/latest/getting-started.html#demultiplex-inline-barcodes",
+      "evidence": [
+        "tests/test_cli_fastq.sh",
+        "scripts/check_barcode_failure_fixtures.py",
+        "docs/benchmarks/barcode_demux/README.md"
+      ]
+    },
+    {
+      "id": "feature-barcode-assignment",
+      "task": "Assign fixed-window feature-barcode reads to a known feature list",
+      "queries": [
+        "feature-barcode assignment",
+        "assign TotalSeq antibody feature reads",
+        "known feature tag matching from FASTQ"
+      ],
+      "entrypoint": "dotmatch count",
+      "command": "dotmatch count --targets features.tsv --reads feature_R2.fastq.gz --sample-label sample --target-start 0 --target-length 15 --k 1 --metric hamming --out feature_counts.tsv --assignments feature_assignments.tsv --summary feature_summary.json",
+      "inputs": [
+        "known feature-barcode target table",
+        "feature read FASTQ or FASTQ.gz",
+        "reviewed feature-window start and length"
+      ],
+      "outputs": [
+        "per-feature unique counts TSV",
+        "optional per-read assignments TSV",
+        "run summary JSON"
+      ],
+      "limitations": [
+        "The checked public lane covers per-read fixed-window feature assignment.",
+        "DotMatch does not perform cell-barcode, UMI, CITE-seq, or Cell Ranger quantification."
+      ],
+      "documentation": "https://dotmatch.readthedocs.io/en/latest/tutorials/scverse-perturb-seq.html#count-guide-or-feature-barcode-reads",
+      "evidence": [
+        "scripts/check_feature_barcode_gate.py",
+        "docs/benchmarks/feature_barcode/README.md",
+        "benchmarks/raw/feature_barcode.csv"
+      ]
+    },
+    {
+      "id": "perturb-seq-guide-capture",
+      "task": "Assign fixed-window Perturb-seq or CRISPR guide-capture reads",
+      "queries": [
+        "Perturb-seq guide capture",
+        "assign CRISPR guide-capture FASTQ reads",
+        "match guide capture reads to known guides"
+      ],
+      "entrypoint": "dotmatch count",
+      "command": "dotmatch count --targets guides.tsv --reads guide_capture_R2.fastq.gz --sample-label sample --target-start 63 --target-length 19 --k 0 --metric hamming --out guide_counts.tsv --assignments guide_assignments.tsv --summary guide_summary.json",
+      "inputs": [
+        "known guide target table",
+        "guide-capture FASTQ or FASTQ.gz",
+        "reviewed guide-window start and length"
+      ],
+      "outputs": [
+        "per-guide unique counts TSV",
+        "optional per-read assignments TSV",
+        "run summary JSON"
+      ],
+      "limitations": [
+        "The checked public guide-capture evidence is a single-guide extraction lane, not useful multi-guide assignment evidence.",
+        "DotMatch does not call guides per cell or process expression, cell barcodes, UMIs, or perturbation effects."
+      ],
+      "documentation": "https://dotmatch.readthedocs.io/en/latest/tutorials/scverse-perturb-seq.html",
+      "evidence": [
+        "scripts/check_perturb_seq_gate.py",
+        "docs/benchmarks/perturb_seq/README.md",
+        "benchmarks/raw/perturb_seq.csv"
+      ]
+    },
+    {
+      "id": "barcode-panel-design",
+      "task": "Design or check a barcode panel before sequencing",
+      "queries": [
+        "barcode panel design",
+        "design error-correcting DNA barcodes",
+        "check barcode panel collision safety"
+      ],
+      "entrypoint": "dotmatch panel design",
+      "command": "dotmatch panel design --n 96 --length 16 --preset illumina-inline-96 --out-dir panel",
+      "inputs": [
+        "requested barcode count and length or an existing barcode table",
+        "a panel preset or explicit design constraints"
+      ],
+      "outputs": [
+        "designed barcode table",
+        "panel certificate and machine-readable safety records",
+        "human-readable panel report"
+      ],
+      "limitations": [
+        "This designs short barcode sets, not hybrid-capture probes, PCR primers, or full sequencing assays.",
+        "Validate synthesis and instrument-specific constraints outside DotMatch."
+      ],
+      "documentation": "https://dotmatch.readthedocs.io/en/latest/barcode-panel-design.html",
+      "evidence": [
+        "python/tests/test_panel.py",
+        "scripts/check_barcode_panel_design_gate.py",
+        "benchmarks/raw/barcode_panel_design.csv"
+      ]
+    },
+    {
+      "id": "known-target-fastq-matching",
+      "task": "Count any known short-DNA target list from a fixed FASTQ window",
+      "queries": [
+        "known-target FASTQ matching",
+        "match short sequencing reads to a whitelist",
+        "count primers adapters or panel targets from FASTQ"
+      ],
+      "entrypoint": "dotmatch count",
+      "command": "dotmatch count --targets targets.tsv --reads sample.fastq.gz --sample-label sample --target-start 0 --target-length 20 --k 0 --metric hamming --out counts.tsv --sample-qc sample_qc.tsv --summary summary.json",
+      "inputs": [
+        "known target TSV or CSV",
+        "FASTQ or FASTQ.gz reads",
+        "zero-based target start and target length"
+      ],
+      "outputs": [
+        "unique target counts TSV",
+        "sample QC TSV",
+        "run summary JSON"
+      ],
+      "limitations": [
+        "Targets must be finite and known before assignment.",
+        "This is fixed-window short-DNA assignment, not local or whole-read genome alignment."
+      ],
+      "documentation": "https://dotmatch.readthedocs.io/en/latest/getting-started.html#count-known-targets-from-fastq",
+      "evidence": [
+        "tests/test_cli_fastq.sh",
+        "python/tests/test_cli.py",
+        "docs/schemas.md"
+      ]
+    },
+    {
+      "id": "barcode-run-diagnosis",
+      "task": "Diagnose high unmatched, ambiguous, invalid, or low-quality barcode assignments",
+      "queries": [
+        "debug barcode demultiplexing",
+        "high unmatched barcode rate",
+        "find barcode offset and collisions"
+      ],
+      "entrypoint": "dotmatch barcode autopsy",
+      "command": "dotmatch barcode autopsy --barcodes barcodes.tsv --reads pooled.fastq.gz --scan-starts 0:12 --k-values 0,1 --out-dir autopsy",
+      "inputs": [
+        "known barcode table",
+        "FASTQ or FASTQ.gz reads",
+        "a plausible range of barcode starts"
+      ],
+      "outputs": [
+        "HTML and Markdown diagnosis reports",
+        "offset scans, collision records, and frequent unmatched windows",
+        "machine-readable provenance and findings"
+      ],
+      "limitations": [
+        "The report proposes settings for review; it cannot infer unavailable sample-sheet or wet-lab context.",
+        "Do not use mismatch correction when the target audit reports unsafe collisions."
+      ],
+      "documentation": "https://dotmatch.readthedocs.io/en/latest/getting-started.html#diagnose-a-barcode-run",
+      "evidence": [
+        "scripts/check_barcode_failure_fixtures.py",
+        "examples/barcode_autopsy/failure_modes/expected_findings.tsv",
+        "docs/evidence-gallery/snapshots/barcode_autopsy/report.md"
+      ]
+    }
+  ],
+  "error_recovery": [
+    {
+      "symptom": "High unmatched rate",
+      "next_command": "dotmatch inspect-unmatched --targets targets.tsv --reads sample.fastq.gz --target-start 0 --target-length 20 --k 0 --top 50 --out top_unmatched.tsv",
+      "reason": "Frequent unmatched windows expose offset, orientation, target-sheet, trimming, and contamination problems."
+    },
+    {
+      "symptom": "High ambiguous rate or unsafe mismatch correction",
+      "next_command": "dotmatch audit --targets targets.tsv --k 1 --audit-mode auto --out-dir audit",
+      "reason": "The target audit records duplicates and near neighbours that can make correction non-unique."
+    },
+    {
+      "symptom": "Many invalid windows",
+      "next_command": "dotmatch count --help",
+      "reason": "Confirm that target-start plus target-length fits the post-trimming read length."
+    },
+    {
+      "symptom": "Uncertain command or file contract",
+      "next_command": "dotmatch capabilities --json",
+      "reason": "The installed manifest maps supported tasks to commands, inputs, outputs, evidence, and limitations."
+    }
+  ],
+  "interfaces": {
+    "human_help": "dotmatch --help",
+    "machine_help": "dotmatch capabilities --json",
+    "manifest": "https://dnncha.github.io/dotmatch/agent-capabilities.json",
+    "schema": "https://dnncha.github.io/dotmatch/agent-capabilities.schema.json",
+    "llms": "https://dnncha.github.io/dotmatch/llms.txt",
+    "llms_full": "https://dnncha.github.io/dotmatch/llms-full.txt"
+  }
+}

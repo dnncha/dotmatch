@@ -238,6 +238,23 @@ def test_distribution_record_rejects_version_mismatch(tmp_path):
     assert any("release_version 0.2.0 does not match pyproject version 0.1.0" in failure for failure in result.failures)
 
 
+def test_distribution_record_accepts_explicit_unpublished_candidate(tmp_path):
+    checker = _load_checker()
+    manifest = _manifest()
+    manifest["candidate_version"] = "0.2.0"
+    manifest["candidate_status"] = "prepared_not_published"
+    manifest["publication_authorized"] = False
+    _write_repo(tmp_path, manifest)
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "dotmatch"\nversion = "0.2.0"\n',
+        encoding="utf-8",
+    )
+
+    result = checker.audit(tmp_path)
+
+    assert result.failures == []
+
+
 def test_distribution_record_rejects_duplicate_channel_ids(tmp_path):
     checker = _load_checker()
     manifest = _manifest(channels=[_channel("pypi"), _channel("pypi")])
