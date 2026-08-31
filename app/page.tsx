@@ -21,11 +21,11 @@ const agentReferenceUrl = "https://dnncha.github.io/dotmatch/agent-reference-cri
 const pypiUrl = "https://pypi.org/project/dotmatch/";
 const containerUrl = `${repoUrl}/pkgs/container/dotmatch`;
 const workflowExamplesUrl = `${repoUrl}/tree/main/examples/workflows`;
-const doiUrl = "https://doi.org/10.5281/zenodo.20541628";
+const doiUrl = "https://doi.org/10.5281/zenodo.22214073";
 const binderUrl = "https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb";
 const colabUrl = "https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb";
 const releaseVersion = packageMetadata.version;
-const publishedVersion = "0.3.1";
+const publishedVersion = "0.4.0";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const assignmentWorkflowImage = `${basePath}/dotmatch-read-assignment-v2.webp`;
@@ -212,9 +212,9 @@ const evidenceGroups = [
   },
   {
     eyebrow: "Release",
-    title: `Published ${publishedVersion}; candidate ${releaseVersion}`,
+    title: `Published ${publishedVersion}`,
     body:
-      "Version 0.3.1 is the current verified release on PyPI, GHCR, GitHub Releases, and Zenodo. Version 0.4.0 is a source candidate until it is separately authorized and published; Bioconda and BioContainers remain downstream gates.",
+      "Version 0.4.0 is verified on PyPI, GHCR, GitHub Releases, and Zenodo. Bioconda and its generated BioContainers image remain community-controlled downstream gates while the 0.4.0 recipe is reviewed.",
     links: [
       ["Release status", distributionUrl],
       ["Benchmarks", benchmarksUrl]
@@ -223,7 +223,7 @@ const evidenceGroups = [
 ] as const;
 
 const trustFacts = [
-  ["Candidate", `Version ${releaseVersion} source candidate`],
+  ["Release", `Version ${releaseVersion} published`],
   ["License", "Apache-2.0 open source"],
   ["Data", "Runs locally on your machine"],
   ["Citation", "Archived release with DOI"]

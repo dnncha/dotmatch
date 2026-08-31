@@ -79,7 +79,7 @@ for (const phrase of [
   "Run with a local agent",
   "dotmatch agent tools --json",
   "structured verdict remains <code>failed</code>",
-  "Published ${publishedVersion}; candidate ${releaseVersion}",
+  "Published ${publishedVersion}",
   "python3 -m pip install dotmatch",
   "getting-started.html",
   "https://dotmatch.readthedocs.io/en/latest/"
@@ -134,9 +134,9 @@ if (!page.includes("featureList") || !page.includes("agent-capabilities.json")) 
 
 if (!page.includes('import packageMetadata from "../package.json"') ||
     !page.includes("softwareVersion: publishedVersion") ||
-    !page.includes('const publishedVersion = "0.3.1"') ||
-    !page.includes("Published ${publishedVersion}; candidate ${releaseVersion}") ||
-    !page.includes("Version ${releaseVersion} source candidate")) {
+    !page.includes('const publishedVersion = "0.4.0"') ||
+    !page.includes("Published ${publishedVersion}") ||
+    !page.includes("Version ${releaseVersion} published")) {
   console.error("Homepage must separate candidate source metadata from the current published package.");
   process.exit(1);
 }

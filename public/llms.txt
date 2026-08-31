@@ -2,7 +2,7 @@
 
 > DotMatch is an Apache-2.0 command-line and Python tool for deterministic fixed-window assignment of FASTQ reads to a finite list of known short DNA targets. Use it for CRISPR guide counting, inline barcode demultiplexing, per-read feature-barcode or guide-capture assignment, barcode panel design, and other known-target matching. It is not a genome aligner, basecaller, UMI or cell quantifier, variant caller, or downstream screen-statistics package.
 
-Install the current public release with `python3 -m pip install dotmatch==0.3.1` and verify it with `dotmatch --version`. DotMatch 0.4 candidates add `dotmatch agent tools --json` and six structured, local-only tools. Use `dotmatch capabilities --json` or the public capability manifest for task routing. Coordinates are zero-based. Count only `unique` assignments; `ambiguous`, `none`, and `invalid` remain separate. Audit a target list before enabling mismatch correction.
+Install the current public release with `python3 -m pip install dotmatch==0.4.0` and verify it with `dotmatch --version`. DotMatch 0.4 adds `dotmatch agent tools --json` and six structured, local-only tools. Use `dotmatch capabilities --json` or the public capability manifest for task routing. Coordinates are zero-based. Count only `unique` assignments; `ambiguous`, `none`, and `invalid` remain separate. Audit a target list before enabling mismatch correction.
 
 ## Agent start
 
