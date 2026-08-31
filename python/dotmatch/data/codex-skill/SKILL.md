@@ -1,6 +1,6 @@
 ---
 name: dotmatch-agent
-description: "Prepare, preflight, run, correct, review, and package local DotMatch CRISPR guide-counting or Perturb-seq direct-guide workflows. Use when a user asks a Codex agent to operate DotMatch on local target tables and FASTQ files, produce reliability evidence, or create a raw-data-free handoff."
+description: "Prepare, preflight, run, correct, review, and package local DotMatch CRISPR guide-counting or Perturb-seq direct-guide workflows. Use when a user asks a coding agent to operate DotMatch on local target tables and FASTQ files, produce reliability evidence, or create a raw-data-free handoff."
 ---
 
 # DotMatch Agent

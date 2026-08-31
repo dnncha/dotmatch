@@ -12,6 +12,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / "extensions" / "codex" / "dotmatch-agent"
 PACKAGED = ROOT / "python" / "dotmatch" / "data" / "codex-skill"
+CLAUDE_SKILL = ROOT / "extensions" / "claude-code" / "dotmatch-agent"
+PACKAGED_CLAUDE = ROOT / "python" / "dotmatch" / "data" / "claude-code-skill"
 
 
 def files(root: Path) -> dict[str, bytes]:
@@ -35,6 +37,15 @@ def main() -> int:
     elif not PACKAGED.is_dir():
         failures.append("installed-package skill copy is missing")
 
+    claude_required = required - {"agents/openai.yaml"}
+    claude_observed = set(files(CLAUDE_SKILL)) if CLAUDE_SKILL.is_dir() else set()
+    if claude_observed != claude_required:
+        failures.append(f"Claude Code skill files must be exactly {sorted(claude_required)}; observed {sorted(claude_observed)}")
+    if CLAUDE_SKILL.is_dir() and PACKAGED_CLAUDE.is_dir() and files(CLAUDE_SKILL) != files(PACKAGED_CLAUDE):
+        failures.append("installed-package Claude Code skill copy differs from the extension")
+    elif not PACKAGED_CLAUDE.is_dir():
+        failures.append("installed-package Claude Code skill copy is missing")
+
     skill_text = (SKILL / "SKILL.md").read_text(encoding="utf-8") if (SKILL / "SKILL.md").is_file() else ""
     for phrase in [
         "name: dotmatch-agent",
@@ -54,18 +65,19 @@ def main() -> int:
     codex_root = Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex")))
     standard_validator = codex_root / "skills" / ".system" / "skill-creator" / "scripts" / "quick_validate.py"
     if standard_validator.is_file():
-        result = subprocess.run(
-            [sys.executable, str(standard_validator), str(SKILL)],
-            cwd=ROOT,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            check=False,
-        )
-        if result.returncode:
-            failures.append("standard skill validator failed: " + result.stdout.strip())
-        else:
-            print(result.stdout.strip())
+        for label, skill_path in (("Codex", SKILL), ("Claude Code", CLAUDE_SKILL)):
+            result = subprocess.run(
+                [sys.executable, str(standard_validator), str(skill_path)],
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                check=False,
+            )
+            if result.returncode:
+                failures.append(f"standard skill validator failed for {label}: " + result.stdout.strip())
+            else:
+                print(f"{label}: {result.stdout.strip()}")
     else:
         print("Standard Codex skill validator is unavailable on this host; repository checks still ran")
 
@@ -73,7 +85,7 @@ def main() -> int:
         for failure in failures:
             print(f"FAIL: {failure}")
         return 1
-    print("Codex skill structure, metadata, references, and packaged copy passed")
+    print("Codex and Claude Code skill structures, metadata, references, and packaged copies passed")
     return 0
 
 

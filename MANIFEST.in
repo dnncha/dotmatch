@@ -9,6 +9,7 @@ include agent-tools.json
 include agent-tools.schema.json
 include agent-reference-crispr.json
 recursive-include extensions/codex/dotmatch-agent *
+recursive-include extensions/claude-code/dotmatch-agent *
 recursive-include python/dotmatch/data *
 include docs/assay-evidence.json
 include README.md

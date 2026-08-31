@@ -700,13 +700,19 @@ def _read_input(source: str) -> dict[str, Any]:
     return value
 
 
-def _skill_source() -> Any:
-    return resources.files("dotmatch").joinpath("data", "codex-skill")
+def _skill_source(host: str) -> Any:
+    directory = {
+        "codex": "codex-skill",
+        "claude-code": "claude-code-skill",
+    }.get(host)
+    if directory is None:
+        raise AgentToolError(f"unsupported skill host: {host}")
+    return resources.files("dotmatch").joinpath("data", directory)
 
 
-def _export_skill(target: str) -> dict[str, Any]:
+def _export_skill(target: str, host: str = "codex") -> dict[str, Any]:
     out_dir = _empty_output_path(target, "target")
-    source = _skill_source()
+    source = _skill_source(host)
     out_dir.mkdir(parents=True, exist_ok=True)
     for item in source.iterdir():
         destination = out_dir / item.name
@@ -717,8 +723,9 @@ def _export_skill(target: str) -> dict[str, Any]:
     files = [_artifact(path, role="skill_file") for path in sorted(out_dir.rglob("*")) if path.is_file()]
     envelope = _base_envelope("export-skill")
     envelope["artifacts"] = files
-    envelope["result"] = {"target": str(out_dir), "files": len(files)}
-    envelope["next_actions"] = [{"action": "restart_codex", "reason": "Reload local skill discovery after installation."}]
+    envelope["result"] = {"target": str(out_dir), "host": host, "files": len(files)}
+    restart_action = "restart_claude_code" if host == "claude-code" else "restart_codex"
+    envelope["next_actions"] = [{"action": restart_action, "reason": "Reload local skill discovery after installation."}]
     return envelope
 
 
@@ -737,8 +744,9 @@ def command_agent(argv: Sequence[str]) -> int:
     invoke = sub.add_parser("invoke", help="invoke one structured local tool")
     invoke.add_argument("tool")
     invoke.add_argument("--input", required=True)
-    export = sub.add_parser("export-skill", help="copy the bundled Codex skill into an empty directory")
+    export = sub.add_parser("export-skill", help="copy a bundled agent skill into an empty directory")
     export.add_argument("--target", required=True)
+    export.add_argument("--host", choices=("codex", "claude-code"), default="codex")
     command = "agent"
     try:
         args = parser.parse_args(list(argv))
@@ -748,7 +756,7 @@ def command_agent(argv: Sequence[str]) -> int:
             print(json.dumps(result, indent=2, sort_keys=True))
             return 0
         if args.command == "export-skill":
-            result = _export_skill(args.target)
+            result = _export_skill(args.target, host=args.host)
         else:
             result = invoke_tool(args.tool, _read_input(args.input))
     except (AgentToolError, OSError, json.JSONDecodeError, ValueError) as exc:

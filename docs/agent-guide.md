@@ -17,6 +17,7 @@ DotMatch 0.4 adds a local execution contract with six composable tools:
 dotmatch agent tools --json
 dotmatch agent invoke discover --input discover.json
 dotmatch agent export-skill --target ./dotmatch-agent
+dotmatch agent export-skill --host claude-code --target ./.claude/skills/dotmatch-agent
 ```
 
 `discover`, `prepare_assay`, `inspect_assay`, `run_assay`, `review_assay`, and
@@ -24,6 +25,12 @@ dotmatch agent export-skill --target ./dotmatch-agent
 JSON envelope to stdout and progress or diagnostics to stderr. The Python API
 exposes the same contract through `dotmatch.agent_tools.list_tools()` and
 `dotmatch.agent_tools.invoke_tool()`.
+
+The default skill export targets Codex. For Claude Code, use `--host
+claude-code` and place the empty target directory under `.claude/skills/` for a
+project installation or `~/.claude/skills/` for a personal installation. The
+Claude Code export uses the same scientific references and evidence policy but
+omits Codex-only interface metadata. Restart the agent after installation.
 
 The canonical contract and schema are also published as
 [`agent-tools.json`](https://dnncha.github.io/dotmatch/agent-tools.json) and

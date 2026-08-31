@@ -131,6 +131,7 @@ def check_sdist_members(sdist: Path) -> None:
         "/agent-tools.schema.json",
         "/agent-reference-crispr.json",
         "/extensions/codex/dotmatch-agent/SKILL.md",
+        "/extensions/claude-code/dotmatch-agent/SKILL.md",
         "/docs/assay-evidence.json",
         "/LICENSE",
     ]
@@ -323,6 +324,19 @@ def verify_clean_install(artifact: Path, install_root: Path, expected_version: s
     export_result = json.loads(export_text)
     if export_result.get("status") != "passed" or not (exported_skill / "SKILL.md").is_file():
         raise SystemExit(f"{artifact.name} could not export the installed Codex skill")
+    exported_claude_skill = probe_dir / "exported-dotmatch-claude-skill"
+    claude_export_text = run_text(
+        [str(venv_script(env_dir, "dotmatch")), "agent", "export-skill", "--host", "claude-code", "--target", str(exported_claude_skill)],
+        cwd=probe_dir,
+        env=env,
+    )
+    claude_export_result = json.loads(claude_export_text)
+    if (
+        claude_export_result.get("status") != "passed"
+        or not (exported_claude_skill / "SKILL.md").is_file()
+        or (exported_claude_skill / "agents" / "openai.yaml").exists()
+    ):
+        raise SystemExit(f"{artifact.name} could not export the installed Claude Code skill")
 
     dist_observed = run_text([str(venv_script(env_dir, "dotmatch")), "dist", "ACGT", "AGGT"], cwd=probe_dir, env=env)
     if dist_observed != "1":

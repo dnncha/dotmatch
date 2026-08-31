@@ -328,6 +328,21 @@ def test_export_skill_requires_empty_directory_and_has_metadata(tmp_path: Path) 
         _export_skill(str(target))
 
 
+def test_export_skill_for_claude_code_has_host_specific_metadata(tmp_path: Path) -> None:
+    target = tmp_path / "claude-skill"
+    result = _export_skill(str(target), host="claude-code")
+    assert result["status"] == "passed"
+    assert result["result"]["host"] == "claude-code"
+    assert result["next_actions"][0]["action"] == "restart_claude_code"
+    assert (target / "SKILL.md").is_file()
+    assert not (target / "agents" / "openai.yaml").exists()
+    assert sorted(path.name for path in (target / "references").iterdir()) == [
+        "crispr.md",
+        "evidence-policy.md",
+        "perturb-seq.md",
+    ]
+
+
 def test_candidate_revision_is_numbered_and_does_not_edit_original(tmp_path: Path) -> None:
     targets = tmp_path / "targets.tsv"
     reads = tmp_path / "reads.fastq"

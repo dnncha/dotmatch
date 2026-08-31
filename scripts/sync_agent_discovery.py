@@ -47,6 +47,10 @@ COPY_TARGETS = {
 }
 SKILL_SOURCE = "extensions/codex/dotmatch-agent"
 SKILL_TARGET = "python/dotmatch/data/codex-skill"
+CLAUDE_SKILL_TARGETS = [
+    "extensions/claude-code/dotmatch-agent",
+    "python/dotmatch/data/claude-code-skill",
+]
 
 
 def _skill_files(root: Path, relative: str) -> dict[str, bytes]:
@@ -58,6 +62,24 @@ def _skill_files(root: Path, relative: str) -> dict[str, bytes]:
         for path in directory.rglob("*")
         if path.is_file()
     }
+
+
+def _claude_skill_files(root: Path) -> dict[str, bytes]:
+    return {
+        name: content
+        for name, content in _skill_files(root, SKILL_SOURCE).items()
+        if name != "agents/openai.yaml"
+    }
+
+
+def _write_files(root: Path, relative: str, content: dict[str, bytes]) -> None:
+    target = root / relative
+    if target.exists():
+        shutil.rmtree(target)
+    for name, value in content.items():
+        destination = target / name
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(value)
 
 
 def main() -> int:
@@ -87,6 +109,14 @@ def main() -> int:
             if target.exists():
                 shutil.rmtree(target)
             shutil.copytree(ROOT / SKILL_SOURCE, target)
+
+    expected_claude_skill = _claude_skill_files(ROOT)
+    for target_name in CLAUDE_SKILL_TARGETS:
+        if _skill_files(ROOT, target_name) == expected_claude_skill:
+            continue
+        stale.append(target_name)
+        if not args.check:
+            _write_files(ROOT, target_name, expected_claude_skill)
 
     if args.check and stale:
         print("Agent discovery copies are stale: " + ", ".join(stale))

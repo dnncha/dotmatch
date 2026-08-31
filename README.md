@@ -96,11 +96,14 @@ For an autonomous local workflow, inspect the installed contract first:
 ```bash
 dotmatch agent tools --json
 dotmatch agent export-skill --target ./dotmatch-agent
+dotmatch agent export-skill --host claude-code --target ./.claude/skills/dotmatch-agent
 ```
 
 The six tools prepare, preflight, run, review, and hand off CRISPR or
 Perturb-seq direct-guide workflows using structured JSON only. They do not
-upload research data or accept free-form shell commands.
+upload research data or accept free-form shell commands. Codex can install the
+default export in its skills directory; Claude Code discovers the host-specific
+export from `.claude/skills/dotmatch-agent` in a project.
 
 | Intent or search phrase | Entry point | Important limit |
 | --- | --- | --- |
