@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   creator: "DotMatch maintainers",
   publisher: "DotMatch",
   category: "Bioinformatics software",
+  icons: {
+    icon: [{ url: `${siteUrl}/favicon.svg`, type: "image/svg+xml" }]
+  },
   alternates: {
     canonical: siteUrl
   },
