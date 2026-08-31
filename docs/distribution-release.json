@@ -1,36 +1,31 @@
 {
   "schema_version": 1,
   "status": "partially_verified",
-  "release_version": "0.3.1",
-  "candidate_version": "0.4.0",
-  "candidate_status": "prepared_not_published",
-  "publication_authorized": false,
-  "release_tag": "v0.3.1",
-  "release_commit": "e630d4f8f0fe0122bafc2e350e91b5ac970e6f2e",
-  "tag_object": "1fd191df89dadc9fe31ba22f56be25cc5d746faa",
-  "github_release_url": "https://github.com/dnncha/dotmatch/releases/tag/v0.3.1",
-  "release_workflow_url": "https://github.com/dnncha/dotmatch/actions/runs/33282811243",
+  "release_version": "0.4.0",
+  "publication_authorized": true,
+  "release_tag": "v0.4.0",
+  "release_commit": "ed959753495175dabe3139d879d98e1afe8fdb60",
+  "tag_object": "c6da09198470a8c34207e846b3bfa20727b9e5d1",
+  "github_release_url": "https://github.com/dnncha/dotmatch/releases/tag/v0.4.0",
+  "release_workflow_url": "https://github.com/dnncha/dotmatch/actions/runs/33427674665",
   "post_release_gate": "make distribution-channels",
   "channels": [
     {
       "id": "pypi",
       "status": "verified",
-      "expected_url": "https://pypi.org/project/dotmatch/0.3.1/",
-      "public_url": "https://pypi.org/project/dotmatch/0.3.1/",
-      "evidence_url": "https://pypi.org/pypi/dotmatch/0.3.1/json",
-      "verified_date": "2026-08-30",
+      "expected_url": "https://pypi.org/project/dotmatch/0.4.0/",
+      "public_url": "https://pypi.org/project/dotmatch/0.4.0/",
+      "evidence_url": "https://pypi.org/pypi/dotmatch/0.4.0/json",
+      "verified_date": "2026-08-31",
       "verification_command": "make distribution-channels",
-      "linux_wheel_architectures": [
-        "x86_64",
-        "aarch64"
-      ],
+      "linux_wheel_architectures": ["x86_64", "aarch64"],
       "artifact_sha256": {
-        "dotmatch-0.3.1-py3-none-macosx_11_0_universal2.whl": "93eca88cdd5beaa6fbb015076fd345330762baa3134b50633c17e6a5b85a7751",
-        "dotmatch-0.3.1-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl": "989442510de57afb15a36a3481d44c3786a8d81f1d5801b1ba1493abef897152",
-        "dotmatch-0.3.1-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl": "b323a2585c21c3c454fbf4711ff407c2a3a7732ee7560e2ccc9a5f50eb3511cd",
-        "dotmatch-0.3.1-py3-none-musllinux_1_2_aarch64.whl": "030cefcc61b3e1fb9ecbb91b9785febf6bafaebc10df54b25bcb93dab2a58e2a",
-        "dotmatch-0.3.1-py3-none-musllinux_1_2_x86_64.whl": "b37c0fbe075e6b113322ab22cfc8e52d031a3d5225726b574cf12b187f06d492",
-        "dotmatch-0.3.1.tar.gz": "0ba8efb0416d26a093caf8a5fc75526b7c1116fc1271e7eccf695278be6207ad"
+        "dotmatch-0.4.0-py3-none-macosx_11_0_universal2.whl": "34c7e392b0f3fe3202a678d7b703d8a1a73a1d8f5b831eb47dfec3697e2716b1",
+        "dotmatch-0.4.0-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl": "9b2f883a627f3d37bfa2eb06735d4d61bc25d89523b0cf90ae6c91ead3edb710",
+        "dotmatch-0.4.0-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl": "c380a544513c97b3a19c55f9e2fb092d53596ff52b052717e8a5eb3004504d68",
+        "dotmatch-0.4.0-py3-none-musllinux_1_2_aarch64.whl": "d82fb9849159f34daf689ec88ceee9d741aad1800636e3fd95fde1ab80d19054",
+        "dotmatch-0.4.0-py3-none-musllinux_1_2_x86_64.whl": "73fa457a00655ee19d572c7e6afd534f4dc3bea2a5419e935a61decde35a7ccf",
+        "dotmatch-0.4.0.tar.gz": "367cb89e0b54e35286d51107e487f8656aa0f1277eeb9716978b4087ee9864bb"
       }
     },
     {
@@ -39,10 +34,10 @@
       "expected_url": "https://anaconda.org/bioconda/dotmatch",
       "public_url": "https://anaconda.org/bioconda/dotmatch",
       "evidence_url": "https://api.anaconda.org/package/bioconda/dotmatch",
-      "verified_date": "2026-08-30",
+      "verified_date": "2026-08-31",
       "verification_command": "make distribution-channels",
-      "blocker": "A DotMatch 0.3.1 recipe has not been accepted and built by Bioconda; the current public version is 0.2.2.",
-      "next_action": "Submit the rendered recipe from the immutable 0.3.1 source archive, then verify channel propagation."
+      "blocker": "DotMatch 0.4.0 requires acceptance and build by the community-controlled Bioconda channel; the current public version is 0.2.2.",
+      "next_action": "Submit the rendered recipe from the immutable 0.4.0 source archive, then verify channel propagation."
     },
     {
       "id": "bioconda-assaycode",
@@ -50,24 +45,21 @@
       "expected_url": "https://anaconda.org/bioconda/assaycode",
       "public_url": "https://anaconda.org/bioconda/assaycode",
       "evidence_url": "https://api.anaconda.org/package/bioconda/assaycode",
-      "verified_date": "2026-08-30",
+      "verified_date": "2026-08-31",
       "verification_command": "make distribution-channels",
-      "blocker": "The optional AssayCode compatibility metapackage is still at 0.2.2 and depends on the matching DotMatch 0.3.1 Bioconda build.",
-      "next_action": "Update the metapackage after the matching DotMatch 0.3.1 Bioconda build is available."
+      "blocker": "The optional AssayCode compatibility metapackage is still at 0.2.2 and depends on the matching DotMatch 0.4.0 Bioconda build.",
+      "next_action": "Update the metapackage after the matching DotMatch 0.4.0 Bioconda build is available."
     },
     {
       "id": "ghcr",
       "status": "verified",
       "expected_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
       "public_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
-      "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/33282811243",
-      "verified_date": "2026-08-30",
-      "manifest_digest": "sha256:203b7adc707e1aaecb7c79d6010fbc69da810834768413e36cc340e2710809d8",
+      "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/33427674665",
+      "verified_date": "2026-08-31",
+      "manifest_digest": "sha256:b06dfec356ef408916e510846a2d35bdc9d2c533d50d7f2fd7bb40c225e8796a",
       "verification_command": "make distribution-channels",
-      "platforms": [
-        "linux/amd64",
-        "linux/arm64"
-      ]
+      "platforms": ["linux/amd64", "linux/arm64"]
     },
     {
       "id": "biocontainers",
@@ -75,27 +67,27 @@
       "expected_url": "https://quay.io/repository/biocontainers/dotmatch",
       "public_url": "https://quay.io/repository/biocontainers/dotmatch",
       "evidence_url": "https://quay.io/api/v1/repository/biocontainers/dotmatch/tag/?onlyActiveTags=true&page=1&limit=100",
-      "verified_date": "2026-08-30",
+      "verified_date": "2026-08-31",
       "verification_command": "make distribution-channels",
-      "blocker": "The BioContainers image depends on the matching Bioconda package and has not been generated for 0.3.1; current public tags are 0.2.2.",
+      "blocker": "The BioContainers image is generated only after the matching community-controlled Bioconda package propagates; current public tags are 0.2.2.",
       "next_action": "Verify the generated image after Bioconda propagation, including a runtime check on an OCI host."
     },
     {
       "id": "zenodo",
       "status": "verified",
       "expected_url": "https://doi.org/10.5281/zenodo.20541628",
-      "public_url": "https://zenodo.org/records/22167503",
-      "evidence_url": "https://zenodo.org/api/records/22167503",
-      "verified_date": "2026-08-30",
+      "public_url": "https://zenodo.org/records/22214073",
+      "evidence_url": "https://zenodo.org/api/records/22214073",
+      "verified_date": "2026-08-31",
       "verification_command": "make distribution-channels",
       "concept_doi": "10.5281/zenodo.20541628",
-      "version_doi": "10.5281/zenodo.22167503"
+      "version_doi": "10.5281/zenodo.22214073"
     }
   ],
   "blockers": [
-    "A DotMatch 0.3.1 recipe has not been accepted and built by Bioconda.",
-    "The optional AssayCode compatibility metapackage depends on the matching DotMatch 0.3.1 Bioconda build.",
-    "The BioContainers image depends on Bioconda propagation and has not been generated for 0.3.1."
+    "DotMatch 0.4.0 requires acceptance and build by the community-controlled Bioconda channel.",
+    "The optional AssayCode compatibility metapackage depends on the matching DotMatch 0.4.0 Bioconda build.",
+    "The BioContainers image depends on Bioconda propagation and has not been generated for 0.4.0."
   ],
-  "next_action": "Validate and submit the immutable 0.3.1 Bioconda recipe, then verify the DotMatch and AssayCode packages and generated BioContainers image after upstream propagation."
+  "next_action": "Submit the immutable 0.4.0 Bioconda recipe, then verify the DotMatch and AssayCode packages and generated BioContainers image after upstream propagation."
 }
