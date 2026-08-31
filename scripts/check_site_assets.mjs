@@ -61,15 +61,16 @@ if ((page.match(/<h1\b/g) ?? []).length !== 1) {
 
 for (const phrase of [
   "DotMatch",
-  "Open-source known-target read assignment",
-  "See which sequencing reads match—and which do not.",
+  "Known-target sequencing read assignment",
+  "Match reads without hiding uncertainty.",
   "unique",
   "ambiguous",
   "none",
   "invalid",
   "CRISPR guides",
   "inline barcodes",
-  "DotMatch is not a genome aligner or basecaller.",
+  "It is not a genome aligner or basecaller.",
+  "Bioconda and BioContainers still carry an older release",
   "python3 -m pip install dotmatch",
   "getting-started.html",
   "https://dotmatch.readthedocs.io/en/latest/"
@@ -124,7 +125,7 @@ if (!page.includes("featureList") || !page.includes("agent-capabilities.json")) 
 
 if (!page.includes('import packageMetadata from "../package.json"') ||
     !page.includes("softwareVersion: releaseVersion") ||
-    !page.includes("v${releaseVersion}")) {
+    !page.includes("Version ${releaseVersion}, with status you can verify")) {
   console.error("Homepage release claims must come from package.json metadata.");
   process.exit(1);
 }

@@ -10,9 +10,9 @@ const socialImageAlt =
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: "DotMatch",
-  title: "DotMatch - Clear Read Assignment for Known DNA Targets",
+  title: "DotMatch — Known-target sequencing read assignment",
   description:
-    "DotMatch compares a chosen part of each sequencing read with known short DNA targets and keeps uncertain or invalid assignments visible.",
+    "Match a fixed window in each sequencing read to known short DNA targets while keeping ambiguous, unmatched, and invalid reads visible.",
   authors: [{ name: "DotMatch maintainers", url: "https://github.com/dnncha/dotmatch" }],
   creator: "DotMatch maintainers",
   publisher: "DotMatch",
@@ -33,9 +33,9 @@ export const metadata: Metadata = {
     "FASTQ sequence matching"
   ],
   openGraph: {
-    title: "DotMatch - Clear Read Assignment",
+    title: "DotMatch — Match reads without hiding uncertainty",
     description:
-      "See which sequencing reads match known DNA targets and which remain ambiguous, unmatched, or invalid.",
+      "Assign fixed read windows to known DNA targets while keeping ambiguous, unmatched, and invalid reads visible.",
     type: "website",
     siteName: "DotMatch",
     locale: "en_US",
@@ -53,9 +53,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "DotMatch - Clear Read Assignment",
+    title: "DotMatch — Match reads without hiding uncertainty",
     description:
-      "See which sequencing reads match known DNA targets and which remain ambiguous, unmatched, or invalid.",
+      "Assign fixed read windows to known DNA targets while keeping ambiguous, unmatched, and invalid reads visible.",
     images: [
       {
         url: twitterImageUrl,

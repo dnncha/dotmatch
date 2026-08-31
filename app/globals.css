@@ -183,7 +183,6 @@ h1 {
 .section-heading p,
 .workflow-grid p,
 .failure-grid p,
-.evidence-note p,
 .install-copy p {
   color: var(--muted);
   font-size: 1.04rem;
@@ -484,202 +483,78 @@ h3 {
     #fff;
 }
 
-.evidence-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.42fr);
-  gap: 1rem;
-  align-items: stretch;
-}
-
-.evidence-note,
-.evidence-links,
 .terminal {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
 }
 
-.evidence-note {
-  padding: 1.35rem;
-}
-
-.evidence-note h3 {
-  margin-bottom: 0.75rem;
-}
-
-.evidence-note p + p {
-  margin-top: 0.85rem;
-}
-
-.evidence-links {
+.evidence-grid {
   display: grid;
-  gap: 1px;
-  overflow: hidden;
-  background: var(--line);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
 }
 
-.evidence-links a {
+.evidence-card {
   display: flex;
-  align-items: center;
-  min-height: 72px;
-  padding: 1rem;
-  color: var(--ink);
-  background: #fff;
-  font-weight: 760;
-}
-
-.evidence-links a:hover {
-  color: var(--green);
-}
-
-.evaluation-section {
-  background: #fff;
-}
-
-.evaluation-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.36fr);
-  gap: 1rem;
-  align-items: start;
-}
-
-.evaluation-list {
-  display: grid;
-  gap: 1px;
-  margin: 0;
-  padding: 0;
-  border: 1px solid var(--line);
-  background: var(--line);
-  list-style: none;
-}
-
-.evaluation-list li {
-  display: grid;
-  grid-template-columns: minmax(120px, 0.22fr) minmax(0, 1fr);
-  gap: 1rem;
   min-width: 0;
-  padding: 1rem 1.15rem;
+  min-height: 310px;
+  flex-direction: column;
+  padding: 1.35rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
   background: #fff;
 }
 
-.evaluation-list strong {
-  color: var(--green-strong);
-  font-size: 1rem;
-  line-height: 1.35;
+.evidence-card:nth-child(3) {
+  border-color: rgba(153, 107, 19, 0.3);
+  background: #fffcf3;
 }
 
-.evaluation-list p {
+.evidence-eyebrow {
+  color: var(--green-strong);
+  font-size: 0.74rem;
+  font-weight: 820;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.evidence-card h3 {
+  margin-top: 0.65rem;
+  font-size: 1.45rem;
+}
+
+.evidence-card > p:not(.evidence-eyebrow) {
+  margin-top: 0.8rem;
   color: var(--muted);
   font-size: 0.98rem;
-  line-height: 1.52;
+  line-height: 1.58;
 }
 
-.evaluation-links {
-  display: grid;
-  gap: 0.7rem;
-  padding: 1rem;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #f7fbf9;
-}
-
-.evaluation-links a {
+.evidence-card-links {
   display: flex;
-  align-items: center;
-  min-height: 48px;
-  padding: 0.85rem;
-  border: 1px solid rgba(15, 107, 87, 0.18);
-  border-radius: 7px;
-  background: #fff;
-  font-size: 0.94rem;
-  font-weight: 760;
-}
-
-.evaluation-links a:hover {
-  color: var(--green);
-  border-color: rgba(15, 107, 87, 0.38);
-}
-
-.ecosystem-section {
-  background:
-    linear-gradient(180deg, #f7fbf9 0%, #ffffff 100%),
-    #fff;
-}
-
-.ecosystem-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.36fr);
-  gap: 1rem;
-  align-items: stretch;
-}
-
-.ecosystem-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 1px;
-  margin: 0;
-  padding: 0;
-  border: 1px solid var(--line);
-  background: var(--line);
-  list-style: none;
-  counter-reset: ecosystem-target;
-}
-
-.ecosystem-grid li {
-  min-width: 0;
-  min-height: 132px;
-  padding: 1rem;
-  background: #fff;
-  color: var(--ink);
-  font-size: 0.98rem;
-  font-weight: 760;
-  line-height: 1.35;
-  counter-increment: ecosystem-target;
-}
-
-.ecosystem-grid li::before {
-  display: block;
-  margin-bottom: 0.9rem;
-  color: var(--green-strong);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.88rem;
-  content: counter(ecosystem-target, decimal-leading-zero);
-}
-
-.ecosystem-note {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  padding: 1.15rem;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #102018;
-  color: #fff;
-}
-
-.ecosystem-note h3 {
-  margin-bottom: 0.75rem;
-}
-
-.ecosystem-note p {
-  color: rgba(255, 255, 255, 0.76);
-  font-size: 0.98rem;
-  line-height: 1.55;
-}
-
-.ecosystem-note a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  margin-top: 0.85rem;
-  color: #9ce5c9;
-  font-size: 0.94rem;
-  font-weight: 780;
-}
-
-.ecosystem-note a:first-of-type {
+  flex-wrap: wrap;
+  gap: 0.55rem 1rem;
   margin-top: auto;
-  padding-top: 1rem;
+  padding-top: 1.25rem;
+}
+
+.evidence-card-links a,
+.automation-note a {
+  color: var(--green-strong);
+  font-size: 0.92rem;
+  font-weight: 780;
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.18em;
+}
+
+.automation-note {
+  max-width: 900px;
+  margin-top: 1.25rem;
+  color: var(--muted);
+  font-size: 0.94rem;
+  line-height: 1.55;
 }
 
 .install-section {
@@ -740,12 +615,14 @@ h3 {
   margin: 0;
   padding: 1.3rem;
   overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .terminal code {
   color: #d9f9eb;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 1.2rem;
+  font-size: clamp(0.92rem, 2vw, 1.2rem);
   line-height: 1.55;
 }
 
@@ -828,14 +705,13 @@ h3 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .evidence-layout,
-  .evaluation-layout,
-  .ecosystem-layout {
-    grid-template-columns: 1fr;
+  .evidence-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .ecosystem-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .evidence-card:nth-child(3) {
+    grid-column: 1 / -1;
+    min-height: auto;
   }
 }
 
@@ -920,17 +796,14 @@ h3 {
     grid-template-columns: 1fr;
   }
 
-  .ecosystem-grid {
+  .evidence-grid {
     grid-template-columns: 1fr;
   }
 
-  .ecosystem-grid li {
+  .evidence-card,
+  .evidence-card:nth-child(3) {
+    grid-column: auto;
     min-height: auto;
-  }
-
-  .evaluation-list li {
-    grid-template-columns: 1fr;
-    gap: 0.38rem;
   }
 
   .outcome-card {
@@ -956,11 +829,20 @@ h3 {
     font-size: 1.14rem;
   }
 
+  .hero-actions {
+    gap: 0.55rem;
+  }
+
+  .hero-actions .button {
+    padding-right: 0.9rem;
+    padding-left: 0.9rem;
+    font-size: 0.94rem;
+  }
+
   .hero-text,
   .section-heading p,
   .workflow-grid p,
   .failure-grid p,
-  .evidence-note p,
   .install-copy p {
     font-size: 0.98rem;
   }
