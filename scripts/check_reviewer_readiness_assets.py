@@ -54,6 +54,7 @@ EXPECTED_INTEGRATION_IDS = {
 ALLOWED_INTEGRATION_STATUSES = {
     "external_pr_open",
     "external_pr_review_ready",
+    "external_released",
     "local_payload_ready",
     "local_parser_ready",
     "local_wrapper_ready",
@@ -212,6 +213,17 @@ def _check_integrations(result: AuditResult) -> None:
                 result.failures.append(f"{target_id} open PR must declare a full external_record_commit")
             if target.get("accepted") is not False or target.get("released") is not False:
                 result.failures.append(f"{target_id} open PR must not be marked accepted or released")
+        if status == "external_released":
+            record = str(target.get("external_record") or "").strip()
+            evidence = str(target.get("evidence_url") or target.get("release_url") or "").strip()
+            if not is_https_url(record) or uses_placeholder_host(record):
+                result.failures.append(f"{target_id} released target must declare external_record")
+            if not is_https_url(evidence) or uses_placeholder_host(evidence):
+                result.failures.append(f"{target_id} released target must declare evidence_url or release_url")
+            if target.get("accepted") is not True or target.get("released") is not True:
+                result.failures.append(f"{target_id} released target must be marked accepted and released")
+            if not str(target.get("released_tag") or "").strip():
+                result.failures.append(f"{target_id} released target must declare released_tag")
         for asset in target.get("source_assets") or []:
             asset_path = Path(str(asset))
             if not asset_path.exists():

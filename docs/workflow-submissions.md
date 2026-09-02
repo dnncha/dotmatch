@@ -2,7 +2,7 @@
 
 DotMatch keeps runnable examples in `examples/workflows/`. This page links the
 corresponding public upstream records and names the remaining acceptance gates.
-The records were checked on 2026-08-28. An open pull request is not an accepted
+The records were checked on 2026-09-02. An open pull request is not an accepted
 or released integration.
 
 See `docs/ecosystem-status.md` for package-manager and registry status.
@@ -41,11 +41,12 @@ published module record. Only then add an `nf_core_module` entry to
 ## Galaxy / IUC
 
 - Public record: [galaxyproject/tools-iuc #8336](https://github.com/galaxyproject/tools-iuc/pull/8336)
-- State: open, not accepted or published to a ToolShed
-- Checked head: `b547330d0b3f9fb38368eac3a94fd84098d51031`
+- State: open; review comments addressed at `e936bbce3577492ff6c12c83d29534213dcb6ce6`
 - Upstream checks: wrapper lint, containerized Planemo tests, and result
-  aggregation pass at the checked head
-- Scope: CRISPR count, demultiplexing, panel check, and assay-run wrappers
+  aggregation previously passed; re-run expected after the matching-mode and
+  assert refresh
+- Scope: CRISPR count wrapper (local tree also carries demux, panel check, and
+  assay-run examples)
 
 Source wrappers and fixtures are in `examples/workflows/galaxy/`. Keep outputs
 as plain TSV, JSON, FASTQ, and HTML datasets so Galaxy histories expose both
@@ -58,27 +59,23 @@ public ToolShed record is verified.
 ## Snakemake wrappers
 
 - Public record: [snakemake/snakemake-wrappers #5825](https://github.com/snakemake/snakemake-wrappers/pull/5825)
-- State: open, not accepted or released
-- Checked head: `a72d2bb8bdeb97d8ac506cbc249925f969888b6f`
-- Local check: Black passes for `bio/dotmatch/crispr-count/wrapper.py`
-- Upstream checks: the Code quality and Tests runs require upstream maintainer
-  approval at the checked head
+- State: accepted and released
+- Checked tags: `v9.17.0`, `v9.17.1`
+- Evidence: [bio/dotmatch/crispr-count on v9.17.1](https://github.com/snakemake/snakemake-wrappers/tree/v9.17.1/bio/dotmatch/crispr-count)
 
 The repository workflow remains under `examples/workflows/snakemake/`. Keep
 `metric`, `k`, `ambiguity_policy`, and ambiguous-output handling explicit.
 
-Acceptance gate: an upstream maintainer must approve the workflow runs; after
-checks pass, obtain review and merge, then verify the released wrapper record
-before adding a
-`snakemake_workflow` entry to `docs/workflow-adoption.json`.
+Acceptance gate: satisfied. The released wrapper is recorded in
+`docs/workflow-adoption.json`.
 
 ## MultiQC
 
 - Public record: [MultiQC/MultiQC #3629](https://github.com/MultiQC/MultiQC/pull/3629)
-- State: open, not accepted or released
+- State: open, not accepted or released; fixture dependency
+  [MultiQC/test-data #386](https://github.com/MultiQC/test-data/pull/386) is
+  merged and module CI is green
 - Checked head: `166f94ce70f2bc1fdbc94f460a4c857511bf1416`
-- Upstream checks: eight checks pass; one additional Python 3.9 check is
-  recorded as cancelled
 
 DotMatch also exposes its parser as a package plugin. Release 0.3.0 uses a
 `before_config` hook so search patterns are present before MultiQC indexes
@@ -93,5 +90,5 @@ Record only the state that has actually been published.
 ## bio.tools and WorkflowHub
 
 `docs/registries/biotools.yml` is draft metadata. No accepted DotMatch record
-was found in bio.tools on 2026-08-28. No exact DotMatch workflow record was
+was found in bio.tools on 2026-09-02. No exact DotMatch workflow record was
 found in WorkflowHub. Neither surface is recorded as submitted or accepted.

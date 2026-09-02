@@ -6,11 +6,11 @@
       "id": "snakemake-wrappers-dotmatch-crispr-count",
       "type": "snakemake_workflow",
       "name": "Snakemake wrappers DotMatch CRISPR count wrapper",
-      "status": "accepted",
-      "adoption_url": "https://github.com/snakemake/snakemake-wrappers/pull/5825",
-      "evidence_url": "https://github.com/snakemake/snakemake-wrappers/tree/master/bio/dotmatch/crispr-count",
-      "validation_notes": "Merged to the upstream master branch as c0a07504c8ae48dc9d60d12cfa564320fb7f5864 on 2026-08-29. The wrapper is absent from the current v9.16.0 tag, so this is accepted but unreleased and not yet evidence of stable-tag installation.",
-      "recorded_date": "2026-08-31"
+      "status": "released",
+      "adoption_url": "https://github.com/snakemake/snakemake-wrappers/releases/tag/v9.17.1",
+      "evidence_url": "https://github.com/snakemake/snakemake-wrappers/tree/v9.17.1/bio/dotmatch/crispr-count",
+      "validation_notes": "Merged to upstream master on 2026-08-29 as c0a07504c8ae48dc9d60d12cfa564320fb7f5864. Present on the public v9.17.0 and v9.17.1 wrapper tags, so stable-tag installation is verified.",
+      "recorded_date": "2026-09-02"
     }
   ],
   "blockers": [],
