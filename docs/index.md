@@ -23,6 +23,11 @@ python3 -m pip install dotmatch
 dotmatch --version
 ```
 
+The current public PyPI release is 0.4.0 and includes the six `dotmatch agent`
+tools described below. Confirm that `dotmatch --version` reports 0.4.0 before
+using them. Bioconda and BioContainers may lag PyPI; check the installed
+version when using those channels.
+
 Then follow [Getting started](getting-started.md) for a small count or
 demultiplexing run. If you already know which command you need, go straight to
 the [command reference](command-reference.md). Coding and scientific agents can

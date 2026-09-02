@@ -38,6 +38,11 @@ python3 -m pip install dotmatch
 dotmatch --version
 ```
 
+The current public release is 0.4.0 and includes the six `dotmatch agent`
+tools below. Check that `dotmatch --version` reports 0.4.0 before using that
+route. Bioconda and BioContainers may lag PyPI and GHCR; check the installed
+version when using those channels.
+
 Conda users can install the current Bioconda build:
 
 ```bash

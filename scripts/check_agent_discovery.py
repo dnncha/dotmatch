@@ -289,12 +289,37 @@ def validate_surfaces(root: Path) -> list[str]:
     if '"Agent guide" = "https://dotmatch.readthedocs.io/en/latest/agent-guide.html"' not in pyproject:
         failures.append("pyproject.toml must publish the Agent guide project URL")
     readme = _read(root, "README.md")
+    readme_surface = " ".join(readme.split())
     for phrase in ["Choose by task", "Agent guide", "dotmatch capabilities --json"]:
         if phrase not in readme:
             failures.append(f"README.md missing agent discovery phrase: {phrase}")
+    for phrase in [
+        "The current public release is 0.4.0",
+        "six `dotmatch agent` tools",
+        "includes the six",
+    ]:
+        if phrase not in readme_surface:
+            failures.append(f"README.md must state the public/agent-tools version boundary: {phrase}")
     docs_index = _read(root, "docs/index.md")
+    docs_index_surface = " ".join(docs_index.split())
     if "agent-guide" not in docs_index:
         failures.append("docs/index.md must route to the agent guide")
+    for phrase in [
+        "The current public PyPI release is 0.4.0",
+        "six `dotmatch agent` tools",
+        "includes the six",
+    ]:
+        if phrase not in docs_index_surface:
+            failures.append(f"docs/index.md must state the public/agent-tools version boundary: {phrase}")
+    agent_guide = _read(root, "docs/agent-guide.md")
+    agent_guide_surface = " ".join(agent_guide.split())
+    for phrase in [
+        "This six-tool interface is included in the current public PyPI release, 0.4.0.",
+        "older package",
+        "until that channel reaches 0.4.0",
+    ]:
+        if phrase not in agent_guide_surface:
+            failures.append(f"docs/agent-guide.md must state the public/agent-tools version boundary: {phrase}")
     docs_conf = _read(root, "docs/conf.py")
     for name in ["llms.txt", "llms-full.txt", "agent-capabilities.json", "agent-capabilities.schema.json", "agent-tools.json", "agent-tools.schema.json"]:
         if name not in docs_conf:
