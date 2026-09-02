@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "active_external_review",
-  "verified_on": "2026-08-28",
+  "verified_on": "2026-09-02",
   "adoption_record": "docs/workflow-adoption.json",
   "targets": [
     {
@@ -40,12 +40,12 @@
       "id": "multiqc_module",
       "name": "MultiQC module",
       "type": "multiqc_plugin",
-      "status": "external_pr_open",
-      "prepared_for_version": "next release after 0.2.2",
+      "status": "external_pr_review_ready",
+      "prepared_for_version": "0.3.0+",
       "external_target": "https://github.com/MultiQC/MultiQC",
       "external_record": "https://github.com/MultiQC/MultiQC/pull/3629",
       "external_record_commit": "166f94ce70f2bc1fdbc94f460a4c857511bf1416",
-      "external_record_state": "open",
+      "external_record_state": "open_ci_green_awaiting_review",
       "accepted": false,
       "released": false,
       "source_assets": [
@@ -54,19 +54,19 @@
         "examples/workflows/multiqc/data/"
       ],
       "review_command": "python3 scripts/run_workflow_integration_tests.py --skip-nf-test --skip-nextflow --skip-snakemake --skip-planemo",
-      "next_action": "Wait for MultiQC maintainer review; release the independent before_config discovery hook in DotMatch only after its source checks pass.",
+      "next_action": "Fixture PR MultiQC/test-data#386 is merged and module CI is green; wait for MultiQC maintainer review and release.",
       "public_record_required": true
     },
     {
       "id": "galaxy_iuc",
       "name": "Galaxy / IUC wrappers",
       "type": "galaxy_toolshed",
-      "status": "external_pr_open",
+      "status": "external_pr_review_ready",
       "prepared_for_version": "0.2.2",
       "external_target": "https://github.com/galaxyproject/tools-iuc",
       "external_record": "https://github.com/galaxyproject/tools-iuc/pull/8336",
-      "external_record_commit": "b547330d0b3f9fb38368eac3a94fd84098d51031",
-      "external_record_state": "open",
+      "external_record_commit": "e936bbce3577492ff6c12c83d29534213dcb6ce6",
+      "external_record_state": "open_review_comments_addressed",
       "accepted": false,
       "released": false,
       "source_assets": [
@@ -76,28 +76,30 @@
         "examples/workflows/galaxy/dotmatch_assay_run.xml"
       ],
       "review_command": "make workflow-examples-ready",
-      "next_action": "Wait for IUC maintainer review; after merge, verify ToolShed publication before describing the wrappers as installable.",
+      "next_action": "IUC review comments addressed (select matching mode, profile 25.0, stricter asserts); wait for re-review, then ToolShed publication.",
       "public_record_required": true
     },
     {
       "id": "snakemake_wrapper",
       "name": "Snakemake wrapper",
       "type": "snakemake_workflow",
-      "status": "external_pr_open",
+      "status": "external_released",
       "prepared_for_version": "0.2.2",
       "external_target": "https://github.com/snakemake/snakemake-wrappers",
       "external_record": "https://github.com/snakemake/snakemake-wrappers/pull/5825",
-      "external_record_commit": "a72d2bb8bdeb97d8ac506cbc249925f969888b6f",
-      "external_record_state": "open_checks_require_maintainer_approval",
-      "accepted": false,
-      "released": false,
+      "external_record_commit": "c0a07504c8ae48dc9d60d12cfa564320fb7f5864",
+      "external_record_state": "merged_and_tagged",
+      "accepted": true,
+      "released": true,
+      "released_tag": "v9.17.1",
+      "evidence_url": "https://github.com/snakemake/snakemake-wrappers/tree/v9.17.1/bio/dotmatch/crispr-count",
       "source_assets": [
         "examples/workflows/snakemake/Snakefile",
         "examples/workflows/snakemake/config.json",
         "examples/workflows/fixtures/"
       ],
       "review_command": "make workflow-examples-ready",
-      "next_action": "An upstream maintainer must approve the Code quality and Tests workflow runs; then wait for review and verify the released wrapper record after merge.",
+      "next_action": "Keep the local Snakemake example aligned with the released upstream wrapper; no further submission gate remains.",
       "public_record_required": true
     },
     {

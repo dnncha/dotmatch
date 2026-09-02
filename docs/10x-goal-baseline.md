@@ -16,7 +16,7 @@ it contains unrelated uncommitted changes.
 | --- | --- | --- |
 | Scientific accuracy | The CRISPR comparison report records six public-data Edlib-oracle rows of 10,000 reads each, all with zero assignment mismatches. Count agreement, ambiguity, and outcome semantics are reported separately. | 60,000 oracle-checked reads, zero observed mismatches. Because zero is an observed floor, not a measurable positive accuracy margin, improvement is defined as 10x broader independent validation with the same zero-mismatch and semantic gates. |
 | Speed | The full Sanson/Brunello public Hamming `k=1` row records 634,950.2 reads/s and 388.9288 seconds against guide-counter at 473,609.5 reads/s. The report marks this as a single full-data row, not a repeated claim. A new deterministic indexed-Hamming control is documented in `docs/10x-performance-control.md`. | 634,950.2 reads/s and 388.9288 seconds on the recorded workload and hardware. A repeated baseline must be captured before publishing a speed multiplier. The local control is diagnostic evidence only. |
-| Scientific impact | `docs/workflow-adoption.json` is `not_ready` with no accepted external workflow entries. `docs/adopters/` contains only the record template. Open external PRs are not counted as adoption. | Zero verified independent public use records in the project evidence registry. A multiplicative ratio from zero is undefined, so the 10x operational target is ten independently authored, public-safe scientific evaluation or use records. |
+| Scientific impact | `docs/workflow-adoption.json` records one released Snakemake wrapper on `v9.17.1`. `docs/adopters/` still contains only the record template. Open external PRs are not counted as adoption. | One released workflow-manager integration and zero independently authored lab use records. The 10x operational target remains ten independently authored, public-safe scientific evaluation or use records. |
 | Industry impact | There is no permissioned public industry, core-facility, or production-use record in `docs/adopters/`. Package availability and downloads are distribution evidence, not industry impact. | Zero verified industry-use records in the project evidence registry. The 10x operational target is ten permissioned evaluation or deployment records with workflow scope and at least one before/after operational metric. |
 
 ### Baseline boundaries
@@ -112,8 +112,10 @@ green and the evidence is independently auditable.
 1. Re-run the full Sanson/Brunello Hamming `k=1` lane five times and freeze the
    baseline artifact before optimizing.
 2. Expand held-out oracle validation to ten lanes without changing semantics.
-3. Convert open workflow submissions into accepted/released integrations before
-   counting scientific impact.
+3. Land the open nf-core, MultiQC, and Galaxy submissions, then convert each
+   accepted/released integration into `docs/workflow-adoption.json`.
 4. Invite independent scientific and industry evaluators through
    `docs/10x-evaluation-request.md`; do not publish private data or infer impact
    from replies alone.
+5. Prefer Bioconda PR #68663 over the autobump #68629 so DotMatch 0.4.0 and the
+   AssayCode metapackage land together after osx-64 CI is green.

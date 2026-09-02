@@ -31,7 +31,10 @@ dotmatch crispr-count --library '$library' --samples samples.tsv --guide-start '
         <param name="reads" type="data" format="fastq,fastqsanger,fastq.gz,fastqsanger.gz" multiple="true" label="CRISPR guide FASTQ reads" help="Provide one FASTQ dataset per sample. Galaxy dataset names become sample IDs in the count and QC outputs."/>
         <param name="guide_start" type="integer" value="23" min="0" label="Guide start" help="Zero-based start position of the guide window in each read."/>
         <param name="guide_length" type="integer" value="19" min="1" label="Guide length"/>
-        <param name="k" type="integer" value="1" min="0" max="1" label="Maximum correction radius"/>
+        <param name="k" type="select" label="Matching mode" help="Exact matching disables edit correction. One-edit correction allows a single substitution within the guide window.">
+            <option value="0">Exact matching</option>
+            <option value="1" selected="true">One-edit correction</option>
+        </param>
         <param name="metric" type="select" label="Distance metric">
             <option value="levenshtein" selected="true">Levenshtein</option>
             <option value="hamming">Hamming</option>

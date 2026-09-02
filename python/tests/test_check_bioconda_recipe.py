@@ -119,6 +119,12 @@ def _build() -> str:
     return (
         "#!/usr/bin/env bash\n"
         "set -euo pipefail\n\n"
+        'if [[ "$(uname -s)" == "Darwin" && "$(uname -m)" == "x86_64" ]]; then\n'
+        "  sed -i.bak '/CFLAGS += -mavx2/d; /CXXFLAGS += -mavx2/d' Makefile\n"
+        "fi\n\n"
+        'if [[ "$(uname -s)" == "Darwin" ]]; then\n'
+        '  export MACOSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET:-11.0}"\n'
+        "fi\n\n"
         "make \\\n"
         '  DOTMATCH_VERSION="${PKG_VERSION}" \\\n'
         '  CC="${CC}" \\\n'
@@ -134,9 +140,13 @@ def _build() -> str:
         'install -m 644 libdotmatch.a "${PREFIX}/lib/libdotmatch.a"\n'
         'install -m 644 LICENSE "${PREFIX}/share/${PKG_NAME}/LICENSE"\n\n'
         'if [[ "$(uname -s)" == "Darwin" ]]; then\n'
-        '    install -m 755 libdotmatch.dylib "${PREFIX}/lib/libdotmatch.dylib"\n'
+        '  install -m 755 libdotmatch.dylib "${PREFIX}/lib/libdotmatch.dylib"\n'
+        '  PKG_DIR="$("${PYTHON}" -c \'import pathlib, sysconfig; print(pathlib.Path(sysconfig.get_paths()["purelib"]) / "dotmatch")\')"\n'
+        '  if [[ -d "${PKG_DIR}" ]]; then\n'
+        '    install -m 755 libdotmatch.dylib "${PKG_DIR}/libdotmatch.dylib"\n'
+        "  fi\n"
         "else\n"
-        '    install -m 755 libdotmatch.so "${PREFIX}/lib/libdotmatch.so"\n'
+        '  install -m 755 libdotmatch.so "${PREFIX}/lib/libdotmatch.so"\n'
         "fi\n"
     )
 

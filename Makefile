@@ -13,9 +13,13 @@ LLVM_PROFDATA ?= $(shell command -v llvm-profdata 2>/dev/null || xcrun --find ll
 LLVM_COV ?= $(shell command -v llvm-cov 2>/dev/null || xcrun --find llvm-cov 2>/dev/null)
 UNAME_S := $(shell uname -s)
 UNAME_M := $(shell uname -m)
+# Opt out with DOTMATCH_DISABLE_AVX2=1 when the toolchain march (for example
+# Bioconda osx-64 -march=core2) cannot accept an unconditional -mavx2 append.
 ifeq ($(UNAME_M),x86_64)
+ifneq ($(DOTMATCH_DISABLE_AVX2),1)
 CFLAGS += -mavx2
 CXXFLAGS += -mavx2
+endif
 endif
 ifeq ($(UNAME_S),Darwin)
 SHARED_EXT := dylib
