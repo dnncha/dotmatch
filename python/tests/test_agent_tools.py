@@ -32,7 +32,7 @@ def test_contract_defines_exact_six_tools() -> None:
         assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
         assert "$defs" in schema
     assert contract["schema_version"] == "1.0"
-    assert contract["generated_for_version"] == "0.4.0"
+    assert contract["generated_for_version"] == "0.4.1"
     assert {item["name"] for item in contract["tools"]} == {
         "discover",
         "prepare_assay",

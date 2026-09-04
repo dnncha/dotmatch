@@ -134,7 +134,7 @@ if (!page.includes("featureList") || !page.includes("agent-capabilities.json")) 
 
 if (!page.includes('import packageMetadata from "../package.json"') ||
     !page.includes("softwareVersion: publishedVersion") ||
-    !page.includes('const publishedVersion = "0.4.0"') ||
+    !page.includes('const publishedVersion = "0.4.1"') ||
     !page.includes("Published ${publishedVersion}") ||
     !page.includes("Version ${releaseVersion} published")) {
   console.error("Homepage must separate candidate source metadata from the current published package.");

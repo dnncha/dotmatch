@@ -21,7 +21,7 @@ citation. The version-specific DOI for DotMatch 0.4.0 is
 
 Suggested citation:
 
-> O'Toole D. DotMatch: deterministic known-target short-DNA assignment for sequencing workflows. Software release v0.4.0. https://github.com/dnncha/dotmatch
+> O'Toole D. DotMatch: deterministic known-target short-DNA assignment for sequencing workflows. Software release v0.4.1. https://github.com/dnncha/dotmatch
 
 Release DOI: <https://doi.org/10.5281/zenodo.22214073>
 

@@ -25,7 +25,7 @@ const doiUrl = "https://doi.org/10.5281/zenodo.22214073";
 const binderUrl = "https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb";
 const colabUrl = "https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb";
 const releaseVersion = packageMetadata.version;
-const publishedVersion = "0.4.0";
+const publishedVersion = "0.4.1";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const assignmentWorkflowImage = `${basePath}/dotmatch-read-assignment-v2.webp`;
@@ -214,7 +214,7 @@ const evidenceGroups = [
     eyebrow: "Release",
     title: `Published ${publishedVersion}`,
     body:
-      "Version 0.4.0 is verified on PyPI, GHCR, GitHub Releases, and Zenodo. Bioconda and its generated BioContainers image remain community-controlled downstream gates while the 0.4.0 recipe is reviewed.",
+      "Version 0.4.1 is verified on PyPI, GHCR, GitHub Releases, and Zenodo. Bioconda and its generated BioContainers image remain community-controlled downstream gates while the 0.4.1 recipe is reviewed.",
     links: [
       ["Release status", distributionUrl],
       ["Benchmarks", benchmarksUrl]

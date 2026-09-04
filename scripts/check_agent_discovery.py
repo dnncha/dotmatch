@@ -294,7 +294,7 @@ def validate_surfaces(root: Path) -> list[str]:
         if phrase not in readme:
             failures.append(f"README.md missing agent discovery phrase: {phrase}")
     for phrase in [
-        "The current public release is 0.4.0",
+        "The current public release is 0.4.1",
         "six `dotmatch agent` tools",
         "includes the six",
     ]:
@@ -305,7 +305,7 @@ def validate_surfaces(root: Path) -> list[str]:
     if "agent-guide" not in docs_index:
         failures.append("docs/index.md must route to the agent guide")
     for phrase in [
-        "The current public PyPI release is 0.4.0",
+        "The current public PyPI release is 0.4.1",
         "six `dotmatch agent` tools",
         "includes the six",
     ]:
@@ -314,9 +314,9 @@ def validate_surfaces(root: Path) -> list[str]:
     agent_guide = _read(root, "docs/agent-guide.md")
     agent_guide_surface = " ".join(agent_guide.split())
     for phrase in [
-        "This six-tool interface is included in the current public PyPI release, 0.4.0.",
+        "This six-tool interface is included in the current public PyPI release, 0.4.1.",
         "older package",
-        "until that channel reaches 0.4.0",
+        "until that channel reaches 0.4.1",
     ]:
         if phrase not in agent_guide_surface:
             failures.append(f"docs/agent-guide.md must state the public/agent-tools version boundary: {phrase}")

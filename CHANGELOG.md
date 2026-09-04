@@ -2,7 +2,16 @@
 
 All notable user-facing changes are tracked here. Public statements in release notes must stay aligned with `docs/scientific-claims.md`.
 
-## 0.4.0 - Unreleased
+## 0.4.1 - 2026-09-04
+
+### Changed
+
+- Refreshed workflow-adoption records and the Galaxy wrapper handoff for the
+  0.4 release line.
+- Updated the web and Binder dependency locks to the verified current ranges.
+- Hardened the Bioconda macOS build path and repository readiness checks.
+
+## 0.4.0 - 2026-08-31
 
 ### Added
 

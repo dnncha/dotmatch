@@ -28,7 +28,7 @@ Linux x86_64 and macOS 11 or newer:
 mkdir -p smoke-output
 python3 -m venv .venv
 . .venv/bin/activate
-python3 -m pip install dotmatch==0.4.0
+python3 -m pip install dotmatch==0.4.1
 dotmatch --version
 ```
 
@@ -202,7 +202,7 @@ After cloning this repository, this recipe installs the release into a new virtu
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
-python3 -m pip install dotmatch==0.4.0
+python3 -m pip install dotmatch==0.4.1
 dotmatch count \
   --targets demo-data/crispr_guides.tsv \
   --reads demo-data/reads.fastq \

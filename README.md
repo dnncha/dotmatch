@@ -38,8 +38,8 @@ python3 -m pip install dotmatch
 dotmatch --version
 ```
 
-The current public release is 0.4.0 and includes the six `dotmatch agent`
-tools below. Check that `dotmatch --version` reports 0.4.0 before using that
+The current public release is 0.4.1 and includes the six `dotmatch agent`
+tools below. Check that `dotmatch --version` reports 0.4.1 before using that
 route. Bioconda and BioContainers may lag PyPI and GHCR; check the installed
 version when using those channels.
 
@@ -71,8 +71,8 @@ backend.
 For containerised workflows, the current release is also published to GHCR:
 
 ```bash
-docker pull ghcr.io/dnncha/dotmatch:v0.4.0
-docker run --rm ghcr.io/dnncha/dotmatch:v0.4.0 --version
+  docker pull ghcr.io/dnncha/dotmatch:v0.4.1
+  docker run --rm ghcr.io/dnncha/dotmatch:v0.4.1 --version
 ```
 
 The [container package](https://github.com/dnncha/dotmatch/pkgs/container/dotmatch)

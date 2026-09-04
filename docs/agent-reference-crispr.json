@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "tool_contract_version": "1.0",
-  "dotmatch_version": "0.4.0",
+  "dotmatch_version": "0.4.1",
   "tool": "review_assay",
   "status": "failed",
   "exit_code": 2,
