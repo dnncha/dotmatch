@@ -16,14 +16,17 @@ compatibility mode.
 If you use DotMatch, cite the software release through `CITATION.cff`.
 Installed packages also provide `dotmatch citation` for a copyable citation.
 Use the Zenodo concept DOI `10.5281/zenodo.20541628` for general software
-citation. The version-specific DOI for DotMatch 0.4.0 is
-`10.5281/zenodo.22214073` and is recorded in `CITATION.cff`.
+citation. The prior version-specific DOI for DotMatch 0.4.0 is
+`10.5281/zenodo.22214073`. A version-specific DOI for DotMatch 0.4.1 is
+pending Zenodo archival.
 
 Suggested citation:
 
 > O'Toole D. DotMatch: deterministic known-target short-DNA assignment for sequencing workflows. Software release v0.4.1. https://github.com/dnncha/dotmatch
 
-Release DOI: <https://doi.org/10.5281/zenodo.22214073>
+Prior release DOI (v0.4.0): <https://doi.org/10.5281/zenodo.22214073>
+
+Current release DOI (v0.4.1): pending Zenodo archival.
 
 Concept DOI: <https://doi.org/10.5281/zenodo.20541628>
 
@@ -31,7 +34,7 @@ Concept DOI: <https://doi.org/10.5281/zenodo.20541628>
 
 For CRISPR guide-counting workflows:
 
-> Reads were assigned to the guide library using DotMatch v0.4.0 with known-target assignment, literal-byte sequence semantics, and the radius ambiguity policy. Count matrices retained only reads for which exactly one guide lay inside the configured edit-distance radius; ambiguous and unmatched reads were excluded from target counts and retained in diagnostic summaries.
+> Reads were assigned to the guide library using DotMatch v0.4.1 with known-target assignment, literal-byte sequence semantics, and the radius ambiguity policy. Count matrices retained only reads for which exactly one guide lay inside the configured edit-distance radius; ambiguous and unmatched reads were excluded from target counts and retained in diagnostic summaries.
 
 For one-edit Levenshtein rescue:
 
@@ -123,7 +126,7 @@ statements out until real-data comparator evidence is in the repository.
 
 ## Evidence Boundary
 
-Describe DotMatch v0.4.0 as a known-target short-DNA assignment engine. It is
+Describe DotMatch v0.4.1 as a known-target short-DNA assignment engine. It is
 not a genome aligner, general Edlib replacement, production Illumina
 demultiplexer, full Perturb-seq analysis pipeline, adapter trimmer, UMI grouper,
 read merger, or amplicon consensus/variant-calling workflow. Current public

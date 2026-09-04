@@ -3,12 +3,12 @@
 This page records the public state of DotMatch distribution, registry, and
 workflow integrations. It separates source readiness from upstream submission,
 acceptance, release, and installability. States were checked against the linked
-provider records on 2026-09-02.
+provider records on 2026-09-04.
 
 | Surface | Version or revision | Local state | Public state | Installable from that surface? |
 | --- | --- | --- | --- | --- |
-| [PyPI](https://pypi.org/project/dotmatch/0.4.0/) | 0.4.0 | Tagged release workflow passed | Published with an sdist, a universal macOS wheel, and repaired manylinux/musllinux wheels for x86_64 and aarch64 | Yes: `python3 -m pip install dotmatch==0.4.0` |
-| [Bioconda](https://anaconda.org/bioconda/dotmatch) | 0.2.2 | Recipe handoff for 0.4.0 is open | Released for linux-64, linux-aarch64, osx-64, and osx-arm64 at 0.2.2; [0.4.0 PR #68663](https://github.com/bioconda/bioconda-recipes/pull/68663) is the preferred update | Yes at 0.2.2; 0.4.0 awaits Bioconda merge |
+| [PyPI](https://pypi.org/project/dotmatch/0.4.1/) | 0.4.1 | Tagged release workflow passed | Published with an sdist, a universal macOS wheel, and repaired manylinux/musllinux wheels for x86_64 and aarch64 | Yes: `python3 -m pip install dotmatch==0.4.1` |
+| [Bioconda](https://anaconda.org/bioconda/dotmatch) | 0.2.2 | Recipe handoff for 0.4.1 is open | 0.2.2 remains public for linux-64, linux-aarch64, osx-64, and osx-arm64; 0.4.1 awaits community submission, merge, and propagation | Yes at 0.2.2; 0.4.1 awaits Bioconda merge |
 | [Spack packages #6191](https://github.com/spack/spack-packages/pull/6191) | 0.2.2 | Package recipe reviewed upstream | Merged into `spack-packages` `develop`; [recipe present](https://github.com/spack/spack-packages/blob/develop/repos/spack_repo/builtin/packages/py_dotmatch/package.py) | Not recorded as released here; no dated Spack release containing the recipe was verified |
 | [Galaxy IUC #8336](https://github.com/galaxyproject/tools-iuc/pull/8336) | `e936bbce3577492ff6c12c83d29534213dcb6ce6` | Four wrappers and fixtures are available; review comments addressed | Submitted, open; matching-mode select, profile 25.0, and stricter asserts pushed | No; IUC merge and ToolShed publication are separate gates |
 | [nf-core/modules #12156](https://github.com/nf-core/modules/pull/12156) | `77e849b86cae10557a8b17f9c86fa87f6833ece2` | Scoped `crispr_count` module and tests are available | Submitted, open | No; merge and release have not occurred |
@@ -23,7 +23,7 @@ PyPI:
 
 ```bash
 python3 -m venv .dotmatch-pypi-smoke
-.dotmatch-pypi-smoke/bin/pip install dotmatch==0.4.0
+.dotmatch-pypi-smoke/bin/pip install dotmatch==0.4.1
 .dotmatch-pypi-smoke/bin/dotmatch --version
 .dotmatch-pypi-smoke/bin/dotmatch dist ACGT AGGT
 ```
