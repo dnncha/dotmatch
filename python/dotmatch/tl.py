@@ -39,14 +39,10 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Sequence
 
-try:
-    import anndata as ad
-    import pandas as pd
-    _HAS_ANNDATA = True
-except Exception:  # noqa: BLE001
-    ad = None
-    pd = None
-    _HAS_ANNDATA = False
+from ._optional import optional_module
+
+ad, _HAS_ANNDATA = optional_module("anndata")
+pd, _HAS_PANDAS = optional_module("pandas")
 
 # Use absolute import from the installed package name to avoid relative import
 # issues when running under PYTHONPATH or pytest collection.
@@ -59,7 +55,7 @@ from dotmatch.core import (
 
 
 def _ensure_anndata() -> None:
-    if not _HAS_ANNDATA:
+    if not (_HAS_ANNDATA and _HAS_PANDAS):
         raise ImportError(
             "anndata (and pandas) are required for dotmatch.tl. "
             "Install with: pip install 'dotmatch[anndata]'"

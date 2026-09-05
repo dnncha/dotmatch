@@ -675,8 +675,9 @@ def command_crispr_quickstart(args: argparse.Namespace) -> int:
         if args.no_run or not args.accept_inference:
             if not args.no_run:
                 print(
-                    "Draft project created; review inference_report.json, then rerun with "
-                    "--accept-inference or use dotmatch assay start after setting status = \"ready\"."
+                    "Draft project created; review inference_report.json and assay.toml. "
+                    "After confirming the settings, change status = \"draft\" to \"ready\" "
+                    "in assay.toml, then run dotmatch assay start with that file."
                 )
             return 0
         spec_text = (project / "assay.toml").read_text(encoding="utf-8")

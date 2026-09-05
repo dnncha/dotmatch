@@ -9,7 +9,7 @@ import tempfile
 import threading
 from pathlib import Path
 
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import expect, sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -116,7 +116,7 @@ def main():
                     == 0
                 )
                 page.get_by_role("button", name="Check complete library").click()
-                assert "A, C, G and T" in page.get_by_role("alert").inner_text()
+                expect(page.locator("#library-error")).to_contain_text("A, C, G and T")
                 page.get_by_role("button", name="Clear", exact=True).click()
                 assert (
                     page.get_by_label("Target sequences", exact=True).input_value()

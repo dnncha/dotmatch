@@ -28,9 +28,8 @@ or **invalid** (the requested window could not be extracted). Only unique calls
 contribute to a target count. Choose the matching policy deliberately; a unique
 call is not proof of biological origin.
 
-Keep downstream screen statistics in the workflow you already use. DotMatch is
-an assignment and counting tool, not a genome aligner, basecaller, cell/UMI
-pipeline or gene-level hit-calling package.
+Keep downstream screen statistics in the workflow you already use. DotMatch is not a genome aligner,
+basecaller, cell/UMI pipeline or gene-level hit-calling package.
 
 ## Install
 
@@ -52,8 +51,10 @@ conda activate dotmatch
 docker run --rm ghcr.io/dnncha/dotmatch:v0.4.1 --version
 ```
 
-Bioconda and its generated BioContainers images can lag PyPI/GHCR. Check the
-installed version. See the [installation guide](https://dotmatch.readthedocs.io/en/latest/getting-started.html)
+Bioconda and its generated BioContainers images can lag PyPI/GHCR. When a
+newly tagged version has not reached Bioconda yet, use PyPI or the source build.
+Check the installed version. Review the [packaging details](https://dotmatch.readthedocs.io/en/latest/packaging.html)
+for platform and container verification. See the [installation guide](https://dotmatch.readthedocs.io/en/latest/getting-started.html)
 for platform details, source builds and the third-party Homebrew tap. The optional
 [desktop Workbench](https://github.com/dnncha/dotmatch-community) is maintained separately.
 
@@ -68,8 +69,10 @@ dotmatch crispr quickstart \
   --out crispr_screen/
 ```
 
-Review `crispr_screen/inference_report.json` and `assay.toml`: confirm the guide
-window, orientation, library and sample files. Then run and review:
+This creates a draft project. Review `crispr_screen/inference_report.json` and
+`assay.toml`: confirm the guide window, orientation, library and sample files.
+After confirming the settings, change the top-level `status = "draft"` to
+`status = "ready"` in `assay.toml`, then run and review:
 
 ```bash
 dotmatch assay start crispr_screen/assay.toml
@@ -121,6 +124,10 @@ Feature matrices require upstream cell identifiers and extracted feature windows
 They do not perform cell calling, UMI deduplication or perturbation-effect analysis.
 
 ## Reproduce the evidence
+
+The [benchmark reports](https://dotmatch.readthedocs.io/en/latest/benchmarks/README.html)
+include commands, hardware and assignment rules. Those reports cover the tested workloads;
+they are not universal speed or biological-accuracy guarantees.
 
 [Public CRISPR comparisons](https://dotmatch.readthedocs.io/en/latest/benchmarks/crispr_comparison/README.html)
 record Yusa and Brunello inputs, methods, count differences, runtime and memory.
