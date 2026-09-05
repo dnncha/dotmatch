@@ -1,0 +1,61 @@
+name: Prepare approved 0.5.0 release
+on:
+  push:
+    branches: [improve/scientist-first-library-audit]
+    paths: [scripts/prepare_050_release.py, .github/workflows/prepare-050.yml]
+permissions:
+  contents: write
+concurrency:
+  group: prepare-dotmatch-050
+  cancel-in-progress: false
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Prepare versioned metadata
+        run: python scripts/prepare_050_release.py
+      - name: Install validation tooling
+        run: python -m pip install build pytest -r docs/requirements.txt
+      - name: Validate release metadata, package and scientific boundaries
+        run: |
+          make all shared
+          make python-test
+          make repository-ready
+          make release-ready
+          make citation-metadata-ready
+          make distribution-record-ready
+          make agent-discovery-ready
+          make agent-reference-workflows-ready
+      - name: Commit the validated candidate without changing unrelated files
+        env:
+          EXPECTED_HEAD: ${{ github.sha }}
+        run: |
+          test "$(git ls-remote origin refs/heads/improve/scientist-first-library-audit | cut -f1)" = "$EXPECTED_HEAD"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -u
+          git add docs/releases/distribution-0.4.1.json
+          git rm scripts/prepare_050_release.py .github/workflows/prepare-050.yml
+          git diff --cached --stat
+          git commit -m 'release: prepare validated DotMatch 0.5.0 metadata and citation boundaries'
+          git push origin HEAD:refs/heads/improve/scientist-first-library-audit
+          git rev-parse HEAD
+      - name: Collect review source
+        if: always()
+        run: |
+          mkdir -p /tmp/prepare-review
+          git status --short > /tmp/prepare-review/status.txt
+          git diff > /tmp/prepare-review/uncommitted.diff
+          tar --exclude=.git --exclude=build --exclude=node_modules --exclude=docs/_build --exclude='*.so' --exclude='*.a' -czf /tmp/prepare-review/source.tar.gz .
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: release-candidate-review
+          path: /tmp/prepare-review/
