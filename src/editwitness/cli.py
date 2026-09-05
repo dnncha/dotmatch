@@ -9,7 +9,7 @@ from importlib.resources import files
 from pathlib import Path
 from typing import Any, NoReturn
 
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from ._version import MODEL_VERSION, __version__
 from .engine import analyze
@@ -88,8 +88,10 @@ def compact_summary(result: Analysis) -> dict[str, Any]:
 
 
 def schema_for(kind: str) -> dict[str, Any]:
-    model = {"manifest": Manifest, "analysis": Analysis, "scan": ScanResult}[kind]
-    schema = model.model_json_schema()
+    models: dict[str, type[BaseModel]] = {
+        "manifest": Manifest, "analysis": Analysis, "scan": ScanResult,
+    }
+    schema = models[kind].model_json_schema()
     schema["$schema"] = "https://json-schema.org/draft/2020-12/schema"
     schema["$id"] = f"urn:editwitness:schema:{kind}:1.0"
     return schema

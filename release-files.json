@@ -43,7 +43,7 @@
     "src/editwitness/__init__.py": "85b37d277ef4d0bd39b06cee28277f7c41b1a3746ef639318b43230df62f16b4",
     "src/editwitness/__main__.py": "935a1c1166b0c1ea35a82256345000bf2c73ded718d77773bc27a71ecce28f7d",
     "src/editwitness/_version.py": "4132eb908e54ddbb6c8debe631bb2cef2062f26e9af28fa39a9b6ef7d8b3b136",
-    "src/editwitness/cli.py": "cf020bbbab907c6deb211879339b7e7f535c31a0adb64506aed2e6730c3fbe87",
+    "src/editwitness/cli.py": "7e5694cac980ca489813c92628b0bac929161b16d30ddf6d2859c98fb5f129da",
     "src/editwitness/data/demo.json": "b46eeb145761bda6a793f2fb83a71c83c5c255e8f0e21822c87917d39567c4ed",
     "src/editwitness/data/paired_end.json": "16d9ea63da5b7d5169102ab18e5a74c0c42b6a253b8c8b31e1a13adf27862962",
     "src/editwitness/engine.py": "7583d65e7e084c810f02221ad7ad5d83829c111e4e4d422aefb69477eea1ecdb",
