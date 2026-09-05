@@ -7,22 +7,23 @@ const read = path => readFileSync(join(root, path), "utf8");
 const required = ["README.md", "app/page.tsx", "app/layout.tsx", "app/robots.ts", "app/sitemap.ts", "app/globals.css", "app/site-metadata.ts", "app/research-shell.tsx", "app/research.module.css", "app/crispr-guide-counting/page.tsx", "app/tools/library-safety/page.tsx", "app/tools/library-safety/explorer.tsx", "lib/library-safety.ts", "tests/site/library-safety.test.mjs", "tests/site/metadata.test.mjs", "docs/index.md", "docs/getting-started.md", "docs/command-reference.md", "docs/agent-guide.md", "docs/agent-crispr.md", "docs/agent-perturb-seq.md", "public/llms.txt", "public/llms-full.txt", "public/agent-capabilities.json", "public/agent-capabilities.schema.json", "public/agent-tools.json", "public/agent-tools.schema.json", "public/agent-reference-crispr.json", "public/dotmatch-read-assignment-v2.webp", "public/dotmatch-read-assignment-mobile-v2.webp", "public/dotmatch-og.png", "public/dotmatch-twitter.png"];
 for (const path of required) assert(existsSync(join(root, path)), `Missing public file: ${path}`);
 const home = read("app/page.tsx");
+const homeContent = home + read("app/assignment-demo.tsx") + read("app/install-command.tsx");
 for (const anchor of ["top", "workflow", "failure-modes", "use-cases", "evidence", "install", "agent-workflow"]) assert(home.includes(`id="${anchor}"`), `Missing homepage section: ${anchor}`);
-for (const path of ["app/page.tsx", "app/crispr-guide-counting/page.tsx", "app/tools/library-safety/page.tsx"]) {
+for (const path of ["app/page.tsx", "app/crispr-guide-counting/page.tsx", "app/tools/library-safety/page.tsx", "app/assignment-sensitivity/page.tsx"]) {
   const page = read(path);
   assert.equal((page.match(/<h1\b/g) ?? []).length, 1, `${path}: exactly one H1 required`);
   assert(!page.includes("github.com/dnncha/dotmatch/blob/main/docs/"), `${path}: use rendered documentation links`);
 }
-for (const phrase of ["CRISPR", "ambiguous", "unique", "none", "invalid", "dotmatch agent tools --json", "python3 -m pip install dotmatch", "getting-started.html", "SoftwareApplication", "softwareVersion: publishedVersion", "featureList", 'type="application/ld+json"']) assert(home.includes(phrase), `Missing scientific/task content: ${phrase}`);
-for (const image of ["dotmatch-read-assignment-v2.webp", "dotmatch-read-assignment-mobile-v2.webp"]) assert(home.includes(image), `Missing responsive image: ${image}`);
-assert(home.includes("<picture>") && home.includes('media="(max-width: 520px)"'), "Responsive explainer source missing");
+for (const phrase of ["CRISPR", "ambiguous", "unique", "none", "invalid", "dotmatch agent tools --json", "python3 -m pip install dotmatch", "getting-started.html", "SoftwareApplication", "softwareVersion: publishedVersion", "featureList", 'type="application/ld+json"']) assert(homeContent.includes(phrase), `Missing scientific/task content: ${phrase}`);
+assert(home.includes("AssignmentDemo") && home.includes("assignment-demo.json"), "Homepage must use the checked native example");
+for (const file of ["app/home.module.css", "app/assignment-demo.tsx", "app/install-command.tsx", "public/assignment-demo.json", "scripts/generate_assignment_demo.py"]) assert(existsSync(join(root, file)), `Missing checked-example asset: ${file}`);
 const layout = read("app/layout.tsx"), metadata = read("app/site-metadata.ts"), sitemap = read("app/sitemap.ts");
 assert(layout.includes('applicationName: "DotMatch"') && metadata.includes('siteName: "DotMatch"'), "Metadata identity missing");
 assert(layout.includes('rel="describedby"') && layout.includes("llms.txt"), "Agent discovery link missing");
 assert(metadata.includes('publishedVersion = "0.4.1"'), "Review the published release and its install evidence before changing the public version");
-assert(home.includes("packageMetadata.version") && home.includes("Website source version"), "Keep published and source versions distinct");
+assert(home.includes("packageMetadata.version") && home.toLowerCase().includes("website source version"), "Keep published and source versions distinct");
 assert(/^\d+\.\d+\.\d+/.test(JSON.parse(read("package.json")).version), "Source version must be semantic");
-for (const route of ["crispr-guide-counting", "tools/library-safety"]) {
+for (const route of ["crispr-guide-counting", "tools/library-safety", "assignment-sensitivity"]) {
   assert(sitemap.includes(route), `Sitemap missing ${route}`);
   assert(read(`app/${route}/page.tsx`).includes("pageMetadata("), `Page-specific canonical missing: ${route}`);
 }

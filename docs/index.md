@@ -97,6 +97,7 @@ agent-guide
 agent-crispr
 agent-perturb-seq
 command-reference
+sensitivity
 tutorials/crispr-count-first-run
 tutorials/scverse-perturb-seq
 lab-evaluation

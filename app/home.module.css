@@ -1,0 +1,627 @@
+.home {
+  --paper: #fbfcfa;
+  --deep: #123c2e;
+  --quiet: #526159;
+  max-width: 1220px;
+  margin: auto;
+  padding: 0 clamp(22px, 5vw, 60px);
+  font-size: 16px;
+}
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: clamp(32px, 4.5vw, 68px);
+  align-items: center;
+  padding: 76px 0 58px;
+}
+.eyebrow {
+  font-size: 0.76rem;
+  letter-spacing: 0.105em;
+  text-transform: uppercase;
+  color: #33654e;
+  font-weight: 750;
+  line-height: 1.6;
+  margin-bottom: 22px;
+}
+.hero h1 {
+  font-size: clamp(2.8rem, 4.9vw, 4.35rem);
+  line-height: 1.055;
+  letter-spacing: -0.05em;
+  margin: 0 0 24px;
+  font-weight: 760;
+  text-wrap: balance;
+}
+.hero h1 span {
+  color: #39715a;
+  display: block;
+}
+.lede {
+  color: var(--quiet);
+  font-size: 1.16rem;
+  line-height: 1.75;
+  max-width: 530px;
+}
+.actions {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 27px;
+}
+.primary {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 48px;
+  padding: 13px 21px;
+  border-radius: 7px;
+  color: #fff;
+  background: var(--deep);
+  font-size: 0.94rem;
+  font-weight: 680;
+  line-height: 1.4;
+  transition: background 0.15s;
+}
+.primary:hover {
+  background: #236147;
+}
+.textLink {
+  color: var(--deep);
+  font-size: 0.93rem;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+.facts {
+  font-size: 0.83rem;
+  line-height: 1.7;
+  color: var(--quiet);
+  margin-top: 23px;
+}
+.facts span + span:before {
+  content: "·";
+  padding: 0 9px;
+}
+.instrument {
+  background: #fbfcfa;
+  border: 1px solid #ccd9d1;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 36px #18362608;
+  min-width: 0;
+}
+.instrumentHeading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 22px;
+  border-bottom: 1px solid #e1e8e2;
+  color: #48624f;
+  font-size: 0.69rem;
+  letter-spacing: 0.08em;
+}
+.instrumentHeading span:first-child {
+  font-weight: 750;
+}
+.instrumentHeading span:last-child {
+  letter-spacing: 0;
+  text-transform: none;
+}
+.exampleControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding: 13px 14px 0;
+}
+.exampleControls button {
+  font: inherit;
+  font-size: 0.73rem;
+  min-height: 40px;
+  padding: 8px 9px;
+  background: none;
+  border: 1px solid transparent;
+  color: #4a5e52;
+  cursor: pointer;
+  border-radius: 5px;
+}
+.exampleControls button[aria-pressed="true"] {
+  border-color: #cadbd0;
+  background: #eaf1eb;
+  color: #183f2c;
+  font-weight: 700;
+}
+.exampleControls button:hover {
+  background: #edf3ee;
+}
+.sequenceArea {
+  padding: 24px 24px 22px;
+  min-height: 254px;
+}
+.sequenceLabel {
+  display: block;
+  font-size: 0.76rem;
+  color: #64736a;
+  margin-bottom: 10px;
+}
+.sequence {
+  display: flex;
+  font:
+    clamp(0.75rem, 1.3vw, 1.01rem) / 1.9 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  letter-spacing: 0;
+  color: #253e30;
+  white-space: nowrap;
+}
+.sequence span {
+  min-width: 0;
+}
+.sequence span:nth-child(4n):not(:last-child) {
+  margin-right: 0.4em;
+}
+.mismatch {
+  color: #923c20;
+  background: #ffebdc;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  border-radius: 2px;
+}
+.matchRule {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 22px 0 15px;
+  padding-top: 15px;
+  border-top: 1px dashed #d4ded5;
+  color: #63766a;
+  font-size: 0.78rem;
+}
+.matchRule span:last-child {
+  font-size: 1.2rem;
+}
+.verdict {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.95rem;
+  flex-wrap: wrap;
+}
+.status {
+  font:
+    650 0.77rem/1.5 ui-monospace,
+    SFMono-Regular,
+    monospace;
+  background: #e4eee7;
+  color: #23563a;
+  padding: 4px 9px;
+  border-radius: 4px;
+}
+.status[data-status="ambiguous"] {
+  color: #79551a;
+  background: #f5ebd7;
+}
+.status[data-status="none"] {
+  color: #5a5c70;
+  background: #ebedf3;
+}
+.status[data-status="invalid"] {
+  color: #8a3d36;
+  background: #fae9e5;
+}
+.explanation {
+  font-size: 0.83rem;
+  line-height: 1.75;
+  color: #506358;
+  margin-top: 14px;
+  min-height: 44px;
+}
+.instrumentFoot {
+  border-top: 1px solid #e1e8e2;
+  font-size: 0.72rem;
+  line-height: 1.7;
+  color: #627167;
+  padding: 13px 22px;
+}
+.instrumentFoot a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.installStrip {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  align-items: center;
+  gap: 28px;
+  border-top: 1px solid #dce6df;
+  border-bottom: 1px solid #dce6df;
+  padding: 26px 0 18px;
+}
+.installStrip h2 {
+  font-size: 1.1rem;
+  letter-spacing: -0.015em;
+  margin: 0 0 7px;
+}
+.installStrip p {
+  font-size: 0.82rem;
+  line-height: 1.7;
+  color: var(--quiet);
+}
+.installStrip a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.installCommand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 13px 13px 17px;
+  background: #f0f4f0;
+  border: 1px solid #d5e0d7;
+  border-radius: 7px;
+}
+.installCommand code {
+  font-size: 0.81rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.installCommand button {
+  background: #fff;
+  border: 1px solid #cbd8ce;
+  border-radius: 4px;
+  min-height: 40px;
+  min-width: 56px;
+  padding: 7px;
+  font: 600 0.75rem system-ui;
+  cursor: pointer;
+}
+.copyStatus {
+  min-height: 19px;
+  display: block;
+  font-size: 0.72rem;
+  color: #3a6250;
+  margin-top: 5px;
+}
+.section {
+  padding: 58px 0;
+  border-bottom: 1px solid #dce6df;
+}
+.section h2 {
+  font-size: clamp(1.75rem, 3vw, 2.4rem);
+  letter-spacing: -0.04em;
+  line-height: 1.2;
+  margin: 0 0 18px;
+  font-weight: 720;
+  text-wrap: balance;
+}
+.section > p {
+  font-size: 1rem;
+  line-height: 1.8;
+  color: var(--quiet);
+  max-width: 760px;
+}
+.section .eyebrow {
+  font-size: 0.75rem;
+  margin-bottom: 12px;
+  color: #33654e;
+}
+.steps {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 30px;
+  margin: 32px 0 0;
+  padding: 0;
+}
+.stepNumber {
+  display: block;
+  color: #61846b;
+  font:
+    500 0.81rem ui-monospace,
+    monospace;
+  padding-top: 15px;
+  border-top: 2px solid #d5e2d7;
+  margin-bottom: 15px;
+}
+.steps h3 {
+  font-size: 1.04rem;
+  line-height: 1.4;
+  margin: 0 0 10px;
+}
+.steps p {
+  font-size: 0.9rem;
+  line-height: 1.8;
+  color: var(--quiet);
+}
+.steps a {
+  display: inline-block;
+  margin-top: 14px;
+  color: var(--deep);
+  font-weight: 650;
+  font-size: 0.84rem;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.proof {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 42px;
+  align-items: start;
+}
+.proof p {
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: var(--quiet);
+  margin: 15px 0;
+}
+.proof a {
+  display: inline-block;
+  margin-top: 12px;
+}
+.proofTable {
+  overflow-x: auto;
+  border: 1px solid #d9e3db;
+  border-radius: 9px;
+}
+.proofTable table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.82rem;
+  text-align: left;
+  line-height: 1.5;
+  min-width: 350px;
+}
+.proofTable caption {
+  padding: 17px;
+  text-align: left;
+  color: #445d4b;
+  font-size: 0.73rem;
+  background: #f1f5f1;
+}
+.proofTable th,
+.proofTable td {
+  padding: 13px 14px;
+  border-top: 1px solid #dfe7e0;
+}
+.proofTable thead {
+  color: #5a6f60;
+  font-size: 0.72rem;
+}
+.proofTable tbody th {
+  font-weight: 550;
+}
+.proofTable td {
+  font-variant-numeric: tabular-nums;
+}
+.proofNote {
+  font-size: 0.77rem !important;
+  line-height: 1.7 !important;
+  margin: 13px 0 0 !important;
+}
+.routes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 30px;
+  margin: 25px 0 0;
+}
+.routes h3 {
+  font-size: 1.03rem;
+  line-height: 1.4;
+  margin: 0 0 10px;
+}
+.routes p {
+  font-size: 0.88rem;
+  line-height: 1.8;
+  color: var(--quiet);
+  margin: 0 0 12px;
+}
+.routes a {
+  font-size: 0.83rem;
+  color: var(--deep);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  font-weight: 650;
+}
+.evidenceRows {
+  margin-top: 26px;
+}
+.evidenceRow {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr auto;
+  gap: 26px;
+  padding: 21px 0;
+  border-top: 1px solid #dfe7e0;
+  align-items: start;
+}
+.evidenceRow h3 {
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 0;
+}
+.evidenceRow p {
+  font-size: 0.87rem;
+  line-height: 1.7;
+  color: var(--quiet);
+}
+.evidenceRow a {
+  font-size: 0.85rem;
+  line-height: 1.7;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  color: var(--deep);
+  white-space: nowrap;
+}
+.automation {
+  padding: 29px 0 38px;
+}
+.automation summary {
+  font-weight: 650;
+  font-size: 0.95rem;
+  cursor: pointer;
+  line-height: 1.6;
+  min-height: 32px;
+}
+.automation p {
+  font-size: 0.9rem;
+  line-height: 1.8;
+  color: var(--quiet);
+  max-width: 780px;
+  margin: 15px 0;
+}
+.automation pre {
+  background: #f0f4f0;
+  padding: 18px;
+  border-radius: 7px;
+  overflow-x: auto;
+  font-size: 0.81rem;
+  line-height: 1.8;
+}
+.automation a {
+  color: var(--deep);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.boundary {
+  font-size: 0.8rem;
+  color: #647069;
+  line-height: 1.8;
+  margin-top: 24px;
+}
+.home button:focus-visible,
+.home summary:focus-visible,
+.home [tabindex]:focus-visible {
+  outline: 3px solid #258465;
+  outline-offset: 3px;
+}
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 30px;
+    padding-top: 42px;
+  }
+  .hero h1 {
+    max-width: 720px;
+    font-size: clamp(2.75rem, 7.2vw, 4.4rem);
+  }
+  .lede {
+    max-width: 670px;
+  }
+  .instrument {
+    max-width: 660px;
+  }
+  .sequence {
+    font-size: 1.1rem;
+  }
+  .installStrip {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .proof {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .evidenceRow {
+    grid-template-columns: 1fr 1.5fr;
+  }
+  .evidenceRow > a {
+    grid-column: 2;
+  }
+  .steps,
+  .routes {
+    gap: 22px;
+  }
+}
+@media (max-width: 600px) {
+  .hero {
+    padding: 35px 0;
+  }
+  .hero h1 {
+    font-size: 2.7rem;
+  }
+  .lede {
+    font-size: 1.04rem;
+  }
+  .eyebrow {
+    font-size: 0.7rem;
+    margin-bottom: 18px;
+  }
+  .sequenceArea {
+    padding: 21px 18px;
+    min-height: 247px;
+  }
+  .sequence {
+    font-size: 0.84rem;
+  }
+  .exampleControls {
+    padding: 10px 9px 0;
+    gap: 0;
+  }
+  .exampleControls button {
+    font-size: 0.69rem;
+    padding: 7px;
+    min-height: 44px;
+  }
+  .instrumentHeading {
+    padding: 15px 17px;
+  }
+  .instrumentFoot {
+    padding: 12px 17px;
+  }
+  .actions {
+    gap: 18px;
+  }
+  .facts {
+    font-size: 0.76rem;
+  }
+  .steps,
+  .routes {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .steps {
+    margin-top: 24px;
+  }
+  .stepNumber {
+    padding-top: 12px;
+    margin-bottom: 10px;
+  }
+  .section {
+    padding: 38px 0;
+  }
+  .evidenceRow {
+    grid-template-columns: 1fr;
+    gap: 9px;
+    padding: 19px 0;
+  }
+  .evidenceRow > a {
+    grid-column: 1;
+  }
+  .proofTable table {
+    min-width: 315px;
+    font-size: 0.75rem;
+  }
+  .proofTable th,
+  .proofTable td {
+    padding: 11px 9px;
+  }
+  .installCommand {
+    padding: 10px 11px;
+    gap: 10px;
+  }
+  .installCommand code {
+    font-size: 0.72rem;
+  }
+  .explanation {
+    font-size: 0.8rem;
+  }
+  .routes {
+    gap: 28px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home * {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}

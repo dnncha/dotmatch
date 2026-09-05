@@ -92,34 +92,9 @@ def _open_text(path: str | Path, mode: str = "rt") -> TextIO:
 
 
 def _read_targets(path: str | Path) -> list[Target]:
-    targets: list[Target] = []
-    delimiter = "," if Path(path).suffix.lower() == ".csv" else "\t"
-    with _open_text(path) as fh:
-        first_data = True
-        for row in csv.reader(fh, delimiter=delimiter):
-            if not row:
-                continue
-            cols = [col.strip() for col in row]
-            if not any(cols) or cols[0].startswith("#"):
-                continue
-            if first_data and _looks_like_header(cols):
-                first_data = False
-                continue
-            first_data = False
-            if len(cols) == 1:
-                seq = cols[0].upper()
-                target_id = f"target_{len(targets)}"
-                gene = ""
-            else:
-                target_id = cols[0]
-                seq = cols[1].upper()
-                gene = cols[2] if len(cols) > 2 else ""
-            if not seq:
-                raise ValueError(f"empty target sequence in {path}")
-            targets.append(Target(target_id=target_id, seq=seq, gene=gene))
-    if not targets:
-        raise ValueError(f"no targets found in {path}")
-    return targets
+    from .target_io import read_target_table
+
+    return [Target(row.target_id, row.sequence, row.gene) for row in read_target_table(path)]
 
 
 def _looks_like_header(cols: Sequence[str]) -> bool:
@@ -2463,6 +2438,9 @@ Workflow namespaces:
       for an inferred, reviewable first run.
 
 Diagnostics and validation:
+  sensitivity
+      Compare exact, radius-one and best-distance counts in one FASTQ pass.
+      Use `dotmatch sensitivity --help` for inputs and review-bundle outputs.
   audit --targets targets.tsv|targets.csv --k K --out-dir audit_dir
       Report nearby target pairs that make correction ambiguous or unsafe.
       Hamming k=2/k=3 safety is computed by exact native audit; fast audit
@@ -2650,6 +2628,7 @@ TROUBLESHOOTING
     Use dotmatch <command> --help or dotmatch <namespace> <command> --help.
 
 REFERENCES
+  Policy sensitivity: dotmatch sensitivity --help
   Documentation: https://dotmatch.readthedocs.io/
   Source: https://github.com/dnncha/dotmatch
   Citation metadata: CITATION.cff
@@ -2731,6 +2710,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"dotmatch: could not load installed capabilities: {exc}", file=sys.stderr)
             return 2
         return 0
+    if raw_args and raw_args[0] == "sensitivity":
+        from .sensitivity import main as sensitivity_main
+
+        return sensitivity_main(raw_args[1:])
     if raw_args and raw_args[0] == "agent":
         return command_agent(raw_args[1:])
     if raw_args and raw_args[0] == "assay":

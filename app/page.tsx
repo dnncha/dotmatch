@@ -1,43 +1,356 @@
 import packageMetadata from "../package.json";
-import checkedFixtureEnvelope from "../agent-reference-crispr.json";
+import demo from "../public/assignment-demo.json";
 import { ResearchHeader, ResearchFooter } from "./research-shell";
-import { basePath, canonicalUrl, conceptDoi, docsUrl, publishedVersion, repoUrl, sitePath } from "./site-metadata";
-import styles from "./research.module.css";
+import {
+  canonicalUrl,
+  conceptDoi,
+  docsUrl,
+  publishedVersion,
+  repoUrl,
+  sitePath,
+} from "./site-metadata";
+import { AssignmentDemo } from "./assignment-demo";
+import { InstallCommand } from "./install-command";
+import styles from "./home.module.css";
 const structuredData = {
-  "@context": "https://schema.org", "@graph": [
-    { "@type": "WebSite", "@id": `${canonicalUrl()}#website`, name: "DotMatch", url: canonicalUrl(), description: "CRISPR guide counting and known-target barcode assignment with visible ambiguity and QC." },
-    { "@type": "SoftwareApplication", "@id": `${canonicalUrl()}#software`, name: "DotMatch", applicationCategory: "Bioinformatics software", operatingSystem: "Linux, macOS", softwareVersion: publishedVersion, softwareHelp: docsUrl, codeRepository: repoUrl, downloadUrl: "https://pypi.org/project/dotmatch/", citation: conceptDoi, license: `${repoUrl}/blob/main/LICENSE`, programmingLanguage: ["C", "Python", "R"], featureList: ["CRISPR guide counting", "MAGeCK-compatible count tables", "inline barcode demultiplexing", "known-target library auditing", "explicit ambiguous-read outcomes"], description: "Assign short read windows to known DNA targets. Review unique, ambiguous, unmatched, and invalid reads before downstream analysis." }
-  ]
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${canonicalUrl()}#website`,
+      name: "DotMatch",
+      url: canonicalUrl(),
+      description:
+        "CRISPR guide counting and barcode assignment with explicit read outcomes.",
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": `${canonicalUrl()}#software`,
+      name: "DotMatch",
+      applicationCategory: "Bioinformatics software",
+      operatingSystem: "Linux, macOS",
+      softwareVersion: publishedVersion,
+      subjectOf: `${canonicalUrl()}agent-capabilities.json`,
+      softwareHelp: docsUrl,
+      codeRepository: repoUrl,
+      downloadUrl: "https://pypi.org/project/dotmatch/",
+      citation: conceptDoi,
+      license: `${repoUrl}/blob/main/LICENSE`,
+      programmingLanguage: ["C", "Python", "R"],
+      featureList: [
+        "CRISPR guide counting",
+        "MAGeCK-compatible count tables",
+        "inline barcode demultiplexing",
+        "target-library auditing",
+        "explicit ambiguous-read outcomes",
+      ],
+      description:
+        "Count known CRISPR guides from FASTQ and inspect unique, ambiguous, unmatched and invalid read outcomes before downstream analysis.",
+    },
+  ],
 };
-const outcomes = [["unique", "One target fits the selected assignment rule."], ["ambiguous", "Several targets fit. No forced assignment."], ["none", "No target fits. Investigate unmatched reads."], ["invalid", "The requested read window cannot be extracted."]];
+const policyRows = [
+  ["exact", "Exact"],
+  ["radius_k1", "One target within k=1"],
+  ["best_k1", "Nearest target, k=1"],
+] as const;
 export default function Home() {
-  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} /><ResearchHeader />
-    <main id="main-content" className={styles.shell}>
-      <section id="top" className={styles.hero} aria-labelledby="hero-title"><div>
-        <p className={styles.eyebrow}>CRISPR guide counting & barcode QC</p><h1 id="hero-title" className={styles.title}>Guide counts you can inspect.</h1>
-        <p className={styles.lede}>Turn FASTQ reads and a known guide library into count tables, assignment QC, and a reproducible handoff. Keep ambiguous reads visible instead of forcing them into the result.</p>
-        <div className={styles.actions}><a className={styles.primary} href={sitePath("crispr-guide-counting")}>Count CRISPR guides</a><a className={styles.secondary} href={sitePath("tools/library-safety")}>Check a library in your browser</a></div>
-        <p className={styles.caption}>Open source · Runs locally · Published CLI {publishedVersion}<br />Browser checker: no installation, account, or sequence upload.</p>
-      </div><aside className={styles.panel} aria-labelledby="output-title"><p className={styles.eyebrow}>Your data → reviewable results</p><h2 id="output-title">FASTQ + guide library</h2>
-        <ul className={styles.outputs}><li><code>MAGeCK-compatible counts</code><span>Guide-by-sample counts for downstream screen analysis.</span></li><li><code>Assignment QC</code><span>Unique, ambiguous, unmatched, and invalid outcomes.</span></li><li><code>Methods + checksums</code><span>A local handoff bundle without copying raw FASTQs.</span></li></ul>
-        <pre className={styles.code}><code>{`python3 -m pip install dotmatch==${publishedVersion}\ndotmatch --version`}</code></pre><p className={styles.caption}>Counting and assignment, not gene-level significance testing.</p>
-      </aside></section>
-      <section id="workflow" className={styles.section} aria-labelledby="workflow-title"><p className={styles.eyebrow}>One understandable workflow</p><h2 id="workflow-title">From a guide library to counts you can explain.</h2>
-        <div className={styles.grid}><article className={styles.card}><h3>1. Prepare</h3><p>Provide a guide library and FASTQs. Review the inferred window and assay configuration before counting.</p><a href={sitePath("crispr-guide-counting")}>Follow the CRISPR workflow</a></article><article className={styles.card}><h3>2. Check correction risk</h3><p>Inspect duplicate sequences and overlapping mismatch neighbourhoods. A larger correction radius is not automatically better.</p><a href={sitePath("tools/library-safety")}>Try the library checker</a></article><article className={styles.card}><h3>3. Review and hand off</h3><p>Inspect assignment outcomes, then carry counts and methods into your statistical workflow.</p><a href={`${docsUrl}lab-evaluation.html`}>Review a completed run</a></article></div>
-        <figure className={styles.figure}><picture><source media="(max-width: 520px)" srcSet={`${basePath}/dotmatch-read-assignment-mobile-v2.webp`} width="864" height="1821" /><img src={`${basePath}/dotmatch-read-assignment-v2.webp`} width="1825" height="862" alt="FASTQ reads and a target library pass through fixed-window assignment into unique, ambiguous, unmatched, and invalid outcomes" loading="lazy" decoding="async" /></picture><figcaption>Known-target sequencing read assignment: compare a reviewed read window with the sequences you expect.</figcaption></figure>
-      </section>
-      <section id="failure-modes" className={styles.section} aria-labelledby="outcomes-title"><h2 id="outcomes-title">Account for reads that do not become counts.</h2><p>Review the matching rule, window, orientation, and library alongside these outcomes.</p><div className={`${styles.grid} ${styles.two}`}>{outcomes.map(([label, detail]) => <article key={label} className={styles.card}><h3><code>{label}</code></h3><p>{detail}</p></article>)}</div><p className={styles.note}>A unique assignment is not proof of biological origin. Contamination, missing targets, and errors outside the matching model still matter. <a href={`${docsUrl}trust-and-scope.html`}>Read the scientific boundaries.</a></p></section>
-      <section id="use-cases" className={styles.section} aria-labelledby="uses-title"><h2 id="uses-title">Start with the job you need done.</h2><div className={styles.grid}>
-        <article className={styles.card}><h3>CRISPR screens</h3><p>Count known CRISPR guides and export MAGeCK-compatible tables. Keep hit calling in a dedicated statistics workflow.</p><a href={sitePath("crispr-guide-counting")}>FASTQ to guide counts</a></article>
-        <article className={styles.card}><h3>Barcodes & core facilities</h3><p>Demultiplex fixed-position inline barcodes, inspect collisions, and diagnose unmatched or ambiguous reads.</p><a href={`${docsUrl}getting-started.html#diagnose-a-barcode-run`}>Troubleshoot barcode assignment</a></article>
-        <article className={styles.card}><h3>Feature & guide capture</h3><p>Assign known feature sequences. Build a cell-by-feature matrix from already extracted, cell-labelled observations; upstream cell/UMI processing stays separate.</p><a href={`${docsUrl}tutorials/scverse-perturb-seq.html`}>See the scverse handoff</a></article>
-      </div></section>
-      <section id="evidence" className={styles.section} aria-labelledby="evidence-title"><p className={styles.eyebrow}>Inspect the evidence</p><h2 id="evidence-title">Published inputs. Explicit comparisons. Reproducible methods.</h2><div className={styles.grid}>
-        <article className={styles.card}><h3>Public CRISPR comparisons</h3><p>Inspect Yusa and Brunello results, count differences, commands, and resource measurements. Exact, Hamming, and Levenshtein comparisons are different lanes.</p><a href={`${docsUrl}benchmarks/crispr_comparison/README.html`}>Read the comparison report</a></article>
-        <article className={styles.card}><h3>Direct-guide case study</h3><p>The GSE146194 case study separates discovery from evaluation reads and checks assignment against reference implementations. It does not validate guide-per-cell calls.</p><a href={`${repoUrl}/tree/main/examples/perturb_seq_gse146194`}>Reproduce the case study</a></article>
-        <article className={styles.card}><h3>Methods & citation</h3><p>Review assignment semantics, release archives, and output contracts before adopting DotMatch in a study.</p><a href={`${docsUrl}methods-and-citation.html`}>Methods and citation</a></article>
-      </div><p className={styles.note}>A benchmark row marked <code>ok</code> does not by itself mean identical counts or biological correctness. Inspect count deltas, semantics, dataset scope, and validation method. <a href={sitePath("crispr-guide-counting")}>Interpret the evidence.</a></p></section>
-      <section id="install" className={styles.section} aria-labelledby="install-title"><h2 id="install-title">Use your existing research environment.</h2><p>Install the published Linux or macOS CLI from PyPI, or follow the Conda and container instructions. Check the installed version: community distribution channels can lag a release.</p><pre className={styles.code}><code>{`python3 -m pip install dotmatch==${publishedVersion}\ndotmatch --version\ndotmatch crispr quickstart --help`}</code></pre><div className={styles.actions}><a className={styles.primary} href={`${docsUrl}getting-started.html`}>Installation & first run</a><a className={styles.secondary} href={`${repoUrl}/tree/main/examples/workflows`}>Workflow examples</a></div><p className={styles.caption}>Published package: {publishedVersion}. Website source version: {packageMetadata.version}. Local wrappers are not claims of acceptance into an upstream platform.</p></section>
-      <section id="agent-workflow" className={styles.section} aria-labelledby="agent-title"><h2 id="agent-title">Automate a reviewed workflow.</h2><p>Local agents can prepare, preflight, run, review, and package an assay through six structured tools. The same scientific checks apply whether a person or an agent starts the run.</p><pre className={styles.code}><code>{`dotmatch agent tools --json\ndotmatch agent export-skill --target ./dotmatch-agent`}</code></pre><div className={styles.actions}><a className={styles.secondary} href={`${docsUrl}agent-guide.html`}>Agent guide</a><a className={styles.secondary} href={`${basePath}/agent-capabilities.json`}>Capability manifest</a></div><details className={styles.detail}><summary>Inspect the synthetic agent-contract fixture</summary><p>This fixture intentionally exercises unsafe and low-assignment states. Its expected verdict is <code>failed</code>; it is a software contract test, not biological validation.</p><pre className={styles.code}><code>{JSON.stringify(checkedFixtureEnvelope, null, 2)}</code></pre></details><p className={styles.caption}>DotMatch is not a genome aligner, basecaller, cell-calling pipeline, or downstream screen statistics package.</p></section>
-    </main><ResearchFooter /></>;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <ResearchHeader />
+      <main id="main-content" className={styles.home}>
+        <section id="top" className={styles.hero} aria-labelledby="hero-title">
+          <div>
+            <p className={styles.eyebrow}>
+              CRISPR guide counting & barcode assignment
+            </p>
+            <h1 id="hero-title">
+              Count your guides.<span>Account for every read.</span>
+            </h1>
+            <p className={styles.lede}>
+              Go from FASTQ and a guide library to MAGeCK-compatible counts. See
+              which reads matched, which were ambiguous, and which need another
+              look.
+            </p>
+            <div className={styles.actions}>
+              <a
+                className={styles.primary}
+                href={sitePath("crispr-guide-counting")}
+              >
+                Start counting guides <span aria-hidden="true">&nbsp;→</span>
+              </a>
+              <a
+                className={styles.textLink}
+                href={sitePath("tools/library-safety")}
+              >
+                Check a library first
+              </a>
+            </div>
+            <p className={styles.facts}>
+              <span>Apache-2.0</span>
+              <span>Linux & macOS</span>
+              <span>Your data stays local</span>
+            </p>
+          </div>
+          <AssignmentDemo />
+        </section>
+        <section
+          id="install"
+          className={styles.installStrip}
+          aria-labelledby="install-title"
+        >
+          <div>
+            <h2 id="install-title">Install. Bring your own data.</h2>
+            <p>
+              Published CLI {publishedVersion} ·{" "}
+              <a href={`${docsUrl}getting-started.html`}>
+                Conda, containers & installation help
+              </a>
+            </p>
+          </div>
+          <InstallCommand />
+        </section>
+        <section
+          id="workflow"
+          className={styles.section}
+          aria-labelledby="workflow-title"
+        >
+          <p className={styles.eyebrow}>From reads to a count matrix</p>
+          <h2 id="workflow-title">
+            A small step in your workflow.
+            <br />A clear account of your data.
+          </h2>
+          <ol className={styles.steps}>
+            <li>
+              <span className={styles.stepNumber}>01 / PREPARE</span>
+              <h3>Start with the guides you expect.</h3>
+              <p>
+                Give DotMatch your library and FASTQs. Review the proposed read
+                window before the analysis starts.
+              </p>
+              <a href={`${docsUrl}tutorials/crispr-count-first-run.html`}>
+                Follow the first-run tutorial
+              </a>
+            </li>
+            <li>
+              <span className={styles.stepNumber}>02 / COUNT</span>
+              <h3>Make the matching rule explicit.</h3>
+              <p>
+                Use exact, substitution-tolerant or indel-aware matching. Keep
+                ambiguous and unmatched reads separate from unique counts.
+              </p>
+              <a href={sitePath("assignment-sensitivity")}>
+                See why the rule matters
+              </a>
+            </li>
+            <li>
+              <span className={styles.stepNumber}>03 / ANALYSE</span>
+              <h3>Keep the analysis you already trust.</h3>
+              <p>
+                Take the raw count matrix into MAGeCK. Carry configuration, QC
+                and methods with the result in a local review bundle.
+              </p>
+              <a href={`${docsUrl}lab-evaluation.html`}>
+                Inspect the handoff workflow
+              </a>
+            </li>
+          </ol>
+        </section>
+        <section
+          id="failure-modes"
+          className={styles.section}
+          aria-labelledby="sensitivity-title"
+        >
+          <div className={styles.proof}>
+            <div>
+              <p className={styles.eyebrow}>
+                More assigned reads ≠ better assignments
+              </p>
+              <h2 id="sensitivity-title">
+                Same reads.
+                <br />
+                Different rules.
+                <br />
+                Different counts.
+              </h2>
+              <p>
+                Here, exact matching and radius-one matching both count three
+                reads—but not the same reads or guides. A single mapping
+                percentage would hide that difference.
+              </p>
+              <a
+                className={styles.textLink}
+                href={sitePath("assignment-sensitivity")}
+              >
+                Explore the worked example →
+              </a>
+            </div>
+            <div>
+              <div
+                className={styles.proofTable}
+                tabIndex={0}
+                role="region"
+                aria-label="Checked synthetic policy comparison"
+              >
+                <table>
+                  <caption>
+                    Synthetic example · {demo.read_count} reads ·{" "}
+                    {demo.target_count} target IDs
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Matching rule</th>
+                      <th scope="col">Unique</th>
+                      <th scope="col">Ambiguous</th>
+                      <th scope="col">Unmatched</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {policyRows.map(([key, label]) => (
+                      <tr key={key}>
+                        <th scope="row">{label}</th>
+                        <td>{demo.outcomes[key].unique}</td>
+                        <td>{demo.outcomes[key].ambiguous}</td>
+                        <td>{demo.outcomes[key].none}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className={styles.proofNote}>
+                One additional read has an invalid window under every policy.{" "}
+                {demo.changed_reads} reads change outcome between policies.
+                Calculated with the native matcher; not a biological accuracy
+                benchmark.
+              </p>
+            </div>
+          </div>
+        </section>
+        <section
+          id="use-cases"
+          className={styles.section}
+          aria-labelledby="use-title"
+        >
+          <h2 id="use-title">Built around known sequences.</h2>
+          <div className={styles.routes}>
+            <article>
+              <h3>Pooled CRISPR screens</h3>
+              <p>
+                Count known guides, inspect assignment QC and export a
+                guide-by-sample matrix.
+              </p>
+              <a href={sitePath("crispr-guide-counting")}>CRISPR counting</a>
+            </article>
+            <article>
+              <h3>Barcodes & sequencing cores</h3>
+              <p>
+                Demultiplex inline barcodes and investigate collisions or
+                unexpected unmatched reads.
+              </p>
+              <a href={`${docsUrl}getting-started.html#diagnose-a-barcode-run`}>
+                Barcode diagnostics
+              </a>
+            </article>
+            <article>
+              <h3>Feature & guide capture</h3>
+              <p>
+                Assign known features and build matrices from observations with
+                explicit cell identifiers.
+              </p>
+              <a href={`${docsUrl}tutorials/scverse-perturb-seq.html`}>
+                Feature-matrix workflow
+              </a>
+            </article>
+          </div>
+        </section>
+        <section
+          id="evidence"
+          className={styles.section}
+          aria-labelledby="evidence-title"
+        >
+          <p className={styles.eyebrow}>Examine it before you adopt it</p>
+          <h2 id="evidence-title">The inputs, methods and results are open.</h2>
+          <p>
+            Reproduce a public example, inspect count differences and compare
+            DotMatch with your current workflow.
+          </p>
+          <div className={styles.evidenceRows}>
+            <article className={styles.evidenceRow}>
+              <h3>Yusa & Brunello CRISPR data</h3>
+              <p>
+                Recorded comparisons with MAGeCK, guide-counter and reference
+                matchers. Runtime, memory, settings and count differences are
+                reported together.
+              </p>
+              <a href={`${docsUrl}benchmarks/crispr_comparison/README.html`}>
+                Read the results →
+              </a>
+            </article>
+            <article className={styles.evidenceRow}>
+              <h3>Public direct-guide capture</h3>
+              <p>
+                A GSE146194 example with separate discovery and evaluation
+                reads. Evidence for per-read guide assignment, not completed
+                single-cell analysis.
+              </p>
+              <a href={`${repoUrl}/tree/main/examples/perturb_seq_gse146194`}>
+                Reproduce the case study →
+              </a>
+            </article>
+            <article className={styles.evidenceRow}>
+              <h3>The example on this page</h3>
+              <p>
+                Nine synthetic reads exercise close targets, duplicate
+                sequences, a literal N, an unmatched read and a short read.
+                Every displayed result is checked from source.
+              </p>
+              <a href={`${repoUrl}/tree/main/examples/assignment_sensitivity`}>
+                Inspect the fixture →
+              </a>
+            </article>
+          </div>
+        </section>
+        <section
+          id="agent-workflow"
+          className={styles.automation}
+          aria-label="Automation and scientific scope"
+        >
+          <details>
+            <summary>Working in a pipeline or with a local agent?</summary>
+            <p>
+              Use stable files and structured tools to prepare, preflight, run
+              and review an assay. Inspect the installed contract before
+              choosing a workflow.
+            </p>
+            <pre>
+              <code>{`dotmatch agent tools --json\ndotmatch agent export-skill --target ./dotmatch-agent`}</code>
+            </pre>
+            <p>
+              <a href={`${docsUrl}agent-guide.html`}>Agent guide</a> ·{" "}
+              <a href={`${repoUrl}/tree/main/examples/workflows`}>
+                Workflow examples
+              </a>{" "}
+              ·{" "}
+              <a href={`${docsUrl}command-reference.html`}>Command reference</a>
+            </p>
+          </details>
+          <p className={styles.boundary}>
+            DotMatch handles known-target sequence assignment. Genome alignment,
+            cell/UMI processing and downstream screen statistics remain separate
+            steps.{" "}
+            <a href={`${docsUrl}trust-and-scope.html`}>Methods & scope</a> ·{" "}
+            <a href={`${docsUrl}methods-and-citation.html`}>Cite DotMatch</a>
+            <br />
+            Published package {publishedVersion}; website source version{" "}
+            {packageMetadata.version}.
+          </p>
+        </section>
+      </main>
+      <ResearchFooter />
+    </>
+  );
 }

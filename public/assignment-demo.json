@@ -1,0 +1,247 @@
+{
+  "schema_version": "dotmatch.assignment-demo.v1",
+  "kind": "synthetic_software_example",
+  "metric": "hamming",
+  "target_length": 20,
+  "target_start": 0,
+  "read_count": 9,
+  "target_count": 5,
+  "changed_reads": 5,
+  "targets": [
+    {
+      "id": "guide_A",
+      "sequence": "ACGTACGTACGTACGTACGT"
+    },
+    {
+      "id": "guide_B",
+      "sequence": "CCGTACGTACGTACGTACGT"
+    },
+    {
+      "id": "guide_C",
+      "sequence": "TGCATGCATGCATGCATGCA"
+    },
+    {
+      "id": "guide_D",
+      "sequence": "GGTAGGTAGGTAGGTAGGTA"
+    },
+    {
+      "id": "guide_D_duplicate",
+      "sequence": "GGTAGGTAGGTAGGTAGGTA"
+    }
+  ],
+  "records": [
+    {
+      "id": "exact_near_a",
+      "sequence": "ACGTACGTACGTACGTACGT",
+      "calls": {
+        "exact": {
+          "status": "unique",
+          "target_id": "guide_A"
+        },
+        "radius_k1": {
+          "status": "ambiguous",
+          "target_id": null
+        },
+        "best_k1": {
+          "status": "unique",
+          "target_id": "guide_A"
+        }
+      },
+      "candidate_ids": [
+        "guide_A",
+        "guide_B"
+      ]
+    },
+    {
+      "id": "exact_near_b",
+      "sequence": "CCGTACGTACGTACGTACGT",
+      "calls": {
+        "exact": {
+          "status": "unique",
+          "target_id": "guide_B"
+        },
+        "radius_k1": {
+          "status": "ambiguous",
+          "target_id": null
+        },
+        "best_k1": {
+          "status": "unique",
+          "target_id": "guide_B"
+        }
+      },
+      "candidate_ids": [
+        "guide_A",
+        "guide_B"
+      ]
+    },
+    {
+      "id": "two_candidates",
+      "sequence": "GCGTACGTACGTACGTACGT",
+      "calls": {
+        "exact": {
+          "status": "none",
+          "target_id": null
+        },
+        "radius_k1": {
+          "status": "ambiguous",
+          "target_id": null
+        },
+        "best_k1": {
+          "status": "ambiguous",
+          "target_id": null
+        }
+      },
+      "candidate_ids": [
+        "guide_A",
+        "guide_B"
+      ]
+    },
+    {
+      "id": "exact_isolated",
+      "sequence": "TGCATGCATGCATGCATGCA",
+      "calls": {
+        "exact": {
+          "status": "unique",
+          "target_id": "guide_C"
+        },
+        "radius_k1": {
+          "status": "unique",
+          "target_id": "guide_C"
+        },
+        "best_k1": {
+          "status": "unique",
+          "target_id": "guide_C"
+        }
+      },
+      "candidate_ids": [
+        "guide_C"
+      ]
+    },
+    {
+      "id": "one_mismatch",
+      "sequence": "CGCATGCATGCATGCATGCA",
+      "calls": {
+        "exact": {
+          "status": "none",
+          "target_id": null
+        },
+        "radius_k1": {
+          "status": "unique",
+          "target_id": "guide_C"
+        },
+        "best_k1": {
+          "status": "unique",
+          "target_id": "guide_C"
+        }
+      },
+      "candidate_ids": [
+        "guide_C"
+      ]
+    },
+    {
+      "id": "unmatched",
+      "sequence": "GGGGGGGGGGGGGGGGGGGG",
+      "calls": {
+        "exact": {
+          "status": "none",
+          "target_id": null
+        },
+        "radius_k1": {
+          "status": "none",
+          "target_id": null
+        },
+        "best_k1": {
+          "status": "none",
+          "target_id": null
+        }
+      },
+      "candidate_ids": []
+    },
+    {
+      "id": "short",
+      "sequence": "AC",
+      "calls": {
+        "exact": {
+          "status": "invalid",
+          "target_id": null
+        },
+        "radius_k1": {
+          "status": "invalid",
+          "target_id": null
+        },
+        "best_k1": {
+          "status": "invalid",
+          "target_id": null
+        }
+      },
+      "candidate_ids": []
+    },
+    {
+      "id": "duplicate_target",
+      "sequence": "GGTAGGTAGGTAGGTAGGTA",
+      "calls": {
+        "exact": {
+          "status": "ambiguous",
+          "target_id": null
+        },
+        "radius_k1": {
+          "status": "ambiguous",
+          "target_id": null
+        },
+        "best_k1": {
+          "status": "ambiguous",
+          "target_id": null
+        }
+      },
+      "candidate_ids": [
+        "guide_D",
+        "guide_D_duplicate"
+      ]
+    },
+    {
+      "id": "literal_n",
+      "sequence": "NGCATGCATGCATGCATGCA",
+      "calls": {
+        "exact": {
+          "status": "none",
+          "target_id": null
+        },
+        "radius_k1": {
+          "status": "unique",
+          "target_id": "guide_C"
+        },
+        "best_k1": {
+          "status": "unique",
+          "target_id": "guide_C"
+        }
+      },
+      "candidate_ids": [
+        "guide_C"
+      ]
+    }
+  ],
+  "outcomes": {
+    "exact": {
+      "unique": 3,
+      "ambiguous": 1,
+      "none": 4,
+      "invalid": 1
+    },
+    "radius_k1": {
+      "unique": 3,
+      "ambiguous": 4,
+      "none": 1,
+      "invalid": 1
+    },
+    "best_k1": {
+      "unique": 5,
+      "ambiguous": 2,
+      "none": 1,
+      "invalid": 1
+    }
+  },
+  "inputs_sha256": {
+    "targets.tsv": "5106f85a1ed2893d27a9691a34335de7ecb08678b9d21c3842a0ffb95ee6630e",
+    "reads.fastq": "cd775aa791e509ec605a8d543713e43726f6fe0b76255df54f3d46dfd0fa4475"
+  }
+}

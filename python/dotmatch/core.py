@@ -259,52 +259,13 @@ def _looks_like_target_header(cols: Sequence[str]) -> bool:
 
 
 def load_targets(path: str | Path) -> list[tuple[str, str]]:
-    """Load a target table as ``(target_id, sequence)`` pairs.
+    """Read plain/gzipped CSV or TSV with named or positional target columns.
 
-    TSV is the default; ``.csv`` files are parsed as comma-separated. Headered
-    tables use common id/sequence column names, and headerless one- or two-column
-    files are accepted for notebook and workflow glue.
+    Duplicate sequences are retained; empty or duplicate IDs are rejected.
     """
-    source = Path(path)
-    delimiter = "," if source.suffix.lower() == ".csv" else "\t"
-    targets: list[tuple[str, str]] = []
-    with _open_text(source) as fh:
-        first_data = True
-        id_col = 0
-        seq_col = 1
-        for row in csv.reader(fh, delimiter=delimiter):
-            if not row:
-                continue
-            cols = [col.strip() for col in row]
-            if not any(cols) or cols[0].startswith("#"):
-                continue
-            if first_data and _looks_like_target_header(cols):
-                header = {name.strip().lower(): i for i, name in enumerate(cols)}
-                for candidate in ("target_id", "guide_id", "barcode_id", "id", "name"):
-                    if candidate in header:
-                        id_col = header[candidate]
-                        break
-                for candidate in ("target_seq", "guide_seq", "barcode_seq", "sequence", "seq"):
-                    if candidate in header:
-                        seq_col = header[candidate]
-                        break
-                first_data = False
-                continue
-            first_data = False
-            if len(cols) == 1:
-                target_id = f"target_{len(targets)}"
-                seq = cols[0].upper()
-            else:
-                if id_col >= len(cols) or seq_col >= len(cols):
-                    raise ValueError(f"target row does not contain id/sequence columns: {source}")
-                target_id = cols[id_col] or f"target_{len(targets)}"
-                seq = cols[seq_col].upper()
-            if not seq:
-                raise ValueError(f"empty target sequence in {source}")
-            targets.append((target_id, seq))
-    if not targets:
-        raise ValueError(f"no targets found in {source}")
-    return targets
+    from .target_io import read_target_table
+
+    return [(row.target_id, row.sequence) for row in read_target_table(path)]
 
 
 def iter_fastq(path: str | Path) -> Iterator[FastqRecord]:
