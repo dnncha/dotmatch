@@ -25,3 +25,14 @@ jobs:
           NEXT_OUTPUT: export
           NEXT_PUBLIC_BASE_PATH: /dotmatch
           NEXT_PUBLIC_SITE_URL: https://dnncha.github.io/dotmatch
+      - name: Record exact preview source
+        run: |
+          mkdir -p review
+          git archive --format=tar.gz --output=review/source.tar.gz HEAD
+          git rev-parse HEAD > review/commit.txt
+          cp -R out review/site
+      - uses: actions/upload-artifact@v7
+        with:
+          name: site-review
+          path: review/
+          retention-days: 7
