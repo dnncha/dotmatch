@@ -17,14 +17,20 @@
       "id": "EW-001",
       "priority": "P0",
       "title": "Publish standalone research-alpha repository and execute remote CI",
-      "status": "ready",
+      "status": "partially_completed",
       "depends_on": [],
       "acceptance_criteria": [
         "Run source inventory verification and all available local checks.",
         "Create dnncha/editwitness with fresh history; do not merge into DotMatch.",
         "Resolve all CI matrix and strict typing failures; record actual run URLs and commit.",
         "Confirm package-index namespace ownership before PyPI publication; configure trusted publishing and no credentials in code."
-      ]
+      ],
+      "completed_evidence": {
+        "staging_branch": "dnncha/dotmatch:editwitness/research-alpha-20260906",
+        "passing_ci_run": "https://github.com/dnncha/dotmatch/actions/runs/33998897914",
+        "tested_commit": "377c3bfafeb722bce3eac91d339dfec9d1028e68",
+        "remaining": "Create standalone repository with publisher; verify ownership and configure package publication."
+      }
     },
     {
       "id": "EW-002",

@@ -9,11 +9,13 @@ source inventory check and the tests. Create the standalone repository with
 already exist. Never merge the staging branch into DotMatch. If the target exists,
 inspect it and continue its existing history rather than creating a replacement.
 
-Run strict mypy and the actual Linux/macOS/Windows CI matrix. Fix demonstrated
-failures with narrow patches and regression tests; do not suppress errors merely
-to obtain green checks. The local build environment could not execute mypy or
-Ruff, so those are specifically unclaimed gates. Record the actual commit and run
-links in a reviewed status update.
+All six Linux/macOS/Windows jobs, strict mypy, schemas, distribution builds and
+coverage passed in GitHub run 33998897914 for commit
+`377c3bfafeb722bce3eac91d339dfec9d1028e68`; see `BUILD_STATUS.md`. The schema typing
+and Windows UTF-8 test fixes are already included. Repeat the checks in the new
+standalone repository after publication. Ruff was not run; do not claim otherwise.
+Fix demonstrated failures with narrow patches and regression tests, not suppressed
+checks. Record the actual commit and run links in reviewed status updates.
 
 Confirm ownership/availability of the PyPI name before publishing. Configure a
 reviewed trusted-publishing path and release only an explicitly alpha version.
