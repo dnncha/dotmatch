@@ -1,0 +1,27 @@
+name: Site validation
+on:
+  pull_request:
+    paths: ['app/**', 'lib/library-safety.ts', 'public/**', 'tests/site/**', 'scripts/check_site_assets.mjs', 'scripts/check_site_export.mjs', 'package*.json', 'next.config.ts', '.github/workflows/site-validation.yml']
+  push:
+    branches: [main]
+    paths: ['app/**', 'lib/library-safety.ts', 'public/**', 'tests/site/**', 'scripts/check_site_assets.mjs', 'scripts/check_site_export.mjs', 'package*.json', 'next.config.ts', '.github/workflows/site-validation.yml']
+permissions:
+  contents: read
+jobs:
+  static-site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run check:site
+      - name: Build and inspect GitHub Pages export
+        run: npm run build && node scripts/check_site_export.mjs
+        env:
+          NEXT_OUTPUT: export
+          NEXT_PUBLIC_BASE_PATH: /dotmatch
+          NEXT_PUBLIC_SITE_URL: https://dnncha.github.io/dotmatch

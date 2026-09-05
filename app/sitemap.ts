@@ -1,18 +1,7 @@
 import type { MetadataRoute } from "next";
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://dnncha.github.io/dotmatch";
-
+import { canonicalUrl } from "./site-metadata";
 export const dynamic = "force-static";
-
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
-
-  return [
-    {
-      url: siteUrl,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 1
-    }
-  ];
+  // Do not manufacture lastModified from build time. Add actual content dates when tracked.
+  return ["", "crispr-guide-counting", "tools/library-safety"].map(path => ({ url: canonicalUrl(path) }));
 }

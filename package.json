@@ -7,26 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "tsc --noEmit",
-    "check:site": "node scripts/check_site_assets.mjs"
+    "check:site": "node scripts/check_site_assets.mjs && npm run test:site",
+    "test:site": "node --experimental-strip-types --test tests/site/*.test.mjs"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/dnncha/dotmatch.git"
-  },
+  "repository": { "type": "git", "url": "git+https://github.com/dnncha/dotmatch.git" },
   "license": "Apache-2.0",
-  "overrides": {
-    "postcss": "^8.5.10",
-    "sharp": "^0.35.3"
-  },
-  "dependencies": {
-    "next": "^16.3.4",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8"
-  },
-  "devDependencies": {
-    "@types/node": "^26.4.0",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.5",
-    "typescript": "^7.0.2"
-  }
+  "overrides": { "postcss": "^8.5.10", "sharp": "^0.35.3" },
+  "dependencies": { "next": "^16.3.4", "react": "^19.2.8", "react-dom": "^19.2.8" },
+  "devDependencies": { "@types/node": "^26.4.0", "@types/react": "^19.2.18", "@types/react-dom": "^19.2.5", "typescript": "^7.0.2" }
 }
