@@ -29,7 +29,7 @@ def test_cli_full_analysis_html_replay_and_compact(tmp_path):
     assert verify_result(result_path).conclusion == "ambiguity_demonstrated"
     verified = cli("verify", result_path, "--manifest", manifest)
     assert json.loads(verified.stdout)["replayed"] is True
-    assert report.read_text().startswith("<!doctype html>")
+    assert report.read_text(encoding="utf-8").startswith("<!doctype html>")
     compact = cli("analyze", manifest, "--compact")
     data = json.loads(compact.stdout)
     assert data["kind"] == "editwitness.summary"
