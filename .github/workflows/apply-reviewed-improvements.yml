@@ -1,5 +1,5 @@
 name: Apply reviewed DotMatch improvements
-# Temporary transport for a locally tested patch. Removed by its own commit.
+# Temporary transport for a locally tested patch; removed through the authorized connector after application.
 on:
   push:
     branches: [improve/scientist-first-library-audit]
@@ -48,13 +48,14 @@ jobs:
           python3 scripts/generate_assignment_demo.py --check
           node scripts/check_site_assets.mjs
           git diff --check
-      - name: Commit only the reviewed implementation to the feature branch
+      - name: Commit only source changes within contents permission
         env:
           EXPECTED_SHA: ${{ github.sha }}
         run: |
           test "$(git ls-remote origin refs/heads/improve/scientist-first-library-audit | cut -f1)" = "$EXPECTED_SHA"
           rm -rf .review
-          rm .github/workflows/apply-reviewed-improvements.yml
+          # Workflow edits are applied separately through the authorized connector.
+          git restore --source=HEAD -- .github/workflows/site-validation.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
