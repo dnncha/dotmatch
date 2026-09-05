@@ -1,0 +1,46 @@
+{
+  "version": "0.1.0a1",
+  "environment": {
+    "python": "3.13.5",
+    "pydantic": "2.13.4",
+    "platform": "Linux x86_64"
+  },
+  "tests": {
+    "passed": 572,
+    "failed": 0,
+    "kind": "synthetic software verification; no empirical biological validation"
+  },
+  "coverage": {
+    "covered_lines": 732,
+    "num_statements": 733,
+    "percent_covered": 99.47643979057591,
+    "percent_covered_display": "99",
+    "missing_lines": 1,
+    "excluded_lines": 4,
+    "percent_statements_covered": 99.86357435197817,
+    "percent_statements_covered_display": "99",
+    "num_branches": 222,
+    "num_partial_branches": 4,
+    "covered_branches": 218,
+    "missing_branches": 4,
+    "percent_branches_covered": 98.1981981981982,
+    "percent_branches_covered_display": "98"
+  },
+  "schema_check": "passed",
+  "source_hygiene": "passed (not a full static type check)",
+  "installed_wheel": "passed outside source tree with preinstalled dependencies",
+  "html_checks": {
+    "engine": "Chromium",
+    "widths": [
+      1440,
+      390
+    ],
+    "document_horizontal_overflow": false,
+    "script_elements": 0
+  },
+  "strict_mypy_local": "not run; unavailable in local environment",
+  "ruff_local": "not run; unavailable in local environment",
+  "remote_ci": "not yet verified at source-artifact build time",
+  "biological_validation": "not performed",
+  "package_index_publication": "not performed"
+}

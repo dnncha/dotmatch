@@ -1,0 +1,30 @@
+{
+  "version": "0.1.0a1",
+  "python": "3.13.5",
+  "platform": "Linux-6.18.35-x86_64-with-glibc2.41",
+  "processor": "",
+  "warmups_per_workload": 1,
+  "repetitions": 5,
+  "seconds": {
+    "demo_analysis": [
+      0.0005506719999175402,
+      0.0005142489999343525,
+      0.0004454150000583468,
+      0.00042102900010831945,
+      0.0004646120000870724
+    ],
+    "deletion_grid_450000_pairs": [
+      0.19310442100004366,
+      0.13307787600001575,
+      0.14172107200010942,
+      0.13507923199995275,
+      0.1316615289999845
+    ]
+  },
+  "median_seconds": {
+    "demo_analysis": 0.0004646120000870724,
+    "deletion_grid_450000_pairs": 0.13507923199995275
+  },
+  "enumerated_valid_deletions": 325250,
+  "caveat": "Synthetic in-process warm timings on this machine only. No competitor comparison or empirical assay benchmark."
+}

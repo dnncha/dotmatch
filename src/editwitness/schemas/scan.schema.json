@@ -1,0 +1,200 @@
+{
+  "$defs": {
+    "DeletionScan": {
+      "additionalProperties": false,
+      "description": "Inclusive endpoint ranges, sampled with step, describing deletions [start,end).",
+      "properties": {
+        "start_min": {
+          "minimum": 0,
+          "title": "Start Min",
+          "type": "integer"
+        },
+        "start_max": {
+          "minimum": 0,
+          "title": "Start Max",
+          "type": "integer"
+        },
+        "end_min": {
+          "minimum": 1,
+          "title": "End Min",
+          "type": "integer"
+        },
+        "end_max": {
+          "minimum": 1,
+          "title": "End Max",
+          "type": "integer"
+        },
+        "step": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Step",
+          "type": "integer"
+        },
+        "min_length": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Min Length",
+          "type": "integer"
+        },
+        "max_length": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Length"
+        }
+      },
+      "required": [
+        "start_min",
+        "start_max",
+        "end_min",
+        "end_max"
+      ],
+      "title": "DeletionScan",
+      "type": "object"
+    },
+    "ScanAssayCounts": {
+      "additionalProperties": false,
+      "properties": {
+        "assay_id": {
+          "title": "Assay Id",
+          "type": "string"
+        },
+        "potentially_amplifiable": {
+          "title": "Potentially Amplifiable",
+          "type": "integer"
+        },
+        "binding_site_disrupted": {
+          "title": "Binding Site Disrupted",
+          "type": "integer"
+        },
+        "outside_product_bounds": {
+          "title": "Outside Product Bounds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "assay_id",
+        "potentially_amplifiable",
+        "binding_site_disrupted",
+        "outside_product_bounds"
+      ],
+      "title": "ScanAssayCounts",
+      "type": "object"
+    },
+    "ScanExample": {
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "title": "Start",
+          "type": "integer"
+        },
+        "end": {
+          "title": "End",
+          "type": "integer"
+        },
+        "length": {
+          "title": "Length",
+          "type": "integer"
+        },
+        "assay_statuses": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Assay Statuses",
+          "type": "object"
+        }
+      },
+      "required": [
+        "start",
+        "end",
+        "length",
+        "assay_statuses"
+      ],
+      "title": "ScanExample",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "kind": {
+      "const": "editwitness.deletion_scan",
+      "default": "editwitness.deletion_scan",
+      "title": "Kind",
+      "type": "string"
+    },
+    "package_version": {
+      "title": "Package Version",
+      "type": "string"
+    },
+    "model_version": {
+      "title": "Model Version",
+      "type": "string"
+    },
+    "manifest_sha256": {
+      "title": "Manifest Sha256",
+      "type": "string"
+    },
+    "result_sha256": {
+      "default": "",
+      "title": "Result Sha256",
+      "type": "string"
+    },
+    "grid": {
+      "$ref": "#/$defs/DeletionScan"
+    },
+    "enumerated_deletions": {
+      "title": "Enumerated Deletions",
+      "type": "integer"
+    },
+    "all_existing_assays_structurally_blind": {
+      "title": "All Existing Assays Structurally Blind",
+      "type": "integer"
+    },
+    "assays": {
+      "items": {
+        "$ref": "#/$defs/ScanAssayCounts"
+      },
+      "title": "Assays",
+      "type": "array"
+    },
+    "blind_examples": {
+      "items": {
+        "$ref": "#/$defs/ScanExample"
+      },
+      "title": "Blind Examples",
+      "type": "array"
+    },
+    "caveat": {
+      "title": "Caveat",
+      "type": "string"
+    }
+  },
+  "required": [
+    "package_version",
+    "model_version",
+    "manifest_sha256",
+    "grid",
+    "enumerated_deletions",
+    "all_existing_assays_structurally_blind",
+    "assays",
+    "blind_examples",
+    "caveat"
+  ],
+  "title": "ScanResult",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:editwitness:schema:scan:1.0"
+}

@@ -1,0 +1,15 @@
+# EditWitness
+
+> Local, explicit observability counterexamples for CRISPR validation assays.
+> Research alpha; software-tested, not empirically validated.
+
+## Start here
+- README.md: installation, synthetic example, supported scope.
+- docs/agent-guide.md: machine interface and interpretation rules.
+- docs/scientific-model.md: exact observation model and limitations.
+- docs/data-contract.md: coordinates, invariants, schema and outputs.
+- AGENTS.md: development invariants and continuation commands.
+- roadmap.json: machine-readable implementation and validation tasks.
+- BUILD_STATUS.md: checks actually performed on the delivered artifact.
+
+This file is a navigation aid, not an assurance of automatic agent discovery.

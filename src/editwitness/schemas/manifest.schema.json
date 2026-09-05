@@ -1,0 +1,443 @@
+{
+  "$defs": {
+    "Allele": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Description",
+          "type": "string"
+        },
+        "edits": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Edit"
+          },
+          "maxItems": 64,
+          "title": "Edits",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "Allele",
+      "type": "object"
+    },
+    "Assay": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Description",
+          "type": "string"
+        },
+        "left_primer": {
+          "$ref": "#/$defs/Interval"
+        },
+        "right_primer": {
+          "$ref": "#/$defs/Interval"
+        },
+        "left_oligo": {
+          "anyOf": [
+            {
+              "maxLength": 20000,
+              "minLength": 1,
+              "pattern": "^[ACGT]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Left Oligo"
+        },
+        "right_oligo": {
+          "anyOf": [
+            {
+              "maxLength": 20000,
+              "minLength": 1,
+              "pattern": "^[ACGT]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Right Oligo"
+        },
+        "readout": {
+          "default": "full_insert",
+          "enum": [
+            "full_insert",
+            "paired_end"
+          ],
+          "title": "Readout",
+          "type": "string"
+        },
+        "read_bases": {
+          "anyOf": [
+            {
+              "maximum": 20000,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Read Bases"
+        },
+        "min_product_bp": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Min Product Bp",
+          "type": "integer"
+        },
+        "max_product_bp": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Product Bp"
+        },
+        "cost_units": {
+          "default": 1,
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Cost Units",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "left_primer",
+        "right_primer"
+      ],
+      "title": "Assay",
+      "type": "object"
+    },
+    "DeletionScan": {
+      "additionalProperties": false,
+      "description": "Inclusive endpoint ranges, sampled with step, describing deletions [start,end).",
+      "properties": {
+        "start_min": {
+          "minimum": 0,
+          "title": "Start Min",
+          "type": "integer"
+        },
+        "start_max": {
+          "minimum": 0,
+          "title": "Start Max",
+          "type": "integer"
+        },
+        "end_min": {
+          "minimum": 1,
+          "title": "End Min",
+          "type": "integer"
+        },
+        "end_max": {
+          "minimum": 1,
+          "title": "End Max",
+          "type": "integer"
+        },
+        "step": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Step",
+          "type": "integer"
+        },
+        "min_length": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Min Length",
+          "type": "integer"
+        },
+        "max_length": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Length"
+        }
+      },
+      "required": [
+        "start_min",
+        "start_max",
+        "end_min",
+        "end_max"
+      ],
+      "title": "DeletionScan",
+      "type": "object"
+    },
+    "Edit": {
+      "additionalProperties": false,
+      "description": "Replace reference[start:end] with sequence; start == end is an insertion.",
+      "properties": {
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        },
+        "end": {
+          "minimum": 0,
+          "title": "End",
+          "type": "integer"
+        },
+        "sequence": {
+          "default": "",
+          "maxLength": 20000,
+          "pattern": "^[ACGT]*$",
+          "title": "Sequence",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "Edit",
+      "type": "object"
+    },
+    "Hypothesis": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Description",
+          "type": "string"
+        },
+        "alleles": {
+          "items": {
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Alleles",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "alleles"
+      ],
+      "title": "Hypothesis",
+      "type": "object"
+    },
+    "Interval": {
+      "additionalProperties": false,
+      "description": "Local reference interval [start, end), not a VCF or genomic position.",
+      "properties": {
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        },
+        "end": {
+          "exclusiveMinimum": 0,
+          "title": "End",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "Interval",
+      "type": "object"
+    },
+    "Reference": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "sequence": {
+          "maxLength": 20000,
+          "minLength": 1,
+          "pattern": "^[ACGT]*$",
+          "title": "Sequence",
+          "type": "string"
+        },
+        "assembly": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assembly"
+        },
+        "contig": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Contig"
+        },
+        "genomic_start": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Genomic Start"
+        },
+        "synthetic": {
+          "default": false,
+          "title": "Synthetic",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "sequence"
+      ],
+      "title": "Reference",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "coordinate_system": {
+      "const": "0-based-half-open",
+      "default": "0-based-half-open",
+      "title": "Coordinate System",
+      "type": "string"
+    },
+    "reference": {
+      "$ref": "#/$defs/Reference"
+    },
+    "alleles": {
+      "items": {
+        "$ref": "#/$defs/Allele"
+      },
+      "maxItems": 128,
+      "minItems": 1,
+      "title": "Alleles",
+      "type": "array"
+    },
+    "hypotheses": {
+      "items": {
+        "$ref": "#/$defs/Hypothesis"
+      },
+      "maxItems": 1000,
+      "minItems": 1,
+      "title": "Hypotheses",
+      "type": "array"
+    },
+    "expected_hypothesis": {
+      "maxLength": 80,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+      "title": "Expected Hypothesis",
+      "type": "string"
+    },
+    "assays": {
+      "items": {
+        "$ref": "#/$defs/Assay"
+      },
+      "maxItems": 16,
+      "minItems": 1,
+      "title": "Assays",
+      "type": "array"
+    },
+    "candidates": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Assay"
+      },
+      "maxItems": 24,
+      "title": "Candidates",
+      "type": "array"
+    },
+    "deletion_scan": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DeletionScan"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "reference",
+    "alleles",
+    "hypotheses",
+    "expected_hypothesis",
+    "assays"
+  ],
+  "title": "Manifest",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:editwitness:schema:manifest:1.0"
+}

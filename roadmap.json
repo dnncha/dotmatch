@@ -1,0 +1,160 @@
+{
+  "format": "editwitness.roadmap.v1",
+  "package_version": "0.1.0a1",
+  "principle": "Advance scientific usefulness and independent adoption; do not manufacture validation.",
+  "implemented": [
+    "Strict local manifest and schemas",
+    "Original-site presence model and independent oracle tests",
+    "Explicit counterexamples and candidate panel selection",
+    "Paired-end gap handling",
+    "Streaming deletion geometry",
+    "Offline HTML/JSON, checksums and replay",
+    "CLI, Python API, portable agent guidance",
+    "Source distribution and wheel build path"
+  ],
+  "tasks": [
+    {
+      "id": "EW-001",
+      "priority": "P0",
+      "title": "Publish standalone research-alpha repository and execute remote CI",
+      "status": "ready",
+      "depends_on": [],
+      "acceptance_criteria": [
+        "Run source inventory verification and all available local checks.",
+        "Create dnncha/editwitness with fresh history; do not merge into DotMatch.",
+        "Resolve all CI matrix and strict typing failures; record actual run URLs and commit.",
+        "Confirm package-index namespace ownership before PyPI publication; configure trusted publishing and no credentials in code."
+      ]
+    },
+    {
+      "id": "EW-002",
+      "priority": "P0",
+      "title": "Independent scientific review of the original-site observation model",
+      "status": "needs_external_review",
+      "depends_on": [],
+      "acceptance_criteria": [
+        "Obtain review from a genome-engineering scientist independent of implementation.",
+        "Review hidden-primer and whole-window witnesses, dosage semantics, paired-end read gaps, negative signals and primer-rescue failures.",
+        "Record disagreements and revise model/version explicitly; never manufacture a reviewer or review result."
+      ]
+    },
+    {
+      "id": "EW-003",
+      "priority": "P1",
+      "title": "Exact edited-sequence primer rematching as a separately versioned model",
+      "status": "ready",
+      "depends_on": [
+        "EW-002"
+      ],
+      "acceptance_criteria": [
+        "Define handling of new, rescued, multiple and opposing-orientation primer sites with bounded product enumeration.",
+        "Make physically equivalent normalized allele representations yield the same observation in the new model.",
+        "Add independent sequence-oracle and adversarial repeat/normalization tests.",
+        "Retain original model replay; no unsupported mismatch probabilities."
+      ]
+    },
+    {
+      "id": "EW-004",
+      "priority": "P1",
+      "title": "Adjudicated public biological benchmark with ground-truth metadata",
+      "status": "needs_data_and_review",
+      "depends_on": [
+        "EW-002"
+      ],
+      "acceptance_criteria": [
+        "Acquire licensed/public exact references, primer geometry, edit structures, read configuration and independent measurement outcomes.",
+        "Store provenance, accessions, checksums, exclusions and negative controls before evaluation.",
+        "Publish reproducible scripts and per-case outcomes; separate synthetic from biological evidence.",
+        "Report false assurances and model failures, not only successful illustrations."
+      ]
+    },
+    {
+      "id": "EW-005",
+      "priority": "P1",
+      "title": "One read-only caller-output adapter with source provenance",
+      "status": "ready",
+      "depends_on": [
+        "EW-004"
+      ],
+      "acceptance_criteria": [
+        "Choose a versioned established caller format with real fixtures and documented semantics.",
+        "Preserve upstream outputs, sample metadata and checksums.",
+        "Never equate an unobserved allele with zero biological frequency.",
+        "Add malformed-file and coordinate-normalization tests and a runnable end-to-end example."
+      ]
+    },
+    {
+      "id": "EW-006",
+      "priority": "P1",
+      "title": "More useful bounded deletion-hypothesis generation",
+      "status": "ready",
+      "depends_on": [],
+      "acceptance_criteria": [
+        "Generate explicit local deletion alternatives around a user-specified edit without claiming outcome probabilities.",
+        "Record grid bounds, filtering and any cap; do not silently subsample.",
+        "Deduplicate equivalent states reproducibly and keep inspectable counterexamples.",
+        "Use actual readout-equivalence engine, not structural scan counts, for genotype claims."
+      ]
+    },
+    {
+      "id": "EW-007",
+      "priority": "P2",
+      "title": "Calibrated orthogonal copy-number measurement model",
+      "status": "needs_experimental_evidence",
+      "depends_on": [
+        "EW-004"
+      ],
+      "acceptance_criteria": [
+        "Specify actual measurement uncertainty, controls, failure modes and calibration.",
+        "Demonstrate both resolved and unresolved cases on independently adjudicated data.",
+        "Use a separate response-model version and explicitly distinguish dosage from sequence presence.",
+        "Do not release a clinically labeled or perfect-sensitivity mock assay."
+      ]
+    },
+    {
+      "id": "EW-008",
+      "priority": "P2",
+      "title": "Pilot with independent genome-engineering facilities",
+      "status": "needs_external_users",
+      "depends_on": [
+        "EW-004"
+      ],
+      "acceptance_criteria": [
+        "Two unrelated facilities use the tool on a second design without developer-led encoding.",
+        "Record actionable decision changes, manual input burden and interpretability failures.",
+        "Publish anonymized or permitted findings without invented user counts."
+      ]
+    },
+    {
+      "id": "EW-009",
+      "priority": "P2",
+      "title": "Agent and workflow distribution after demonstrated use",
+      "status": "ready",
+      "depends_on": [
+        "EW-001",
+        "EW-008"
+      ],
+      "acceptance_criteria": [
+        "Provide one real workflow integration and pinned installation instructions.",
+        "Add an optional thin MCP adapter only when requested by a real adopter; retain offline CLI.",
+        "Preserve structured errors, resource budgets, model caveats and no network by default.",
+        "Evaluate Bioconda and registry submissions without claiming they already exist."
+      ]
+    },
+    {
+      "id": "EW-010",
+      "priority": "P2",
+      "title": "Profile-driven performance improvements",
+      "status": "ready",
+      "depends_on": [
+        "EW-008"
+      ],
+      "acceptance_criteria": [
+        "Collect reproducible workloads with environment, dataset and baseline metadata.",
+        "Optimize only demonstrated bottlenecks; retain independent oracle agreement.",
+        "Add a native extension only with portable wheels and measurable user benefit.",
+        "Do not trade evidence completeness for speed without an explicit versioned approximation."
+      ]
+    }
+  ]
+}

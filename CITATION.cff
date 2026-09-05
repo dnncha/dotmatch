@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "Please cite this software version and commit when using EditWitness. No methods paper is claimed."
+type: software
+title: "EditWitness: explicit observability counterexamples for CRISPR validation assays"
+version: 0.1.0a1
+date-released: 2026-09-05
+authors:
+  - family-names: "O'Toole"
+    given-names: "Donncha"
+license: Apache-2.0
+abstract: "A local research-alpha package for comparing declared CRISPR validation hypotheses under an explicit idealized observation model. Software-tested; not empirically validated."
+keywords:
+  - CRISPR
+  - assay observability
+  - allelic dropout
+  - bioinformatics

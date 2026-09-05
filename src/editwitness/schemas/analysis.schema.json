@@ -1,0 +1,609 @@
+{
+  "$defs": {
+    "AlleleObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "allele_id": {
+          "title": "Allele Id",
+          "type": "string"
+        },
+        "assay_id": {
+          "title": "Assay Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "potentially_observable",
+            "original_binding_site_disrupted",
+            "outside_product_bounds"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "product_length": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Product Length"
+        },
+        "reads": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Reads",
+          "type": "array"
+        },
+        "signal_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signal Id"
+        }
+      },
+      "required": [
+        "allele_id",
+        "assay_id",
+        "status",
+        "reason"
+      ],
+      "title": "AlleleObservation",
+      "type": "object"
+    },
+    "Assay": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Description",
+          "type": "string"
+        },
+        "left_primer": {
+          "$ref": "#/$defs/Interval"
+        },
+        "right_primer": {
+          "$ref": "#/$defs/Interval"
+        },
+        "left_oligo": {
+          "anyOf": [
+            {
+              "maxLength": 20000,
+              "minLength": 1,
+              "pattern": "^[ACGT]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Left Oligo"
+        },
+        "right_oligo": {
+          "anyOf": [
+            {
+              "maxLength": 20000,
+              "minLength": 1,
+              "pattern": "^[ACGT]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Right Oligo"
+        },
+        "readout": {
+          "default": "full_insert",
+          "enum": [
+            "full_insert",
+            "paired_end"
+          ],
+          "title": "Readout",
+          "type": "string"
+        },
+        "read_bases": {
+          "anyOf": [
+            {
+              "maximum": 20000,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Read Bases"
+        },
+        "min_product_bp": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Min Product Bp",
+          "type": "integer"
+        },
+        "max_product_bp": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Product Bp"
+        },
+        "cost_units": {
+          "default": 1,
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Cost Units",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "left_primer",
+        "right_primer"
+      ],
+      "title": "Assay",
+      "type": "object"
+    },
+    "HypothesisAssessment": {
+      "additionalProperties": false,
+      "properties": {
+        "hypothesis_id": {
+          "title": "Hypothesis Id",
+          "type": "string"
+        },
+        "alleles": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Alleles",
+          "type": "array"
+        },
+        "equivalent_to_expected": {
+          "title": "Equivalent To Expected",
+          "type": "boolean"
+        },
+        "distinguishing_existing_assays": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Distinguishing Existing Assays",
+          "type": "array"
+        }
+      },
+      "required": [
+        "hypothesis_id",
+        "alleles",
+        "equivalent_to_expected",
+        "distinguishing_existing_assays"
+      ],
+      "title": "HypothesisAssessment",
+      "type": "object"
+    },
+    "HypothesisObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "hypothesis_id": {
+          "title": "Hypothesis Id",
+          "type": "string"
+        },
+        "assay_id": {
+          "title": "Assay Id",
+          "type": "string"
+        },
+        "signal_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Signal Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "hypothesis_id",
+        "assay_id",
+        "signal_ids"
+      ],
+      "title": "HypothesisObservation",
+      "type": "object"
+    },
+    "Interval": {
+      "additionalProperties": false,
+      "description": "Local reference interval [start, end), not a VCF or genomic position.",
+      "properties": {
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        },
+        "end": {
+          "exclusiveMinimum": 0,
+          "title": "End",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "Interval",
+      "type": "object"
+    },
+    "Notice": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "related_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Related Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "Notice",
+      "type": "object"
+    },
+    "PanelPlan": {
+      "additionalProperties": false,
+      "properties": {
+        "goal": {
+          "const": "distinguish_expected_from_currently_equivalent_alternatives",
+          "default": "distinguish_expected_from_currently_equivalent_alternatives",
+          "title": "Goal",
+          "type": "string"
+        },
+        "algorithm": {
+          "enum": [
+            "exhaustive_minimum_cost",
+            "greedy_weighted_cover",
+            "not_needed"
+          ],
+          "title": "Algorithm",
+          "type": "string"
+        },
+        "optimality": {
+          "enum": [
+            "proven_within_declared_candidates",
+            "not_proven",
+            "not_applicable"
+          ],
+          "title": "Optimality",
+          "type": "string"
+        },
+        "selected_assays": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Selected Assays",
+          "type": "array"
+        },
+        "cost_units": {
+          "title": "Cost Units",
+          "type": "integer"
+        },
+        "resolved_hypotheses": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Resolved Hypotheses",
+          "type": "array"
+        },
+        "unresolved_hypotheses": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Unresolved Hypotheses",
+          "type": "array"
+        },
+        "note": {
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "algorithm",
+        "optimality",
+        "selected_assays",
+        "cost_units",
+        "resolved_hypotheses",
+        "unresolved_hypotheses",
+        "note"
+      ],
+      "title": "PanelPlan",
+      "type": "object"
+    },
+    "ReferenceSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "length": {
+          "title": "Length",
+          "type": "integer"
+        },
+        "sequence_sha256": {
+          "title": "Sequence Sha256",
+          "type": "string"
+        },
+        "synthetic": {
+          "title": "Synthetic",
+          "type": "boolean"
+        },
+        "assembly": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Assembly"
+        },
+        "contig": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Contig"
+        },
+        "genomic_start": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Genomic Start"
+        }
+      },
+      "required": [
+        "name",
+        "length",
+        "sequence_sha256",
+        "synthetic",
+        "assembly",
+        "contig",
+        "genomic_start"
+      ],
+      "title": "ReferenceSummary",
+      "type": "object"
+    },
+    "Witness": {
+      "additionalProperties": false,
+      "properties": {
+        "hypothesis_id": {
+          "title": "Hypothesis Id",
+          "type": "string"
+        },
+        "expected_alleles": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Expected Alleles",
+          "type": "array"
+        },
+        "alternative_alleles": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Alternative Alleles",
+          "type": "array"
+        },
+        "explanation": {
+          "title": "Explanation",
+          "type": "string"
+        },
+        "resolving_candidate_assays": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Resolving Candidate Assays",
+          "type": "array"
+        }
+      },
+      "required": [
+        "hypothesis_id",
+        "expected_alleles",
+        "alternative_alleles",
+        "explanation",
+        "resolving_candidate_assays"
+      ],
+      "title": "Witness",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "kind": {
+      "const": "editwitness.analysis",
+      "default": "editwitness.analysis",
+      "title": "Kind",
+      "type": "string"
+    },
+    "package_version": {
+      "title": "Package Version",
+      "type": "string"
+    },
+    "model_version": {
+      "title": "Model Version",
+      "type": "string"
+    },
+    "manifest_sha256": {
+      "title": "Manifest Sha256",
+      "type": "string"
+    },
+    "result_sha256": {
+      "default": "",
+      "title": "Result Sha256",
+      "type": "string"
+    },
+    "validation_status": {
+      "const": "software-tested; not empirically validated",
+      "default": "software-tested; not empirically validated",
+      "title": "Validation Status",
+      "type": "string"
+    },
+    "conclusion": {
+      "enum": [
+        "ambiguity_demonstrated",
+        "distinguishable_only_within_declared_model"
+      ],
+      "title": "Conclusion",
+      "type": "string"
+    },
+    "expected_hypothesis": {
+      "title": "Expected Hypothesis",
+      "type": "string"
+    },
+    "expected_alleles": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Expected Alleles",
+      "type": "array"
+    },
+    "reference": {
+      "$ref": "#/$defs/ReferenceSummary"
+    },
+    "assays": {
+      "items": {
+        "$ref": "#/$defs/Assay"
+      },
+      "title": "Assays",
+      "type": "array"
+    },
+    "candidates": {
+      "items": {
+        "$ref": "#/$defs/Assay"
+      },
+      "title": "Candidates",
+      "type": "array"
+    },
+    "assumptions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Assumptions",
+      "type": "array"
+    },
+    "notices": {
+      "items": {
+        "$ref": "#/$defs/Notice"
+      },
+      "title": "Notices",
+      "type": "array"
+    },
+    "allele_observations": {
+      "items": {
+        "$ref": "#/$defs/AlleleObservation"
+      },
+      "title": "Allele Observations",
+      "type": "array"
+    },
+    "hypothesis_observations": {
+      "items": {
+        "$ref": "#/$defs/HypothesisObservation"
+      },
+      "title": "Hypothesis Observations",
+      "type": "array"
+    },
+    "hypotheses": {
+      "items": {
+        "$ref": "#/$defs/HypothesisAssessment"
+      },
+      "title": "Hypotheses",
+      "type": "array"
+    },
+    "witnesses": {
+      "items": {
+        "$ref": "#/$defs/Witness"
+      },
+      "title": "Witnesses",
+      "type": "array"
+    },
+    "plan": {
+      "$ref": "#/$defs/PanelPlan"
+    }
+  },
+  "required": [
+    "package_version",
+    "model_version",
+    "manifest_sha256",
+    "conclusion",
+    "expected_hypothesis",
+    "expected_alleles",
+    "reference",
+    "assays",
+    "candidates",
+    "assumptions",
+    "notices",
+    "allele_observations",
+    "hypothesis_observations",
+    "hypotheses",
+    "witnesses",
+    "plan"
+  ],
+  "title": "Analysis",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:editwitness:schema:analysis:1.0"
+}
