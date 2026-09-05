@@ -1,1 +1,0 @@
-MAGeCK comparator skipped; install mageck and set DOTMATCH_EXAMPLE_FULL=1 to run it.

@@ -1,3 +1,0 @@
-comparison,left,right,status,left_path,right_path,n_guides,total_left,total_right,total_delta,differing_guides,max_abs_delta,pearson,spearman
-dotmatch_hamming_vs_guide_counter,dotmatch_hamming,guide_counter,ok,examples/crispr_guides/output/counts.hamming.mageck.tsv,examples/crispr_guides/output/guide_counter.counts.txt,87437,18261,20956,-2695,2409,7,0.93013799,0.93268449
-dotmatch_exact_vs_mageck_exact,dotmatch_exact,mageck_exact,ok,examples/crispr_guides/output/counts.exact.mageck.tsv,examples/crispr_guides/output/mageck_exact_benchmark.count.txt,87437,17894,17894,0,0,0,1.00000000,1.00000000

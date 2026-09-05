@@ -1,8 +1,0 @@
-{
-  "status": "failed",
-  "n_targets": 3,
-  "minimum_hamming_distance": 1,
-  "minimum_levenshtein_distance": 1,
-  "safe_at_k": false,
-  "ambiguous_error_examples": 2
-}

@@ -1,2 +1,0 @@
-tool,version,workflow,semantics,n_reads,n_targets,target_start,target_length,k,seconds,reads_per_sec,exit_code,command,assigned_reads,ambiguous_reads,rejected_reads,dataset_id,requested_records_per_sample,run_level
-bowtie1_crispr_hamming_k3,/usr/bin/bowtie-align-s version 1.3.1,sanson_brunello_hamming_k23,hamming_k3_no_indels_bowtie1_v,4000000,77441,20,20,3,792.599458,5046.7,0,/usr/bin/bowtie-build <tmp>/dotmatch <tmp>/dotmatch && /usr/bin/bowtie -q -v 3 --best --strata --norc -a <tmp>/dotmatch <tmp>/dotmatch <tmp>/dotmatch,16741,115,3983144,sanson_brunello,1000000,subsample

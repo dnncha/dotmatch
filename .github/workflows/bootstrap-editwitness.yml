@@ -1,0 +1,117 @@
+name: Verify isolated EditWitness research alpha
+on:
+  push:
+    branches: ['editwitness/research-alpha-20260906']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: editwitness-staging-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  hydrate:
+    if: github.repository == 'dnncha/dotmatch' && github.ref == 'refs/heads/editwitness/research-alpha-20260906'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      commit: ${{ steps.commit.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify and unpack the independently tested source
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, json, lzma
+          from pathlib import Path, PurePosixPath
+          root = Path.cwd().resolve()
+          if (root / 'pyproject.toml').exists():
+              print('Source is already materialized; preserve subsequent changes.')
+              raise SystemExit(0)
+          parts = [root / f'.bootstrap/source.{i:02}.xzpart' for i in range(1, 6)]
+          packed = b''.join(path.read_bytes() for path in parts)
+          expected = '8ed72d20468f41f48dabcd1b6b93ee89e20076195e9800ba21ff6d76767a3486'
+          if hashlib.sha256(packed).hexdigest() != expected:
+              raise SystemExit('Source transport checksum mismatch.')
+          decoder = lzma.LZMADecompressor(memlimit=256 * 1024 * 1024)
+          raw = decoder.decompress(packed, max_length=4 * 1024 * 1024)
+          if not decoder.eof or decoder.unused_data:
+              raise SystemExit('Invalid or oversized source transport.')
+          payload = json.loads(raw.decode('utf-8'))
+          if payload['format'] != 'editwitness.source-transport.v1' or len(payload['files']) != 68:
+              raise SystemExit('Unexpected source transport format.')
+          for name, text in payload['files'].items():
+              path = PurePosixPath(name)
+              if path.is_absolute() or any(p in {'.', '..', '.git'} for p in path.parts) or '\\' in name:
+                  raise SystemExit(f'Unsafe source path: {name}')
+              target = root.joinpath(*path.parts)
+              if not target.resolve().is_relative_to(root) or not isinstance(text, str):
+                  raise SystemExit('Invalid source entry.')
+              if name.startswith('.github/workflows/') and (
+                  not target.exists() or target.read_text(encoding='utf-8') != text
+              ):
+                  raise SystemExit('Transport may not introduce or change workflows.')
+              target.parent.mkdir(parents=True, exist_ok=True)
+              target.write_text(text, encoding='utf-8', newline='\n')
+          print('Verified and materialized 68 source files.')
+          PY
+          python scripts/release_manifest.py --check
+      - name: Commit only to the isolated staging branch
+        id: commit
+        shell: bash
+        run: |
+          test "$GITHUB_REPOSITORY" = 'dnncha/dotmatch'
+          test "$GITHUB_REF" = 'refs/heads/editwitness/research-alpha-20260906'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m 'Materialize independently tested EditWitness 0.1.0a1 source'
+            git push origin 'HEAD:refs/heads/editwitness/research-alpha-20260906'
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+  test:
+    needs: hydrate
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.hydrate.outputs.commit }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install -e ".[dev]"
+      - run: python -m pytest -q
+      - run: python scripts/check_style.py
+      - run: python scripts/generate_schemas.py --check
+      - run: python -m build
+      - run: python -m editwitness doctor
+  typing:
+    needs: hydrate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.hydrate.outputs.commit }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install -e ".[dev]"
+      - run: python -m mypy src/editwitness
+  coverage:
+    needs: hydrate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.hydrate.outputs.commit }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install -e ".[dev]"
+      - run: python scripts/check_coverage.py
