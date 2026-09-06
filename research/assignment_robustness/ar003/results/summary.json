@@ -1,0 +1,933 @@
+{
+  "all_sensitivity_settings": [
+    {
+      "baseline_exact_minimum": 20,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18738,
+      "eligible_annotations": 18738,
+      "max_absolute_delta": 5.422991568784365,
+      "median_absolute_delta": 0.029433765712648552,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "exact",
+      "primary": false,
+      "pseudocount": 0.1,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.0038958266623972675,
+      "shift_ge_half_log2": 73,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 20,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18339,
+      "eligible_annotations": 18738,
+      "max_absolute_delta": 2.3499219075987474,
+      "median_absolute_delta": 0.0169804244018487,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "radius_k1",
+      "primary": false,
+      "pseudocount": 0.1,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.002561639449247518,
+      "shift_ge_half_log2": 48,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 20,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18731,
+      "eligible_annotations": 18738,
+      "max_absolute_delta": 1.4177552970506158,
+      "median_absolute_delta": 0.01655898804891831,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "best_k1",
+      "primary": false,
+      "pseudocount": 0.1,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.0006404098623118795,
+      "shift_ge_half_log2": 12,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 20,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18738,
+      "eligible_annotations": 18738,
+      "max_absolute_delta": 4.3802823578584125,
+      "median_absolute_delta": 0.029405927244463614,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "exact",
+      "primary": false,
+      "pseudocount": 0.5,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.0038424591738712775,
+      "shift_ge_half_log2": 72,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 20,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18339,
+      "eligible_annotations": 18738,
+      "max_absolute_delta": 2.3290286088637098,
+      "median_absolute_delta": 0.016956070062274384,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "radius_k1",
+      "primary": false,
+      "pseudocount": 0.5,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.002561639449247518,
+      "shift_ge_half_log2": 48,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 20,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18731,
+      "eligible_annotations": 18738,
+      "max_absolute_delta": 1.1455093313595501,
+      "median_absolute_delta": 0.01653343406206631,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "best_k1",
+      "primary": false,
+      "pseudocount": 0.5,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.0006404098623118795,
+      "shift_ge_half_log2": 12,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 20,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18738,
+      "eligible_annotations": 18738,
+      "max_absolute_delta": 3.987977471750787,
+      "median_absolute_delta": 0.029380871703076766,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "exact",
+      "primary": false,
+      "pseudocount": 1.0,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.0038424591738712775,
+      "shift_ge_half_log2": 72,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 20,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18339,
+      "eligible_annotations": 18738,
+      "max_absolute_delta": 2.303527928338386,
+      "median_absolute_delta": 0.01694072353502807,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "radius_k1",
+      "primary": false,
+      "pseudocount": 1.0,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.0024549044721955387,
+      "shift_ge_half_log2": 46,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 20,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18731,
+      "eligible_annotations": 18738,
+      "max_absolute_delta": 1.142185069364397,
+      "median_absolute_delta": 0.016533163034039428,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "best_k1",
+      "primary": false,
+      "pseudocount": 1.0,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.0005870423737858897,
+      "shift_ge_half_log2": 11,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 50,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18721,
+      "eligible_annotations": 18721,
+      "max_absolute_delta": 4.809294038395389,
+      "median_absolute_delta": 0.029425349562144043,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "exact",
+      "primary": false,
+      "pseudocount": 0.1,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.003792532450189627,
+      "shift_ge_half_log2": 71,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 50,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18323,
+      "eligible_annotations": 18721,
+      "max_absolute_delta": 2.3499219075987474,
+      "median_absolute_delta": 0.01696733861237748,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "radius_k1",
+      "primary": false,
+      "pseudocount": 0.1,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.002563965600128198,
+      "shift_ge_half_log2": 48,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 50,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18714,
+      "eligible_annotations": 18721,
+      "max_absolute_delta": 1.4177552970506158,
+      "median_absolute_delta": 0.01653389572670816,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "best_k1",
+      "primary": false,
+      "pseudocount": 0.1,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.0006409914000320495,
+      "shift_ge_half_log2": 12,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 50,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18721,
+      "eligible_annotations": 18721,
+      "max_absolute_delta": 4.3802823578584125,
+      "median_absolute_delta": 0.029397624574098835,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "exact",
+      "primary": true,
+      "pseudocount": 0.5,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.003739116500186956,
+      "shift_ge_half_log2": 70,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 50,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18323,
+      "eligible_annotations": 18721,
+      "max_absolute_delta": 2.3290286088637098,
+      "median_absolute_delta": 0.01695330211240542,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "radius_k1",
+      "primary": true,
+      "pseudocount": 0.5,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.002563965600128198,
+      "shift_ge_half_log2": 48,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 50,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18714,
+      "eligible_annotations": 18721,
+      "max_absolute_delta": 1.1455093313595501,
+      "median_absolute_delta": 0.016524312758114612,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "best_k1",
+      "primary": true,
+      "pseudocount": 0.5,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.0006409914000320495,
+      "shift_ge_half_log2": 12,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 50,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18721,
+      "eligible_annotations": 18721,
+      "max_absolute_delta": 3.987977471750787,
+      "median_absolute_delta": 0.02937335523839542,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "exact",
+      "primary": false,
+      "pseudocount": 1.0,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.003739116500186956,
+      "shift_ge_half_log2": 70,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 50,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18323,
+      "eligible_annotations": 18721,
+      "max_absolute_delta": 2.303527928338386,
+      "median_absolute_delta": 0.01692508683219962,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "radius_k1",
+      "primary": false,
+      "pseudocount": 1.0,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.0024571337001228566,
+      "shift_ge_half_log2": 46,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 50,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18714,
+      "eligible_annotations": 18721,
+      "max_absolute_delta": 1.142185069364397,
+      "median_absolute_delta": 0.01650567072769038,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "best_k1",
+      "primary": false,
+      "pseudocount": 1.0,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.0005875754500293788,
+      "shift_ge_half_log2": 11,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 100,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18558,
+      "eligible_annotations": 18558,
+      "max_absolute_delta": 4.809294038395389,
+      "median_absolute_delta": 0.029318120102160006,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "exact",
+      "primary": false,
+      "pseudocount": 0.1,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.003502532600495743,
+      "shift_ge_half_log2": 65,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 100,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18161,
+      "eligible_annotations": 18558,
+      "max_absolute_delta": 2.3499219075987474,
+      "median_absolute_delta": 0.01687963650799612,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "radius_k1",
+      "primary": false,
+      "pseudocount": 0.1,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.002478715378812372,
+      "shift_ge_half_log2": 46,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 100,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18551,
+      "eligible_annotations": 18558,
+      "max_absolute_delta": 1.4177552970506158,
+      "median_absolute_delta": 0.016451540071449666,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "best_k1",
+      "primary": false,
+      "pseudocount": 0.1,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.0005388511693070374,
+      "shift_ge_half_log2": 10,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 100,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18558,
+      "eligible_annotations": 18558,
+      "max_absolute_delta": 4.3802823578584125,
+      "median_absolute_delta": 0.02926321860888531,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "exact",
+      "primary": false,
+      "pseudocount": 0.5,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.003448647483565039,
+      "shift_ge_half_log2": 64,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 100,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18161,
+      "eligible_annotations": 18558,
+      "max_absolute_delta": 2.3290286088637098,
+      "median_absolute_delta": 0.016865707543921582,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "radius_k1",
+      "primary": false,
+      "pseudocount": 0.5,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.002478715378812372,
+      "shift_ge_half_log2": 46,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 100,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18551,
+      "eligible_annotations": 18558,
+      "max_absolute_delta": 1.1455093313595501,
+      "median_absolute_delta": 0.016441249898370314,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "best_k1",
+      "primary": false,
+      "pseudocount": 0.5,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.0005388511693070374,
+      "shift_ge_half_log2": 10,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 100,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18558,
+      "eligible_annotations": 18558,
+      "max_absolute_delta": 3.987977471750787,
+      "median_absolute_delta": 0.029226138532570695,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "exact",
+      "primary": false,
+      "pseudocount": 1.0,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.003448647483565039,
+      "shift_ge_half_log2": 64,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 100,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18161,
+      "eligible_annotations": 18558,
+      "max_absolute_delta": 2.303527928338386,
+      "median_absolute_delta": 0.01683835048425425,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "radius_k1",
+      "primary": false,
+      "pseudocount": 1.0,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.0023709451449509646,
+      "shift_ge_half_log2": 44,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 100,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18551,
+      "eligible_annotations": 18558,
+      "max_absolute_delta": 1.1081931976139807,
+      "median_absolute_delta": 0.016407028409383795,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "best_k1",
+      "primary": false,
+      "pseudocount": 1.0,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.00048496605237633366,
+      "shift_ge_half_log2": 9,
+      "strong_sign_reversals": 0
+    }
+  ],
+  "archives": 3,
+  "assay_designs": 2,
+  "audit_commit": "68a406b41805b808e6428927c2b8ccd2a2e55f9f",
+  "audit_run": 34032669590,
+  "biological_replicated_contrasts": 0,
+  "completion": "complete",
+  "full_public_records": 30215791,
+  "limitations": [
+    "Yusa plasmid/ESC1 is not a replicated biological contrast; Brunello is a plasmid sample.",
+    "Global multi-position and fixed-window comparisons also change extraction; this is not solely mismatch policy.",
+    "Additional gene-resolved records are not additional molecules or a demonstrated gain in accuracy.",
+    "Gene and guide views overlap and cannot be added. Gene labels are original annotations.",
+    "Bounds cover the candidate-supported assigned subset under the declared model, not all true source molecules.",
+    "Conditional ranges are not confidence intervals and their separate upper endpoints need not be jointly feasible.",
+    "Known-origin controls are constructed, error-free and based on previously inspected assay contexts.",
+    "No production release, manuscript submission, biological discovery or calibrated FDR claim."
+  ],
+  "primary_effects": [
+    {
+      "baseline_exact_minimum": 50,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18721,
+      "eligible_annotations": 18721,
+      "max_absolute_delta": 4.3802823578584125,
+      "median_absolute_delta": 0.029397624574098835,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "exact",
+      "primary": true,
+      "pseudocount": 0.5,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.003739116500186956,
+      "shift_ge_half_log2": 70,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 50,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18323,
+      "eligible_annotations": 18721,
+      "max_absolute_delta": 2.3290286088637098,
+      "median_absolute_delta": 0.01695330211240542,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "radius_k1",
+      "primary": true,
+      "pseudocount": 0.5,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.002563965600128198,
+      "shift_ge_half_log2": 48,
+      "strong_sign_reversals": 0
+    },
+    {
+      "baseline_exact_minimum": 50,
+      "biological_FDR_or_hit_calling": false,
+      "conditional_range_excludes_zero": 18714,
+      "eligible_annotations": 18721,
+      "max_absolute_delta": 1.1455093313595501,
+      "median_absolute_delta": 0.016524312758114612,
+      "median_conditional_range_width": 0.0,
+      "normalization": "input_read_totals",
+      "policy": "best_k1",
+      "primary": true,
+      "pseudocount": 0.5,
+      "reference": "fixed_window_best_k1",
+      "shift_fraction": 0.0006409914000320495,
+      "shift_ge_half_log2": 12,
+      "strong_sign_reversals": 0
+    }
+  ],
+  "protocol_commit": "de0002a37259cf27000015f43dd335343cd01234",
+  "samples": {
+    "ERR376998": {
+      "additional_gene_resolved_records": {
+        "best_k1": 169983,
+        "exact": 161284,
+        "radius_k1": 703993
+      },
+      "environment": {
+        "dotmatch": "0.5.0",
+        "index_source_sha256": "4e4c040b0e3e23e476d580e7051a8ab10aaec11d3b973344f387ed3cf2ec5134",
+        "peak_rss_kib": 437960,
+        "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "python": "3.11.16 (main, Aug 13 2026, 02:46:14) [GCC 13.3.0]",
+        "source_sha256": "c76df6897f2bb80ae66c5c147d4bacafa4eed56b9b7de1a2cf4763837e0f15b9",
+        "wall_seconds": 412.62153067400004
+      },
+      "gene_annotations": 19149,
+      "input": {
+        "fastq_bytes": "282339185",
+        "fastq_ftp": "ftp.sra.ebi.ac.uk/vol1/fastq/ERR376/ERR376998/ERR376998.fastq.gz",
+        "fastq_md5": "7b552f8efd6fe90fc6bc34879c617040",
+        "full_archive_md5_verified": true,
+        "metadata_url": "https://www.ebi.ac.uk/ena/portal/api/filereport?accession=ERR376998&result=read_run&format=json&fields=run_accession%2Cstudy_accession%2Csample_accession%2Csample_title%2Cfastq_ftp%2Cfastq_md5%2Cfastq_bytes%2Cread_count",
+        "observed_records": 10093905,
+        "prefix_records": 100000,
+        "prefix_sha256": "9edbddbe25b7f943f3be06f640dee3afe3f8729d47ddc9039bea346e63a25cc9",
+        "read_count": "10093905",
+        "run_accession": "ERR376998",
+        "sample_accession": "SAMEA2188756",
+        "sample_title": "",
+        "sha256": "7f79b76cec12b70319744417282f963c00818a5f0ae61497bd7b64790ac55f2f",
+        "study_accession": "PRJEB4038",
+        "url": "https://ftp.sra.ebi.ac.uk/vol1/fastq/ERR376/ERR376998/ERR376998.fastq.gz"
+      },
+      "library_sha256": "252e3b81b809c50f5cc347238a52926818027ad78a3ec98686e8012a8a46a896",
+      "offsets": [
+        21,
+        22,
+        23,
+        24
+      ],
+      "qc": {
+        "best_k1": {
+          "gene": {
+            "ambiguous": 454,
+            "invalid": 0,
+            "none": 685400,
+            "unique": 9408051
+          },
+          "guide": {
+            "ambiguous": 170437,
+            "invalid": 0,
+            "none": 685400,
+            "unique": 9238068
+          },
+          "position": {
+            "ambiguous": 170078,
+            "invalid": 0,
+            "none": 685400,
+            "unique": 9238427
+          }
+        },
+        "exact": {
+          "gene": {
+            "ambiguous": 2,
+            "invalid": 0,
+            "none": 1061984,
+            "unique": 9031919
+          },
+          "guide": {
+            "ambiguous": 161286,
+            "invalid": 0,
+            "none": 1061984,
+            "unique": 8870635
+          },
+          "position": {
+            "ambiguous": 161286,
+            "invalid": 0,
+            "none": 1061984,
+            "unique": 8870635
+          }
+        },
+        "radius_k1": {
+          "gene": {
+            "ambiguous": 81472,
+            "invalid": 0,
+            "none": 685400,
+            "unique": 9327033
+          },
+          "guide": {
+            "ambiguous": 785465,
+            "invalid": 0,
+            "none": 685400,
+            "unique": 8623040
+          },
+          "position": {
+            "ambiguous": 721252,
+            "invalid": 0,
+            "none": 685400,
+            "unique": 8687253
+          }
+        }
+      },
+      "records": 10093905,
+      "target_count": 87437,
+      "validation": {
+        "assignment_disagreements": 0,
+        "exhaustive_full_library_full_position_records": 200,
+        "full_fixed_window_native_count_cells": 262311,
+        "full_fixed_window_native_states_reconciled": true,
+        "native_selected_window_checks": 800,
+        "sampling_seed": 20260906
+      }
+    },
+    "ERR376999": {
+      "additional_gene_resolved_records": {
+        "best_k1": 164106,
+        "exact": 152683,
+        "radius_k1": 688995
+      },
+      "environment": {
+        "dotmatch": "0.5.0",
+        "index_source_sha256": "4e4c040b0e3e23e476d580e7051a8ab10aaec11d3b973344f387ed3cf2ec5134",
+        "peak_rss_kib": 433380,
+        "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "python": "3.11.16 (main, Aug 13 2026, 02:46:14) [GCC 13.3.0]",
+        "source_sha256": "c76df6897f2bb80ae66c5c147d4bacafa4eed56b9b7de1a2cf4763837e0f15b9",
+        "wall_seconds": 390.351621682
+      },
+      "gene_annotations": 19149,
+      "input": {
+        "fastq_bytes": "290645388",
+        "fastq_ftp": "ftp.sra.ebi.ac.uk/vol1/fastq/ERR376/ERR376999/ERR376999.fastq.gz",
+        "fastq_md5": "be96811adce2f5d69efd18a02f8e2416",
+        "full_archive_md5_verified": true,
+        "metadata_url": "https://www.ebi.ac.uk/ena/portal/api/filereport?accession=ERR376999&result=read_run&format=json&fields=run_accession%2Cstudy_accession%2Csample_accession%2Csample_title%2Cfastq_ftp%2Cfastq_md5%2Cfastq_bytes%2Cread_count",
+        "observed_records": 10300758,
+        "prefix_records": 100000,
+        "prefix_sha256": "73059a9ac5c7f92bfc4da032a38f4bb03024a144f06b6a9f805aa28fac5ff159",
+        "read_count": "10300758",
+        "run_accession": "ERR376999",
+        "sample_accession": "SAMEA2188757",
+        "sample_title": "",
+        "sha256": "cf2bc10938e178d16dfb81ca2f9fda805cae892290fac3cfc243bb637f8cda17",
+        "study_accession": "PRJEB4038",
+        "url": "https://ftp.sra.ebi.ac.uk/vol1/fastq/ERR376/ERR376999/ERR376999.fastq.gz"
+      },
+      "library_sha256": "252e3b81b809c50f5cc347238a52926818027ad78a3ec98686e8012a8a46a896",
+      "offsets": [
+        21,
+        22,
+        23,
+        24
+      ],
+      "qc": {
+        "best_k1": {
+          "gene": {
+            "ambiguous": 478,
+            "invalid": 0,
+            "none": 931425,
+            "unique": 9368855
+          },
+          "guide": {
+            "ambiguous": 164584,
+            "invalid": 0,
+            "none": 931425,
+            "unique": 9204749
+          },
+          "position": {
+            "ambiguous": 164261,
+            "invalid": 0,
+            "none": 931425,
+            "unique": 9205072
+          }
+        },
+        "exact": {
+          "gene": {
+            "ambiguous": 1,
+            "invalid": 0,
+            "none": 1420790,
+            "unique": 8879967
+          },
+          "guide": {
+            "ambiguous": 152684,
+            "invalid": 0,
+            "none": 1420790,
+            "unique": 8727284
+          },
+          "position": {
+            "ambiguous": 152684,
+            "invalid": 0,
+            "none": 1420790,
+            "unique": 8727284
+          }
+        },
+        "radius_k1": {
+          "gene": {
+            "ambiguous": 86247,
+            "invalid": 0,
+            "none": 931425,
+            "unique": 9283086
+          },
+          "guide": {
+            "ambiguous": 775242,
+            "invalid": 0,
+            "none": 931425,
+            "unique": 8594091
+          },
+          "position": {
+            "ambiguous": 707346,
+            "invalid": 0,
+            "none": 931425,
+            "unique": 8661987
+          }
+        }
+      },
+      "records": 10300758,
+      "target_count": 87437,
+      "validation": {
+        "assignment_disagreements": 0,
+        "exhaustive_full_library_full_position_records": 200,
+        "full_fixed_window_native_count_cells": 262311,
+        "full_fixed_window_native_states_reconciled": true,
+        "native_selected_window_checks": 800,
+        "sampling_seed": 20260906
+      }
+    },
+    "SRR8297997": {
+      "additional_gene_resolved_records": {
+        "best_k1": 321,
+        "exact": 248,
+        "radius_k1": 4572
+      },
+      "environment": {
+        "dotmatch": "0.5.0",
+        "index_source_sha256": "4e4c040b0e3e23e476d580e7051a8ab10aaec11d3b973344f387ed3cf2ec5134",
+        "peak_rss_kib": 408712,
+        "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "python": "3.11.16 (main, Aug 13 2026, 02:46:14) [GCC 13.3.0]",
+        "source_sha256": "c76df6897f2bb80ae66c5c147d4bacafa4eed56b9b7de1a2cf4763837e0f15b9",
+        "wall_seconds": 633.749485952
+      },
+      "gene_annotations": 19113,
+      "input": {
+        "experiment_title": "Illumina MiSeq sequencing: Plasmid DNA for Brunello with a modified tracr",
+        "fastq_bytes": "351041737",
+        "fastq_ftp": "ftp.sra.ebi.ac.uk/vol1/fastq/SRR829/007/SRR8297997/SRR8297997.fastq.gz",
+        "fastq_md5": "eddb739a786a8f4ad05845868e0d89de",
+        "full_archive_md5_verified": true,
+        "library_layout": "SINGLE",
+        "metadata_url": "https://www.ebi.ac.uk/ena/portal/api/filereport?accession=SRR8297997&result=read_run&format=json&fields=run_accession%2Cstudy_accession%2Csample_accession%2Csample_alias%2Cexperiment_title%2Clibrary_layout%2Cfastq_ftp%2Cfastq_md5%2Cfastq_bytes%2Cread_count",
+        "observed_records": 9821128,
+        "prefix_records": 100000,
+        "prefix_sha256": "27a0b08b89e7a4ef14e482c93aefe8150a2cbf8b2fdee94508c8c446710201c8",
+        "read_count": "9821128",
+        "run_accession": "SRR8297997",
+        "sample_accession": "SAMN10517964",
+        "sample_alias": "Brunello_mod_tracr_pDNA",
+        "sha256": "c55a555a73174f70e2d966f15bfb2b69ab99e456efd130dcd1a1b122970e017c",
+        "study_accession": "PRJNA508200",
+        "url": "https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR829/007/SRR8297997/SRR8297997.fastq.gz"
+      },
+      "library_sha256": "0d2906187829ea9f736de94a47369bd94d42cde5f348fea9d12a385625cc2ca1",
+      "offsets": [
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30
+      ],
+      "qc": {
+        "best_k1": {
+          "gene": {
+            "ambiguous": 7028,
+            "invalid": 0,
+            "none": 531425,
+            "unique": 9282675
+          },
+          "guide": {
+            "ambiguous": 7349,
+            "invalid": 0,
+            "none": 531425,
+            "unique": 9282354
+          },
+          "position": {
+            "ambiguous": 6862,
+            "invalid": 0,
+            "none": 531425,
+            "unique": 9282841
+          }
+        },
+        "exact": {
+          "gene": {
+            "ambiguous": 5965,
+            "invalid": 0,
+            "none": 1069023,
+            "unique": 8746140
+          },
+          "guide": {
+            "ambiguous": 6213,
+            "invalid": 0,
+            "none": 1069023,
+            "unique": 8745892
+          },
+          "position": {
+            "ambiguous": 6213,
+            "invalid": 0,
+            "none": 1069023,
+            "unique": 8745892
+          }
+        },
+        "radius_k1": {
+          "gene": {
+            "ambiguous": 138576,
+            "invalid": 0,
+            "none": 531425,
+            "unique": 9151127
+          },
+          "guide": {
+            "ambiguous": 143148,
+            "invalid": 0,
+            "none": 531425,
+            "unique": 9146555
+          },
+          "position": {
+            "ambiguous": 26759,
+            "invalid": 0,
+            "none": 531425,
+            "unique": 9262944
+          }
+        }
+      },
+      "records": 9821128,
+      "target_count": 77441,
+      "validation": {
+        "assignment_disagreements": 0,
+        "exhaustive_full_library_full_position_records": 200,
+        "full_fixed_window_native_count_cells": 232323,
+        "full_fixed_window_native_states_reconciled": true,
+        "native_selected_window_checks": 1974,
+        "sampling_seed": 20260906
+      }
+    }
+  },
+  "schema": "dotmatch.research.ar003.report.v1",
+  "validation": {
+    "candidate_classes_reaggregated": {
+      "ERR376998": 268929,
+      "ERR376999": 255363,
+      "SRR8297997": 233841
+    },
+    "complete_class_to_guide_and_gene_reconciliation": true,
+    "independent_SQL_Python_legacy_gene_aggregations": 2,
+    "old_and_new_artifact_integrity": [
+      {
+        "accession": "ERR376998",
+        "completion_sha256": "2d29ad1fada5127e108488d7d9df6e7524a66b956816f641f787928273fb7b9f",
+        "kind": "joint",
+        "verified_files": 7
+      },
+      {
+        "accession": "ERR376998",
+        "completion_sha256": "fdbad62dae31930948a064bc412b045c8def802d2a4f64a4073a189ce14d66ae",
+        "kind": "prior_replay",
+        "verified_files": 82
+      },
+      {
+        "accession": "ERR376999",
+        "completion_sha256": "933d5d5414a1718e4d432611e060c981c28c6d979214925e3c2ad5c43d250f80",
+        "kind": "joint",
+        "verified_files": 7
+      },
+      {
+        "accession": "ERR376999",
+        "completion_sha256": "9716d9bbb42896954267d1527b65b8299c9c564c5b99ffdcfa002c61ef9b2afe",
+        "kind": "prior_replay",
+        "verified_files": 28
+      },
+      {
+        "accession": "SRR8297997",
+        "completion_sha256": "40fba2d6a310aeaec0d31c8ff2b086c803a9b938109dd09498cd04e70df01994",
+        "kind": "joint",
+        "verified_files": 7
+      },
+      {
+        "accession": "SRR8297997",
+        "completion_sha256": "7d26967684445ee629ec36ee0511406308201eac18688047e3a772e762abb640",
+        "kind": "prior_replay",
+        "verified_files": 28
+      }
+    ],
+    "ratio_vs_log_difference_arithmetic_checks": 2068092,
+    "source_sha256": "0a5b23ea66f6156f59f825822ced4e88353bee4a383a7c9b0078acdc850485f4"
+  }
+}
