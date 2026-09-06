@@ -43,7 +43,10 @@ def targets_from_dataframe(df: Any, id_col=None, seq_col=None) -> list[tuple[str
     columns = list(df.columns)
     if not columns or len(set(columns)) != len(columns):
         raise ValueError("target dataframe columns must be nonempty and unique")
-    seq = _column(columns, seq_col, (*SEQ_COLUMNS, "dna", "target", "guide", "barcode"),
+    # A canonical sequence column takes precedence over legacy names such as
+    # "guide", which is also a common target-ID column name.
+    aliases = SEQ_COLUMNS if any(str(col).lower() in SEQ_COLUMNS for col in columns) else ("dna", "target", "guide", "barcode")
+    seq = _column(columns, seq_col, aliases,
                   fallback=columns[1] if len(columns) > 1 else columns[0], name="sequence column")
     id_candidates = [col for col in columns if col != seq]
     target_id = _column(columns if id_col is not None else id_candidates, id_col, ID_COLUMNS,
@@ -169,6 +172,29 @@ def _axis(values, name):
     return result
 
 
+def _read_assignment_table(path):
+    """Reject ragged/duplicate-column TSV before pandas can infer a new index."""
+    import csv
+    import gzip
+    import pandas as pd
+
+    source = Path(path)
+    opener = gzip.open if source.name.lower().endswith(".gz") else open
+    with opener(source, "rt", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.reader(handle, delimiter="\t", strict=True)
+        header = next(reader, None)
+        if not header or any(not name or name != name.strip() or any(ord(c) < 32 or ord(c) == 127 for c in name) for name in header):
+            raise ValueError("assignment columns must be nonempty without surrounding whitespace or controls")
+        if len(set(header)) != len(header):
+            raise ValueError("assignment columns must be unique")
+        rows = []
+        for row in reader:
+            if len(row) != len(header):
+                raise ValueError(f"assignment row {reader.line_num} has {len(row)} fields; expected {len(header)}")
+            rows.append(row)
+    return pd.DataFrame(rows, columns=header, dtype=object)
+
+
 def assignments_to_anndata(assignments, *, cell_col="cell_barcode", feature_col="target_name",
                            status_col=None, count_unique_only=True, include_ambiguous_per_cell=False,
                            cell_names: Sequence[str] | None = None, feature_names: Sequence[str] | None = None):
@@ -190,7 +216,7 @@ def assignments_to_anndata(assignments, *, cell_col="cell_barcode", feature_col=
         raise ValueError("only unique assignments may contribute counts; count_unique_only must be True")
     if isinstance(assignments, (str, Path)):
         # Preserve NA-like and numeric-looking identifiers exactly.
-        frame = pd.read_csv(assignments, sep="\t", dtype=str, keep_default_na=False)
+        frame = _read_assignment_table(assignments)
     elif hasattr(assignments, "columns"):
         frame = assignments
     else:
