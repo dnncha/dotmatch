@@ -1,117 +1,153 @@
-name: Verify isolated EditWitness research alpha
+name: Publish isolated EditWitness research alpha
 on:
   push:
-    branches: ['editwitness/research-alpha-20260906']
-  workflow_dispatch:
+    branches: [editwitness/research-alpha-20260906]
 permissions:
   contents: read
 concurrency:
-  group: editwitness-staging-${{ github.ref }}
+  group: editwitness-isolated-publication
   cancel-in-progress: false
 jobs:
   hydrate:
     if: github.repository == 'dnncha/dotmatch' && github.ref == 'refs/heads/editwitness/research-alpha-20260906'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     outputs:
-      commit: ${{ steps.commit.outputs.sha }}
+      sha: ${{ steps.materialize.outputs.sha }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Verify and unpack the independently tested source
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 0
+      - name: Verify source transport and commit only the isolated package
+        id: materialize
         shell: bash
         run: |
           python - <<'PY'
-          import hashlib, json, lzma
-          from pathlib import Path, PurePosixPath
-          root = Path.cwd().resolve()
-          if (root / 'pyproject.toml').exists():
-              print('Source is already materialized; preserve subsequent changes.')
-              raise SystemExit(0)
-          parts = [root / f'.bootstrap/source.{i:02}.xzpart' for i in range(1, 6)]
-          packed = b''.join(path.read_bytes() for path in parts)
-          expected = '8ed72d20468f41f48dabcd1b6b93ee89e20076195e9800ba21ff6d76767a3486'
-          if hashlib.sha256(packed).hexdigest() != expected:
-              raise SystemExit('Source transport checksum mismatch.')
-          decoder = lzma.LZMADecompressor(memlimit=256 * 1024 * 1024)
-          raw = decoder.decompress(packed, max_length=4 * 1024 * 1024)
-          if not decoder.eof or decoder.unused_data:
-              raise SystemExit('Invalid or oversized source transport.')
-          payload = json.loads(raw.decode('utf-8'))
-          if payload['format'] != 'editwitness.source-transport.v1' or len(payload['files']) != 68:
-              raise SystemExit('Unexpected source transport format.')
-          for name, text in payload['files'].items():
-              path = PurePosixPath(name)
-              if path.is_absolute() or any(p in {'.', '..', '.git'} for p in path.parts) or '\\' in name:
-                  raise SystemExit(f'Unsafe source path: {name}')
-              target = root.joinpath(*path.parts)
-              if not target.resolve().is_relative_to(root) or not isinstance(text, str):
-                  raise SystemExit('Invalid source entry.')
-              if name.startswith('.github/workflows/') and (
-                  not target.exists() or target.read_text(encoding='utf-8') != text
-              ):
-                  raise SystemExit('Transport may not introduce or change workflows.')
+          import hashlib, json, lzma, os, pathlib, shutil, subprocess, tomllib
+          assert os.environ['GITHUB_REPOSITORY'] == 'dnncha/dotmatch'
+          ref = 'refs/heads/editwitness/research-alpha-20260906'
+          assert os.environ['GITHUB_REF'] == ref
+          base = 'ebd4f62d4639eb440a1e663bcda893107fb93d3c'
+          payload = b''.join(pathlib.Path(f'.bootstrap/part-{i:02}.xzpart').read_bytes() for i in range(1, 6))
+          assert len(payload) == 55308
+          assert hashlib.sha256(payload).hexdigest() == '1a0e490e28b09f9cf75562411bb85172122c4f6cb91725dcb5b8306d855c6f92'
+          decoder = lzma.LZMADecompressor(memlimit=128*1024*1024)
+          raw = decoder.decompress(payload, max_length=4*1024*1024)
+          assert decoder.eof and not decoder.unused_data
+          data = json.loads(raw)
+          assert data['format'] == 'editwitness.transport.v1' and data['base_commit'] == base
+          subprocess.run(['git', 'merge-base', '--is-ancestor', base, 'HEAD'], check=True)
+          def safe(name):
+              p = pathlib.PurePosixPath(name)
+              assert not p.is_absolute() and '..' not in p.parts and '.git' not in p.parts
+              assert '\\' not in name and str(p) == name
+              return pathlib.Path(name)
+          prepared = {}
+          for name, patch in data['files'].items():
+              target = safe(name)
+              if 'text' in patch:
+                  text = patch['text']
+              else:
+                  safe(patch['base'])
+                  old = subprocess.check_output(['git', 'show', base+':'+patch['base']])
+                  assert hashlib.sha256(old).hexdigest() == patch['base_sha256'], name
+                  lines = old.decode('utf-8').splitlines(keepends=True)
+                  pieces = []
+                  for part in patch['chunks']:
+                      if isinstance(part, str):
+                          pieces.append(part)
+                      else:
+                          assert len(part) == 2 and 0 <= part[0] <= part[1] <= len(lines)
+                          pieces.append(''.join(lines[part[0]:part[1]]))
+                  text = ''.join(pieces)
+              content = text.encode('utf-8')
+              assert hashlib.sha256(content).hexdigest() == patch['sha256'], name
+              prepared[target] = content
+          for target, content in prepared.items():
               target.parent.mkdir(parents=True, exist_ok=True)
-              target.write_text(text, encoding='utf-8', newline='\n')
-          print('Verified and materialized 68 source files.')
+              target.write_bytes(content)
+          for name in data['remove']:
+              safe(name).unlink()
+          shutil.rmtree('.bootstrap')
+          pathlib.Path('.github/workflows/bootstrap-editwitness.yml').unlink()
+          pathlib.Path('STAGING.md').unlink(missing_ok=True)
+          config = tomllib.loads(pathlib.Path('pyproject.toml').read_text())
+          assert config['project']['name'] == 'editwitness' and config['project']['version'] == '0.2.0a2'
+          subprocess.run(['python', 'scripts/release_manifest.py', '--check'], check=True)
+          subprocess.run(['git', 'config', 'user.name', 'github-actions[bot]'], check=True)
+          subprocess.run(['git', 'config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com'], check=True)
+          subprocess.run(['git', 'add', '-A'], check=True)
+          subprocess.run(['git', 'commit', '-m', 'Publishable EditWitness 0.2.0a2 source: exact observations, explicit haplotypes and release gates'], check=True)
+          sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          subprocess.run(['git', 'push', 'origin', 'HEAD:'+ref], check=True)
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as handle:
+              handle.write('sha='+sha+'\n')
           PY
-          python scripts/release_manifest.py --check
-      - name: Commit only to the isolated staging branch
-        id: commit
+  verify:
+    needs: hydrate
+    uses: ./.github/workflows/ci.yml
+    with:
+      checkout_ref: ${{ needs.hydrate.outputs.sha }}
+    permissions:
+      contents: read
+  publish:
+    needs: [hydrate, verify]
+    if: github.repository == 'dnncha/dotmatch' && github.ref == 'refs/heads/editwitness/research-alpha-20260906'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ needs.hydrate.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          name: editwitness-distributions
+          path: dist
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          name: editwitness-release-evidence
+          path: release-support
+      - name: Validate tested artifacts and publish a non-latest alpha
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TESTED_SHA: ${{ needs.hydrate.outputs.sha }}
         shell: bash
         run: |
-          test "$GITHUB_REPOSITORY" = 'dnncha/dotmatch'
-          test "$GITHUB_REF" = 'refs/heads/editwitness/research-alpha-20260906'
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
-          if ! git diff --cached --quiet; then
-            git commit -m 'Materialize independently tested EditWitness 0.1.0a1 source'
-            git push origin 'HEAD:refs/heads/editwitness/research-alpha-20260906'
-          fi
-          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-  test:
-    needs: hydrate
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python: ['3.11', '3.13']
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.hydrate.outputs.commit }}
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python }}
-      - run: python -m pip install -e ".[dev]"
-      - run: python -m pytest -q
-      - run: python scripts/check_style.py
-      - run: python scripts/generate_schemas.py --check
-      - run: python -m build
-      - run: python -m editwitness doctor
-  typing:
-    needs: hydrate
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.hydrate.outputs.commit }}
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-      - run: python -m pip install -e ".[dev]"
-      - run: python -m mypy src/editwitness
-  coverage:
-    needs: hydrate
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.hydrate.outputs.commit }}
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-      - run: python -m pip install -e ".[dev]"
-      - run: python scripts/check_coverage.py
+          python scripts/release_manifest.py --check
+          python - <<'PY'
+          import hashlib, json, os, pathlib, subprocess, sys
+          sys.path.insert(0, 'scripts')
+          from publish_github import verify_artifacts
+          verify_artifacts(pathlib.Path('dist'), expected_version='0.2.0a2')
+          root = pathlib.Path('release-support')
+          assert {p.name for p in root.iterdir()} == {'release-evidence.json','editwitness-demo.html','EVIDENCE_SHA256SUMS'}
+          seen = set()
+          for line in (root/'EVIDENCE_SHA256SUMS').read_text().splitlines():
+              digest, name = line.split('  ')
+              assert name in {'release-evidence.json','editwitness-demo.html'} and name not in seen
+              assert hashlib.sha256((root/name).read_bytes()).hexdigest() == digest
+              seen.add(name)
+          assert len(seen) == 2
+          proof = json.loads((root/'release-evidence.json').read_text())
+          sha = os.environ['TESTED_SHA']
+          assert proof['source_commit'] == sha and proof['package_version'] == '0.2.0a2'
+          assert proof['software_self_test']['passed'] is True
+          assert proof['empirical_biological_validation'] is False
+          assert proof['ci_run_url'] == 'https://github.com/dnncha/dotmatch/actions/runs/'+os.environ['GITHUB_RUN_ID']
+          assert proof['source_inventory_sha256'] == hashlib.sha256(pathlib.Path('release-files.json').read_bytes()).hexdigest()
+          remote = json.loads(subprocess.check_output(['gh','api','repos/dnncha/dotmatch/git/ref/heads/editwitness/research-alpha-20260906']))
+          assert remote['object']['sha'] == sha, 'source branch moved after verification'
+          tag = 'editwitness-v0.2.0a2'
+          existing = subprocess.run(['gh','api','repos/dnncha/dotmatch/git/ref/tags/'+tag], capture_output=True)
+          assert existing.returncode != 0, 'refusing to overwrite an existing tag'
+          assert '404' in existing.stderr.decode(), 'tag lookup failed unexpectedly'
+          PY
+          gh release create editwitness-v0.2.0a2 dist/* release-support/* \
+            --repo dnncha/dotmatch --target "$TESTED_SHA" --draft --prerelease --latest=false \
+            --title "EditWitness 0.2.0a2 — research alpha (independent package)" --notes-file RELEASE_NOTES.md
+          gh release edit editwitness-v0.2.0a2 --repo dnncha/dotmatch --draft=false --latest=false
