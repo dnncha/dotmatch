@@ -1,0 +1,45 @@
+name: Assignment research - split verified inputs
+on:
+  push:
+    branches: [research/assignment-robustness-v2]
+    paths: [.github/workflows/assignment-transfer.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  transfer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: assignment-yusa-inputs
+          run-id: 34028150631
+          github-token: ${{ github.token }}
+          repository: dnncha/dotmatch
+          path: inputs
+      - name: Validate archive bytes before splitting transport
+        run: |
+          set -euo pipefail
+          echo '7b552f8efd6fe90fc6bc34879c617040  inputs/ERR376998.fastq.gz' | md5sum -c -
+          echo 'be96811adce2f5d69efd18a02f8e2416  inputs/ERR376999.fastq.gz' | md5sum -c -
+      - uses: actions/upload-artifact@v4
+        with:
+          name: yusa-plasmid-full
+          path: inputs/ERR376998.fastq.gz
+          compression-level: 0
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: yusa-esc1-full
+          path: inputs/ERR376999.fastq.gz
+          compression-level: 0
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: yusa-reference-prefixes
+          path: |
+            inputs/*.prefix100k.fastq.gz
+            inputs/library.*
+          compression-level: 0
+          retention-days: 3
