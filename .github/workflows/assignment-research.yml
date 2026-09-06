@@ -1,0 +1,49 @@
+name: Assignment research - public Yusa
+on:
+  push:
+    branches: [research/assignment-robustness-v2]
+    paths:
+      - research/assignment_robustness/phase1/collect.py
+      - .github/workflows/assignment-research.yml
+permissions:
+  contents: read
+jobs:
+  verified-public-data:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 11d159fa1648365f2a4e96917b483c33aa5d9fe7
+          path: pinned-engine
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build the unchanged release engine
+        run: |
+          python -m pip install ./pinned-engine > research-install.log 2>&1
+          python -m pip freeze > research-environment.txt
+          git -C pinned-engine rev-parse HEAD > research-engine-commit.txt
+      - name: Verify archives and run the actual engine
+        run: python research/assignment_robustness/phase1/collect.py 2>&1 | tee research-run.log
+      - name: Preserve analysis and failure evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: assignment-yusa-evidence
+          path: |
+            research-output/
+            !research-output/raw/
+            research-*.log
+            research-*.txt
+          retention-days: 30
+      - name: Transfer real inputs for independent audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: assignment-yusa-inputs
+          path: research-output/raw/
+          compression-level: 0
+          retention-days: 3
+          if-no-files-found: warn
