@@ -82,3 +82,10 @@ correction radius, or CPU fallback. It never edits the original spec, changes
 target sequences, counts ambiguous reads, relaxes QC thresholds, changes the
 reliability profile, or performs downstream CRISPR statistics. Repeated states
 and unresolved reliability blocks stop rather than widening the assay.
+
+## Reference contract and scope
+
+This route provides known-guide counting only: no downstream screen statistics.
+Inspect the [checked contract fixture](https://dnncha.github.io/dotmatch/agent-reference-crispr.json)
+when integrating the tool envelope. Its intentionally failed verdict exercises
+unsafe and low-assignment states; it is not biological validation.

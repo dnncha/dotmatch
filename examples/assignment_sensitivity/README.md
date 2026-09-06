@@ -5,18 +5,18 @@ including two IDs for the same sequence. It exercises a close pair, an isolated
 target, substitutions, a literal N, an unmatched read and an invalid short window.
 There is no experimental biological claim attached to these data.
 
-From a reviewed source checkout (the sensitivity command is not in PyPI 0.4.1):
+From a checkout of the v0.5.0 release:
 
 ```bash
-python3 -m pip install .
+python3 -m pip install dotmatch==0.5.0
 dotmatch sensitivity \
   --targets examples/assignment_sensitivity/targets.tsv \
   --reads examples/assignment_sensitivity/reads.fastq \
   --target-start 0 --target-length 20 \
-  --write-read-changes --out-dir /tmp/dotmatch-sensitivity-example
+  --write-read-changes --out-dir sensitivity-example
 ```
 
-Open `/tmp/dotmatch-sensitivity-example/report.html`. Use a new output directory
+Open `sensitivity-example/report.html`. Use a new output directory
 for each run; existing directories are deliberately refused.
 
 | Policy | Unique | Ambiguous | Unmatched | Invalid |

@@ -33,11 +33,11 @@ basecaller, cell/UMI pipeline or gene-level hit-calling package.
 
 ## Install
 
-The current public release is 0.4.1 and includes the six `dotmatch agent` tools
+Release 0.5.0 includes the six `dotmatch agent` tools
 described below:
 
 ```bash
-python3 -m pip install dotmatch==0.4.1
+python3 -m pip install dotmatch==0.5.0
 dotmatch --version
 ```
 
@@ -47,13 +47,14 @@ Conda and container routes:
 conda create -n dotmatch -c conda-forge -c bioconda dotmatch
 conda activate dotmatch
 
-# Or use the pinned published container:
-docker run --rm ghcr.io/dnncha/dotmatch:v0.4.1 --version
+# Or use the pinned release container:
+docker run --rm ghcr.io/dnncha/dotmatch:v0.5.0 --version
 ```
 
 Bioconda and its generated BioContainers images can lag PyPI/GHCR. When a
 newly tagged version has not reached Bioconda yet, use PyPI or the source build.
-Check the installed version. Review the [packaging details](https://dotmatch.readthedocs.io/en/latest/packaging.html)
+Check the installed version. The Bioconda recipe includes `osx-arm64` for Apple Silicon.
+Review the [packaging details](https://dotmatch.readthedocs.io/en/latest/packaging.html)
 for platform and container verification. See the [installation guide](https://dotmatch.readthedocs.io/en/latest/getting-started.html)
 for platform details, source builds and the third-party Homebrew tap. The optional
 [desktop Workbench](https://github.com/dnncha/dotmatch-community) is maintained separately.
@@ -87,20 +88,20 @@ for inputs, direct CLI options and count-table outputs.
 
 ## Understand the effect of mismatch correction
 
-The new source-tree `dotmatch sensitivity` command compares exact, radius-one and
+The `dotmatch sensitivity` command, introduced in 0.5.0, compares exact, radius-one and
 best-distance Hamming assignment using the same windows in **one FASTQ pass**.
 It produces three count matrices, per-guide deltas, read-state transitions,
 checksums and a self-contained HTML report. It never selects a policy for you.
 
-**This command is not in PyPI 0.4.1.** From a reviewed source checkout:
+Run the included synthetic example from a checkout of the v0.5.0 release:
 
 ```bash
-python3 -m pip install .
+python3 -m pip install dotmatch==0.5.0
 dotmatch sensitivity \
   --targets examples/assignment_sensitivity/targets.tsv \
   --reads examples/assignment_sensitivity/reads.fastq \
   --target-start 0 --target-length 20 \
-  --write-read-changes --out-dir /tmp/dotmatch-sensitivity-example
+  --write-read-changes --out-dir sensitivity-example
 ```
 
 The [nine-read synthetic example](https://github.com/dnncha/dotmatch/tree/main/examples/assignment_sensitivity)
@@ -153,7 +154,7 @@ DotMatch provides a [Python streaming API](https://dotmatch.readthedocs.io/en/la
 The [ecosystem status ledger](https://dotmatch.readthedocs.io/en/latest/ecosystem-status.html)
 distinguishes local examples from accepted upstream integrations.
 
-The six structured agent tools are available in published 0.4.1:
+The six structured agent tools are included in release 0.5.0:
 
 ```bash
 dotmatch capabilities --json
@@ -173,6 +174,7 @@ Machine-readable discovery: [agent-capabilities.json](https://dnncha.github.io/d
 ## Citation and contributing
 
 DotMatch is [Apache-2.0 licensed](https://github.com/dnncha/dotmatch/blob/main/LICENSE).
-Use the [methods and citation guide](https://dotmatch.readthedocs.io/en/latest/methods-and-citation.html)
+Use `dotmatch citation` and [CITATION.cff](https://github.com/dnncha/dotmatch/blob/main/CITATION.cff)
+to record the actual software version. Use the [methods and citation guide](https://dotmatch.readthedocs.io/en/latest/methods-and-citation.html)
 to cite the actual release and configuration used. Improvements, discrepancy
 fixtures and reproducible bug reports are welcome: [contributing guide](https://github.com/dnncha/dotmatch/blob/main/CONTRIBUTING.md).

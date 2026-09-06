@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import hashlib
 import json
 import re
 import subprocess
@@ -95,6 +96,13 @@ LOCAL_ABSOLUTE_PATH_PATTERNS = [
     re.compile(re.escape(prefix.encode("utf-8")) + rb"[^,\s\"')<]*")
     for prefix in LOCAL_ABSOLUTE_PATH_PREFIXES
 ]
+
+# The exact reviewed, hand-written nine-read policy fixture is allowed.
+# Replacing these bytes requires a new provenance review, not a directory exemption.
+APPROVED_SYNTHETIC_RAW_SHA256 = {
+    "examples/assignment_sensitivity/reads.fastq":
+        "cd775aa791e509ec605a8d543713e43726f6fe0b76255df54f3d46dfd0fa4475",
+}
 
 RAW_DATA_SUFFIXES = (".fastq", ".fq", ".fastq.gz", ".fq.gz", ".bam", ".bcl")
 ALLOWED_RAW_DATA_PREFIXES = (
@@ -490,7 +498,12 @@ def check_no_private_raw_data(root: Path, result: AuditResult) -> None:
         relative = rel(path, root)
         if not _has_raw_data_suffix(relative):
             continue
-        if not relative.startswith(ALLOWED_RAW_DATA_PREFIXES):
+        expected = APPROVED_SYNTHETIC_RAW_SHA256.get(relative)
+        if expected is not None:
+            if hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+                offenders.append(relative)
+                continue
+        elif not relative.startswith(ALLOWED_RAW_DATA_PREFIXES):
             offenders.append(relative)
             continue
         try:

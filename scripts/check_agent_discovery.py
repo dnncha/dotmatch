@@ -288,13 +288,14 @@ def validate_surfaces(root: Path) -> list[str]:
     pyproject = _read(root, "pyproject.toml")
     if '"Agent guide" = "https://dotmatch.readthedocs.io/en/latest/agent-guide.html"' not in pyproject:
         failures.append("pyproject.toml must publish the Agent guide project URL")
+    release = re.search(r'^version\s*=\s*"([^"]+)"', pyproject, re.M).group(1)
     readme = _read(root, "README.md")
     readme_surface = " ".join(readme.split())
     for phrase in ["Choose by task", "Agent guide", "dotmatch capabilities --json"]:
         if phrase not in readme:
             failures.append(f"README.md missing agent discovery phrase: {phrase}")
     for phrase in [
-        "The current public release is 0.4.1",
+        f"Release {release}",
         "six `dotmatch agent` tools",
         "includes the six",
     ]:
@@ -305,7 +306,7 @@ def validate_surfaces(root: Path) -> list[str]:
     if "agent-guide" not in docs_index:
         failures.append("docs/index.md must route to the agent guide")
     for phrase in [
-        "The current public PyPI release is 0.4.1",
+        f"Release {release}",
         "six `dotmatch agent` tools",
         "includes the six",
     ]:
@@ -314,9 +315,9 @@ def validate_surfaces(root: Path) -> list[str]:
     agent_guide = _read(root, "docs/agent-guide.md")
     agent_guide_surface = " ".join(agent_guide.split())
     for phrase in [
-        "This six-tool interface is included in the current public PyPI release, 0.4.1.",
+        f"This six-tool interface is included in release {release}.",
         "older package",
-        "until that channel reaches 0.4.1",
+        f"until that channel reaches {release}",
     ]:
         if phrase not in agent_guide_surface:
             failures.append(f"docs/agent-guide.md must state the public/agent-tools version boundary: {phrase}")

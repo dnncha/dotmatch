@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "tool_contract_version": "1.0",
-  "dotmatch_version": "0.4.1",
+  "dotmatch_version": "0.5.0",
   "tool": "review_assay",
   "status": "failed",
   "exit_code": 2,
@@ -53,7 +53,12 @@
   ],
   "result": {
     "fixture": "committed synthetic CRISPR workflow fixture",
-    "outcomes_preserved": ["unique", "ambiguous", "none", "invalid"],
+    "outcomes_preserved": [
+      "unique",
+      "ambiguous",
+      "none",
+      "invalid"
+    ],
     "claim_boundary": "This record checks assignment and evidence behavior; it is not biological screen evidence."
   }
 }

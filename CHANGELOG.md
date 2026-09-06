@@ -4,6 +4,8 @@ All notable user-facing changes are tracked here. Public statements in release n
 
 ## Unreleased
 
+## 0.5.0 - 2026-09-06
+
 ### Added
 
 - Added `dotmatch sensitivity`: one-pass native-index comparison of exact,
@@ -14,6 +16,13 @@ All notable user-facing changes are tracked here. Public statements in release n
 
 ### Fixed
 
+- Defer optional scientific imports so basic matching and CLI use do not load
+  dataframe stacks unnecessarily; keep explicit dataframe integrations working.
+- Do not expose an ambiguous nearest candidate as an assigned dataframe label.
+- Normalize dataframe target case, diagnose missing FASTQ identifiers, and
+  retain original decompressed bytes when a caller requests a content digest.
+- Correct draft-project review instructions and preserve actionable input errors.
+
 - Python target-table loaders now handle `.csv.gz`, UTF-8 BOMs and reordered
   named columns consistently. Empty/duplicate target IDs are rejected rather
   than silently merged; duplicate sequences with distinct IDs are retained.
@@ -21,7 +30,6 @@ All notable user-facing changes are tracked here. Public statements in release n
   ignores malformed values. Matrix identity is distinguished from equal guide
   totals across samples, with explicit named-axis comparability.
 
-The new sensitivity command requires a source install until a release is tagged.
 Historical benchmark artifacts are unchanged; new comparison fields are additive.
 
 ## 0.4.1 - 2026-09-04

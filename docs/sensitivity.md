@@ -1,9 +1,8 @@
 # Assignment-policy sensitivity
 
-The source-tree `dotmatch sensitivity` command compares exact, Hamming radius-one,
+The `dotmatch sensitivity` command, introduced in 0.5.0, compares exact, Hamming radius-one,
 and best-distance Hamming assignments on the same fixed windows of one FASTQ.
-It is new source functionality for the next release, not part of published 0.4.1.
-Install from a reviewed source checkout with `python3 -m pip install .`.
+Install the matching release with `python3 -m pip install dotmatch==0.5.0`.
 
 ```bash
 dotmatch sensitivity \
@@ -77,12 +76,12 @@ Normal input errors clean up the run's temporary files. Default batch size is
 ## Reproduce the example
 
 ```bash
-python3 -m pip install .
+python3 -m pip install dotmatch==0.5.0
 dotmatch sensitivity \
   --targets examples/assignment_sensitivity/targets.tsv \
   --reads examples/assignment_sensitivity/reads.fastq \
   --target-start 0 --target-length 20 \
-  --write-read-changes --out-dir /tmp/dotmatch-sensitivity-example
+  --write-read-changes --out-dir sensitivity-example
 ```
 
 The nine-read synthetic example has exact outcomes 3 unique, 1 ambiguous,
