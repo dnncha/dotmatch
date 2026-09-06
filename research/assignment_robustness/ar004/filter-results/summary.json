@@ -1,0 +1,226 @@
+{
+  "additional_guides": 66,
+  "additional_original_gene_labels": 61,
+  "commands": {
+    "event_best": {
+      "command": [
+        "mageck",
+        "test",
+        "-k",
+        "filter-results/event_best.tsv",
+        "-t",
+        "A,B,C",
+        "-c",
+        "pDNA",
+        "--norm-method",
+        "median",
+        "--remove-zero",
+        "none",
+        "--gene-lfc-method",
+        "median",
+        "--keep-tmp",
+        "--normcounts-to-file",
+        "-n",
+        "filter-results/mageck/event_best"
+      ],
+      "gene_summary_sha256": "3ffdde361462e760d90af50cd56d15caf01da8b1149e8d44872942a3b30d7f7e",
+      "genes": 19112,
+      "matrix_sha256": "800212ff8c949320bda0e293c68cc9fcd7b07305eb552c9bb4f646adaa002fb1",
+      "wall_seconds": 14.776613573000077
+    },
+    "joint_best": {
+      "command": [
+        "mageck",
+        "test",
+        "-k",
+        "filter-results/joint_best.tsv",
+        "-t",
+        "A,B,C",
+        "-c",
+        "pDNA",
+        "--norm-method",
+        "median",
+        "--remove-zero",
+        "none",
+        "--gene-lfc-method",
+        "median",
+        "--keep-tmp",
+        "--normcounts-to-file",
+        "-n",
+        "filter-results/mageck/joint_best"
+      ],
+      "gene_summary_sha256": "cf26f29528cf8ce1172749590ced87343485a320d496babbea8cf76e7af3f23c",
+      "genes": 19112,
+      "matrix_sha256": "f719fa77b7213bff744092c8e27f3b0dac3de171a84e3f10b16f5a278cab67df",
+      "wall_seconds": 14.816124849000062
+    }
+  },
+  "comparison": {
+    "common_genes": 19112,
+    "genes_abs_lfc_difference_ge_0_5": 27,
+    "left": "event_best",
+    "max_abs_lfc_difference": 2.3499000000000003,
+    "median_abs_lfc_difference": 9.999999999998899e-05,
+    "missing_left": [],
+    "missing_right": [],
+    "right": "joint_best",
+    "scope": "supplementary_event_exact_baseline",
+    "spearman_negative_rank": 0.9991589085615716,
+    "thresholds": [
+      {
+        "both": 482,
+        "fdr": 0.01,
+        "jaccard": 0.9897330595482546,
+        "left_calls": 487,
+        "neither": 18625,
+        "only_left": 5,
+        "only_right": 0,
+        "right_calls": 482
+      },
+      {
+        "both": 1120,
+        "fdr": 0.05,
+        "jaccard": 0.9902740937223696,
+        "left_calls": 1127,
+        "neither": 17981,
+        "only_left": 7,
+        "only_right": 4,
+        "right_calls": 1124
+      },
+      {
+        "both": 1422,
+        "fdr": 0.1,
+        "jaccard": 0.9916317991631799,
+        "left_calls": 1431,
+        "neither": 17678,
+        "only_left": 9,
+        "only_right": 3,
+        "right_calls": 1425
+      }
+    ]
+  },
+  "completion": "complete",
+  "declaration_commit": "a60ad8f06dde2235d555a26d23d45c5dc4d25e69",
+  "independent_gene_LFC_checks": {
+    "primary": [
+      {
+        "analysis": "full_event_best",
+        "disagreements": 0,
+        "gene_medians_checked": 19112,
+        "guide_rows": 74293,
+        "max_absolute_rounding_difference": 7.00000000000145e-05,
+        "tolerance": "1.1e-4 * max(1, |median|, maximum |guide LFC|); original outputs use five significant digits"
+      },
+      {
+        "analysis": "full_event_exact",
+        "disagreements": 0,
+        "gene_medians_checked": 19112,
+        "guide_rows": 74293,
+        "max_absolute_rounding_difference": 7.500000000004725e-05,
+        "tolerance": "1.1e-4 * max(1, |median|, maximum |guide LFC|); original outputs use five significant digits"
+      },
+      {
+        "analysis": "full_joint_best",
+        "disagreements": 0,
+        "gene_medians_checked": 19112,
+        "guide_rows": 74293,
+        "max_absolute_rounding_difference": 7.00000000000145e-05,
+        "tolerance": "1.1e-4 * max(1, |median|, maximum |guide LFC|); original outputs use five significant digits"
+      },
+      {
+        "analysis": "full_joint_exact",
+        "disagreements": 0,
+        "gene_medians_checked": 19112,
+        "guide_rows": 74293,
+        "max_absolute_rounding_difference": 7.49999999998252e-05,
+        "tolerance": "1.1e-4 * max(1, |median|, maximum |guide LFC|); original outputs use five significant digits"
+      },
+      {
+        "analysis": "full_joint_radius",
+        "disagreements": 0,
+        "gene_medians_checked": 19112,
+        "guide_rows": 74293,
+        "max_absolute_rounding_difference": 7.00000000000145e-05,
+        "tolerance": "1.1e-4 * max(1, |median|, maximum |guide LFC|); original outputs use five significant digits"
+      },
+      {
+        "analysis": "repeat_event_best",
+        "disagreements": 0,
+        "gene_medians_checked": 19112,
+        "guide_rows": 74293,
+        "max_absolute_rounding_difference": 7.00000000000145e-05,
+        "tolerance": "1.1e-4 * max(1, |median|, maximum |guide LFC|); original outputs use five significant digits"
+      },
+      {
+        "analysis": "repeat_joint_best",
+        "disagreements": 0,
+        "gene_medians_checked": 19112,
+        "guide_rows": 74293,
+        "max_absolute_rounding_difference": 7.00000000000145e-05,
+        "tolerance": "1.1e-4 * max(1, |median|, maximum |guide LFC|); original outputs use five significant digits"
+      },
+      {
+        "analysis": "thin_event_best",
+        "disagreements": 0,
+        "gene_medians_checked": 19112,
+        "guide_rows": 74293,
+        "max_absolute_rounding_difference": 7.00000000000145e-05,
+        "tolerance": "1.1e-4 * max(1, |median|, maximum |guide LFC|); original outputs use five significant digits"
+      },
+      {
+        "analysis": "thin_event_exact",
+        "disagreements": 0,
+        "gene_medians_checked": 19112,
+        "guide_rows": 74293,
+        "max_absolute_rounding_difference": 7.500000000004725e-05,
+        "tolerance": "1.1e-4 * max(1, |median|, maximum |guide LFC|); original outputs use five significant digits"
+      },
+      {
+        "analysis": "thin_joint_best",
+        "disagreements": 0,
+        "gene_medians_checked": 19112,
+        "guide_rows": 74293,
+        "max_absolute_rounding_difference": 7.00000000000145e-05,
+        "tolerance": "1.1e-4 * max(1, |median|, maximum |guide LFC|); original outputs use five significant digits"
+      },
+      {
+        "analysis": "thin_joint_exact",
+        "disagreements": 0,
+        "gene_medians_checked": 19112,
+        "guide_rows": 74293,
+        "max_absolute_rounding_difference": 7.500000000004725e-05,
+        "tolerance": "1.1e-4 * max(1, |median|, maximum |guide LFC|); original outputs use five significant digits"
+      },
+      {
+        "analysis": "thin_joint_radius",
+        "disagreements": 0,
+        "gene_medians_checked": 19112,
+        "guide_rows": 74293,
+        "max_absolute_rounding_difference": 7.00000000000145e-05,
+        "tolerance": "1.1e-4 * max(1, |median|, maximum |guide LFC|); original outputs use five significant digits"
+      }
+    ],
+    "supplementary": [
+      {
+        "analysis": "event_best",
+        "disagreements": 0,
+        "gene_medians_checked": 19112,
+        "guide_rows": 74359,
+        "max_absolute_rounding_difference": 7.00000000000145e-05,
+        "tolerance": "1.1e-4 * max(1, |median|, maximum |guide LFC|); original outputs use five significant digits"
+      },
+      {
+        "analysis": "joint_best",
+        "disagreements": 0,
+        "gene_medians_checked": 19112,
+        "guide_rows": 74359,
+        "max_absolute_rounding_difference": 7.00000000000145e-05,
+        "tolerance": "1.1e-4 * max(1, |median|, maximum |guide LFC|); original outputs use five significant digits"
+      }
+    ]
+  },
+  "original_guides": 74293,
+  "source_commit": "dab06c4197ab1aeda1e0a4f197df199b62d69c92",
+  "source_sha256": "84a8d433c1b4601e4c7323b89b257429b090493174b47a27233393ff02a42850",
+  "supplementary_guides": 74359
+}

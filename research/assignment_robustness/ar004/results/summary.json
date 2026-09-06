@@ -1,0 +1,1101 @@
+{
+  "RRA_executable_sha256": "f829f71a29f392a81589ccfbc8e8729ec49c92589a1289352f7a629e04329ca1",
+  "biological_cellular_replicates": 3,
+  "commands": {
+    "full_event_best": {
+      "command": [
+        "mageck",
+        "test",
+        "-k",
+        "statistics-results/count-matrices/full_event_best.tsv",
+        "-t",
+        "A,B,C",
+        "-c",
+        "pDNA",
+        "--norm-method",
+        "median",
+        "--remove-zero",
+        "none",
+        "--gene-lfc-method",
+        "median",
+        "--keep-tmp",
+        "--normcounts-to-file",
+        "-n",
+        "statistics-results/mageck/full_event_best"
+      ],
+      "gene_summary_sha256": "5db3d221797b1e0223573a3fdcb1f132a54f540a97158f7d7c07cfb339f0cce2",
+      "genes": 19112,
+      "matrix_sha256": "a557f163e3d7ab7c9d45f86b68191634d2d8c8056b8d30562a5cf40b3caa1381",
+      "wall_seconds": 15.327594181999984
+    },
+    "full_event_exact": {
+      "command": [
+        "mageck",
+        "test",
+        "-k",
+        "statistics-results/count-matrices/full_event_exact.tsv",
+        "-t",
+        "A,B,C",
+        "-c",
+        "pDNA",
+        "--norm-method",
+        "median",
+        "--remove-zero",
+        "none",
+        "--gene-lfc-method",
+        "median",
+        "--keep-tmp",
+        "--normcounts-to-file",
+        "-n",
+        "statistics-results/mageck/full_event_exact"
+      ],
+      "gene_summary_sha256": "f93e92352fa505969458e9d63e359b263c346b86db698aaf643cf9cb4c329ab6",
+      "genes": 19112,
+      "matrix_sha256": "e609fdfc5cadd6cd22a41baaf8a9b5988c3cf4c5226cefaaa54d1c4249c1b54c",
+      "wall_seconds": 15.32189749400004
+    },
+    "full_joint_best": {
+      "command": [
+        "mageck",
+        "test",
+        "-k",
+        "statistics-results/count-matrices/full_joint_best.tsv",
+        "-t",
+        "A,B,C",
+        "-c",
+        "pDNA",
+        "--norm-method",
+        "median",
+        "--remove-zero",
+        "none",
+        "--gene-lfc-method",
+        "median",
+        "--keep-tmp",
+        "--normcounts-to-file",
+        "-n",
+        "statistics-results/mageck/full_joint_best"
+      ],
+      "gene_summary_sha256": "c9babca9dab3424d199dcabd511eade6ac86fa546b71aac3a51d00e39fdd111d",
+      "genes": 19112,
+      "matrix_sha256": "45c74d1a81de89f0d5a8b2ed80d8303a479f8995259806abf08fa99762361dbe",
+      "wall_seconds": 15.258141098999886
+    },
+    "full_joint_exact": {
+      "command": [
+        "mageck",
+        "test",
+        "-k",
+        "statistics-results/count-matrices/full_joint_exact.tsv",
+        "-t",
+        "A,B,C",
+        "-c",
+        "pDNA",
+        "--norm-method",
+        "median",
+        "--remove-zero",
+        "none",
+        "--gene-lfc-method",
+        "median",
+        "--keep-tmp",
+        "--normcounts-to-file",
+        "-n",
+        "statistics-results/mageck/full_joint_exact"
+      ],
+      "gene_summary_sha256": "d761d1ddb6186ea38570979566a027a0497cd05663e90818ebef7003cdddd8dc",
+      "genes": 19112,
+      "matrix_sha256": "1200556a40a41f5c378e5cd0bd88fb5207ea116872e4cf40546f10985305f249",
+      "wall_seconds": 15.2585691889999
+    },
+    "full_joint_radius": {
+      "command": [
+        "mageck",
+        "test",
+        "-k",
+        "statistics-results/count-matrices/full_joint_radius.tsv",
+        "-t",
+        "A,B,C",
+        "-c",
+        "pDNA",
+        "--norm-method",
+        "median",
+        "--remove-zero",
+        "none",
+        "--gene-lfc-method",
+        "median",
+        "--keep-tmp",
+        "--normcounts-to-file",
+        "-n",
+        "statistics-results/mageck/full_joint_radius"
+      ],
+      "gene_summary_sha256": "fde445ca992fbcaec3e5b4b05eb77a381a64ff716a63aab36da7e7ec521e5426",
+      "genes": 19112,
+      "matrix_sha256": "3a666783352bd627eba47cb90c7478cfc20e1fb0cb32989512b564d24c284887",
+      "wall_seconds": 15.294953243999998
+    },
+    "repeat_event_best": {
+      "command": [
+        "mageck",
+        "test",
+        "-k",
+        "statistics-results/count-matrices/full_event_best.tsv",
+        "-t",
+        "A,B,C",
+        "-c",
+        "pDNA",
+        "--norm-method",
+        "median",
+        "--remove-zero",
+        "none",
+        "--gene-lfc-method",
+        "median",
+        "--keep-tmp",
+        "--normcounts-to-file",
+        "-n",
+        "statistics-results/mageck/repeat_event_best"
+      ],
+      "gene_summary_sha256": "5db3d221797b1e0223573a3fdcb1f132a54f540a97158f7d7c07cfb339f0cce2",
+      "genes": 19112,
+      "matrix_sha256": "a557f163e3d7ab7c9d45f86b68191634d2d8c8056b8d30562a5cf40b3caa1381",
+      "wall_seconds": 15.316131781999957
+    },
+    "repeat_joint_best": {
+      "command": [
+        "mageck",
+        "test",
+        "-k",
+        "statistics-results/count-matrices/full_joint_best.tsv",
+        "-t",
+        "A,B,C",
+        "-c",
+        "pDNA",
+        "--norm-method",
+        "median",
+        "--remove-zero",
+        "none",
+        "--gene-lfc-method",
+        "median",
+        "--keep-tmp",
+        "--normcounts-to-file",
+        "-n",
+        "statistics-results/mageck/repeat_joint_best"
+      ],
+      "gene_summary_sha256": "c9babca9dab3424d199dcabd511eade6ac86fa546b71aac3a51d00e39fdd111d",
+      "genes": 19112,
+      "matrix_sha256": "45c74d1a81de89f0d5a8b2ed80d8303a479f8995259806abf08fa99762361dbe",
+      "wall_seconds": 15.300327769999967
+    },
+    "thin_event_best": {
+      "command": [
+        "mageck",
+        "test",
+        "-k",
+        "statistics-results/count-matrices/thin_event_best.tsv",
+        "-t",
+        "A,B,C",
+        "-c",
+        "pDNA",
+        "--norm-method",
+        "median",
+        "--remove-zero",
+        "none",
+        "--gene-lfc-method",
+        "median",
+        "--keep-tmp",
+        "--normcounts-to-file",
+        "-n",
+        "statistics-results/mageck/thin_event_best"
+      ],
+      "gene_summary_sha256": "e24158659be39fb3b2ef1335e3c59d390bf193ece9daabdc11001b0580557e91",
+      "genes": 19112,
+      "matrix_sha256": "151a0476f5d697ef16c7de2f9729aad46f8ac53f56dca855cbd4ba3f3bf9452f",
+      "wall_seconds": 15.311289520999935
+    },
+    "thin_event_exact": {
+      "command": [
+        "mageck",
+        "test",
+        "-k",
+        "statistics-results/count-matrices/thin_event_exact.tsv",
+        "-t",
+        "A,B,C",
+        "-c",
+        "pDNA",
+        "--norm-method",
+        "median",
+        "--remove-zero",
+        "none",
+        "--gene-lfc-method",
+        "median",
+        "--keep-tmp",
+        "--normcounts-to-file",
+        "-n",
+        "statistics-results/mageck/thin_event_exact"
+      ],
+      "gene_summary_sha256": "bbe9d33cef13f96629e0df4094ff7a79705c1cebe54a7c6b3a4e0e429f034dd3",
+      "genes": 19112,
+      "matrix_sha256": "82628c24eadb2d2aea23df00160cffb0be35bfb3c00f5d4e9f7317e536c12e43",
+      "wall_seconds": 15.301844497000047
+    },
+    "thin_joint_best": {
+      "command": [
+        "mageck",
+        "test",
+        "-k",
+        "statistics-results/count-matrices/thin_joint_best.tsv",
+        "-t",
+        "A,B,C",
+        "-c",
+        "pDNA",
+        "--norm-method",
+        "median",
+        "--remove-zero",
+        "none",
+        "--gene-lfc-method",
+        "median",
+        "--keep-tmp",
+        "--normcounts-to-file",
+        "-n",
+        "statistics-results/mageck/thin_joint_best"
+      ],
+      "gene_summary_sha256": "110b96b4289bfbcdcda9c0f79548b9a705ef7418c5b0db756acc050df1b82301",
+      "genes": 19112,
+      "matrix_sha256": "2c48843e36d9417cb13642e1fd0e81d99b00383ff754029ffe7f205b59add245",
+      "wall_seconds": 15.299227762999863
+    },
+    "thin_joint_exact": {
+      "command": [
+        "mageck",
+        "test",
+        "-k",
+        "statistics-results/count-matrices/thin_joint_exact.tsv",
+        "-t",
+        "A,B,C",
+        "-c",
+        "pDNA",
+        "--norm-method",
+        "median",
+        "--remove-zero",
+        "none",
+        "--gene-lfc-method",
+        "median",
+        "--keep-tmp",
+        "--normcounts-to-file",
+        "-n",
+        "statistics-results/mageck/thin_joint_exact"
+      ],
+      "gene_summary_sha256": "d33f6a712fa39d11b4c0bfb7b53f2d67da0b1fa4acb06086c605ad22927ef0bf",
+      "genes": 19112,
+      "matrix_sha256": "0376401990ec3002aa774ef784cd3ab279e1026a197a4c29210a36be74795739",
+      "wall_seconds": 15.311198726000157
+    },
+    "thin_joint_radius": {
+      "command": [
+        "mageck",
+        "test",
+        "-k",
+        "statistics-results/count-matrices/thin_joint_radius.tsv",
+        "-t",
+        "A,B,C",
+        "-c",
+        "pDNA",
+        "--norm-method",
+        "median",
+        "--remove-zero",
+        "none",
+        "--gene-lfc-method",
+        "median",
+        "--keep-tmp",
+        "--normcounts-to-file",
+        "-n",
+        "statistics-results/mageck/thin_joint_radius"
+      ],
+      "gene_summary_sha256": "96d400293aad6f51b73b937820f2a9e257a78b3a4c0c059b568eb076d778337a",
+      "genes": 19112,
+      "matrix_sha256": "a158d473109552b8becd266b9ab83cce2dd15ea88a8f9840aacd00ac1f226f11",
+      "wall_seconds": 15.305400684999995
+    }
+  },
+  "comparisons": [
+    {
+      "common_genes": 19112,
+      "genes_abs_lfc_difference_ge_0_5": 20,
+      "left": "event_best",
+      "max_abs_lfc_difference": 2.3496999999999995,
+      "median_abs_lfc_difference": 0.00010099999999999693,
+      "missing_left": [],
+      "missing_right": [],
+      "right": "joint_best",
+      "scope": "full",
+      "spearman_negative_rank": 0.9993826760491332,
+      "thresholds": [
+        {
+          "both": 483,
+          "fdr": 0.01,
+          "jaccard": 0.9938271604938271,
+          "left_calls": 486,
+          "neither": 18626,
+          "only_left": 3,
+          "only_right": 0,
+          "right_calls": 483
+        },
+        {
+          "both": 1118,
+          "fdr": 0.05,
+          "jaccard": 0.9937777777777778,
+          "left_calls": 1124,
+          "neither": 17987,
+          "only_left": 6,
+          "only_right": 1,
+          "right_calls": 1119
+        },
+        {
+          "both": 1422,
+          "fdr": 0.1,
+          "jaccard": 0.9951014695591323,
+          "left_calls": 1426,
+          "neither": 17683,
+          "only_left": 4,
+          "only_right": 3,
+          "right_calls": 1425
+        }
+      ]
+    },
+    {
+      "common_genes": 19112,
+      "genes_abs_lfc_difference_ge_0_5": 3,
+      "left": "event_exact",
+      "max_abs_lfc_difference": 0.9691999999999998,
+      "median_abs_lfc_difference": 9.999999999982245e-06,
+      "missing_left": [],
+      "missing_right": [],
+      "right": "joint_exact",
+      "scope": "full",
+      "spearman_negative_rank": 0.9999028841260044,
+      "thresholds": [
+        {
+          "both": 502,
+          "fdr": 0.01,
+          "jaccard": 0.9980119284294234,
+          "left_calls": 503,
+          "neither": 18609,
+          "only_left": 1,
+          "only_right": 0,
+          "right_calls": 502
+        },
+        {
+          "both": 1143,
+          "fdr": 0.05,
+          "jaccard": 1.0,
+          "left_calls": 1143,
+          "neither": 17969,
+          "only_left": 0,
+          "only_right": 0,
+          "right_calls": 1143
+        },
+        {
+          "both": 1460,
+          "fdr": 0.1,
+          "jaccard": 0.9986320109439124,
+          "left_calls": 1462,
+          "neither": 17650,
+          "only_left": 2,
+          "only_right": 0,
+          "right_calls": 1460
+        }
+      ]
+    },
+    {
+      "common_genes": 19112,
+      "genes_abs_lfc_difference_ge_0_5": 355,
+      "left": "joint_exact",
+      "max_abs_lfc_difference": 4.693200000000001,
+      "median_abs_lfc_difference": 0.03175999999999998,
+      "missing_left": [],
+      "missing_right": [],
+      "right": "joint_best",
+      "scope": "full",
+      "spearman_negative_rank": 0.989226740938231,
+      "thresholds": [
+        {
+          "both": 448,
+          "fdr": 0.01,
+          "jaccard": 0.8342644320297952,
+          "left_calls": 502,
+          "neither": 18575,
+          "only_left": 54,
+          "only_right": 35,
+          "right_calls": 483
+        },
+        {
+          "both": 1078,
+          "fdr": 0.05,
+          "jaccard": 0.910472972972973,
+          "left_calls": 1143,
+          "neither": 17928,
+          "only_left": 65,
+          "only_right": 41,
+          "right_calls": 1119
+        },
+        {
+          "both": 1389,
+          "fdr": 0.1,
+          "jaccard": 0.928475935828877,
+          "left_calls": 1460,
+          "neither": 17616,
+          "only_left": 71,
+          "only_right": 36,
+          "right_calls": 1425
+        }
+      ]
+    },
+    {
+      "common_genes": 19112,
+      "genes_abs_lfc_difference_ge_0_5": 99,
+      "left": "joint_best",
+      "max_abs_lfc_difference": 3.4666000000000006,
+      "median_abs_lfc_difference": 0.003339999999999982,
+      "missing_left": [],
+      "missing_right": [],
+      "right": "joint_radius",
+      "scope": "full",
+      "spearman_negative_rank": 0.9959140344306983,
+      "thresholds": [
+        {
+          "both": 476,
+          "fdr": 0.01,
+          "jaccard": 0.9171483622350675,
+          "left_calls": 483,
+          "neither": 18593,
+          "only_left": 7,
+          "only_right": 36,
+          "right_calls": 512
+        },
+        {
+          "both": 1103,
+          "fdr": 0.05,
+          "jaccard": 0.9641608391608392,
+          "left_calls": 1119,
+          "neither": 17968,
+          "only_left": 16,
+          "only_right": 25,
+          "right_calls": 1128
+        },
+        {
+          "both": 1402,
+          "fdr": 0.1,
+          "jaccard": 0.9783670621074668,
+          "left_calls": 1425,
+          "neither": 17679,
+          "only_left": 23,
+          "only_right": 8,
+          "right_calls": 1410
+        }
+      ]
+    },
+    {
+      "common_genes": 19112,
+      "genes_abs_lfc_difference_ge_0_5": 19,
+      "left": "event_best",
+      "max_abs_lfc_difference": 2.3232999999999997,
+      "median_abs_lfc_difference": 0.00024000000000001798,
+      "missing_left": [],
+      "missing_right": [],
+      "right": "joint_best",
+      "scope": "thin",
+      "spearman_negative_rank": 0.9993786206803124,
+      "thresholds": [
+        {
+          "both": 484,
+          "fdr": 0.01,
+          "jaccard": 0.9918032786885246,
+          "left_calls": 486,
+          "neither": 18624,
+          "only_left": 2,
+          "only_right": 2,
+          "right_calls": 486
+        },
+        {
+          "both": 1119,
+          "fdr": 0.05,
+          "jaccard": 0.9937833037300178,
+          "left_calls": 1123,
+          "neither": 17986,
+          "only_left": 4,
+          "only_right": 3,
+          "right_calls": 1122
+        },
+        {
+          "both": 1418,
+          "fdr": 0.1,
+          "jaccard": 0.9943899018232819,
+          "left_calls": 1423,
+          "neither": 17686,
+          "only_left": 5,
+          "only_right": 3,
+          "right_calls": 1421
+        }
+      ]
+    },
+    {
+      "common_genes": 19112,
+      "genes_abs_lfc_difference_ge_0_5": 2,
+      "left": "event_exact",
+      "max_abs_lfc_difference": 0.9653999999999998,
+      "median_abs_lfc_difference": 1.5000000000001124e-05,
+      "missing_left": [],
+      "missing_right": [],
+      "right": "joint_exact",
+      "scope": "thin",
+      "spearman_negative_rank": 0.9999005280528344,
+      "thresholds": [
+        {
+          "both": 507,
+          "fdr": 0.01,
+          "jaccard": 0.9980314960629921,
+          "left_calls": 508,
+          "neither": 18604,
+          "only_left": 1,
+          "only_right": 0,
+          "right_calls": 507
+        },
+        {
+          "both": 1147,
+          "fdr": 0.05,
+          "jaccard": 0.9982593559617058,
+          "left_calls": 1147,
+          "neither": 17963,
+          "only_left": 0,
+          "only_right": 2,
+          "right_calls": 1149
+        },
+        {
+          "both": 1458,
+          "fdr": 0.1,
+          "jaccard": 0.9993145990404386,
+          "left_calls": 1459,
+          "neither": 17653,
+          "only_left": 1,
+          "only_right": 0,
+          "right_calls": 1458
+        }
+      ]
+    },
+    {
+      "common_genes": 19112,
+      "genes_abs_lfc_difference_ge_0_5": 352,
+      "left": "joint_exact",
+      "max_abs_lfc_difference": 4.644900000000001,
+      "median_abs_lfc_difference": 0.03212000000000004,
+      "missing_left": [],
+      "missing_right": [],
+      "right": "joint_best",
+      "scope": "thin",
+      "spearman_negative_rank": 0.9890487561833119,
+      "thresholds": [
+        {
+          "both": 453,
+          "fdr": 0.01,
+          "jaccard": 0.8388888888888889,
+          "left_calls": 507,
+          "neither": 18572,
+          "only_left": 54,
+          "only_right": 33,
+          "right_calls": 486
+        },
+        {
+          "both": 1084,
+          "fdr": 0.05,
+          "jaccard": 0.9132266217354675,
+          "left_calls": 1149,
+          "neither": 17925,
+          "only_left": 65,
+          "only_right": 38,
+          "right_calls": 1122
+        },
+        {
+          "both": 1386,
+          "fdr": 0.1,
+          "jaccard": 0.9283322170127261,
+          "left_calls": 1458,
+          "neither": 17619,
+          "only_left": 72,
+          "only_right": 35,
+          "right_calls": 1421
+        }
+      ]
+    },
+    {
+      "common_genes": 19112,
+      "genes_abs_lfc_difference_ge_0_5": 99,
+      "left": "joint_best",
+      "max_abs_lfc_difference": 3.4736,
+      "median_abs_lfc_difference": 0.0029599999999999904,
+      "missing_left": [],
+      "missing_right": [],
+      "right": "joint_radius",
+      "scope": "thin",
+      "spearman_negative_rank": 0.9957764198507771,
+      "thresholds": [
+        {
+          "both": 479,
+          "fdr": 0.01,
+          "jaccard": 0.9337231968810916,
+          "left_calls": 486,
+          "neither": 18599,
+          "only_left": 7,
+          "only_right": 27,
+          "right_calls": 506
+        },
+        {
+          "both": 1105,
+          "fdr": 0.05,
+          "jaccard": 0.9667541557305337,
+          "left_calls": 1122,
+          "neither": 17969,
+          "only_left": 17,
+          "only_right": 21,
+          "right_calls": 1126
+        },
+        {
+          "both": 1399,
+          "fdr": 0.1,
+          "jaccard": 0.9762735519888346,
+          "left_calls": 1421,
+          "neither": 17679,
+          "only_left": 22,
+          "only_right": 12,
+          "right_calls": 1411
+        }
+      ]
+    },
+    {
+      "common_genes": 19112,
+      "genes_abs_lfc_difference_ge_0_5": 0,
+      "left": "event_best",
+      "max_abs_lfc_difference": 0.0,
+      "median_abs_lfc_difference": 0.0,
+      "missing_left": [],
+      "missing_right": [],
+      "right": "event_best",
+      "scope": "identical_input_repeat",
+      "spearman_negative_rank": 1.0,
+      "thresholds": [
+        {
+          "both": 486,
+          "fdr": 0.01,
+          "jaccard": 1.0,
+          "left_calls": 486,
+          "neither": 18626,
+          "only_left": 0,
+          "only_right": 0,
+          "right_calls": 486
+        },
+        {
+          "both": 1124,
+          "fdr": 0.05,
+          "jaccard": 1.0,
+          "left_calls": 1124,
+          "neither": 17988,
+          "only_left": 0,
+          "only_right": 0,
+          "right_calls": 1124
+        },
+        {
+          "both": 1426,
+          "fdr": 0.1,
+          "jaccard": 1.0,
+          "left_calls": 1426,
+          "neither": 17686,
+          "only_left": 0,
+          "only_right": 0,
+          "right_calls": 1426
+        }
+      ]
+    },
+    {
+      "common_genes": 19112,
+      "genes_abs_lfc_difference_ge_0_5": 0,
+      "left": "joint_best",
+      "max_abs_lfc_difference": 0.0,
+      "median_abs_lfc_difference": 0.0,
+      "missing_left": [],
+      "missing_right": [],
+      "right": "joint_best",
+      "scope": "identical_input_repeat",
+      "spearman_negative_rank": 1.0,
+      "thresholds": [
+        {
+          "both": 483,
+          "fdr": 0.01,
+          "jaccard": 1.0,
+          "left_calls": 483,
+          "neither": 18629,
+          "only_left": 0,
+          "only_right": 0,
+          "right_calls": 483
+        },
+        {
+          "both": 1119,
+          "fdr": 0.05,
+          "jaccard": 1.0,
+          "left_calls": 1119,
+          "neither": 17993,
+          "only_left": 0,
+          "only_right": 0,
+          "right_calls": 1119
+        },
+        {
+          "both": 1425,
+          "fdr": 0.1,
+          "jaccard": 1.0,
+          "left_calls": 1425,
+          "neither": 17687,
+          "only_left": 0,
+          "only_right": 0,
+          "right_calls": 1425
+        }
+      ]
+    }
+  ],
+  "completion": "complete",
+  "eligible_genes": 19112,
+  "eligible_guides": 74293,
+  "excluded_annotation_groups": [
+    "",
+    "NA",
+    "Non-Targeting-Control",
+    "na"
+  ],
+  "exposures": {
+    "A": {
+      "full": 76471324,
+      "thin": 75357831
+    },
+    "B": {
+      "full": 85301059,
+      "thin": 75355121
+    },
+    "C": {
+      "full": 75356900,
+      "thin": 75356900
+    },
+    "pDNA": {
+      "full": 9821128,
+      "thin": 9821128
+    }
+  },
+  "mageck_executable_sha256": "e01b3b317017d4d20313db35dd234c90bd83d62df8236bb47802902ebc2d8698",
+  "mageck_version": "0.5.9.5",
+  "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+  "python": "3.10.21 (main, Aug 13 2026, 02:42:48) [GCC 13.3.0]",
+  "reads": 246950411,
+  "replicate_descriptives": [
+    {
+      "all_three_policy_delta_same_sign": 318,
+      "all_three_replicates_abs_difference_ge_0_5": 4,
+      "genes": 19112,
+      "left": "event_best",
+      "right": "joint_best"
+    },
+    {
+      "all_three_policy_delta_same_sign": 47,
+      "all_three_replicates_abs_difference_ge_0_5": 0,
+      "genes": 19112,
+      "left": "event_exact",
+      "right": "joint_exact"
+    },
+    {
+      "all_three_policy_delta_same_sign": 12686,
+      "all_three_replicates_abs_difference_ge_0_5": 21,
+      "genes": 19112,
+      "left": "joint_exact",
+      "right": "joint_best"
+    },
+    {
+      "all_three_policy_delta_same_sign": 618,
+      "all_three_replicates_abs_difference_ge_0_5": 79,
+      "genes": 19112,
+      "left": "joint_best",
+      "right": "joint_radius"
+    }
+  ],
+  "run_manifests": {
+    "SRR8297836": {
+      "completion_sha256": "d9cc33756a8bcf138717131d25a86287661cc7a06dc89ab766c6d6998a7e1664",
+      "metrics": {
+        "policies": {
+          "event_best": {
+            "count_events": 57907779,
+            "cross_gene_multiple": 115874,
+            "extra_events": 143081,
+            "matched_records": 57764698,
+            "multiply_counted_records": 131894,
+            "within_gene_multiple": 16020
+          },
+          "event_exact": {
+            "count_events": 53478992,
+            "cross_gene_multiple": 27852,
+            "extra_events": 34028,
+            "matched_records": 53444964,
+            "multiply_counted_records": 30653,
+            "within_gene_multiple": 2801
+          }
+        },
+        "records": 63209854,
+        "thinned_records": 62289512
+      },
+      "sample": "A",
+      "validation": {
+        "all_count_budgets": true,
+        "disagreements": 0,
+        "dotmatch_version": "0.5.0",
+        "full_library_position_checks": 2000,
+        "gene_annotations": 19113,
+        "guide_rows": 77441,
+        "pinned_DotMatch_checks": 2000,
+        "seed": 20260906,
+        "selected_records": 200
+      }
+    },
+    "SRR8297837": {
+      "completion_sha256": "6ceb832da5c5b4b6479807fcbae63a6490d5c669c665b824c0ac85627d476a80",
+      "metrics": {
+        "policies": {
+          "event_best": {
+            "count_events": 11592054,
+            "cross_gene_multiple": 23013,
+            "extra_events": 27792,
+            "matched_records": 11564262,
+            "multiply_counted_records": 25757,
+            "within_gene_multiple": 2744
+          },
+          "event_exact": {
+            "count_events": 10628168,
+            "cross_gene_multiple": 4700,
+            "extra_events": 5162,
+            "matched_records": 10623006,
+            "multiply_counted_records": 4918,
+            "within_gene_multiple": 218
+          }
+        },
+        "records": 13261470,
+        "thinned_records": 13068319
+      },
+      "sample": "A",
+      "validation": {
+        "all_count_budgets": true,
+        "disagreements": 0,
+        "dotmatch_version": "0.5.0",
+        "full_library_position_checks": 2000,
+        "gene_annotations": 19113,
+        "guide_rows": 77441,
+        "pinned_DotMatch_checks": 2000,
+        "seed": 20260906,
+        "selected_records": 200
+      }
+    },
+    "SRR8297838": {
+      "completion_sha256": "b6814dcd66571d38093ab90f2821cf2fb819975944b936464894db2bc7611921",
+      "metrics": {
+        "policies": {
+          "event_best": {
+            "count_events": 62279773,
+            "cross_gene_multiple": 127845,
+            "extra_events": 156677,
+            "matched_records": 62123096,
+            "multiply_counted_records": 146220,
+            "within_gene_multiple": 18375
+          },
+          "event_exact": {
+            "count_events": 57549548,
+            "cross_gene_multiple": 28595,
+            "extra_events": 33602,
+            "matched_records": 57515946,
+            "multiply_counted_records": 30872,
+            "within_gene_multiple": 2277
+          }
+        },
+        "records": 67909372,
+        "thinned_records": 59991005
+      },
+      "sample": "B",
+      "validation": {
+        "all_count_budgets": true,
+        "disagreements": 0,
+        "dotmatch_version": "0.5.0",
+        "full_library_position_checks": 2000,
+        "gene_annotations": 19113,
+        "guide_rows": 77441,
+        "pinned_DotMatch_checks": 2000,
+        "seed": 20260906,
+        "selected_records": 200
+      }
+    },
+    "SRR8297839": {
+      "completion_sha256": "b393367a7dc4e688461281d64993707f0b458226561a15c24b761ed065cce534",
+      "metrics": {
+        "policies": {
+          "event_best": {
+            "count_events": 13978223,
+            "cross_gene_multiple": 27384,
+            "extra_events": 32385,
+            "matched_records": 13945838,
+            "multiply_counted_records": 29731,
+            "within_gene_multiple": 2347
+          },
+          "event_exact": {
+            "count_events": 12797720,
+            "cross_gene_multiple": 6859,
+            "extra_events": 7979,
+            "matched_records": 12789741,
+            "multiply_counted_records": 7265,
+            "within_gene_multiple": 406
+          }
+        },
+        "records": 17391687,
+        "thinned_records": 15364116
+      },
+      "sample": "B",
+      "validation": {
+        "all_count_budgets": true,
+        "disagreements": 0,
+        "dotmatch_version": "0.5.0",
+        "full_library_position_checks": 2000,
+        "gene_annotations": 19113,
+        "guide_rows": 77441,
+        "pinned_DotMatch_checks": 2000,
+        "seed": 20260906,
+        "selected_records": 200
+      }
+    },
+    "SRR8297840": {
+      "completion_sha256": "8524e5da50e6197bd77925b58d395ca4247237a6e394b5169c0b0b99435ba09b",
+      "metrics": {
+        "policies": {
+          "event_best": {
+            "count_events": 49346331,
+            "cross_gene_multiple": 98011,
+            "extra_events": 121537,
+            "matched_records": 49224794,
+            "multiply_counted_records": 112857,
+            "within_gene_multiple": 14846
+          },
+          "event_exact": {
+            "count_events": 45570060,
+            "cross_gene_multiple": 22622,
+            "extra_events": 26894,
+            "matched_records": 45543166,
+            "multiply_counted_records": 24555,
+            "within_gene_multiple": 1933
+          }
+        },
+        "records": 53767239,
+        "thinned_records": 53767239
+      },
+      "sample": "C",
+      "validation": {
+        "all_count_budgets": true,
+        "disagreements": 0,
+        "dotmatch_version": "0.5.0",
+        "full_library_position_checks": 2000,
+        "gene_annotations": 19113,
+        "guide_rows": 77441,
+        "pinned_DotMatch_checks": 2000,
+        "seed": 20260906,
+        "selected_records": 200
+      }
+    },
+    "SRR8297841": {
+      "completion_sha256": "2678d7101fc9bb6fe08a4a13542051cee8fcfc3ddfcc3c64ff41543810cd310d",
+      "metrics": {
+        "policies": {
+          "event_best": {
+            "count_events": 19562272,
+            "cross_gene_multiple": 42255,
+            "extra_events": 52026,
+            "matched_records": 19510246,
+            "multiply_counted_records": 47638,
+            "within_gene_multiple": 5383
+          },
+          "event_exact": {
+            "count_events": 17907731,
+            "cross_gene_multiple": 10385,
+            "extra_events": 12864,
+            "matched_records": 17894867,
+            "multiply_counted_records": 10967,
+            "within_gene_multiple": 582
+          }
+        },
+        "records": 21589661,
+        "thinned_records": 21589661
+      },
+      "sample": "C",
+      "validation": {
+        "all_count_budgets": true,
+        "disagreements": 0,
+        "dotmatch_version": "0.5.0",
+        "full_library_position_checks": 2000,
+        "gene_annotations": 19113,
+        "guide_rows": 77441,
+        "pinned_DotMatch_checks": 2000,
+        "seed": 20260906,
+        "selected_records": 200
+      }
+    },
+    "SRR8297997": {
+      "completion_sha256": "e087770b76a7c9feff02a398473e9c3c7b814d1771d355f64068d0badb3eb4f8",
+      "metrics": {
+        "policies": {
+          "event_best": {
+            "count_events": 9318181,
+            "cross_gene_multiple": 23125,
+            "extra_events": 28967,
+            "matched_records": 9289214,
+            "multiply_counted_records": 26561,
+            "within_gene_multiple": 3436
+          },
+          "event_exact": {
+            "count_events": 8758764,
+            "cross_gene_multiple": 5965,
+            "extra_events": 6659,
+            "matched_records": 8752105,
+            "multiply_counted_records": 6213,
+            "within_gene_multiple": 248
+          }
+        },
+        "records": 9821128,
+        "thinned_records": 9821128
+      },
+      "sample": "pDNA",
+      "validation": {
+        "AR003_full_plasmid_replay": {
+          "disagreements": 0,
+          "full_gene_bound_cells": 114678,
+          "full_guide_cells": 232323
+        },
+        "all_count_budgets": true,
+        "disagreements": 0,
+        "dotmatch_version": "0.5.0",
+        "full_library_position_checks": 2000,
+        "gene_annotations": 19113,
+        "guide_rows": 77441,
+        "pinned_DotMatch_checks": 2000,
+        "seed": 20260906,
+        "selected_records": 200
+      }
+    }
+  },
+  "schema": "dotmatch.ar004.statistics.v1",
+  "seed_option": "No seed option advertised; same-input repeats retained",
+  "shared_plasmid_baselines": 1,
+  "source_commit": "8b4c915650619858accb317381ecee8754d80d5b",
+  "source_sha256": "db69ba29fd94eb31209f5fd49f377ea2f19d1ce310f3db02d9052154e288c69b",
+  "technical_run_archives": 7,
+  "validation": {
+    "SQL_guide_and_gene_aggregation": true,
+    "biological_cellular_replicates": 3,
+    "raw_guide_count_cells_checked": 5420870,
+    "shared_plasmid_samples": 1,
+    "technical_sample_groups": 4
+  }
+}

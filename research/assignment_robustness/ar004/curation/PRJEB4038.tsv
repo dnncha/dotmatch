@@ -1,0 +1,141 @@
+run_accession	sample_alias	experiment_title	read_count	fastq_bytes
+ERR309962	JM8_5_clone3-sc-2013-06-06T20:58:06Z-1643297	Illumina MiSeq paired end sequencing	320310	40663629;48172387
+ERR309973	JM8_8_clone4-sc-2013-06-06T21:06:15Z-1643308	Illumina MiSeq paired end sequencing	387634	49225151;56680837
+ERR309974	JM8_8_clone5-sc-2013-06-06T21:11:58Z-1643309	Illumina MiSeq paired end sequencing	407400	51775300;59936628
+ERR309978	JM8_8_clone9-sc-2013-06-06T21:09:56Z-1643313	Illumina MiSeq paired end sequencing	435320	55103074;63986552
+ERR309979	JM8_8_clone10-sc-2013-06-06T21:11:20Z-1643314	Illumina MiSeq paired end sequencing	478749	60489610;69498850
+ERR309980	JM8_5_control-sc-2013-06-10T14:50:48Z-1645591	Illumina MiSeq paired end sequencing	420605	53407145;63184240
+ERR309984	Control_set_2-sc-2013-06-06T20:57:32Z-1643294	Illumina MiSeq paired end sequencing	2815453	325076542;399242018
+ERR338403	gPool_3_1-sc-2013-06-26T16:17:03Z-1654032	Illumina MiSeq paired end sequencing	445249	17561961;19345343
+ERR363671	aTox_resistant_mESC_gLib1-sc-2013-08-30T13:51:20Z-1686807	Illumina MiSeq paired end sequencing	6190592	116782287;138981051
+ERR369583	gRNA_site_2_against_26_GPI_genes_control_rep2-sc-2013-09-12T15:06:22Z-1692102	Illumina MiSeq paired end sequencing	2422662	118418885;170597131
+ERR376999	Mouse_whole_genome_gRNA_v1_mESC_library_1-sc-2013-09-12T11:21:15Z-1691995	Illumina HiSeq 2000 sequencing	10300758	290645388
+ERR377000	Mouse_whole_genome_gRNA_v1_mESC_library_2-sc-2013-09-12T11:21:21Z-1691996	Illumina HiSeq 2000 sequencing	10820594	305692488
+ERR377002	Mouse_whole_genome_gRNA_v1_mESC_library_1-sc-2013-09-12T11:21:15Z-1691995	Illumina HiSeq 2000 sequencing	10393396	297070739
+ERR377007	Flu_resistant_mESC_gLib1_2nd_round_10MOI-sc-2013-09-18T13:07:41Z-1692980	Illumina MiSeq paired end sequencing	1300604	24592333;27522078
+ERR377015	Mouse_whole_genome_gRNA_v1_mESC_library_2-sc-2013-09-12T11:21:21Z-1691996	Illumina HiSeq 2000 sequencing	10468988	289224555
+ERR377020	gRNA_site_1_against_26_GPI_genes_transfected_rep4-sc-2013-09-27T10:26:28Z-1710012	Illumina MiSeq paired end sequencing	2464252	77207239;106963245
+ERR377023	gRNA_site_2_against_26_GPI_genes_control_rep4-sc-2013-09-27T10:27:26Z-1710015	Illumina MiSeq paired end sequencing	3119026	92029244;124739033
+ERR381933	JM8_5_clone3_NAG_Indel-sc-2013-09-27T10:53:35Z-1710018	Illumina MiSeq paired end sequencing	692322	44763731;54904597
+ERR381936	JM8_5_clone6_NAG_Indel-sc-2013-09-27T10:57:05Z-1710021	Illumina MiSeq paired end sequencing	661180	41285740;50833938
+ERR381952	JM8_5_PigA3_transient_tf1-sc-2013-09-27T11:02:04Z-1710037	Illumina MiSeq paired end sequencing	2010088	128116823;154305208
+ERR381962	JM8_5_clone7_NAG_Indel-sc-2013-09-27T10:57:11Z-1710022	Illumina MiSeq paired end sequencing	738824	24431594;34390671
+ERR381963	JM8_5_clone8_NAG_Indel-sc-2013-09-27T11:00:48Z-1710023	Illumina MiSeq paired end sequencing	862652	28056867;38344198
+ERR381965	JM8_5_clone10_NAG_Indel-sc-2013-09-27T10:56:41Z-1710025	Illumina MiSeq paired end sequencing	693658	22594222;30492915
+ERR381968	JM8_8_clone3_NAG_Indel-sc-2013-09-27T11:01:18Z-1710028	Illumina MiSeq paired end sequencing	942164	30904243;42223629
+ERR381972	JM8_8_clone7_NAG_Indel-sc-2013-09-27T11:01:41Z-1710032	Illumina MiSeq paired end sequencing	2236804	72317365;96786392
+ERR381976	JM8_NAG_Indel-sc-2013-09-27T11:01:59Z-1710036	Illumina MiSeq paired end sequencing	1288122	42007246;57658567
+ERR381978	JM8_5_PigA3_transient_tf2-sc-2013-09-27T11:02:10Z-1710038	Illumina MiSeq paired end sequencing	2008496	65767928;90564109
+ERR455238	Lentiviral_mouse_genome_wide_gRNA_library_verion_1_preparation_2_replicated_on_plate_1-sc-1806289	Illumina HiSeq 2000 sequencing	15626209	379757670
+ERR309961	JM8_5_clone2-sc-2013-06-06T20:56:12Z-1643296	Illumina MiSeq paired end sequencing	362583	46036485;53723355
+ERR309970	JM8_8_clone1-sc-2013-06-06T21:04:10Z-1643305	Illumina MiSeq paired end sequencing	397012	50699514;58220719
+ERR309972	JM8_8_clone3-sc-2013-06-06T21:05:22Z-1643307	Illumina MiSeq paired end sequencing	449356	56980456;65323055
+ERR309975	JM8_8_clone6-sc-2013-06-06T21:14:19Z-1643310	Illumina MiSeq paired end sequencing	354938	45046558;51979241
+ERR309976	JM8_8_clone7-sc-2013-06-06T21:07:51Z-1643311	Illumina MiSeq paired end sequencing	357200	45331678;52640266
+ERR309981	GPI_geneset_1-sc-2013-06-06T20:55:04Z-1643291	Illumina MiSeq paired end sequencing	3410096	400341894;489181803
+ERR338405	gPool_3_3-sc-2013-06-26T16:18:18Z-1654034	Illumina MiSeq paired end sequencing	415939	16651182;18481884
+ERR338409	6TGR_3_3-sc-2013-06-26T16:20:20Z-1654038	Illumina MiSeq paired end sequencing	362719	12054181;13808771
+ERR363672	aTox_resistant_mESC_gLib2-sc-2013-08-30T13:51:28Z-1686808	Illumina MiSeq paired end sequencing	5065938	91408132;112312906
+ERR369578	gRNA_site_1_against_26_GPI_genes_control_rep1-sc-2013-09-12T15:06:16Z-1692097	Illumina MiSeq paired end sequencing	2231028	116067266;166893117
+ERR369579	gRNA_site_2_against_26_GPI_genes_control_rep1-sc-2013-09-12T15:06:17Z-1692098	Illumina MiSeq paired end sequencing	2098192	102708294;147624408
+ERR377001	Lentiviral_mouse_whole_genome_gRNA_library_verion_1_preparation_2-sc-2013-09-12T11:21:12Z-1691994	Illumina HiSeq 2000 sequencing	10246121	291385291
+ERR377004	Flu_resistant_mESC_gLib1_1st_round_4MOI-sc-2013-09-18T13:07:04Z-1692977	Illumina MiSeq paired end sequencing	1377316	30026999;33129287
+ERR377012	Mouse_whole_genome_gRNA_v1_mESC_library_2-sc-2013-09-12T11:21:21Z-1691996	Illumina HiSeq 2000 sequencing	10358278	282497502
+ERR377013	Lentiviral_mouse_whole_genome_gRNA_library_verion_1_preparation_2-sc-2013-09-12T11:21:12Z-1691994	Illumina HiSeq 2000 sequencing	9807297	268827488
+ERR377021	gRNA_site_2_against_26_GPI_genes_transfected_rep4-sc-2013-09-27T10:26:36Z-1710013	Illumina MiSeq paired end sequencing	2670992	82289758;111815644
+ERR381934	JM8_5_clone4_NAG_Indel-sc-2013-09-27T10:53:42Z-1710019	Illumina MiSeq paired end sequencing	673586	42363745;51385359
+ERR381935	JM8_5_clone5_NAG_Indel-sc-2013-09-27T10:56:56Z-1710020	Illumina MiSeq paired end sequencing	678496	42410095;52046831
+ERR381938	JM8_5_clone8_NAG_Indel-sc-2013-09-27T11:00:48Z-1710023	Illumina MiSeq paired end sequencing	722124	45356740;55267667
+ERR381941	JM8_8_clone1_NAG_Indel-sc-2013-09-27T10:56:48Z-1710026	Illumina MiSeq paired end sequencing	550942	34463378;43602191
+ERR381944	JM8_8_clone4_NAG_Indel-sc-2013-09-27T11:01:24Z-1710029	Illumina MiSeq paired end sequencing	790838	49698454;60157334
+ERR381945	JM8_8_clone5_NAG_Indel-sc-2013-09-27T11:01:30Z-1710030	Illumina MiSeq paired end sequencing	890298	55901331;67675011
+ERR381951	JM8_NAG_Indel-sc-2013-09-27T11:01:59Z-1710036	Illumina MiSeq paired end sequencing	1074878	67843166;82771970
+ERR381956	JM8_5_clone1_NAG_Indel-sc-2013-09-27T10:56:33Z-1710016	Illumina MiSeq paired end sequencing	884544	28993847;39205378
+ERR381958	JM8_5_clone3_NAG_Indel-sc-2013-09-27T10:53:35Z-1710018	Illumina MiSeq paired end sequencing	886692	30083726;41374008
+ERR381966	JM8_8_clone1_NAG_Indel-sc-2013-09-27T10:56:48Z-1710026	Illumina MiSeq paired end sequencing	697220	22997557;33526383
+ERR381973	JM8_8_clone8_NAG_Indel-sc-2013-09-27T11:01:03Z-1710033	Illumina MiSeq paired end sequencing	984830	32052829;43297620
+ERR455240	Lentiviral_mouse_genome_wide_gRNA_library_verion_1_preparation_2_replicated_on_plate_1-sc-1806289	Illumina HiSeq 2000 sequencing	15401351	371543795
+ERR309960	JM8_5_clone1-sc-2013-06-06T20:55:33Z-1643295	Illumina MiSeq paired end sequencing	359845	45630093;52925084
+ERR309966	JM8_5_clone7-sc-2013-06-06T21:02:38Z-1643301	Illumina MiSeq paired end sequencing	403888	51575661;61934883
+ERR309967	JM8_5_clone8-sc-2013-06-06T21:03:02Z-1643302	Illumina MiSeq paired end sequencing	397292	50524348;58354647
+ERR309977	JM8_8_clone8-sc-2013-06-06T21:08:53Z-1643312	Illumina MiSeq paired end sequencing	379969	48322635;55491699
+ERR338408	6TGR_3_2-sc-2013-06-26T16:19:50Z-1654037	Illumina MiSeq paired end sequencing	440616	16249856;18398916
+ERR338410	6TGR_3_4-sc-2013-06-26T16:21:05Z-1654039	Illumina MiSeq paired end sequencing	409340	13366178;15205756
+ERR338411	aTR_3_1-sc-2013-06-26T16:21:59Z-1654040	Illumina MiSeq paired end sequencing	493731	16150683;18820049
+ERR338412	aTR_3_2-sc-2013-06-26T16:23:36Z-1654041	Illumina MiSeq paired end sequencing	419620	13572363;15357769
+ERR338413	aTR_3_3-sc-2013-06-26T16:24:08Z-1654042	Illumina MiSeq paired end sequencing	394896	12746584;15914725
+ERR338414	aTR_3_4-sc-2013-06-26T16:22:33Z-1654043	Illumina MiSeq paired end sequencing	476324	15790298;17877375
+ERR369570	Lentiviral_mouse_whole_genome_gRNA_library_verion_1_preparation_2-sc-2013-09-12T11:21:12Z-1691994	Illumina HiSeq 2000 sequencing	5234805	229941235
+ERR369573	Lentiviral_mouse_whole_genome_gRNA_library_verion_1_preparation_2-sc-2013-09-12T11:21:12Z-1691994	Illumina HiSeq 2000 sequencing	5761497	256843839
+ERR369576	gRNA_site_1_against_26_GPI_genes_transfected_rep1-sc-2013-09-12T15:06:16Z-1692095	Illumina MiSeq paired end sequencing	2410990	124984528;176228263
+ERR369580	gRNA_site_1_against_26_GPI_genes_transfected_rep2-sc-2013-09-12T15:06:18Z-1692099	Illumina MiSeq paired end sequencing	2083268	106301818;152523293
+ERR369581	gRNA_site_2_against_26_GPI_genes_transfected_rep2-sc-2013-09-12T15:06:19Z-1692100	Illumina MiSeq paired end sequencing	2061572	102675839;148526339
+ERR377006	Flu_resistant_mESC_gLib1_2nd_round_4MOI-sc-2013-09-18T13:07:29Z-1692979	Illumina MiSeq paired end sequencing	1456920	28693043;32297462
+ERR377014	Mouse_whole_genome_gRNA_v1_mESC_library_1-sc-2013-09-12T11:21:15Z-1691995	Illumina HiSeq 2000 sequencing	9880940	272075921
+ERR377019	gRNA_site_2_against_26_GPI_genes_control_rep3-sc-2013-09-27T10:26:21Z-1710011	Illumina MiSeq paired end sequencing	2856226	83870821;112976285
+ERR381932	JM8_5_clone2_NAG_Indel-sc-2013-09-27T10:27:33Z-1710017	Illumina MiSeq paired end sequencing	629984	40041876;49370487
+ERR381937	JM8_5_clone7_NAG_Indel-sc-2013-09-27T10:57:11Z-1710022	Illumina MiSeq paired end sequencing	603458	38303398;47303592
+ERR381942	JM8_8_clone2_NAG_Indel-sc-2013-09-27T11:01:11Z-1710027	Illumina MiSeq paired end sequencing	693228	43681015;53185829
+ERR381943	JM8_8_clone3_NAG_Indel-sc-2013-09-27T11:01:18Z-1710028	Illumina MiSeq paired end sequencing	789804	49644425;60569104
+ERR381947	JM8_8_clone7_NAG_Indel-sc-2013-09-27T11:01:41Z-1710032	Illumina MiSeq paired end sequencing	1874810	117456589;141597639
+ERR381948	JM8_8_clone8_NAG_Indel-sc-2013-09-27T11:01:03Z-1710033	Illumina MiSeq paired end sequencing	826448	51959203;62981932
+ERR381949	JM8_8_clone9_NAG_Indel-sc-2013-09-27T11:01:47Z-1710034	Illumina MiSeq paired end sequencing	777384	48825890;59586423
+ERR381957	JM8_5_clone2_NAG_Indel-sc-2013-09-27T10:27:33Z-1710017	Illumina MiSeq paired end sequencing	762376	25168168;35421432
+ERR381970	JM8_8_clone5_NAG_Indel-sc-2013-09-27T11:01:30Z-1710030	Illumina MiSeq paired end sequencing	1064866	34445511;46388181
+ERR381971	JM8_8_clone6_NAG_Indel-sc-2013-09-27T11:01:35Z-1710031	Illumina MiSeq paired end sequencing	940700	30718516;41741268
+ERR381975	JM8_8_clone10_NAG_Indel-sc-2013-09-27T11:01:53Z-1710035	Illumina MiSeq paired end sequencing	705860	23045451;31356767
+ERR455244	Lentiviral_mouse_genome_wide_gRNA_library_verion_1_preparation_2_replicated_on_plate_1-sc-1806289	Illumina HiSeq 2000 sequencing	17285942	422488259
+ERR309963	JM8_5_clone4-sc-2013-06-06T20:58:28Z-1643298	Illumina MiSeq paired end sequencing	420839	53329547;61593373
+ERR309982	GPI_geneset_2-sc-2013-06-06T20:56:35Z-1643292	Illumina MiSeq paired end sequencing	2662532	310377210;388739819
+ERR338404	gPool_3_2-sc-2013-06-26T16:17:30Z-1654033	Illumina MiSeq paired end sequencing	512062	20168124;22126996
+ERR338406	gPool_3_4-sc-2013-06-26T16:18:46Z-1654035	Illumina MiSeq paired end sequencing	466033	18285023;20100470
+ERR338407	6TGR_3_1-sc-2013-06-26T16:19:09Z-1654036	Illumina MiSeq paired end sequencing	356708	13091989;14789350
+ERR369571	Mouse_whole_genome_gRNA_v1_mESC_library_1-sc-2013-09-12T11:21:15Z-1691995	Illumina HiSeq 2000 sequencing	4518358	193641117
+ERR369575	Mouse_whole_genome_gRNA_v1_mESC_library_2-sc-2013-09-12T11:21:21Z-1691996	Illumina HiSeq 2000 sequencing	6555902	286743405
+ERR369582	gRNA_site_1_against_26_GPI_genes_control_rep2-sc-2013-09-12T15:06:20Z-1692101	Illumina MiSeq paired end sequencing	2323884	117068138;170367455
+ERR369584	6TG_resistant_mESC_gLib1-sc-2013-09-16T11:41:18Z-1692613	Illumina MiSeq paired end sequencing	3009535	113118387;128583486
+ERR376998	Lentiviral_mouse_whole_genome_gRNA_library_verion_1_preparation_2-sc-2013-09-12T11:21:12Z-1691994	Illumina HiSeq 2000 sequencing	10093905	282339185
+ERR377009	Flu_resistant_mESC_gLib2_2nd_round_10MOI-sc-2013-09-18T13:07:54Z-1692982	Illumina MiSeq paired end sequencing	1117716	21853872;24646548
+ERR377010	Lentiviral_mouse_whole_genome_gRNA_library_verion_1_preparation_2-sc-2013-09-12T11:21:12Z-1691994	Illumina HiSeq 2000 sequencing	9644704	260949153
+ERR377011	Mouse_whole_genome_gRNA_v1_mESC_library_1-sc-2013-09-12T11:21:15Z-1691995	Illumina HiSeq 2000 sequencing	9814190	267488864
+ERR377016	gRNA_site_1_against_26_GPI_genes_transfected_rep3-sc-2013-09-27T10:27:14Z-1710008	Illumina MiSeq paired end sequencing	2544346	79896962;107986712
+ERR377017	gRNA_site_2_against_26_GPI_genes_transfected_rep3-sc-2013-09-27T10:26:06Z-1710009	Illumina MiSeq paired end sequencing	2610786	78883736;110591531
+ERR377018	gRNA_site_1_against_26_GPI_genes_control_rep3-sc-2013-09-27T10:26:14Z-1710010	Illumina MiSeq paired end sequencing	2905336	90942374;127953790
+ERR381939	JM8_5_clone9_NAG_Indel-sc-2013-09-27T11:00:57Z-1710024	Illumina MiSeq paired end sequencing	627036	39463908;48507066
+ERR381940	JM8_5_clone10_NAG_Indel-sc-2013-09-27T10:56:41Z-1710025	Illumina MiSeq paired end sequencing	583534	36766488;44572109
+ERR381946	JM8_8_clone6_NAG_Indel-sc-2013-09-27T11:01:35Z-1710031	Illumina MiSeq paired end sequencing	785142	49518076;60230256
+ERR381950	JM8_8_clone10_NAG_Indel-sc-2013-09-27T11:01:53Z-1710035	Illumina MiSeq paired end sequencing	590240	37221087;45313058
+ERR381953	JM8_5_PigA3_transient_tf2-sc-2013-09-27T11:02:10Z-1710038	Illumina MiSeq paired end sequencing	1693002	107205103;131014417
+ERR381960	JM8_5_clone5_NAG_Indel-sc-2013-09-27T10:56:56Z-1710020	Illumina MiSeq paired end sequencing	803570	25724780;35639233
+ERR381961	JM8_5_clone6_NAG_Indel-sc-2013-09-27T10:57:05Z-1710021	Illumina MiSeq paired end sequencing	784568	25239025;34997321
+ERR381964	JM8_5_clone9_NAG_Indel-sc-2013-09-27T11:00:57Z-1710024	Illumina MiSeq paired end sequencing	756122	24670223;34228911
+ERR381969	JM8_8_clone4_NAG_Indel-sc-2013-09-27T11:01:24Z-1710029	Illumina MiSeq paired end sequencing	946036	30771080;41490246
+ERR381974	JM8_8_clone9_NAG_Indel-sc-2013-09-27T11:01:47Z-1710034	Illumina MiSeq paired end sequencing	920808	29802326;40805412
+ERR381977	JM8_5_PigA3_transient_tf1-sc-2013-09-27T11:02:04Z-1710037	Illumina MiSeq paired end sequencing	2406018	79594910;107150752
+ERR455241	Lentiviral_mouse_genome_wide_gRNA_library_verion_1_preparation_2_replicated_in_liquid_1-sc-1806290	Illumina HiSeq 2000 sequencing	15864428	385683855
+ERR455242	Lentiviral_mouse_genome_wide_gRNA_library_verion_1_preparation_2_replicated_on_plate_1-sc-1806289	Illumina HiSeq 2000 sequencing	16778953	415021821
+ERR309964	JM8_5_clone5-sc-2013-06-06T20:59:17Z-1643299	Illumina MiSeq paired end sequencing	402488	50996503;59403658
+ERR309965	JM8_5_clone6-sc-2013-06-06T21:02:06Z-1643300	Illumina MiSeq paired end sequencing	360824	45971751;52782636
+ERR309968	JM8_5_clone9-sc-2013-06-06T20:58:52Z-1643303	Illumina MiSeq paired end sequencing	427796	54461042;62959618
+ERR309969	JM8_5_clone10-sc-2013-06-06T21:03:49Z-1643304	Illumina MiSeq paired end sequencing	386572	49184004;56604900
+ERR309971	JM8_8_clone2-sc-2013-06-06T21:04:41Z-1643306	Illumina MiSeq paired end sequencing	401667	51273655;59358901
+ERR309983	Control_set_1-sc-2013-06-06T20:57:08Z-1643293	Illumina MiSeq paired end sequencing	2921564	352147945;440120532
+ERR338415	VectorMix-sc-2013-06-26T16:23:02Z-1654044	Illumina MiSeq paired end sequencing	459051	15762037;17767267
+ERR369572	Mouse_whole_genome_gRNA_v1_mESC_library_2-sc-2013-09-12T11:21:21Z-1691996	Illumina HiSeq 2000 sequencing	5870879	252497032
+ERR369574	Mouse_whole_genome_gRNA_v1_mESC_library_1-sc-2013-09-12T11:21:15Z-1691995	Illumina HiSeq 2000 sequencing	5016264	218343030
+ERR369577	gRNA_site_2_against_26_GPI_genes_transfected_rep1-sc-2013-09-12T15:06:15Z-1692096	Illumina MiSeq paired end sequencing	2038436	104083142;149700104
+ERR369585	6TG_resistant_mESC_gLib2-sc-2013-09-16T11:41:20Z-1692614	Illumina MiSeq paired end sequencing	3208078	125020714;131357285
+ERR377003	Mouse_whole_genome_gRNA_v1_mESC_library_2-sc-2013-09-12T11:21:21Z-1691996	Illumina HiSeq 2000 sequencing	10976838	314600730
+ERR377005	Flu_resistant_mESC_gLib2_1st_round_4MOI-sc-2013-09-18T13:07:12Z-1692978	Illumina MiSeq paired end sequencing	1513936	32927914;36536166
+ERR377008	Flu_resistant_mESC_gLib2_2nd_round_4MOI-sc-2013-09-18T13:07:46Z-1692981	Illumina MiSeq paired end sequencing	1249196	25262677;28334043
+ERR377022	gRNA_site_1_against_26_GPI_genes_control_rep4-sc-2013-09-27T10:27:21Z-1710014	Illumina MiSeq paired end sequencing	2886686	87613487;125489211
+ERR381931	JM8_5_clone1_NAG_Indel-sc-2013-09-27T10:56:33Z-1710016	Illumina MiSeq paired end sequencing	738772	46555268;56447363
+ERR381954	JM8_5_PigA3_transient_cntl1-sc-2013-09-27T11:02:15Z-1710039	Illumina MiSeq paired end sequencing	741728	47140912;57000841
+ERR381955	JM8_5_PigA3_transient_cntl2-sc-2013-09-27T11:02:21Z-1710040	Illumina MiSeq paired end sequencing	761864	48548585;60025398
+ERR381959	JM8_5_clone4_NAG_Indel-sc-2013-09-27T10:53:42Z-1710019	Illumina MiSeq paired end sequencing	804146	25918294;35149170
+ERR381967	JM8_8_clone2_NAG_Indel-sc-2013-09-27T11:01:11Z-1710027	Illumina MiSeq paired end sequencing	820024	26633647;36335469
+ERR381979	JM8_5_PigA3_transient_cntl1-sc-2013-09-27T11:02:15Z-1710039	Illumina MiSeq paired end sequencing	887028	29342194;39578029
+ERR381980	JM8_5_PigA3_transient_cntl2-sc-2013-09-27T11:02:21Z-1710040	Illumina MiSeq paired end sequencing	926578	30509775;43407598
+ERR455239	Lentiviral_mouse_genome_wide_gRNA_library_verion_1_preparation_2_replicated_in_liquid_1-sc-1806290	Illumina HiSeq 2000 sequencing	16119569	394746174
+ERR455243	Lentiviral_mouse_genome_wide_gRNA_library_verion_1_preparation_2_replicated_in_liquid_1-sc-1806290	Illumina HiSeq 2000 sequencing	17522435	440394397
+ERR455245	Lentiviral_mouse_genome_wide_gRNA_library_verion_1_preparation_2_replicated_in_liquid_1-sc-1806290	Illumina HiSeq 2000 sequencing	17853217	440461470

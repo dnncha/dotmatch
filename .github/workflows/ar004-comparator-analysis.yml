@@ -1,0 +1,134 @@
+name: AR004 - actual comparator downstream analysis
+on:
+  push:
+    branches: [research/replicated-screen-ar004]
+    paths: [research/assignment_robustness/ar004/compare_reco.py, .github/workflows/ar004-comparator-analysis.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  analysis:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ar004-mageck-pinned-engine
+          run-id: 34034892731
+          repository: dnncha/dotmatch
+          github-token: ${{ github.token }}
+          path: statistics-engine
+      - name: Build unchanged pinned downstream engine
+        run: |
+          set -euo pipefail
+          python -m pip install numpy==1.23.5 scipy==1.10.1 setuptools==68.2.2 > comparator-statistics-install.log 2>&1
+          EXPECTED=$(awk '{print $1}' research/assignment_robustness/ar004/mageck/source.sha256)
+          test "$(sha256sum statistics-engine/mageck-0.5.9.5.tar.gz | cut -d' ' -f1)" = "$EXPECTED"
+          mkdir pristine-source
+          tar -xzf statistics-engine/mageck-0.5.9.5.tar.gz -C pristine-source
+          SETUP=$(find pristine-source -name setup.py | head -1)
+          (cd "$(dirname "$SETUP")" && python setup.py install) >> comparator-statistics-install.log 2>&1
+          test "$(mageck --version)" = 0.5.9.5
+          python research/assignment_robustness/ar004/statistics.py --test
+          python -m py_compile research/assignment_robustness/ar004/compare_reco.py
+      - name: Require complete primary statistics and finished actual comparator execution
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,time,urllib.request
+          runs={34035106346:'8b4c915650619858accb317381ecee8754d80d5b',34035165550:'3786e47be0176458764363ab63460db2e78cc941'}
+          deadline=time.monotonic()+2400
+          while runs:
+              for runid,sha in list(runs.items()):
+                  request=urllib.request.Request(f'https://api.github.com/repos/dnncha/dotmatch/actions/runs/{runid}',headers={'Authorization':'Bearer '+os.environ['GH_TOKEN']})
+                  with urllib.request.urlopen(request,timeout=60) as response:r=json.load(response)
+                  assert r['head_sha']==sha
+                  print(runid,r['status'],r['conclusion'],flush=True)
+                  if r['status']=='completed':
+                      assert r['conclusion']=='success','Required execution failed; inspect logs, never fabricate comparison'
+                      del runs[runid]
+              if runs:
+                  if time.monotonic()>deadline:raise TimeoutError('Comparison gate did not complete')
+                  time.sleep(30)
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: ar004-replicated-statistics-complete
+          run-id: 34035106346
+          repository: dnncha/dotmatch
+          github-token: ${{ github.token }}
+          path: primary
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ar004-reco-*
+          run-id: 34035165550
+          repository: dnncha/dotmatch
+          github-token: ${{ github.token }}
+          path: reco-evidence
+      - name: Execute comparator statistics without changing the primary guide population
+        run: |
+          set -euo pipefail
+          python research/assignment_robustness/ar004/compare_reco.py --statistics primary/results --reco reco-evidence --out comparator-results 2>&1 | tee comparator-statistics.log
+      - name: Package complete reproducible research source and native evidence
+        run: |
+          set -euo pipefail
+          mkdir -p packet/source
+          git archive HEAD research/assignment_robustness/ar004 .github/workflows/ar004-comparator-analysis.yml | tar -x -C packet/source
+          cp -r primary packet/primary
+          cp -r reco-evidence packet/reco-evidence
+          cp -r comparator-results packet/comparator-results
+          cp comparator-statistics*.log packet/
+          python - <<'PY'
+          import pathlib,json,hashlib
+          root=pathlib.Path('packet')
+          (root/'PACKET_SHA256.json').write_text(json.dumps({str(f.relative_to(root)):hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted(root.rglob('*')) if f.is_file()},sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ar004-complete-primary-and-comparator
+          path: packet/
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: ar004-comparator-analysis-failure
+          path: |
+            comparator-results/
+            comparator-statistics*.log
+          retention-days: 90
+  preserve:
+    needs: analysis
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/replicated-screen-ar004
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: ar004-complete-primary-and-comparator
+          path: packet
+      - name: Preserve comparator findings or explicit incomplete status
+        run: |
+          set -euo pipefail
+          test '${{ github.ref }}' = refs/heads/research/replicated-screen-ar004
+          mkdir research/assignment_robustness/ar004/comparator-results
+          cp packet/comparator-results/REPORT.md research/assignment_robustness/ar004/comparator-results/
+          for name in summary.json status.json all-discordant-calls.tsv run-accounting.tsv; do
+            if test -f "packet/comparator-results/$name"; then cp "packet/comparator-results/$name" research/assignment_robustness/ar004/comparator-results/; fi
+          done
+          git config user.name 'Donncha OToole research workflow'
+          git config user.email '5190258+dnncha@users.noreply.github.com'
+          git add research/assignment_robustness/ar004/comparator-results
+          git commit -m 'research: preserve actual native-workflow comparator analysis without changing primary results [skip ci]'
+          git pull --rebase origin research/replicated-screen-ar004
+          git push origin HEAD:research/replicated-screen-ar004

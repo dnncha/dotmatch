@@ -1,0 +1,81 @@
+name: AR004 - actual ReCo native-workflow comparator
+on:
+  push:
+    branches: [research/replicated-screen-ar004]
+    paths: [.github/workflows/ar004-reco.yml, research/assignment_robustness/ar004/reco_run.py]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  comparator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      max-parallel: 7
+      matrix:
+        accession: [SRR8297997, SRR8297836, SRR8297837, SRR8297838, SRR8297839, SRR8297840, SRR8297841]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: KaulichLab/ReCo
+          ref: e2daf48b610f8db29ad014bff5be8bb983aaa76f
+          path: upstream-reco
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-name: reco
+          create-args: python=3.8 pip -c conda-forge
+          cache-environment: true
+          init-shell: bash
+      - name: Install exact published comparator dependencies and original Bowtie release
+        run: |
+          set -euo pipefail
+          micromamba run -n reco python -m pip install cutadapt==2.8 dnaio==0.4.2 xopen==0.8.4 > reco-install.log 2>&1
+          micromamba run -n reco python -m pip install -r upstream-reco/requirements.txt >> reco-install.log 2>&1
+          micromamba run -n reco python -m pip install --no-deps ./upstream-reco >> reco-install.log 2>&1
+          curl -fL --retry 3 'https://downloads.sourceforge.net/project/bowtie-bio/bowtie2/2.3.0/bowtie2-2.3.0-linux-legacy-x86_64.zip' -o bowtie2-original-release.zip
+          sha256sum bowtie2-original-release.zip > bowtie2-archive.sha256
+          unzip -q bowtie2-original-release.zip -d bowtie-original
+          BIN=$(find bowtie-original -type f -name bowtie2 | head -1)
+          test -n "$BIN"
+          DIR=$(dirname "$BIN")
+          chmod +x "$DIR"/bowtie2*
+          echo "$PWD/$DIR" >> "$GITHUB_PATH"
+          export PATH="$PWD/$DIR:$PATH"
+          micromamba run -n reco python -m pip freeze > reco-environment.txt
+          micromamba run -n reco cutadapt --version > cutadapt-version.txt
+          micromamba run -n reco bowtie2 --version > bowtie2-version.txt
+          micromamba list -n reco --explicit > conda-explicit.txt
+          test "$(cat cutadapt-version.txt | tail -1)" = 2.8
+          grep 'version 2.3.0' bowtie2-version.txt
+          printf '%s\n' 'Bowtie 2.3.0 original legacy/pthread binary; unchanged alignment version. Conda old-version resolution failed in run 34034661978. A pip conflict with our initially specified xopen 0.9.0 was corrected to Cutadapt-required xopen 0.8.4. No data results from either failed setup are used.' > dependency-provenance.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: ar004-reference
+          run-id: 34034542345
+          repository: dnncha/dotmatch
+          github-token: ${{ github.token }}
+          path: reference
+      - name: Execute actual comparator on the complete raw archive
+        run: |
+          set -euo pipefail
+          python research/assignment_robustness/ar004/reco_run.py '${{ matrix.accession }}' --library reference/library.tsv --source upstream-reco 2>&1 | tee comparator.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ar004-reco-${{ matrix.accession }}
+          path: |
+            reco-result/
+            comparator.log
+            reco-install.log
+            reco-environment.txt
+            cutadapt-version.txt
+            bowtie2-version.txt
+            conda-explicit.txt
+            dependency-provenance.txt
+            bowtie2-archive.sha256
+          retention-days: 90

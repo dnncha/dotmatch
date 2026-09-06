@@ -1,0 +1,14 @@
+[
+  {
+    "runs": 73,
+    "sha256": "b20c270a76962a777fc87f449173bc4118852f3eddda1e8a57031fe93960091d",
+    "study": "PRJNA508200",
+    "url": "https://www.ebi.ac.uk/ena/portal/api/filereport?accession=PRJNA508200&result=read_run&format=json&fields=run_accession%2Csample_accession%2Csample_alias%2Cexperiment_accession%2Cexperiment_title%2Clibrary_layout%2Cfastq_ftp%2Cfastq_md5%2Cfastq_bytes%2Cread_count"
+  },
+  {
+    "runs": 140,
+    "sha256": "3921d9facad88a924012d821abb0db56b3b5b6e86f98d1bcb517d81ac43f756c",
+    "study": "PRJEB4038",
+    "url": "https://www.ebi.ac.uk/ena/portal/api/filereport?accession=PRJEB4038&result=read_run&format=json&fields=run_accession%2Csample_accession%2Csample_alias%2Cexperiment_accession%2Cexperiment_title%2Clibrary_layout%2Cfastq_ftp%2Cfastq_md5%2Cfastq_bytes%2Cread_count"
+  }
+]

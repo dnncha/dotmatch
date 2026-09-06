@@ -1,0 +1,239 @@
+{
+  "command": {
+    "command": [
+      "mageck",
+      "test",
+      "-k",
+      "comparator-results/native-reco-counts.tsv",
+      "-t",
+      "A,B,C",
+      "-c",
+      "pDNA",
+      "--norm-method",
+      "median",
+      "--remove-zero",
+      "none",
+      "--gene-lfc-method",
+      "median",
+      "--keep-tmp",
+      "--normcounts-to-file",
+      "-n",
+      "comparator-results/mageck/native_reco"
+    ],
+    "gene_summary_sha256": "90d476aa02c5579110cb18fb9fc52f31fac4b678ebae19c9eca278633d5a7541",
+    "genes": 19112,
+    "matrix_sha256": "583d476b8f784282799d50b1a6cbde08edc8a62c21e7738a7155d934e57562de",
+    "wall_seconds": 11.948228352000001
+  },
+  "comparisons": [
+    {
+      "common_genes": 19112,
+      "genes_abs_lfc_difference_ge_0_5": 371,
+      "left": "joint_best",
+      "max_abs_lfc_difference": 4.6531,
+      "median_abs_lfc_difference": 0.035030000000000006,
+      "missing_left": [],
+      "missing_right": [],
+      "right": "actual_ReCo",
+      "scope": "native_workflow",
+      "spearman_negative_rank": 0.9876896504793307,
+      "thresholds": [
+        {
+          "both": 451,
+          "fdr": 0.01,
+          "jaccard": 0.826007326007326,
+          "left_calls": 483,
+          "neither": 18566,
+          "only_left": 32,
+          "only_right": 63,
+          "right_calls": 514
+        },
+        {
+          "both": 1077,
+          "fdr": 0.05,
+          "jaccard": 0.9042821158690176,
+          "left_calls": 1119,
+          "neither": 17921,
+          "only_left": 42,
+          "only_right": 72,
+          "right_calls": 1149
+        },
+        {
+          "both": 1388,
+          "fdr": 0.1,
+          "jaccard": 0.9241011984021305,
+          "left_calls": 1425,
+          "neither": 17610,
+          "only_left": 37,
+          "only_right": 77,
+          "right_calls": 1465
+        }
+      ]
+    },
+    {
+      "common_genes": 19112,
+      "genes_abs_lfc_difference_ge_0_5": 384,
+      "left": "event_best",
+      "max_abs_lfc_difference": 4.6529,
+      "median_abs_lfc_difference": 0.03522000000000003,
+      "missing_left": [],
+      "missing_right": [],
+      "right": "actual_ReCo",
+      "scope": "native_workflow",
+      "spearman_negative_rank": 0.9871584158436085,
+      "thresholds": [
+        {
+          "both": 451,
+          "fdr": 0.01,
+          "jaccard": 0.8214936247723132,
+          "left_calls": 486,
+          "neither": 18563,
+          "only_left": 35,
+          "only_right": 63,
+          "right_calls": 514
+        },
+        {
+          "both": 1078,
+          "fdr": 0.05,
+          "jaccard": 0.902092050209205,
+          "left_calls": 1124,
+          "neither": 17917,
+          "only_left": 46,
+          "only_right": 71,
+          "right_calls": 1149
+        },
+        {
+          "both": 1386,
+          "fdr": 0.1,
+          "jaccard": 0.9209302325581395,
+          "left_calls": 1426,
+          "neither": 17607,
+          "only_left": 40,
+          "only_right": 79,
+          "right_calls": 1465
+        }
+      ]
+    },
+    {
+      "common_genes": 19112,
+      "genes_abs_lfc_difference_ge_0_5": 19,
+      "left": "joint_exact",
+      "max_abs_lfc_difference": 1.9182000000000006,
+      "median_abs_lfc_difference": 0.008819999999999939,
+      "missing_left": [],
+      "missing_right": [],
+      "right": "actual_ReCo",
+      "scope": "native_workflow",
+      "spearman_negative_rank": 0.9975389075253297,
+      "thresholds": [
+        {
+          "both": 498,
+          "fdr": 0.01,
+          "jaccard": 0.9613899613899614,
+          "left_calls": 502,
+          "neither": 18594,
+          "only_left": 4,
+          "only_right": 16,
+          "right_calls": 514
+        },
+        {
+          "both": 1134,
+          "fdr": 0.05,
+          "jaccard": 0.9792746113989638,
+          "left_calls": 1143,
+          "neither": 17954,
+          "only_left": 9,
+          "only_right": 15,
+          "right_calls": 1149
+        },
+        {
+          "both": 1447,
+          "fdr": 0.1,
+          "jaccard": 0.9790257104194858,
+          "left_calls": 1460,
+          "neither": 17634,
+          "only_left": 13,
+          "only_right": 18,
+          "right_calls": 1465
+        }
+      ]
+    },
+    {
+      "common_genes": 19112,
+      "genes_abs_lfc_difference_ge_0_5": 0,
+      "left": "actual_ReCo",
+      "max_abs_lfc_difference": 0.0,
+      "median_abs_lfc_difference": 0.0,
+      "missing_left": [],
+      "missing_right": [],
+      "right": "actual_ReCo",
+      "scope": "identical_input_repeat",
+      "spearman_negative_rank": 1.0,
+      "thresholds": [
+        {
+          "both": 514,
+          "fdr": 0.01,
+          "jaccard": 1.0,
+          "left_calls": 514,
+          "neither": 18598,
+          "only_left": 0,
+          "only_right": 0,
+          "right_calls": 514
+        },
+        {
+          "both": 1149,
+          "fdr": 0.05,
+          "jaccard": 1.0,
+          "left_calls": 1149,
+          "neither": 17963,
+          "only_left": 0,
+          "only_right": 0,
+          "right_calls": 1149
+        },
+        {
+          "both": 1465,
+          "fdr": 0.1,
+          "jaccard": 1.0,
+          "left_calls": 1465,
+          "neither": 17647,
+          "only_left": 0,
+          "only_right": 0,
+          "right_calls": 1465
+        }
+      ]
+    }
+  ],
+  "completion": "complete",
+  "eligible_guides": 74293,
+  "kind": "actual_native_workflow_comparator",
+  "known_origin_accuracy_established": false,
+  "raw_records": 246950411,
+  "repeat_command": {
+    "command": [
+      "mageck",
+      "test",
+      "-k",
+      "comparator-results/native-reco-counts.tsv",
+      "-t",
+      "A,B,C",
+      "-c",
+      "pDNA",
+      "--norm-method",
+      "median",
+      "--remove-zero",
+      "none",
+      "--gene-lfc-method",
+      "median",
+      "--keep-tmp",
+      "--normcounts-to-file",
+      "-n",
+      "comparator-results/mageck/native_reco_repeat"
+    ],
+    "gene_summary_sha256": "90d476aa02c5579110cb18fb9fc52f31fac4b678ebae19c9eca278633d5a7541",
+    "genes": 19112,
+    "matrix_sha256": "583d476b8f784282799d50b1a6cbde08edc8a62c21e7738a7155d934e57562de",
+    "wall_seconds": 11.931229145999964
+  },
+  "source_commit": "24a8d08e8cdd2232bd92da8aa4b4ebf798af425e",
+  "source_sha256": "ac9dc31bbfe04c73c19c422ad1d3efe16b0434bbc3bd5912c48e329baa3c00ae"
+}
