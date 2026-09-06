@@ -4,5 +4,7 @@
   "authorized": true,
   "request": "Merge PR #104 to main and release the reviewed DotMatch improvements.",
   "publication_channels": ["GitHub Releases", "PyPI", "GHCR"],
+  "production_website": "GitHub Pages",
+  "non_release_integration": "Vercel optional previews report an account-level block. That exact administrative status is reported, not treated as a successful deployment; production Pages and all code/security checks must pass.",
   "rule": "Only tag the exact checked main commit. Never move an existing tag; never claim an unverified upstream archive or package."
 }

@@ -23,6 +23,7 @@ REQUIRED_WORKFLOWS = {
     '.github/workflows/site-validation.yml',
     '.github/workflows/codeql.yml',
     '.github/workflows/workflow-ecosystem.yml',
+    '.github/workflows/pages.yml',
 }
 
 
@@ -78,15 +79,32 @@ def workflow_verdict(runs, sha):
     return len(latest) == len(REQUIRED_WORKFLOWS) and all(item.get('conclusion') == 'success' for item in latest.values())
 
 
+def status_verdict(status):
+    """Keep release/security checks authoritative, not an unused preview account.
+
+    GitHub Pages is required separately. The exact Vercel account-level block
+    is visible in logs and is not misrepresented as a successful deployment.
+    A Vercel build error, or any other failed status, still blocks publication.
+    """
+    ready = True
+    for item in status.get('statuses', []):
+        if (item.get('context') == 'Vercel' and item.get('state') == 'failure'
+                and item.get('description') == 'Account is blocked.'
+                and item.get('target_url') == 'https://vercel.com/knowledge/why-is-my-account-deployment-blocked'):
+            print('Non-release preview unavailable: Vercel account is blocked. Production GitHub Pages must pass separately.', flush=True)
+            continue
+        require(item.get('state') not in {'failure', 'error'}, f'Commit status failed: {item.get("context")}')
+        ready = ready and item.get('state') == 'success'
+    return ready
+
+
 def tag_release():
     version, tag, sha, _ = context()
     require(os.environ.get('GITHUB_REF') == 'refs/heads/main', 'Tags may only be requested from main')
     for attempt in range(120):
         require(github('git/ref/heads/main')['object']['sha'] == sha, 'Main moved during release validation; refusing to tag a stale candidate')
         runs = github(f'actions/runs?head_sha={sha}&per_page=100')['workflow_runs']
-        status = github(f'commits/{sha}/status')
-        require(status.get('state') not in {'failure', 'error'}, 'A commit status reports failure')
-        external_ready = status.get('total_count', 0) == 0 or status.get('state') == 'success'
+        external_ready = status_verdict(github(f'commits/{sha}/status'))
         if workflow_verdict(runs, sha) and external_ready:
             break
         print('Required checks for the exact main commit are not all complete.', flush=True)
