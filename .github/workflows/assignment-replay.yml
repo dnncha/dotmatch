@@ -1,0 +1,131 @@
+name: Assignment research - independent full-read replay
+on:
+  push:
+    branches: [research/assignment-robustness-v2]
+    paths:
+      - research/assignment_robustness/replay.py
+      - research/assignment_robustness/publish_results.py
+      - .github/workflows/assignment-replay.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - accession: ERR376998
+            start: 23
+            raw_run: 34028707688
+            raw_name: yusa-plasmid-full
+            evidence_run: 34028150631
+            evidence_name: assignment-yusa-evidence
+          - accession: ERR376999
+            start: 23
+            raw_run: 34028707688
+            raw_name: yusa-esc1-full
+            evidence_run: 34028150631
+            evidence_name: assignment-yusa-evidence
+          - accession: SRR8297997
+            start: 21
+            raw_run: 34029177963
+            raw_name: assignment-brunello-inputs
+            evidence_run: 34029177963
+            evidence_name: assignment-brunello-evidence
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 11d159fa1648365f2a4e96917b483c33aa5d9fe7
+          path: pinned-engine
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned original engine and independent numerical oracle
+        run: |
+          set -euo pipefail
+          python -m pip install numpy==2.2.6 ./pinned-engine > replay-install.log 2>&1
+          python -m pip freeze > replay-environment.txt
+          python research/assignment_robustness/replay.py --test 2>&1 | tee replay-tests.log
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.raw_name }}
+          run-id: ${{ matrix.raw_run }}
+          repository: dnncha/dotmatch
+          github-token: ${{ github.token }}
+          path: input/raw
+      - uses: actions/download-artifact@v4
+        if: matrix.accession != 'SRR8297997'
+        with:
+          name: yusa-reference-prefixes
+          run-id: 34028707688
+          repository: dnncha/dotmatch
+          github-token: ${{ github.token }}
+          path: input/raw
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.evidence_name }}
+          run-id: ${{ matrix.evidence_run }}
+          repository: dnncha/dotmatch
+          github-token: ${{ github.token }}
+          path: input/evidence
+      - uses: actions/download-artifact@v4
+        with:
+          name: assignment-upstream-guide-counter
+          run-id: 34028196826
+          repository: dnncha/dotmatch
+          github-token: ${{ github.token }}
+          path: work/evidence
+      - name: Verify actual comparator binary and source
+        run: |
+          set -euo pipefail
+          cd work
+          sha256sum -c evidence/checksums.sha256
+          test "$(cat evidence/source-commit.txt)" = 5e49703a83941494c64f4ddefdd341e099cc0232
+          chmod +x evidence/guide-counter
+          evidence/guide-counter --help > evidence/help.txt
+      - name: Independently reconcile every read and every guide
+        run: |
+          set -euo pipefail
+          python research/assignment_robustness/replay.py \
+            --raw input/raw --evidence input/evidence \
+            --accession '${{ matrix.accession }}' --start '${{ matrix.start }}' \
+            --binary work/evidence/guide-counter --out audit-output 2>&1 | tee replay-run.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: assignment-replay-${{ matrix.accession }}
+          path: |
+            audit-output/
+            audit-output.pending/
+            replay-*.log
+            replay-*.txt
+          retention-days: 90
+  publish-evidence:
+    needs: audit
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/assignment-robustness-v2
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: assignment-replay-*
+          path: completed
+      - name: Publish only reconciled aggregate evidence to the research branch
+        run: |
+          set -euo pipefail
+          test '${{ github.ref }}' = refs/heads/research/assignment-robustness-v2
+          python research/assignment_robustness/publish_results.py completed research/assignment_robustness/results
+          git config user.name 'Donncha OToole research workflow'
+          git config user.email '5190258+dnncha@users.noreply.github.com'
+          git add research/assignment_robustness/results
+          git commit -m 'research: preserve independently reconciled full-read evidence [skip ci]'
+          git push origin HEAD:research/assignment-robustness-v2
