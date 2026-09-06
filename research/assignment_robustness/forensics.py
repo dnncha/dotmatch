@@ -101,7 +101,6 @@ def reconstruct(recs, library, lookup, sample, out):
                 all_offsets[offset] += 1
     total = sum(all_offsets.values())
     pilot.require(total > 0, 'no matching offset events')
-    # Integer comparison is exactly n/total >= 0.0025 = 1/400.
     selected = sorted(offset for offset, n in all_offsets.items() if n * 400 >= total)
     counts, once_consensus, multiplicity = Counter(), Counter(), Counter()
     read_any = same = different = 0
@@ -153,7 +152,12 @@ def yusa(out):
             recsets.append(recs)
             summary['samples'][label] = {'sources': metas, 'records': len(recs), 'sha256': pilot.digest(path)}
         labels = list(pilot.SOURCES['yusa']['samples'])
-        summary['guide_counter_version'] = subprocess.check_output(['guide-counter', '--version'], text=True).strip()
+        probe = subprocess.run(['guide-counter', '--version'], capture_output=True, text=True)
+        summary['guide_counter_version_probe'] = {'returncode': probe.returncode, 'stdout': probe.stdout, 'stderr': probe.stderr}
+        installed = subprocess.check_output(['cargo', 'install', '--list'], text=True)
+        pilot.require('guide-counter v0.1.3:' in installed.splitlines(), 'Cargo installation is not the pinned comparator')
+        summary['guide_counter_version'] = '0.1.3 (verified Cargo installation; CLI version flag unsupported)'
+        summary['cargo_installed_packages'] = installed
         summary['guide_counter_binary_sha256'] = pilot.digest(shutil.which('guide-counter'))
         summary['dotmatch_version'] = subprocess.check_output(['dotmatch', '--version'], text=True).strip()
         crate_paths = list((Path.home() / '.cargo/registry/src').glob('*/guide-counter-0.1.3'))
@@ -188,7 +192,6 @@ def yusa(out):
         pilot.require(gc.keys() == dm.keys() == {row[0] for row in library}, 'guide axes differ')
         lookup = matching_event_lookup(library)
         ref = pilot.Reference(library)
-        # Check lookup semantics on deterministic real windows against a separate query-neighbour oracle.
         checked = 0
         for recs in recsets:
             for _h, seq, _p, _q in recs[:1000]:
