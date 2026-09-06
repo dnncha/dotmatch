@@ -1,0 +1,35 @@
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/rngs.cpp:4: * rand() and srand() functions, particularly in simulation applications 
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/rngs.cpp:44:#define DEFAULT    123456789  /* initial seed, use 0 < DEFAULT < MODULUS  */
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/rngs.cpp:46:static long seed[STREAMS] = {DEFAULT};  /* current state of each stream   */
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/rngs.cpp:62:  t = MULTIPLIER * (seed[stream] % Q) - R * (seed[stream] / Q);
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/rngs.cpp:64:    seed[stream] = t;
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/rngs.cpp:66:    seed[stream] = t + MODULUS;
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/rngs.cpp:67:  return ((double) seed[stream] / MODULUS);
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/rngs.cpp:74: * streams by "planting" a sequence of states (seeds), one per stream, 
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/rngs.cpp:89:  PutSeed(x);                            /* set seed[0]                 */
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/rngs.cpp:92:    x = A256 * (seed[j - 1] % Q) - R * (seed[j - 1] / Q);
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/rngs.cpp:94:      seed[j] = x;
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/rngs.cpp:96:      seed[j] = x + MODULUS;
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/rngs.cpp:119:      printf("\nEnter a positive integer seed (9 digits or less) >> ");
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/rngs.cpp:125:  seed[stream] = x;
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/rngs.cpp:136:  *x = seed[stream];
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/RRA.cpp:48:int max_sgnum_permutation_by_group=100; // the maximum number of sgRNA/gene to perform perumtation by group
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/RRA.cpp:140:  bool permutation_by_group=true;
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/RRA.cpp:158:  bool has_specified_rand_passnum_parameter=false; // whether users specified --permutation option
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/RRA.cpp:179:     if (argv[i-1]== "--permutation"){
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/RRA.cpp:185:	cout<<"Skipping gene "<<sn<<" for permutation ..."<<endl;
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/RRA.cpp:194:     if (argv[i-1] == "--max-sgrnapergene-permutation"){
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/RRA.cpp:195:       max_sgnum_permutation_by_group= atoi(argv[i].c_str());
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/RRA.cpp:200:     if (argv[i] == "--no-permutation-by-group"){
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/RRA.cpp:201:        permutation_by_group=false;
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/RRA.cpp:249:    cout<<"Increase the number of permutations to "<<rand_passnum<<" to get precise p values. To avoid this, use the --permutation option.\n";
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/RRA.cpp:252:  if(permutation_by_group){
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/RRA.cpp:308:	printf("--permutation <int>. The number of rounds of permutation. Increase this value if the number of genes is small. Default 100.\n");
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/RRA.cpp:309:	printf("--no-permutation-by-group. By default, gene permutation is performed separately, by their number of sgRNAs. Turning this option will perform permutation on all genes together. This makes the program faster, but the p value estimation is accurate only if the number of sgRNAs per gene is approximately the same.\n");
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/RRA.cpp:310:	printf("--skip-gene <gene_name>. Genes to skip from doing permutation. Specify it multiple times if you need to skip more than 1 genes.\n");
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/RRA.cpp:313:	printf("--max-sgrnapergene-permutation <max number>. Only permute genes by group if the number of sgRNAs per gene is smaller than this number. This will save a lot of time if some regions are targeted by a large number of sgRNAs (usually hundreds). Must be an integer. Default 100. \n");
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/RRA.cpp:395:	cout<<"Skipping gene "<<sn<<" for permutation ..."<<endl;
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/RRA.cpp:697:    if(sgrnanum<=max_sgnum_permutation_by_group){// to avoid permutations on genes with too many sgRNAs (take too much time)
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/tags:94:pvalue	classdef.h	/^  double pvalue;                \/\/p value for permutation$/;"	m	struct:__anon2
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/tags:95:seed	rngs.cpp	/^static long seed[STREAMS] = {DEFAULT};  \/* current state of each stream   *\/$/;"	v	file:
+statistics-engine/liulab-mageck-c491c3874dca/rra/src/classdef.h:44:  double pvalue;                //p value for permutation
