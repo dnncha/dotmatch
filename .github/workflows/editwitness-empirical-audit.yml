@@ -1,0 +1,82 @@
+name: EditWitness empirical data audit
+on:
+  push:
+    branches: [editwitness/empirical-audit-20260906]
+    paths: [.github/workflows/editwitness-empirical-audit.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Retrieve public metadata and published source data
+        shell: bash
+        run: |
+          mkdir -p audit
+          cat > audit/retrieve.py <<'PY'
+          import csv, io, json, hashlib, time, urllib.request, urllib.parse, pathlib
+          import xml.etree.ElementTree as ET
+          from datetime import datetime, timezone
+          root = pathlib.Path('audit')
+          receipts = []
+          def fetch(name, url, limit=15000000):
+              rec = {'name': name, 'url': url, 'utc': datetime.now(timezone.utc).isoformat()}
+              for attempt in range(2):
+                  try:
+                      req = urllib.request.Request(url, headers={'User-Agent':'EditWitness-research-audit/0.0.2 (public-data retrieval)'})
+                      with urllib.request.urlopen(req, timeout=40) as r:
+                          data = r.read(limit+1)
+                          if len(data)>limit: raise ValueError('size budget exceeded')
+                          rec.update(status=r.status, content_type=r.headers.get('Content-Type'), final_url=r.url)
+                      (root/name).write_bytes(data)
+                      rec.update(ok=True, bytes=len(data), sha256=hashlib.sha256(data).hexdigest())
+                      receipts.append(rec)
+                      print(json.dumps(rec), flush=True)
+                      return data
+                  except Exception as e:
+                      rec.update(ok=False,error=str(e))
+                      if attempt==0: time.sleep(2)
+              receipts.append(rec); print(json.dumps(rec), flush=True)
+              return None
+          fields='run_accession,sample_accession,experiment_accession,study_accession,sample_title,experiment_title,library_strategy,library_source,library_selection,instrument_model,read_count,base_count,fastq_ftp,fastq_md5,fastq_bytes,submitted_ftp,submitted_format,submitted_bytes'
+          url='https://www.ebi.ac.uk/ena/portal/api/filereport?'+urllib.parse.urlencode({'accession':'PRJNA916868','result':'read_run','format':'tsv','fields':fields})
+          ena=fetch('PRJNA916868.tsv',url)
+          if ena:
+              try:
+                  rows=list(csv.DictReader(io.StringIO(ena.decode()),delimiter='\t'))
+                  if not rows or 'run_accession' not in rows[0]: raise ValueError('not valid run table')
+                  print('RUN_TABLE_BEGIN\n'+ena.decode()+'RUN_TABLE_END',flush=True)
+                  for e in sorted({r['experiment_accession'] for r in rows}):
+                      fetch(e+'.xml','https://www.ebi.ac.uk/ena/browser/api/xml/'+e)
+              except Exception as e: print('ENA_PARSE_ERROR',str(e),flush=True)
+          else:
+              for acc in ['SRR22937754','SRR22937755','SRR22937756','SRR22937757']:
+                  fetch(acc+'.xml','https://www.ebi.ac.uk/ena/browser/api/xml/'+acc)
+          xml=fetch('Simpson-2023.xml','https://www.ebi.ac.uk/europepmc/webservices/rest/PMC10014281/fullTextXML')
+          if xml:
+              try:
+                  doc=ET.fromstring(xml)
+                  supplements=[]
+                  for el in doc.iter():
+                      if 'supplementary-material' in el.tag:
+                          supplements.append(ET.tostring(el,encoding='unicode'))
+                  (root/'simpson-supplement-links.txt').write_text('\n'.join(supplements))
+                  print('SUPPLEMENT_LINKS_BEGIN\n'+'\n'.join(supplements)+'\nSUPPLEMENT_LINKS_END',flush=True)
+              except Exception as e: print('XML_PARSE_ERROR',str(e),flush=True)
+          base='https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs41551-026-01776-7/MediaObjects/'
+          for suffix,name in [('1_ESM.pdf','CRISPRLungo-supplement.pdf'),('6_ESM.xlsx','CRISPRLungo-figure3-source.xlsx'),('4_ESM.xlsx','CRISPRLungo-supplement-source.xlsx')]:
+              fetch(name,base+'41551_2026_1776_MOESM'+suffix)
+          (root/'receipts.json').write_text(json.dumps(receipts,indent=2))
+          print('AUDIT_COMPLETE',sum(r.get('ok',False) for r in receipts),'of',len(receipts),flush=True)
+          PY
+          python audit/retrieve.py
+      - name: Preserve source files and retrieval receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: editwitness-public-data-audit
+          path: audit/
+          retention-days: 30
+          if-no-files-found: error
