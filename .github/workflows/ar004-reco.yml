@@ -28,40 +28,31 @@ jobs:
       - uses: mamba-org/setup-micromamba@v2
         with:
           environment-name: reco
-          create-args: >-
-            python=3.8
-            cutadapt=2.8
-            bowtie2=2.3.0
-            pip
-            -c conda-forge
-            -c bioconda
+          create-args: python=3.8 pip -c conda-forge
           cache-environment: true
           init-shell: bash
-      - name: Install exact published comparator dependencies and record versions
+      - name: Install exact published comparator dependencies and original Bowtie release
         run: |
           set -euo pipefail
-          micromamba run -n reco python -m pip install -r upstream-reco/requirements.txt > reco-install.log 2>&1
+          micromamba run -n reco python -m pip install cutadapt==2.8 dnaio==0.4.2 xopen==0.9.0 > reco-install.log 2>&1
+          micromamba run -n reco python -m pip install -r upstream-reco/requirements.txt >> reco-install.log 2>&1
           micromamba run -n reco python -m pip install --no-deps ./upstream-reco >> reco-install.log 2>&1
+          curl -fL --retry 3 'https://downloads.sourceforge.net/project/bowtie-bio/bowtie2/2.3.0/bowtie2-2.3.0-linux-legacy-x86_64.zip' -o bowtie2-original-release.zip
+          sha256sum bowtie2-original-release.zip > bowtie2-archive.sha256
+          unzip -q bowtie2-original-release.zip -d bowtie-original
+          BIN=$(find bowtie-original -type f -name bowtie2 | head -1)
+          test -n "$BIN"
+          DIR=$(dirname "$BIN")
+          chmod +x "$DIR"/bowtie2*
+          echo "$PWD/$DIR" >> "$GITHUB_PATH"
+          export PATH="$PWD/$DIR:$PATH"
           micromamba run -n reco python -m pip freeze > reco-environment.txt
           micromamba run -n reco cutadapt --version > cutadapt-version.txt
           micromamba run -n reco bowtie2 --version > bowtie2-version.txt
           micromamba list -n reco --explicit > conda-explicit.txt
           test "$(cat cutadapt-version.txt | tail -1)" = 2.8
           grep 'version 2.3.0' bowtie2-version.txt
-      - name: Require the independently validated reference artifact
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          python - <<'PY'
-          import json,os,time,urllib.request
-          url='https://api.github.com/repos/dnncha/dotmatch/actions/runs/34034542345/artifacts'
-          for attempt in range(40):
-              req=urllib.request.Request(url,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN']})
-              with urllib.request.urlopen(req,timeout=60) as f: data=json.load(f)
-              if any(a['name']=='ar004-reference' for a in data['artifacts']):break
-              time.sleep(15)
-          else:raise RuntimeError('Validated reference never became available')
-          PY
+          printf '%s\n' 'Bowtie 2.3.0 original legacy/pthread binary; unchanged alignment version. Conda old-version resolution failed in run 34034661978. No comparator results from that failed setup are used.' > dependency-provenance.txt
       - uses: actions/download-artifact@v4
         with:
           name: ar004-reference
@@ -85,4 +76,6 @@ jobs:
             cutadapt-version.txt
             bowtie2-version.txt
             conda-explicit.txt
+            dependency-provenance.txt
+            bowtie2-archive.sha256
           retention-days: 90
