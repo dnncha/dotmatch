@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer"><title>EditWitness · Synthetic 900-bp teaching locus (not biological data)</title>
+<style>
+:root{color-scheme:light;--ink:#142832;--muted:#506671;--line:#d8e2e5;--paper:#f5f8f9;
+--accent:#126d72;--warn:#855014}*{box-sizing:border-box}body{margin:0;background:var(--paper);
+color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:#112b36;color:#fff;padding:42px max(24px,calc((100vw - 1060px)/2)) 34px}
+.brand{font-size:14px;letter-spacing:.12em;font-weight:750;text-transform:uppercase;color:#9ce2d8}
+h1{font-size:clamp(28px,4vw,42px);line-height:1.15;letter-spacing:-.035em;margin:16px 0}
+header p{max-width:820px;color:#d4e3e9;margin-bottom:0}.tag{display:inline-block;font-size:12px;
+font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid #557783;
+border-radius:4px;padding:3px 8px;margin-left:12px;color:#fff}main{max-width:1108px;margin:auto;
+padding:26px 24px 48px}.banner{border-left:4px solid var(--warn);padding:14px 20px;
+background:#fff6e8;border-radius:0 7px 7px 0;margin:0 0 24px}.grid{display:grid;
+grid-template-columns:repeat(3,1fr);gap:16px}.metric{padding:20px 22px;background:white;
+border:1px solid var(--line);border-radius:10px}.metric strong{display:block;font-size:36px;
+line-height:1.2;letter-spacing:-.04em}.metric span{color:var(--muted);font-size:14px}
+section{background:#fff;border:1px solid var(--line);border-radius:10px;padding:24px;margin-top:24px}
+h2{font-size:23px;line-height:1.3;letter-spacing:-.02em;margin:0 0 12px}h3{font-size:17px;
+margin:0 0 8px}p{margin:10px 0}.muted,.small{color:var(--muted)}.small{font-size:13px}
+code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px}
+code{overflow-wrap:anywhere}pre{background:#f3f6f7;padding:14px;border-radius:6px;
+white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto}table{border-collapse:collapse;
+width:100%;font-size:14px}caption{text-align:left;font-size:13px;color:var(--muted);padding-bottom:12px}
+th,td{padding:12px 10px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;background:#f7f9fa}
+.scroll{overflow-x:auto}details{border-top:1px solid var(--line);padding:14px 0}
+summary{cursor:pointer;font-weight:650;overflow-wrap:anywhere}summary:focus-visible{outline:3px solid var(--accent)}
+.witness{border-left:3px solid #ae722c;padding:0 0 0 16px;margin:22px 0}
+.pill{display:inline-block;border-radius:4px;padding:2px 7px;font-size:12px;font-weight:650;
+background:#edf2f4;color:#344e5c}.pill.warn{background:#fff0d7;color:#805019}
+svg{display:block;width:100%;height:auto;min-width:420px}ul,ol{padding-left:23px}li{margin:8px 0}
+footer{padding-top:24px;color:var(--muted);font-size:12px;overflow-wrap:anywhere}
+@media(max-width:650px){header{padding:28px 20px}.grid{grid-template-columns:1fr}.metric{display:flex;
+align-items:center;gap:16px}.metric strong{font-size:30px}main{padding:20px 16px}section{padding:18px}
+th,td{padding:10px 8px}.tag{margin-left:6px;font-size:10px}}
+@media print{body{background:#fff;font-size:11pt}header{background:#fff;color:#142832;padding:0 0 16px}
+header p,.brand{color:#142832}.tag{color:#142832}main{padding:0}.grid{display:flex}.metric{flex:1}
+section{break-inside:avoid;page-break-inside:avoid;border-color:#aaa}.scroll{overflow:visible}
+pre{max-height:none}details{display:block}footer{font-size:8pt}}
+</style></head><body>
+<header><div class="brand">EditWitness <span class="tag">Research alpha</span></div>
+<h1>Your assay leaves alternatives unresolved</h1><p>2 declared alternative hypotheses produce the same modeled observations as intended_biallelic. This demonstrates ambiguity, not an observed editing defect.</p></header><main>
+<div class="banner"><strong>Model evidence, not a safety certificate.</strong> Software-tested; not empirically validated.
+ This is a synthetic demonstration.</div>
+<div class="grid"><div class="metric"><strong>2</strong><span>equivalent alternative hypotheses</span></div>
+<div class="metric"><strong>1</strong><span>separable with supplied candidates</span></div>
+<div class="metric"><strong>1</strong><span>beyond the supplied candidates</span></div></div>
+<section><h2>What was compared</h2><p class="small">Reference: Synthetic 900-bp teaching locus (not biological data) · 900 bp.
+ Sequence presence only; no inference from read fractions or allele dosage.</p>
+<p class="small">4 different local-genotype alternatives. Model: <code>exact-local-sites-presence-v2</code>.
+</p><div class="scroll">
+<table><caption>Existing assays only. “Different observations” is conditional on the response model.</caption>
+<thead><tr><th>Hypothesis</th><th>Alleles</th><th>Comparison</th><th>Separating existing assays</th></tr></thead>
+<tbody><tr><td><code>intended_biallelic</code></td><td>intended + intended</td><td><span class="pill">Expected hypothesis</span></td><td>—</td></tr><tr><td><code>intended_reference</code></td><td>intended + reference</td><td><span class="pill">Different observations</span></td><td>inner</td></tr><tr><td><code>hidden_primer_deletion</code></td><td>intended + primer_site_deletion</td><td><span class="pill warn">Same observations</span></td><td>—</td></tr><tr><td><code>hidden_window_deletion</code></td><td>intended + window_deleted</td><td><span class="pill warn">Same observations</span></td><td>—</td></tr><tr><td><code>interior_deletion</code></td><td>intended + interior_deletion</td><td><span class="pill">Different observations</span></td><td>inner</td></tr></tbody></table></div></section>
+<section><h2>Concrete counterexamples</h2><article class="witness"><h3>hidden_primer_deletion</h3><p><code>intended + intended</code> versus <code>intended + primer_site_deletion</code></p><p>Both hypotheses yield the same sequence-presence observations in every existing assay. At least one alternative allele emits no modeled signal in an existing assay: primer_site_deletion. The surviving signal does not establish the missing allele&#x27;s state.</p><details><summary>Inspect the genomic alternatives</summary><p class="small"><code>intended</code>: [450, 451) → A</p><p class="small"><code>primer_site_deletion</code>: [180, 480) → deletion</p></details><p class="small">Separating candidates: outer.</p><details><summary>Inspect the sequence evidence</summary><h3>inner / intended</h3><p class="small">potentially_observable. 1 exact local product(s) retained. Every modeled product is assumed detectable; this is not a prediction of PCR yield, sensitivity or allele dosage.</p><pre>product 1, read 1: ACCCAAAGCCTTCCCGGTGGTAGGGGTATCAGACTCATAAGCAACCGATCTTCCCCCACGCCGGCGAATGAGTTTAGGCCAACTTCGTTAACCATGCATAACTACTGTTGCATGATCTGGATGCCACAAACGCAACCAGTAGGTAAGTCTGCCATTGGACTAGCTGAGCCAACCGTGTTCACTGAGTCTGGGTTTCTCCGGTTAAAATTTAGAACCCTCTGGAGAATACTAGAAGAATGAACGAGCGACTGGATCGAATGCTGATGCATGATACTACTGCCCGCCCAAGAACGGTACTCACTTTGTCCAGCTCTTTATTAATGCATTATCCGGCACTTATCGGTCCCCACAGATCCCGGATAGGTTACACCCGCAAGCACCCCTCGGTTCACGGCGCCCTCACATATTCTCGCGACTCACTCCCCGCTCTTGGCCGTACAGCGCGTAATCGACATAATCC</pre><h3>inner / primer_site_deletion</h3><p class="small">no_exact_local_product. No retained exact inward-facing heteroprimer product in the local sequence. Mismatched, same-primer and nonlocal amplification remain unmodeled.</p><p class="small">No modeled sequence signal.</p></details></article><article class="witness"><h3>hidden_window_deletion</h3><p><code>intended + intended</code> versus <code>intended + window_deleted</code></p><p>Both hypotheses yield the same sequence-presence observations in every existing assay. At least one alternative allele emits no modeled signal in an existing assay: window_deleted. The surviving signal does not establish the missing allele&#x27;s state.</p><details><summary>Inspect the genomic alternatives</summary><p class="small"><code>intended</code>: [450, 451) → A</p><p class="small"><code>window_deleted</code>: [0, 900) → deletion</p></details><p class="small">Separating candidates: None supplied.</p><details><summary>Inspect the sequence evidence</summary><h3>inner / intended</h3><p class="small">potentially_observable. 1 exact local product(s) retained. Every modeled product is assumed detectable; this is not a prediction of PCR yield, sensitivity or allele dosage.</p><pre>product 1, read 1: ACCCAAAGCCTTCCCGGTGGTAGGGGTATCAGACTCATAAGCAACCGATCTTCCCCCACGCCGGCGAATGAGTTTAGGCCAACTTCGTTAACCATGCATAACTACTGTTGCATGATCTGGATGCCACAAACGCAACCAGTAGGTAAGTCTGCCATTGGACTAGCTGAGCCAACCGTGTTCACTGAGTCTGGGTTTCTCCGGTTAAAATTTAGAACCCTCTGGAGAATACTAGAAGAATGAACGAGCGACTGGATCGAATGCTGATGCATGATACTACTGCCCGCCCAAGAACGGTACTCACTTTGTCCAGCTCTTTATTAATGCATTATCCGGCACTTATCGGTCCCCACAGATCCCGGATAGGTTACACCCGCAAGCACCCCTCGGTTCACGGCGCCCTCACATATTCTCGCGACTCACTCCCCGCTCTTGGCCGTACAGCGCGTAATCGACATAATCC</pre><h3>inner / window_deleted</h3><p class="small">no_exact_local_product. No retained exact inward-facing heteroprimer product in the local sequence. Mismatched, same-primer and nonlocal amplification remain unmodeled.</p><p class="small">No modeled sequence signal.</p></details></article></section>
+<section><h2>Which additional assays help?</h2><p>Selected panel: <strong>outer</strong> · 2 declared cost units.</p>
+<p class="small">Method: exhaustive_minimum_cost. Optimality: proven_within_declared_candidates.</p>
+<p>Separates the expected hypothesis from all alternatives separable by these candidates under this response model. Does not certify real assay performance or resolve unmodeled events.</p><p><strong>1 alternative(s) remain unresolved by every supplied candidate.</strong> Repeating the same sequence-presence measurement does not add dosage evidence. Consider an independently justified orthogonal measurement; this alpha does not simulate it.</p></section>
+<section><h2>Assay geometry and readout</h2><div class="scroll"><svg viewBox="0 0 940 211" role="img" aria-label="Annotated primer positions on the local reference"><text x="175" y="18" fill="#506671" font-size="12">Local reference coordinates · 0-based, half-open</text><text x="0" y="50" fill="#142832" font-size="13">inner</text><line x1="175" y1="45" x2="905" y2="45" stroke="#d4dfe3" stroke-width="3"/><rect x="337.222" y="38" width="16.222" height="14" rx="2" fill="#126d72"/><text x="337.222" y="69" font-size="10" fill="#506671">L [200,220)</text><rect x="726.556" y="38" width="16.222" height="14" rx="2" fill="#126d72"/><text x="726.556" y="69" font-size="10" fill="#506671">R [680,700)</text><text x="0" y="102" fill="#142832" font-size="13">outer</text><line x1="175" y1="97" x2="905" y2="97" stroke="#d4dfe3" stroke-width="3"/><rect x="215.556" y="90" width="16.222" height="14" rx="2" fill="#126d72"/><text x="215.556" y="121" font-size="10" fill="#506671">L [50,70)</text><rect x="848.222" y="90" width="16.222" height="14" rx="2" fill="#126d72"/><text x="848.222" y="121" font-size="10" fill="#506671">R [830,850)</text><text x="0" y="154" fill="#142832" font-size="13">inner_repeat</text><line x1="175" y1="149" x2="905" y2="149" stroke="#d4dfe3" stroke-width="3"/><rect x="337.222" y="142" width="16.222" height="14" rx="2" fill="#126d72"/><text x="337.222" y="173" font-size="10" fill="#506671">L [200,220)</text><rect x="726.556" y="142" width="16.222" height="14" rx="2" fill="#126d72"/><text x="726.556" y="173" font-size="10" fill="#506671">R [680,700)</text></svg></div>
+<div class="scroll"><table><caption>Cost units are user supplied; product-size bounds are declared inclusion rules.</caption>
+<thead><tr><th>Assay</th><th>Observed sequence</th><th>Product bounds</th><th>Cost</th></tr></thead>
+<tbody><tr><td><code>inner</code></td><td>full_insert</td><td>1–1000 bp</td><td>1</td></tr><tr><td><code>outer</code></td><td>full_insert</td><td>1–1500 bp</td><td>2</td></tr><tr><td><code>inner_repeat</code></td><td>full_insert</td><td>1–1000 bp</td><td>1</td></tr></tbody></table></div></section>
+<section><h2>Important qualifications</h2><ul><li><code>FINITE_HYPOTHESIS_SPACE</code> — Absence of a counterexample among declared hypotheses is not evidence of biological completeness.</li><li><code>NO_EXPERIMENTAL_VALIDATION</code> — This alpha has software tests, not measured assay sensitivity or empirical validation.</li><li><code>EXACT_MATCH_MODEL</code> — Both inward heteroprimer orientations are rematched on edited local sequences. Exact matching is not PCR prediction; mismatches, same-primer products and sites outside this window are not modeled.</li><li><code>SYNTHETIC_REFERENCE</code> — This reference is synthetic demonstration data.</li></ul></section>
+<section><h2>The model behind this report</h2><ol><li>Only the explicitly declared local alleles and diploid clonal hypotheses are compared. No exhaustive biological-outcome coverage is claimed.</li><li>Exact primer matches are searched on each reconstructed local allele, in both inward-facing heteroprimer orientations. Every in-bounds product contributes a sequence signal. Mismatches, same-primer amplification and nonlocal binding sites are not modeled.</li><li>Every eligible product is detected without error. Real sampling, PCR bias, assay failure and limits of detection are not modeled.</li><li>An assay observes the SET of full-insert sequences or ordered post-primer-trim read pairs. Allele multiplicity, read counts and genomic copy number are deliberately not observed.</li><li>Configured product-size bounds are hard user-declared inclusion bounds, not a model of PCR efficiency.</li><li>Paired-end readout does not observe the unsequenced gap or insert length. Full-insert mode requires genuinely observing the entire primer-trimmed insert, not merely using a long-read platform.</li><li>Model counterexamples are not evidence that a defect actually occurred. No clinical or clone-release decision is authorized by this software.</li></ol></section>
+<footer>EditWitness 0.2.0a1 · exact-local-sites-presence-v2<br>
+Normalized manifest SHA-256: <code>06b09597e5faa15295e41c1184c402fd07ddfc76065a2f77ae9a25d3f42778ed</code><br>
+Result SHA-256: <code>3f97847697040efc418e291dee7fbf4603599cf3de2aa6b35190483468290683</code><br>
+This report is local, self-contained and script-free. It may contain sensitive genomic sequence; share deliberately.
+ A checksum checks content integrity, not the truth of a scientific claim.</footer>
+</main></body></html>
