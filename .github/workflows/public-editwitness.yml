@@ -1,0 +1,204 @@
+name: Verify and publish EditWitness research alpha
+on:
+  push:
+    branches: ['editwitness/public']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: editwitness-public-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  source:
+    if: github.repository == 'dnncha/dotmatch' && github.ref == 'refs/heads/editwitness/public'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      commit: ${{ steps.source.outputs.sha }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Verify audited source transport
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, json, lzma
+          from pathlib import Path, PurePosixPath
+          root = Path.cwd().resolve()
+          expected = '29b68059c34076f434f1a938d193131e870c084db5894fc5bf8d432d8df3bccd'
+          marker = root / '.transport/applied.sha256'
+          if marker.exists() and marker.read_text().strip() == expected:
+              print('Transport already applied; preserving subsequent reviewed edits.')
+              raise SystemExit(0)
+          packed = b''.join((root / f'.transport/source.{i:02}.xzpart').read_bytes() for i in range(1, 6))
+          if hashlib.sha256(packed).hexdigest() != expected:
+              raise SystemExit('Source transport hash mismatch')
+          decoder = lzma.LZMADecompressor(memlimit=256*1024*1024)
+          raw = decoder.decompress(packed, max_length=4*1024*1024)
+          if not decoder.eof or decoder.unused_data:
+              raise SystemExit('Incomplete or oversized source transport')
+          payload = json.loads(raw.decode('utf-8'))
+          if payload['format'] != 'editwitness.audited-delta.v3' or len(payload['files']) != 53:
+              raise SystemExit('Unexpected source transport format')
+          for name, entry in payload['files'].items():
+              path = PurePosixPath(name)
+              if path.is_absolute() or any(p in {'.','..','.git'} for p in path.parts) or '\\' in name:
+                  raise SystemExit('Unsafe source path')
+              target = root.joinpath(*path.parts)
+              if not target.resolve().is_relative_to(root) or target.is_symlink():
+                  raise SystemExit('Unsafe source destination')
+              mode = entry['mode']
+              if name.startswith('.github/workflows/') and mode != 'verify':
+                  raise SystemExit('Workflow changes require direct reviewed connector writes')
+              if mode == 'verify':
+                  if not target.is_file() or hashlib.sha256(target.read_bytes()).hexdigest() != entry['sha256']:
+                      raise SystemExit(f'Directly written workflow differs: {name}')
+                  continue
+              if mode == 'create':
+                  if target.exists():
+                      raise SystemExit(f'New source path already exists: {name}')
+                  text = entry['text']
+              elif mode == 'delta':
+                  previous = target.read_bytes()
+                  if hashlib.sha256(previous).hexdigest() != entry['base_sha256']:
+                      raise SystemExit(f'Base source differs; refusing stale patch: {name}')
+                  lines = previous.decode('utf-8').splitlines(keepends=True)
+                  last = len(lines)
+                  for start, end, replacement in reversed(entry['edits']):
+                      if not isinstance(start,int) or not isinstance(end,int) or not 0 <= start <= end <= last:
+                          raise SystemExit('Invalid or overlapping line replacement')
+                      lines[start:end] = [replacement]
+                      last = start
+                  text = ''.join(lines)
+              else:
+                  raise SystemExit('Unknown source transport operation')
+              if not isinstance(text,str) or hashlib.sha256(text.encode('utf-8')).hexdigest() != entry['sha256']:
+                  raise SystemExit(f'Reconstructed source hash mismatch: {name}')
+              target.parent.mkdir(parents=True, exist_ok=True)
+              target.write_text(text, encoding='utf-8', newline='\n')
+          marker.write_text(expected+'\n')
+          PY
+          python scripts/release_manifest.py --check
+      - name: Commit only to the independent public branch
+        id: source
+        shell: bash
+        run: |
+          test "$GITHUB_REPOSITORY" = 'dnncha/dotmatch'
+          test "$GITHUB_REF" = 'refs/heads/editwitness/public'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m 'Materialize audited EditWitness 0.2.0a1 sources; independent public branch only'
+            git push origin 'HEAD:refs/heads/editwitness/public'
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+  test:
+    needs: source
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ['3.11', '3.13', '3.14']
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ needs.source.outputs.commit }}
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install -e ".[dev]"
+      - run: python -m pytest -q
+      - run: python scripts/check_style.py
+      - run: python scripts/release_manifest.py --check
+      - run: python scripts/generate_schemas.py --check
+      - run: python -m build
+      - name: Exercise installed wheel outside source tree
+        shell: bash
+        run: python scripts/smoke_wheel.py dist/*.whl
+  typing:
+    needs: source
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ needs.source.outputs.commit }}
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+      - run: python -m pip install -e ".[dev]"
+      - run: python -m mypy src/editwitness
+  coverage:
+    needs: source
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ needs.source.outputs.commit }}
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+      - run: python -m pip install -e ".[dev]"
+      - run: python scripts/check_coverage.py
+  publish:
+    needs: [source, test, typing, coverage]
+    if: github.repository == 'dnncha/dotmatch' && github.ref == 'refs/heads/editwitness/public'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ needs.source.outputs.commit }}
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+      - run: python -m pip install -e ".[dev]"
+      - name: Build create-only public artifact directory
+        env:
+          SOURCE_SHA: ${{ needs.source.outputs.commit }}
+        run: |
+          export SOURCE_DATE_EPOCH=$(git show -s --format=%ct "$SOURCE_SHA")
+          python scripts/build_public_artifacts.py --source-commit "$SOURCE_SHA" --run-url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --destination dist-public/0.2.0a1
+      - name: Attempt explicitly named prerelease without changing DotMatch latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ needs.source.outputs.commit }}
+        shell: bash
+        run: |
+          set +e
+          gh release create editwitness-v0.2.0a1 dist-public/0.2.0a1/*.whl dist-public/0.2.0a1/*.tar.gz dist-public/0.2.0a1/*-source.zip dist-public/0.2.0a1/SHA256SUMS --repo "$GITHUB_REPOSITORY" --target "$SOURCE_SHA" --prerelease --latest=false --title 'EditWitness 0.2.0a1 — research alpha' --notes 'Independent EditWitness research package, temporarily hosted on its own branch. Not a DotMatch release. Software-tested; not empirically biologically validated. See the public branch and publication receipt for model assumptions and exact verification evidence.' > .transport/release-out.txt 2> .transport/release-error.txt
+          RELEASE_STATUS=$?
+          export RELEASE_STATUS
+          set -e
+          python - <<'PY'
+          import json, os, shutil
+          from pathlib import Path
+          path = Path('dist-public/0.2.0a1/publication.json')
+          data = json.loads(path.read_text())
+          success = os.environ['RELEASE_STATUS'] == '0'
+          data['github_prerelease'] = {
+            'status': 'created' if success else 'not_created',
+            'url': Path('.transport/release-out.txt').read_text().strip() if success else None,
+            'error': None if success else Path('.transport/release-error.txt').read_text()[:4000],
+            'latest': False,
+          }
+          path.write_text(json.dumps(data,indent=2)+'\n')
+          shutil.copy2(path,'dist-public/publication.json')
+          print(json.dumps(data['github_prerelease']))
+          PY
+      - name: Publish verified downloads only on the independent branch
+        shell: bash
+        run: |
+          test "$GITHUB_REPOSITORY" = 'dnncha/dotmatch'
+          test "$GITHUB_REF" = 'refs/heads/editwitness/public'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add dist-public
+          git commit -m 'Publish verified EditWitness 0.2.0a1 artifacts and exact CI receipt'
+          git push origin 'HEAD:refs/heads/editwitness/public'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: editwitness-0.2.0a1-public-downloads
+          path: dist-public/0.2.0a1
