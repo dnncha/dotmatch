@@ -1,0 +1,74 @@
+run_accession	sample_alias	experiment_title	read_count	fastq_bytes
+SRR8292127	Calabrese_SetA_109_RepB_Vemurafenib_A375	Illumina HiSeq 2500 sequencing: Calabrese Set A screened with Vemurafenib using dCas9-VP64 in A375, Replicate B	4818253	111286320
+SRR8293151	Calabrese_SetA_109_RepA_Selumetinib_Meljuso	Illumina HiSeq 2500 sequencing: Calabrese Set A screened with Selumetinib using dCas9-VP64 in MelJuSo, Replicate A	8482817	209233797
+SRR8293156	Calabrese_SetB_109_RepB_Dropout_Meljuso	Illumina HiSeq 2500 sequencing: Dropout screen with Calabrese Set B using dCas9-VP64 in MelJuSo, Replicate B	30726380	723006934
+SRR8293469	dCas9-VP64_RepB_Vemurafenib_A375	Illumina HiSeq 2500 sequencing: CRISPRa secondary pool screened with Vemurafenib using dCas9-VP64 in A375, Replicate B	38466858	818281082
+SRR8293527	dCas9-only_RepA_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout CRISPRa screen with secondary pool using dCas9-only in A375, Replicate A	19635856	488382543
+SRR8293574	dCas9-only_RepC_Vemurafenib_A375	Illumina HiSeq 2500 sequencing: CRISPRa secondary pool screened with Vemurafenib using dCas9-only in A375, Replicate C	19498951	410451286
+SRR8293617	dCas9-VP64_RepC_Selumetinib_Meljuso	Illumina HiSeq 2500 sequencing: CRISPRa secondary pool screened with Selumetinib using dCas9-VP64 in MelJuSo, Replicate C	4778662	115713266
+SRR8293869	Dolcetto_SetA_RepA_Dropout_HT29	Illumina HiSeq 2500 sequencing: Dropout screen with Dolcetto Set A in HT29, Replicate A	30461582	725735010
+SRR8293870	Dolcetto_SetA_RepB_Dropout_HT29	Illumina HiSeq 2500 sequencing: Dropout screen with Dolcetto Set A in HT29, Replicate B	27691866	661611293
+SRR8293877	Dolcetto_SetB_RepC_Dropout_HT29	Illumina HiSeq 2500 sequencing: Dropout screen with Dolcetto Set B in HT29, Replicate C	50769875	1345876622
+SRR8297837	Brunello_mod_tracr_RepA_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with Brunello and a modified tracr sequence in A375, Replicate A	13261470	354145013
+SRR8297839	Brunello_mod_tracr_RepB_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with Brunello and a modified tracr sequence in A375, Replicate B	17391687	462740187
+SRR8297840	Brunello_mod_tracr_RepC_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with Brunello and a modified tracr sequence in A375, Replicate C	53767239	1407091601
+SRR8297998	Brunello_pDNA	Illumina HiSeq 2500 sequencing: Plasmid DNA for Brunello	60120685	2149323603
+SRR8298000	orig_tracr_RepB_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with a tiling library using the original tracr in A375, Replicate B	29863166	855379178
+SRR8298019	orig_tracr_RepA_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with a tiling library using the original tracr in A375, Replicate A	29707404	872138090
+SRR8292133	Calabrese_SetA_109_RepA_Dropout_Meljuso	Illumina HiSeq 2500 sequencing: Dropout screen with Calabrese Set A using dCas9-VP64 in MelJuSo, Replicate A	14998228	361224401
+SRR8292158	Calabrese_SetA_109_RepB_Dropout_Meljuso	Illumina HiSeq 2500 sequencing: Dropout screen with Calabrese Set A using dCas9-VP64 in MelJuSo, Replicate B	12270013	294745627
+SRR8293152	Calabrese_SetA_109_RepB_Selumetinib_Meljuso	Illumina HiSeq 2500 sequencing: Calabrese Set A screened with Selumetinib using dCas9-VP64 in MelJuSo, Replicate B	12893146	309437980
+SRR8293158	Calabrese_SetB_109_pDNA	Illumina HiSeq 2500 sequencing: Plasmid DNA for Calabrese Set B with dCas9-VP64	23825883	571033016
+SRR8293161	Calabrese_SetA_118_RepA_Vemurafenib_A375	Illumina HiSeq 2500 sequencing: Calabrese Set A screened with Vemurafenib using dCas9-only in A375, Replicate A	12637182	287125333
+SRR8293464	dCas9-VP64_pDNA	Illumina HiSeq 2500 sequencing: Plasmid DNA for CRISPRa secondary pool with dCas9-VP64	20962628	513450165
+SRR8293467	dCas9-VP64_RepC_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout CRISPRa screen with secondary pool using dCas9-VP64 in A375, Replicate C	15464473	382150706
+SRR8293468	dCas9-VP64_RepA_Vemurafenib_A375	Illumina HiSeq 2500 sequencing: CRISPRa secondary pool screened with Vemurafenib using dCas9-VP64 in A375, Replicate A	25741846	563335583
+SRR8293552	dCas9-only_RepC_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout CRISPRa screen with secondary pool using dCas9-only in A375, Replicate C	17040314	425712394
+SRR8293620	dCas9-VP64_RepC_Trametinib_Meljuso	Illumina HiSeq 2500 sequencing: CRISPRa secondary pool screened with Trametinib using dCas9-VP64 in MelJuSo, Replicate C	12803298	305269273
+SRR8293867	Dolcetto_SetA_RepB_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with Dolcetto Set A in A375, Replicate B	58469110	1389536582
+SRR8297997	Brunello_mod_tracr_pDNA	Illumina MiSeq sequencing: Plasmid DNA for Brunello with a modified tracr	9821128	351041737
+SRR8279891	Brunello_RepA_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with Brunello in A375, Replicate A	99121522	2851267295
+SRR8281054	Brunello_RepB_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with Brunello in A375, Replicate B	93622486	2687153288
+SRR8293150	Calabrese_SetB_109_RepA_Selumetinib_Meljuso	Illumina HiSeq 2500 sequencing: Calabrese Set B screened with Selumetinib using dCas9-VP64 in MelJuSo, Replicate A	20131238	486887387
+SRR8293154	Calabrese_SetB_109_RepA_Dropout_Meljuso	Illumina HiSeq 2500 sequencing: Dropout screen with Calabrese Set B using dCas9-VP64 in MelJuSo, Replicate A	29450788	704711588
+SRR8293465	dCas9-VP64_RepA_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout CRISPRa screen with secondary pool using dCas9-VP64 in A375, Replicate A	18886536	465116441
+SRR8293466	dCas9-VP64_RepB_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout CRISPRa screen with secondary pool using dCas9-VP64 in A375, Replicate B	22211939	543342845
+SRR8293615	dCas9-VP64_RepA_Selumetinib_Meljuso	Illumina HiSeq 2500 sequencing: CRISPRa secondary pool screened with Selumetinib using dCas9-VP64 in MelJuSo, Replicate A	3539853	87668670
+SRR8293618	dCas9-VP64_RepA_Trametinib_Meljuso	Illumina HiSeq 2500 sequencing: CRISPRa secondary pool screened with Trametinib using dCas9-VP64 in MelJuSo, Replicate A	12852473	302447945
+SRR8293619	dCas9-VP64_RepB_Trametinib_Meljuso	Illumina HiSeq 2500 sequencing: CRISPRa secondary pool screened with Trametinib using dCas9-VP64 in MelJuSo, Replicate B	12882942	304486182
+SRR8293621	dCas9-VP64_pDNA_Meljuso	Illumina HiSeq 2500 sequencing: Plasmid DNA for CRISPRa secondary pool with dCas9-VP64	7113201	173451319
+SRR8293873	Dolcetto_SetB_RepB_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with Dolcetto Set B in A375, Replicate B	54376762	1350423455
+SRR8297836	Brunello_mod_tracr_RepA_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with Brunello and a modified tracr sequence in A375, Replicate A	63209854	1655842989
+SRR8297841	Brunello_mod_tracr_RepC_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with Brunello and a modified tracr sequence in A375, Replicate C	21589661	580454156
+SRR8293159	Calabrese_SetA_118_RepA_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with Calabrese Set A using dCas9-only in A375, Replicate A	32255530	714422638
+SRR8293163	Calabrese_SetA_118_pDNA	Illumina HiSeq 2500 sequencing: Plasmid DNA for Calabrese Set A with dCas9-only	13753662	314942963
+SRR8293541	dCas9-only_RepB_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout CRISPRa screen with secondary pool using dCas9-only in A375, Replicate B	17532886	436863049
+SRR8293573	dCas9-only_RepB_Vemurafenib_A375	Illumina HiSeq 2500 sequencing: CRISPRa secondary pool screened with Vemurafenib using dCas9-only in A375, Replicate B	22436177	469094660
+SRR8293612	dCas9-VP64_RepA_Dropout_Meljuso	Illumina HiSeq 2500 sequencing: Dropout CRISPRa screen with secondary pool using dCas9-VP64 in MelJuSo, Replicate A	3118820	76534409
+SRR8293613	dCas9-VP64_RepB_Dropout_Meljuso	Illumina HiSeq 2500 sequencing: Dropout CRISPRa screen with secondary pool using dCas9-VP64 in MelJuSo, Replicate B	10240709	263427321
+SRR8293866	Dolcetto_SetA_RepA_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with Dolcetto Set A in A375, Replicate A	53859430	1300428120
+SRR8293871	Dolcetto_SetA_RepC_Dropout_HT29	Illumina HiSeq 2500 sequencing: Dropout screen with Dolcetto Set A in HT29, Replicate C	37726602	897532450
+SRR8293875	Dolcetto_SetB_RepA_Dropout_HT29	Illumina HiSeq 2500 sequencing: Dropout screen with Dolcetto Set B in HT29, Replicate A	73227278	1933482347
+SRR8293876	Dolcetto_SetB_RepB_Dropout_HT29	Illumina HiSeq 2500 sequencing: Dropout screen with Dolcetto Set B in HT29, Replicate B	72322882	1910374703
+SRR8297842	orig_tracr_pDNA	Illumina HiSeq 2500 sequencing: Plasmid DNA for tiling library with original tracr	16619203	447447090
+SRR8297999	orig_tracr_RepC_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with a tiling library using the original tracr in A375, Replicate C	27934332	805985080
+SRR8298020	Dolcetto_SetB_pDNA	Illumina HiSeq 2500 sequencing: Plasmid DNA for Dolcetto SetB	51962219	1330470048
+SRR8291815	Calabrese_SetA_109_RepA_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with Calabrese Set A using dCas9-VP64 in A375, Replicate A	58926530	1332266972
+SRR8292120	Calabrese_SetA_109_RepB_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with Calabrese Set A using dCas9-VP64 in A375, Replicate B	56264810	1253433097
+SRR8292124	Calabrese_SetA_109_RepA_Vemurafenib_A375	Illumina HiSeq 2500 sequencing: Calabrese Set A screened with Vemurafenib using dCas9-VP64 in A375, Replicate A	4319257	99016789
+SRR8293153	Calabrese_SetA_109_pDNA	Illumina MiSeq sequencing: Plasmid DNA for Calabrese Set A with dCas9-VP64	2891398	95656243
+SRR8293157	Calabrese_SetB_109_RepB_Selumetinib_Meljuso	Illumina HiSeq 2500 sequencing: Calabrese Set B screened with Selumetinib using dCas9-VP64 in MelJuSo, Replicate B	29044025	695172593
+SRR8293160	Calabrese_SetA_118_RepB_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with Calabrese Set A using dCas9-only in A375, Replicate B	31843758	709655516
+SRR8293162	Calabrese_SetA_118_RepB_Vemurafenib_A375	Illumina HiSeq 2500 sequencing: Calabrese Set A screened with Vemurafenib using dCas9-only in A375, Replicate B	10496822	225954800
+SRR8293470	dCas9-VP64_RepC_Vemurafenib_A375	Illumina HiSeq 2500 sequencing: CRISPRa secondary pool screened with Vemurafenib using dCas9-VP64 in A375, Replicate C	25986876	551626164
+SRR8293553	dCas9-only_RepA_Vemurafenib_A375	Illumina HiSeq 2500 sequencing: CRISPRa secondary pool screened with Vemurafenib using dCas9-only in A375, Replicate A	23648580	508899340
+SRR8293614	dCas9-VP64_RepC_Dropout_Meljuso	Illumina HiSeq 2500 sequencing: Dropout CRISPRa screen with secondary pool using dCas9-VP64 in MelJuSo, Replicate C	9561113	232313394
+SRR8293616	dCas9-VP64_RepB_Selumetinib_Meljuso	Illumina HiSeq 2500 sequencing: CRISPRa secondary pool screened with Selumetinib using dCas9-VP64 in MelJuSo, Replicate B	12425938	302780518
+SRR8293868	Dolcetto_SetA_RepC_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with Dolcetto Set A in A375, Replicate C	32899236	796459569
+SRR8293872	Dolcetto_SetB_RepA_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with Dolcetto Set B in A375, Replicate A	63295736	1569192990
+SRR8293874	Dolcetto_SetB_RepC_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with Dolcetto Set B in A375, Replicate C	68466690	1690599634
+SRR8296975	Tracrv2_RepA_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with a tiling library using a modified tracr in A375, Replicate A	22785409	626242454
+SRR8296976	Tracrv2_RepB_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with a tiling library using a modified tracr in A375, Replicate B	17968234	498966891
+SRR8296977	Tracrv2_pDNA	Illumina HiSeq 2500 sequencing: Plasmid DNA for tiling library with modified tracr	5601688	155732781
+SRR8297270	Dolcetto_SetA_pDNA	Illumina HiSeq 2500 sequencing: Plasmid DNA for Dolcetto SetA	64408637	1509738413
+SRR8297838	Brunello_mod_tracr_RepB_Dropout_A375	Illumina HiSeq 2500 sequencing: Dropout screen with Brunello and a modified tracr sequence in A375, Replicate B	67909372	1772816191
