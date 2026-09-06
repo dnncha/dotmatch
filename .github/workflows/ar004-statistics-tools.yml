@@ -1,0 +1,49 @@
+name: AR004 - pinned MAGeCK statistics engine
+on:
+  push:
+    branches: [research/replicated-screen-ar004]
+    paths: [.github/workflows/ar004-statistics-tools.yml]
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install original source without statistical modifications
+        run: |
+          set -euo pipefail
+          mkdir -p statistics-engine
+          python -m pip install numpy==1.23.5 scipy==1.10.1 setuptools==68.2.2 > statistics-engine/install.log 2>&1
+          curl -fL --retry 3 'https://downloads.sourceforge.net/project/mageck/0.5/mageck-0.5.9.5.tar.gz' -o statistics-engine/mageck-0.5.9.5.tar.gz
+          sha256sum statistics-engine/mageck-0.5.9.5.tar.gz > statistics-engine/source.sha256
+          tar -xzf statistics-engine/mageck-0.5.9.5.tar.gz -C statistics-engine
+          SETUP=$(find statistics-engine -name setup.py | head -1)
+          test -n "$SETUP"
+          (cd "$(dirname "$SETUP")" && python setup.py install) >> statistics-engine/install.log 2>&1
+          mageck --version > statistics-engine/version.txt
+          mageck test --help > statistics-engine/test-help.txt
+          RRA > statistics-engine/rra-help.txt 2>&1 || true
+          python -m pip freeze > statistics-engine/environment.txt
+          grep -R -n -E 'srand|srandom|seed|permutation' "$(dirname "$SETUP")/rra" > statistics-engine/randomness-source.txt || true
+          cat statistics-engine/version.txt
+          grep -E 'seed|skip-gene|remove-zero|gene-lfc|additional-rra' statistics-engine/test-help.txt || true
+          cat statistics-engine/rra-help.txt
+          mkdir -p research/assignment_robustness/ar004/mageck
+          cp statistics-engine/version.txt statistics-engine/test-help.txt statistics-engine/rra-help.txt statistics-engine/environment.txt statistics-engine/source.sha256 statistics-engine/randomness-source.txt research/assignment_robustness/ar004/mageck/
+          git config user.name 'Donncha OToole research workflow'
+          git config user.email '5190258+dnncha@users.noreply.github.com'
+          git add research/assignment_robustness/ar004/mageck
+          git commit -m 'research: record exact MAGeCK release and statistics command contract [skip ci]'
+          git pull --rebase origin research/replicated-screen-ar004
+          git push origin HEAD:research/replicated-screen-ar004
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ar004-mageck-pinned-engine
+          path: statistics-engine/
+          retention-days: 90
