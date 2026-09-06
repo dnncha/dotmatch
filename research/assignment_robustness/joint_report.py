@@ -244,7 +244,6 @@ def analyse_pair(old_rows, joint_gene, manifests_by_id):
                     raise ValueError('No eligible genes; do not invent a percentage')
                 deltas.sort()
                 widths.sort()
-                # Nearest-rank medians preserve observed values without distributional assumptions.
                 summary = {'policy': policy, 'baseline_exact_minimum': threshold, 'pseudocount': pseudo,
                            'primary': primary, 'eligible_annotations': len(eligible), 'shift_ge_half_log2': shifts,
                            'shift_fraction': shifts/len(eligible), 'strong_sign_reversals': sign_reversals,
@@ -330,17 +329,17 @@ def build(args):
     primary_table = [[r['policy'], number(r['eligible_annotations']), number(r['shift_ge_half_log2']), f"{100*r['shift_fraction']:.3f}%", number(r['strong_sign_reversals'])] for r in summary['primary_effects']]
     report = '# Joint guide/position resolution in pooled CRISPR counting\n\n'
     report += '**AR003 technical results; 6 September 2026. Not peer reviewed.**\n\n'
-    report += 'The new joint decoder was executed on all **30,215,791 original sequencing records** across ERR376998, ERR376999 and SRR8297997. It considered every permitted position jointly, rather than adding a count for each accepted window. Complete per-position baseline counts were independently reconciled with the prior pinned DotMatch 0.5.0 results.\n\n'
+    report += 'The new joint decoder was executed on all **30,215,791 original sequencing records** across ERR376998, ERR376999 and SRR8297997. It considered every permitted position jointly, rather than adding a count for each accepted window. Complete fixed-window baseline counts were independently reconciled with the prior pinned DotMatch 0.5.0 results.\n\n'
     report += '## What is identifiable at each resolution?\n\n'
     report += markdown_table(['Archive', 'Policy', 'Guide-unique reads', 'Gene-unique reads', 'Additional gene-identifiable reads'], headline)+'\n\n'
     report += 'The last column is gene-unique minus guide-unique within the same policy. These are overlapping views of the same records, not totals to add together. A gene-identifiable read may remain ambiguous between guides of the same gene. More identifiable reads do not, by themselves, establish more accurate assignments. Complete ambiguous, unmatched, invalid and position-level budgets are in `read-resolution.tsv`.\n\n'
     report += '## Yusa representation sensitivity\n\n'
     report += markdown_table(['Joint policy versus fixed best', 'Eligible annotation groups', 'Absolute change >=0.5 log2', 'Share', 'Strong sign reversals'], primary_table)+'\n\n'
-    report += 'Eligibility is fixed-window exact plasmid sum >=50 with at least two guides each having >=10 baseline counts. The same population is used for every policy. Ratios use original input-read exposure and pseudocount 0.5. Strong sign reversals require opposite signs with both absolute ratios >=0.5. Thresholds 20/100 and pseudocounts 0.1/1 are reported separately. This changes extraction and resolution as well as assignment; it is not a pure mismatch-policy comparison.\n\n'
-    report += 'All 19,149 original Yusa annotation labels (subject to an explicit identity check, not assumed gene identities) are retained in the complete tables, including zero counts and ineligible groups. `all-primary-outliers.tsv` contains every qualifying outlier, not only illustrative examples. No gene-level p-values or phenotype discoveries are inferred from this unreplicated pair.\n\n'
+    report += 'Eligibility is fixed-window exact plasmid sum >=50 with at least two guides each having >=10 baseline counts. The same population is used for every policy. Ratios use original input-read exposure and pseudocount 0.5. Strong sign reversals are a descriptive secondary check requiring opposite signs with both absolute ratios >=0.5. Thresholds 20/100 and pseudocounts 0.1/1 are reported separately. This changes extraction and resolution as well as assignment; it is not a pure mismatch-policy comparison.\n\n'
+    report += f"All {len(new_genes['ERR376998']):,} original Yusa annotation labels are retained in the complete tables, including zero counts and ineligible groups. They are original annotation groups, not automatically distinct validated genes. `all-primary-outliers.tsv` contains every qualifying outlier, not only illustrative examples. No gene-level p-values or phenotype discoveries are inferred from this unreplicated pair.\n\n"
     report += '## Known-origin controls\n\n'
-    report += markdown_table(['Archive','Policy','Constructed records','Guide correct','Guide incorrect','Gene correct','Gene incorrect'],
-                             [[r[0],r[1],number(r[2]),number(r[4]),number(r[5]),number(r[8]),number(r[9])] for r in control_rows)+'\n\n'
+    control_table = [[r[0], r[1], number(r[2]), number(r[4]), number(r[5]), number(r[8]), number(r[9])] for r in control_rows]
+    report += markdown_table(['Archive','Policy','Constructed records','Guide correct','Guide incorrect','Gene correct','Gene incorrect'], control_table)+'\n\n'
     report += 'These are the previously archived balanced, error-free constructs, one per reference guide. They test implementation and information loss under known contexts; they do not estimate real sequencing accuracy or generalize to unknown assays. Ambiguous and unassigned results are fully retained in `known-origin-controls.tsv`.\n\n'
     report += '## Validation and evidence boundaries\n\n'
     native_cells = sum(summary_samples[a]['validation']['full_fixed_window_native_count_cells'] for a in ACCESSIONS)
@@ -362,8 +361,6 @@ def build(args):
     validation += 'The local runtime failed during earlier full jobs. Those unfinished jobs were discarded as evidence. The reported full runs were independently executed in GitHub Actions from the recorded commit. The original standalone 127-test suite was rerun locally before failure; the integrated joint decoder has its own independently executed CI tests. These are different test scopes and are not summed into a fictitious single suite.\n\n'
     validation += 'Remaining blockers: independent replicated phenotype contrasts, comparable assay-aware decoders, stronger known-origin error models or orthogonal experimental validation, human review of manuscript and annotation interpretation. No claim that fixed-window counting is optimal for staggered Brunello reads.\n'
     (output/'VALIDATION.md').write_text(validation, encoding='utf-8')
-    # A self-contained, no-script reader: preserve exact validated Markdown as text.
-    # No charts are generated or claimed to have been visually validated.
     body = '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DotMatch AR003 research evidence</title><style>body{max-width:1100px;margin:48px auto;padding:0 24px;font:17px/1.6 system-ui,sans-serif}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:15px/1.7 ui-monospace,monospace}h1{font-size:2rem}a{color:inherit}</style><h1>DotMatch AR003: complete research record</h1><p>Validated numerical report. Exploratory technical results, not peer reviewed.</p><pre>'+html.escape(report)+'</pre></html>\n'
     (output/'report.html').write_text(body, encoding='utf-8')
     dump(output/'completion.json', {'completion': 'complete', 'audit_run': args.audit_run,
@@ -402,6 +399,11 @@ class Tests(unittest.TestCase):
                 point = log_ratio(t, c, nc, nt, pseudo)
                 self.assertLessEqual(low, point)
                 self.assertLessEqual(point, high)
+
+    def test_markdown_control_table(self):
+        rendered = markdown_table(['Archive','Correct','Incorrect'], [['ERR', 10, 0], ['SRR', 20, 0]])
+        self.assertIn('| ERR | 10 | 0 |', rendered)
+        self.assertEqual(len(rendered.splitlines()), 4)
 
 
 def main():
