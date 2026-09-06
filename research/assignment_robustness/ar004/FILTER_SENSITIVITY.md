@@ -1,0 +1,9 @@
+# AR004 supplementary ascertainment check
+
+6 September 2026, declared after inspecting only the previously known complete Brunello plasmid counts, before any new cellular gene statistics were inspected. This supplements, and does not replace, the original AR004 protocol or common primary population.
+
+The primary common guide population requires >=30 joint-exact plasmid counts. That can omit guide identities whose baseline reads are positionally ambiguous. An independently executed local replay of the already known plasmid identifies 74,293 primary eligible guide IDs and 74,359 IDs meeting an event-exact >=30 baseline rule, excluding the same non-targeting/missing annotations. The 66 additional IDs span 61 original gene annotations. These are baseline-only observations, not cellular findings.
+
+To avoid interpreting conditional stability as stability for all ambiguous guides, repeat the primary event_best versus joint_best MAGeCK contrast using the event-exact baseline >=30 common guide population. Retain identical IDs in both arms, including joint-zero guide rows, use the same original complete A/B/C and pDNA counts, median normalization, remove-zero none, median gene LFC and final FDR thresholds 0.01/0.05/0.10. Explicitly list missing gene outputs rather than zero-filling. Report all changed calls/effects and the identities/counts of the 66 added guides.
+
+This is a declared supplementary baseline-ascertainment sensitivity, not a revised primary endpoint, an independently replicated biological study, or a result selected after viewing cellular outcomes. The reference/event arms do not establish true molecular origin. Preserve both populations and any null finding. A difference under this broader population is not automatically evidence that the primary filter was wrong; it quantifies the dependence on conditioning on baseline identifiability.
