@@ -1,0 +1,65 @@
+name: EditWitness spike-in calibration sources
+on:
+  push:
+    branches: [editwitness/empirical-audit-20260906]
+    paths: [.github/workflows/editwitness-calibration-sources.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  calibration-scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Retrieve public calibration metadata and source listings
+        shell: bash
+        run: |
+          mkdir -p calibration
+          cat > calibration/retrieve.py <<'PY'
+          import pathlib,urllib.request,urllib.parse,json,hashlib,csv,io
+          from datetime import datetime,timezone
+          root=pathlib.Path('calibration'); recs=[]
+          def get(name,url,limit=3000000):
+              rec={'name':name,'url':url,'utc':datetime.now(timezone.utc).isoformat()}
+              try:
+                  with urllib.request.urlopen(urllib.request.Request(url,headers={'User-Agent':'EditWitness-research-audit/0.0.2'}),timeout=30) as r:
+                      data=r.read(limit+1);rec.update(status=r.status,content_type=r.headers.get('Content-Type'),final_url=r.url)
+                  if len(data)>limit: raise ValueError('size budget exceeded')
+                  (root/name).write_bytes(data);rec.update(ok=True,bytes=len(data),sha256=hashlib.sha256(data).hexdigest())
+                  recs.append(rec);print(json.dumps(rec),flush=True);return data
+              except Exception as e:
+                  rec.update(ok=False,error=str(e));recs.append(rec);print(json.dumps(rec),flush=True)
+          get('PRJEB53901.tsv','https://www.ebi.ac.uk/ena/portal/api/filereport?'+urllib.parse.urlencode({'accession':'PRJEB53901','result':'read_run','format':'tsv','fields':'run_accession,sample_accession,experiment_accession,sample_alias,sample_title,experiment_title,library_name,read_count,fastq_ftp,fastq_md5,fastq_bytes'}))
+          get('CRISPR-A.xml','https://www.ebi.ac.uk/europepmc/webservices/rest/PMC10256225/fullTextXML')
+          base='https://api.bitbucket.org/2.0/repositories/synbiolab/crispr-a_figures'
+          metadata=get('bitbucket-repository.json',base)
+          if metadata:
+              try:
+                  ref=json.loads(metadata)['mainbranch']['name'];q=[('',0)];seen=set();inventory=[]
+                  while q and len(seen)<35:
+                      path,depth=q.pop(0)
+                      if path in seen:continue
+                      seen.add(path)
+                      url=base+'/src/'+urllib.parse.quote(ref,safe='')+'/'+urllib.parse.quote(path,safe='/')+'?pagelen=100'
+                      data=get('listing-'+str(len(seen))+'.json',url)
+                      if not data:continue
+                      listing=json.loads(data)
+                      for ent in listing.get('values',[]):
+                          inventory.append(ent)
+                          if ent['type']=='commit_directory' and depth<3:q.append((ent['path'],depth+1))
+                          elif ent['type']=='commit_file' and ent.get('size',0)<1000000 and (any(w in ent['path'].lower() for w in ['spike','bias','fig5','fig_5','readme']) or ent['path'].lower().endswith(('.r','.rmd','.py'))):
+                              get('file-'+ent['path'].replace('/','__'),ent['links']['self']['href'])
+                      if 'next' in listing:print('INCOMPLETE_DIRECTORY_PAGINATION',path,flush=True)
+                  (root/'inventory.json').write_text(json.dumps(inventory,indent=2))
+              except Exception as e:print('REPOSITORY_PARSE_ERROR',str(e),flush=True)
+          (root/'receipts.json').write_text(json.dumps(recs,indent=2))
+          PY
+          python calibration/retrieve.py
+      - name: Preserve calibration scout evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: editwitness-calibration-source-audit
+          path: calibration/
+          retention-days: 30
+          if-no-files-found: error
