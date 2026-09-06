@@ -1,0 +1,36 @@
+{
+  "all_guide_native_comparisons": 756945,
+  "all_guide_upstream_comparisons": 252315,
+  "all_target_oracle_windows": 600,
+  "assignment_disagreements": 0,
+  "biological_replicate_count_claim": false,
+  "completion": "complete",
+  "scope": "three_complete_archives_two_library_constructs",
+  "source_sha256": {
+    "REPLAY_PROTOCOL.md": "0ec148697c405ddf05d7d70eefdcb506751c6a4ed260a1b418dc803c9b8961c5",
+    "publish_results.py": "17fdb145da727e66798a9c99291d9a8185c45a03cc372b6c24ac35f554348894",
+    "replay.py": "4e4c040b0e3e23e476d580e7051a8ab10aaec11d3b973344f387ed3cf2ec5134"
+  },
+  "totals": {
+    "count_events": 29588353,
+    "cross_gene_multiple": 38610,
+    "extra_events": 1528351,
+    "matched_reads": 28060002,
+    "multiple_distinct_guides": 1454648,
+    "reads": 30215791,
+    "repeated_same_target_events": 0,
+    "within_gene_multiple": 1416038
+  },
+  "workflow_run": "34030217143",
+  "workflow_url": "https://github.com/dnncha/dotmatch/actions/runs/34030217143",
+  "yusa_totals": {
+    "count_events": 20270172,
+    "cross_gene_multiple": 15485,
+    "extra_events": 1499384,
+    "matched_reads": 18770788,
+    "multiple_distinct_guides": 1428087,
+    "reads": 20394663,
+    "repeated_same_target_events": 0,
+    "within_gene_multiple": 1412602
+  }
+}

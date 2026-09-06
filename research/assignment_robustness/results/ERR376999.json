@@ -1,0 +1,215 @@
+{
+  "accession": "ERR376999",
+  "all_guide_native_comparisons": 262311,
+  "all_guide_upstream_comparisons": 87437,
+  "all_target_oracle_windows": 200,
+  "assignment_disagreements": 0,
+  "biological_inference": false,
+  "completion": "complete",
+  "heldout_statistics": {
+    "additional_distinct_target_events": 734693,
+    "count_events": 10004207,
+    "cross_gene_multiple": 7968,
+    "extra_events": 734693,
+    "matched_reads": 9269514,
+    "multiple_distinct_guides": 699730,
+    "multiply_counted_reads": 699730,
+    "reads": 10200758,
+    "repeated_same_target_events": 0,
+    "within_gene_multiple": 691762
+  },
+  "input": {
+    "fastq_bytes": "290645388",
+    "fastq_ftp": "ftp.sra.ebi.ac.uk/vol1/fastq/ERR376/ERR376999/ERR376999.fastq.gz",
+    "fastq_md5": "be96811adce2f5d69efd18a02f8e2416",
+    "full_archive_md5_verified": true,
+    "metadata_url": "https://www.ebi.ac.uk/ena/portal/api/filereport?accession=ERR376999&result=read_run&format=json&fields=run_accession%2Cstudy_accession%2Csample_accession%2Csample_title%2Cfastq_ftp%2Cfastq_md5%2Cfastq_bytes%2Cread_count",
+    "observed_records": 10300758,
+    "prefix_records": 100000,
+    "prefix_sha256": "73059a9ac5c7f92bfc4da032a38f4bb03024a144f06b6a9f805aa28fac5ff159",
+    "read_count": "10300758",
+    "run_accession": "ERR376999",
+    "sample_accession": "SAMEA2188757",
+    "sample_title": "",
+    "sha256": "cf2bc10938e178d16dfb81ca2f9fda805cae892290fac3cfc243bb637f8cda17",
+    "study_accession": "PRJEB4038",
+    "url": "https://ftp.sra.ebi.ac.uk/vol1/fastq/ERR376/ERR376999/ERR376999.fastq.gz"
+  },
+  "length": 19,
+  "library_sha256": "252e3b81b809c50f5cc347238a52926818027ad78a3ec98686e8012a8a46a896",
+  "native_changed_reads": 547420,
+  "native_outcomes": {
+    "best_k1": {
+      "ambiguous": 319,
+      "invalid": 0,
+      "none": 1351514,
+      "unique": 8948925
+    },
+    "exact": {
+      "ambiguous": 0,
+      "invalid": 0,
+      "none": 1824968,
+      "unique": 8475790
+    },
+    "radius_k1": {
+      "ambiguous": 74285,
+      "invalid": 0,
+      "none": 1351514,
+      "unique": 8874959
+    }
+  },
+  "scope": "complete_public_archive",
+  "selected_offsets": [
+    21,
+    22,
+    23,
+    24
+  ],
+  "source": {
+    "engine_commit": "11d159fa1648365f2a4e96917b483c33aa5d9fe7",
+    "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+    "python": "3.11.16 (main, Aug 13 2026, 02:46:14) [GCC 13.3.0]",
+    "replay_source_sha256": "4e4c040b0e3e23e476d580e7051a8ab10aaec11d3b973344f387ed3cf2ec5134",
+    "source_commit": "c33ff64a4a4cf931cb7b26e6ad3a17afe1cf9580",
+    "upstream_binary_sha256": "96602fd0b9732204b530afb912ff679d48b0ba9e13d32c5eea67c10cbbdbf777",
+    "workflow_run": "34030217143"
+  },
+  "start": 23,
+  "statistics": {
+    "additional_distinct_target_events": 742411,
+    "count_events": 10108301,
+    "cross_gene_multiple": 8040,
+    "extra_events": 742411,
+    "matched_reads": 9365890,
+    "multiple_distinct_guides": 707092,
+    "multiply_counted_reads": 707092,
+    "reads": 10300758,
+    "repeated_same_target_events": 0,
+    "within_gene_multiple": 699052
+  },
+  "synthetic_controls": [
+    {
+      "all_guide_reconciliation": true,
+      "changed_guide_rows": 7060,
+      "command": [
+        "/home/runner/work/dotmatch/dotmatch/work/evidence/guide-counter",
+        "count",
+        "--input",
+        "audit-output.pending/synthetic/balanced/synthetic.fastq.gz",
+        "--samples",
+        "balanced",
+        "--library",
+        "input/raw/library.tsv",
+        "--output",
+        "audit-output.pending/synthetic/balanced/upstream_one_mismatch",
+        "--offset-sample-size",
+        "100000",
+        "--offset-min-fraction",
+        "0.0025"
+      ],
+      "count_events": 94865,
+      "counts_to_zero_origin_guides": 0,
+      "data_kind": "synthetic_known_origin_no_errors",
+      "experiment": "balanced",
+      "fixed_exact_native_matches_truth": true,
+      "input_sha256": "10892023c4c3bbb393711d2dde5d41e8d09ae13a5082d4856ea729dba0408118",
+      "policy": "one_mismatch",
+      "selected_offsets": [
+        21,
+        22,
+        23,
+        24
+      ],
+      "source_reads": 87437,
+      "statistics": {
+        "additional_distinct_target_events": 7428,
+        "count_events": 94865,
+        "cross_gene_multiple": 57,
+        "extra_events": 7428,
+        "matched_reads": 87437,
+        "multiple_distinct_guides": 7057,
+        "multiply_counted_reads": 7057,
+        "reads": 87437,
+        "repeated_same_target_events": 0,
+        "within_gene_multiple": 7000
+      },
+      "zero_origin_guides_receiving_counts": 0
+    },
+    {
+      "all_guide_reconciliation": true,
+      "changed_guide_rows": 1626,
+      "command": [
+        "/home/runner/work/dotmatch/dotmatch/work/evidence/guide-counter",
+        "count",
+        "--input",
+        "audit-output.pending/synthetic/balanced/synthetic.fastq.gz",
+        "--samples",
+        "balanced",
+        "--library",
+        "input/raw/library.tsv",
+        "--output",
+        "audit-output.pending/synthetic/balanced/upstream_exact",
+        "--offset-sample-size",
+        "100000",
+        "--offset-min-fraction",
+        "0.0025",
+        "--exact-match"
+      ],
+      "count_events": 89074,
+      "counts_to_zero_origin_guides": 0,
+      "data_kind": "synthetic_known_origin_no_errors",
+      "experiment": "balanced",
+      "fixed_exact_native_matches_truth": true,
+      "input_sha256": "10892023c4c3bbb393711d2dde5d41e8d09ae13a5082d4856ea729dba0408118",
+      "policy": "exact",
+      "selected_offsets": [
+        22,
+        23,
+        24
+      ],
+      "source_reads": 87437,
+      "statistics": {
+        "additional_distinct_target_events": 1637,
+        "count_events": 89074,
+        "extra_events": 1637,
+        "matched_reads": 87437,
+        "multiple_distinct_guides": 1587,
+        "multiply_counted_reads": 1587,
+        "reads": 87437,
+        "repeated_same_target_events": 0,
+        "within_gene_multiple": 1587
+      },
+      "zero_origin_guides_receiving_counts": 0
+    }
+  ],
+  "target_count": 87437,
+  "template_prediction": {
+    "confusion": {
+      "FN": 63,
+      "FP": 164,
+      "TN": 7723464,
+      "TP": 663212
+    },
+    "evaluation_reads": 8386903,
+    "excluded_evaluation_reads": 1813855,
+    "model_sha256": "a5c41caefa6c1600a6a8d0da0028871d5d935bada34ae5102542a88e344fe74d",
+    "predicted_multiple_templates": 7057,
+    "truth_accuracy_claim": false
+  },
+  "upstream_command": [
+    "/home/runner/work/dotmatch/dotmatch/work/evidence/guide-counter",
+    "count",
+    "--input",
+    "input/raw/ERR376999.fastq.gz",
+    "--samples",
+    "ERR376999",
+    "--library",
+    "input/raw/library.tsv",
+    "--output",
+    "audit-output.pending/upstream",
+    "--offset-sample-size",
+    "100000",
+    "--offset-min-fraction",
+    "0.0025"
+  ]
+}

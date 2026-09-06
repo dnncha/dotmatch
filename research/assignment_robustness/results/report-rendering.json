@@ -1,0 +1,7 @@
+{
+  "delivered_alternative": "Audited Markdown research report, source code, aggregate TSV/JSON, and complete workflow artifacts.",
+  "reason": "The standard analytics portable-report builder was not accessible after the local execution service failed. No custom substitute is misrepresented as that renderer.",
+  "selected_audience": "technical",
+  "selected_report_mode": "html",
+  "status": "blocked"
+}

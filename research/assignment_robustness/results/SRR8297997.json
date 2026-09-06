@@ -1,0 +1,210 @@
+{
+  "accession": "SRR8297997",
+  "all_guide_native_comparisons": 232323,
+  "all_guide_upstream_comparisons": 77441,
+  "all_target_oracle_windows": 200,
+  "assignment_disagreements": 0,
+  "biological_inference": false,
+  "completion": "complete",
+  "heldout_statistics": {
+    "additional_distinct_target_events": 28661,
+    "count_events": 9223611,
+    "cross_gene_multiple": 22881,
+    "extra_events": 28661,
+    "matched_reads": 9194950,
+    "multiple_distinct_guides": 26281,
+    "multiply_counted_reads": 26281,
+    "reads": 9721128,
+    "repeated_same_target_events": 0,
+    "within_gene_multiple": 3400
+  },
+  "input": {
+    "experiment_title": "Illumina MiSeq sequencing: Plasmid DNA for Brunello with a modified tracr",
+    "fastq_bytes": "351041737",
+    "fastq_ftp": "ftp.sra.ebi.ac.uk/vol1/fastq/SRR829/007/SRR8297997/SRR8297997.fastq.gz",
+    "fastq_md5": "eddb739a786a8f4ad05845868e0d89de",
+    "full_archive_md5_verified": true,
+    "library_layout": "SINGLE",
+    "metadata_url": "https://www.ebi.ac.uk/ena/portal/api/filereport?accession=SRR8297997&result=read_run&format=json&fields=run_accession%2Cstudy_accession%2Csample_accession%2Csample_alias%2Cexperiment_title%2Clibrary_layout%2Cfastq_ftp%2Cfastq_md5%2Cfastq_bytes%2Cread_count",
+    "observed_records": 9821128,
+    "prefix_records": 100000,
+    "prefix_sha256": "27a0b08b89e7a4ef14e482c93aefe8150a2cbf8b2fdee94508c8c446710201c8",
+    "read_count": "9821128",
+    "run_accession": "SRR8297997",
+    "sample_accession": "SAMN10517964",
+    "sample_alias": "Brunello_mod_tracr_pDNA",
+    "sha256": "c55a555a73174f70e2d966f15bfb2b69ab99e456efd130dcd1a1b122970e017c",
+    "study_accession": "PRJNA508200",
+    "url": "https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR829/007/SRR8297997/SRR8297997.fastq.gz"
+  },
+  "length": 20,
+  "library_sha256": "0d2906187829ea9f736de94a47369bd94d42cde5f348fea9d12a385625cc2ca1",
+  "native_changed_reads": 8076,
+  "native_outcomes": {
+    "best_k1": {
+      "ambiguous": 21,
+      "invalid": 0,
+      "none": 9757028,
+      "unique": 64079
+    },
+    "exact": {
+      "ambiguous": 0,
+      "invalid": 0,
+      "none": 9764309,
+      "unique": 56819
+    },
+    "radius_k1": {
+      "ambiguous": 816,
+      "invalid": 0,
+      "none": 9757028,
+      "unique": 63284
+    }
+  },
+  "scope": "complete_public_archive",
+  "selected_offsets": [
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30
+  ],
+  "source": {
+    "engine_commit": "11d159fa1648365f2a4e96917b483c33aa5d9fe7",
+    "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+    "python": "3.11.16 (main, Aug 13 2026, 02:46:14) [GCC 13.3.0]",
+    "replay_source_sha256": "4e4c040b0e3e23e476d580e7051a8ab10aaec11d3b973344f387ed3cf2ec5134",
+    "source_commit": "c33ff64a4a4cf931cb7b26e6ad3a17afe1cf9580",
+    "upstream_binary_sha256": "96602fd0b9732204b530afb912ff679d48b0ba9e13d32c5eea67c10cbbdbf777",
+    "workflow_run": "34030217143"
+  },
+  "start": 21,
+  "statistics": {
+    "additional_distinct_target_events": 28967,
+    "count_events": 9318181,
+    "cross_gene_multiple": 23125,
+    "extra_events": 28967,
+    "matched_reads": 9289214,
+    "multiple_distinct_guides": 26561,
+    "multiply_counted_reads": 26561,
+    "reads": 9821128,
+    "repeated_same_target_events": 0,
+    "within_gene_multiple": 3436
+  },
+  "synthetic_controls": [
+    {
+      "all_guide_reconciliation": true,
+      "changed_guide_rows": 0,
+      "command": [
+        "/home/runner/work/dotmatch/dotmatch/work/evidence/guide-counter",
+        "count",
+        "--input",
+        "audit-output.pending/synthetic/balanced/synthetic.fastq.gz",
+        "--samples",
+        "balanced",
+        "--library",
+        "input/raw/library.tsv",
+        "--output",
+        "audit-output.pending/synthetic/balanced/upstream_one_mismatch",
+        "--offset-sample-size",
+        "100000",
+        "--offset-min-fraction",
+        "0.0025"
+      ],
+      "count_events": 77441,
+      "counts_to_zero_origin_guides": 0,
+      "data_kind": "synthetic_known_origin_no_errors",
+      "experiment": "balanced",
+      "fixed_exact_native_matches_truth": true,
+      "input_sha256": "9460cbcd5efa5cf66b0b39ffdb4fe294582d0ac4ce1a8201c1ba19db0bc14423",
+      "policy": "one_mismatch",
+      "selected_offsets": [
+        21
+      ],
+      "source_reads": 77441,
+      "statistics": {
+        "additional_distinct_target_events": 0,
+        "count_events": 77441,
+        "extra_events": 0,
+        "matched_reads": 77441,
+        "reads": 77441,
+        "repeated_same_target_events": 0
+      },
+      "zero_origin_guides_receiving_counts": 0
+    },
+    {
+      "all_guide_reconciliation": true,
+      "changed_guide_rows": 0,
+      "command": [
+        "/home/runner/work/dotmatch/dotmatch/work/evidence/guide-counter",
+        "count",
+        "--input",
+        "audit-output.pending/synthetic/balanced/synthetic.fastq.gz",
+        "--samples",
+        "balanced",
+        "--library",
+        "input/raw/library.tsv",
+        "--output",
+        "audit-output.pending/synthetic/balanced/upstream_exact",
+        "--offset-sample-size",
+        "100000",
+        "--offset-min-fraction",
+        "0.0025",
+        "--exact-match"
+      ],
+      "count_events": 77441,
+      "counts_to_zero_origin_guides": 0,
+      "data_kind": "synthetic_known_origin_no_errors",
+      "experiment": "balanced",
+      "fixed_exact_native_matches_truth": true,
+      "input_sha256": "9460cbcd5efa5cf66b0b39ffdb4fe294582d0ac4ce1a8201c1ba19db0bc14423",
+      "policy": "exact",
+      "selected_offsets": [
+        21
+      ],
+      "source_reads": 77441,
+      "statistics": {
+        "additional_distinct_target_events": 0,
+        "count_events": 77441,
+        "extra_events": 0,
+        "matched_reads": 77441,
+        "reads": 77441,
+        "repeated_same_target_events": 0
+      },
+      "zero_origin_guides_receiving_counts": 0
+    }
+  ],
+  "target_count": 77441,
+  "template_prediction": {
+    "confusion": {
+      "FN": 8,
+      "TN": 55720,
+      "TP": 476
+    },
+    "evaluation_reads": 56204,
+    "excluded_evaluation_reads": 9664924,
+    "model_sha256": "1f5891b9d7b6a8e2497830b64feb1e4e3b226d98d8f10323108fc0c8dfe6084e",
+    "predicted_multiple_templates": 131,
+    "truth_accuracy_claim": false
+  },
+  "upstream_command": [
+    "/home/runner/work/dotmatch/dotmatch/work/evidence/guide-counter",
+    "count",
+    "--input",
+    "input/raw/SRR8297997.fastq.gz",
+    "--samples",
+    "SRR8297997",
+    "--library",
+    "input/raw/library.tsv",
+    "--output",
+    "audit-output.pending/upstream",
+    "--offset-sample-size",
+    "100000",
+    "--offset-min-fraction",
+    "0.0025"
+  ]
+}
