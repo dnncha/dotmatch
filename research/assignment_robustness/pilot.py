@@ -141,12 +141,13 @@ def fetch_prefix(accessions, n):
 
 
 def parse_library(text, length):
+    require(text.strip(), 'empty reference library')
     delimiter = '\t' if '\t' in text.splitlines()[0] else ','
     rows = list(csv.reader(io.StringIO(text), delimiter=delimiter))
     require(rows and all(len(row) == 3 for row in rows if row), 'library must have three columns')
     rows = [row for row in rows if row]
     first = rows[0]
-    seq_names = {'sequence', 'grna.sequence', 'sgrna_sequence', 'guide_seq', 'sgrna sequence'}
+    seq_names = {'seq', 'sequence', 'grna.sequence', 'sgrna_sequence', 'guide_seq', 'sgrna sequence'}
     if first[1].strip().lower() in seq_names:
         rows = rows[1:]
     require(rows, 'empty reference library')
@@ -436,9 +437,13 @@ class Tests(unittest.TestCase):
 
     def test_library(self):
         self.assertEqual(len(parse_library('id,gRNA.sequence,Gene\na,AAAA,g\nb,AAAA,h\n', 4)), 2)
-        for text in ('a\tAAAA\tg\na\tCCCC\th\n', 'a\tAAAN\tg\n', 'a\tAAA\tg\n', 'a\tAAAA\t\n'):
+        for text in ('', 'a\tAAAA\tg\na\tCCCC\th\n', 'a\tAAAN\tg\n', 'a\tAAA\tg\n', 'a\tAAAA\t\n'):
             with self.assertRaises(ValueError):
                 parse_library(text, 4)
+
+    def test_brunello_source_header(self):
+        rows = parse_library('sgRNAID\tSeq\tgene\ng1\tACGTACGTACGTACGTACGT\tGENE1\n', 20)
+        self.assertEqual(rows, [('g1', 'ACGTACGTACGTACGTACGT', 'GENE1')])
 
     def test_fastq(self):
         self.assertEqual(len(list(records(io.BytesIO(b'@a\nACGT\n+\nIIII\n')))), 1)
