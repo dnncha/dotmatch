@@ -1,0 +1,91 @@
+name: Assignment research - joint guide and gene resolution
+on:
+  push:
+    branches: [research/joint-resolution-ar003]
+    paths:
+      - research/assignment_robustness/joint_resolution.py
+      - research/assignment_robustness/ar003/**
+      - .github/workflows/assignment-joint-resolution.yml
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ar003-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - accession: ERR376998
+            start: 23
+            raw_run: 34028707688
+            raw_name: yusa-plasmid-full
+          - accession: ERR376999
+            start: 23
+            raw_run: 34028707688
+            raw_name: yusa-esc1-full
+          - accession: SRR8297997
+            start: 21
+            raw_run: 34029177963
+            raw_name: assignment-brunello-inputs
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 11d159fa1648365f2a4e96917b483c33aa5d9fe7
+          path: pinned-engine
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned engine and run independent tests
+        run: |
+          set -euo pipefail
+          python -m pip install numpy==2.2.6 ./pinned-engine > ar003-install.log 2>&1
+          python -m pip freeze > ar003-environment.txt
+          git rev-parse HEAD > ar003-source-commit.txt
+          python research/assignment_robustness/replay.py --test 2>&1 | tee ar003-index-tests.log
+          python research/assignment_robustness/joint_resolution.py --test 2>&1 | tee ar003-joint-tests.log
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.raw_name }}
+          run-id: ${{ matrix.raw_run }}
+          repository: dnncha/dotmatch
+          github-token: ${{ github.token }}
+          path: input/raw
+      - uses: actions/download-artifact@v4
+        if: matrix.accession != 'SRR8297997'
+        with:
+          name: yusa-reference-prefixes
+          run-id: 34028707688
+          repository: dnncha/dotmatch
+          github-token: ${{ github.token }}
+          path: input/raw
+      - uses: actions/download-artifact@v4
+        with:
+          name: assignment-replay-${{ matrix.accession }}
+          run-id: 34030217143
+          repository: dnncha/dotmatch
+          github-token: ${{ github.token }}
+          path: input/replay
+      - name: Recheck original bytes and audit every read
+        run: |
+          set -euo pipefail
+          OFFSETS=$(python -c 'import json,pathlib; p=list(pathlib.Path("input/replay").rglob("completion.json")); assert len(p)==1; print(",".join(map(str,json.loads(p[0].read_text())["selected_offsets"])))')
+          python research/assignment_robustness/joint_resolution.py \
+            --raw input/raw --replay input/replay \
+            --accession '${{ matrix.accession }}' --start '${{ matrix.start }}' \
+            --offsets "$OFFSETS" --out joint-output 2>&1 | tee ar003-full-run.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: assignment-joint-${{ matrix.accession }}
+          path: |
+            joint-output/
+            joint-output.pending/
+            ar003-*.log
+            ar003-*.txt
+          retention-days: 90

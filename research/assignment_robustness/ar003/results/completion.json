@@ -1,0 +1,15 @@
+{
+  "audit_run": 34032669590,
+  "completion": "complete",
+  "files": {
+    "REPORT.md": "f531124e8890688da70244f01b844d50645f19cdcad4b067e41a26dd3100a0b3",
+    "VALIDATION.md": "3f6e3689c2368602380a3d1c575e050ef926b66776180832663d04d2cd3f3648",
+    "all-gene-representation.tsv": "9acf5ecafcd4aa6cc223c65a9b3a72e0eca5603269dac3a0a4094fb53dfb5c22",
+    "all-primary-outliers.tsv": "7f89f228106942717e985017f1508a593f7558297b5acdcce9a35345a68c9321",
+    "effect-sensitivity.tsv": "d2e51fbd46f94e48b7d5f5ed00cce84a76c3f0f94ce3413d3316c4e743332384",
+    "known-origin-controls.tsv": "5a0e9222dd55f5d39ba0d85add013ff7a2423e322634cc908e8c0b5a74564dcc",
+    "read-resolution.tsv": "edfff4356c8e26d764893c221caeae73aaabf75745bf07d82941c42b5ba2de54",
+    "report.html": "aa1077f583cf4bed16c5e3ba66418caad84ce2214620386384689ced858e2a23",
+    "summary.json": "2dc68e8b64c32b6fb077775c5c3c326e1f752a9c6e275974a697a86af39ed45c"
+  }
+}
