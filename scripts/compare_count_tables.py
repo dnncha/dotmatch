@@ -21,27 +21,37 @@ def public_path(path: Path) -> str:
         return str(path)
 
 
-def parse_counts(path: Path) -> dict[str, int]:
-    with path.open() as fh:
-        reader = csv.DictReader(fh, delimiter="\t")
-        if reader.fieldnames is None or len(reader.fieldnames) < 3:
-            raise ValueError(f"{path} does not look like a count table")
-        key_col = reader.fieldnames[0]
-        count_cols = reader.fieldnames[2:]
-        counts: dict[str, int] = {}
+def parse_matrix(path: Path) -> tuple[list[str], dict[str, tuple[str, dict[str, int]]]]:
+    """Read raw integer counts without coercion, silent drops or duplicate keys."""
+    import re
+
+    with path.open(encoding="utf-8-sig", newline="") as fh:
+        reader = csv.reader(fh, delimiter="\t")
+        header = next(reader, [])
+        if len(header) < 3 or len(set(header)) != len(header) or any(not value for value in header):
+            raise ValueError(f"{path} does not have distinct ID, gene and sample columns")
+        samples = header[2:]
+        rows: dict[str, tuple[str, dict[str, int]]] = {}
         for row in reader:
-            key = row.get(key_col, "")
-            if not key:
+            if not row:
                 continue
-            total = 0
-            for col in count_cols:
-                value = row.get(col, "") or "0"
-                try:
-                    total += int(float(value))
-                except ValueError:
-                    pass
-            counts[key] = total
-    return counts
+            if len(row) != len(header) or not row[0]:
+                raise ValueError(f"{path}: malformed count row at line {reader.line_num}")
+            if row[0] in rows:
+                raise ValueError(f"{path}: duplicate guide ID {row[0]!r}")
+            values: dict[str, int] = {}
+            for sample, text in zip(samples, row[2:]):
+                if not re.fullmatch(r"[0-9]+", text):
+                    raise ValueError(f"{path}: {row[0]}/{sample} must be a non-negative integer count, got {text!r}")
+                values[sample] = int(text)
+            rows[row[0]] = (row[1], values)
+        return samples, rows
+
+
+def parse_counts(path: Path) -> dict[str, int]:
+    """Legacy guide totals; not a claim of sample-by-sample matrix identity."""
+    _samples, rows = parse_matrix(path)
+    return {guide: sum(values.values()) for guide, (_gene, values) in rows.items()}
 
 
 def pearson(xs: list[int], ys: list[int]) -> float:
@@ -95,8 +105,13 @@ def compare(name: str, left_path: Path, right_path: Path, left_label: str, right
             "spearman": "",
         }, []
 
-    left = parse_counts(left_path)
-    right = parse_counts(right_path)
+    left_samples, left_matrix = parse_matrix(left_path)
+    right_samples, right_matrix = parse_matrix(right_path)
+    left = {guide: sum(values.values()) for guide, (_gene, values) in left_matrix.items()}
+    right = {guide: sum(values.values()) for guide, (_gene, values) in right_matrix.items()}
+    same_axes = set(left_samples) == set(right_samples) and left_matrix.keys() == right_matrix.keys()
+    same_annotations = same_axes and all(left_matrix[guide][0] == right_matrix[guide][0] for guide in left_matrix)
+    matrix_identical = same_annotations and all(left_matrix[guide][1] == right_matrix[guide][1] for guide in left_matrix)
     keys = sorted(set(left) | set(right))
     detail: list[dict[str, str]] = []
     xs: list[int] = []
@@ -127,7 +142,12 @@ def compare(name: str, left_path: Path, right_path: Path, left_label: str, right
         "comparison": name,
         "left": left_label,
         "right": right_label,
-        "status": "ok",
+        "status": "ok",  # Legacy execution status, not a count-identity verdict.
+        "execution_status": "completed",
+        "aggregate_scope": "guide_totals_across_samples",
+        "aggregate_counts_identical": str(left == right).lower(),
+        "matrix_comparability": "same_named_axes_and_annotations" if same_annotations else "review_axes_or_annotations",
+        "counts_identical": str(matrix_identical).lower() if same_annotations else "",
         "left_path": public_path(left_path),
         "right_path": public_path(right_path),
         "n_guides": str(len(keys)),

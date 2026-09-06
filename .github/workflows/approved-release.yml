@@ -1,0 +1,63 @@
+name: Approved release
+on:
+  pull_request:
+    paths: ['.github/release-request.json', '.github/workflows/approved-release.yml', '.github/workflows/release.yml', 'scripts/approved_release.py', 'python/tests/test_approved_release.py']
+  push:
+    branches: [main]
+    paths: ['.github/release-request.json', '.github/workflows/approved-release.yml', '.github/workflows/release.yml', 'scripts/approved_release.py', 'python/tests/test_approved_release.py']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: approved-release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  candidate:
+    name: Release candidate acceptance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install acceptance tooling
+        run: |
+          python -m pip install build pytest pandas polars pyarrow jsonschema -r docs/requirements.txt
+          sudo apt-get update
+          sudo apt-get install -y clang llvm
+          npm ci
+      - name: Run the complete pre-tag gate
+        run: make pretag-ready
+      - name: Validate site contracts and export
+        run: |
+          npm run check:site
+          node scripts/check_site_export.mjs
+        env:
+          NEXT_PUBLIC_BASE_PATH: /dotmatch
+          NEXT_PUBLIC_SITE_URL: https://dnncha.github.io/dotmatch
+  tag:
+    name: Tag the checked main commit and dispatch publishing
+    needs: [candidate]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && github.repository == 'dnncha/dotmatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: write
+      actions: write
+      statuses: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Verify exact main checks, preserve immutable tags, dispatch existing release workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/approved_release.py tag

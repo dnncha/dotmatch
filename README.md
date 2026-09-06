@@ -1,255 +1,67 @@
 # DotMatch
 
-DotMatch is a deterministic CRISPR guide-counting and known-target short-DNA
-assignment tool. It assigns short FASTQ read windows to a known list of DNA
-sequences and reports every read as a unique match, an ambiguous match,
-unmatched, or invalid. It also supports barcodes, feature tags, primers, and
-other known targets.
+**Count your guides. Account for every read.**
+
+DotMatch turns FASTQ reads and a known guide library into count tables and
+assignment QC. Use it for **CRISPR guide counting**, fixed-position **barcode
+demultiplexing**, and other short-DNA assays with known targets. It runs locally
+on Linux and macOS and writes MAGeCK-compatible counts.
 
 [![CI](https://github.com/dnncha/dotmatch/actions/workflows/ci.yml/badge.svg)](https://github.com/dnncha/dotmatch/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/dotmatch?label=PyPI)](https://pypi.org/project/dotmatch/)
 [![Documentation](https://readthedocs.org/projects/dotmatch/badge/?version=latest)](https://dotmatch.readthedocs.io/en/latest/)
-[![Bioconda](https://img.shields.io/conda/vn/bioconda/dotmatch?label=Bioconda)](https://anaconda.org/bioconda/dotmatch)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/dnncha/dotmatch/blob/main/LICENSE)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20541628.svg)](https://doi.org/10.5281/zenodo.20541628)
 
+[Start counting guides](https://dnncha.github.io/dotmatch/crispr-guide-counting/) ·
+[Check a library in your browser](https://dnncha.github.io/dotmatch/tools/library-safety/) ·
 [Documentation](https://dotmatch.readthedocs.io/en/latest/) ·
-[Getting started](https://dotmatch.readthedocs.io/en/latest/getting-started.html) ·
-[Agent guide](https://dotmatch.readthedocs.io/en/latest/agent-guide.html) ·
-[CRISPR agent route](https://dotmatch.readthedocs.io/en/latest/agent-crispr.html) ·
-[Perturb-seq agent route](https://dotmatch.readthedocs.io/en/latest/agent-perturb-seq.html) ·
-[Command reference](https://dotmatch.readthedocs.io/en/latest/command-reference.html) ·
-[Capability JSON](https://dnncha.github.io/dotmatch/agent-capabilities.json) ·
-[Agent tools JSON](https://dnncha.github.io/dotmatch/agent-tools.json) ·
-[Checked agent fixture](https://dnncha.github.io/dotmatch/agent-reference-crispr.json) ·
-[Examples](https://github.com/dnncha/dotmatch/tree/main/examples) ·
-[Citation](https://dotmatch.readthedocs.io/en/latest/methods-and-citation.html) ·
-[Try the notebook in Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb) ·
-[Try the notebook in Google Colab](https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb)
+[Methods and results](https://dotmatch.readthedocs.io/en/latest/benchmarks/crispr_comparison/README.html)
 
-![FASTQ reads and a target table are compared at a fixed read window. DotMatch writes counts, split FASTQs, QC tables, and reports.](https://raw.githubusercontent.com/dnncha/dotmatch/main/public/dotmatch-read-assignment.svg)
+## Why use DotMatch?
+
+An assigned-read percentage cannot tell you which targets gained counts, which
+reads fit several targets, or whether a more permissive matching rule changed the
+result. DotMatch keeps those decisions inspectable.
+
+Every read has an explicit outcome: **unique**, **ambiguous**, **none** (unmatched),
+or **invalid** (the requested window could not be extracted). Only unique calls
+contribute to a target count. Choose the matching policy deliberately; a unique
+call is not proof of biological origin.
+
+Keep downstream screen statistics in the workflow you already use. DotMatch is not a genome aligner,
+basecaller, cell/UMI pipeline or gene-level hit-calling package.
 
 ## Install
 
-PyPI is the quickest route on Linux and macOS:
+Release 0.5.0 includes the six `dotmatch agent` tools
+described below:
 
 ```bash
-python3 -m pip install dotmatch
+python3 -m pip install dotmatch==0.5.0
 dotmatch --version
 ```
 
-The current public release is 0.4.1 and includes the six `dotmatch agent`
-tools below. Check that `dotmatch --version` reports 0.4.1 before using that
-route. Bioconda and BioContainers may lag PyPI and GHCR; check the installed
-version when using those channels.
-
-Conda users can install the current Bioconda build:
+Conda and container routes:
 
 ```bash
 conda create -n dotmatch -c conda-forge -c bioconda dotmatch
 conda activate dotmatch
+
+# Or use the pinned release container:
+docker run --rm ghcr.io/dnncha/dotmatch:v0.5.0 --version
 ```
 
-The Bioconda recipe supports Linux, Intel macOS, and Apple Silicon
-(`osx-arm64`). If a newly tagged version has not reached Bioconda yet, use the
-PyPI package or install from source.
+Bioconda and its generated BioContainers images can lag PyPI/GHCR. When a
+newly tagged version has not reached Bioconda yet, use PyPI or the source build.
+Check the installed version. The Bioconda recipe includes `osx-arm64` for Apple Silicon.
+Review the [packaging details](https://dotmatch.readthedocs.io/en/latest/packaging.html)
+for platform and container verification. See the [installation guide](https://dotmatch.readthedocs.io/en/latest/getting-started.html)
+for platform details, source builds and the third-party Homebrew tap. The optional
+[desktop Workbench](https://github.com/dnncha/dotmatch-community) is maintained separately.
 
-macOS users who want the native CPU command without Python can use the
-[third-party Homebrew tap](https://github.com/dnncha/homebrew-tap):
+## Count a CRISPR screen
 
-```bash
-brew tap dnncha/tap
-brew install dnncha/tap/dotmatch
-dotmatch --version
-```
-
-This tap is maintained outside Homebrew's official repositories and installs
-the native `dotmatch` command from a pinned release source archive. Use PyPI or
-Bioconda when you need the Python bindings, AssayCode, or the optional Metal
-backend.
-
-For containerised workflows, the current release is also published to GHCR:
-
-```bash
-  docker pull ghcr.io/dnncha/dotmatch:v0.4.1
-  docker run --rm ghcr.io/dnncha/dotmatch:v0.4.1 --version
-```
-
-The [container package](https://github.com/dnncha/dotmatch/pkgs/container/dotmatch)
-is useful when a workflow should pin the release without installing Python or
-Conda on the host.
-
-BioContainers also publishes the Bioconda-derived image for workflow runners:
-
-```bash
-docker pull quay.io/biocontainers/dotmatch:0.2.2--py311h13f8228_1
-docker run --rm quay.io/biocontainers/dotmatch:0.2.2--py311h13f8228_1 dotmatch --version
-```
-
-See the [BioContainers package](https://quay.io/repository/biocontainers/dotmatch)
-for the other Python-build tags.
-
-Maintainers can refresh the [download metrics
-snapshot](https://dotmatch.readthedocs.io/en/latest/download-metrics.html) with
-`make download-metrics`. It records provider-reported package retrievals by
-channel, version, platform, and Python build; it does not estimate unique users.
-
-## Choose by task
-
-For an autonomous local workflow, inspect the installed contract first:
-
-```bash
-dotmatch agent tools --json
-dotmatch agent export-skill --target ./dotmatch-agent
-```
-
-The six tools prepare, preflight, run, review, and hand off CRISPR or
-Perturb-seq direct-guide workflows using structured JSON only. They do not
-upload research data or accept free-form shell commands.
-
-| Intent or search phrase | Entry point | Important limit |
-| --- | --- | --- |
-| CRISPR guide counting; MAGeCK-compatible counts | `dotmatch crispr-count` | Counting only; no downstream screen statistics |
-| Inline barcode demultiplexing; split FASTQ by barcode | `dotmatch demux` | Starts from FASTQ; no basecalling |
-| Feature-barcode assignment; TotalSeq feature reads | `dotmatch count` | Per-read assignment; no cell/UMI quantification |
-| Perturb-seq guide capture | `dotmatch count` | No guide-per-cell, expression, or perturbation-effect analysis |
-| Barcode panel design or collision checking | `dotmatch panel design` or `dotmatch panel check` | Short barcode sets, not probe or full assay design |
-| Known-target FASTQ matching; whitelist counting | `dotmatch count` | Finite known targets and one reviewed fixed window |
-| High unmatched or ambiguous barcode rate | `dotmatch barcode autopsy` | Diagnostic suggestions require assay-context review |
-
-The [Agent guide](https://dotmatch.readthedocs.io/en/latest/agent-guide.html)
-provides copy-paste commands, inputs, outputs, recovery steps, and evidence
-limits. Agents and workflow tools can read the same routes from
-[`agent-capabilities.json`](https://dnncha.github.io/dotmatch/agent-capabilities.json)
-or the installed `dotmatch capabilities --json` command in DotMatch 0.3.0 and
-later.
-
-The [Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb)
-and [Colab](https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb)
-notebooks run a small synthetic smoke demo without requiring a local install.
-They check mechanics only, not biological validation. If you work with a
-shareable or de-identified guide, barcode, or other fixed-target fixture, see
-the [public validation request](https://github.com/dnncha/dotmatch/issues/82).
-
-## A small example
-
-Prepare a tab-separated target file:
-
-```text
-target_id	sequence
-guide_001	ACGTACGTACGTACGTACGT
-guide_002	ACGTACGTACGTACGTAGGT
-```
-
-Then assign a fixed 20-base window from each read:
-
-```bash
-dotmatch count \
-  --targets guides.tsv \
-  --reads sample_R1.fastq.gz \
-  --sample-label sample_1 \
-  --target-start 23 \
-  --target-length 20 \
-  --k 1 \
-  --metric hamming \
-  --out counts.tsv \
-  --sample-qc sample_qc.tsv \
-  --summary summary.json
-```
-
-DotMatch only counts a read when exactly one target is compatible under the
-selected matching rule. Reads that fit several targets remain visible as
-ambiguous instead of being assigned arbitrarily.
-
-## Try a public CRISPR dataset
-
-After installing the published package, reproduce the checked public
-MAGeCK/Yusa guide-counting example from the repository:
-
-```bash
-git clone https://github.com/dnncha/dotmatch.git
-cd dotmatch
-python3 -m pip install dotmatch
-DOTMATCH_BIN=dotmatch ./examples/crispr_guides/run.sh
-```
-
-This downloads a small public fixture and writes the count matrix, per-read
-assignments, and summary under `examples/crispr_guides/output/`. The example
-README explains how to fetch the full public data and links to the recorded
-[CRISPR comparison
-report](https://dotmatch.readthedocs.io/en/latest/benchmarks/public_crispr/README.html).
-
-## Reproduce the public Perturb-seq case study
-
-The [GSE146194 direct-guide-capture case
-study](https://github.com/dnncha/dotmatch/blob/main/examples/perturb_seq_gse146194/README.md) uses 32 published guide
-barcodes and a bounded, held-out prefix of SRR11214031:
-
-```bash
-git clone https://github.com/dnncha/dotmatch.git
-cd dotmatch
-make bench-perturb-seq-case-study-public
-make perturb-seq-case-study-public-gate
-```
-
-The workflow verifies the publisher workbook, streams only the first 50,000
-FASTQ records, excludes 2,000 discovery reads, and checks 48,000 evaluation
-reads against independent exact and exhaustive Hamming oracles. The report
-includes unmatched and ambiguous outcomes, hashes, commands, software versions,
-and resource measurements. This is per-read fixed-window guide assignment
-evidence; it is not guide-per-cell, UMI, expression, perturbation-effect, or
-speed-comparison evidence.
-
-For a browser-based smoke demo, launch the [Runnable DotMatch notebook in
-Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb) or
-[Google Colab](https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb).
-It uses a small synthetic fixture and is intended for workflow orientation, not
-biological validation.
-
-## What it is for
-
-- counting CRISPR guides and writing MAGeCK-compatible count tables;
-- demultiplexing fixed-position inline barcodes;
-- assigning feature-barcode and guide-capture reads;
-- checking primer, adapter, amplicon-panel, or whitelist sequences;
-- auditing target lists before enabling mismatch correction;
-- designing and checking barcode panels;
-- writing TSV, JSON, FASTQ, and HTML results for pipelines and lab review.
-
-If you work with guide-capture or perturb-seq data, the public case study above
-provides a checked starting point. The [public validation
-invitation](https://github.com/dnncha/dotmatch/issues/82) also asks for a short
-trial and concrete input/output feedback. Please do not post private reads or
-unpublished guide libraries.
-
-If you are choosing a CRISPR guide-counting workflow, see the
-[workflow
-comparison](https://dotmatch.readthedocs.io/en/latest/usability-comparison.html)
-for the documented fit and scope of DotMatch, guide-counter, MAGeCK, and
-alignment-based alternatives.
-
-DotMatch is not a genome aligner, basecaller, UMI pipeline, variant caller, or
-screen-level statistics package. It compares short read windows with a finite
-target list.
-
-## Read outcomes
-
-| Outcome | Meaning |
-| --- | --- |
-| `unique` | Exactly one target is compatible. |
-| `ambiguous` | More than one target is compatible. |
-| `none` | No target is within the selected distance. |
-| `invalid` | The requested read window could not be extracted. |
-
-These states appear in the assignment and QC outputs. They are not folded into
-the unique counts.
-
-## Common workflows
-
-### Count CRISPR guides
-
-For a new screen, DotMatch can prepare a small assay project and infer a likely
-guide window for review:
+Prepare a guide CSV/TSV and FASTQ files. Start a new assay project:
 
 ```bash
 dotmatch crispr quickstart \
@@ -258,196 +70,111 @@ dotmatch crispr quickstart \
   --out crispr_screen/
 ```
 
-Review `crispr_screen/inference_report.json` and `assay.toml`, then run:
+This creates a draft project. Review `crispr_screen/inference_report.json` and
+`assay.toml`: confirm the guide window, orientation, library and sample files.
+After confirming the settings, change the top-level `status = "draft"` to
+`status = "ready"` in `assay.toml`, then run and review:
 
 ```bash
 dotmatch assay start crispr_screen/assay.toml
-```
 
-After a completed run, create a compact technical review bundle without copying
-raw FASTQs:
-
-```bash
+# After reviewing a completed run:
 dotmatch assay handoff crispr_screen/assay.toml
 ```
 
-The bundle includes configuration, QC, reports, methods, citation material, and
-checksums for declared inputs and copied outputs. See the [lab evaluation and
-handoff guide](https://dotmatch.readthedocs.io/en/latest/lab-evaluation.html)
-for the review sequence and data-handling boundary.
+The handoff carries configuration, QC, methods and checksums without copying raw
+FASTQs. Follow the [complete CRISPR tutorial](https://dotmatch.readthedocs.io/en/latest/tutorials/crispr-count-first-run.html)
+for inputs, direct CLI options and count-table outputs.
 
-For an explicit one-command run, use `dotmatch crispr-count`. The
-[CRISPR tutorial](https://dotmatch.readthedocs.io/en/latest/tutorials/crispr-count-first-run.html)
-covers both routes.
+## Understand the effect of mismatch correction
 
-### Demultiplex inline barcodes
+The `dotmatch sensitivity` command, introduced in 0.5.0, compares exact, radius-one and
+best-distance Hamming assignment using the same windows in **one FASTQ pass**.
+It produces three count matrices, per-guide deltas, read-state transitions,
+checksums and a self-contained HTML report. It never selects a policy for you.
 
-```bash
-dotmatch demux \
-  --barcodes barcodes.tsv \
-  --reads pooled.fastq.gz \
-  --barcode-start 0 \
-  --barcode-length 8 \
-  --k 1 \
-  --metric hamming \
-  --out-dir demuxed/ \
-  --summary demux.summary.json
-```
-
-If a run has an unexpectedly high unmatched or ambiguous rate, inspect it with:
+Run the included synthetic example from a checkout of the v0.5.0 release:
 
 ```bash
-dotmatch barcode autopsy \
-  --barcodes barcodes.tsv \
-  --reads pooled.fastq.gz \
-  --scan-starts 0:12 \
-  --k-values 0,1 \
-  --out-dir autopsy/
+python3 -m pip install dotmatch==0.5.0
+dotmatch sensitivity \
+  --targets examples/assignment_sensitivity/targets.tsv \
+  --reads examples/assignment_sensitivity/reads.fastq \
+  --target-start 0 --target-length 20 \
+  --write-read-changes --out-dir sensitivity-example
 ```
 
-Open `autopsy/report.html` first. The tables beside it record offset scans,
-near-neighbour barcodes, correction safety, and frequent unmatched windows.
+The [nine-read synthetic example](https://github.com/dnncha/dotmatch/tree/main/examples/assignment_sensitivity)
+shows why equal assigned totals can hide different per-guide counts.
+[Read the output contract](https://dotmatch.readthedocs.io/en/latest/sensitivity.html).
+This is sensitivity analysis, not an estimate of biological accuracy.
 
-### Build a cell-by-feature matrix from extracted observations
+## Choose by task
 
-When an upstream workflow has already extracted feature windows and attached an
-explicit cell identifier, DotMatch can write a sparse cells × features matrix:
+| Task | Entry point | Workflow |
+| --- | --- | --- |
+| CRISPR guide counting | `dotmatch crispr-count` | [First run](https://dotmatch.readthedocs.io/en/latest/tutorials/crispr-count-first-run.html) |
+| Inline barcode demultiplexing | `dotmatch demux` | [Getting started](https://dotmatch.readthedocs.io/en/latest/getting-started.html) |
+| High unmatched or ambiguous barcode rate | `dotmatch barcode autopsy` | [Barcode diagnostics](https://dotmatch.readthedocs.io/en/latest/getting-started.html#diagnose-a-barcode-run) |
+| Target-library collisions | `dotmatch audit` | [Browser checker](https://dnncha.github.io/dotmatch/tools/library-safety/) |
+| Barcode panel design | `dotmatch panel design` | [Panel documentation](https://dotmatch.readthedocs.io/en/latest/barcode-panel-design.html) |
+| Paired target counting | `dotmatch pair-count` | [Command reference](https://dotmatch.readthedocs.io/en/latest/command-reference.html) |
+| Cell-by-feature matrix from extracted observations | `dotmatch feature matrix` | [scverse handoff](https://dotmatch.readthedocs.io/en/latest/tutorials/scverse-perturb-seq.html) |
 
-```bash
-dotmatch feature matrix \
-  --observations feature_observations.tsv \
-  --targets feature_library.tsv \
-  --id-column observation_id \
-  --cell-column cell_barcode \
-  --sequence-column feature_seq \
-  --metric hamming --k 1 \
-  --out-dir feature_matrix/
-```
+Feature matrices require upstream cell identifiers and extracted feature windows.
+They do not perform cell calling, UMI deduplication or perturbation-effect analysis.
 
-The output directory contains `matrix.mtx`, cell and feature axes, long-form
-counts, per-observation assignments, per-cell QC, and a JSON summary. Only
-unique assignments add a matrix count. This command does not perform FASTQ
-pairing, cell-barcode correction, UMI deduplication, or cell calling; those
-upstream steps should remain documented with the observation table.
+## Reproduce the evidence
 
-See the [scverse and feature-barcode tutorial](https://dotmatch.readthedocs.io/en/latest/tutorials/scverse-perturb-seq.html)
-for the file contract and AnnData handoff.
+The [benchmark reports](https://dotmatch.readthedocs.io/en/latest/benchmarks/README.html)
+include commands, hardware and assignment rules. Those reports cover the tested workloads;
+they are not universal speed or biological-accuracy guarantees.
 
-### Count target pairs across R1 and R2
+[Public CRISPR comparisons](https://dotmatch.readthedocs.io/en/latest/benchmarks/crispr_comparison/README.html)
+record Yusa and Brunello inputs, methods, count differences, runtime and memory.
+Exact, Hamming and Levenshtein results use different semantics and should be
+compared separately. A comparison that completed successfully is not necessarily
+an identical count matrix or biological validation.
 
-Use `pair-count` when a left target and a right target are sequenced in
-synchronized FASTQ mates:
+The [GSE146194 direct-guide-capture case study](https://github.com/dnncha/dotmatch/tree/main/examples/perturb_seq_gse146194)
+separates discovery and evaluation reads and checks per-read assignments against
+independent reference implementations. It does not establish guide-per-cell or
+perturbation-effect accuracy.
 
-```bash
-dotmatch pair-count \
-  --left-targets r1_targets.tsv \
-  --right-targets r2_targets.tsv \
-  --left-reads sample_R1.fastq.gz \
-  --right-reads sample_R2.fastq.gz \
-  --left-start 0 --left-length 20 \
-  --right-start 0 --right-length 20 \
-  --k 1 --metric hamming \
-  --out pair_counts.tsv \
-  --summary pair_summary.json
-```
+For an installation-free synthetic smoke demo, use [Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb)
+or [Google Colab](https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb).
+For a shareable or de-identified workflow evaluation, see the [public validation invitation](https://github.com/dnncha/dotmatch/issues/82).
+Do not post private reads or unpublished guide libraries.
 
-R1 and R2 must contain the same records in the same order. DotMatch checks the
-canonical read identifier before assignment and records input synchronization,
-side-specific unmatched totals, and side-specific invalid totals in the summary.
+## Pipelines, Python and local agents
 
-### Check a target library
-
-Before allowing mismatch correction, check whether neighbouring targets can
-produce ambiguous assignments:
-
-```bash
-dotmatch audit \
-  --targets guides.tsv \
-  --k 1 \
-  --audit-mode auto \
-  --out-dir audit/
-```
-
-The [barcode panel guide](https://dotmatch.readthedocs.io/en/latest/barcode-panel-design.html)
-also covers panel design, optimisation, simulation, layout, and export.
-
-## Python API
-
-```python
-import dotmatch
-
-distance = dotmatch.distance("ACGT", "AGGT")
-assert distance == 1
-
-result = dotmatch.assign_posterior("ACGT", ["ACGT", "AGGT"], "IIII")
-print(result.status)
-```
-
-The posterior helper is experimental and is not used by the high-throughput
-CLI path. The [Python API documentation](https://dotmatch.readthedocs.io/en/latest/streaming-api.html)
-describes the supported streaming interfaces.
-
-## Outputs and workflow integration
-
-Depending on the command, DotMatch writes count tables, split FASTQs,
-`sample_qc.tsv`, per-read assignments, unmatched-read tables, `summary.json`,
-and self-contained HTML reports. The formats are documented in the
-[output schema reference](https://dotmatch.readthedocs.io/en/latest/schemas.html).
-
-Examples for Nextflow, nf-core, Snakemake, Galaxy, and MultiQC live under
-[`examples/workflows`](https://github.com/dnncha/dotmatch/tree/main/examples/workflows).
+DotMatch provides a [Python streaming API](https://dotmatch.readthedocs.io/en/latest/streaming-api.html),
+[output schemas](https://dotmatch.readthedocs.io/en/latest/schemas.html), and
+[workflow examples](https://github.com/dnncha/dotmatch/tree/main/examples/workflows).
 The [ecosystem status ledger](https://dotmatch.readthedocs.io/en/latest/ecosystem-status.html)
-separates local examples, open upstream submissions, accepted contributions,
-released integrations, and installable package-manager channels.
-The desktop Workbench is maintained separately in
-[`dotmatch-community`](https://github.com/dnncha/dotmatch-community).
+distinguishes local examples from accepted upstream integrations.
 
-## Matching rules and performance
-
-Hamming distance is the usual choice for fixed-length windows where only base
-substitutions should be considered. Levenshtein distance can also account for
-short insertions and deletions. The default radius policy requires a single
-compatible target; the optional `best` policy exists for compatibility with
-workflows that select the nearest target.
-
-Indexed candidate generation and native distance kernels make fixed-window
-assignment practical for large FASTQ inputs. Benchmark results, hardware,
-commands, and known limitations are kept with the
-[benchmark reports](https://dotmatch.readthedocs.io/en/latest/benchmarks/README.html).
-Those reports cover the tested workloads; they are not a claim that DotMatch
-replaces general alignment or every demultiplexing workflow.
-
-## Documentation
-
-- [Agent guide](https://dotmatch.readthedocs.io/en/latest/agent-guide.html)
-- [Getting started](https://dotmatch.readthedocs.io/en/latest/getting-started.html)
-- [Command reference](https://dotmatch.readthedocs.io/en/latest/command-reference.html)
-- [AssaySpec workflows](https://dotmatch.readthedocs.io/en/latest/assayspec.html)
-- [Lab evaluation and handoff](https://dotmatch.readthedocs.io/en/latest/lab-evaluation.html)
-- [CRISPR count QC](https://dotmatch.readthedocs.io/en/latest/crispr-qc.html)
-- [Barcode panel design](https://dotmatch.readthedocs.io/en/latest/barcode-panel-design.html)
-- [Output schemas](https://dotmatch.readthedocs.io/en/latest/schemas.html)
-- [Methods and citation](https://dotmatch.readthedocs.io/en/latest/methods-and-citation.html)
-- [Packaging notes](https://dotmatch.readthedocs.io/en/latest/packaging.html)
-
-## Citation
-
-Run `dotmatch citation` to print the citation for the installed version. The
-repository also includes [`CITATION.cff`](https://github.com/dnncha/dotmatch/blob/main/CITATION.cff),
-and release archives are deposited with Zenodo.
-
-## Development
+The six structured agent tools are included in release 0.5.0:
 
 ```bash
-git clone https://github.com/dnncha/dotmatch.git
-cd dotmatch
-make
-make test
+dotmatch capabilities --json
+dotmatch agent tools --json
+dotmatch agent export-skill --target ./dotmatch-agent
 ```
 
-See [CONTRIBUTING.md](https://github.com/dnncha/dotmatch/blob/main/CONTRIBUTING.md)
-for the development setup and pull-request checks.
+They prepare, preflight, run, review and hand off local assays without accepting
+free-form shell commands or uploading research data. Start with the
+[Agent guide](https://dotmatch.readthedocs.io/en/latest/agent-guide.html),
+[CRISPR agent route](https://dotmatch.readthedocs.io/en/latest/agent-crispr.html), or
+[Perturb-seq agent route](https://dotmatch.readthedocs.io/en/latest/agent-perturb-seq.html).
+Machine-readable discovery: [agent-capabilities.json](https://dnncha.github.io/dotmatch/agent-capabilities.json),
+[agent-tools.json](https://dnncha.github.io/dotmatch/agent-tools.json), and the
+[checked contract fixture](https://dnncha.github.io/dotmatch/agent-reference-crispr.json).
 
-## License
+## Citation and contributing
 
-Apache-2.0. See [LICENSE](https://github.com/dnncha/dotmatch/blob/main/LICENSE).
+DotMatch is [Apache-2.0 licensed](https://github.com/dnncha/dotmatch/blob/main/LICENSE).
+Use `dotmatch citation` and [CITATION.cff](https://github.com/dnncha/dotmatch/blob/main/CITATION.cff)
+to record the actual software version. Use the [methods and citation guide](https://dotmatch.readthedocs.io/en/latest/methods-and-citation.html)
+to cite the actual release and configuration used. Improvements, discrepancy
+fixtures and reproducible bug reports are welcome: [contributing guide](https://github.com/dnncha/dotmatch/blob/main/CONTRIBUTING.md).

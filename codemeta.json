@@ -9,8 +9,8 @@
   "issueTracker": "https://github.com/dnncha/dotmatch/issues",
   "license": "https://spdx.org/licenses/Apache-2.0",
   "identifier": "https://doi.org/10.5281/zenodo.20541628",
-  "version": "0.4.1",
-  "softwareVersion": "0.4.1",
+  "version": "0.5.0",
+  "softwareVersion": "0.5.0",
   "programmingLanguage": [
     "C",
     "Python",

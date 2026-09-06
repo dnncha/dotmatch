@@ -117,7 +117,17 @@ def test_codemeta_tracks_release_citation_and_concept_doi_after_minting() -> Non
         }
     ]
     assert f"version: \"{_pyproject_version()}\"" in citation
-    assert '\ndoi: "10.5281/zenodo.22214073"' in citation
+    record = json.loads((ROOT / "docs/distribution-release.json").read_text(encoding="utf-8"))
+    channel = next(item for item in record["channels"] if item["id"] == "zenodo")
+    doi_lines = [line for line in citation.splitlines() if line.startswith("doi:")]
+    if doi_lines:
+        assert record["release_version"] == _pyproject_version()
+        assert channel["status"] == "verified"
+        assert doi_lines[0].split(":", 1)[1].strip().strip('"') == channel["version_doi"]
+    else:
+        assert channel["status"] in {"prepared", "blocked"}
+        assert "doi" not in zenodo
+    assert 'doi: "10.5281/zenodo.22214073"' not in citation
     assert codemeta["softwareVersion"] == zenodo["version"]
     assert "known-target assignment" in codemeta["keywords"]
     assert "CRISPR" in codemeta["keywords"]

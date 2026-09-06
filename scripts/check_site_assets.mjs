@@ -1,246 +1,52 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-
+import assert from "node:assert/strict";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-
-const requiredFiles = [
-  "README.md",
-  "app/page.tsx",
-  "app/layout.tsx",
-  "app/robots.ts",
-  "app/sitemap.ts",
-  "app/globals.css",
-  "docs/index.md",
-  "docs/getting-started.md",
-  "docs/command-reference.md",
-  "docs/agent-guide.md",
-  "docs/agent-crispr.md",
-  "docs/agent-perturb-seq.md",
-  "public/llms.txt",
-  "public/llms-full.txt",
-  "public/agent-capabilities.json",
-  "public/agent-capabilities.schema.json",
-  "public/agent-tools.json",
-  "public/agent-tools.schema.json",
-  "public/agent-reference-crispr.json",
-  "public/dotmatch-read-assignment-v2.webp",
-  "public/dotmatch-read-assignment-mobile-v2.webp",
-  "public/dotmatch-og.png",
-  "public/dotmatch-twitter.png"
-];
-
-for (const path of requiredFiles) {
-  if (!existsSync(join(root, path))) {
-    console.error(`Missing public file: ${path}`);
-    process.exit(1);
-  }
+const read = path => readFileSync(join(root, path), "utf8");
+const required = ["README.md", "app/page.tsx", "app/layout.tsx", "app/robots.ts", "app/sitemap.ts", "app/globals.css", "app/site-metadata.ts", "app/research-shell.tsx", "app/research.module.css", "app/crispr-guide-counting/page.tsx", "app/tools/library-safety/page.tsx", "app/tools/library-safety/explorer.tsx", "lib/library-safety.ts", "tests/site/library-safety.test.mjs", "tests/site/metadata.test.mjs", "docs/index.md", "docs/getting-started.md", "docs/command-reference.md", "docs/agent-guide.md", "docs/agent-crispr.md", "docs/agent-perturb-seq.md", "public/llms.txt", "public/llms-full.txt", "public/agent-capabilities.json", "public/agent-capabilities.schema.json", "public/agent-tools.json", "public/agent-tools.schema.json", "public/agent-reference-crispr.json", "public/dotmatch-read-assignment-v2.webp", "public/dotmatch-read-assignment-mobile-v2.webp", "public/dotmatch-og.png", "public/dotmatch-twitter.png"];
+for (const path of required) assert(existsSync(join(root, path)), `Missing public file: ${path}`);
+const home = read("app/page.tsx");
+const homeContent = home + read("app/assignment-demo.tsx") + read("app/install-command.tsx");
+for (const anchor of ["top", "workflow", "failure-modes", "use-cases", "evidence", "install", "agent-workflow"]) assert(home.includes(`id="${anchor}"`), `Missing homepage section: ${anchor}`);
+for (const path of ["app/page.tsx", "app/crispr-guide-counting/page.tsx", "app/tools/library-safety/page.tsx", "app/assignment-sensitivity/page.tsx"]) {
+  const page = read(path);
+  assert.equal((page.match(/<h1\b/g) ?? []).length, 1, `${path}: exactly one H1 required`);
+  assert(!page.includes("github.com/dnncha/dotmatch/blob/main/docs/"), `${path}: use rendered documentation links`);
 }
-
-const read = (path) => readFileSync(join(root, path), "utf8");
-const page = read("app/page.tsx");
-const layout = read("app/layout.tsx");
-const readme = read("README.md");
-const docsIndex = read("docs/index.md");
-const packageMetadata = JSON.parse(read("package.json"));
-const normalizedPage = page.replace(/\s+/g, " ");
-
-for (const anchor of [
-  'id="top"',
-  'id="agent-workflow"',
-  'id="failure-modes"',
-  'id="workflow"',
-  'id="use-cases"',
-  'id="evidence"',
-  'id="install"'
-]) {
-  if (!page.includes(anchor)) {
-    console.error(`Missing homepage section: ${anchor}`);
-    process.exit(1);
-  }
+for (const phrase of ["CRISPR", "ambiguous", "unique", "none", "invalid", "dotmatch agent tools --json", "python3 -m pip install dotmatch", "getting-started.html", "SoftwareApplication", "softwareVersion: publishedVersion", "featureList", 'type="application/ld+json"']) assert(homeContent.includes(phrase), `Missing scientific/task content: ${phrase}`);
+assert(home.includes("AssignmentDemo") && home.includes("assignment-demo.json"), "Homepage must use the checked native example");
+for (const file of ["app/home.module.css", "app/assignment-demo.tsx", "app/install-command.tsx", "public/assignment-demo.json", "scripts/generate_assignment_demo.py"]) assert(existsSync(join(root, file)), `Missing checked-example asset: ${file}`);
+const layout = read("app/layout.tsx"), metadata = read("app/site-metadata.ts"), sitemap = read("app/sitemap.ts");
+assert(layout.includes('applicationName: "DotMatch"') && metadata.includes('siteName: "DotMatch"'), "Metadata identity missing");
+assert(layout.includes('rel="describedby"') && layout.includes("llms.txt"), "Agent discovery link missing");
+assert(metadata.includes('publishedVersion = "0.4.1"'), "Review the published release and its install evidence before changing the public version");
+assert(home.includes("packageMetadata.version") && home.toLowerCase().includes("website source version"), "Keep published and source versions distinct");
+assert(/^\d+\.\d+\.\d+/.test(JSON.parse(read("package.json")).version), "Source version must be semantic");
+for (const route of ["crispr-guide-counting", "tools/library-safety", "assignment-sensitivity"]) {
+  assert(sitemap.includes(route), `Sitemap missing ${route}`);
+  assert(read(`app/${route}/page.tsx`).includes("pageMetadata("), `Page-specific canonical missing: ${route}`);
 }
-
-if ((page.match(/<h1\b/g) ?? []).length !== 1) {
-  console.error("Homepage must contain exactly one H1.");
-  process.exit(1);
-}
-
-for (const phrase of [
-  "DotMatch",
-  "Known-target sequencing read assignment",
-  "Match reads without hiding uncertainty.",
-  "unique",
-  "ambiguous",
-  "none",
-  "invalid",
-  "CRISPR guides",
-  "inline barcodes",
-  "It is not a genome aligner or basecaller.",
-  "Run with a local agent",
-  "dotmatch agent tools --json",
-  "structured verdict remains <code>failed</code>",
-  "Published ${publishedVersion}",
-  "python3 -m pip install dotmatch",
-  "getting-started.html",
-  "https://dotmatch.readthedocs.io/en/latest/"
-]) {
-  if (!normalizedPage.includes(phrase)) {
-    console.error(`Homepage is missing required user-facing content: ${phrase}`);
-    process.exit(1);
-  }
-}
-
-if (page.includes("github.com/dnncha/dotmatch/blob/main/docs/")) {
-  console.error("Homepage documentation links must point to the rendered documentation site.");
-  process.exit(1);
-}
-
-for (const image of [
-  "dotmatch-read-assignment-v2.webp",
-  "dotmatch-read-assignment-mobile-v2.webp"
-]) {
-  if (!page.includes(image)) {
-    console.error(`Homepage does not reference its responsive explainer image: ${image}`);
-    process.exit(1);
-  }
-}
-
-if (!page.includes("<picture>") || !page.includes('media="(max-width: 520px)"')) {
-  console.error("Homepage explainer must provide a dedicated mobile image source.");
-  process.exit(1);
-}
-
-if (!layout.includes('applicationName: "DotMatch"') ||
-    !layout.includes('siteName: "DotMatch"') ||
-    !layout.includes("known short DNA targets")) {
-  console.error("Site metadata must describe DotMatch consistently.");
-  process.exit(1);
-}
-
-if (!page.includes('type="application/ld+json"') || !page.includes("SoftwareApplication")) {
-  console.error("Homepage must include SoftwareApplication structured data.");
-  process.exit(1);
-}
-
-if (!layout.includes('rel="describedby"') || !layout.includes("llms.txt")) {
-  console.error("Homepage metadata must point agents to llms.txt.");
-  process.exit(1);
-}
-
-if (!page.includes("featureList") || !page.includes("agent-capabilities.json")) {
-  console.error("Homepage structured data must expose agent task vocabulary and capability JSON.");
-  process.exit(1);
-}
-
-if (!page.includes('import packageMetadata from "../package.json"') ||
-    !page.includes("softwareVersion: publishedVersion") ||
-    !page.includes('const publishedVersion = "0.4.1"') ||
-    !page.includes("Published ${publishedVersion}") ||
-    !page.includes("Version ${releaseVersion} published")) {
-  console.error("Homepage must separate candidate source metadata from the current published package.");
-  process.exit(1);
-}
-
-if (typeof packageMetadata.version !== "string" || !/^\d+\.\d+\.\d+/.test(packageMetadata.version)) {
-  console.error("package.json must declare a semantic release version.");
-  process.exit(1);
-}
-
-const css = read("app/globals.css");
-for (const accessibilityRule of [
-  ".skip-link",
-  ":focus-visible",
-  "prefers-reduced-motion",
-  ".install-copy a"
-]) {
-  if (!css.includes(accessibilityRule)) {
-    console.error(`Homepage accessibility rule is missing: ${accessibilityRule}`);
-    process.exit(1);
-  }
-}
-
-const markdownLinkPattern = /!?\[[^\]]*\]\(([^)\s]+)(?:\s+[^)]*)?\)/g;
-for (const [label, text] of [["README.md", readme], ["docs/index.md", docsIndex]]) {
-  for (const match of text.matchAll(markdownLinkPattern)) {
+assert(!sitemap.includes("new Date("), "Do not manufacture lastModified from build time");
+for (const rule of [".skip-link", ":focus-visible", "prefers-reduced-motion", ".install-copy a"]) assert(read("app/globals.css").includes(rule), `Missing accessibility rule: ${rule}`);
+const linkPattern = /!?\[[^\]]*\]\(([^)\s]+)(?:\s+[^)]*)?\)/g;
+for (const file of ["README.md", "docs/index.md"]) {
+  for (const match of read(file).matchAll(linkPattern)) {
     const destination = match[1].replace(/^<|>$/g, "");
-    if (destination.startsWith("#") ||
-        destination.startsWith("https://") ||
-        destination.startsWith("http://") ||
-        destination.startsWith("mailto:")) {
-      continue;
-    }
-    const sourcePath = join(root, label);
-    const pathPart = destination.split("#", 1)[0];
-    const resolved = resolve(dirname(sourcePath), pathPart);
-    if (!existsSync(resolved)) {
-      console.error(`${label} contains a missing local link: ${destination}`);
-      process.exit(1);
-    }
+    if (/^(#|https?:\/\/)/.test(destination)) continue;
+    assert(file !== "README.md", `README link not safe on PyPI: ${destination}`);
+    if (destination.startsWith("mailto:")) continue;
+    assert(existsSync(resolve(dirname(join(root, file)), destination.split("#", 1)[0])), `${file}: broken local link ${destination}`);
   }
 }
-
-for (const match of readme.matchAll(markdownLinkPattern)) {
-  const destination = match[1].replace(/^<|>$/g, "");
-  if (!destination.startsWith("https://") && !destination.startsWith("http://") && !destination.startsWith("#")) {
-    console.error(`README link is not safe when rendered on PyPI: ${destination}`);
-    process.exit(1);
-  }
+function markdownFiles(dir) {
+  return readdirSync(join(root, dir)).flatMap(name => {
+    const path = join(dir, name);
+    if (name === "_build") return [];
+    return statSync(join(root, path)).isDirectory() ? markdownFiles(path) : name.endsWith(".md") ? [path] : [];
+  });
 }
-
-const publicLanguageFiles = [
-  "README.md",
-  "app/page.tsx",
-  "app/layout.tsx",
-  "pyproject.toml",
-  "codemeta.json",
-  ".zenodo.json",
-  "CITATION.cff"
-];
-
-function markdownFiles(directory) {
-  const results = [];
-  for (const name of readdirSync(join(root, directory))) {
-    const relative = join(directory, name);
-    const full = join(root, relative);
-    if (name === "_build") continue;
-    if (statSync(full).isDirectory()) results.push(...markdownFiles(relative));
-    else if (name.endsWith(".md")) results.push(relative);
-  }
-  return results;
-}
-
-publicLanguageFiles.push(...markdownFiles("docs"));
-
-const forbiddenPhrases = [
-  "adoption evidence",
-  "adoption trust",
-  "AI slop",
-  "big wins",
-  "evidence-bounded",
-  "industry exposure",
-  "massive industry impact",
-  "next wins",
-  "pilot conversations",
-  "private feedback",
-  "quote-approved",
-  "turning private evaluation into public adoption evidence",
-  "without turning private feedback into public evidence",
-  "game-changing",
-  "revolutionary",
-  "world-class",
-  "best-in-class",
-  "enterprise-grade",
-  "just works"
-];
-
-for (const path of publicLanguageFiles) {
-  const text = read(path).toLowerCase();
-  for (const phrase of forbiddenPhrases) {
-    if (text.includes(phrase.toLowerCase())) {
-      console.error(`${path} contains internal or inflated public language: ${phrase}`);
-      process.exit(1);
-    }
-  }
-}
-
-console.log("Public site, documentation links, PyPI README links, and language checks passed");
+const languageFiles = ["README.md", "app/page.tsx", "app/layout.tsx", "app/crispr-guide-counting/page.tsx", "app/tools/library-safety/page.tsx", "pyproject.toml", "codemeta.json", ".zenodo.json", "CITATION.cff", ...markdownFiles("docs")];
+const forbidden = ["adoption evidence", "adoption trust", "AI slop", "big wins", "evidence-bounded", "industry exposure", "massive industry impact", "next wins", "pilot conversations", "private feedback", "quote-approved", "turning private evaluation into public adoption evidence", "without turning private feedback into public evidence", "game-changing", "revolutionary", "world-class", "best-in-class", "enterprise-grade", "just works"];
+for (const path of languageFiles) for (const phrase of forbidden) assert(!read(path).toLowerCase().includes(phrase.toLowerCase()), `${path}: internal or inflated language: ${phrase}`);
+console.log("Public routes, accessibility hooks, release identity, documentation links, and scientific language checks passed");

@@ -625,7 +625,12 @@ def test_assay_run_count_reproduces_existing_crispr_fixture(tmp_path: Path) -> N
     assert "ambiguous reads were not silently counted" in methods
     citation = (out_dir / "CITATION.bib").read_text(encoding="utf-8")
     assert "@software{dotmatch" in citation
-    assert "doi = {10.5281/zenodo.22214073}" in citation
+    cff = (ROOT / "CITATION.cff").read_text(encoding="utf-8")
+    doi_lines = [line for line in cff.splitlines() if line.startswith("doi:")]
+    expected_doi = doi_lines[0].split(":", 1)[1].strip().strip('"') if doi_lines else "10.5281/zenodo.20541628"
+    assert "doi = {" + expected_doi + "}" in citation
+    from dotmatch import __version__
+    assert "version = {" + __version__ + "}" in citation
     versions = (out_dir / "software_versions.yml").read_text(encoding="utf-8")
     assert "dotmatch_python:" in versions
     assert "dotmatch_native:" in versions

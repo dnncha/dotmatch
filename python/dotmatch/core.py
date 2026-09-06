@@ -10,26 +10,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Iterator, Sequence, TextIO
 
-try:
-    import pandas as pd  # type: ignore
-    _HAS_PANDAS = True
-except Exception:  # noqa: BLE001
-    pd = None  # type: ignore
-    _HAS_PANDAS = False
+from ._optional import optional_module
 
-try:
-    import polars as pl  # type: ignore
-    _HAS_POLARS = True
-except Exception:  # noqa: BLE001
-    pl = None  # type: ignore
-    _HAS_POLARS = False
+pd, _HAS_PANDAS = optional_module("pandas")
 
-try:
-    import anndata as ad  # type: ignore
-    _HAS_ANNDATA = True
-except Exception:  # noqa: BLE001
-    ad = None  # type: ignore
-    _HAS_ANNDATA = False
+pl, _HAS_POLARS = optional_module("polars")
+
+ad, _HAS_ANNDATA = optional_module("anndata")
 
 MATCH_INVALID = -1
 MATCH_NONE = 0
@@ -247,7 +234,7 @@ _STATUS_NAMES = {
 def _open_text(path: str | Path, mode: str = "rt") -> TextIO:
     path = Path(path)
     if str(path).endswith(".gz"):
-        return gzip.open(path, mode)
+        return gzip.open(path, mode, encoding="utf-8", newline="")
     return path.open(mode, encoding="utf-8", newline="")
 
 
@@ -259,56 +246,22 @@ def _looks_like_target_header(cols: Sequence[str]) -> bool:
 
 
 def load_targets(path: str | Path) -> list[tuple[str, str]]:
-    """Load a target table as ``(target_id, sequence)`` pairs.
+    """Read plain/gzipped CSV or TSV with named or positional target columns.
 
-    TSV is the default; ``.csv`` files are parsed as comma-separated. Headered
-    tables use common id/sequence column names, and headerless one- or two-column
-    files are accepted for notebook and workflow glue.
+    Duplicate sequences are retained; empty or duplicate IDs are rejected.
     """
-    source = Path(path)
-    delimiter = "," if source.suffix.lower() == ".csv" else "\t"
-    targets: list[tuple[str, str]] = []
-    with _open_text(source) as fh:
-        first_data = True
-        id_col = 0
-        seq_col = 1
-        for row in csv.reader(fh, delimiter=delimiter):
-            if not row:
-                continue
-            cols = [col.strip() for col in row]
-            if not any(cols) or cols[0].startswith("#"):
-                continue
-            if first_data and _looks_like_target_header(cols):
-                header = {name.strip().lower(): i for i, name in enumerate(cols)}
-                for candidate in ("target_id", "guide_id", "barcode_id", "id", "name"):
-                    if candidate in header:
-                        id_col = header[candidate]
-                        break
-                for candidate in ("target_seq", "guide_seq", "barcode_seq", "sequence", "seq"):
-                    if candidate in header:
-                        seq_col = header[candidate]
-                        break
-                first_data = False
-                continue
-            first_data = False
-            if len(cols) == 1:
-                target_id = f"target_{len(targets)}"
-                seq = cols[0].upper()
-            else:
-                if id_col >= len(cols) or seq_col >= len(cols):
-                    raise ValueError(f"target row does not contain id/sequence columns: {source}")
-                target_id = cols[id_col] or f"target_{len(targets)}"
-                seq = cols[seq_col].upper()
-            if not seq:
-                raise ValueError(f"empty target sequence in {source}")
-            targets.append((target_id, seq))
-    if not targets:
-        raise ValueError(f"no targets found in {source}")
-    return targets
+    from .target_io import read_target_table
+
+    return [(row.target_id, row.sequence) for row in read_target_table(path)]
 
 
-def iter_fastq(path: str | Path) -> Iterator[FastqRecord]:
-    """Yield FASTQ records from plain or gzipped FASTQ."""
+def iter_fastq(path: str | Path, *, content_digest: Any | None = None) -> Iterator[FastqRecord]:
+    """Yield FASTQ records, optionally hashing original decompressed UTF-8 bytes.
+
+    The optional hashlib-compatible object is updated before normalization.
+    Consume the complete iterator before treating its digest as a full-input
+    checksum; this is not the checksum of a compressed file.
+    """
     with _open_text(path) as fh:
         while True:
             header = fh.readline()
@@ -317,6 +270,9 @@ def iter_fastq(path: str | Path) -> Iterator[FastqRecord]:
             seq = fh.readline()
             plus = fh.readline()
             qual = fh.readline()
+            if content_digest is not None:
+                for line in (header, seq, plus, qual):
+                    content_digest.update(line.encode("utf-8"))
             if not seq or not plus or not qual:
                 raise ValueError(f"truncated FASTQ record in {path}")
             header = header.rstrip("\n\r")
@@ -327,15 +283,17 @@ def iter_fastq(path: str | Path) -> Iterator[FastqRecord]:
                 raise ValueError(f"invalid FASTQ record in {path}")
             if len(seq) != len(qual):
                 raise ValueError(f"invalid FASTQ record in {path}: sequence and quality lengths differ")
-            yield FastqRecord(header[1:].split()[0], seq, qual)
+            identifiers = header[1:].split()
+            if not identifiers:
+                raise ValueError(f"invalid FASTQ record in {path}: missing read identifier")
+            yield FastqRecord(identifiers[0], seq, qual)
 
 
 def _normalize_targets(targets: Any) -> list[tuple[str, str]]:
     if isinstance(targets, (str, Path)):
         return load_targets(targets)
-    if _HAS_PANDAS and hasattr(targets, "columns"):
-        return targets_from_dataframe(targets)
-    if _HAS_POLARS and pl is not None and isinstance(targets, pl.DataFrame):
+    # Do not import an optional dataframe stack to inspect ordinary lists.
+    if hasattr(targets, "columns"):
         return targets_from_dataframe(targets)
     normalized: list[tuple[str, str]] = []
     for i, item in enumerate(targets):
@@ -1006,7 +964,7 @@ def targets_from_dataframe(
         else:
             seq_col = cols[1] if len(cols) > 1 else 1
     ids = data[id_col].astype(str).tolist()
-    seqs = data[seq_col].astype(str).tolist()
+    seqs = data[seq_col].astype(str).str.upper().tolist()
     return list(zip(ids, seqs))
 
 
@@ -1038,8 +996,13 @@ def results_to_dataframe(
             "status": r.status,
             "status_name": status_map.get(r.status, str(r.status)),
         }
-        if target_names is not None and 0 <= r.target_index < len(target_names):
-            row["target_name"] = target_names[r.target_index]
+        if target_names is not None:
+            # A candidate index is diagnostic information, not an assignment.
+            row["target_name"] = (
+                target_names[r.target_index]
+                if r.status == MATCH_UNIQUE and 0 <= r.target_index < len(target_names)
+                else ""
+            )
         if read_ids is not None and i < len(read_ids):
             row["read_id"] = read_ids[i]
         rows.append(row)

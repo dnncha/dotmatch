@@ -2,6 +2,36 @@
 
 All notable user-facing changes are tracked here. Public statements in release notes must stay aligned with `docs/scientific-claims.md`.
 
+## Unreleased
+
+## 0.5.0 - 2026-09-06
+
+### Added
+
+- Added `dotmatch sensitivity`: one-pass native-index comparison of exact,
+  radius-one and best-distance Hamming assignment, with three count matrices,
+  per-guide deltas, state transitions, checksums and a local HTML report.
+- Added a native-generated interactive assignment example and a worked
+  sensitivity page. The homepage and README now lead with the scientific task.
+
+### Fixed
+
+- Defer optional scientific imports so basic matching and CLI use do not load
+  dataframe stacks unnecessarily; keep explicit dataframe integrations working.
+- Do not expose an ambiguous nearest candidate as an assigned dataframe label.
+- Normalize dataframe target case, diagnose missing FASTQ identifiers, and
+  retain original decompressed bytes when a caller requests a content digest.
+- Correct draft-project review instructions and preserve actionable input errors.
+
+- Python target-table loaders now handle `.csv.gz`, UTF-8 BOMs and reordered
+  named columns consistently. Empty/duplicate target IDs are rejected rather
+  than silently merged; duplicate sequences with distinct IDs are retained.
+- Benchmark count parsing no longer rounds through floating point or silently
+  ignores malformed values. Matrix identity is distinguished from equal guide
+  totals across samples, with explicit named-axis comparability.
+
+Historical benchmark artifacts are unchanged; new comparison fields are additive.
+
 ## 0.4.1 - 2026-09-04
 
 ### Changed

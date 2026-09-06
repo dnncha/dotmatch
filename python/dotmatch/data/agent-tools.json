@@ -2,7 +2,7 @@
   "$schema": "https://dnncha.github.io/dotmatch/agent-tools.schema.json",
   "schema_version": "1.0",
   "tool_contract_version": "1.0",
-  "generated_for_version": "0.4.1",
+  "generated_for_version": "0.5.0",
   "transport": {
     "input": "one JSON object supplied by file, stdin, or the Python API",
     "output": "one JSON envelope on stdout or as a Python dictionary",
@@ -54,7 +54,12 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "intent": {"enum": ["crispr-guide-counting", "perturb-seq-guide-capture"]}
+          "intent": {
+            "enum": [
+              "crispr-guide-counting",
+              "perturb-seq-guide-capture"
+            ]
+          }
         }
       }
     },
@@ -64,17 +69,55 @@
       "input_schema": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["intent", "targets", "reads_dir", "output_dir"],
+        "required": [
+          "intent",
+          "targets",
+          "reads_dir",
+          "output_dir"
+        ],
         "properties": {
-          "intent": {"enum": ["crispr-guide-counting", "perturb-seq-guide-capture"]},
-          "targets": {"type": "string", "minLength": 1},
-          "reads_dir": {"type": "string", "minLength": 1},
-          "output_dir": {"type": "string", "minLength": 1},
-          "link_reads": {"type": "boolean", "default": false},
-          "threads": {"type": "integer", "minimum": 1, "default": 1},
-          "max_reads": {"type": "integer", "minimum": 1, "default": 50000},
-          "max_start": {"type": "integer", "minimum": 0, "default": 32},
-          "minimum_free_bytes": {"type": "integer", "minimum": 0, "default": 1073741824}
+          "intent": {
+            "enum": [
+              "crispr-guide-counting",
+              "perturb-seq-guide-capture"
+            ]
+          },
+          "targets": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reads_dir": {
+            "type": "string",
+            "minLength": 1
+          },
+          "output_dir": {
+            "type": "string",
+            "minLength": 1
+          },
+          "link_reads": {
+            "type": "boolean",
+            "default": false
+          },
+          "threads": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1
+          },
+          "max_reads": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 50000
+          },
+          "max_start": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 32
+          },
+          "minimum_free_bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 1073741824
+          }
         }
       }
     },
@@ -84,10 +127,19 @@
       "input_schema": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["spec"],
+        "required": [
+          "spec"
+        ],
         "properties": {
-          "spec": {"type": "string", "minLength": 1},
-          "minimum_free_bytes": {"type": "integer", "minimum": 0, "default": 1073741824}
+          "spec": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minimum_free_bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 1073741824
+          }
         }
       }
     },
@@ -97,11 +149,25 @@
       "input_schema": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["spec"],
+        "required": [
+          "spec"
+        ],
         "properties": {
-          "spec": {"type": "string", "minLength": 1},
-          "max_revisions": {"type": "integer", "minimum": 0, "maximum": 3, "default": 3},
-          "minimum_free_bytes": {"type": "integer", "minimum": 0, "default": 1073741824}
+          "spec": {
+            "type": "string",
+            "minLength": 1
+          },
+          "max_revisions": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3,
+            "default": 3
+          },
+          "minimum_free_bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 1073741824
+          }
         }
       }
     },
@@ -111,10 +177,19 @@
       "input_schema": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["spec"],
+        "required": [
+          "spec"
+        ],
         "properties": {
-          "spec": {"type": "string", "minLength": 1},
-          "minimum_free_bytes": {"type": "integer", "minimum": 0, "default": 1073741824}
+          "spec": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minimum_free_bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 1073741824
+          }
         }
       }
     },
@@ -124,11 +199,24 @@
       "input_schema": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["spec", "output_dir"],
+        "required": [
+          "spec",
+          "output_dir"
+        ],
         "properties": {
-          "spec": {"type": "string", "minLength": 1},
-          "output_dir": {"type": "string", "minLength": 1},
-          "minimum_free_bytes": {"type": "integer", "minimum": 0, "default": 1073741824}
+          "spec": {
+            "type": "string",
+            "minLength": 1
+          },
+          "output_dir": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minimum_free_bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 1073741824
+          }
         }
       }
     }

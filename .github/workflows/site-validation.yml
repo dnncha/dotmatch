@@ -1,0 +1,53 @@
+name: Site validation
+on:
+  pull_request:
+    paths: ['app/**', 'lib/library-safety.ts', 'public/**', 'tests/site/**', 'scripts/check_site_assets.mjs', 'scripts/check_site_export.mjs', 'scripts/generate_assignment_demo.py', 'scripts/check_site_browser.py', 'examples/assignment_sensitivity/**', 'python/dotmatch/sensitivity.py', 'package*.json', 'next.config.ts', '.github/workflows/site-validation.yml']
+  push:
+    branches: [main]
+    paths: ['app/**', 'lib/library-safety.ts', 'public/**', 'tests/site/**', 'scripts/check_site_assets.mjs', 'scripts/check_site_export.mjs', 'scripts/generate_assignment_demo.py', 'scripts/check_site_browser.py', 'examples/assignment_sensitivity/**', 'python/dotmatch/sensitivity.py', 'package*.json', 'next.config.ts', '.github/workflows/site-validation.yml']
+permissions:
+  contents: read
+jobs:
+  static-site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Check the native-generated website example
+        run: |
+          make shared
+          python3 scripts/generate_assignment_demo.py --check
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run check:site
+      - name: Build and inspect GitHub Pages export
+        run: npm run build && node scripts/check_site_export.mjs
+        env:
+          NEXT_OUTPUT: export
+          NEXT_PUBLIC_BASE_PATH: /dotmatch
+          NEXT_PUBLIC_SITE_URL: https://dnncha.github.io/dotmatch
+      - name: Browser interaction and responsive-layout checks
+        run: |
+          python3 -m pip install playwright==1.55.0
+          python3 -m playwright install --with-deps chromium
+          python3 scripts/check_site_browser.py
+      - name: Record exact preview source
+        if: always()
+        run: |
+          mkdir -p review
+          git archive --format=tar.gz --output=review/source.tar.gz HEAD
+          git rev-parse HEAD > review/commit.txt
+          if [ -d out ]; then cp -R out review/site; fi
+          if [ -d browser-review ]; then cp -R browser-review review/browser; fi
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-review
+          path: review/
+          retention-days: 7
