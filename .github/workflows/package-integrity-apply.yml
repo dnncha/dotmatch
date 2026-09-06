@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 2
+          fetch-depth: 0
           ref: ${{ github.sha }}
       - uses: actions/setup-python@v7
         with:
@@ -23,7 +23,9 @@ jobs:
           python - <<'PY'
           import hashlib, json, pathlib, shutil, subprocess
           def git(*args): return subprocess.check_output(['git', *args], text=True).strip()
-          assert git('rev-parse', 'HEAD^') == '11d159fa1648365f2a4e96917b483c33aa5d9fe7', 'Unexpected base commit'
+          subprocess.run(['git', 'merge-base', '--is-ancestor', '11d159fa1648365f2a4e96917b483c33aa5d9fe7', 'HEAD'], check=True)
+          changed = git('diff', '--name-only', '11d159fa1648365f2a4e96917b483c33aa5d9fe7', 'HEAD').splitlines()
+          assert all(p.startswith('.audit-transfer/') or p == '.github/workflows/package-integrity-apply.yml' for p in changed), 'Unexpected source changes before import'
           parts = sorted(pathlib.Path('.audit-transfer').glob('changes-*.json'))
           assert len(parts) == 6, 'Incomplete transfer'
           changes = [entry for part in parts for entry in json.loads(part.read_text())]
@@ -51,6 +53,7 @@ jobs:
       - name: Build and run focused regression tests
         run: |
           python -m pip install pytest pandas polars anndata jsonschema
+          python -m pip install --no-deps .
           make -j2 all shared
           python -m pytest -q python/tests/test_count_io_audit.py python/tests/test_public_api_audit.py python/tests/test_sparse_integrity_audit.py python/tests/test_native_oracle_audit.py python/tests/test_native_target_table_audit.py python/tests/test_feature_matrix.py python/tests/test_sensitivity.py
           python scripts/generate_assignment_demo.py --check
