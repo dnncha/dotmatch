@@ -1,0 +1,8 @@
+{
+  "version": "0.5.0",
+  "tag": "v0.5.0",
+  "authorized": true,
+  "request": "Merge PR #104 to main and release the reviewed DotMatch improvements.",
+  "publication_channels": ["GitHub Releases", "PyPI", "GHCR"],
+  "rule": "Only tag the exact checked main commit. Never move an existing tag; never claim an unverified upstream archive or package."
+}
