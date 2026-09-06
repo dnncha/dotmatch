@@ -1,0 +1,113 @@
+{
+  "version": "0.1.0a1",
+  "environment": {
+    "python": "3.13.5",
+    "pydantic": "2.13.4",
+    "platform": "Linux x86_64"
+  },
+  "tests": {
+    "passed": 572,
+    "failed": 0,
+    "kind": "synthetic software verification; no empirical biological validation"
+  },
+  "coverage": {
+    "covered_lines": 732,
+    "num_statements": 733,
+    "percent_covered": 99.47643979057591,
+    "percent_covered_display": "99",
+    "missing_lines": 1,
+    "excluded_lines": 4,
+    "percent_statements_covered": 99.86357435197817,
+    "percent_statements_covered_display": "99",
+    "num_branches": 222,
+    "num_partial_branches": 4,
+    "covered_branches": 218,
+    "missing_branches": 4,
+    "percent_branches_covered": 98.1981981981982,
+    "percent_branches_covered_display": "98"
+  },
+  "schema_check": "passed",
+  "source_hygiene": "passed (not a full static type check)",
+  "installed_wheel": "passed outside source tree with preinstalled dependencies",
+  "html_checks": {
+    "engine": "Chromium",
+    "widths": [
+      1440,
+      390
+    ],
+    "document_horizontal_overflow": false,
+    "script_elements": 0
+  },
+  "strict_mypy_local": "not run; unavailable in local environment",
+  "ruff_local": "not run; unavailable in local environment",
+  "remote_ci": "passed; see github_verification for exact tested commit and run",
+  "biological_validation": "not performed",
+  "package_index_publication": "not performed",
+  "date": "2026-09-05 UTC",
+  "github_verification": {
+    "repository": "dnncha/dotmatch",
+    "branch": "editwitness/research-alpha-20260906",
+    "tested_commit": "377c3bfafeb722bce3eac91d339dfec9d1028e68",
+    "run_url": "https://github.com/dnncha/dotmatch/actions/runs/33998897914",
+    "run_id": 33998897914,
+    "status": "all_jobs_completed_successfully",
+    "tests_passed": 572,
+    "matrix": [
+      {
+        "os": "ubuntu-latest",
+        "python": "3.11",
+        "result": "passed"
+      },
+      {
+        "os": "ubuntu-latest",
+        "python": "3.13",
+        "result": "passed"
+      },
+      {
+        "os": "macos-latest",
+        "python": "3.11",
+        "result": "passed"
+      },
+      {
+        "os": "macos-latest",
+        "python": "3.13",
+        "result": "passed"
+      },
+      {
+        "os": "windows-latest",
+        "python": "3.11",
+        "result": "passed"
+      },
+      {
+        "os": "windows-latest",
+        "python": "3.13",
+        "result": "passed"
+      }
+    ],
+    "strict_mypy": "passed",
+    "schema_snapshots": "passed",
+    "source_hygiene": "passed_not_ruff",
+    "distribution_builds": "passed",
+    "coverage": {
+      "covered_statements": 732,
+      "total_statements": 733,
+      "covered_branches": 218,
+      "total_branches": 222,
+      "combined_percent": 99.47643979057591
+    },
+    "covered_environment": {
+      "python": "3.13.15",
+      "pydantic": "2.13.5",
+      "pytest": "9.1.1",
+      "coverage": "7.16.0"
+    },
+    "delivery_note": "Final documentation records this tested code; scientific implementation and tests are unchanged."
+  },
+  "not_run": [
+    "Ruff",
+    "standalone GitHub repository creation",
+    "PyPI publication",
+    "biological validation"
+  ],
+  "scientific_status": "software-tested model; not empirically validated"
+}

@@ -1,0 +1,49 @@
+{
+  "package_version": "0.2.0a1",
+  "date": "2026-09-06",
+  "python": "3.13.5",
+  "platform": "Linux-6.18.35-x86_64-with-glibc2.41",
+  "synthetic": true,
+  "notes": "Local timings include JSON loading for demo workloads; warmed, no coverage. Not a comparative or biological benchmark.",
+  "workloads": {
+    "exact_demo": {
+      "seconds": [
+        0.0010945620001621137,
+        0.001029594000101497,
+        0.0010432639999180537,
+        0.0010074500000882836,
+        0.0009990579999339388,
+        0.0010049770000932767,
+        0.0010317369999484072
+      ],
+      "median_seconds": 0.001029594000101497,
+      "result_sha256": "2b6afc32fe3be069825416cea739311bdb90d9e82549e89d5026fb654b087344"
+    },
+    "generate_and_analyze_9_deletions": {
+      "seconds": [
+        0.0022993300001417083,
+        0.00209296799994263,
+        0.0023532620000423776,
+        0.002743040000041219,
+        0.0022366160001183744,
+        0.002212990000089121,
+        0.00214871299999686
+      ],
+      "median_seconds": 0.0022366160001183744,
+      "result_sha256": "8b8ebf0b2913ec116e7375f5f485dfc6a391ba55cb0767483021167d98cf86df"
+    },
+    "legacy_geometry_demo_grid": {
+      "seconds": [
+        0.0013252900000679801,
+        0.001163796000128059,
+        0.0011469710000255873,
+        0.0012100060000648227,
+        0.001074862999985271,
+        0.0010652579999259615,
+        0.0014393219998964923
+      ],
+      "median_seconds": 0.001163796000128059,
+      "result_sha256": "3704a63ec0c73df87a15da01626d854778678095b6e8cedb5e6ac575722fce25"
+    }
+  }
+}

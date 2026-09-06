@@ -18,7 +18,7 @@ def main() -> int:
         path = root / f"{kind}.schema.json"
         expected = schema_for(kind)
         if args.check:
-            if not path.is_file() or json.loads(path.read_text()) != expected:
+            if not path.is_file() or json.loads(path.read_text(encoding="utf-8")) != expected:
                 stale.append(str(path.relative_to(root.parent.parent.parent)))
         else:
             path.write_text(json.dumps(expected, indent=2) + "\n", encoding="utf-8")

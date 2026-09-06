@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ._version import EXACT_MODEL_VERSION
 from .io import MAX_INPUT_BYTES, InputError
 from .models import Allele, Assay, Edit, Hypothesis, Interval, Manifest, Reference
 from .sequence import find_all, reverse_complement
@@ -30,7 +31,7 @@ def read_fasta(path: str | Path) -> tuple[str, str]:
 
 
 def init_from_fasta(path: str | Path, left_oligo: str, right_oligo: str,
-                    edit_position: int, alternate: str) -> Manifest:
+                    edit_position: int, alternate: str, *, read_bases: int | None = None) -> Manifest:
     name, sequence = read_fasta(path)
     left_oligo, right_oligo, alternate = left_oligo.upper(), right_oligo.upper(), alternate.upper()
     for oligo in (left_oligo, right_oligo):
@@ -48,6 +49,7 @@ def init_from_fasta(path: str | Path, left_oligo: str, right_oligo: str,
     if not left.end <= edit_position < right.start:
         raise InputError("init requires the intended substitution between the primer binding sites")
     return Manifest(
+        observation_model=EXACT_MODEL_VERSION,
         reference=Reference(name=name, sequence=sequence),
         alleles=(Allele(id="reference"), Allele(id="intended", edits=(
             Edit(start=edit_position, end=edit_position + 1, sequence=alternate),
@@ -58,5 +60,6 @@ def init_from_fasta(path: str | Path, left_oligo: str, right_oligo: str,
                     Hypothesis(id="intended_window_deleted", alleles=("intended", "window_deleted"))),
         expected_hypothesis="intended_biallelic",
         assays=(Assay(id="amplicon", left_primer=left, right_primer=right,
-                      left_oligo=left_oligo, right_oligo=right_oligo),),
+                      left_oligo=left_oligo, right_oligo=right_oligo,
+                      readout="full_insert" if read_bases is None else "paired_end", read_bases=read_bases),),
     )

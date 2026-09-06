@@ -142,6 +142,74 @@
       "title": "Assay",
       "type": "object"
     },
+    "DeletionGeneration": {
+      "additionalProperties": false,
+      "properties": {
+        "method": {
+          "const": "single-reference-deletions-v1",
+          "default": "single-reference-deletions-v1",
+          "title": "Method",
+          "type": "string"
+        },
+        "input_manifest_sha256": {
+          "title": "Input Manifest Sha256",
+          "type": "string"
+        },
+        "grid": {
+          "$ref": "#/$defs/DeletionScan"
+        },
+        "fixed_allele": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "Fixed Allele",
+          "type": "string"
+        },
+        "valid_deletions": {
+          "minimum": 1,
+          "title": "Valid Deletions",
+          "type": "integer"
+        },
+        "deduplicated_states": {
+          "minimum": 0,
+          "title": "Deduplicated States",
+          "type": "integer"
+        },
+        "added_alleles": {
+          "minimum": 0,
+          "title": "Added Alleles",
+          "type": "integer"
+        },
+        "added_hypotheses": {
+          "minimum": 0,
+          "title": "Added Hypotheses",
+          "type": "integer"
+        },
+        "max_new_hypotheses": {
+          "maximum": 999,
+          "minimum": 1,
+          "title": "Max New Hypotheses",
+          "type": "integer"
+        },
+        "caveat": {
+          "default": "One expected allele fixed; single deletions on the reference haplotype only. Equivalent local sequence states deduplicated; first geometry retained. No probabilities, sampling or exhaustive biological coverage.",
+          "title": "Caveat",
+          "type": "string"
+        }
+      },
+      "required": [
+        "input_manifest_sha256",
+        "grid",
+        "fixed_allele",
+        "valid_deletions",
+        "deduplicated_states",
+        "added_alleles",
+        "added_hypotheses",
+        "max_new_hypotheses"
+      ],
+      "title": "DeletionGeneration",
+      "type": "object"
+    },
     "DeletionScan": {
       "additionalProperties": false,
       "description": "Inclusive endpoint ranges, sampled with step, describing deletions [start,end).",
@@ -360,9 +428,21 @@
   "additionalProperties": false,
   "properties": {
     "schema_version": {
-      "const": "1.0",
-      "default": "1.0",
+      "default": "1.1",
+      "enum": [
+        "1.0",
+        "1.1"
+      ],
       "title": "Schema Version",
+      "type": "string"
+    },
+    "observation_model": {
+      "default": "original-sites-presence-v1",
+      "enum": [
+        "original-sites-presence-v1",
+        "exact-local-sequence-presence-v2"
+      ],
+      "title": "Observation Model",
       "type": "string"
     },
     "coordinate_system": {
@@ -427,6 +507,17 @@
         }
       ],
       "default": null
+    },
+    "generation": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DeletionGeneration"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     }
   },
   "required": [
@@ -439,5 +530,5 @@
   "title": "Manifest",
   "type": "object",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:editwitness:schema:manifest:1.0"
+  "$id": "urn:editwitness:schema:manifest:1.1"
 }

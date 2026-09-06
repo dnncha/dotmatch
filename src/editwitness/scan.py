@@ -7,6 +7,7 @@ from .models import Manifest, ScanAssayCounts, ScanExample, ScanResult
 
 
 def scan_deletions(manifest: Manifest) -> ScanResult:
+    manifest = Manifest.model_validate(manifest)
     grid = manifest.deletion_scan
     if grid is None:
         raise InputError("manifest has no deletion_scan configuration")
@@ -54,7 +55,8 @@ def scan_deletions(manifest: Manifest) -> ScanResult:
             binding_site_disrupted=counts[assay.id][1], outside_product_bounds=counts[assay.id][2],
         ) for assay in manifest.assays),
         blind_examples=tuple(blind_examples),
-        caveat="Counts describe only the declared deletion grid on the supplied reference; "
+        caveat="This scanner always uses original-sites-presence-v1 geometry, not exact-local rematching. "
+               "Counts describe only the declared deletion grid on the supplied reference; "
                "they are not event probabilities or empirical sensitivity. This geometry scan "
                "does not evaluate readout equivalence, compound edits, the intended allele, "
                "new primer sites, nonspecific amplification or experimental sampling.",

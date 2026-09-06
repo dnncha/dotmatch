@@ -10,7 +10,7 @@ rng = random.Random(20260905)
 sequence = "".join(rng.choice("ACGT") for _ in range(900))
 alt = next(base for base in "ACGT" if base != sequence[450])
 data = {
-    "schema_version": "1.0", "coordinate_system": "0-based-half-open",
+    "schema_version": "1.1", "observation_model": "exact-local-sequence-presence-v2", "coordinate_system": "0-based-half-open",
     "reference": {"name": "Synthetic 900-bp teaching locus (not biological data)", "sequence": sequence, "synthetic": True},
     "alleles": [
         {"id": "reference", "edits": []},

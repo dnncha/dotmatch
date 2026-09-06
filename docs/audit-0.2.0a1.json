@@ -1,0 +1,107 @@
+{
+  "format": "editwitness.audit.v1",
+  "date": "2026-09-06",
+  "baseline": "0.1.0a1",
+  "candidate": "0.2.0a1",
+  "review_type": "Implementation self-audit with adversarial and independent-oracle software tests; not independent scientific review.",
+  "findings": [
+    {
+      "id": "EW-A01",
+      "severity": "high",
+      "title": "Edit notation changed the scientific conclusion",
+      "observation": "A broad replacement retaining the original primer DNA was classified as disrupted by the original-site model, while a compact edit yielding the same final sequence was observable.",
+      "remediation": "Added explicitly versioned exact final-sequence rematching with both orientations, multisite products and representation-invariance tests. Legacy remains named and warned, not silently redefined.",
+      "regression_evidence": "tests/test_exact_model.py::test_sequence_invariance_rescues_unchanged_site_in_broad_replacement",
+      "status": "implemented"
+    },
+    {
+      "id": "EW-A02",
+      "severity": "high",
+      "title": "Aliases could inflate genomic counterexamples",
+      "observation": "Renamed hypotheses or alternate allele IDs encoding the same final diploid sequence state could be counted as distinct alternatives.",
+      "remediation": "Compare actual unordered final sequence pairs; label identical local states and exclude them from witnesses in both models.",
+      "regression_evidence": "tests/test_exact_model.py::test_same_state_with_different_allele_ids_is_not_an_alternative",
+      "status": "implemented"
+    },
+    {
+      "id": "EW-A03",
+      "severity": "high",
+      "title": "Readout initialization silently assumed complete observation",
+      "observation": "A new CLI manifest could default to full-insert readout without a deliberate user declaration of actual sequence coverage.",
+      "remediation": "Require mutually exclusive --full-insert or --read-bases in CLI initialization. Model configuration remains visible.",
+      "regression_evidence": "tests/test_audit_regressions.py::test_cli_init_never_silently_assumes_full_insert_observation",
+      "status": "implemented"
+    },
+    {
+      "id": "EW-A04",
+      "severity": "high",
+      "title": "Public API could trust bypassed model validation",
+      "observation": "Frozen Pydantic instances can still be constructed/copied without validation; the public engine accepted those instances.",
+      "remediation": "Enable instance revalidation and validate at public computational boundaries, including nested copied models.",
+      "regression_evidence": "tests/test_exact_model.py::test_public_engine_revalidates_model_copy_and_construct",
+      "status": "implemented"
+    },
+    {
+      "id": "EW-A05",
+      "severity": "medium",
+      "title": "The missing allele was not fully inspectable in result evidence",
+      "observation": "An allele with no signal could be named without its complete edit definition in a result/report. Sequence inspection emphasized observed reads rather than the hidden DNA.",
+      "remediation": "Store every allele edit definition, final length and SHA; emit final sequences through focused witness inspection. Add candidate evidence to HTML.",
+      "regression_evidence": "tests/test_audit_regressions.py::test_complete_witness_includes_reconstructable_final_alleles",
+      "status": "implemented"
+    },
+    {
+      "id": "EW-A06",
+      "severity": "medium",
+      "title": "Geometry scan was not a hypothesis-generating workflow",
+      "observation": "The alpha required manual encoding of useful alternatives; structural scan counters did not establish read/genotype equivalence.",
+      "remediation": "Add bounded reference-deletion generation, fixed-allele declaration, sequence deduplication, explicit provenance and fail-closed caps; keep geometry scanner separate.",
+      "regression_evidence": "tests/test_audit_regressions.py::test_cli_generated_challenges_are_actual_analysis_inputs",
+      "status": "implemented"
+    },
+    {
+      "id": "EW-A07",
+      "severity": "medium",
+      "title": "Redundant candidate assays could needlessly disable exact optimization",
+      "observation": "Candidate-count threshold switched to greedy even when many candidates were safely dominated duplicates.",
+      "remediation": "Perform deterministic objective-preserving dominance reduction and expose removed candidates. Retain impossible-to-separate cases.",
+      "regression_evidence": "tests/test_audit_regressions.py::test_equivalent_candidate_dominance_enables_exact_search",
+      "status": "implemented"
+    },
+    {
+      "id": "EW-A08",
+      "severity": "medium",
+      "title": "New schema defaults could invalidate old artifact checksums",
+      "observation": "Hashing the newly validated model rather than the archived payload would add defaults and change the digest.",
+      "remediation": "Verify actual archived JSON before migration defaults; old artifacts pass integrity. Require originating executable for exact replay.",
+      "regression_evidence": "tests/test_audit_regressions.py::test_old_result_integrity_survives_new_optional_schema_fields",
+      "status": "implemented"
+    },
+    {
+      "id": "EW-A09",
+      "severity": "high",
+      "title": "Release status and source staging were not actual independent publication",
+      "observation": "The earlier release was staged in an unrelated repository, and current-session GitHub operations cannot create or push a standalone repository.",
+      "remediation": "Keep DotMatch untouched. Provide a fresh-history publisher with identity, visibility, source and exact-commit CI gates. Record publication as blocked, not completed.",
+      "regression_evidence": "tests/test_release_safety.py; docs/releasing.md",
+      "status": "publication_blocked_controls_implemented"
+    },
+    {
+      "id": "EW-A10",
+      "severity": "medium",
+      "title": "Source-distribution contents omitted new regression fixtures",
+      "observation": "Packaging patterns included Python tests but not their JSON fixtures, workflow files or full documentation/evidence inventory.",
+      "remediation": "Explicitly include JSON fixtures, documentation JSON, workflows, line-ending rules and release notes. Test the source archive independently.",
+      "regression_evidence": "MANIFEST.in; source-distribution verification recorded in BUILD_STATUS.md",
+      "status": "implemented"
+    }
+  ],
+  "remaining_scientific_limits": [
+    "No adjudicated biological benchmark",
+    "No independent scientific review",
+    "Exact matching is not calibrated PCR performance",
+    "No dosage, mosaicism, off-window or single-primer-product model",
+    "No raw-read caller adapter"
+  ],
+  "publication": "No new remote write performed; standalone repo lookup returned Not Found and no authenticated write capability was exposed."
+}

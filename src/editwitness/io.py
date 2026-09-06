@@ -84,7 +84,8 @@ def verify_result(path: str | Path) -> Analysis | ScanResult:
         result = ScanResult.model_validate(data)
     else:
         raise InputError("unsupported result kind; compact summaries cannot be verified as full results")
-    if not result.result_sha256 or seal(result).result_sha256 != result.result_sha256:
+    payload = {key: value for key, value in data.items() if key != "result_sha256"}
+    if not result.result_sha256 or digest(payload) != result.result_sha256:
         raise InputError("result checksum mismatch")
     return result
 

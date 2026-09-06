@@ -52,7 +52,8 @@ def test_demo_stdin_validation_and_informational_commands():
         assert result.returncode == 0, result.stderr
         assert isinstance(json.loads(result.stdout), dict)
     assert "editwitness" in cli("--help").stdout
-    assert "0.1.0a1" in cli("--version").stdout
+    from editwitness import __version__
+    assert __version__ in cli("--version").stdout
 
 
 def test_witness_and_scan_commands():
@@ -187,7 +188,7 @@ def test_cli_init_and_verifying_result_cannot_overwrite_input(demo, tmp_path):
     alternate = next(x for x in "ACGT" if x != demo.reference.sequence[450])
     result = cli("init", "--fasta", fasta, "--left-primer", demo.reference.sequence[200:220],
                  "--right-primer", reverse_complement(demo.reference.sequence[680:700]),
-                 "--edit-position", 450, "--alternate", alternate)
+                 "--edit-position", 450, "--alternate", alternate, "--full-insert")
     assert result.returncode == 0, result.stderr
     assert json.loads(result.stdout)["expected_hypothesis"] == "intended_biallelic"
     output = tmp_path / "analysis.json"

@@ -19,7 +19,8 @@ A SHA-256 result checksum detects accidental changes when the expected checksum
 is trusted. It is not a cryptographic author signature, a secure execution
 attestation, or biological validation. Anyone can recompute a checksum.
 
-Until a standalone private vulnerability-reporting channel is configured,
-contact the maintainer through their existing private GitHub contact route rather
-than publishing exploitable details or private sequences. The release checklist
-requires enabling GitHub private vulnerability reporting where available.
+A dedicated private vulnerability-reporting channel is not yet configured.
+Do not publish exploitable details, confidential sequences or personal data in
+public issues, and do not send them until a private reporting route is confirmed.
+Enabling GitHub private vulnerability reporting is a post-publication task.
+Synthetic, non-sensitive correctness reproducers can be filed publicly.

@@ -11,8 +11,10 @@ from typing import Any, NoReturn
 
 from pydantic import BaseModel, ValidationError
 
-from ._version import MODEL_VERSION, __version__
+from ._version import MODEL_VERSION, SCHEMA_VERSION, SUPPORTED_MODELS, __version__
 from .engine import analyze
+from .design import expand_deletions
+from .sequence import apply_edits
 from .fasta import init_from_fasta
 from .io import (
     InputError, atomic_write, canonical_json, check_destinations, digest,
@@ -38,7 +40,7 @@ def build_parser() -> Parser:
     parser = Parser(prog="editwitness", description="Show what a CRISPR validation assay cannot establish.")
     parser.add_argument("--version", action="version", version=f"editwitness {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
-    for command in ("analyze", "validate", "scan", "witness"):
+    for command in ("analyze", "validate", "scan", "witness", "expand-deletions", "compare-models"):
         p = sub.add_parser(command)
         p.add_argument("manifest", help="Local manifest JSON; '-' reads stdin")
         _output_options(p)
@@ -46,6 +48,9 @@ def build_parser() -> Parser:
             p.add_argument("--html", help="Also write a self-contained HTML report")
             p.add_argument("--compact", action="store_true", help="Return a token-efficient summary without sequences")
             p.add_argument("--fail-on-ambiguity", action="store_true", help="Exit 4 after emitting a result with counterexamples")
+        if command == "expand-deletions":
+            p.add_argument("--fixed-allele", help="Expected allele to preserve; required when expected allele sequences differ")
+            p.add_argument("--max-new-hypotheses", type=int, default=100)
         if command == "witness":
             p.add_argument("--hypothesis", required=True)
             p.add_argument("--include-sequences", action="store_true")
@@ -56,7 +61,7 @@ def build_parser() -> Parser:
     p = sub.add_parser("schema")
     p.add_argument("kind", choices=("manifest", "analysis", "scan"))
     _output_options(p)
-    for command in ("doctor", "capabilities"):
+    for command in ("doctor", "capabilities", "self-test"):
         _output_options(sub.add_parser(command))
     p = sub.add_parser("demo", help="Write an explicitly synthetic example manifest")
     p.add_argument("--paired-end", action="store_true", help="Demonstrate a read-gap blind spot too")
@@ -67,6 +72,9 @@ def build_parser() -> Parser:
     p.add_argument("--right-primer", required=True)
     p.add_argument("--edit-position", required=True, type=int, help="Local 0-based substitution position")
     p.add_argument("--alternate", required=True)
+    readout = p.add_mutually_exclusive_group(required=True)
+    readout.add_argument("--full-insert", action="store_true", help="Declare that the entire trimmed insert is observed")
+    readout.add_argument("--read-bases", type=int, help="Usable post-primer-trim bases per paired-end read")
     _output_options(p)
     return parser
 
@@ -78,6 +86,7 @@ def compact_summary(result: Analysis) -> dict[str, Any]:
         "analysis_sha256": result.result_sha256, "manifest_sha256": result.manifest_sha256,
         "conclusion": result.conclusion, "validation_status": result.validation_status,
         "expected_hypothesis": result.expected_hypothesis,
+        "generation": result.generation.model_dump(mode="json") if result.generation else None,
         "declared_hypotheses": len(result.hypotheses),
         "equivalent_alternatives": [w.hypothesis_id for w in result.witnesses],
         "plan": result.plan.model_dump(mode="json"),
@@ -93,25 +102,28 @@ def schema_for(kind: str) -> dict[str, Any]:
     }
     schema = models[kind].model_json_schema()
     schema["$schema"] = "https://json-schema.org/draft/2020-12/schema"
-    schema["$id"] = f"urn:editwitness:schema:{kind}:1.0"
+    schema["$id"] = f"urn:editwitness:schema:{kind}:{SCHEMA_VERSION}"
     return schema
 
 
 def capabilities() -> dict[str, Any]:
     return {
         "kind": "editwitness.capabilities", "schema_version": "1.0", "version": __version__,
-        "model_version": MODEL_VERSION, "network_required": False, "telemetry": False,
-        "commands": ["demo", "init", "validate", "analyze", "witness", "scan", "schema", "verify", "doctor", "capabilities"],
+        "supported_models": list(SUPPORTED_MODELS), "legacy_default_model": MODEL_VERSION, "network_required": False, "telemetry": False,
+        "commands": ["demo", "init", "validate", "analyze", "witness", "scan", "schema", "verify", "doctor", "capabilities", "self-test", "expand-deletions", "compare-models"],
         "input": "Strict JSON manifest; local 0-based half-open reference coordinates.",
         "output": "JSON to stdout by default; structured JSON errors to stderr; no progress text on stdout.",
         "exit_codes": {"0": "completed (may demonstrate ambiguity)", "2": "invalid input or usage",
-                       "3": "I/O failure", "4": "ambiguity with --fail-on-ambiguity", "5": "integrity or replay mismatch"},
+                       "3": "I/O failure", "4": "ambiguity with --fail-on-ambiguity", "5": "integrity or replay mismatch", "6": "software self-test failed"},
         "limits": {"reference_bases": 20000, "alleles": 128, "hypotheses": 1000,
                    "existing_assays": 16, "candidate_assays": 24, "scan_grid_pairs": 500000,
-                   "exact_planner_useful_candidates": 18},
+                   "exact_planner_useful_candidates": 18, "exact_products_per_observation": 4096,
+                   "exact_total_products": 20000, "exact_evidence_bases": 20000000,
+                   "hypothesis_signal_references": 100000, "deletion_generation_bases": 200000000},
         "supports": ["explicit allele replacements", "diploid clonal hypotheses",
                      "full-insert or post-trim paired-end sequence presence", "counterexample witnesses",
-                     "candidate-panel selection", "streaming local-deletion geometry scan"],
+                     "candidate-panel selection", "streaming original-site deletion geometry scan",
+                     "exact local primer rematching in both orientations", "bounded deletion-hypothesis generation"],
         "does_not_support": ["raw-read analysis", "probabilistic PCR", "allele-fraction inference",
                              "empirical sensitivity", "genome-wide primer specificity", "clinical interpretation",
                              "mosaic samples", "inversions or translocations", "copy-number assay simulation"],
@@ -125,6 +137,10 @@ def run(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
         return schema_for(args.kind), 0
     if command == "capabilities":
         return capabilities(), 0
+    if command == "self-test":
+        from .selftest import self_test
+        report = self_test()
+        return report, 0 if report["passed"] else 6
     if command == "doctor":
         import pydantic
         return {"kind": "editwitness.doctor", "version": __version__,
@@ -136,11 +152,14 @@ def run(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
         data = json.loads(files("editwitness").joinpath("data", filename).read_text(encoding="utf-8"))
         return Manifest.model_validate(data).model_dump(mode="json"), 0
     if command == "init":
-        initialized = init_from_fasta(args.fasta, args.left_primer, args.right_primer, args.edit_position, args.alternate)
+        initialized = init_from_fasta(args.fasta, args.left_primer, args.right_primer, args.edit_position, args.alternate, read_bases=args.read_bases)
         return initialized.model_dump(mode="json"), 0
     if command == "verify":
         verified = verify_result(args.result)
         if args.manifest is not None:
+            if verified.package_version != __version__:
+                raise InputError(f"result replay mismatch: result was created with EditWitness {verified.package_version}; "
+                                 "use that exact package version for replay. Integrity-only verification remains available.")
             manifest = load_manifest(args.manifest)
             replay = analyze(manifest) if isinstance(verified, Analysis) else scan_deletions(manifest)
             if replay.result_sha256 != verified.result_sha256:
@@ -153,6 +172,23 @@ def run(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
         return {"kind": "editwitness.manifest_validation", "valid": True,
                 "manifest_sha256": digest(manifest.model_dump(mode="json")),
                 "caveat": "Valid input syntax and model invariants; not experimental validation."}, 0
+    if command == "compare-models":
+        summaries = []
+        alternatives = []
+        for model in SUPPORTED_MODELS:
+            data = manifest.model_dump(mode="json")
+            data.update(schema_version=SCHEMA_VERSION, observation_model=model)
+            modeled = analyze(Manifest.model_validate(data))
+            summaries.append(compact_summary(modeled))
+            alternatives.append({w.hypothesis_id for w in modeled.witnesses})
+        return {"kind": "editwitness.model_comparison", "schema_version": SCHEMA_VERSION,
+                "models": summaries, "equivalent_in_both": sorted(alternatives[0] & alternatives[1]),
+                "equivalent_only_in_legacy": sorted(alternatives[0] - alternatives[1]),
+                "equivalent_only_in_exact": sorted(alternatives[1] - alternatives[0]),
+                "caveat": "Sensitivity to model assumptions, not an empirical adjudication of which outcome occurred."}, 0
+    if command == "expand-deletions":
+        return expand_deletions(manifest, fixed_allele=args.fixed_allele,
+                                max_new_hypotheses=args.max_new_hypotheses).model_dump(mode="json"), 0
     if command == "scan":
         return scan_deletions(manifest).model_dump(mode="json"), 0
     result = analyze(manifest)
@@ -160,12 +196,16 @@ def run(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
         witness = next((w for w in result.witnesses if w.hypothesis_id == args.hypothesis), None)
         if witness is None:
             raise InputError("hypothesis is not an equivalent alternative in this analysis")
-        response: dict[str, Any] = {"kind": "editwitness.witness", "schema_version": "1.0",
+        response: dict[str, Any] = {"kind": "editwitness.witness", "schema_version": SCHEMA_VERSION,
+                                    "model_version": result.model_version,
                                     "analysis_sha256": result.result_sha256,
                                     "witness": witness.model_dump(mode="json"),
                                     "assumptions": list(result.assumptions)}
         if args.include_sequences:
             allele_ids = set(witness.expected_alleles + witness.alternative_alleles)
+            response["alleles"] = [dict(a.model_dump(mode="json"),
+                                      final_sequence=apply_edits(manifest.reference.sequence, a.edits))
+                                  for a in manifest.alleles if a.id in allele_ids]
             response["allele_observations"] = [o.model_dump(mode="json") for o in result.allele_observations
                                                if o.allele_id in allele_ids]
         return response, 0

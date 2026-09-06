@@ -1,34 +1,42 @@
-# Next working session
+# Continue EditWitness, do not restart it
 
-This is an implemented research-alpha package, not a request to generate a new
-scaffold. Read `BUILD_STATUS.md`, `AGENTS.md` and `roadmap.json` first.
+Read `BUILD_STATUS.md`, `roadmap.json`, `docs/scientific-model.md`, and the public
+`editwitness-v0.2.0a2` release plus its linked CI run before claiming status.
 
-Start with EW-001. In a local checkout with an authenticated GitHub CLI, run the
-source inventory check and the tests. Create the standalone repository with
-`python scripts/publish_github.py --public` only when `dnncha/editwitness` does not
-already exist. Never merge the staging branch into DotMatch. If the target exists,
-inspect it and continue its existing history rather than creating a replacement.
+## Publication boundary
 
-All six Linux/macOS/Windows jobs, strict mypy, schemas, distribution builds and
-coverage passed in GitHub run 33998897914 for commit
-`377c3bfafeb722bce3eac91d339dfec9d1028e68`; see `BUILD_STATUS.md`. The schema typing
-and Windows UTF-8 test fixes are already included. Repeat the checks in the new
-standalone repository after publication. Ruff was not run; do not claim otherwise.
-Fix demonstrated failures with narrow patches and regression tests, not suppressed
-checks. Record the actual commit and run links in reviewed status updates.
+The temporary public distribution host is `dnncha/dotmatch`, isolated branch
+`editwitness/research-alpha-20260906`. This branch contains EditWitness source,
+not a change to DotMatch main. **Never merge it into DotMatch.** The namespaced
+prerelease is not marked as DotMatch's latest release. No PyPI publication is
+claimed. Inspect the actual release before announcing completion or retrying it.
 
-Confirm ownership/availability of the PyPI name before publishing. Configure a
-reviewed trusted-publishing path and release only an explicitly alpha version.
-There is no stored API key or assumed package-index account. Run the installed
-wheel's demo and replay commands from outside the repository after building.
+Repository creation was not available through the connected write actions. On
+an already authenticated GitHub CLI, the clean source archive can create
+`dnncha/editwitness` using `python scripts/publish_github.py --public --release`.
+The helper refuses to overwrite an existing repository. Use its `--resume`
+mode only for an exact reviewed-source match. Update canonical links after the
+move, execute new CI, then configure trusted PyPI publishing after namespace
+ownership is confirmed. Do not use account credentials from another project.
 
-Then advance a bounded, unblocked roadmap item. Prioritize independent scientific
-review, exact primer rematching, useful hypothesis generation and adjudicated
-biological examples over more UI surfaces. External review and biological data
-must be obtained, not fabricated. Keep the original model replayable, and bump the
-model identifier when its semantics change.
+## Engineering acceptance
 
-Finish each iteration by reporting implemented changes, exact tests actually run,
-remaining scientific limits and one highest-value next action. Update roadmap
-statuses only with evidence. Do not turn software correctness into claims of
-measured assay sensitivity or clone safety.
+Run pytest, strict mypy, Ruff, schema and source inventory checks. Build and
+exercise the installed wheel, `self-test`, and the extracted source distribution.
+Record new test results; historical green CI is not evidence for changed code.
+
+## Scientific next step
+
+Obtain an independently reviewed, provenance-complete benchmark case with exact
+reference, primer geometry, editing structures, read configuration and orthogonal
+measurements. No existing synthetic test is experimental sensitivity evidence.
+Do not introduce a fake perfect copy-number assay or infer unseen allele dosage.
+Do not replace callers; implement one read-only format adapter only after its
+semantics and observation uncertainty are specified with real fixtures.
+
+## New regression invariants
+
+Heterozygous expansion requires explicit `--fixed-allele`. Identical final DNA
+must yield identical exact-local observations. Product size is not secretly
+observed by paired-end reads. Budget failures do not return partial evidence.
+A software self-test pass never becomes a biological safety claim.

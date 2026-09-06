@@ -1,5 +1,44 @@
 {
   "$defs": {
+    "AlleleEvidence": {
+      "additionalProperties": false,
+      "description": "Inspectable edit definition plus final-sequence identity, without inferred dosage.",
+      "properties": {
+        "allele_id": {
+          "title": "Allele Id",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "edits": {
+          "items": {
+            "$ref": "#/$defs/Edit"
+          },
+          "title": "Edits",
+          "type": "array"
+        },
+        "sequence_length": {
+          "minimum": 0,
+          "title": "Sequence Length",
+          "type": "integer"
+        },
+        "sequence_sha256": {
+          "title": "Sequence Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "allele_id",
+        "description",
+        "edits",
+        "sequence_length",
+        "sequence_sha256"
+      ],
+      "title": "AlleleEvidence",
+      "type": "object"
+    },
     "AlleleObservation": {
       "additionalProperties": false,
       "properties": {
@@ -15,7 +54,8 @@
           "enum": [
             "potentially_observable",
             "original_binding_site_disrupted",
-            "outside_product_bounds"
+            "outside_product_bounds",
+            "no_exact_local_product"
           ],
           "title": "Status",
           "type": "string"
@@ -55,6 +95,22 @@
           ],
           "default": null,
           "title": "Signal Id"
+        },
+        "signal_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Signal Ids",
+          "type": "array"
+        },
+        "products": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ProductObservation"
+          },
+          "title": "Products",
+          "type": "array"
         }
       },
       "required": [
@@ -176,6 +232,162 @@
       "title": "Assay",
       "type": "object"
     },
+    "DeletionGeneration": {
+      "additionalProperties": false,
+      "properties": {
+        "method": {
+          "const": "single-reference-deletions-v1",
+          "default": "single-reference-deletions-v1",
+          "title": "Method",
+          "type": "string"
+        },
+        "input_manifest_sha256": {
+          "title": "Input Manifest Sha256",
+          "type": "string"
+        },
+        "grid": {
+          "$ref": "#/$defs/DeletionScan"
+        },
+        "fixed_allele": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "Fixed Allele",
+          "type": "string"
+        },
+        "valid_deletions": {
+          "minimum": 1,
+          "title": "Valid Deletions",
+          "type": "integer"
+        },
+        "deduplicated_states": {
+          "minimum": 0,
+          "title": "Deduplicated States",
+          "type": "integer"
+        },
+        "added_alleles": {
+          "minimum": 0,
+          "title": "Added Alleles",
+          "type": "integer"
+        },
+        "added_hypotheses": {
+          "minimum": 0,
+          "title": "Added Hypotheses",
+          "type": "integer"
+        },
+        "max_new_hypotheses": {
+          "maximum": 999,
+          "minimum": 1,
+          "title": "Max New Hypotheses",
+          "type": "integer"
+        },
+        "caveat": {
+          "default": "One expected allele fixed; single deletions on the reference haplotype only. Equivalent local sequence states deduplicated; first geometry retained. No probabilities, sampling or exhaustive biological coverage.",
+          "title": "Caveat",
+          "type": "string"
+        }
+      },
+      "required": [
+        "input_manifest_sha256",
+        "grid",
+        "fixed_allele",
+        "valid_deletions",
+        "deduplicated_states",
+        "added_alleles",
+        "added_hypotheses",
+        "max_new_hypotheses"
+      ],
+      "title": "DeletionGeneration",
+      "type": "object"
+    },
+    "DeletionScan": {
+      "additionalProperties": false,
+      "description": "Inclusive endpoint ranges, sampled with step, describing deletions [start,end).",
+      "properties": {
+        "start_min": {
+          "minimum": 0,
+          "title": "Start Min",
+          "type": "integer"
+        },
+        "start_max": {
+          "minimum": 0,
+          "title": "Start Max",
+          "type": "integer"
+        },
+        "end_min": {
+          "minimum": 1,
+          "title": "End Min",
+          "type": "integer"
+        },
+        "end_max": {
+          "minimum": 1,
+          "title": "End Max",
+          "type": "integer"
+        },
+        "step": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Step",
+          "type": "integer"
+        },
+        "min_length": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Min Length",
+          "type": "integer"
+        },
+        "max_length": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Length"
+        }
+      },
+      "required": [
+        "start_min",
+        "start_max",
+        "end_min",
+        "end_max"
+      ],
+      "title": "DeletionScan",
+      "type": "object"
+    },
+    "Edit": {
+      "additionalProperties": false,
+      "description": "Replace reference[start:end] with sequence; start == end is an insertion.",
+      "properties": {
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        },
+        "end": {
+          "minimum": 0,
+          "title": "End",
+          "type": "integer"
+        },
+        "sequence": {
+          "default": "",
+          "maxLength": 20000,
+          "pattern": "^[ACGT]*$",
+          "title": "Sequence",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "Edit",
+      "type": "object"
+    },
     "HypothesisAssessment": {
       "additionalProperties": false,
       "properties": {
@@ -200,6 +412,16 @@
           },
           "title": "Distinguishing Existing Assays",
           "type": "array"
+        },
+        "same_local_genomic_state_as_expected": {
+          "default": false,
+          "title": "Same Local Genomic State As Expected",
+          "type": "boolean"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
         }
       },
       "required": [
@@ -300,7 +522,8 @@
           "enum": [
             "exhaustive_minimum_cost",
             "greedy_weighted_cover",
-            "not_needed"
+            "not_needed",
+            "no_separating_candidates"
           ],
           "title": "Algorithm",
           "type": "string"
@@ -342,6 +565,14 @@
         "note": {
           "title": "Note",
           "type": "string"
+        },
+        "dominated_candidates": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Dominated Candidates",
+          "type": "array"
         }
       },
       "required": [
@@ -354,6 +585,52 @@
         "note"
       ],
       "title": "PanelPlan",
+      "type": "object"
+    },
+    "ProductObservation": {
+      "additionalProperties": false,
+      "description": "One exact local heteroprimer product. Coordinates refer to the final allele.",
+      "properties": {
+        "plus_left_site": {
+          "$ref": "#/$defs/Interval"
+        },
+        "plus_right_site": {
+          "$ref": "#/$defs/Interval"
+        },
+        "orientation": {
+          "enum": [
+            "forward",
+            "reverse"
+          ],
+          "title": "Orientation",
+          "type": "string"
+        },
+        "product_length": {
+          "minimum": 1,
+          "title": "Product Length",
+          "type": "integer"
+        },
+        "reads": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reads",
+          "type": "array"
+        },
+        "signal_id": {
+          "title": "Signal Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "plus_left_site",
+        "plus_right_site",
+        "orientation",
+        "product_length",
+        "reads",
+        "signal_id"
+      ],
+      "title": "ProductObservation",
       "type": "object"
     },
     "ReferenceSummary": {
@@ -468,8 +745,11 @@
   "additionalProperties": false,
   "properties": {
     "schema_version": {
-      "const": "1.0",
-      "default": "1.0",
+      "default": "1.1",
+      "enum": [
+        "1.0",
+        "1.1"
+      ],
       "title": "Schema Version",
       "type": "string"
     },
@@ -552,6 +832,25 @@
       "title": "Notices",
       "type": "array"
     },
+    "generation": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DeletionGeneration"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "allele_evidence": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/AlleleEvidence"
+      },
+      "title": "Allele Evidence",
+      "type": "array"
+    },
     "allele_observations": {
       "items": {
         "$ref": "#/$defs/AlleleObservation"
@@ -605,5 +904,5 @@
   "title": "Analysis",
   "type": "object",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:editwitness:schema:analysis:1.0"
+  "$id": "urn:editwitness:schema:analysis:1.1"
 }

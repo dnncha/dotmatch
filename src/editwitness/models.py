@@ -18,7 +18,7 @@ DNA = Annotated[str, Field(pattern=r"^[ACGT]*$", max_length=20_000)]
 
 
 class Contract(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True, strict=True, allow_inf_nan=False)
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True, allow_inf_nan=False, revalidate_instances="always")
 
 
 class Interval(Contract):
@@ -117,8 +117,26 @@ class DeletionScan(Contract):
         return self
 
 
+class DeletionGeneration(Contract):
+    method: Literal["single-reference-deletions-v1"] = "single-reference-deletions-v1"
+    input_manifest_sha256: str
+    grid: DeletionScan
+    fixed_allele: Identifier
+    valid_deletions: int = Field(ge=1)
+    deduplicated_states: int = Field(ge=0)
+    added_alleles: int = Field(ge=0)
+    added_hypotheses: int = Field(ge=0)
+    max_new_hypotheses: int = Field(ge=1, le=999)
+    caveat: str = ("One expected allele fixed; single deletions on the reference haplotype only. "
+                   "Equivalent local sequence states deduplicated; first geometry retained. "
+                   "No probabilities, sampling or exhaustive biological coverage.")
+
+
 class Manifest(Contract):
-    schema_version: Literal["1.0"] = "1.0"
+    schema_version: Literal["1.0", "1.1"] = "1.1"
+    observation_model: Literal[
+        "original-sites-presence-v1", "exact-local-sequence-presence-v2"
+    ] = "original-sites-presence-v1"
     coordinate_system: Literal["0-based-half-open"] = "0-based-half-open"
     reference: Reference
     alleles: Items[Allele] = Field(min_length=1, max_length=128)
@@ -127,11 +145,14 @@ class Manifest(Contract):
     assays: Items[Assay] = Field(min_length=1, max_length=16)
     candidates: Items[Assay] = Field(default=(), max_length=24)
     deletion_scan: DeletionScan | None = None
+    generation: DeletionGeneration | None = None
 
     @model_validator(mode="after")
     def cross_validate(self) -> Self:
         from .sequence import reverse_complement
 
+        if self.schema_version == "1.0" and self.observation_model != "original-sites-presence-v1":
+            raise ValueError("exact-local model requires manifest schema_version 1.1")
         n = len(self.reference.sequence)
         for name, values in (
             ("allele", self.alleles), ("hypothesis", self.hypotheses),
@@ -164,6 +185,8 @@ class Manifest(Contract):
             right = reverse_complement(
                 self.reference.sequence[assay.right_primer.start:assay.right_primer.end]
             )
+            if self.observation_model == "exact-local-sequence-presence-v2" and left == right:
+                raise ValueError(f"{assay.id}: identical primer oligos have ambiguous read orientation; unsupported")
             if assay.left_oligo is not None and assay.left_oligo != left:
                 raise ValueError(f"{assay.id}: left_oligo does not match its annotated reference site")
             if assay.right_oligo is not None and assay.right_oligo != right:
@@ -184,14 +207,36 @@ class Notice(Contract):
     related_ids: Items[str] = ()
 
 
+class ProductObservation(Contract):
+    """One exact local heteroprimer product. Coordinates refer to the final allele."""
+    plus_left_site: Interval
+    plus_right_site: Interval
+    orientation: Literal["forward", "reverse"]
+    product_length: int = Field(ge=1)
+    reads: Items[str]
+    signal_id: str
+
+
+class AlleleEvidence(Contract):
+    """Inspectable edit definition plus final-sequence identity, without inferred dosage."""
+    allele_id: str
+    description: str
+    edits: Items[Edit]
+    sequence_length: int = Field(ge=0)
+    sequence_sha256: str
+
+
 class AlleleObservation(Contract):
     allele_id: str
     assay_id: str
-    status: Literal["potentially_observable", "original_binding_site_disrupted", "outside_product_bounds"]
+    status: Literal["potentially_observable", "original_binding_site_disrupted", "outside_product_bounds", "no_exact_local_product"]
     reason: str
     product_length: int | None = None
     reads: Items[str] = ()
     signal_id: str | None = None
+    # Singular fields above are populated only for an unambiguous signal; use these collections.
+    signal_ids: Items[str] = ()
+    products: Items[ProductObservation] = ()
 
 
 class HypothesisObservation(Contract):
@@ -205,6 +250,8 @@ class HypothesisAssessment(Contract):
     alleles: Items[str]
     equivalent_to_expected: bool
     distinguishing_existing_assays: Items[str]
+    same_local_genomic_state_as_expected: bool = False
+    description: str = ""
 
 
 class Witness(Contract):
@@ -219,13 +266,14 @@ class PanelPlan(Contract):
     goal: Literal["distinguish_expected_from_currently_equivalent_alternatives"] = (
         "distinguish_expected_from_currently_equivalent_alternatives"
     )
-    algorithm: Literal["exhaustive_minimum_cost", "greedy_weighted_cover", "not_needed"]
+    algorithm: Literal["exhaustive_minimum_cost", "greedy_weighted_cover", "not_needed", "no_separating_candidates"]
     optimality: Literal["proven_within_declared_candidates", "not_proven", "not_applicable"]
     selected_assays: Items[str]
     cost_units: int
     resolved_hypotheses: Items[str]
     unresolved_hypotheses: Items[str]
     note: str
+    dominated_candidates: Items[str] = ()
 
 
 class ReferenceSummary(Contract):
@@ -239,7 +287,7 @@ class ReferenceSummary(Contract):
 
 
 class Analysis(Contract):
-    schema_version: Literal["1.0"] = "1.0"
+    schema_version: Literal["1.0", "1.1"] = "1.1"
     kind: Literal["editwitness.analysis"] = "editwitness.analysis"
     package_version: str
     model_version: str
@@ -256,6 +304,8 @@ class Analysis(Contract):
     candidates: Items[Assay]
     assumptions: Items[str]
     notices: Items[Notice]
+    generation: DeletionGeneration | None = None
+    allele_evidence: Items[AlleleEvidence] = ()
     allele_observations: Items[AlleleObservation]
     hypothesis_observations: Items[HypothesisObservation]
     hypotheses: Items[HypothesisAssessment]
@@ -278,7 +328,7 @@ class ScanExample(Contract):
 
 
 class ScanResult(Contract):
-    schema_version: Literal["1.0"] = "1.0"
+    schema_version: Literal["1.0", "1.1"] = "1.1"
     kind: Literal["editwitness.deletion_scan"] = "editwitness.deletion_scan"
     package_version: str
     model_version: str

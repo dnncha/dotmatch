@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "editwitness"
-version = "0.1.0a1"
+version = "0.2.0a2"
 description = "Explicit counterexamples and assay blind-spot analysis for CRISPR validation."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -20,6 +20,11 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = ["pydantic>=2.7,<3"]
+
+[project.urls]
+Source = "https://github.com/dnncha/dotmatch/tree/editwitness/research-alpha-20260906"
+Documentation = "https://github.com/dnncha/dotmatch/tree/editwitness/research-alpha-20260906/docs"
+Releases = "https://github.com/dnncha/dotmatch/releases/tag/editwitness-v0.2.0a2"
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<10", "coverage[toml]>=7.10,<8", "jsonschema>=4,<5", "build>=1,<2", "ruff>=0.9", "mypy>=1.13,<2"]
@@ -45,6 +50,7 @@ patch = ["subprocess"]
 
 [tool.coverage.report]
 show_missing = true
+fail_under = 95
 exclude_also = ["if __name__ == .__main__.:", "raise NotImplementedError"]
 
 [tool.ruff]

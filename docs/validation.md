@@ -1,77 +1,46 @@
-# Validation: what is established and what is not
+# Validation and evidence
 
-## Current status
+## What has been validated
 
-This alpha has deterministic software tests and deliberately synthetic examples.
-It has no prospective laboratory validation, no measured sensitivity or
-specificity, no externally adjudicated assay-design benchmark, and no clinical
-validation. No published data were relabeled as a successful package benchmark.
+The local audit tests deterministic software behavior, contract validation,
+sequence reconstruction, exact local product enumeration, state equivalence,
+finite panel selection, artifact integrity and packaging. See `BUILD_STATUS.md`
+and `verification.json` for actual environment-specific results. Historical
+0.1.0a1 remote CI results are archived separately and are **not** evidence that
+0.2.0a1 has passed remote CI.
 
-For exact executed checks, see [BUILD_STATUS.md](../BUILD_STATUS.md). A configured
-CI job, a proposed test, or a packaged schema is not a passing result.
+The exact model is compared with an independently written naive substring
+oracle, including both orientations, multiple products, paired-end gaps,
+sequence-rescuing replacements and equivalent edit representations. Generation
+is checked for deterministic full-grid enumeration, deduplication, provenance,
+limits and non-mutation. The optimizer is compared against independent subset
+enumeration on small cases. Tests include legacy artifacts, invalid constructed
+model instances, HTML escaping and release identity/checksum defenses.
 
-## Software verification strategy
+Test counts include parametrized examples and seeded oracle cases, not that many
+independent biological experiments. Coverage measures executed statements and
+branches; it does not imply model correctness or scientific validity.
 
-**Independent sequence oracle.** Exhaustive small deletion, insertion, substitution
-and replacement cases are reconstructed by an independent labeled-base oracle.
-It determines surviving original primer sites using base provenance, not the
-production disruption/mapping helpers. Tests compare full-insert and paired-end
-observations, boundaries, empty inserts, and product-size eligibility. Randomized
-compound examples use a fixed seed.
+## What is not validated
 
-**Panel optimality.** Small randomized set-cover instances are checked against an
-independent combinations-based enumeration. Ties, no candidates, unrecoverable
-alternatives, and the deliberately nonoptimal larger-candidate path are tested.
+No independent scientist has approved this release's observation function. No
+adjudicated wet-lab dataset establishes predictive sensitivity or specificity.
+No clinical use, experimental dropout frequency, PCR thermodynamics, genome-wide
+specificity, allele dosage or safety certification is supported.
 
-**Scan agreement.** Interval-only deletion counts are compared with the sequence
-observation path across small exhaustive grids, with length and size filters.
-This tests internal model consistency, not empirical deletion frequency.
+## Next scientific gates
 
-**Contracts and execution.** Tests cover strict types, bounds, duplicate fields
-and IDs, immutable inputs, both schema and semantic validation, altered result
-hashes, replay, malformed input, atomic writes, overwrite refusal, structured
-exit codes, packaged examples and escaped reports. The core is tested with
-socket creation blocked.
+First, obtain review of both the useful and misleading cases from independent
+genome-engineering scientists. Keep disagreements in the repository, especially
+about exact-match assumptions, off-window outcomes and negative results.
 
-These tests substantially constrain implementation mistakes. They do not make an
-idealized PCR model realistic merely by being numerous.
+Second, curate a small benchmark with exact local references, original primers,
+edit structures, read configuration, independent truth and permission to share.
+Record exclusions and negative controls before scoring. Publications motivating
+the problem are not automatically usable truth sets; missing assay metadata is
+a reason to exclude or qualify a case, not to invent it.
 
-## Independent biological validation plan
-
-### Gate A: adjudicated examples
-
-Obtain public or explicitly permitted examples with a reference assembly, exact
-primer sequences and coordinates, true edit structures, read configuration,
-quality-control measurements, and an independent assessment of the relevant
-alleles. Record accession, license, checksum, provenance and exclusions before
-analysis. An article abstract alone is not sufficient benchmark metadata.
-
-Include known hidden-deletion examples **and negative controls** where the
-measurement truly separates the competing states. Have an independent scientist
-review each model encoding without seeing the package prediction.
-
-### Gate B: model adequacy
-
-Challenge assumptions deliberately: boundary changes, repetitive sites,
-replacement-induced rescued sites, primer mismatches, size-dependent bias,
-unequal allele amplification, incomplete reads, sampling, mixtures, and
-copy-number changes. Record failures instead of shrinking the benchmark to
-well-behaved examples. Decide which require a new model and which remain excluded.
-
-### Gate C: prospective decision usefulness
-
-At least two independent facilities should use the package on a second design
-without developer-led encoding. Measure whether it changes a validation decision,
-how much manual input is needed, whether its warnings are actionable, and whether
-an independent measurement supports the specific ambiguity it highlighted.
-
-No arbitrary "accuracy" score should combine incomplete metadata, synthetic
-cases and real biological examples. Report denominators, excluded cases,
-confidence/uncertainty where justified, and observed model failures separately.
-
-### Gate D: broader release
-
-A methods claim requires an independently reviewed model, audited benchmark
-provenance, reproducible scripts, negative controls, and evidence that users can
-interpret reports without mistaking them for safety certificates. Publication
-and integration work should follow that evidence, not replace it.
+Third, evaluate both false reassurance and excessive ambiguity. The important
+outcome is a better validation decision, not a higher number of warnings.
+Publish the scripts and per-case evidence, and separate synthetic software
+checks from biological benchmark results.

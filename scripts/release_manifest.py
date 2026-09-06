@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT_FILES = {
     "README.md", "LICENSE", "NOTICE", "CITATION.cff", "CHANGELOG.md", "CONTRIBUTING.md",
     "SECURITY.md", "AGENTS.md", "BUILD_STATUS.md", "llms.txt", "roadmap.json", "pyproject.toml",
-    ".gitignore", "MANIFEST.in",
+    ".gitignore", ".gitattributes", "MANIFEST.in", "RELEASE_NOTES.md",
 }
 DIRECTORIES = {"src", "tests", "docs", "examples", "scripts", "benchmarks", "skills", ".github"}
 ALLOWED_SUFFIXES = {".py", ".json", ".md", ".yml", ".yaml", ".toml", ".fasta", ".txt"}
@@ -53,11 +53,11 @@ def main() -> int:
     target = root / "release-files.json"
     expected = release_manifest(root)
     if args.check:
-        if not target.is_file() or json.loads(target.read_text()) != expected:
+        if not target.is_file() or json.loads(target.read_text(encoding="utf-8")) != expected:
             parser.exit(1, "Source inventory differs; inspect changes before regenerating.\n")
         print("Source inventory verified.")
     else:
-        target.write_text(json.dumps(expected, indent=2, sort_keys=True) + "\n")
+        target.write_text(json.dumps(expected, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         print("Wrote release-files.json.")
     return 0
 

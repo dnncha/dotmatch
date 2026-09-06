@@ -1,164 +1,175 @@
 # Scientific model
 
-## The question, precisely
+## The question
 
-Given a finite collection of local alleles, a finite collection of diploid clonal
-hypotheses, and explicitly configured assays, can those assays distinguish the
-expected hypothesis from each alternative?
+For a finite set of local alleles, diploid clonal hypotheses, and configured
+assays, which distinct genomic states cannot be distinguished from the expected
+state by a specified observation function?
 
-Model identifier: `original-sites-presence-v1`.
+This is a deterministic design calculation, not inference from sequencing data
+and not a probability model of DNA repair or assay performance.
 
-This is a question about a declared observation function. It is not a probability
-model of CRISPR repair or of real assay performance.
+## Coordinates and sequence identity
 
-## 1. Alleles and coordinates
+A reference is an explicit A/C/G/T sequence. Edits replace `reference[start:end]`
+with `sequence`, in **original-reference, zero-based, half-open coordinates**.
+Insertions use `start == end`; deletions use an empty replacement. Overlapping,
+ambiguous and no-op edit declarations are rejected. Both expected and alternative
+hypotheses contain exactly two declared alleles; other ploidies and mosaic
+mixtures are unsupported.
 
-A local reference is an uppercase A/C/G/T sequence. An allele is the reference
-with sorted, nonoverlapping replacements. A replacement substitutes
-`reference[start:end]` with `sequence`. All positions are local, zero-based,
-half-open coordinates. Insertions have `start == end`; deletions have an empty
-replacement sequence.
+In the new model, the final DNA is reconstructed before any primer matching.
+Equivalent final sequences have the same observations regardless of edit
+notation. A diploid state is an unordered pair of final sequences, with
+multiplicity retained when comparing genomic states. An alternative with the
+same pair as the expectation is explicitly labeled and excluded from witness
+counts. The tool does not distinguish chromosome origin or haplotype context
+outside the supplied local window.
 
-All edits use the **original reference coordinates**, not the coordinates after
-previous edits. Ambiguous overlaps, repeated insertion boundaries, and no-op
-replacements are rejected. Alleles are sequence configurations, not empirical
-claims that those configurations occurred.
+## Exact local sequence model (v2)
 
-## 2. Original-site eligibility
+Identifier: `exact-local-sequence-presence-v2`.
 
-An assay specifies an inward-facing left and right primer interval. The current
-model emits a product only when both original sites remain pristine and the
-reconstructed product meets the declared size bounds.
-
-A nonempty replacement overlapping a primer interval disrupts its original site.
-An insertion strictly inside the interval also disrupts it. An insertion exactly
-at a site's boundary does not disrupt the site. Surviving original bases are
-mapped through edit-induced coordinate shifts before extracting the insert.
-
-**This is not a thermodynamic prediction.** A partially mismatched primer may
-still amplify. A replacement can recreate the same binding sequence or create a
-new one. The current original-site model does not rematch edited sequences,
-model mismatch tolerance, or rescue those sites. Consequently, conclusions can
-depend on how a complex replacement is represented. Do not use those cases as
-experimentally established dropout predictions. Sequence-aware rematching and
-representation-invariance tests are a priority before broader claims.
-
-Only annotated sites are used. A local duplicate-site warning is not a full
-specificity screen: other orientations, sites outside the supplied window,
-paralogs, pseudogenes, and nonspecific amplification remain unmodeled.
-
-## 3. The observation function
-
-For allele `a` and assay `s`, define `O(a,s)` as either no sequence signal or one
-of the following idealized observations:
-
-* `full_insert`: the complete primer-trimmed insert sequence.
-* `paired_end`: the ordered pair `(first k insert bases, reverse_complement(last k
-  insert bases))`, where `k` is the number of usable **post-primer-trim** bases.
-
-If the insert is shorter than `k`, the complete available insert is used. Empty
-inserts are valid sequence observations, distinct from an allele emitting no
-signal. Adapter handling and real read errors are not modeled.
-
-A full-insert declaration means the full insert is genuinely observed. Merely
-choosing a long-read instrument is not sufficient. Conversely, product length
-appears in diagnostic metadata but **is not part of a paired-end observation**.
-The tool does not smuggle knowledge of the unsequenced gap into the conclusion.
-
-For a two-allele hypothesis `H = (a,b)`, the assay observes the **set**:
+The reference specifies a forward oligo F and reverse oligo R, either explicitly
+or derived from their annotated reference intervals. Each allele is reconstructed.
+All exact F, R, reverse-complement(F) and reverse-complement(R) sites are found
+inside that final local sequence. Two productive arrangements are enumerated:
 
 ```text
-O(H,s) = O(a,s) ∪ O(b,s), omitting absent signals
+plus strand: F ... reverse_complement(R)   => forward orientation
+plus strand: R ... reverse_complement(F)   => reverse orientation
 ```
 
-Equal sequences collapse. Multiplicity, read fractions, molecular counts, and
-copy number are deliberately unobserved. `(intended,intended)` and
-`(intended,unobserved)` can therefore have the same observation.
+Sites must be nonoverlapping and inward-facing. An adjacent pair with an empty
+primer-trimmed insert is permitted. Product length includes both primer sites;
+user-declared minimum/maximum bounds are hard exclusions. Surviving products are
+normalized to F-to-R orientation. Multiple products are retained, not silently
+reduced to the first match. The model includes new and recreated exact sites.
 
-Every eligible signal is assumed detectable. Sampling, allele competition,
-stochastic failure, contamination, and limits of detection are outside this
-model. Even predicted differences need not be experimentally detectable.
+Identical F and R oligos are rejected because their read orientation is ambiguous
+under this model. Products requiring the same primer at both ends (F/F or R/R)
+are not represented. Mismatched binding, thermodynamics, competition, PCR cycle
+count, sampling, limits of detection and off-window binding are also absent.
+A lack of exact local product is **not** an empirical dropout diagnosis.
 
-## 4. What a witness proves
-
-For existing assays `S`, a witness is a declared alternative `H_alt` such that:
+For a normalized primer-trimmed insert I, the measured sequence signal is:
 
 ```text
-for every s in S: O(H_alt,s) == O(H_expected,s)
+full_insert: (I,)
+paired_end:  (first k available bases of I,
+              reverse_complement(last k available bases of I))
 ```
 
-It proves observational equivalence **within this model**, conditional on all its
-assumptions. It does not establish that the alternative occurred, is plausible at
-some estimated frequency, or is the only alternative. No likelihood or posterior
-probability is calculated.
+Here k is the usable post-primer-trim read length. Short inserts use all available
+bases. Empty observed inserts are signals, distinct from no product. Product
+length and binding-site coordinates are diagnostic metadata, **not part of the
+paired-end equivalence key**. The unsequenced gap must not leak into a decision.
 
-If no witness exists, the conclusion is
-`distinguishable_only_within_declared_model`. That wording is deliberate: the
-provided hypotheses are not an exhaustive description of biology.
+All eligible exact local products are assumed detectable. A hypothesis observes
+the union of its alleles' distinct sequence signals for each assay. Multiplicity,
+fractions, counts and copy number are unobserved. Consequently, two copies of the
+same intended allele and one intended allele plus an unobserved allele may
+produce the same signal set. A predicted sequence difference need not be
+detectable experimentally under these idealized assumptions.
 
-There is no inference from observed experimental data in this release. It is a
-preflight/design and model-inspection tool. Incorporating real results requires
-a separately validated adapter and a definition of observation uncertainty.
+## Original-site model (v1)
 
-## 5. Candidate panels
+Identifier: `original-sites-presence-v1`.
 
-For each currently equivalent alternative, a candidate covers it when its
-modeled observation differs from the expected hypothesis. The planner covers all
-alternatives distinguishable by at least one supplied candidate, while explicitly
-retaining those that none can distinguish.
+This legacy model requires both annotated original primer intervals to survive
+pristine and the reconstructed product to satisfy size bounds. Edits overlapping
+a primer site disrupt it; an insertion at the boundary does not. It does not
+search the edited DNA for rescued or new sites, so complex replacement notation
+can affect its answer. This limitation is now a prominent machine-readable
+notice. The model remains available for explicit legacy comparisons; it has not
+been silently redefined.
 
-At most 18 useful candidates: enumerate all subsets, minimize the integer sum of
-user-declared costs, then the number of assays, then lexicographic IDs. Optimality
-is proven only for this objective, these candidates, and this model.
+Old manifests that omit `observation_model` continue to select v1. New `demo` and
+`init` templates explicitly select v2 and schema 1.1. Use `compare-models` to
+inspect sensitivity to these assumptions, not to decide which outcome occurred.
 
-Above 18: greedily maximize newly covered alternatives per cost unit, with exact
-rational comparisons and deterministic ties. Output says `not_proven`. The tool
-does not claim globally optimal assay design or that selecting primers alone
-resolves every alternative.
+## What a witness proves
 
-The objective distinguishes the expectation from alternatives. It does **not**
-aim to distinguish every alternative from every other alternative.
+For every existing assay s, an alternative H is a witness when:
 
-## 6. Deletion geometry scan
+```text
+observed_signal_set(H, s) == observed_signal_set(expected, s)
+```
 
-The scanner enumerates single deletions `[start,end)` on the supplied reference
-using configured inclusive endpoint ranges and a step. Length filtering follows
-enumeration. Upper bounds are included only when reached by the step.
+and its final local diploid sequence pair differs from the expected pair.
 
-For each existing assay it counts disrupted original sites, eligible products,
-and products excluded by hard size bounds. It stores only a bounded number of
-blind examples. It does not compare read sequences or the declared genotypes.
+This establishes equivalence **within the declared model and hypotheses**. It
+does not show that the alternative exists, estimate its likelihood, identify all
+possible alternatives, or validate the expected state. With no witnesses, the
+conclusion remains `distinguishable_only_within_declared_model`, never “safe.”
 
-Changing the grid changes the denominator. Counts are therefore **not** editing
-outcome frequencies, biological risk, sensitivity, or a calibration curve.
-Candidate assays and compound edits are not part of this scanner.
+Every result records allele edit definitions and final sequence lengths/hashes,
+including alleles with no signal. A focused `witness --include-sequences` command
+also emits the final alternative DNA for inspection. Checksum integrity is not
+an authenticated signature and does not establish scientific truth.
 
-## 7. Orthogonal measurements
+## Hypothesis generation versus geometry scanning
 
-A missing local sequence signal may require a different kind of measurement.
-This alpha reports that need without pretending to simulate a validated
-copy-number assay. A future assay type needs its own response model, failure
-modes, calibration, controls, and versioned contract.
+`expand-deletions` enumerates the valid single deletions in the declared reference
+grid. Each is a deletion of the reference haplotype, paired with one selected
+fixed expected allele. It is **not** a deletion applied on top of an intended
+edited haplotype or a repair-outcome prediction. Physically identical local
+states are deduplicated, keeping the first grid representation. Bounds, step,
+input hash, filtering counts, and caps are recorded. Capacity excess is an error,
+not subsampling. Generated results are then analyzed by the chosen full engine.
 
-## Scientific context and adjacent tools
+`scan` is different: it streams original-site deletion geometry and hard-size
+eligibility counts without comparing read sequences or diploid states. It
+always identifies itself as v1. Grid-dependent counts are not outcome frequencies,
+risk, sensitivity or the proportion of all biologically possible deletions.
 
-Weisheit et al. reported hidden monoallelic deletions and loss of heterozygosity
-in edited human stem cells, and described quantitative genotyping PCR and SNP
-controls. This motivates inspecting what sequence-only assays cannot establish;
-it does **not** validate the EditWitness observation function.
+## Candidate panels
+
+The objective separates the expectation from each currently equivalent
+alternative—not all alternatives from each other. Candidate coverage is a
+modeled difference from the expected observation. Alternatives no supplied
+candidate covers remain explicitly unresolved.
+
+Safe dominance filtering removes a candidate only when a no-worse deterministic
+choice covers its entire witness set. With at most 18 remaining useful candidates,
+all subsets are evaluated: minimize summed integer cost, then number of assays,
+then lexicographic IDs. Above 18, a deterministic cost-aware greedy method is
+labeled `not_proven`. None of this proves globally optimal experimental design,
+experimental discriminability, or sufficient biological validation.
+
+## Fail-closed resource limits
+
+Exact matching permits at most 10,000 hits per primer sequence, 4,096 products
+per allele/assay, 20,000 products and 20 million observed bases per analysis.
+Manifest and generation limits also apply; inspect `capabilities`. Exceeding a
+limit returns a structured error, not a truncated reassuring result. The HTML
+may abbreviate previews without removing evidence from the full result.
+
+## Scientific context, not package validation
+
+Weisheit et al. describe on-target defects missed by routine genotyping and
+quantitative/SNP-based validation. This motivates the problem but does not
+validate this program or its assumptions:
 
 - Weisheit I et al. *Detection of Deleterious On-Target Effects after HDR-Mediated
   CRISPR Editing.* Cell Reports 31(8), 107689 (2020).
-  DOI: [10.1016/j.celrep.2020.107689](https://doi.org/10.1016/j.celrep.2020.107689).
+  [DOI: 10.1016/j.celrep.2020.107689](https://doi.org/10.1016/j.celrep.2020.107689).
   [PubMed](https://pubmed.ncbi.nlm.nih.gov/32460021/).
-- [CleanFinder's Allelic Dropout SNP Analyzer](https://cleanfinder.org/allelic_dropout)
-  analyzes long-read FASTQ data for heterozygous SNP evidence. Allelic-dropout
-  analysis itself is not new. EditWitness instead compares explicit assay-model
-  counterexamples and candidate panels without replacing a caller.
+- [CleanFinder allelic-dropout analysis](https://cleanfinder.org/allelic_dropout)
+  is relevant adjacent work. Allelic-dropout analysis itself is not new.
 - [CRISPR-Analytics / CRISPR-A](https://pubmed.ncbi.nlm.nih.gov/37253059/)
-  is relevant prior work in genome-editing analysis and simulation. Simulation
-  and experiment-design support are not unique to this project.
+  is relevant prior analysis/simulation work. Simulation and design support are
+  not unique to EditWitness.
 
-References establish context, not package accuracy, experimental validation,
-exhaustive novelty, or endorsement. A formal competitive review and independent
-biological assessment remain release gates.
+The release has no independently adjudicated experimental accuracy estimate.
+Independent scientific review and a provenance-complete biological benchmark
+remain explicit release-development gates.
+
+### Haplotype choice during deletion generation
+
+For a heterozygous expectation, the caller must explicitly choose the expected
+allele to preserve. The other member of each generated challenge is a deletion
+of the supplied reference haplotype, **not** a deletion composed onto the other
+edited allele. To inspect both preserved-haplotype choices, run separate, clearly
+identified generations. Equivalent allele-list orderings never choose different
+haplotypes implicitly. The generated set is still finite and uncalibrated.

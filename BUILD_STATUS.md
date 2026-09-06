@@ -1,71 +1,46 @@
-# Build and verification status
+# EditWitness 0.2.0a2 — verification and distribution boundary
 
-Release: **0.1.0a1 research alpha**. Recorded 2026-09-05 UTC.
+**6 September 2026. Research alpha; not empirically biologically validated.**
 
-## Verified GitHub checks
+The current public release target is the namespaced GitHub prerelease
+`dnncha/dotmatch: editwitness-v0.2.0a2`. EditWitness is an independent package.
+DotMatch main must not be changed or receive this branch as a merge. A standalone
+`dnncha/editwitness` repository and PyPI publication are separate remaining steps.
 
-[Completed verification run](https://github.com/dnncha/dotmatch/actions/runs/33998897914)
+## Evidence available before the remote release gate
 
-Verified source commit: `377c3bfafeb722bce3eac91d339dfec9d1028e68`.
-Final delivery documentation records this already-tested code; no scientific
-implementation or tests were changed after that run.
+The local suite passed **630 tests** after the hardening changes. Schema
+snapshots and Python 3.11 syntax/text checks passed. New tests cover explicit
+heterozygous haplotype choice, evidence budgets and the offline software self-test.
+**Executed local branch coverage:** 1,046 / 1,049 statements and 322 / 328
+branches; the configured 95% combined gate passed, including CLI subprocesses.
+Historical 0.1.0a1 and 0.2.0a1 records are retained under `docs/history/`; they
+are not reused as proof for changed code.
 
-| Check | Observed result |
-|---|---|
-| Linux, macOS and Windows; Python 3.11 and 3.13 | All six test jobs passed. |
-| Test suite | 572 passed, including the covered run. |
-| Strict mypy check | Passed for `src/editwitness`. |
-| Source hygiene | Passed on all six matrix jobs; this is not Ruff. |
-| Schema snapshots | Passed on all six matrix jobs. |
-| Wheel and source builds | Passed on all six matrix jobs. |
-| Branch-aware coverage | 732/733 statements and 218/222 branches; 99.48% combined. |
-| Source inventory | Verified in the delivery job before running checks. |
+Local dependency downloads were unavailable. The remote CI is responsible for
+strict mypy, Ruff, clean dependency installation and the expanded operating-system
+and Python matrix. A configured job is not a passed job.
 
-The initial CI attempt found a schema-registry type annotation and a Windows
-locale-dependent test read. Both were corrected before the passing run. Neither
-fix changes the observation model. Installed developer tools are not necessarily
-executed checks: Ruff was not run and is not claimed as passed.
+## Public release gate
 
-## Additional local checks
+The temporary transport first commits the complete reviewed source to the
+isolated branch. CI checks out that exact committed SHA, runs all gates, builds
+the wheel and source archive, installs the wheel outside the checkout, and runs
+the tests from the extracted source archive. Only successful gates allow a
+namespaced prerelease. Publication must not mark it as DotMatch's latest release.
 
-The implementation passed 572 local tests before the two portability fixes, plus
-a full branch-aware coverage run. The local environment was Linux x86_64,
-Python 3.13.5, Pydantic 2.13.4 and pytest 9.0.2. The remote covered run used
-Python 3.13.15, Pydantic 2.13.5, pytest 9.1.1 and coverage 7.16.0.
+The release assets include `release-evidence.json`, with the exact source commit,
+source inventory digest, executed self-test and CI run URL. That run is the
+source of truth for passed or failed jobs. `SHA256SUMS` covers the wheel and source
+distribution; `EVIDENCE_SHA256SUMS` covers the supplementary report and provenance.
+A checksum is not a signature or a claim of biological validity.
 
-The wheel was installed outside the source tree, and the CLI, bundled demo,
-checksums and replay were exercised. Desktop and mobile HTML rendering was
-inspected in Chromium. These are software checks, not experimental validation.
+Do not report a GitHub prerelease as published until its API record is public,
+not draft, and its assets and target commit match the executed gate. Do not
+report a PyPI release: none is part of this workflow.
 
-Testing includes exhaustive small-event comparisons against an independent
-labeled-base sequence oracle, 400 seeded compound-edit cases, and 150 randomized
-small panel-selection problems compared with independent subset enumeration.
-It also covers malformed and oversized inputs, coordinate boundaries, original
-primer integrity, paired-end read gaps, output protection and HTML escaping.
+## Remaining scientific gate
 
-## Measured computational benchmark
-
-The local streaming scanner evaluated **325,250 valid deletions** from a grid of
-450,000 endpoint pairs in a median **0.135 seconds** over five warmed runs on this
-environment. The workload and measurements are in
-`benchmarks/2026-09-05-linux.json`. This is neither a comparison with another
-package nor biological sensitivity or whole-genome throughput.
-
-## Delivery and remaining gates
-
-The complete source is on the isolated GitHub branch
-`dnncha/dotmatch:editwitness/research-alpha-20260906`. **Do not merge this branch
-into DotMatch.** DotMatch main was not changed by this delivery.
-
-The standalone `dnncha/editwitness` repository has not been created: the connected
-GitHub tool cannot create repositories. With an already authenticated local
-GitHub CLI, `python scripts/publish_github.py --public` creates it from the
-checked source with fresh history. The publisher refuses an existing target.
-Its dry-run was checked; an actual new-repository publication was not performed.
-
-Not completed: PyPI/Bioconda publication, package namespace reservation, hosted
-documentation, a registered DOI, independent scientific review, an adjudicated
-biological benchmark, or laboratory adoption. No clinical suitability, safety
-certification or empirical assay accuracy is claimed.
-
-See `docs/continuation.md` and `roadmap.json` for bounded next tasks.
+Independent genome-engineering review and an adjudicated, provenance-complete
+biological benchmark remain outstanding. Software checks do not establish PCR
+sensitivity, allele dosage, safety, clinical validity, novelty or real adoption.

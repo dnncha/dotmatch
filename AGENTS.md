@@ -1,45 +1,37 @@
 # Working on EditWitness
 
-Read `docs/scientific-model.md`, `docs/architecture.md`, and `BUILD_STATUS.md`
-before changing the engine. Read `roadmap.json` for prioritized bounded tasks.
+Read `BUILD_STATUS.md`, `docs/scientific-model.md`, `docs/audit-0.2.0a1.md` and
+`roadmap.json` before changing semantics. This is a finite-model research tool,
+not clinical software or a caller. Never manufacture empirical validation,
+independent review, adoption, remote CI or public distribution status.
 
-## Non-negotiable invariants
+## Invariants
 
-- An observational counterexample is not evidence that a defect occurred.
-- Absence of a declared counterexample never means "safe" or "biallelic confirmed".
-- Primer coordinates are local, zero-based and half-open. Reverse oligos are 5′→3′.
-- All edits use original reference coordinates. No hidden coordinate conversion.
-- Sequence-presence sets discard dosage and read fractions intentionally.
-- Paired-end observations do not include diagnostic product length or unsequenced bases.
-- Original-site eligibility is not PCR thermodynamics or sequence-aware rematching.
-- Unsupported events must be rejected or explicitly labeled, never silently treated as normal.
-- No network access in the scientific core, telemetry, arbitrary manifest plugins, or API keys.
-- Presentation must not compute or change scientific conclusions.
-- Model semantics changes require a new model version and migration documentation.
+- Coordinates are zero-based, half-open on the original local reference.
+- Exact v2 uses final DNA, both orientations and all bounded heteroprimer
+  products. Equivalent DNA must not depend on edit notation.
+- Sequence presence is not dosage, counts or biological probability.
+- Paired-end equivalence cannot use product length or unsequenced bases.
+- Keep unresolvable alternatives; no silent grid/evidence truncation.
+- New biological assumptions need an explicit model identity and migration.
+- Preserve legacy input meaning; archived integrity and exact-version replay
+  are different operations.
+- Validate model instances at public API boundaries, even constructed/copied ones.
+- Compact output is not a full replay artifact. Preserve structured errors.
 
-## Efficient continuation
+## Development checks
 
-Select the highest-priority unblocked task in `roadmap.json`, but do not manufacture
-biological data or validation. Complete a narrow acceptance criterion, add a
-regression test first when fixing behavior, and update task status with evidence.
-Do not repeatedly rediscover the architecture or replace the project with a new scaffold.
+Run tests, strict mypy, Ruff, schema drift, source hygiene and coverage. Add a
+regression test before changing a scientific decision. Keep an independent
+sequence oracle; don't share the optimized pairing helper with its test oracle.
+Build the wheel and sdist and test imports outside the checkout. Regenerate
+`release-files.json` only after reviewing source changes, then check it.
 
-Run:
+## Release boundaries
 
-```bash
-python -m pip install -e '.[dev]'
-python -m pytest -q
-python scripts/generate_schemas.py --check
-python scripts/check_style.py
-python -m mypy src/editwitness
-python -m build
-```
-
-Keep independent test oracles independent: never implement expected results by
-calling the same production interval/sequence functions. Synthetic fixtures must
-remain explicitly labeled and reproducible.
-
-Never push a research alpha as a clinical or empirically validated release. Do
-not publish patient-derived data in issues. Do not merge an isolated GitHub
-staging branch into DotMatch: export this package into its own repository using
-the documented publishing script. The projects remain distinct.
+Never merge the old staging branch into DotMatch. This is a standalone project.
+The publisher creates a new repo and optionally a prerelease after exact-SHA push
+CI. It never force-pushes, uploads sequence samples, changes existing visibility,
+or publishes to PyPI. Continue from `docs/continuation.md` and record actual
+remote URLs/checks. The current session had no authenticated write capability;
+this fact is not permission to claim a publication or bypass access controls.

@@ -10,11 +10,19 @@ from .models import Assay, PanelPlan
 def plan_panel(candidates: tuple[Assay, ...], coverage: dict[str, set[str]],
                alternatives: set[str]) -> PanelPlan:
     useful = sorted((a for a in candidates if coverage.get(a.id)), key=lambda a: a.id)
+    # A superset at lower cost, or the same cost and a lexicographically preferred
+    # ID, can always replace a dominated assay without worsening our objective.
+    dominated = tuple(a.id for a in useful if any(
+        b.id != a.id and coverage[a.id] <= coverage[b.id]
+        and (b.cost_units, b.id) < (a.cost_units, a.id)
+        for b in useful
+    ))
+    useful = [a for a in useful if a.id not in dominated]
     resolvable: set[str] = set().union(*(coverage[a.id] for a in useful)) if useful else set()
     unresolved = alternatives - resolvable
     if not useful:
         return PanelPlan(
-            algorithm="not_needed", optimality="not_applicable", selected_assays=(),
+            algorithm="no_separating_candidates" if alternatives else "not_needed", optimality="not_applicable", selected_assays=(),
             cost_units=0, resolved_hypotheses=(), unresolved_hypotheses=tuple(sorted(unresolved)),
             note="No candidate distinguishes a remaining alternative." if alternatives else
                  "No equivalent alternative was declared. This is not evidence of assay completeness.",
@@ -63,6 +71,7 @@ def plan_panel(candidates: tuple[Assay, ...], coverage: dict[str, set[str]],
         optimality = "not_proven"
     return PanelPlan(
         algorithm=algorithm, optimality=optimality, selected_assays=chosen,
+        dominated_candidates=dominated,
         cost_units=total, resolved_hypotheses=tuple(names),
         unresolved_hypotheses=tuple(sorted(unresolved)),
         note="Separates the expected hypothesis from all alternatives separable by these candidates "

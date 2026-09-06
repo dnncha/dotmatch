@@ -1,58 +1,65 @@
-# Releasing EditWitness
+# Publishing a reviewed research alpha
 
-## Current distribution status
+The analysis package is offline. Publication is a separate, explicitly
+requested authenticated action. Do not put credentials or private DNA into this
+repository. Do not merge the historical staging branch into DotMatch.
 
-The delivered source and wheel are research-alpha artifacts. A configured workflow
-is not a published release. `BUILD_STATUS.md` records what was actually checked.
-Do not claim PyPI, Bioconda, a DOI, hosted documentation, or remote CI is complete
-until those systems confirm it.
-
-## Standalone GitHub publication
-
-The ChatGPT GitHub connection used for this build can write to existing
-repositories but cannot create a repository. If the code is supplied through an
-isolated staging branch in `dnncha/dotmatch`, do **not merge that branch into
-DotMatch**. EditWitness is an independent project.
-
-With the source extracted locally and GitHub CLI already authenticated as
-`dnncha`, first inspect the dry run:
+## Prepare
 
 ```bash
-python scripts/publish_github.py --public --dry-run
-python scripts/publish_github.py --public
+python -m pip install -e ".[dev]"
+python -m pytest -q
+python -m mypy src/editwitness
+python -m ruff check src/editwitness --select E4,E7,E9,F
+python scripts/check_style.py
+python scripts/generate_schemas.py --check
+python scripts/release_manifest.py --check
 ```
 
-The script verifies the checked source inventory, refuses an existing target,
-creates a fresh git history, and uses `gh repo create` to publish
-`dnncha/editwitness`. It does not transfer DotMatch history, force-push, modify
-existing repositories, or publish to PyPI. Choose `--private` instead of
-`--public` to make the new repository private. Visibility is always explicit.
+Any intentional source change requires inventory regeneration **after review**.
+Do not regenerate it automatically to hide unexplained differences. Record
+actual results, not a previous release's successful checks.
 
-If creation succeeds but pushing fails, the script retains the temporary source
-repository and prints its recovery location. Inspect the remote before retrying;
-do not delete an existing repository to make a retry pass.
+## Publish source and create a GitHub prerelease
 
-After reviewed source edits, regenerate the inventory with
-`python scripts/release_manifest.py`. Do not do this merely to suppress an
-unexpected integrity failure.
+With Git and GitHub CLI installed and already authenticated as the intended
+owner, run from the extracted release root:
 
-## Release checklist
+```bash
+python scripts/publish_github.py --public --release --dry-run
+python scripts/publish_github.py --public --release
+```
 
-1. Run tests, schema checks, source hygiene and strict typing. Build and install
-   the wheel outside the source tree. Record actual environment and outcomes.
-2. Check local and remote files for secrets or patient-derived data. Keep
-   synthetic fixtures explicitly labeled. Enable private vulnerability reporting
-   when the standalone repository is available.
-3. Execute the Linux/macOS/Windows CI matrix. Resolve failures before tagging.
-   Add repository topics and links only after the target exists.
-4. Verify ownership and availability of the `editwitness` package namespace.
-   Configure reviewed trusted publishing; do not store long-lived credentials in
-   the repo. Publish an explicitly alpha version, never a misleading stable 1.0.
-5. Check install instructions on a clean machine and archive versioned artifacts
-   with SHA-256 checksums. Cite a real commit/version; register a DOI only if an
-   actual archive integration has created one.
-6. Treat empirical validation as a separate scientific gate. Passing packaging
-   and CI cannot satisfy it.
+The default owner is `dnncha`. The script verifies the source inventory and user,
+requires that the target repository not exist, creates `dnncha/editwitness`, and
+pushes a fresh independent history. It does not clone or modify DotMatch. Without
+`--release` it stops after source publication.
 
-The build workflow produces artifacts only. It does not contain a hidden
-publishing step or assume package-index credentials exist.
+With `--release` it waits for the exact published commit's **push** run of
+`ci.yml`, requires a successful conclusion, downloads the CI-built distribution
+artifact, verifies SHA256SUMS and creates the alpha tag and prerelease. A PR run,
+stale success, existing tag, mismatched artifact or failed CI is not sufficient.
+The CI artifact contains the wheel and source distribution built only after the
+matrix, coverage and typing checks succeed. The publisher does not publish to
+PyPI and does not pretend a checksum is an authenticated signature.
+
+## Partial completion and recovery
+
+If source publication succeeds but CI fails, the public source may exist without
+a release. Inspect the error and retained recovery directory. Never retry with a
+force push. `--resume` is allowed only when the existing repository has the
+requested visibility and **exactly** the reviewed source inventory; it does not
+overwrite later work. For a real correction, make a reviewed follow-up commit,
+update its inventory, push via normal Git, resolve all CI, and run the publisher
+with `--resume --public --release` from that exact reviewed source.
+
+This session supplied only read-only connector operations and no authenticated
+CLI. Therefore remote publication could not be performed here. The local
+publisher helper tests and dry run are not a live GitHub end-to-end test.
+
+## Package-index release
+
+PyPI namespace ownership, trusted publishing, package provenance attestations
+and a clean index installation test are separate tasks. They are not configured
+or performed by this script. Do not advertise an index command until the actual
+index project and version have been verified.

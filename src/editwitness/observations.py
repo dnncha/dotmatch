@@ -48,4 +48,5 @@ def observe_allele(reference: str, allele: Allele, assay: Assay) -> AlleleObserv
                "Signal is sequence presence, not abundance, dosage or a probability of detection.",
         product_length=product_length, reads=reads,
         signal_id="seq:" + hashlib.sha256(encoded).hexdigest(),
+        signal_ids=("seq:" + hashlib.sha256(encoded).hexdigest(),),
     )

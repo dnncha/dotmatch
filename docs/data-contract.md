@@ -1,103 +1,84 @@
-# Data contract
+# Data contract (schema 1.1)
 
-## Manifest
+Use `editwitness schema manifest` or `schema analysis` for the complete generated
+JSON Schema. Schema snapshots ship inside the wheel and are checked for drift.
+Cross-field/biological invariants also require `validate`; JSON Schema alone is
+not a replacement for the runtime validator.
 
-Generate a complete example with `editwitness demo`; inspect
-`editwitness schema manifest` or the committed schema snapshots under
-`src/editwitness/schemas/`. Runtime validation is authoritative.
+## Input
 
-JSON Schema describes structure. It does **not** encode every cross-field rule:
-reference bounds, primer matches, edit nonoverlap, known IDs, or work budgets.
-Always run `editwitness validate` or construct `Manifest` through Pydantic.
+All edit and primer coordinates are **zero-based, half-open local reference
+coordinates**, not genomic positions unless the supplied local sequence happens
+to begin at genomic zero. Oligos are 5′-to-3′ strings; the right primer is the
+reverse complement of its annotated plus-strand reference interval. Full-insert
+and paired-end readouts require different explicit configuration.
 
-| Field | Meaning |
+Every hypothesis names exactly two declared alleles. IDs are unique within their
+namespace; referential integrity and nonoverlapping edit invariants are checked.
+Extra fields and invalid primitive types are rejected. Public APIs revalidate
+Pydantic instances rather than trusting `model_copy` or `model_construct`.
+
+Schema 1.0 and 1.1 inputs are supported. An omitted observation model means legacy
+v1 for backward compatibility. New inputs should set schema 1.1 and explicitly
+select `exact-local-sequence-presence-v2` or `original-sites-presence-v1`.
+
+Optional `generation` describes the declared source of expanded alternatives;
+it is provenance metadata, not an authenticated proof of how a file was created.
+
+## Output
+
+`model_version` identifies the actual observation function. `schema_version`
+identifies serialization. `package_version` identifies executable behavior.
+`allele_evidence` retains edit definitions, final sequence length and SHA-256 for
+all alleles, including those with no sequence signal.
+
+In v2 an allele/assay may produce multiple products and multiple distinct signals:
+
+- `products` preserves final-allele plus-strand site coordinates, orientation,
+  product length and measured reads for every eligible heteroprimer product.
+- `signal_ids` is the authoritative set of distinct measured sequence signals.
+- Legacy `signal_id` and `reads` describe a singleton distinct signal only;
+  **null `signal_id` does not imply absence when `signal_ids` has multiple items**.
+
+A genuinely absent signal differs from an empty insert sequence. Product lengths,
+allele IDs, hashes of whole genomes, and binding-site coordinates must never be
+used as extra observed data in paired-end equivalence comparisons.
+
+`same_local_genomic_state_as_expected` marks representation/name aliases, excluded
+from `witnesses`. `plan.unresolved_hypotheses` is never silently discarded.
+`dominated_candidates` explains safe optimizer preprocessing.
+
+## CLI process contract
+
+| Exit | Meaning |
 |---|---|
-| `schema_version` | `1.0` (also the default if omitted). |
-| `coordinate_system` | `0-based-half-open` (default; no automatic coordinate conversion). |
-| `reference` | Name, uppercase A/C/G/T local sequence, optional assembly/contig/genomic start, synthetic flag. |
-| `alleles` | Unique IDs, optional descriptions, sorted local replacements. |
-| `hypotheses` | Unique IDs and exactly two known allele IDs. Repetition represents two modeled copies. |
-| `expected_hypothesis` | ID of one declared hypothesis. |
-| `assays` | One or more existing assays. |
-| `candidates` | Optional follow-up assays with positive integer cost units. |
-| `deletion_scan` | Optional single-deletion endpoint grid. |
+| 0 | Requested computation completed; no statement of biological safety. |
+| 2 | Invalid input, unsupported configuration, or resource limit exceeded. |
+| 3 | I/O failure. |
+| 4 | Analysis completed with ambiguity and `--fail-on-ambiguity` was requested. |
+| 5 | Checksum or same-version replay mismatch. |
 
-IDs use letters, numbers, underscores, dots and hyphens; they start with a letter
-or digit and have at most 80 characters. Assay IDs are unique across both existing
-and candidate collections. Unknown fields are rejected. Integers cannot be
-strings, booleans, or floats. NaN, Infinity and duplicate JSON keys are rejected.
+JSON goes to stdout unless `--output` is supplied. Errors are JSON on stderr.
+`--compact` emits a summary, not a complete replayable analysis. Output paths are
+preflighted, inputs are not overwritten, and existing files need explicit
+`--force`. Hashes detect content changes, not maliciously re-signed data.
 
-Reference metadata does not trigger a lookup or convert coordinates. FASTA import
-uppercases A/C/G/T; JSON sequence fields are strictly uppercase. Ambiguous N/IUPAC
-bases are unsupported in this model rather than guessed or silently discarded.
+## Replay
 
-## Coordinates without ambiguity
+`verify result.json` checks the checksum of the actual archived JSON payload,
+including old 0.1.0a1 artifacts. `verify result.json --manifest input.json` also
+reruns the analysis and requires the exact originating package version. This
+avoids claiming that a new schema's additional fields reproduce an old byte
+representation. [Migration notes](migration-0.2.md).
 
-For reference `ACGTACGT`, `[2,5)` is `GTA`.
+## Additional bounded-work checks in 0.2.0a2
 
-```json
-{"start": 2, "end": 5, "sequence": ""}
-```
+The observation engine permits at most 100,000 total hypothesis-to-signal
+references in one analysis. Deletion generation permits at most 200 million
+reconstructed bases across its valid grid cells, including duplicate states.
+Both limits are disclosed by `capabilities`; exceeding either returns a
+structured input error without partial evidence. The scientific observation
+models and schema identifiers are unchanged by these execution guards.
 
-This deletes those three bases. A substitution at local index 2 is `[2,3)` with a
-one-base alternate. An insertion immediately before local base 2 is `[2,2)` with
-a nonempty alternate. All replacements refer to the unchanged input reference.
-
-A 1-based genomic/VCF position is not a local position. For a supplied window
-starting at zero-based genomic coordinate `g`, a simple 1-based genomic position
-`p` maps to local base `p - 1 - g`. That formula does not normalize VCF alleles:
-VCF anchoring, strand orientation, left normalization, and complex alleles require
-a dedicated importer, which is not shipped here.
-
-## Primer orientation and reads
-
-`left_primer` and `right_primer` are intervals on the supplied forward-oriented
-reference, with a nonempty gap between them. Both actual primer oligos are
-specified 5′→3′. `left_oligo` equals the left interval sequence;
-`right_oligo` equals the **reverse complement** of the right interval sequence.
-Optional oligos are checked exactly against their intervals.
-
-Product size includes both primer intervals. The observed insert excludes both.
-`min_product_bp` and `max_product_bp` are inclusive, declared inclusion bounds;
-they are not automatically inferred from a polymerase or instrument.
-
-`paired_end` requires `read_bases`: usable **post-primer-trim insert bases per
-end**, not nominal sequencer cycle count. `full_insert` forbids `read_bases`.
-
-## Output families
-
-`editwitness.analysis` contains the reference digest, assays, per-allele
-observations, per-hypothesis signatures, comparisons, witnesses, candidate-panel
-plan, assumptions, notices, model version and checksums.
-
-`editwitness.deletion_scan` contains the explicit grid, denominator, counts, up to
-20 blind examples, limitations and checksums.
-
-`editwitness.summary` is a compact projection of an analysis. It does not contain
-the full evidence and cannot be verified as a full result. Its `analysis_sha256`
-identifies the complete analysis from which it was derived.
-
-`editwitness.witness` returns one named equivalent alternative. With
-`--include-sequences`, it includes the relevant allele observations across
-existing and candidate assays. It is a focused evidence view, not a separately
-sealed analysis.
-
-`manifest_validation` and `integrity` outputs establish structural consistency or
-content integrity only. Their names must not be repurposed as scientific
-validation status.
-
-## Files and limits
-
-Input JSON and FASTA are bounded at 8 MiB; loaded full result JSON at 64 MiB.
-Analysis also has sequence/work budgets described in the architecture document.
-A valid but too-large design must be deliberately split, never silently sampled.
-
-Output defaults to stdout. Files are created atomically and are not overwritten
-unless `--force` is supplied. Input replacement is refused even with `--force`.
-Parent directories must already exist. Temporary file permissions default to
-owner-only; operating-system behavior and filesystem support still apply.
-
-Each output file is atomic independently. An analysis JSON plus HTML report is
-not a multi-file transaction: a late filesystem error can leave one complete
-file and no other file. Use result checksums and exit status; do not treat a
-partial output set as completed work.
+`self-test` emits `editwitness.software_self_test` schema 1.0. Its `passed` field
+and process status (0 or 6) concern the installed software only.

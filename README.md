@@ -2,203 +2,183 @@
 
 **Know what your CRISPR assay can—and cannot—see.**
 
-EditWitness finds explicit genomic alternatives that produce the same modeled
-observations as an intended edit. It then asks which of your proposed follow-up
-assays can separate those alternatives.
+EditWitness finds distinct, explicitly described genomic states that produce the
+same modeled assay observations. It shows the counterexample, then compares
+additional assays that could distinguish it. Keep your existing caller: this is
+an assay-design and evidence-inspection tool, not a replacement aligner.
 
-Keep your aligner and editing-analysis pipeline. Add a check on what their
-measurements are capable of establishing.
+**Research alpha · Apache-2.0 · Python 3.11+ · Local execution · No API key**
 
-> **Research alpha · 0.1.0a1.** This is working, software-tested scientific
-> software with an intentionally bounded, idealized model. It has **not** been
-> empirically validated. It does not diagnose an editing defect, estimate its
-> probability, or certify a clone as correctly edited or safe.
+Version **0.2.0a2** includes exact primer rematching against final edited DNA,
+bounded deletion-hypothesis generation, complete allele evidence, and an offline
+installation self-test. Heterozygous challenge generation requires an explicit
+choice of the allele to preserve. It is
+software-tested, **not empirically validated for biological or clinical use**.
+See [build evidence](BUILD_STATUS.md), [the model audit](docs/audit-0.2.0a1.md),
+and [release hardening](docs/audit-0.2.0a2.md).
+A prepared release is not a published one: current distribution status is
+recorded in `BUILD_STATUS.md`. Do not assume a PyPI release exists.
 
-## The distinction that matters
+## The problem in one example
 
-An amplicon containing only the intended sequence may be compatible with two
-very different states:
+An amplicon shows only the intended sequence. Does that establish that both
+alleles carry the edit? Not from sequence presence alone: an intended allele
+paired with an unobserved deleted allele can give the same modeled result.
 
-```text
-intended + intended                 intended + allele invisible to this assay
-          │                                        │
-          └──────────── the same sequence-presence observation ────────────┘
-```
+The bundled synthetic example makes that ambiguity inspectable:
 
-In the model, detecting the intended sequence does not establish the state of a
-second allele that emits no signal. A witness is the **specific alternative**,
-the reason it remains indistinguishable, and the candidate measurements that
-would distinguish it under stated assumptions.
+| Assay panel | What the model can distinguish |
+|---|---|
+| Original inner assay | The expected edit remains equivalent to two distinct alternatives. |
+| Add the supplied outer assay | The primer-deletion alternative becomes distinguishable. |
+| Both supplied assays | The whole-window-deletion alternative remains unresolved. |
 
-This is an observability check, not a new variant caller.
+The output does **not** say that a deletion occurred, estimate its frequency,
+or declare a clone safe. It names the alternatives and assumptions behind the
+comparison. [Read the scientific model](docs/scientific-model.md).
 
-## Try the synthetic example
+## Install the research alpha
 
-Requires Python 3.11 or newer. From this source directory:
+The public release location is temporarily
+[`dnncha/dotmatch`, tag `editwitness-v0.2.0a2`](https://github.com/dnncha/dotmatch/releases/tag/editwitness-v0.2.0a2).
+This is **an independent package**, not a DotMatch release or dependency. Its
+source lives on an isolated branch; do not merge that branch into DotMatch.
+Repository creation is the remaining administrative step for `dnncha/editwitness`.
+There is no PyPI release. Use only the versioned asset after the prerelease is
+published; a source branch or a queued CI job is not release evidence.
 
 ```bash
-python -m venv .venv
-# macOS / Linux:
-source .venv/bin/activate
-# Windows PowerShell instead: .venv\Scripts\Activate.ps1
-python -m pip install .
+python -m pip install "https://github.com/dnncha/dotmatch/releases/download/editwitness-v0.2.0a2/editwitness-0.2.0a2-py3-none-any.whl"
+editwitness self-test
+```
 
+The release includes `SHA256SUMS`, the clean source distribution, a synthetic
+HTML report and execution provenance tied to the tested source commit. The
+self-test checks two synthetic cases and deterministic replay offline. It is
+**not** a validation of a real assay.
+
+## Try the example
+
+Alternatively, from a downloaded source distribution, in its root directory:
+
+```bash
+python -m pip install .
+editwitness self-test
 editwitness demo -o demo.json
 editwitness analyze demo.json -o analysis.json --html report.html
-editwitness analyze demo.json --compact --pretty
 editwitness verify analysis.json --manifest demo.json
 ```
 
-Open `report.html` locally. It needs no server, JavaScript, account, API key, or
-external assets. The example is synthetic, not a published experiment.
+Open `report.html`. It is a self-contained report with no scripts, CDN,
+telemetry, or external font requests. The JSON retains the full evidence;
+the HTML deliberately limits long sequence previews.
 
-**Expected result:** the existing inner amplicon leaves two declared alternatives
-indistinguishable from the intended biallelic hypothesis. The planner selects the
-outer amplicon, which separates the primer-deletion alternative. Deletion of the
-entire local window remains unresolved by every supplied candidate.
-
-```json
-{
-  "conclusion": "ambiguity_demonstrated",
-  "equivalent_alternatives": ["hidden_primer_deletion", "hidden_window_deletion"],
-  "selected_assays": ["outer"],
-  "unresolved_hypotheses": ["hidden_window_deletion"]
-}
-```
-
-This excerpt flattens selected fields for readability. The actual versioned
-output nests panel information under `plan`.
-
-**This release is not published on PyPI.** Install the source or the accompanying
-wheel. Do not assume that an unrelated package with a matching name is ours.
-
-## What works today
-
-| Capability | What it actually does |
-|---|---|
-| Explicit counterexamples | Compares declared two-allele clonal hypotheses against the expected hypothesis. |
-| Sequence-aware readout | Reconstructs local replacements and models full primer-trimmed inserts or ordered paired-end reads. |
-| Read-gap ambiguity | Does not pretend that paired-end reads observe the unsequenced middle or product length. |
-| Follow-up panel selection | Finds a minimum-cost panel for up to 18 useful candidates; uses an explicitly nonoptimal greedy method above that limit. |
-| Local deletion scan | Streams a bounded deletion grid using interval geometry without reconstructing every sequence. |
-| Human-readable evidence | Generates a self-contained HTML report with coordinate diagrams and inspectable sequence evidence. |
-| Reproducible artifacts | Emits canonical JSON, normalized-input checksums, versioned assumptions, and replay verification. |
-| Agent interface | Provides schemas, capability discovery, structured errors, stable exit codes, and compact summaries. |
-
-### Start from a real local reference
-
-`init` accepts one local FASTA record, exact 5′→3′ primer oligos, and one intended
-substitution. It resolves unique inward-orientation matches within that window.
-It **does not** establish genome-wide primer specificity.
-
-```bash
-editwitness init --fasta locus.fasta \
-  --left-primer YOUR_FORWARD_OLIGO --right-primer YOUR_REVERSE_OLIGO \
-  --edit-position 450 --alternate A -o design.json
-```
-
-Replace the illustrative values with your own data. `450` is a **local,
-zero-based** position, not a VCF position. The alternate must differ from the
-reference. Inspect and extend the generated hypotheses and assay assumptions
-before drawing conclusions. JSON supports more general, nonoverlapping local
-replacements; see the [data contract](docs/data-contract.md).
-
-### Explore a read-gap blind spot
+For paired-end sequencing, the tool observes only the declared sequenced ends,
+not the unsequenced gap or an implicitly known product length:
 
 ```bash
 editwitness demo --paired-end -o paired.json
-editwitness analyze paired.json --compact --pretty
-editwitness witness paired.json --hypothesis interior_deletion --include-sequences
+editwitness analyze paired.json -o paired-analysis.json --html paired.html
 ```
 
-The paired-end example leaves four alternatives indistinguishable. The outer
-full-insert candidate separates three; whole-window loss still remains unresolved.
+For a real design, start with `editwitness init --help`. Initialization requires
+an explicit choice of `--full-insert` or `--read-bases N`. All coordinates are
+local, **zero-based, half-open**, on the supplied reference. Generated templates
+select `exact-local-sequence-presence-v2` explicitly.
 
-### Audit a deletion grid
+## What is implemented
+
+**Sequence-aware counterexamples.** Exact local matching finds preserved,
+recreated and new sites on final edited DNA. It enumerates inward-facing
+heteroprimer products in both orientations. Multiple products remain explicit;
+identical final diploid sequence states are not counted as alternative genomes.
+
+**Useful, bounded hypothesis generation.** Supply an explicit `deletion_scan`
+grid, then generate sequence-deduplicated diploid alternatives:
 
 ```bash
-editwitness scan demo.json -o deletion-scan.json
-editwitness verify deletion-scan.json --manifest demo.json
+editwitness expand-deletions design.json -o expanded.json
+editwitness analyze expanded.json -o expanded-analysis.json --html expanded.html
 ```
 
-These are counts on a **declared grid**, not event probabilities, assay
-sensitivity, or a biological frequency distribution. The scan is separate from
-the hypothesis-comparison engine and operates on the reference, not the intended
-allele.
+Generation records its input hash, grid, fixed allele and counts. When the
+expected alleles encode different final sequences, specify `--fixed-allele ID`;
+reordering the allele list must not silently select a different challenge. It fails rather
+than silently sampling if the configured limit is exceeded. These are challenges
+to the assay design, **not predicted CRISPR outcome frequencies**.
 
-## For Python users
+**Follow-up panel selection.** Given candidate assays and integer costs, select
+measurements that separate the expectation from the currently equivalent
+alternatives. Small nondominated panels use exhaustive optimization; larger
+ones use a declared greedy method. Impossible-to-separate alternatives remain
+unresolved. No claim of globally optimal primer design is made.
 
-```python
-from editwitness import analyze, load_manifest
+**Assumption sensitivity.** `editwitness compare-models design.json` shows which
+counterexamples depend on the old original-site model versus the exact local
+sequence model. This comparison is not experimental adjudication.
 
-manifest = load_manifest("design.json")
-result = analyze(manifest)
-for witness in result.witnesses:
-    print(witness.hypothesis_id, witness.resolving_candidate_assays)
-print(result.plan.unresolved_hypotheses)
-```
-
-The public entry points share the CLI's model. No LLM participates in the
-scientific calculation.
-
-## For agents and workflow authors
+## For agents and workflows
 
 ```bash
+editwitness self-test
 editwitness capabilities
 editwitness schema manifest
 editwitness validate design.json
 editwitness analyze design.json --compact
+editwitness witness design.json --hypothesis hidden_primer_deletion --include-sequences
 ```
 
-Stdout is JSON; errors are JSON on stderr. Successful execution can legitimately
-report ambiguity. To use ambiguity as a workflow gate, explicitly add
-`--fail-on-ambiguity` (exit code 4).
+JSON is the primary interface. Diagnostics go to stderr; successful commands do
+not print prose into machine output. Versioned schemas, explicit resource
+limits, content hashes and exact-version replay make runs inspectable.
+An exit code of zero means the calculation completed, not that an edit is safe.
 
-Read the [agent guide](docs/agent-guide.md), the portable
-[agent skill](skills/editwitness/SKILL.md), and [AGENTS.md](AGENTS.md). An agent
-must never translate exit code 0, a valid manifest, or an empty list of declared
-counterexamples into “safe” or “biallelic confirmed.”
+```python
+from editwitness import analyze, expand_deletions, load_manifest
 
-## The boundaries are part of the product
+manifest = load_manifest("design.json")
+result = analyze(manifest)
+for witness in result.witnesses:
+    print(witness.hypothesis_id)
+```
 
-The current model requires **pristine original annotated primer sites** and
-perfect detection of eligible products. It does not model mismatch tolerance,
-new or rescued binding sites, stochastic PCR, amplification efficiency, read
-counts, copy-number measurements, mosaicism, aneuploidy, or complex structural
-rearrangements. It consumes a design manifest, not FASTQ/BAM data.
+[Agent guide](docs/agent-guide.md) · [Data contract](docs/data-contract.md) ·
+[Architecture](docs/architecture.md) · [Migration from 0.1](docs/migration-0.2.md)
 
-Changing a supplied hypothesis set can change the answer. “Distinguishable within
-the declared model” does not mean “all biological alternatives were excluded.”
+## Limits worth reading
 
-Read the [scientific model](docs/scientific-model.md) before applying it to an
-experiment. Every full analysis carries these qualifications with the evidence.
+The exact model assumes that every eligible exact local product is detected.
+It does not predict PCR efficiency, mismatch tolerance, sequencing errors,
+read counts, allele competition, dosage, mosaicism, or genome-wide specificity.
+Single-primer products and sites outside the supplied sequence window are not
+modeled. Identical oligos are rejected because their read orientation is
+ambiguous under this contract. The set of supplied hypotheses is finite, not an
+exhaustive account of biology.
 
-## Documentation
+`scan` remains a separately labeled **original-site geometry scanner**. Its
+counts are not exact-model read equivalence, biological risk or sensitivity.
+Use `expand-deletions` plus `analyze` for generated sequence-model comparisons.
 
-- [Scientific model and references](docs/scientific-model.md)
-- [Coordinates, inputs, outputs, and limits](docs/data-contract.md)
-- [Architecture and extension decisions](docs/architecture.md)
-- [Agent integration and exit codes](docs/agent-guide.md)
-- [Validation status and independent-validation plan](docs/validation.md)
-- [Prioritized roadmap](docs/roadmap.md) and [machine-readable tasks](roadmap.json)
-- [Development](CONTRIBUTING.md), [release procedure](docs/releasing.md), and [security](SECURITY.md)
-
-## Development
+## Contributing and validation
 
 ```bash
-python -m pip install -e '.[dev]'
+python -m pip install -e ".[dev]"
 python -m pytest -q
-python scripts/generate_schemas.py --check
-python scripts/check_style.py
 python -m mypy src/editwitness
-python -m build
+python -m ruff check src/editwitness --select E4,E7,E9,F
+python scripts/generate_schemas.py --check
+python scripts/release_manifest.py --check
 ```
 
-Only the checks listed in [BUILD_STATUS.md](BUILD_STATUS.md) were actually run
-for the delivered artifact. CI configuration is not evidence of a passing CI run.
+The tests include an independent substring-based observation oracle, equivalent
+edit representations, multisite/reverse-orientation products, old artifact
+integrity, and panel-selection comparisons against independent enumeration.
+These establish software behavior—not biological accuracy.
 
-## License and attribution
+[Validation plan](docs/validation.md) · [Contribution rules](CONTRIBUTING.md) ·
+[Machine-readable roadmap](roadmap.json) · [Next-session handoff](docs/continuation.md)
 
-Apache-2.0. Copyright 2026 Donncha O'Toole and EditWitness contributors.
-See [LICENSE](LICENSE) and [CITATION.cff](CITATION.cff). No paper, DOI, clinical
-validation, or institutional endorsement is claimed for this alpha.
+Independent genome-engineering review and adjudicated experimental benchmarks
+are the next scientific gates. No reviewers, users, benchmark accuracy or
+clinical validity are claimed without actual evidence. Citation metadata is in
+[`CITATION.cff`](CITATION.cff); there is no registered publication DOI yet.

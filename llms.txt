@@ -1,15 +1,19 @@
 # EditWitness
 
-> Local, explicit observability counterexamples for CRISPR validation assays.
-> Research alpha; software-tested, not empirically validated.
+> Local, inspectable CRISPR assay counterexamples and follow-up panel comparisons.
 
-## Start here
-- README.md: installation, synthetic example, supported scope.
-- docs/agent-guide.md: machine interface and interpretation rules.
-- docs/scientific-model.md: exact observation model and limitations.
-- docs/data-contract.md: coordinates, invariants, schema and outputs.
-- AGENTS.md: development invariants and continuation commands.
-- roadmap.json: machine-readable implementation and validation tasks.
-- BUILD_STATUS.md: checks actually performed on the delivered artifact.
+Research alpha 0.2.0a1. Software-tested; not empirically biologically validated.
+No API key, network calls, LLM dependency or safety certification.
 
-This file is a navigation aid, not an assurance of automatic agent discovery.
+## Entry points
+- [README](README.md): purpose, source installation and runnable synthetic examples.
+- [Scientific model](docs/scientific-model.md): exact-v2 and legacy-v1 assumptions.
+- [Agent guide](docs/agent-guide.md): machine contract and safe interpretation.
+- [Data contract](docs/data-contract.md): coordinates, signal sets and exit codes.
+- [Audit](docs/audit-0.2.0a1.md): substantive findings, fixes and limits.
+- [Build evidence](BUILD_STATUS.md): measured checks and actual publication status.
+- [Roadmap](roadmap.json): tasks, acceptance criteria and uncompleted validation.
+
+Use `editwitness capabilities`, `schema manifest`, `validate`, `analyze --compact`,
+`witness --include-sequences`, `expand-deletions`, and `compare-models`.
+Never turn no witnesses into proof of a safe edit or grid counts into risk.

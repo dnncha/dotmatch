@@ -1,0 +1,4 @@
+* text=auto eol=lf
+*.whl binary
+*.zip binary
+*.gz binary
