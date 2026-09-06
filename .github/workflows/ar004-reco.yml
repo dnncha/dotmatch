@@ -1,0 +1,88 @@
+name: AR004 - actual ReCo native-workflow comparator
+on:
+  push:
+    branches: [research/replicated-screen-ar004]
+    paths: [.github/workflows/ar004-reco.yml, research/assignment_robustness/ar004/reco_run.py]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  comparator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      max-parallel: 7
+      matrix:
+        accession: [SRR8297997, SRR8297836, SRR8297837, SRR8297838, SRR8297839, SRR8297840, SRR8297841]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: KaulichLab/ReCo
+          ref: e2daf48b610f8db29ad014bff5be8bb983aaa76f
+          path: upstream-reco
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-name: reco
+          create-args: >-
+            python=3.8
+            cutadapt=2.8
+            bowtie2=2.3.0
+            pip
+            -c conda-forge
+            -c bioconda
+          cache-environment: true
+          init-shell: bash
+      - name: Install exact published comparator dependencies and record versions
+        run: |
+          set -euo pipefail
+          micromamba run -n reco python -m pip install -r upstream-reco/requirements.txt > reco-install.log 2>&1
+          micromamba run -n reco python -m pip install --no-deps ./upstream-reco >> reco-install.log 2>&1
+          micromamba run -n reco python -m pip freeze > reco-environment.txt
+          micromamba run -n reco cutadapt --version > cutadapt-version.txt
+          micromamba run -n reco bowtie2 --version > bowtie2-version.txt
+          micromamba list -n reco --explicit > conda-explicit.txt
+          test "$(cat cutadapt-version.txt | tail -1)" = 2.8
+          grep 'version 2.3.0' bowtie2-version.txt
+      - name: Require the independently validated reference artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,time,urllib.request
+          url='https://api.github.com/repos/dnncha/dotmatch/actions/runs/34034542345/artifacts'
+          for attempt in range(40):
+              req=urllib.request.Request(url,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN']})
+              with urllib.request.urlopen(req,timeout=60) as f: data=json.load(f)
+              if any(a['name']=='ar004-reference' for a in data['artifacts']):break
+              time.sleep(15)
+          else:raise RuntimeError('Validated reference never became available')
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: ar004-reference
+          run-id: 34034542345
+          repository: dnncha/dotmatch
+          github-token: ${{ github.token }}
+          path: reference
+      - name: Execute actual comparator on the complete raw archive
+        run: |
+          set -euo pipefail
+          python research/assignment_robustness/ar004/reco_run.py '${{ matrix.accession }}' --library reference/library.tsv --source upstream-reco 2>&1 | tee comparator.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ar004-reco-${{ matrix.accession }}
+          path: |
+            reco-result/
+            comparator.log
+            reco-install.log
+            reco-environment.txt
+            cutadapt-version.txt
+            bowtie2-version.txt
+            conda-explicit.txt
+          retention-days: 90
