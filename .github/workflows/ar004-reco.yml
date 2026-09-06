@@ -34,7 +34,7 @@ jobs:
       - name: Install exact published comparator dependencies and original Bowtie release
         run: |
           set -euo pipefail
-          micromamba run -n reco python -m pip install cutadapt==2.8 dnaio==0.4.2 xopen==0.9.0 > reco-install.log 2>&1
+          micromamba run -n reco python -m pip install cutadapt==2.8 dnaio==0.4.2 xopen==0.8.4 > reco-install.log 2>&1
           micromamba run -n reco python -m pip install -r upstream-reco/requirements.txt >> reco-install.log 2>&1
           micromamba run -n reco python -m pip install --no-deps ./upstream-reco >> reco-install.log 2>&1
           curl -fL --retry 3 'https://downloads.sourceforge.net/project/bowtie-bio/bowtie2/2.3.0/bowtie2-2.3.0-linux-legacy-x86_64.zip' -o bowtie2-original-release.zip
@@ -52,7 +52,7 @@ jobs:
           micromamba list -n reco --explicit > conda-explicit.txt
           test "$(cat cutadapt-version.txt | tail -1)" = 2.8
           grep 'version 2.3.0' bowtie2-version.txt
-          printf '%s\n' 'Bowtie 2.3.0 original legacy/pthread binary; unchanged alignment version. Conda old-version resolution failed in run 34034661978. No comparator results from that failed setup are used.' > dependency-provenance.txt
+          printf '%s\n' 'Bowtie 2.3.0 original legacy/pthread binary; unchanged alignment version. Conda old-version resolution failed in run 34034661978. A pip conflict with our initially specified xopen 0.9.0 was corrected to Cutadapt-required xopen 0.8.4. No data results from either failed setup are used.' > dependency-provenance.txt
       - uses: actions/download-artifact@v4
         with:
           name: ar004-reference
