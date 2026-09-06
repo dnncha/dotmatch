@@ -1,0 +1,52 @@
+name: AR004 - outcome-blind sample curation
+on:
+  push:
+    branches: [research/replicated-screen-ar004]
+    paths: [.github/workflows/ar004-curation.yml]
+permissions:
+  contents: write
+jobs:
+  metadata:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire complete study run metadata without reading outcomes
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import urllib.request,urllib.parse,json,hashlib,pathlib,time
+          root=pathlib.Path('research/assignment_robustness/ar004/curation')
+          root.mkdir(parents=True,exist_ok=False)
+          provenance=[]
+          for accession in ('PRJNA508200','PRJEB4038'):
+              fields='run_accession,sample_accession,sample_alias,experiment_accession,experiment_title,library_layout,fastq_ftp,fastq_md5,fastq_bytes,read_count'
+              url='https://www.ebi.ac.uk/ena/portal/api/filereport?'+urllib.parse.urlencode(dict(accession=accession,result='read_run',format='json',fields=fields))
+              for attempt in range(3):
+                  try:
+                      with urllib.request.urlopen(url,timeout=90) as r: data=r.read(10000001)
+                      break
+                  except Exception:
+                      if attempt==2: raise
+                      time.sleep(2**attempt)
+              assert len(data)<10000000
+              rows=json.loads(data)
+              assert rows and len({r['run_accession'] for r in rows})==len(rows)
+              (root/(accession+'.json')).write_bytes(data)
+              summary='\n'.join('\t'.join(str(r[k]) for k in ('run_accession','sample_alias','experiment_title','read_count','fastq_bytes')) for r in rows)
+              (root/(accession+'.tsv')).write_text('run_accession\tsample_alias\texperiment_title\tread_count\tfastq_bytes\n'+summary+'\n')
+              print(accession,summary,sep='\n')
+              provenance.append(dict(study=accession,url=url,sha256=hashlib.sha256(data).hexdigest(),runs=len(rows)))
+          (root/'provenance.json').write_text(json.dumps(provenance,indent=2,sort_keys=True)+'\n')
+          PY
+          git config user.name 'Donncha OToole research workflow'
+          git config user.email '5190258+dnncha@users.noreply.github.com'
+          git add research/assignment_robustness/ar004/curation
+          git commit -m 'research: preserve original study sample metadata before AR004 outcomes [skip ci]'
+          git push origin HEAD:research/replicated-screen-ar004
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ar004-study-metadata
+          path: research/assignment_robustness/ar004/curation/
+          retention-days: 90
