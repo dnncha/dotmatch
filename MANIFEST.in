@@ -20,3 +20,5 @@ include src/qdalign.c
 include src/qdmetal_stub.c
 include src/qdmetal.mm
 include src/qda.c
+
+include src/target_table.h

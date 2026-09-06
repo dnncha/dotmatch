@@ -87,10 +87,10 @@ build/coverage/qdmetal_stub.o: src/qdmetal_stub.c include/qdmetal.h | build/cove
 build/coverage:
 	mkdir -p build/coverage
 
-dotmatch: src/qda.c build/qdalign.o $(METAL_OBJ) include/qdalign.h include/qdmetal.h Makefile
+dotmatch: src/qda.c src/target_table.h build/qdalign.o $(METAL_OBJ) include/qdalign.h include/qdmetal.h Makefile
 	$(CC) $(CFLAGS) $(DOTMATCH_VERSION_CFLAGS) src/qda.c build/qdalign.o $(METAL_OBJ) -o $@ $(LDFLAGS) $(ZLIB_LIBS) $(PTHREAD_LIBS) $(METAL_LIBS) $(METAL_CXX_LIBS)
 
-qda: src/qda.c build/qdalign.o $(METAL_OBJ) include/qdalign.h include/qdmetal.h Makefile
+qda: src/qda.c src/target_table.h build/qdalign.o $(METAL_OBJ) include/qdalign.h include/qdmetal.h Makefile
 	$(CC) $(CFLAGS) $(DOTMATCH_VERSION_CFLAGS) src/qda.c build/qdalign.o $(METAL_OBJ) -o $@ $(LDFLAGS) $(ZLIB_LIBS) $(PTHREAD_LIBS) $(METAL_LIBS) $(METAL_CXX_LIBS)
 
 build/test_qdalign: tests/test_qdalign.c build/qdalign.o include/qdalign.h | build

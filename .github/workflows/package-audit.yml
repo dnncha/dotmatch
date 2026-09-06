@@ -1,0 +1,53 @@
+name: Package integrity
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: package-integrity-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  scientific-python:
+    name: Scientific Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install real scientific integrations
+        run: python -m pip install '.[dev]' build
+      - name: Build native engine and run all Python tests with optional integrations
+        run: |
+          make -j2 all shared
+          python -m pytest python/tests -q --junitxml=package-tests.xml
+      - name: Verify the generated scientific website example
+        run: python scripts/generate_assignment_demo.py --check
+      - name: Build source and wheel distributions
+        run: python -m build
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: package-integrity-python-${{ matrix.python }}
+          path: package-tests.xml
+  container:
+    name: Complete CLI container (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build runtime image without publishing
+        run: docker build -t dotmatch:integrity .
+      - name: Exercise native and Python commands as an unprivileged caller
+        run: python3 scripts/check_container_workflows.py dotmatch:integrity

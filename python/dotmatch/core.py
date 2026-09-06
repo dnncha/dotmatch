@@ -6,11 +6,15 @@ import gzip
 import math
 import os
 import platform
+import threading
+from functools import wraps
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Iterator, Sequence, TextIO
 
 from ._optional import optional_module
+from ._validation import integer, named_targets
+from .fastq_io import FastqRecord, iter_fastq
 
 pd, _HAS_PANDAS = optional_module("pandas")
 
@@ -66,13 +70,6 @@ class PosteriorAssignment:
 
 
 @dataclass(frozen=True)
-class FastqRecord:
-    read_id: str
-    seq: str
-    qual: str
-
-
-@dataclass(frozen=True)
 class StreamAssignment:
     read_id: str
     observed_seq: str
@@ -91,25 +88,23 @@ def _platform_ext() -> str:
 
 
 def _candidate_paths() -> list[Path]:
+    # Overrides are explicit, never a hint followed by an unrelated fallback.
     env = os.environ.get("DOTMATCH_LIB") or os.environ.get("QUICKDNA_LIB")
-    paths = [Path(env)] if env else []
+    if env:
+        return [Path(env).expanduser().resolve()]
     here = Path(__file__).resolve()
-    ext = _platform_ext()
-    names = [f"libdotmatch.{ext}", f"libqdalign.{ext}"]
-    for name in names:
-        paths.extend(
-            [
-                here.parent / name,
-                here.parents[2] / name,
-                Path.cwd() / name,
-            ]
-        )
+    names = [f"libdotmatch.{_platform_ext()}", f"libqdalign.{_platform_ext()}"]
+    paths = [here.parent / name for name in names]
+    # Only the known source layout permits a source-tree build. Never search CWD
+    # or arbitrary ancestors of an installed/vendored package for executable code.
+    if here.parent.name == "dotmatch" and here.parent.parent.name == "python":
+        paths.extend(here.parents[2] / name for name in names)
     return paths
 
 
 def _load_lib() -> ctypes.CDLL:
     for path in _candidate_paths():
-        if path.exists():
+        if path.is_file():
             lib = ctypes.CDLL(str(path))
             lib.qdaln_alphabet_policy.argtypes = []
             lib.qdaln_alphabet_policy.restype = ctypes.c_char_p
@@ -255,55 +250,18 @@ def load_targets(path: str | Path) -> list[tuple[str, str]]:
     return [(row.target_id, row.sequence) for row in read_target_table(path)]
 
 
-def iter_fastq(path: str | Path, *, content_digest: Any | None = None) -> Iterator[FastqRecord]:
-    """Yield FASTQ records, optionally hashing original decompressed UTF-8 bytes.
-
-    The optional hashlib-compatible object is updated before normalization.
-    Consume the complete iterator before treating its digest as a full-input
-    checksum; this is not the checksum of a compressed file.
-    """
-    with _open_text(path) as fh:
-        while True:
-            header = fh.readline()
-            if not header:
-                return
-            seq = fh.readline()
-            plus = fh.readline()
-            qual = fh.readline()
-            if content_digest is not None:
-                for line in (header, seq, plus, qual):
-                    content_digest.update(line.encode("utf-8"))
-            if not seq or not plus or not qual:
-                raise ValueError(f"truncated FASTQ record in {path}")
-            header = header.rstrip("\n\r")
-            seq = seq.rstrip("\n\r").upper()
-            plus = plus.rstrip("\n\r")
-            qual = qual.rstrip("\n\r")
-            if not header.startswith("@") or not plus.startswith("+"):
-                raise ValueError(f"invalid FASTQ record in {path}")
-            if len(seq) != len(qual):
-                raise ValueError(f"invalid FASTQ record in {path}: sequence and quality lengths differ")
-            identifiers = header[1:].split()
-            if not identifiers:
-                raise ValueError(f"invalid FASTQ record in {path}: missing read identifier")
-            yield FastqRecord(identifiers[0], seq, qual)
-
-
 def _normalize_targets(targets: Any) -> list[tuple[str, str]]:
     if isinstance(targets, (str, Path)):
         return load_targets(targets)
-    # Do not import an optional dataframe stack to inspect ordinary lists.
     if hasattr(targets, "columns"):
         return targets_from_dataframe(targets)
-    normalized: list[tuple[str, str]] = []
+    rows = []
     for i, item in enumerate(targets):
         if isinstance(item, (tuple, list)) and len(item) >= 2:
-            normalized.append((str(item[0]), str(item[1]).upper()))
+            rows.append((item[0], item[1]))
         else:
-            normalized.append((f"target_{i}", str(item).upper()))
-    if not normalized:
-        raise ValueError("targets must not be empty")
-    return normalized
+            rows.append((f"target_{i}", item))
+    return named_targets(rows)
 
 
 def _extract_window(seq: str, start: int, length: int) -> str | None:
@@ -340,6 +298,7 @@ def distance(a: str | bytes, b: str | bytes) -> int:
 
 
 def distance_leq(a: str | bytes, b: str | bytes, k: int) -> bool:
+    k = integer(k, "k")
     aa = _as_bytes(a)
     bb = _as_bytes(b)
     result = int(_LIB.qdaln_edit_distance_leq(aa, len(aa), bb, len(bb), int(k)))
@@ -349,6 +308,8 @@ def distance_leq(a: str | bytes, b: str | bytes, k: int) -> bool:
 
 
 def _array_inputs(seqs: Sequence[str | bytes]) -> tuple[list[bytes], ctypes.Array, ctypes.Array]:
+    if isinstance(seqs, (str, bytes, bytearray)) or not hasattr(seqs, "__len__"):
+        raise TypeError("expected a sized sequence of sequences; wrap a single sequence in a list")
     encoded = [_as_bytes(s) for s in seqs]
     ptrs = (ctypes.c_char_p * len(encoded))()
     lens = (ctypes.c_size_t * len(encoded))()
@@ -406,8 +367,7 @@ def assign(
     k: int = 1,
     policy: str = "radius",
 ) -> list[MatchResult]:
-    if k < 0:
-        raise ValueError("k must be non-negative")
+    k = integer(k, "k")
     _normalize_policy(policy)
     _read_bytes, read_ptrs, read_lens = _array_inputs(reads)
     _target_bytes, target_ptrs, target_lens = _array_inputs(barcodes)
@@ -456,8 +416,8 @@ def assign_exact(
 
 def _phred33_probability(ch: int) -> float:
     q = ch - 33
-    if q < 0:
-        raise ValueError("quality string must use Phred+33 characters")
+    if q < 0 or q > 93:
+        raise ValueError("quality string must use Phred+33 ASCII characters 33–126")
     return 10.0 ** (-q / 10.0)
 
 
@@ -478,6 +438,8 @@ def assign_posterior(
     read_b = _as_bytes(read)
     qual_b = _as_bytes(quality)
     target_b = [_as_bytes(t) for t in targets]
+    if not read_b:
+        raise ValueError("posterior assignment requires a nonempty read")
     if not target_b:
         raise ValueError("targets must not be empty")
     if len(read_b) != len(qual_b):
@@ -492,10 +454,12 @@ def assign_posterior(
     else:
         if len(priors) != len(target_b):
             raise ValueError("priors must have one entry per target")
-        if any(p < 0.0 for p in priors) or sum(priors) <= 0.0:
-            raise ValueError("priors must be non-negative with positive total mass")
-        total = float(sum(priors))
-        log_priors = [math.log(float(p) / total) if p > 0.0 else -math.inf for p in priors]
+        values = [float(p) for p in priors]
+        if any(not math.isfinite(p) or p < 0.0 for p in values) or not any(p > 0.0 for p in values):
+            raise ValueError("priors must be finite, non-negative with positive total mass")
+        # Normalize in log space below. Summing large finite priors first can
+        # overflow; dividing tiny priors by that sum can underflow to zero.
+        log_priors = [math.log(p) if p > 0.0 else -math.inf for p in values]
 
     log_likelihoods: list[float] = []
     for target, log_prior in zip(target_b, log_priors):
@@ -512,24 +476,43 @@ def assign_posterior(
     order = sorted(range(len(posteriors)), key=lambda i: posteriors[i], reverse=True)
     best = order[0]
     second = posteriors[order[1]] if len(order) > 1 else 0.0
-    status = MATCH_UNIQUE if posteriors[best] >= min_posterior else MATCH_AMBIGUOUS
+    status = MATCH_UNIQUE if posteriors[best] >= min_posterior and posteriors[best] > second else MATCH_AMBIGUOUS
     return PosteriorAssignment(best, posteriors[best], second, status, posteriors)
 
 
+def _synchronized(method):
+    @wraps(method)
+    def call(self, *args, **kwargs):
+        # ctypes releases the GIL: close() must never free an in-flight index.
+        with self._lock:
+            return method(self, *args, **kwargs)
+    return call
+
+
 class Matcher:
+    """Reusable native index with synchronized lifetime management.
+
+    Calls on one Matcher are serialized, including close(). Use an independent
+    Matcher per worker when parallel assignment is required.
+    """
     def __init__(self, barcodes: Sequence[str | bytes]):
-        self._closed = False
+        self._lock = threading.RLock()
+        self._closed = True
+        self._index = None
         self._target_bytes, target_ptrs, target_lens = _array_inputs(barcodes)
         self._index = _LIB.qdaln_index_build(target_ptrs, target_lens, len(barcodes))
         if not self._index:
             raise ValueError("invalid barcode input")
+        self._closed = False
 
+    @_synchronized
     def close(self) -> None:
         if not self._closed:
             _LIB.qdaln_index_free(self._index)
             self._index = None
             self._closed = True
 
+    @_synchronized
     def __enter__(self) -> "Matcher":
         if self._closed:
             raise ValueError("matcher is closed")
@@ -571,8 +554,7 @@ class Matcher:
         k: int = 1,
         policy: str = "radius",
     ) -> tuple[list[MatchResult], AssignmentStats]:
-        if k < 0 or k > 3:
-            raise ValueError("hamming assignment supports k between 0 and 3")
+        k = integer(k, "k", maximum=3)
         if k == 0:
             return self.assign_exact_with_stats(reads, policy=policy)
         return self._assign_with_stats_func(_LIB.qdaln_index_assign_hamming_stats, reads, k=k, policy=policy)
@@ -588,6 +570,7 @@ class Matcher:
         results, _stats = self.assign_exact_with_stats(reads, ascii_fold=ascii_fold, policy=policy)
         return results
 
+    @_synchronized
     def assign_exact_with_stats(
         self,
         reads: Sequence[str | bytes],
@@ -634,6 +617,7 @@ class Matcher:
         """
         return self._assign_with_stats_func(_LIB.qdaln_index_assign_status_stats, reads, k=k, policy=policy)
 
+    @_synchronized
     def _assign_with_stats_func(
         self,
         func: Any,
@@ -644,8 +628,7 @@ class Matcher:
     ) -> tuple[list[MatchResult], AssignmentStats]:
         if self._closed:
             raise ValueError("matcher is closed")
-        if k < 0:
-            raise ValueError("k must be non-negative")
+        k = integer(k, "k")
         _normalize_policy(policy)
 
         _read_bytes, read_ptrs, read_lens = _array_inputs(reads)
@@ -690,6 +673,12 @@ def stream_assign(
     carry a target id/sequence; ambiguous, none, and invalid windows remain
     explicit rather than being forced into a target.
     """
+    k = integer(k, "k", maximum=3 if metric == "hamming" else 2147483647)
+    target_start = integer(target_start, "target_start")
+    batch_size = integer(batch_size, "batch_size", minimum=1)
+    if target_length is not None:
+        target_length = integer(target_length, "target_length", minimum=1)
+    _normalize_policy(policy)
     if metric not in {"levenshtein", "hamming", "exact"}:
         raise ValueError("metric must be 'levenshtein', 'hamming', or 'exact'")
     if metric == "exact" and k != 0:
@@ -928,44 +917,10 @@ def _to_pandas(df: Any) -> Any:
             pass
     return df
 
-def targets_from_dataframe(
-    df: Any,
-    id_col: str | int | None = None,
-    seq_col: str | int | None = None,
-) -> list[tuple[str, str]]:
-    """Extract (id, sequence) pairs from a pandas or polars DataFrame or Series-like.
-
-    If id_col/seq_col omitted, assumes first two columns (or column named 'id'/'seq'/'sequence'/'barcode').
-    Returns list of (id, seq) suitable for Matcher or assign.
-    Supports polars DataFrames (converted internally).
-    """
-    if _HAS_PANDAS:
-        _ensure_pandas()
-    else:
-        if not (_HAS_POLARS and (isinstance(df, pl.DataFrame) if pl else False or hasattr(df, "to_pandas"))):
-            raise ImportError("pandas (or polars) required for DataFrame input to targets_from_dataframe")
-    data = _to_pandas(df)
-    if _HAS_PANDAS:
-        cols = list(data.columns)
-    else:
-        cols = list(getattr(data, "columns", []))
-    if id_col is None:
-        for cand in ("id", "target_id", "name", "guide_id", "barcode_id", cols[0] if cols else None):
-            if cand in cols:
-                id_col = cand
-                break
-        else:
-            id_col = cols[0] if cols else 0
-    if seq_col is None:
-        for cand in ("seq", "sequence", "dna", "target", "guide", "barcode", cols[1] if len(cols) > 1 else None):
-            if cand in cols:
-                seq_col = cand
-                break
-        else:
-            seq_col = cols[1] if len(cols) > 1 else 1
-    ids = data[id_col].astype(str).tolist()
-    seqs = data[seq_col].astype(str).str.upper().tolist()
-    return list(zip(ids, seqs))
+def targets_from_dataframe(df: Any, id_col=None, seq_col=None) -> list[tuple[str, str]]:
+    """Extract validated (ID, sequence) pairs; see dotmatch.dataframes."""
+    from .dataframes import targets_from_dataframe as convert
+    return convert(df, id_col=id_col, seq_col=seq_col)
 
 
 def results_to_dataframe(
@@ -985,6 +940,10 @@ def results_to_dataframe(
         MATCH_NONE: "none",
         MATCH_INVALID: "invalid",
     }
+    if read_ids is not None and len(read_ids) != len(results):
+        raise ValueError("read_ids must contain one ID per result")
+    if target_names is not None and any(r.status == MATCH_UNIQUE and not 0 <= r.target_index < len(target_names) for r in results):
+        raise ValueError("target_names does not cover every uniquely assigned target index")
     rows = []
     for i, r in enumerate(results):
         row = {
@@ -1006,56 +965,22 @@ def results_to_dataframe(
         if read_ids is not None and i < len(read_ids):
             row["read_id"] = read_ids[i]
         rows.append(row)
-    return pd.DataFrame(rows)
+    columns = ["read_index", "target_index", "best_distance", "second_best_distance", "match_count", "status", "status_name"]
+    if target_names is not None:
+        columns.append("target_name")
+    if read_ids is not None:
+        columns.append("read_id")
+    return pd.DataFrame(rows, columns=columns)
 
 
-def assign_dataframe(
-    reads: Any,
-    targets: Any,
-    k: int = 1,
-    policy: str = "radius",
-    metric: str = "levenshtein",
-    read_ids: Sequence[str] | None = None,
-    target_names: Sequence[str] | None = None,
-) -> Any:
-    """High-level: assign using pandas/polars Series/DataFrame inputs, return pandas DataFrame of results.
-
-    reads/targets can be list, Series of seqs, or DataFrame (will use seq col heuristics).
-    Polars inputs are converted internally; result is pandas DataFrame (call .to_polars() if desired).
-    """
-    if _HAS_PANDAS:
-        _ensure_pandas()
-    targets = _to_pandas(targets)
-    reads = _to_pandas(reads)
-    # normalize targets to seq list
-    if _HAS_PANDAS and hasattr(targets, "iloc"):
-        if len(getattr(targets, "shape", (0,))) > 1 and targets.shape[1] > 0:  # df
-            tseqs = targets.iloc[:, 1].astype(str).tolist() if targets.shape[1] > 1 else targets.iloc[:, 0].astype(str).tolist()
-            tnames = targets.iloc[:, 0].astype(str).tolist() if target_names is None and targets.shape[1] > 0 else (target_names or None)
-        else:
-            tseqs = targets.astype(str).tolist()
-            tnames = target_names
-    else:
-        tseqs = [str(x) for x in targets]
-        tnames = target_names
-    # reads
-    if _HAS_PANDAS and hasattr(reads, "iloc"):
-        rseqs = reads.astype(str).tolist() if hasattr(reads, "astype") else [str(x) for x in reads]
-        rids = read_ids or (reads.index.astype(str).tolist() if hasattr(reads, "index") else None)
-    else:
-        rseqs = [str(x) for x in reads]
-        rids = read_ids
-    if metric == "levenshtein":
-        res = assign(rseqs, tseqs, k=k, policy=policy)
-    elif metric == "hamming":
-        res = assign_hamming(rseqs, tseqs, k=k, policy=policy)
-    elif metric == "exact":
-        if k != 0:
-            raise ValueError("metric='exact' requires k=0")
-        res = assign_exact(rseqs, tseqs, policy=policy)
-    else:
-        raise ValueError("metric must be 'levenshtein', 'hamming', or 'exact'")
-    return results_to_dataframe(res, target_names=tnames, read_ids=rids)
+def assign_dataframe(reads: Any, targets: Any, k: int = 1, policy: str = "radius",
+                     metric: str = "levenshtein", read_ids=None, target_names=None, *,
+                     read_seq_col=None, read_id_col=None, target_seq_col=None, target_id_col=None):
+    """Assign lists, Series or named dataframes without lossy string coercion."""
+    from .dataframes import assign_dataframe as convert
+    return convert(reads, targets, k, policy, metric, read_ids, target_names,
+                   read_seq_col=read_seq_col, read_id_col=read_id_col,
+                   target_seq_col=target_seq_col, target_id_col=target_id_col)
 
 
 def _ensure_anndata() -> None:
@@ -1067,155 +992,30 @@ def _ensure_anndata() -> None:
     _ensure_pandas()
 
 
-def counts_tsv_to_anndata(
-    counts_path: str | Path,
-    *,
-    sample_cols: list[str] | None = None,
-    var_cols: list[str] = ("target_id", "target_seq", "gene"),
-) -> Any:
-    """Load a DotMatch counts TSV (mageck or dotmatch format) into an AnnData object.
+def counts_tsv_to_anndata(counts_path: str | Path, *, sample_cols=None,
+                         var_cols=("target_id", "target_seq", "gene")):
+    """Load raw integer counts as sparse samples-by-targets AnnData.
 
-    The resulting AnnData has:
-    - X: counts (cells/samples x features) as sparse or dense
-    - var: feature metadata (target_id, seq, gene if present)
-    - obs: samples/cells
-    Useful bridge after running `dotmatch count --format mageck ...` or the Python CLI.
+    sample_cols selects source column names in the requested order. Detailed
+    DotMatch output uses only *_count_total columns by default. Missing values,
+    fractional/negative counts and overflowing integers raise explicit errors.
     """
-    _ensure_anndata()
-    _ensure_pandas()
-    path = Path(counts_path)
-    # Reuse the robust parser from cli if possible, else simple pandas read
-    try:
-        # Try to use internal if exposed, else fall back
-        from . import cli as _cli  # type: ignore
-        counts_dict = _cli._read_crispr_count_matrix(str(path))  # may be private
-        # Reconstruct simple matrix
-        guides = counts_dict.get("guides", [])
-        samples = counts_dict.get("samples", [])
-        data = []
-        for g in guides:
-            row = [g["counts"].get(s, 0) for s in samples]
-            data.append(row)
-        X = pd.DataFrame(data, index=[g["id"] for g in guides], columns=samples).T
-        var_df = pd.DataFrame(
-            [{"target_id": g["id"], "gene": g.get("gene", "")} for g in guides]
-        ).set_index("target_id")
-    except Exception:
-        # Simple fallback: read tsv, assume first cols are id/gene, rest numeric samples
-        df = pd.read_csv(path, sep="\t")
-        # Try to detect id col
-        id_col = None
-        for c in ("target_id", "guide", "id", "feature_id", df.columns[0]):
-            if c in df.columns:
-                id_col = c
-                break
-        numeric = df.select_dtypes(include="number")
-        if numeric.shape[1] == 0:
-            numeric = df.iloc[:, 2:] if df.shape[1] > 2 else df.iloc[:, 1:]
-        X = numeric.T
-        X.columns = df[id_col].astype(str).values if id_col else [f"f{i}" for i in range(X.shape[1])]
-        var_df = pd.DataFrame(index=X.columns)
-        for c in var_cols:
-            if c in df.columns and c != id_col:
-                var_df[c] = df.set_index(id_col)[c].reindex(X.columns).values if id_col else None
-    adata = ad.AnnData(X=X.values if hasattr(X, "values") else X)
-    adata.var = var_df if len(var_df) else pd.DataFrame(index=X.columns)
-    adata.obs = pd.DataFrame(index=X.index.astype(str))
-    adata.var_names = X.columns.astype(str)
-    adata.obs_names = X.index.astype(str)
-    return adata
+    from .dataframes import counts_tsv_to_anndata as convert
+    return convert(counts_path, sample_cols=sample_cols, var_cols=var_cols)
 
 
-def assignments_to_anndata(
-    assignments: Any,
-    *,
-    cell_col: str = "cell_barcode",
-    feature_col: str = "target_name",
-    status_col: str | None = None,
-    count_unique_only: bool = True,
-    include_ambiguous_per_cell: bool = False,
-) -> Any:
-    """Build a cells x features count AnnData from a per-read assignments table (pandas/polars DF or path to assignments.tsv).
+def assignments_to_anndata(assignments: Any, *, cell_col="cell_barcode", feature_col="target_name",
+                           status_col=None, count_unique_only=True, include_ambiguous_per_cell=False,
+                           cell_names=None, feature_names=None):
+    """Count uniquely assigned observations in a sparse cell-by-feature matrix.
 
-    This is useful for 10x-style feature barcode or guide capture / perturb-seq where you have
-    pre-extracted cell barcodes + the feature/guide window sequence, ran assignment (via CLI `dotmatch count --assignments` or Python `assign_dataframe`),
-    and now want a count matrix in AnnData form for scanpy/pertpy/etc. downstream analysis.
-
-    By default (count_unique_only=True) only status==unique reads contribute to the count matrix.
-    This preserves DotMatch's core scientific contract: ambiguous reads are never silently assigned.
-
-    ``status_col`` defaults to ``status_name`` or ``status`` when either is
-    present. Text outcomes (``unique``/``ambiguous``) and native numeric status
-    values are both accepted.
-
-    If your assignments came from the CLI, provide an explicit cell column from
-    the upstream workflow rather than inferring it from a read identifier.
+    Cell labels must be explicit; they are never inferred from read IDs. Keep
+    all observed cells, including those with no unique assignments. Optional
+    cell_names/feature_names fix order and retain zero-count cells and features.
+    No UMI deduplication or biological cell/perturbation calling is performed.
     """
-    _ensure_anndata()
-    _ensure_pandas()
-    if isinstance(assignments, (str, Path)):
-        df = pd.read_csv(assignments, sep="\t")
-    else:
-        df = _to_pandas(assignments)
-    if cell_col not in df.columns:
-        # heuristic: try common names or assume first col or read_id contains it
-        for cand in ("cell_barcode", "cell", "barcode", "CB", "cell_id", "barcode_id"):
-            if cand in df.columns:
-                cell_col = cand
-                break
-        else:
-            if "read_id" in df.columns:
-                # naive; real pipelines pre-extract or use proper CB from 10x R1
-                df[cell_col] = df["read_id"].astype(str).str.split("_").str[0]
-            else:
-                raise ValueError(f"Could not find cell column '{cell_col}'; pass cell_col= or pre-populate the DF")
-    if feature_col not in df.columns:
-        for cand in ("target_name", "target_id", "feature", "guide", "id", "target"):
-            if cand in df.columns:
-                feature_col = cand
-                break
-        else:
-            feature_col = "target_index"  # fallback
-
-    # Always compute per-cell stats for QC/accuracy visibility. The native API
-    # has historically emitted integer status values while table artifacts use
-    # the readable names, so accept both forms without silently dropping rows.
-    if status_col is None:
-        if "status_name" in df.columns:
-            status_col = "status_name"
-        elif "status" in df.columns:
-            status_col = "status"
-        else:
-            raise ValueError("Could not find assignment status column; pass status_col=")
-    if status_col not in df.columns:
-        raise ValueError(f"Could not find status column '{status_col}'")
-    statuses = df[status_col].astype(str).str.strip().str.lower()
-    unique_mask = statuses.isin(["unique", "1", "1.0"])
-    ambig_mask = statuses.isin(["ambiguous", "2", "2.0"])
-
-    if count_unique_only:
-        df_unique = df[unique_mask]
-    else:
-        df_unique = df[unique_mask]  # still only uniques for matrix
-
-    # aggregate unique counts
-    grp = df_unique.groupby([cell_col, feature_col]).size().reset_index(name="count")
-    pivot = grp.pivot(index=cell_col, columns=feature_col, values="count").fillna(0).astype(int)
-
-    adata = ad.AnnData(X=pivot.values)
-    adata.obs = pd.DataFrame(index=pivot.index.astype(str))
-    adata.var = pd.DataFrame(index=pivot.columns.astype(str))
-    adata.var_names = pivot.columns.astype(str)
-    adata.obs_names = pivot.index.astype(str)
-    adata.layers["counts"] = adata.X.copy()
-
-    if include_ambiguous_per_cell:
-        ambig_counts = df[ambig_mask].groupby(cell_col).size()
-        adata.obs["ambiguous_count"] = adata.obs_names.map(ambig_counts).fillna(0).astype(int)
-        adata.obs["unique_count"] = adata.obs_names.map(
-            df_unique.groupby(cell_col).size()
-        ).fillna(0).astype(int)
-
-    # Reproducibility / scientific metadata (policy, k etc. can be joined from summary if user passes more context)
-    adata.uns["dotmatch"] = {"source": "assignments_to_anndata", "unique_only": count_unique_only}
-    return adata
+    from .dataframes import assignments_to_anndata as convert
+    return convert(assignments, cell_col=cell_col, feature_col=feature_col,
+                   status_col=status_col, count_unique_only=count_unique_only,
+                   include_ambiguous_per_cell=include_ambiguous_per_cell,
+                   cell_names=cell_names, feature_names=feature_names)

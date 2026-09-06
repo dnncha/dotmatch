@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <pthread.h>
 #include <errno.h>
 #include <stdint.h>
@@ -498,88 +499,7 @@ static int find_column(char **fields, size_t n, const char *a, const char *b, co
     return -1;
 }
 
-static int read_target_table(const char *path, seq_table *table) {
-    FILE *fp = fopen(path, "r");
-    if (fp == NULL) return -1;
-
-    char buf[16384];
-    int id_col = 0;
-    int seq_col = 1;
-    int gene_col = 2;
-    int have_header = 0;
-    int first_data = 1;
-    size_t row = 0;
-    while (fgets(buf, sizeof(buf), fp) != NULL) {
-        trim_line(buf);
-        if (buf[0] == '\0' || buf[0] == '#') continue;
-
-        char delim = strchr(buf, ',') != NULL && strchr(buf, '\t') == NULL ? ',' : '\t';
-        char *fields[16];
-        size_t nf = split_fields(buf, delim, fields, 16);
-        if (first_data) {
-            int maybe_id = find_column(fields, nf, "id", "target_id", "barcode_id");
-            if (maybe_id < 0) maybe_id = find_column(fields, nf, "guide", "sgRNA", "sgrna");
-            if (maybe_id < 0) maybe_id = find_column(fields, nf, "sgRNAID", "sgrnaid", "guide_id");
-            if (maybe_id < 0) maybe_id = find_column(fields, nf, "sgRNA_ID", "sgrna_id", NULL);
-            int maybe_seq = find_column(fields, nf, "gRNA.sequence", "target_seq", "sequence");
-            if (maybe_seq < 0) maybe_seq = find_column(fields, nf, "bases", NULL, NULL);
-            if (maybe_seq < 0) maybe_seq = find_column(fields, nf, "Seq", "seq", "barcode_seq");
-            if (maybe_seq < 0) maybe_seq = find_column(fields, nf, "guide_seq", "sgRNA.sequence", "sgrna_sequence");
-            if (maybe_seq < 0) maybe_seq = find_column(fields, nf, "sgRNA_seq", "guide_sequence", "GuideSequence");
-            int maybe_gene = find_column(fields, nf, "Gene", "gene", "gene_symbol");
-            if (maybe_gene < 0) maybe_gene = find_column(fields, nf, "gene.symbol", "target_gene", NULL);
-            if (maybe_id >= 0 && maybe_seq >= 0) {
-                id_col = maybe_id;
-                seq_col = maybe_seq;
-                gene_col = maybe_gene;
-                have_header = 1;
-                first_data = 0;
-                continue;
-            }
-        }
-        first_data = 0;
-
-        const char *id = NULL;
-        const char *seq = NULL;
-        const char *gene = "";
-        char id_buf[32];
-        if (nf == 1) {
-            int n = snprintf(id_buf, sizeof(id_buf), "%zu", row);
-            if (n < 0 || (size_t)n >= sizeof(id_buf)) {
-                fclose(fp);
-                return -1;
-            }
-            id = id_buf;
-            seq = fields[0];
-        } else {
-            if ((size_t)id_col >= nf || (size_t)seq_col >= nf) {
-                fclose(fp);
-                return -1;
-            }
-            id = fields[id_col];
-            seq = fields[seq_col];
-            if (have_header && gene_col >= 0 && (size_t)gene_col < nf) gene = fields[gene_col];
-            if (!have_header && nf > 2) gene = fields[2];
-        }
-        if (id[0] == '\0' || seq[0] == '\0') {
-            fprintf(stderr, "%s:%zu: target ID and sequence must be non-empty\n", path, row + 1);
-            fclose(fp);
-            return -1;
-        }
-        if (push_record_gene(table, id, strlen(id), seq, strlen(seq), gene, strlen(gene)) != 0) {
-            fclose(fp);
-            return -1;
-        }
-        ++row;
-    }
-
-    if (ferror(fp)) {
-        fclose(fp);
-        return -1;
-    }
-    fclose(fp);
-    return table->count == 0 ? -1 : 0;
-}
+#include "target_table.h"
 
 static int run_batch(const char *argv0, int argc, char **argv, const char *mode) {
     if (argc != 5 && argc != 7) {

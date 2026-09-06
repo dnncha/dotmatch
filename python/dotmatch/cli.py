@@ -105,26 +105,9 @@ def _looks_like_header(cols: Sequence[str]) -> bool:
 
 
 def _iter_fastq(path: str | Path) -> Iterator[ReadRecord]:
-    with _open_text(path) as fh:
-        while True:
-            header = fh.readline()
-            if not header:
-                return
-            seq = fh.readline()
-            plus = fh.readline()
-            qual = fh.readline()
-            if not seq or not plus or not qual:
-                raise ValueError("truncated FASTQ record")
-            header = header.rstrip("\n\r")
-            seq = seq.rstrip("\n\r").upper()
-            plus = plus.rstrip("\n\r")
-            qual = qual.rstrip("\n\r")
-            if not header.startswith("@") or not plus.startswith("+"):
-                raise ValueError("invalid FASTQ record")
-            if len(seq) != len(qual):
-                raise ValueError("invalid FASTQ record: sequence and quality lengths differ")
-            read_id = header[1:].split()[0]
-            yield ReadRecord(read_id=read_id, seq=seq, qual=qual)
+    from .fastq_io import iter_fastq
+    for record in iter_fastq(path):
+        yield ReadRecord(record.read_id, record.seq, record.qual)
 
 
 def _status_name(status: int) -> str:
@@ -1817,55 +1800,13 @@ def _add_crispr_qc_args(parser: argparse.ArgumentParser) -> None:
 
 
 def _read_crispr_count_matrix(path: str | Path) -> dict[str, object]:
-    with _open_text(path) as fh:
-        reader = csv.DictReader(fh, delimiter="\t")
-        if reader.fieldnames is None or len(reader.fieldnames) < 3:
-            raise ValueError("count matrix must have guide, gene, and at least one sample column")
-        if len(set(reader.fieldnames)) != len(reader.fieldnames):
-            raise ValueError("count matrix columns must be unique")
-        guide_col = reader.fieldnames[0]
-        gene_col = reader.fieldnames[1]
-        sample_cols = reader.fieldnames[2:]
-        guides: list[dict[str, object]] = []
-        sample_counts = {sample: [] for sample in sample_cols}
-        seen_guides: set[str] = set()
-        for row in reader:
-            guide_id = str(row.get(guide_col, "")).strip()
-            gene = str(row.get(gene_col, "")).strip()
-            if not guide_id:
-                raise ValueError("count matrix contains an empty guide id")
-            if guide_id in seen_guides:
-                raise ValueError(f"count matrix contains duplicate guide id: {guide_id}")
-            seen_guides.add(guide_id)
-            guide_counts: dict[str, int] = {}
-            for sample in sample_cols:
-                value = _parse_count_value(str(row.get(sample, "0") or "0"), guide_id, sample)
-                if value < 0:
-                    raise ValueError(f"negative count for {guide_id}/{sample}")
-                guide_counts[sample] = value
-                sample_counts[sample].append(value)
-            guides.append({"id": guide_id, "gene": gene, "counts": guide_counts})
-    if not guides:
-        raise ValueError("count matrix contains no guides")
-    return {
-        "guide_col": guide_col,
-        "gene_col": gene_col,
-        "samples": sample_cols,
-        "guides": guides,
-        "sample_counts": sample_counts,
-    }
+    from .count_io import read_crispr_count_matrix
+    return read_crispr_count_matrix(path)
 
 
 def _parse_count_value(text: str, guide_id: str, sample: str) -> int:
-    try:
-        numeric = float(text)
-    except ValueError as exc:
-        raise ValueError(f"non-numeric count for {guide_id}/{sample}") from exc
-    if not math.isfinite(numeric):
-        raise ValueError(f"non-finite count for {guide_id}/{sample}")
-    if not numeric.is_integer():
-        raise ValueError(f"non-integer count for {guide_id}/{sample}")
-    return int(numeric)
+    from .count_io import parse_count_value
+    return parse_count_value(text, guide_id, sample)
 
 
 def _read_sample_qc(path: str | Path) -> dict[str, dict[str, float | str]]:

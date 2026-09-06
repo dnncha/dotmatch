@@ -8,21 +8,18 @@ from typing import Sequence
 
 def native_cli_candidates() -> list[Path]:
     env = os.environ.get("DOTMATCH_NATIVE_CLI")
-    candidates = [Path(env)] if env else []
+    if env:
+        return [Path(env).expanduser().resolve()]
     here = Path(__file__).resolve()
-    candidates.extend(
-        [
-            here.parent / "dotmatch-native",
-            here.parents[2] / "dotmatch",
-            Path.cwd() / "dotmatch",
-        ]
-    )
+    candidates = [here.parent / "dotmatch-native"]
+    if here.parent.name == "dotmatch" and here.parent.parent.name == "python":
+        candidates.append(here.parents[2] / "dotmatch")
     return candidates
 
 
 def find_native_cli() -> Path:
     for path in native_cli_candidates():
-        if path.exists() and os.access(path, os.X_OK):
+        if path.is_file() and os.access(path, os.X_OK):
             return path
     searched = ", ".join(str(path) for path in native_cli_candidates())
     raise FileNotFoundError(

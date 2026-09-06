@@ -118,6 +118,7 @@ usability-comparison
 :caption: APIs and integration
 
 streaming-api
+python-dataframes
 schemas
 workbench
 bioinformatics-evaluation
