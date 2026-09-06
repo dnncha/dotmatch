@@ -1,0 +1,75 @@
+name: Verify and publish EditWitness 0.2.0a2
+on:
+  push:
+    branches: [editwitness/release-a2-ci]
+permissions:
+  contents: read
+concurrency:
+  group: editwitness-isolated-publication
+  cancel-in-progress: false
+jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+    with:
+      checkout_ref: b37729abd17b7a7d659851187b19aeb24c1ecd0d
+    permissions:
+      contents: read
+  publish:
+    needs: verify
+    if: github.repository == 'dnncha/dotmatch' && github.ref == 'refs/heads/editwitness/release-a2-ci'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: b37729abd17b7a7d659851187b19aeb24c1ecd0d
+          persist-credentials: false
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          name: editwitness-distributions
+          path: dist
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          name: editwitness-release-evidence
+          path: release-support
+      - name: Validate tested artifacts and publish a non-latest alpha
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TESTED_SHA: b37729abd17b7a7d659851187b19aeb24c1ecd0d
+        shell: bash
+        run: |
+          python scripts/release_manifest.py --check
+          python - <<'PY'
+          import hashlib, json, os, pathlib, subprocess, sys
+          sys.path.insert(0, 'scripts')
+          from publish_github import verify_artifacts
+          verify_artifacts(pathlib.Path('dist'), expected_version='0.2.0a2')
+          root = pathlib.Path('release-support')
+          assert {p.name for p in root.iterdir()} == {'release-evidence.json','editwitness-demo.html','EVIDENCE_SHA256SUMS'}
+          seen = set()
+          for line in (root/'EVIDENCE_SHA256SUMS').read_text().splitlines():
+              digest, name = line.split('  ')
+              assert name in {'release-evidence.json','editwitness-demo.html'} and name not in seen
+              assert hashlib.sha256((root/name).read_bytes()).hexdigest() == digest
+              seen.add(name)
+          assert len(seen) == 2
+          proof = json.loads((root/'release-evidence.json').read_text())
+          sha = os.environ['TESTED_SHA']
+          assert proof['source_commit'] == sha and proof['package_version'] == '0.2.0a2'
+          assert proof['software_self_test']['passed'] is True
+          assert proof['empirical_biological_validation'] is False
+          assert proof['ci_run_url'] == 'https://github.com/dnncha/dotmatch/actions/runs/'+os.environ['GITHUB_RUN_ID']
+          assert proof['source_inventory_sha256'] == hashlib.sha256(pathlib.Path('release-files.json').read_bytes()).hexdigest()
+          remote = json.loads(subprocess.check_output(['gh','api','repos/dnncha/dotmatch/git/ref/heads/editwitness/research-alpha-20260906']))
+          assert remote['object']['sha'] == sha, 'source branch moved after verification'
+          tag = 'editwitness-v0.2.0a2'
+          existing = subprocess.run(['gh','api','repos/dnncha/dotmatch/git/ref/tags/'+tag], capture_output=True)
+          assert existing.returncode != 0, 'refusing to overwrite an existing tag'
+          assert '404' in existing.stderr.decode(), 'tag lookup failed unexpectedly'
+          PY
+          gh release create editwitness-v0.2.0a2 dist/* release-support/* \
+            --repo dnncha/dotmatch --target "$TESTED_SHA" --draft --prerelease --latest=false \
+            --title "EditWitness 0.2.0a2 — research alpha (independent package)" --notes-file RELEASE_NOTES.md
+          gh release edit editwitness-v0.2.0a2 --repo dnncha/dotmatch --draft=false --latest=false
