@@ -1,0 +1,64 @@
+name: EditWitness compact read evidence
+on:
+  push:
+    branches: [editwitness/empirical-audit-20260906]
+    paths: [.github/workflows/editwitness-compact-read-evidence.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  compact-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Wait for and retrieve the six full-read evidence artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run watch 34028249467 --repo dnncha/dotmatch --exit-status || true
+          mkdir -p full compact
+          gh api repos/dnncha/dotmatch/actions/runs/34028249467/artifacts --paginate > compact/source_artifacts.json
+          gh run download 34028249467 --repo dnncha/dotmatch --pattern 'editwitness-paired-reads-*' --dir full
+      - name: Validate all original hashes before omitting only candidate FASTQ from compact copy
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,json,shutil
+          source=Path('full');dest=Path('compact');summaries=[]
+          for folder in sorted(source.iterdir()):
+              if not folder.is_dir():continue
+              receipt=json.loads((folder/'receipt.json').read_text())
+              run=receipt['run'];target=dest/run;target.mkdir()
+              validated={}
+              for line in (folder/'SHA256SUMS').read_text().splitlines():
+                  expected,name=line.split('  ',1)
+                  if Path(name).name!=name:raise ValueError('unexpected nested source path')
+                  h=hashlib.sha256()
+                  with (folder/name).open('rb') as f:
+                      while block:=f.read(8388608):h.update(block)
+                  if h.hexdigest()!=expected:raise ValueError('source checksum mismatch: '+run+'/'+name)
+                  validated[name]=expected
+              omitted=[]
+              for file in folder.iterdir():
+                  if file.name=='target_candidates.fastq.gz':
+                      omitted.append({'name':file.name,'bytes':file.stat().st_size,'sha256':validated[file.name],
+                                      'hash_verified_on_runner':True,'reason':'omit sequence duplication from compact audit; original full artifact retained'})
+                  elif file.is_file():shutil.copy2(file,target/file.name)
+              (target/'compact_manifest.json').write_text(json.dumps({'run':run,'source_workflow_run':34028249467,
+                 'source_status':receipt['status'],'omitted_files':omitted,'all_source_file_hashes_verified':True},indent=2))
+              summaries.append({'run':run,'status':receipt['status'],'reads':receipt.get('reads_processed'),
+                                'candidates':receipt.get('target_candidates'),'omitted_bytes':sum(x['bytes'] for x in omitted)})
+          if len(summaries)!=6:raise ValueError('expected six full-read artifacts, got '+str(len(summaries)))
+          (dest/'compact_summary.json').write_text(json.dumps(summaries,indent=2))
+          print(json.dumps(summaries,indent=2))
+          PY
+      - name: Preserve compact evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: editwitness-six-run-compact-evidence
+          path: compact/
+          retention-days: 30
+          compression-level: 0
+          if-no-files-found: error
