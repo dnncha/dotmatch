@@ -117,8 +117,24 @@ class DeletionScan(Contract):
         return self
 
 
+class GenerationProvenance(Contract):
+    method: Literal["reference-deletion-grid-v1"] = "reference-deletion-grid-v1"
+    source_manifest_sha256: str
+    grid: DeletionScan
+    enumerated_deletions: int
+    added_alleles: int
+    duplicate_local_sequences: int
+    paired_with_expected_allele: str
+    caveat: str
+
+
 class Manifest(Contract):
-    schema_version: Literal["1.0"] = "1.0"
+    schema_version: Literal["1.0", "1.1"] = "1.1"
+    # Omission retains the historical response model. New CLI examples select v2 explicitly.
+    observation_model: Literal["original-sites-presence-v1", "exact-local-sites-presence-v2"] = (
+        "original-sites-presence-v1"
+    )
+    generation: GenerationProvenance | None = None
     coordinate_system: Literal["0-based-half-open"] = "0-based-half-open"
     reference: Reference
     alleles: Items[Allele] = Field(min_length=1, max_length=128)
@@ -184,14 +200,27 @@ class Notice(Contract):
     related_ids: Items[str] = ()
 
 
+class ExactProduct(Contract):
+    """One modeled inward-facing F/R product on an edited local sequence."""
+    start: int = Field(ge=0)
+    end: int = Field(gt=0)
+    orientation: Literal["forward", "reverse"]
+    product_length: int = Field(gt=0)
+    reads: Items[str]
+    signal_id: str
+
+
 class AlleleObservation(Contract):
     allele_id: str
     assay_id: str
-    status: Literal["potentially_observable", "original_binding_site_disrupted", "outside_product_bounds"]
+    status: Literal["potentially_observable", "original_binding_site_disrupted", "outside_product_bounds", "no_exact_local_product"]
     reason: str
     product_length: int | None = None
     reads: Items[str] = ()
     signal_id: str | None = None
+    products: Items[ExactProduct] = ()
+    inward_exact_pairs: int = 0
+    products_excluded_by_bounds: int = 0
 
 
 class HypothesisObservation(Contract):
@@ -204,6 +233,8 @@ class HypothesisAssessment(Contract):
     hypothesis_id: str
     alleles: Items[str]
     equivalent_to_expected: bool
+    same_local_genotype_as_expected: bool = False
+    representative_hypothesis: str
     distinguishing_existing_assays: Items[str]
 
 
@@ -239,7 +270,7 @@ class ReferenceSummary(Contract):
 
 
 class Analysis(Contract):
-    schema_version: Literal["1.0"] = "1.0"
+    schema_version: Literal["1.1"] = "1.1"
     kind: Literal["editwitness.analysis"] = "editwitness.analysis"
     package_version: str
     model_version: str
@@ -248,7 +279,10 @@ class Analysis(Contract):
     validation_status: Literal["software-tested; not empirically validated"] = (
         "software-tested; not empirically validated"
     )
-    conclusion: Literal["ambiguity_demonstrated", "distinguishable_only_within_declared_model"]
+    conclusion: Literal["ambiguity_demonstrated", "distinguishable_only_within_declared_model", "no_distinct_alternatives", "baseline_uninformative"]
+    distinct_alternatives: int
+    alleles: Items[Allele]
+    generation: GenerationProvenance | None = None
     expected_hypothesis: str
     expected_alleles: Items[str]
     reference: ReferenceSummary
@@ -278,7 +312,7 @@ class ScanExample(Contract):
 
 
 class ScanResult(Contract):
-    schema_version: Literal["1.0"] = "1.0"
+    schema_version: Literal["1.1"] = "1.1"
     kind: Literal["editwitness.deletion_scan"] = "editwitness.deletion_scan"
     package_version: str
     model_version: str
@@ -290,3 +324,10 @@ class ScanResult(Contract):
     assays: Items[ScanAssayCounts]
     blind_examples: Items[ScanExample]
     caveat: str
+
+
+def validated_manifest(manifest: Manifest) -> Manifest:
+    """Recheck public API input, including models made with unchecked Pydantic helpers."""
+    if not isinstance(manifest, Manifest):
+        raise TypeError("expected a Manifest; use Manifest.model_validate for dictionaries")
+    return Manifest.model_validate(manifest.model_dump(mode="python"))

@@ -12,7 +12,9 @@ Always run `editwitness validate` or construct `Manifest` through Pydantic.
 
 | Field | Meaning |
 |---|---|
-| `schema_version` | `1.0` (also the default if omitted). |
+| `schema_version` | `1.0` and `1.1` inputs are accepted; the current default is `1.1`. |
+| `observation_model` | `original-sites-presence-v1` if omitted; select `exact-local-sites-presence-v2` explicitly for edited-sequence rematching. |
+| `generation` | Optional declared deletion-generation provenance; not an authenticated attestation. |
 | `coordinate_system` | `0-based-half-open` (default; no automatic coordinate conversion). |
 | `reference` | Name, uppercase A/C/G/T local sequence, optional assembly/contig/genomic start, synthetic flag. |
 | `alleles` | Unique IDs, optional descriptions, sorted local replacements. |
@@ -66,8 +68,8 @@ end**, not nominal sequencer cycle count. `full_insert` forbids `read_bases`.
 
 ## Output families
 
-`editwitness.analysis` contains the reference digest, assays, per-allele
-observations, per-hypothesis signatures, comparisons, witnesses, candidate-panel
+Schema 1.1 `editwitness.analysis` contains full allele edit definitions, a distinct-alternative count, generation provenance, the reference digest, assays, per-allele
+observations (including every retained exact product), per-hypothesis signatures, canonical genotype representatives, comparisons, witnesses, candidate-panel
 plan, assumptions, notices, model version and checksums.
 
 `editwitness.deletion_scan` contains the explicit grid, denominator, counts, up to
@@ -101,3 +103,27 @@ Each output file is atomic independently. An analysis JSON plus HTML report is
 not a multi-file transaction: a late filesystem error can leave one complete
 file and no other file. Use result checksums and exit status; do not treat a
 partial output set as completed work.
+
+## Product collections and aliases in 1.1
+
+For exact-local observations, `products` is authoritative. Each product has
+`start`, `end`, `orientation`, `product_length`, ordered `reads`, and `signal_id`.
+Coordinates are on the edited allele. A multi-product observation intentionally
+has no singular `signal_id` or `product_length`; null is not absence of signal.
+The engine unions signal identifiers across **all** retained products.
+
+`representative_hypothesis` identifies the canonical representative of a local
+genotype. `same_local_genotype_as_expected` distinguishes a renamed/reordered
+expected state from a distinct but observationally confounded alternative.
+`distinct_alternatives` counts canonical alternatives, not input labels. The
+`witness` command accepts an alias but identifies the requested and representative
+IDs explicitly.
+
+`editwitness.model_comparison` is a summary of analyses under two models, with
+analysis digests, shared/changed witnesses and panel changes. It is not itself a
+sealed full analysis. `expand-deletions` emits an ordinary full manifest with
+explicit alleles/hypotheses and declared provenance, not an opaque generator job.
+
+See [migration notes](migration-0.2.md) for result compatibility. Schema 1.0 or
+unknown-version results are rejected by the current verifier rather than migrated
+under an old digest. Use the package that produced an older result to verify it.

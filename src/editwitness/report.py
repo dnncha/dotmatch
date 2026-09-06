@@ -82,10 +82,17 @@ def render_report(result: Analysis) -> str:
         if n else "Only the supplied hypotheses were tested. This result does not establish complete validation "
                   "or exclude biological outcomes that were not modeled."
     )
+    if result.conclusion == "no_distinct_alternatives":
+        title = "No different genomic state was tested"
+        intro = "Only the expected local genotype, or aliases of it, was supplied. Add explicit alternatives before assessing assay discrimination."
+    elif result.conclusion == "baseline_uninformative":
+        title = "The baseline assays produce no expected signal"
+        intro = "Under this model, none of the existing assays positively observes the expectation. A real negative result also permits experimental failure."
     rows = []
-    for h in result.hypotheses:
+    for h in result.hypotheses[:100]:
         expected = h.hypothesis_id == result.expected_hypothesis
         status = "Expected hypothesis" if expected else (
+            "Same local genotype (alias)" if h.same_local_genotype_as_expected else
             "Same observations" if h.equivalent_to_expected else "Different observations"
         )
         css = "pill warn" if h.equivalent_to_expected and not expected else "pill"
@@ -95,25 +102,40 @@ def render_report(result: Analysis) -> str:
     witnesses = []
     for w in result.witnesses[:MAX_REPORT_WITNESSES]:
         evidence = []
+        edits = []
+        for allele in result.alleles:
+            if allele.id not in set(w.expected_alleles + w.alternative_alleles):
+                continue
+            descriptions = [f"[{event.start}, {event.end}) → " + (event.sequence[:160] or "deletion")
+                            + (" … (full replacement in JSON)" if len(event.sequence) > 160 else "")
+                            for event in allele.edits]
+            edits.append(f'<p class="small"><code>{e(allele.id)}</code>: '
+                         f'{e("; ".join(descriptions)) or "unchanged local reference"}</p>')
+
         ids = set(w.expected_alleles + w.alternative_alleles)
         for assay in result.assays:
             for observation in result.allele_observations:
                 if observation.assay_id != assay.id or observation.allele_id not in ids:
                     continue
+                read_groups = ([p.reads for p in observation.products[:8]]
+                               if observation.products else [observation.reads])
                 reads = "\n".join(
-                    f"read {i+1}: {read[:MAX_SEQUENCE_PREVIEW_BASES] or '(empty insert)'}"
+                    f"product {j+1}, read {i+1}: {read[:MAX_SEQUENCE_PREVIEW_BASES] or '(empty insert)'}"
                     + (f" … [preview: first {MAX_SEQUENCE_PREVIEW_BASES} of {len(read)} bases; full sequence in JSON]"
                        if len(read) > MAX_SEQUENCE_PREVIEW_BASES else "")
-                    for i, read in enumerate(observation.reads)
+                    for j, group in enumerate(read_groups) for i, read in enumerate(group)
                 )
+                if len(observation.products) > 8:
+                    reads += f"\n[First 8 of {len(observation.products)} products; full evidence in JSON.]"
                 evidence.append(
                     f'<h3>{e(assay.id)} / {e(observation.allele_id)}</h3>'
                     f'<p class="small">{e(observation.status)}. {e(observation.reason)}</p>'
-                    + (f'<pre>{e(reads)}</pre>' if observation.reads else '<p class="small">No modeled sequence signal.</p>')
+                    + (f'<pre>{e(reads)}</pre>' if reads else '<p class="small">No modeled sequence signal.</p>')
                 )
         witnesses.append(
             f'<article class="witness"><h3>{e(w.hypothesis_id)}</h3><p><code>{e(" + ".join(w.expected_alleles))}</code>'
             f' versus <code>{e(" + ".join(w.alternative_alleles))}</code></p><p>{e(w.explanation)}</p>'
+            f'<details><summary>Inspect the genomic alternatives</summary>{"".join(edits)}</details>'
             f'<p class="small">Separating candidates: {e(", ".join(w.resolving_candidate_assays)) or "None supplied"}.</p>'
             f'<details><summary>Inspect the sequence evidence</summary>{"".join(evidence)}</details></article>'
         )
@@ -150,7 +172,9 @@ def render_report(result: Analysis) -> str:
 <div class="metric"><strong>{len(result.plan.resolved_hypotheses)}</strong><span>separable with supplied candidates</span></div>
 <div class="metric"><strong>{unresolved}</strong><span>beyond the supplied candidates</span></div></div>
 <section><h2>What was compared</h2><p class="small">Reference: {e(result.reference.name)} · {result.reference.length:,} bp.
- Sequence presence only; no inference from read fractions or allele dosage.</p><div class="scroll">
+ Sequence presence only; no inference from read fractions or allele dosage.</p>
+<p class="small">{result.distinct_alternatives} different local-genotype alternatives. Model: <code>{e(result.model_version)}</code>.
+{'Showing the first 100 hypotheses; all are in JSON.' if len(result.hypotheses) > 100 else ''}</p><div class="scroll">
 <table><caption>Existing assays only. “Different observations” is conditional on the response model.</caption>
 <thead><tr><th>Hypothesis</th><th>Alleles</th><th>Comparison</th><th>Separating existing assays</th></tr></thead>
 <tbody>{''.join(rows)}</tbody></table></div></section>

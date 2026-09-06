@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "editwitness"
-version = "0.1.0a1"
+version = "0.2.0a1"
 description = "Explicit counterexamples and assay blind-spot analysis for CRISPR validation."
 readme = "README.md"
 requires-python = ">=3.11"

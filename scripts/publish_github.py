@@ -68,7 +68,7 @@ def main() -> int:
         command("git", "add", ".", cwd=work)
         command("git", "-c", f"user.name={user.get('name') or user['login']}", "-c",
                 f"user.email={user['id']}+{user['login']}@users.noreply.github.com", "commit", "-m",
-                "Release EditWitness 0.1.0a1 research alpha", cwd=work)
+                "Publish audited EditWitness research alpha", cwd=work)
         created = command("gh", "repo", "create", repo, "--public" if args.public else "--private",
                           "--description", "CRISPR assay observability: explicit counterexamples, candidate panels, local agent-friendly evidence.",
                           "--source", str(work), "--remote", "origin", "--push", cwd=work)

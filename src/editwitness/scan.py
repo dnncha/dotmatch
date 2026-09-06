@@ -3,10 +3,11 @@ from __future__ import annotations
 
 from ._version import MODEL_VERSION, __version__
 from .io import InputError, digest, seal
-from .models import Manifest, ScanAssayCounts, ScanExample, ScanResult
+from .models import Manifest, ScanAssayCounts, ScanExample, ScanResult, validated_manifest
 
 
 def scan_deletions(manifest: Manifest) -> ScanResult:
+    manifest = validated_manifest(manifest)
     grid = manifest.deletion_scan
     if grid is None:
         raise InputError("manifest has no deletion_scan configuration")

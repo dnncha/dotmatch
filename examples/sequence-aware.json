@@ -1,0 +1,178 @@
+{
+  "schema_version": "1.1",
+  "observation_model": "exact-local-sites-presence-v2",
+  "generation": null,
+  "coordinate_system": "0-based-half-open",
+  "reference": {
+    "name": "Synthetic 900-bp teaching locus (not biological data)",
+    "sequence": "GAGTACAGCCACAACCCGAATAGATAAATAACCAGTCAACTGGTACAGCGTCTTTTTAAATTATTGTCGTACCCAAAAAAGAAGGAGAGTTCGAGGCACCATTAACGACTTCAAACTTTAGGGACTCGCTTTATCACCTCCGTATAGTTTAAAAGAATCGCGGGAAGTTTGAATCGGCAGATGGTACGTAAGAGTGCTTTCCTTCTCTTTTCAGAGCACTACCCAAAGCCTTCCCGGTGGTAGGGGTATCAGACTCATAAGCAACCGATCTTCCCCCACGCCGGCGAATGAGTTTAGGCCAACTTCGTTAACCATGCATAACTACTGTTGCATGATCTGGATGCCACAAACGCAACCAGTAGGTAAGTCTGCCATTGGACTAGCTGAGCCAACCGTGTTCACTGAGTCTGGGTTTCTCCGGTTAAAATTTAGAACCCTCTGGAGAATACTTGAAGAATGAACGAGCGACTGGATCGAATGCTGATGCATGATACTACTGCCCGCCCAAGAACGGTACTCACTTTGTCCAGCTCTTTATTAATGCATTATCCGGCACTTATCGGTCCCCACAGATCCCGGATAGGTTACACCCGCAAGCACCCCTCGGTTCACGGCGCCCTCACATATTCTCGCGACTCACTCCCCGCTCTTGGCCGTACAGCGCGTAATCGACATAATCCTGTTACATAGACCCCTCCTGGATAAGAGACCGCCAGAATGCAACTTTTGTACGTCTTGGGAATACACAGTGTGAGGTCATCGACCATTTGTGGGCACTAAGAAGAGCTCACTTCTTTTATGAAGGCGGACAACACTTTGGACATTTTTGTTGAACGCCACATCTTGAAGCCAAGCTTGTGGGATGTGTCGCGAGGGGTAATATCTGCTATGAAAGCTTCC",
+    "assembly": null,
+    "contig": null,
+    "genomic_start": null,
+    "synthetic": true
+  },
+  "alleles": [
+    {
+      "id": "reference",
+      "description": "",
+      "edits": []
+    },
+    {
+      "id": "intended",
+      "description": "",
+      "edits": [
+        {
+          "start": 450,
+          "end": 451,
+          "sequence": "A"
+        }
+      ]
+    },
+    {
+      "id": "primer_site_deletion",
+      "description": "Hypothetical deletion removes the inner left-primer site",
+      "edits": [
+        {
+          "start": 180,
+          "end": 480,
+          "sequence": ""
+        }
+      ]
+    },
+    {
+      "id": "interior_deletion",
+      "description": "Hypothetical deletion within the paired-end read gap",
+      "edits": [
+        {
+          "start": 400,
+          "end": 500,
+          "sequence": ""
+        }
+      ]
+    },
+    {
+      "id": "window_deleted",
+      "description": "Hypothetical deletion of the entire supplied reference window, not a claim about a whole chromosome",
+      "edits": [
+        {
+          "start": 0,
+          "end": 900,
+          "sequence": ""
+        }
+      ]
+    }
+  ],
+  "hypotheses": [
+    {
+      "id": "intended_biallelic",
+      "description": "",
+      "alleles": [
+        "intended",
+        "intended"
+      ]
+    },
+    {
+      "id": "intended_reference",
+      "description": "",
+      "alleles": [
+        "intended",
+        "reference"
+      ]
+    },
+    {
+      "id": "hidden_primer_deletion",
+      "description": "",
+      "alleles": [
+        "intended",
+        "primer_site_deletion"
+      ]
+    },
+    {
+      "id": "hidden_window_deletion",
+      "description": "",
+      "alleles": [
+        "intended",
+        "window_deleted"
+      ]
+    },
+    {
+      "id": "interior_deletion",
+      "description": "",
+      "alleles": [
+        "intended",
+        "interior_deletion"
+      ]
+    }
+  ],
+  "expected_hypothesis": "intended_biallelic",
+  "assays": [
+    {
+      "id": "inner",
+      "description": "",
+      "left_primer": {
+        "start": 200,
+        "end": 220
+      },
+      "right_primer": {
+        "start": 680,
+        "end": 700
+      },
+      "left_oligo": null,
+      "right_oligo": null,
+      "readout": "full_insert",
+      "read_bases": null,
+      "min_product_bp": 1,
+      "max_product_bp": 1000,
+      "cost_units": 1
+    }
+  ],
+  "candidates": [
+    {
+      "id": "outer",
+      "description": "",
+      "left_primer": {
+        "start": 50,
+        "end": 70
+      },
+      "right_primer": {
+        "start": 830,
+        "end": 850
+      },
+      "left_oligo": null,
+      "right_oligo": null,
+      "readout": "full_insert",
+      "read_bases": null,
+      "min_product_bp": 1,
+      "max_product_bp": 1500,
+      "cost_units": 2
+    },
+    {
+      "id": "inner_repeat",
+      "description": "",
+      "left_primer": {
+        "start": 200,
+        "end": 220
+      },
+      "right_primer": {
+        "start": 680,
+        "end": 700
+      },
+      "left_oligo": null,
+      "right_oligo": null,
+      "readout": "full_insert",
+      "read_bases": null,
+      "min_product_bp": 1,
+      "max_product_bp": 1000,
+      "cost_units": 1
+    }
+  ],
+  "deletion_scan": {
+    "start_min": 0,
+    "start_max": 450,
+    "end_min": 451,
+    "end_max": 900,
+    "step": 75,
+    "min_length": 1,
+    "max_length": null
+  }
+}

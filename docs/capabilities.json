@@ -1,0 +1,90 @@
+{
+  "kind": "editwitness.capabilities",
+  "schema_version": "1.1",
+  "version": "0.2.0a1",
+  "default_for_omitted_model": "original-sites-presence-v1",
+  "models": [
+    "original-sites-presence-v1",
+    "exact-local-sites-presence-v2"
+  ],
+  "network_required": false,
+  "telemetry": false,
+  "commands": [
+    "demo",
+    "init",
+    "validate",
+    "analyze",
+    "witness",
+    "scan",
+    "schema",
+    "verify",
+    "doctor",
+    "capabilities",
+    "expand-deletions",
+    "compare-models"
+  ],
+  "input": "Strict JSON manifest; local 0-based half-open reference coordinates.",
+  "output": "JSON to stdout by default; structured JSON errors to stderr; no progress text on stdout.",
+  "exit_codes": {
+    "0": "completed (may demonstrate ambiguity)",
+    "2": "invalid input or usage",
+    "3": "I/O failure",
+    "4": "ambiguity with --fail-on-ambiguity",
+    "5": "integrity or replay mismatch"
+  },
+  "limits": {
+    "reference_bases": 20000,
+    "alleles": 128,
+    "hypotheses": 1000,
+    "existing_assays": 16,
+    "candidate_assays": 24,
+    "scan_grid_pairs": 500000,
+    "exact_planner_useful_candidates": 18,
+    "exact_site_matches": 512,
+    "exact_products_per_allele_assay": 128,
+    "exact_product_bases": 20000000,
+    "generation_endpoint_pairs": 5000
+  },
+  "supports": [
+    "explicit allele replacements",
+    "diploid clonal hypotheses",
+    "full-insert or post-trim paired-end sequence presence",
+    "counterexample witnesses",
+    "candidate-panel selection",
+    "streaming local-deletion geometry scan",
+    "both-orientation exact local primer rematching",
+    "bounded deletion-hypothesis generation",
+    "observation-model sensitivity comparison"
+  ],
+  "does_not_support": [
+    "raw-read analysis",
+    "probabilistic PCR",
+    "allele-fraction inference",
+    "empirical sensitivity",
+    "genome-wide primer specificity",
+    "clinical interpretation",
+    "mosaic samples",
+    "inversions or translocations",
+    "copy-number assay simulation"
+  ],
+  "command_contracts": {
+    "analyze": {
+      "input": "manifest path or -",
+      "output": "editwitness.analysis",
+      "compact": "editwitness.summary"
+    },
+    "expand-deletions": {
+      "input": "manifest with deletion_scan and homozygous expectation",
+      "output": "manifest JSON"
+    },
+    "compare-models": {
+      "input": "manifest",
+      "output": "editwitness.model_comparison"
+    },
+    "verify": {
+      "input": "full result and optional --manifest",
+      "output": "editwitness.integrity"
+    }
+  },
+  "agent_rule": "Never translate a successful process exit or absence of a declared counterexample into 'safe', 'validated' or 'biallelic confirmed'."
+}

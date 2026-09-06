@@ -52,7 +52,8 @@ def test_demo_stdin_validation_and_informational_commands():
         assert result.returncode == 0, result.stderr
         assert isinstance(json.loads(result.stdout), dict)
     assert "editwitness" in cli("--help").stdout
-    assert "0.1.0a1" in cli("--version").stdout
+    from editwitness import __version__
+    assert __version__ in cli("--version").stdout
 
 
 def test_witness_and_scan_commands():

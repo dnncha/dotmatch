@@ -1,71 +1,71 @@
 # Build and verification status
 
-Release: **0.1.0a1 research alpha**. Recorded 2026-09-05 UTC.
+Version: **0.2.0a1 research alpha**. Audit dated 2026-09-06.
 
-## Verified GitHub checks
+This is a self-audit and software verification record. Independent scientific
+review, an adjudicated biological benchmark and empirical assay validation have
+not been performed. Historical 0.1 evidence is retained in `docs/verification.json`
+and must not be used as proof for the changed 0.2 model.
 
-[Completed verification run](https://github.com/dnncha/dotmatch/actions/runs/33998897914)
+## Local checks for the audited implementation
 
-Verified source commit: `377c3bfafeb722bce3eac91d339dfec9d1028e68`.
-Final delivery documentation records this already-tested code; no scientific
-implementation or tests were changed after that run.
+The final covered suite passed **726 tests** on Linux/Python 3.13.5, Pydantic
+2.13.4 and pytest 9.0.2. Statement and branch totals, environment and command
+checks are recorded in `docs/verification-0.2.json`. Coverage is software execution
+coverage, not biological coverage or a probability that the implementation is correct.
 
-| Check | Observed result |
-|---|---|
-| Linux, macOS and Windows; Python 3.11 and 3.13 | All six test jobs passed. |
-| Test suite | 572 passed, including the covered run. |
-| Strict mypy check | Passed for `src/editwitness`. |
-| Source hygiene | Passed on all six matrix jobs; this is not Ruff. |
-| Schema snapshots | Passed on all six matrix jobs. |
-| Wheel and source builds | Passed on all six matrix jobs. |
-| Branch-aware coverage | 732/733 statements and 218/222 branches; 99.48% combined. |
-| Source inventory | Verified in the delivery job before running checks. |
+The schema snapshots and dependency-free syntax/source hygiene check passed.
+The latter is **not Ruff**. Strict mypy is configured as a remote gate; it was
+not available in the offline local environment and is not claimed as locally run.
 
-The initial CI attempt found a schema-registry type annotation and a Windows
-locale-dependent test read. Both were corrected before the passing run. Neither
-fix changes the observation model. Installed developer tools are not necessarily
-executed checks: Ruff was not run and is not claimed as passed.
+Both wheel and source distribution were built offline with setuptools. The
+installed-wheel check uses a fresh temporary environment outside the source tree
+with preinstalled dependencies, verifies the package import location, runs the
+bundled demo, analysis, full-sequence witness, HTML, model comparison, schema and
+result replay. Its observed result is recorded separately from build success.
 
-## Additional local checks
+The actual generated report was rendered in Chromium at 1440 and 390 pixels.
+Both had zero document-level horizontal overflow, no scripts and no page errors.
+Desktop and mobile screenshots were visually inspected.
 
-The implementation passed 572 local tests before the two portability fixes, plus
-a full branch-aware coverage run. The local environment was Linux x86_64,
-Python 3.13.5, Pydantic 2.13.4 and pytest 9.0.2. The remote covered run used
-Python 3.13.15, Pydantic 2.13.5, pytest 9.1.1 and coverage 7.16.0.
+## Remote and public-distribution evidence
 
-The wheel was installed outside the source tree, and the CLI, bundled demo,
-checksums and replay were exercised. Desktop and mobile HTML rendering was
-inspected in Chromium. These are software checks, not experimental validation.
+The intended public source is `dnncha/dotmatch:editwitness/public`. This is
+independent temporary hosting, **not a change to DotMatch main**. The publication
+workflow runs a nine-job OS/Python matrix (Linux, macOS, Windows; Python 3.11,
+3.13, 3.14), strict typing, coverage with a 95% combined floor, source inventory,
+schema and build checks, and installed-wheel smoke tests.
 
-Testing includes exhaustive small-event comparisons against an independent
-labeled-base sequence oracle, 400 seeded compound-edit cases, and 150 randomized
-small panel-selection problems compared with independent subset enumeration.
-It also covers malformed and oversized inputs, coordinate boundaries, original
-primer integrity, paired-end read gaps, output protection and HTML escaping.
+Configured jobs are not evidence of passing jobs. The public build writes
+`dist-public/publication.json` only after every required verification job passes;
+it records the tested source SHA and actual run URL. Its neighboring checksums
+identify the wheel, source archive and example evidence. A receipt is not an
+authenticated provenance attestation or biological validation. Check the run and
+exact commit before using a mutable branch in a reproducible workflow.
 
-## Measured computational benchmark
+A separate EditWitness-tagged GitHub prerelease may be attempted after the checks,
+but is not assumed to exist. The receipt records the actual outcome. GitHub
+repository permissions may prevent release/tag creation for a branch that changes
+workflows. Public source and versioned download assets do not imply a standalone
+repository, a PyPI release, a DOI or empirical validation.
 
-The local streaming scanner evaluated **325,250 valid deletions** from a grid of
-450,000 endpoint pairs in a median **0.135 seconds** over five warmed runs on this
-environment. The workload and measurements are in
-`benchmarks/2026-09-05-linux.json`. This is neither a comparison with another
-package nor biological sensitivity or whole-genome throughput.
+## Measured workload
 
-## Delivery and remaining gates
+`benchmarks/2026-09-06-exact-local.json` records seven warmed in-process runs of
+47 local alleles, 47 hypotheses, three assays and 78 retained products. The median
+was approximately 5.5 ms in this environment. It excludes process startup,
+hypothesis expansion and I/O. This is a synthetic computational measurement, not
+biological accuracy, a competitor comparison or a production throughput promise.
+The older geometry-only benchmark measures a different model and workload.
 
-The complete source is on the isolated GitHub branch
-`dnncha/dotmatch:editwitness/research-alpha-20260906`. **Do not merge this branch
-into DotMatch.** DotMatch main was not changed by this delivery.
+## Remaining distribution and scientific gates
 
-The standalone `dnncha/editwitness` repository has not been created: the connected
-GitHub tool cannot create repositories. With an already authenticated local
-GitHub CLI, `python scripts/publish_github.py --public` creates it from the
-checked source with fresh history. The publisher refuses an existing target.
-Its dry-run was checked; an actual new-repository publication was not performed.
+The connector can update existing repositories but cannot create
+`dnncha/editwitness`. That standalone repository and package-index publication
+remain unperformed unless an independently verified later record says otherwise.
+The checked `scripts/publish_github.py` can create fresh standalone history with
+an already authenticated maintainer CLI; it refuses an existing target.
 
-Not completed: PyPI/Bioconda publication, package namespace reservation, hosted
-documentation, a registered DOI, independent scientific review, an adjudicated
-biological benchmark, or laboratory adoption. No clinical suitability, safety
-certification or empirical assay accuracy is claimed.
-
-See `docs/continuation.md` and `roadmap.json` for bounded next tasks.
+Next: independent review of both response models, a benchmark with exact assay
+metadata and independent measurements, then a real caller adapter and facility
+pilots. See the audit, migration notes, continuation guide and machine roadmap.

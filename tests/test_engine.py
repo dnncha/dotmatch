@@ -51,7 +51,7 @@ def test_no_alternatives_never_means_validated(demo):
     data = demo.model_dump(mode="json")
     data["hypotheses"] = data["hypotheses"][:1]
     result = analyze(Manifest.model_validate(data))
-    assert result.conclusion == "distinguishable_only_within_declared_model"
+    assert result.conclusion == "no_distinct_alternatives"
     assert result.validation_status == "software-tested; not empirically validated"
     assert "completeness" in result.plan.note
 

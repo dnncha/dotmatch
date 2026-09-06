@@ -21,7 +21,8 @@ def source_files(root: Path) -> list[Path]:
         if not path.is_file():
             continue
         relative = path.relative_to(root)
-        if relative.as_posix() == ".github/workflows/bootstrap-editwitness.yml":
+        if relative.as_posix() in {".github/workflows/bootstrap-editwitness.yml",
+                                   ".github/workflows/public-editwitness.yml"}:
             continue  # Temporary transport-only workflow, never part of the standalone package.
         if any(part in {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
                or part.endswith(".egg-info") for part in relative.parts):
@@ -53,11 +54,11 @@ def main() -> int:
     target = root / "release-files.json"
     expected = release_manifest(root)
     if args.check:
-        if not target.is_file() or json.loads(target.read_text()) != expected:
+        if not target.is_file() or json.loads(target.read_text(encoding="utf-8")) != expected:
             parser.exit(1, "Source inventory differs; inspect changes before regenerating.\n")
         print("Source inventory verified.")
     else:
-        target.write_text(json.dumps(expected, indent=2, sort_keys=True) + "\n")
+        target.write_text(json.dumps(expected, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         print("Wrote release-files.json.")
     return 0
 

@@ -1,15 +1,21 @@
 # EditWitness
 
-> Local, explicit observability counterexamples for CRISPR validation assays.
-> Research alpha; software-tested, not empirically validated.
+Local CRISPR assay-observability research software for humans and agents.
+Package 0.2.0a1. Software-tested; not empirically biologically validated.
 
-## Start here
-- README.md: installation, synthetic example, supported scope.
-- docs/agent-guide.md: machine interface and interpretation rules.
-- docs/scientific-model.md: exact observation model and limitations.
-- docs/data-contract.md: coordinates, invariants, schema and outputs.
-- AGENTS.md: development invariants and continuation commands.
-- roadmap.json: machine-readable implementation and validation tasks.
-- BUILD_STATUS.md: checks actually performed on the delivered artifact.
+Start with `editwitness capabilities`, `editwitness schema manifest` and
+`editwitness demo`. New demos explicitly select exact-local-sites-presence-v2.
+Omitted model selection retains original-sites-presence-v1.
 
-This file is a navigation aid, not an assurance of automatic agent discovery.
+- README.md: purpose, installation, complete example.
+- docs/agent-guide.md: commands, errors, resource limits, scientific guardrails.
+- docs/capabilities.json: generated machine capability description.
+- docs/scientific-model.md: exact assumptions and exclusions.
+- docs/data-contract.md: coordinates, products, aliases, outputs.
+- docs/audit-0.2.md: audit findings, fixes, residual limitations.
+- docs/migration-0.2.md: input and result compatibility.
+- roadmap.json: next work and explicit acceptance criteria.
+
+No remote service, telemetry, API key or LLM is required. Full JSON contains
+bounded evidence. Compact output is a summary, not a full verification target.
+A successful command is not a claim that an edit is safe or biallelic.

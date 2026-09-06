@@ -19,6 +19,14 @@ production disruption/mapping helpers. Tests compare full-insert and paired-end
 observations, boundaries, empty inserts, and product-size eligibility. Randomized
 compound examples use a fixed seed.
 
+**Exact-product oracle.** A separate oracle reconstructs replacements by reverse
+list slicing and exhaustively searches substring pairs in both orientations. It
+does not call the production matching, reverse-complement, edit-reconstruction
+or interval-bound helpers. Tests include new/rescued sites, reverse products,
+multiple products, empty inserts, repeat limits, paired-end gaps and observational
+invariance under alternate edit representations. Canonical genotype aliases and
+unchecked public-API models have regression tests.
+
 **Panel optimality.** Small randomized set-cover instances are checked against an
 independent combinations-based enumeration. Ties, no candidates, unrecoverable
 alternatives, and the deliberately nonoptimal larger-candidate path are tested.

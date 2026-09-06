@@ -230,6 +230,55 @@
       "title": "Edit",
       "type": "object"
     },
+    "GenerationProvenance": {
+      "additionalProperties": false,
+      "properties": {
+        "method": {
+          "const": "reference-deletion-grid-v1",
+          "default": "reference-deletion-grid-v1",
+          "title": "Method",
+          "type": "string"
+        },
+        "source_manifest_sha256": {
+          "title": "Source Manifest Sha256",
+          "type": "string"
+        },
+        "grid": {
+          "$ref": "#/$defs/DeletionScan"
+        },
+        "enumerated_deletions": {
+          "title": "Enumerated Deletions",
+          "type": "integer"
+        },
+        "added_alleles": {
+          "title": "Added Alleles",
+          "type": "integer"
+        },
+        "duplicate_local_sequences": {
+          "title": "Duplicate Local Sequences",
+          "type": "integer"
+        },
+        "paired_with_expected_allele": {
+          "title": "Paired With Expected Allele",
+          "type": "string"
+        },
+        "caveat": {
+          "title": "Caveat",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_manifest_sha256",
+        "grid",
+        "enumerated_deletions",
+        "added_alleles",
+        "duplicate_local_sequences",
+        "paired_with_expected_allele",
+        "caveat"
+      ],
+      "title": "GenerationProvenance",
+      "type": "object"
+    },
     "Hypothesis": {
       "additionalProperties": false,
       "properties": {
@@ -360,10 +409,33 @@
   "additionalProperties": false,
   "properties": {
     "schema_version": {
-      "const": "1.0",
-      "default": "1.0",
+      "default": "1.1",
+      "enum": [
+        "1.0",
+        "1.1"
+      ],
       "title": "Schema Version",
       "type": "string"
+    },
+    "observation_model": {
+      "default": "original-sites-presence-v1",
+      "enum": [
+        "original-sites-presence-v1",
+        "exact-local-sites-presence-v2"
+      ],
+      "title": "Observation Model",
+      "type": "string"
+    },
+    "generation": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GenerationProvenance"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "coordinate_system": {
       "const": "0-based-half-open",
@@ -439,5 +511,5 @@
   "title": "Manifest",
   "type": "object",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:editwitness:schema:manifest:1.0"
+  "$id": "urn:editwitness:schema:manifest:1.1"
 }

@@ -54,5 +54,16 @@ unexpected integrity failure.
 6. Treat empirical validation as a separate scientific gate. Passing packaging
    and CI cannot satisfy it.
 
-The build workflow produces artifacts only. It does not contain a hidden
-publishing step or assume package-index credentials exist.
+The standalone build workflow produces artifacts only and does not assume
+package-index credentials. The separately named, temporary
+`public-editwitness.yml` workflow is explicitly authorized for public branch
+distribution: it verifies a checksummed source transport, restricts writes to
+`editwitness/public`, runs all gates and then records public artifacts and a
+publication receipt. A scoped prerelease attempt must use an EditWitness-prefixed
+tag, remain a prerelease, and never become DotMatch's latest release. A permission
+failure is reported rather than worked around with hidden tokens or altered tags.
+
+The transport-only workflows and compressed transport are excluded from the
+standalone source inventory. The default branch, DotMatch code and other releases
+must remain untouched. Public source, downloadable artifacts, a GitHub release
+and PyPI publication are four separate states; report each accurately.

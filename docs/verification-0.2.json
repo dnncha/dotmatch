@@ -1,0 +1,53 @@
+{
+  "version": "0.2.0a1",
+  "date": "2026-09-06",
+  "environment": {
+    "python": "3.13.5",
+    "pydantic": "2.13.4",
+    "pytest": "9.0.2",
+    "platform": "Linux-6.18.35-x86_64-with-glibc2.41"
+  },
+  "tests": {
+    "passed": 726,
+    "kind": "synthetic software verification; no empirical biological validation"
+  },
+  "coverage": {
+    "covered_lines": 986,
+    "num_statements": 992,
+    "percent_covered": 99.07834101382488,
+    "percent_covered_display": "99",
+    "missing_lines": 6,
+    "excluded_lines": 4,
+    "percent_statements_covered": 99.39516129032258,
+    "percent_statements_covered_display": "99",
+    "num_branches": 310,
+    "num_partial_branches": 6,
+    "covered_branches": 304,
+    "missing_branches": 6,
+    "percent_branches_covered": 98.06451612903226,
+    "percent_branches_covered_display": "98"
+  },
+  "schema_snapshots": "passed",
+  "source_hygiene": "passed; not Ruff",
+  "strict_mypy_local": "not available; remote gate configured",
+  "wheel_and_sdist_builds": "passed using offline setuptools backend",
+  "installed_wheel": "passed outside source tree with preinstalled dependencies",
+  "html_checks": [
+    {
+      "width": 1440,
+      "horizontal_overflow": false,
+      "script_elements": 0,
+      "page_errors": []
+    },
+    {
+      "width": 390,
+      "horizontal_overflow": false,
+      "script_elements": 0,
+      "page_errors": []
+    }
+  ],
+  "remote_ci": "consult dist-public/publication.json and the linked actual run; not established by this local record",
+  "biological_validation": "not performed",
+  "standalone_repository_creation": "not performed",
+  "pypi_publication": "not performed"
+}

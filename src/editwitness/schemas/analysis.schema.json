@@ -1,5 +1,37 @@
 {
   "$defs": {
+    "Allele": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Description",
+          "type": "string"
+        },
+        "edits": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Edit"
+          },
+          "maxItems": 64,
+          "title": "Edits",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "Allele",
+      "type": "object"
+    },
     "AlleleObservation": {
       "additionalProperties": false,
       "properties": {
@@ -15,7 +47,8 @@
           "enum": [
             "potentially_observable",
             "original_binding_site_disrupted",
-            "outside_product_bounds"
+            "outside_product_bounds",
+            "no_exact_local_product"
           ],
           "title": "Status",
           "type": "string"
@@ -55,6 +88,24 @@
           ],
           "default": null,
           "title": "Signal Id"
+        },
+        "products": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExactProduct"
+          },
+          "title": "Products",
+          "type": "array"
+        },
+        "inward_exact_pairs": {
+          "default": 0,
+          "title": "Inward Exact Pairs",
+          "type": "integer"
+        },
+        "products_excluded_by_bounds": {
+          "default": 0,
+          "title": "Products Excluded By Bounds",
+          "type": "integer"
         }
       },
       "required": [
@@ -176,6 +227,193 @@
       "title": "Assay",
       "type": "object"
     },
+    "DeletionScan": {
+      "additionalProperties": false,
+      "description": "Inclusive endpoint ranges, sampled with step, describing deletions [start,end).",
+      "properties": {
+        "start_min": {
+          "minimum": 0,
+          "title": "Start Min",
+          "type": "integer"
+        },
+        "start_max": {
+          "minimum": 0,
+          "title": "Start Max",
+          "type": "integer"
+        },
+        "end_min": {
+          "minimum": 1,
+          "title": "End Min",
+          "type": "integer"
+        },
+        "end_max": {
+          "minimum": 1,
+          "title": "End Max",
+          "type": "integer"
+        },
+        "step": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Step",
+          "type": "integer"
+        },
+        "min_length": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Min Length",
+          "type": "integer"
+        },
+        "max_length": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Length"
+        }
+      },
+      "required": [
+        "start_min",
+        "start_max",
+        "end_min",
+        "end_max"
+      ],
+      "title": "DeletionScan",
+      "type": "object"
+    },
+    "Edit": {
+      "additionalProperties": false,
+      "description": "Replace reference[start:end] with sequence; start == end is an insertion.",
+      "properties": {
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        },
+        "end": {
+          "minimum": 0,
+          "title": "End",
+          "type": "integer"
+        },
+        "sequence": {
+          "default": "",
+          "maxLength": 20000,
+          "pattern": "^[ACGT]*$",
+          "title": "Sequence",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "Edit",
+      "type": "object"
+    },
+    "ExactProduct": {
+      "additionalProperties": false,
+      "description": "One modeled inward-facing F/R product on an edited local sequence.",
+      "properties": {
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        },
+        "end": {
+          "exclusiveMinimum": 0,
+          "title": "End",
+          "type": "integer"
+        },
+        "orientation": {
+          "enum": [
+            "forward",
+            "reverse"
+          ],
+          "title": "Orientation",
+          "type": "string"
+        },
+        "product_length": {
+          "exclusiveMinimum": 0,
+          "title": "Product Length",
+          "type": "integer"
+        },
+        "reads": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reads",
+          "type": "array"
+        },
+        "signal_id": {
+          "title": "Signal Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start",
+        "end",
+        "orientation",
+        "product_length",
+        "reads",
+        "signal_id"
+      ],
+      "title": "ExactProduct",
+      "type": "object"
+    },
+    "GenerationProvenance": {
+      "additionalProperties": false,
+      "properties": {
+        "method": {
+          "const": "reference-deletion-grid-v1",
+          "default": "reference-deletion-grid-v1",
+          "title": "Method",
+          "type": "string"
+        },
+        "source_manifest_sha256": {
+          "title": "Source Manifest Sha256",
+          "type": "string"
+        },
+        "grid": {
+          "$ref": "#/$defs/DeletionScan"
+        },
+        "enumerated_deletions": {
+          "title": "Enumerated Deletions",
+          "type": "integer"
+        },
+        "added_alleles": {
+          "title": "Added Alleles",
+          "type": "integer"
+        },
+        "duplicate_local_sequences": {
+          "title": "Duplicate Local Sequences",
+          "type": "integer"
+        },
+        "paired_with_expected_allele": {
+          "title": "Paired With Expected Allele",
+          "type": "string"
+        },
+        "caveat": {
+          "title": "Caveat",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_manifest_sha256",
+        "grid",
+        "enumerated_deletions",
+        "added_alleles",
+        "duplicate_local_sequences",
+        "paired_with_expected_allele",
+        "caveat"
+      ],
+      "title": "GenerationProvenance",
+      "type": "object"
+    },
     "HypothesisAssessment": {
       "additionalProperties": false,
       "properties": {
@@ -194,6 +432,15 @@
           "title": "Equivalent To Expected",
           "type": "boolean"
         },
+        "same_local_genotype_as_expected": {
+          "default": false,
+          "title": "Same Local Genotype As Expected",
+          "type": "boolean"
+        },
+        "representative_hypothesis": {
+          "title": "Representative Hypothesis",
+          "type": "string"
+        },
         "distinguishing_existing_assays": {
           "items": {
             "type": "string"
@@ -206,6 +453,7 @@
         "hypothesis_id",
         "alleles",
         "equivalent_to_expected",
+        "representative_hypothesis",
         "distinguishing_existing_assays"
       ],
       "title": "HypothesisAssessment",
@@ -468,8 +716,8 @@
   "additionalProperties": false,
   "properties": {
     "schema_version": {
-      "const": "1.0",
-      "default": "1.0",
+      "const": "1.1",
+      "default": "1.1",
       "title": "Schema Version",
       "type": "string"
     },
@@ -505,10 +753,34 @@
     "conclusion": {
       "enum": [
         "ambiguity_demonstrated",
-        "distinguishable_only_within_declared_model"
+        "distinguishable_only_within_declared_model",
+        "no_distinct_alternatives",
+        "baseline_uninformative"
       ],
       "title": "Conclusion",
       "type": "string"
+    },
+    "distinct_alternatives": {
+      "title": "Distinct Alternatives",
+      "type": "integer"
+    },
+    "alleles": {
+      "items": {
+        "$ref": "#/$defs/Allele"
+      },
+      "title": "Alleles",
+      "type": "array"
+    },
+    "generation": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GenerationProvenance"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "expected_hypothesis": {
       "title": "Expected Hypothesis",
@@ -589,6 +861,8 @@
     "model_version",
     "manifest_sha256",
     "conclusion",
+    "distinct_alternatives",
+    "alleles",
     "expected_hypothesis",
     "expected_alleles",
     "reference",
@@ -605,5 +879,5 @@
   "title": "Analysis",
   "type": "object",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:editwitness:schema:analysis:1.0"
+  "$id": "urn:editwitness:schema:analysis:1.1"
 }

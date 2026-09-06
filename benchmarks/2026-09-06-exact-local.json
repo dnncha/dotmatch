@@ -1,0 +1,24 @@
+{
+  "version": "0.2.0a1",
+  "python": "3.13.5",
+  "platform": "Linux-6.18.35-x86_64-with-glibc2.41",
+  "model": "exact-local-sites-presence-v2",
+  "manifest_sha256": "35c98b922f936811ee93ec9d74315abd3c8d8cdb1ed542ca7390eac72002c74a",
+  "reference_bases": 900,
+  "alleles": 47,
+  "hypotheses": 47,
+  "assays": 3,
+  "exact_products": 78,
+  "seconds": [
+    0.008520163000184766,
+    0.005705907999981719,
+    0.005395248000013453,
+    0.0054966919999515085,
+    0.005602506000059293,
+    0.005354102999945098,
+    0.00475118500003191
+  ],
+  "median_seconds": 0.0054966919999515085,
+  "scope": "Seven warmed in-process analysis runs; excludes interpreter startup, expansion and file I/O.",
+  "caveat": "Synthetic computational workload; not sensitivity, validation, competitor comparison or a throughput guarantee."
+}

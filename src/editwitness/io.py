@@ -78,6 +78,8 @@ def verify_result(path: str | Path) -> Analysis | ScanResult:
         raise InputError("result must be a JSON object")
     result: Analysis | ScanResult
     kind = data.get("kind")
+    if kind in {"editwitness.analysis", "editwitness.deletion_scan"} and data.get("schema_version") != "1.1":
+        raise InputError("unsupported result schema version; use the producing package version to verify older evidence")
     if kind == "editwitness.analysis":
         result = Analysis.model_validate(data)
     elif kind == "editwitness.deletion_scan":

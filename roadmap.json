@@ -1,6 +1,6 @@
 {
   "format": "editwitness.roadmap.v1",
-  "package_version": "0.1.0a1",
+  "package_version": "0.2.0a1",
   "principle": "Advance scientific usefulness and independent adoption; do not manufacture validation.",
   "implemented": [
     "Strict local manifest and schemas",
@@ -10,7 +10,11 @@
     "Streaming deletion geometry",
     "Offline HTML/JSON, checksums and replay",
     "CLI, Python API, portable agent guidance",
-    "Source distribution and wheel build path"
+    "Source distribution and wheel build path",
+    "Exact local primer rematching in both orientations, including multiple products",
+    "Canonical local genotype grouping and explicit uninformative result states",
+    "Bounded deletion-hypothesis generation with provenance",
+    "Model-sensitivity comparison and guarded public Python entry points"
   ],
   "tasks": [
     {
@@ -26,21 +30,20 @@
         "Confirm package-index namespace ownership before PyPI publication; configure trusted publishing and no credentials in code."
       ],
       "completed_evidence": {
-        "staging_branch": "dnncha/dotmatch:editwitness/research-alpha-20260906",
-        "passing_ci_run": "https://github.com/dnncha/dotmatch/actions/runs/33998897914",
-        "tested_commit": "377c3bfafeb722bce3eac91d339dfec9d1028e68",
-        "remaining": "Create standalone repository with publisher; verify ownership and configure package publication."
+        "historical_0.1_ci": "https://github.com/dnncha/dotmatch/actions/runs/33999093146",
+        "current_evidence": "BUILD_STATUS.md",
+        "remaining": "Standalone repository creation and package-index ownership/publication remain separate from public branch distribution."
       }
     },
     {
       "id": "EW-002",
       "priority": "P0",
-      "title": "Independent scientific review of the original-site observation model",
+      "title": "Independent scientific review of both observation models",
       "status": "needs_external_review",
       "depends_on": [],
       "acceptance_criteria": [
         "Obtain review from a genome-engineering scientist independent of implementation.",
-        "Review hidden-primer and whole-window witnesses, dosage semantics, paired-end read gaps, negative signals and primer-rescue failures.",
+        "Review original-site representation dependence, exact multi-product/all-detectable assumptions, primer rescue, local-window limits, dosage, paired-end gaps and uninformative states.",
         "Record disagreements and revise model/version explicitly; never manufacture a reviewer or review result."
       ]
     },
@@ -48,16 +51,20 @@
       "id": "EW-003",
       "priority": "P1",
       "title": "Exact edited-sequence primer rematching as a separately versioned model",
-      "status": "ready",
-      "depends_on": [
-        "EW-002"
-      ],
+      "status": "implemented_awaiting_external_validation",
+      "depends_on": [],
       "acceptance_criteria": [
         "Define handling of new, rescued, multiple and opposing-orientation primer sites with bounded product enumeration.",
         "Make physically equivalent normalized allele representations yield the same observation in the new model.",
         "Add independent sequence-oracle and adversarial repeat/normalization tests.",
-        "Retain original model replay; no unsupported mismatch probabilities."
-      ]
+        "Retain explicit original model selection; verify historical evidence with the package version that produced it. Do not invent mismatch probabilities."
+      ],
+      "completed_evidence": {
+        "code": "src/editwitness/exact.py",
+        "tests": "tests/test_exact.py",
+        "model": "exact-local-sites-presence-v2",
+        "independent_biological_validation": false
+      }
     },
     {
       "id": "EW-004",
@@ -93,14 +100,19 @@
       "id": "EW-006",
       "priority": "P1",
       "title": "More useful bounded deletion-hypothesis generation",
-      "status": "ready",
+      "status": "implemented",
       "depends_on": [],
       "acceptance_criteria": [
         "Generate explicit local deletion alternatives around a user-specified edit without claiming outcome probabilities.",
         "Record grid bounds, filtering and any cap; do not silently subsample.",
         "Deduplicate equivalent states reproducibly and keep inspectable counterexamples.",
         "Use actual readout-equivalence engine, not structural scan counts, for genotype claims."
-      ]
+      ],
+      "completed_evidence": {
+        "code": "src/editwitness/generate.py",
+        "tests": "tests/test_audit_regressions.py",
+        "scope": "Reference-haplotype deletions paired with a homozygous local expectation; explicit limits, deduplication and provenance."
+      }
     },
     {
       "id": "EW-007",
@@ -152,10 +164,9 @@
       "priority": "P2",
       "title": "Profile-driven performance improvements",
       "status": "ready",
-      "depends_on": [
-        "EW-008"
-      ],
+      "depends_on": [],
       "acceptance_criteria": [
+        "Profile exact rematching/product enumeration separately from the geometry scanner; report model and workload shape.",
         "Collect reproducible workloads with environment, dataset and baseline metadata.",
         "Optimize only demonstrated bottlenecks; retain independent oracle agreement.",
         "Add a native extension only with portable wheels and measurable user benefit.",
