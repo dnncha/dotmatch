@@ -1,0 +1,63 @@
+name: Import checked package audit
+on:
+  push:
+    branches: [audit/package-integrity-2026-09-06]
+    paths: ['.audit-transfer/**', '.github/workflows/package-integrity-apply.yml']
+permissions:
+  contents: write
+jobs:
+  import:
+    if: github.repository == 'dnncha/dotmatch' && github.ref == 'refs/heads/audit/package-integrity-2026-09-06'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+          ref: ${{ github.sha }}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Apply hash-checked edits and remove transfer scaffolding
+        run: |
+          python - <<'PY'
+          import hashlib, json, pathlib, shutil, subprocess
+          def git(*args): return subprocess.check_output(['git', *args], text=True).strip()
+          assert git('rev-parse', 'HEAD^') == '11d159fa1648365f2a4e96917b483c33aa5d9fe7', 'Unexpected base commit'
+          parts = sorted(pathlib.Path('.audit-transfer').glob('changes-*.json'))
+          assert len(parts) == 6, 'Incomplete transfer'
+          changes = [entry for part in parts for entry in json.loads(part.read_text())]
+          assert len(changes) == 29 and len({item['path'] for item in changes}) == 29
+          for item in changes:
+              path = pathlib.Path(item['path'])
+              assert not path.is_absolute() and '..' not in path.parts and not path.is_symlink()
+              original = path.read_bytes() if path.exists() else b''
+              if item['before'] is None: assert not path.exists(), str(path)
+              else: assert hashlib.sha256(original).hexdigest() == item['before'], 'Base mismatch: ' + str(path)
+              lines = original.decode('utf-8').splitlines(keepends=True)
+              for start, end, replacement in reversed(item['ops']):
+                  assert 0 <= start <= end <= len(lines)
+                  lines[start:end] = replacement.splitlines(keepends=True)
+              updated = ''.join(lines).encode('utf-8')
+              assert hashlib.sha256(updated).hexdigest() == item['after'], 'Result mismatch: ' + str(path)
+              path.parent.mkdir(parents=True, exist_ok=True)
+              path.write_bytes(updated)
+          shutil.rmtree('.audit-transfer')
+          pathlib.Path('.github/workflows/package-integrity-apply.yml').unlink()
+          subprocess.run(['git', 'add', '-A'], check=True)
+          assert git('write-tree') == '2fb69f95d015bd3885f5bc76798eb27c7f9e4654', 'Final tree differs from locally reviewed source'
+          print('All 29 source files and the final Git tree match the reviewed implementation.')
+          PY
+      - name: Build and run focused regression tests
+        run: |
+          python -m pip install pytest pandas polars anndata jsonschema
+          make -j2 all shared
+          python -m pytest -q python/tests/test_count_io_audit.py python/tests/test_public_api_audit.py python/tests/test_sparse_integrity_audit.py python/tests/test_native_oracle_audit.py python/tests/test_native_target_table_audit.py python/tests/test_feature_matrix.py python/tests/test_sensitivity.py
+          python scripts/generate_assignment_demo.py --check
+      - name: Commit only the reviewed tree to the audit branch
+        run: |
+          test "$(git write-tree)" = 2fb69f95d015bd3885f5bc76798eb27c7f9e4654
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'fix: scientific input integrity, sparse adapters and complete container workflows'
+          git push origin HEAD:refs/heads/audit/package-integrity-2026-09-06
