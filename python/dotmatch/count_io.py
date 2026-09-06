@@ -28,8 +28,10 @@ def parse_count_value(text: str, guide_id: str, sample: str) -> int:
     text = text.strip()
     if len(text) > 4096:
         raise ValueError(f"count too large for {location}")
+    if text.lower().lstrip("+-") in {"inf", "infinity", "nan", "snan"}:
+        raise ValueError(f"non-finite count for {location}")
     if re.fullmatch(r"[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?", text) is None:
-        raise ValueError(f"non-numeric or non-finite count for {location}")
+        raise ValueError(f"non-numeric count for {location}")
     try:
         value = Decimal(text)
     except InvalidOperation as exc:
