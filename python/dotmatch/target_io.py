@@ -7,9 +7,9 @@ import gzip
 from dataclasses import dataclass
 from pathlib import Path
 
-ID_COLUMNS = ("target_id", "guide_id", "barcode_id", "id", "name", "sgrna")
-SEQ_COLUMNS = ("target_seq", "guide_seq", "barcode_seq", "sequence", "seq")
-GENE_COLUMNS = ("gene", "gene_id", "gene_symbol")
+ID_COLUMNS = ("target_id", "guide_id", "barcode_id", "id", "name", "sgrna", "guide", "sgrnaid", "sgrna_id")
+SEQ_COLUMNS = ("target_seq", "guide_seq", "barcode_seq", "sequence", "seq", "grna.sequence", "bases", "sgrna.sequence", "sgrna_sequence", "sgrna_seq", "guide_sequence", "guidesequence")
+GENE_COLUMNS = ("gene", "gene_id", "gene_symbol", "gene.symbol", "target_gene")
 
 
 @dataclass(frozen=True)
@@ -40,12 +40,17 @@ def read_target_table(path: str | Path) -> list[TargetRecord]:
     named = False
     id_col, seq_col, gene_col = 0, 1, 2
     sequence_only = False
+    width = None
     with opener(source, "rt", encoding="utf-8-sig", newline="") as handle:
         reader = csv.reader(handle, delimiter=delimiter, strict=True)
         for row in reader:
             cols = [cell.strip() for cell in row]
             if not cols or not any(cols) or cols[0].startswith("#"):
                 continue
+            if width is None:
+                width = len(cols)
+            if len(cols) != width:
+                raise ValueError(f"row has a different number of fields in {source} at line {reader.line_num}")
             if first:
                 header = [cell.lower() for cell in cols]
                 sequence_only = len(header) == 1 and header[0] in SEQ_COLUMNS
@@ -55,7 +60,9 @@ def read_target_table(path: str | Path) -> list[TargetRecord]:
                 )
                 first = False
                 if named:
-                    if len(set(header)) != len(header):
+                    if any(sum(name in group for name in header) > 1 for group in (ID_COLUMNS, SEQ_COLUMNS, GENE_COLUMNS)):
+                        raise ValueError(f"multiple possible ID, sequence or gene columns in {source}; provide an unambiguous library")
+                    if len(set(header)) != len(header) or any(not name for name in header):
                         raise ValueError(f"duplicate header columns in {source}")
                     if sequence_only:
                         seq_col = 0
@@ -84,6 +91,8 @@ def read_target_table(path: str | Path) -> list[TargetRecord]:
                     )
                 target_id, sequence = cols[id_col], cols[seq_col]
                 gene = cols[gene_col] if 0 <= gene_col < len(cols) else ""
+            if target_id.startswith('"') or gene.startswith('"'):
+                raise ValueError("target ID and gene may not start with a literal double quote (TSV identity boundary)")
             if not target_id:
                 raise ValueError(
                     f"empty target ID in {source} at line {reader.line_num}"

@@ -170,4 +170,6 @@ def test_assignments_to_anndata_accepts_text_status_when_optional_deps_are_avail
 
     assert list(adata.obs_names) == ["cell_1", "cell_2"]
     assert list(adata.var_names) == ["feature_a"]
-    assert adata.X.tolist() == [[1], [1]]
+    from scipy import sparse
+    assert sparse.isspmatrix_csr(adata.X)
+    assert adata.X.toarray().tolist() == [[1], [1]]

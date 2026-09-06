@@ -4,6 +4,53 @@ All notable user-facing changes are tracked here. Public statements in release n
 
 ## Unreleased
 
+### Fixed
+
+- Reject rounded, boolean, negative, and overflowing thresholds at the Python/C
+  boundary. Serialize calls and close on a shared Matcher so its native index
+  cannot be freed while an in-flight call uses it.
+- Reject non-finite posterior priors, normalize very large finite priors in log
+  space, validate Phred+33 quality, and retain ambiguous ties at every cutoff.
+- Parse raw counts without float rounding or missing-to-zero coercion. Reject
+  ragged rows and preserve selected sample order and textual IDs.
+- Honour named/reordered and explicitly selected pandas/Polars columns. Reject
+  missing sequences rather than stringifying them, and validate label lengths.
+- Load native binaries only from the package, the explicit source-tree layout,
+  or a configured override. A broken override no longer falls back silently;
+  the current working directory is no longer an executable search path.
+- Share strict four-line FASTQ validation across Python streaming, discovery,
+  and sensitivity. Errors include record/line context; decompressed hashes
+  remain over original bytes. Native FASTQ readers remain separate.
+- Native target-table reading now accepts gzip, BOMs, quoted CSV/TSV and
+  reordered headers without the former 16 KiB row truncation. Malformed rows,
+  ambiguous headers, embedded NULs, and over-limit rows fail explicitly.
+
+### Added
+
+- Sparse int64 AnnData adapters, explicit sample selection and optional cell /
+  feature axes. Keep zero-count cells and metadata; count only unique observed
+  assignments. No cell-barcode inference or UMI deduplication is performed.
+- `python -m dotmatch` invokes the installed CLI dispatcher.
+- Multi-stage container runtime with the packaged CLI, without the build toolchain
+  or repository. Native counting, Python sensitivity and structured agent tools
+  are tested offline with a read-only root filesystem and an unprivileged UID
+  on Linux x86-64 and ARM64 in the package-integrity workflow.
+
+### Compatibility
+
+- Malformed inputs previously accepted by coercion now raise actionable errors.
+- `assignments_to_anndata` requires an explicit cell column and rejects
+  `count_unique_only=False` instead of silently ignoring it. Its matrix is sparse;
+  use `.X.toarray()` only for a deliberate small dense conversion.
+- One-column native target tables now receive `target_0`, `target_1`, ... IDs,
+  matching Python. Named IDs are unchanged. Target-table IDs and genes cannot
+  begin with a literal double quote because native TSV serialization would
+  otherwise change their downstream interpretation.
+
+These are source changes after 0.5.0, not changes to already-published artifacts.
+The matching kernel, default counting policies, historical benchmark outputs,
+and published biological scope are unchanged.
+
 ## 0.5.0 - 2026-09-06
 
 ### Added

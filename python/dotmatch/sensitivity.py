@@ -102,37 +102,9 @@ class _HashReader(io.RawIOBase):
 
 
 def _fastq(handle, source: Path) -> Iterator[tuple[str, str]]:
-    ordinal = 0
-    while True:
-        header = handle.readline()
-        if not header:
-            return
-        ordinal += 1
-        seq, plus, qual = handle.readline(), handle.readline(), handle.readline()
-        if not seq or not plus or not qual:
-            raise ValueError(f"truncated FASTQ record {ordinal} in {source}")
-        header, seq, plus, qual = (
-            text.rstrip("\r\n") for text in (header, seq, plus, qual)
-        )
-        if (
-            not header.startswith("@")
-            or not header[1:].split()
-            or not plus.startswith("+")
-        ):
-            raise ValueError(f"invalid FASTQ record {ordinal} in {source}")
-        if (
-            len(seq) != len(qual)
-            or not seq.isascii()
-            or any(ch.isspace() for ch in seq)
-        ):
-            raise ValueError(
-                f"invalid sequence/quality lengths or sequence symbols at record {ordinal} in {source}"
-            )
-        if any(ord(ch) < 33 or ord(ch) > 126 for ch in qual):
-            raise ValueError(
-                f"invalid Phred+33 quality at record {ordinal} in {source}"
-            )
-        yield header[1:].split()[0], seq.upper()
+    from .fastq_io import iter_fastq_records
+    for record in iter_fastq_records(handle, source):
+        yield record.read_id, record.seq
 
 
 def _sha256(path: Path) -> str:

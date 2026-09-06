@@ -43,10 +43,18 @@ from . import tl as tl  # scverse-style tools (dotmatch.tl.assign_features, dotm
 
 
 def _source_tree_version() -> Optional[str]:
-    pyproject = Path(__file__).resolve().parents[2] / "pyproject.toml"
+    here = Path(__file__).resolve()
+    # A --target/vendor install can sit beneath somebody else's pyproject.
+    # Only our actual source layout is allowed to override installed metadata.
+    if here.parent.name != "dotmatch" or here.parents[1].name != "python":
+        return None
+    pyproject = here.parents[2] / "pyproject.toml"
     if not pyproject.exists():
         return None
-    match = re.search(r'^version\s*=\s*"([^"]+)"', pyproject.read_text(encoding="utf-8"), flags=re.MULTILINE)
+    project = re.search(r"(?ms)^\[project\]\s*$(.*?)(?=^\[|\Z)", pyproject.read_text(encoding="utf-8"))
+    if not project or not re.search(r'^name\s*=\s*"dotmatch"\s*$', project.group(1), re.MULTILINE):
+        return None
+    match = re.search(r'^version\s*=\s*"([^"]+)"', project.group(1), flags=re.MULTILINE)
     return match.group(1) if match else None
 
 
