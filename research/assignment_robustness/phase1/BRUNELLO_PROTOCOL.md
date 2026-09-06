@@ -1,0 +1,7 @@
+# Second assay architecture: complete Brunello plasmid run
+
+6 September 2026. Prospective extension after inspecting the Yusa historical-prefix decomposition, before new Brunello results. Yusa full-read independent forensics is still in progress. The known Yusa prefix finding is predominantly within-gene extra guide-count events; it is not a new biological result.
+
+Acquire complete SRR8297997 (plasmid, PRJNA508200) and the corrected 77,441-target, 20-base Brunello library used in the pinned guide-counter example. Verify ENA bytes, MD5 and complete records. Fixed-window comparison uses zero-based start 21, length 20, reflecting the existing plasmid extraction evidence. This is not a claim that one window captures every staggered-primer read. Run the three unchanged DotMatch 0.5.0 policies and preserve the first 100,000 records separately for technical reconciliation. Subsequent multi-offset discovery/heldout analysis uses the same 100,000-record discovery prefix and 0.0025 threshold as Yusa.
+
+This is a second library/construct technical comparison, not a replicated differential biological contrast. A plasmid run cannot establish new gene essentiality, treatment effects or cross-screen prevalence. No synthetic fallback, post-hoc selection of successful genes, production policy change or release. Retain null findings and failed attempts. Source terms apply; raw files are temporary research transport, not a new data license.

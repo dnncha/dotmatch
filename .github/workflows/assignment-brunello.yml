@@ -1,0 +1,48 @@
+name: Assignment research - complete Brunello plasmid
+on:
+  push:
+    branches: [research/assignment-robustness-v2]
+    paths:
+      - research/assignment_robustness/phase1/collect_brunello.py
+      - .github/workflows/assignment-brunello.yml
+permissions:
+  contents: read
+jobs:
+  verified-plasmid:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 11d159fa1648365f2a4e96917b483c33aa5d9fe7
+          path: pinned-engine
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build pinned release
+        run: |
+          set -euo pipefail
+          python -m pip install ./pinned-engine > brunello-install.log 2>&1
+          python -m pip freeze > brunello-environment.txt
+      - name: Collect complete independent-library sample
+        run: |
+          set -euo pipefail
+          python research/assignment_robustness/phase1/collect_brunello.py 2>&1 | tee brunello-run.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: assignment-brunello-evidence
+          path: |
+            brunello-output/
+            !brunello-output/raw/
+            brunello-*.log
+            brunello-*.txt
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: assignment-brunello-inputs
+          path: brunello-output/raw/
+          compression-level: 0
+          retention-days: 3
