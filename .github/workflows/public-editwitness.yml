@@ -22,7 +22,7 @@ jobs:
         shell: bash
         run: |
           python - <<'PY'
-          import hashlib, json, lzma
+          import hashlib, json, lzma, subprocess, sys
           from pathlib import Path, PurePosixPath
           root = Path.cwd().resolve()
           expected = '29b68059c34076f434f1a938d193131e870c084db5894fc5bf8d432d8df3bccd'
@@ -41,6 +41,8 @@ jobs:
           if payload['format'] != 'editwitness.audited-delta.v3' or len(payload['files']) != 53:
               raise SystemExit('Unexpected source transport format')
           for name, entry in payload['files'].items():
+              if name == 'release-files.json':
+                  continue  # Derived inventory is regenerated and checked against its exact target digest below.
               path = PurePosixPath(name)
               if path.is_absolute() or any(p in {'.','..','.git'} for p in path.parts) or '\\' in name:
                   raise SystemExit('Unsafe source path')
@@ -76,6 +78,10 @@ jobs:
                   raise SystemExit(f'Reconstructed source hash mismatch: {name}')
               target.parent.mkdir(parents=True, exist_ok=True)
               target.write_text(text, encoding='utf-8', newline='\n')
+          subprocess.run([sys.executable, 'scripts/release_manifest.py'], check=True)
+          inventory_digest = hashlib.sha256((root / 'release-files.json').read_bytes()).hexdigest()
+          if inventory_digest != payload['files']['release-files.json']['sha256']:
+              raise SystemExit('Regenerated inventory differs from the audited source target')
           marker.write_text(expected+'\n')
           PY
           python scripts/release_manifest.py --check
