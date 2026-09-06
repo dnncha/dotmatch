@@ -1,0 +1,47 @@
+name: AR004 source validation and research snapshot
+on:
+  push:
+    branches: [research/read-evidence-ar004]
+    paths:
+      - research/assignment_robustness/ar004/**
+      - .github/workflows/assignment-ar004-checks.yml
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install the exact numerical versions used in the executed experiment
+        run: |
+          set -euo pipefail
+          python -m pip install numpy==2.3.5 scipy==1.17.0
+          python -m pip freeze > ar004-ci-environment.txt
+      - name: Validate syntax and independent scientific edge cases
+        run: |
+          set -euo pipefail
+          python -m compileall -q research/assignment_robustness/ar004
+          python -m unittest discover -s research/assignment_robustness/ar004/tests -v 2>&1 | tee ar004-ci-tests.log
+      - name: Preserve exact public source and protocols, not raw data
+        run: |
+          set -euo pipefail
+          mkdir snapshot
+          git archive --format=tar.gz HEAD research/assignment_robustness/ar004 research/assignment_robustness/replay.py .github/workflows/assignment-ar004-resources.yml .github/workflows/assignment-ar004-checks.yml > snapshot/dotmatch-ar004-public-source.tar.gz
+          git rev-parse HEAD > snapshot/source-commit.txt
+          cp ar004-ci-* snapshot/
+          python - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path('snapshot')
+          m={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(root.iterdir()) if p.is_file()}
+          (root/'SHA256.json').write_text(json.dumps(m,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ar004-verified-public-source
+          path: snapshot/
+          retention-days: 90
