@@ -1,0 +1,41 @@
+name: EditWitness paired captured-read audit
+on:
+  push:
+    branches: [editwitness/empirical-audit-20260906]
+    paths:
+      - .github/workflows/editwitness-paired-read-audit.yml
+      - research/empirical-20260906/collect_reads.py
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  read-audit:
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        run: [SRR22937744, SRR22937743, SRR22937742, SRR22937757, SRR22937754, SRR22937753]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out isolated research branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Install pinned mapper
+        run: python -m pip install mappy==2.30
+      - name: Audit one complete public FASTQ
+        env:
+          RUN: ${{ matrix.run }}
+        run: |
+          mkdir -p "audit/$RUN"
+          cp research/empirical-20260906/collect_reads.py "audit/$RUN/collector.py"
+          python -m pip freeze > "audit/$RUN/environment.txt"
+          python research/empirical-20260906/collect_reads.py "$RUN" --output "audit/$RUN"
+      - name: Preserve captured-read evidence and receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: editwitness-paired-reads-${{ matrix.run }}
+          path: audit/${{ matrix.run }}/
+          retention-days: 30
+          compression-level: 0
+          if-no-files-found: error
