@@ -1,0 +1,20 @@
+{
+  "schema": "editwitness.assay-geometry.v1",
+  "source_doi": "10.1016/j.ymthe.2023.01.004",
+  "oligo_source": "Supplementary Table S1 and Table S7, visually transcribed and checked by exact reference matching",
+  "native_reference": {"assembly":"GRCh38/hg38","chrom":"chr12","start0":111449213,"end0":111618315,"dna_sha256":"fb7de2d6c66dd142917ad6b1c5f9f7e5dd8a886f769a454de7f21e822b65ed74"},
+  "local_reference": {"genomic_start0":111595213,"genomic_end0":111604213,"strand":"-","length":9000},
+  "oligos": {
+    "edit_g4":"ACCAAAACAGTCTGAGGCGG", "edit_g5":"GTCGCCGCGACCACCGAGGA",
+    "capture_up1":"CACCCAACAATTTCGTTTGT", "capture_up2":"CAAACTGCCCACCATCGTGA",
+    "capture_down1":"GCGAATCACTTGAGGTCAGG", "capture_down2":"TCGGTAGTACGAGACCAAAC",
+    "pcr_forward":"GGCCTGCCTGGTAGATGCC", "pcr_reverse":"GGATCTCCAGGGTCCAGCC",
+    "dd4_forward":"CCTCCCTCCCGGCAGAGC", "dd4_reverse":"GGAGAAGGAGGACGACGAAG",
+    "dd5_forward":"GCAGCGGCCTTCTAGCGTC", "dd5_reverse":"TGGGGTGCCGACACCCAC",
+    "dd4_probe_ref":"CGGCTCCCGGCGGCTCCTTGGTCTC", "dd4_probe_target":"CGCCTCCCTCCGCCTCAGACTGTTTT",
+    "dd5_probe_ref":"CGCCTTCGCCGTCCTCGTCCT", "dd5_probe_target":"CACGGCTCCCTCCTCGGTGGTC"
+  },
+  "native_cut_boundaries0":[4916,5383], "repeat_native_interval0":[5194,5263],
+  "native_repeat_codons":23, "nominal_bac_repeat_codons":72,
+  "note":"Nominal 72-codon geometry model is not a verified specimen haplotype. Native flanks, primer sites and cleavage coordinates match the published sequences; actual repeat composition/length can vary."
+}
