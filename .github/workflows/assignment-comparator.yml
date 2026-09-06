@@ -1,0 +1,38 @@
+name: Assignment research - pinned comparator
+on:
+  push:
+    branches: [research/assignment-robustness-v2]
+    paths: [.github/workflows/assignment-comparator.yml]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: fulcrumgenomics/guide-counter
+          ref: 5e49703a83941494c64f4ddefdd341e099cc0232
+      - name: Build the unmodified v0.1.3 comparator
+        run: |
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/source-commit.txt
+          git hash-object src/commands/count.rs > evidence/count-source-blob.txt
+          test "$(cat evidence/count-source-blob.txt)" = de7ffe6531d69c5b91f901448fb4b0332ab87684
+          rustup toolchain install 1.75.0 --profile minimal
+          rustc +1.75.0 --version > evidence/rust-version.txt
+          cargo +1.75.0 build --release --locked 2>&1 | tee evidence/build.log
+          cp target/release/guide-counter evidence/
+          cp Cargo.lock evidence/
+          cp src/commands/count.rs evidence/
+          cp LICENSE* evidence/ || true
+          sha256sum evidence/guide-counter evidence/Cargo.lock evidence/count.rs > evidence/checksums.sha256
+          evidence/guide-counter --version > evidence/version.txt
+          git diff --exit-code
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: assignment-upstream-guide-counter
+          path: evidence/
+          retention-days: 30
