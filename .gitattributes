@@ -1,0 +1,7 @@
+# Stable source bytes on Windows, macOS and Linux. Release checks hash bytes.
+* text=auto eol=lf
+*.xzpart -text
+*.whl -text
+*.zip -text
+*.gz -text
+*.png -text

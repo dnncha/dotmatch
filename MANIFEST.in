@@ -13,3 +13,4 @@ include .gitignore
 recursive-include .github *.md *.yml *.yaml
 exclude .github/workflows/bootstrap-editwitness.yml
 exclude .github/workflows/public-editwitness.yml
+include .gitattributes

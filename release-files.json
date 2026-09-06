@@ -1,5 +1,6 @@
 {
   "files": {
+    ".gitattributes": "ebb78028526763b5b547400d462d9a4b4e823312862b38f2d0edf4d853104bf5",
     ".github/ISSUE_TEMPLATE/bug.md": "525d66bd7177865362581d84e3a90d05f7077ba82279465e5448d702c600e693",
     ".github/PULL_REQUEST_TEMPLATE.md": "684005aa61ac78c1b6a1d9c7a6b696cd178e4bbebe99ace62917001f354c4c05",
     ".github/workflows/build-release.yml": "a0fd03e0434771a1039b82d12a07b20decfb691124811bf2410b362dc0acb5db",
@@ -11,7 +12,7 @@
     "CITATION.cff": "89a8d699a87d8879f2a6cb43e78e6068f0f66683f9b9fd9ff7e78c4c393638f5",
     "CONTRIBUTING.md": "ff49e596c2d0a36fddffa532588bb7d1475564d61e5f80f4150932346fdc50ef",
     "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
-    "MANIFEST.in": "f28faf8fa19cdd57dced827c8dc0429b4b1f488e3f0e10fadae521b9f3b33c8f",
+    "MANIFEST.in": "0e883765c5df88773410df4de29cefb59f5340d5e3e8894fecfff5968978bb37",
     "NOTICE": "62c6ba03da2e0e1e75e08f1637fc91efd802d7b2a7f3fb3336cc228dccdd5228",
     "README.md": "50ce94f3156db37de5a8c8cb178a86ed9e1099dcee8164022505398494725681",
     "SECURITY.md": "998c111d0480cb1673dd7433244457425c9361939a86cfa2734dc1869127e39f",
@@ -46,7 +47,7 @@
     "scripts/generate_examples.py": "0027c91c749f664d8b62235af8ba65344ef1dd71d9f009b6689c0581ed6f0a50",
     "scripts/generate_schemas.py": "5868c06acdcb7c131962ab81f330c8f50cbdab0c44f613ebd6baeb140cc8ea6a",
     "scripts/publish_github.py": "d373ae5a5e336d2b11f981c040eae5d238e2eb1da50af63940d73b8d7b6e3925",
-    "scripts/release_manifest.py": "661b5f9bb696463377565355a3cc5fe5f09522d0e076e87f0d3c6e2d17b540cd",
+    "scripts/release_manifest.py": "b69e7cc993f1a03d51ec3112b8f1fd87e6e4d89b5f6f87c3f04168ac59a1b2b8",
     "scripts/smoke_wheel.py": "69900c61340f6a8900b86d61cb82aef57c9c3bd40aa99f8962e8bf8bb2b5cc63",
     "skills/editwitness/SKILL.md": "097f9761dd5b04743ae8aff9686404b8868829cd58020fc22fc96cd9385db640",
     "src/editwitness/__init__.py": "d09ef959a57ad258b88ca120ba2f49b5c084cb57e230da7617087432735fcc72",

@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT_FILES = {
     "README.md", "LICENSE", "NOTICE", "CITATION.cff", "CHANGELOG.md", "CONTRIBUTING.md",
     "SECURITY.md", "AGENTS.md", "BUILD_STATUS.md", "llms.txt", "roadmap.json", "pyproject.toml",
-    ".gitignore", "MANIFEST.in",
+    ".gitignore", ".gitattributes", "MANIFEST.in",
 }
 DIRECTORIES = {"src", "tests", "docs", "examples", "scripts", "benchmarks", "skills", ".github"}
 ALLOWED_SUFFIXES = {".py", ".json", ".md", ".yml", ".yaml", ".toml", ".fasta", ".txt"}
