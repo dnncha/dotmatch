@@ -1,0 +1,117 @@
+name: AR004 - complete replicated screen counting
+on:
+  push:
+    branches: [research/replicated-screen-ar004]
+    paths:
+      - research/assignment_robustness/ar004/count.cpp
+      - research/assignment_robustness/ar004/run.py
+      - research/assignment_robustness/ar004/test_counter.py
+      - .github/workflows/ar004-count.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 11d159fa1648365f2a4e96917b483c33aa5d9fe7
+          path: pinned-engine
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build and independently test exact candidate enumeration
+        run: |
+          set -euo pipefail
+          python -m pip install numpy==2.2.6 ./pinned-engine > install.log 2>&1
+          g++ -O3 -std=c++17 -Wall -Wextra research/assignment_robustness/ar004/count.cpp -lz -o research/assignment_robustness/ar004/count
+          python research/assignment_robustness/ar004/test_counter.py 2>&1 | tee native-tests.log
+          python research/assignment_robustness/joint_resolution.py --test 2>&1 | tee ar003-tests.log
+          python -m pip freeze > environment.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: assignment-brunello-inputs
+          run-id: 34029177963
+          repository: dnncha/dotmatch
+          github-token: ${{ github.token }}
+          path: input/raw
+      - uses: actions/download-artifact@v4
+        with:
+          name: assignment-joint-SRR8297997
+          run-id: 34032669590
+          repository: dnncha/dotmatch
+          github-token: ${{ github.token }}
+          path: input/previous
+      - name: Require complete AR003 plasmid count and bound equivalence before new cellular data
+        run: |
+          set -euo pipefail
+          python research/assignment_robustness/ar004/run.py --accession SRR8297997 --library input/raw/library.tsv --binary research/assignment_robustness/ar004/count --work input/raw --out result/SRR8297997 --previous input/previous 2>&1 | tee baseline-run.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ar004-reference
+          path: input/raw/library.tsv
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ar004-count-SRR8297997
+          path: |
+            result/SRR8297997/
+            native-tests.log
+            ar003-tests.log
+            baseline-run.log
+            environment.txt
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: ar004-validation-failure
+          path: |
+            result/
+            '*.log'
+          retention-days: 30
+  cellular:
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        accession: [SRR8297836, SRR8297837, SRR8297838, SRR8297839, SRR8297840, SRR8297841]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 11d159fa1648365f2a4e96917b483c33aa5d9fe7
+          path: pinned-engine
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ar004-reference
+          path: reference
+      - name: Build pinned and independent engines
+        run: |
+          set -euo pipefail
+          python -m pip install numpy==2.2.6 ./pinned-engine > install.log 2>&1
+          g++ -O3 -std=c++17 -Wall -Wextra research/assignment_robustness/ar004/count.cpp -lz -o research/assignment_robustness/ar004/count
+          python research/assignment_robustness/ar004/test_counter.py 2>&1 | tee tests.log
+          python -m pip freeze > environment.txt
+      - name: Download and audit the complete original archive
+        run: |
+          set -euo pipefail
+          python research/assignment_robustness/ar004/run.py --accession '${{ matrix.accession }}' --library reference/library.tsv --binary research/assignment_robustness/ar004/count --work work --out result/'${{ matrix.accession }}' 2>&1 | tee run.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ar004-count-${{ matrix.accession }}
+          path: |
+            result/
+            run.log
+            tests.log
+            environment.txt
+          retention-days: 90
