@@ -1,0 +1,113 @@
+name: AR004 - baseline ascertainment and independent gene-effect check
+on:
+  push:
+    branches: [research/replicated-screen-ar004]
+    paths: [research/assignment_robustness/ar004/filter_sensitivity.py, .github/workflows/ar004-filter-sensitivity.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  sensitivity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ar004-mageck-pinned-engine
+          run-id: 34034892731
+          repository: dnncha/dotmatch
+          github-token: ${{ github.token }}
+          path: statistics-engine
+      - name: Install original statistical source with unchanged parameters
+        run: |
+          set -euo pipefail
+          python -m pip install numpy==1.23.5 scipy==1.10.1 setuptools==68.2.2 > install.log 2>&1
+          EXPECTED=$(awk '{print $1}' research/assignment_robustness/ar004/mageck/source.sha256)
+          test "$(sha256sum statistics-engine/mageck-0.5.9.5.tar.gz | cut -d' ' -f1)" = "$EXPECTED"
+          mkdir pristine-source
+          tar -xzf statistics-engine/mageck-0.5.9.5.tar.gz -C pristine-source
+          SETUP=$(find pristine-source -name setup.py | head -1)
+          (cd "$(dirname "$SETUP")" && python setup.py install) >> install.log 2>&1
+          test "$(mageck --version)" = 0.5.9.5
+          python research/assignment_robustness/ar004/statistics.py --test
+          python -m py_compile research/assignment_robustness/ar004/filter_sensitivity.py
+      - name: Require successful primary analysis before supplementary execution
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,time,urllib.request
+          url='https://api.github.com/repos/dnncha/dotmatch/actions/runs/34035106346'
+          deadline=time.monotonic()+1800
+          while True:
+              request=urllib.request.Request(url,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN']})
+              with urllib.request.urlopen(request,timeout=60) as response:r=json.load(response)
+              assert r['head_sha']=='8b4c915650619858accb317381ecee8754d80d5b'
+              print(r['status'],r['conclusion'],flush=True)
+              if r['status']=='completed':
+                  assert r['conclusion']=='success','Incomplete primary analysis cannot support the supplementary report'
+                  break
+              if time.monotonic()>deadline:raise TimeoutError('Primary analysis did not complete')
+              time.sleep(30)
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: ar004-replicated-statistics-complete
+          run-id: 34035106346
+          repository: dnncha/dotmatch
+          github-token: ${{ github.token }}
+          path: primary
+      - name: Run both supplementary contrasts and independent median-LFC audit
+        run: |
+          set -euo pipefail
+          python research/assignment_robustness/ar004/filter_sensitivity.py --primary primary/results --out filter-results 2>&1 | tee filter-run.log
+          mkdir -p packet/source
+          cp -r filter-results packet/results
+          cp research/assignment_robustness/ar004/filter_sensitivity.py research/assignment_robustness/ar004/statistics.py research/assignment_robustness/ar004/FILTER_SENSITIVITY.md packet/source/
+          cp filter-run.log packet/
+          git rev-parse HEAD > packet/source-commit.txt
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ar004-baseline-filter-sensitivity
+          path: packet/
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: ar004-filter-sensitivity-failure
+          path: |
+            filter-results/
+            filter-run.log
+            install.log
+          retention-days: 90
+  preserve:
+    needs: sensitivity
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/replicated-screen-ar004
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: ar004-baseline-filter-sensitivity
+          path: packet
+      - name: Preserve supplementary results separately from the primary population
+        run: |
+          set -euo pipefail
+          mkdir research/assignment_robustness/ar004/filter-results
+          cp packet/results/REPORT.md packet/results/summary.json packet/results/additional-baseline-guides.tsv packet/results/all-discordant-calls.tsv research/assignment_robustness/ar004/filter-results/
+          git config user.name 'Donncha OToole research workflow'
+          git config user.email '5190258+dnncha@users.noreply.github.com'
+          git add research/assignment_robustness/ar004/filter-results
+          git commit -m 'research: preserve declared baseline sensitivity and independent gene-effect checks [skip ci]'
+          git pull --rebase origin research/replicated-screen-ar004
+          git push origin HEAD:research/replicated-screen-ar004
