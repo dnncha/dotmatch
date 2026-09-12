@@ -526,6 +526,16 @@ number of candidate targets checked after indexing.
 
 Output schemas are documented in [Public Schemas](docs/schemas.md).
 
+Audit repeated FASTQ sequences without changing abundance counts:
+
+```sh
+dotmatch duplication --reads sample.fastq.gz --json
+```
+
+Supports synchronized mates with `--reads2`, disk-backed exact counts, and a
+versioned agent report. Sequence repetition is not proof of PCR duplication.
+See [Sequence duplication audit](docs/duplication-audit.md).
+
 ## Barcode Demultiplexing
 
 For fixed-position inline barcodes, `demux` writes one FASTQ per uniquely

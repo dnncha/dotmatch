@@ -401,3 +401,10 @@ candidates_verified
 The `percent_rescued_by_k1`, `percent_ambiguous`, and `percent_unmatched`
 fields are percentages of total FASTQ records for that sample. Use
 `sample_qc.tsv` when a valid-window denominator is required.
+
+
+## Duplication audit JSON
+
+`dotmatch duplication --json` emits `dotmatch.duplication.v1`. See the
+[agent contract and metric definitions](duplication-audit.md#agent-contract).
+The report preserves read counts and does not estimate PCR duplication.

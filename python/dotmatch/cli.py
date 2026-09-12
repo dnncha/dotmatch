@@ -2262,6 +2262,8 @@ Workflow namespaces:
       Convenience commands for CRISPR guide-count workflows.
 
 Diagnostics and validation:
+  duplication --reads reads.fastq.gz [--reads2 mates.fastq.gz] [--json]
+      Audit exact sequence repetition with disk-backed counts; preserve all reads.
   audit --targets targets.tsv|targets.csv --k K --out-dir audit_dir
       Report nearby target pairs that make correction ambiguous or unsafe.
       Hamming k=2/k=3 safety is computed by exact native audit; fast audit
@@ -2459,6 +2461,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 2
         print_manual()
         return 0
+    if raw_args and raw_args[0] == "duplication":
+        from .duplication import command_duplication
+
+        return command_duplication(raw_args[1:])
     if raw_args and raw_args[0] == "assay":
         return command_assay(raw_args[1:])
     if raw_args and raw_args[0] == "crispr":

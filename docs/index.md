@@ -91,6 +91,7 @@ proposals-and-roadmap
 :caption: Reference
 
 schemas
+duplication-audit
 methods-and-citation
 citation-flywheel
 bioinformatics-evaluation
