@@ -4,6 +4,18 @@ All notable user-facing changes are tracked here. Public statements in release n
 
 ## Unreleased
 
+### Assignment review
+
+- The sensitivity report now supports full-library search, policy comparison,
+  guide and transition inspection, identity-checked local read decisions, and
+  scoped TSV/SVG exports. Matching/count semantics are unchanged.
+- A native-generated nine-read example opens without installation and includes
+  a portable download with the original completed artifacts. The website points
+  to the published 0.5.0 engine and distinguishes the unreleased viewer.
+- Update the website's sharp and baseline-browser-mapping dependency chains.
+  Add local-file Chromium, Firefox and macOS WebKit acceptance gates; WebKit
+  automation is not a branded Safari or physical-device acceptance claim.
+
 ### Fixed
 
 - Reject rounded, boolean, negative, and overflowing thresholds at the Python/C

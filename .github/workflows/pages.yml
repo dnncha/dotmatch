@@ -24,6 +24,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
       - uses: actions/configure-pages@v6
       - run: npm ci
       - name: Build static export

@@ -131,6 +131,35 @@ def main():
                     page.evaluate("document.activeElement.textContent")
                     == "Skip to main content"
                 )
+                # Exercise the actual public entry -> native report -> local
+                # evidence route, not merely a screenshot of a fixture table.
+                page.set_viewport_size({"width": 1440, "height": 1000})
+                page.goto(origin + "/dotmatch/assignment-sensitivity/", wait_until="networkidle")
+                assert "dotmatch==0.5.0" in page.inner_text("body")
+                with page.expect_download() as example_download:
+                    page.get_by_role("link", name="Download the complete example").click()
+                import zipfile
+                with zipfile.ZipFile(example_download.value.path()) as archive:
+                    assert "report.html" in archive.namelist()
+                    assert "bundle/read_changes.tsv" in archive.namelist()
+                page.get_by_role("link", name="Open the interactive example").click()
+                page.wait_for_url("**/examples/assignment-review/report.html")
+                expect(page.locator("#headline")).to_contain_text("Same assigned total")
+                expect(page.get_by_role("note", name="Synthetic demonstration")).to_be_visible()
+                demo_requests = []
+                page.on("request", lambda request: demo_requests.append(request.url))
+                page.set_input_files("#read-file", str(ROOT / "out/examples/assignment-review/bundle/read_changes.tsv"))
+                expect(page.locator("#attachment-status")).to_contain_text("5 changed records loaded")
+                page.get_by_role("button", name="guide_A", exact=True).click()
+                expect(page.locator("#detail-reads")).to_contain_text("exact_near_a")
+                assert page.locator("#detail-counts strong").all_inner_texts() == ["1", "0", "1"]
+                page.keyboard.press("Escape")
+                page.click("#clear-reads")
+                assert "exact_near_a" not in page.locator("body").text_content()
+                page.screenshot(path=str(output / "native-review-desktop.png"), full_page=True)
+                assert demo_requests == [], "Viewer interactions must not initiate requests"
+                checks.append({"public_review_entry": "passed", "example_download": "passed",
+                               "native_report_read_inspection": "passed", "viewer_requests": demo_requests})
                 assert not errors, errors
                 checks.append(
                     {

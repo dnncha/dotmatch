@@ -1,0 +1,75 @@
+name: sensitivity-review
+
+on:
+  pull_request:
+    paths:
+      - 'python/dotmatch/sensitivity*.py'
+      - 'python/tests/test_sensitivity*.py'
+      - 'scripts/check_sensitivity*.py'
+      - 'scripts/build_sensitivity_demo.py'
+      - 'examples/assignment_sensitivity/**'
+      - 'public/assignment-demo.json'
+      - '.github/workflows/sensitivity-review.yml'
+  push:
+    paths:
+      - 'python/dotmatch/sensitivity*.py'
+      - 'python/tests/test_sensitivity*.py'
+      - 'scripts/check_sensitivity*.py'
+      - 'scripts/build_sensitivity_demo.py'
+      - 'examples/assignment_sensitivity/**'
+      - 'public/assignment-demo.json'
+      - '.github/workflows/sensitivity-review.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  portable-review:
+    name: Portable review / ${{ matrix.os }} / ${{ matrix.browser }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            browser: chromium
+          - os: ubuntu-latest
+            browser: firefox
+          - os: macos-latest
+            browser: webkit
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Test dependencies
+        run: |
+          python -m pip install pytest==9.0.2 playwright==1.57.0
+          python -m playwright install --with-deps ${{ matrix.browser }}
+      - name: Build native engine
+        run: make shared
+      - name: Existing sensitivity, review and native demo contracts
+        run: python -m pytest -q python/tests/test_sensitivity.py python/tests/test_sensitivity_review.py python/tests/test_sensitivity_demo.py
+      - name: Real local-file browser acceptance and Node contracts
+        run: |
+          mkdir -p review-checks
+          python scripts/check_sensitivity_review.py --browser ${{ matrix.browser }} --file-mode --screenshots review-checks/screenshots --result review-checks/result.json
+      - name: Native-produced portable example acceptance
+        run: |
+          python scripts/build_sensitivity_demo.py --out review-checks/example
+          python scripts/check_sensitivity_demo.py --example review-checks/example --browser ${{ matrix.browser }} --result review-checks/demo-result.json
+      - name: Record exact source and platform
+        if: always()
+        run: |
+          mkdir -p review-checks
+          git rev-parse HEAD > review-checks/checked-commit.txt
+          python -c 'import json, platform; print(json.dumps({"system": platform.platform(), "python": platform.python_version()}))' > review-checks/platform.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: sensitivity-review-${{ matrix.os }}-${{ matrix.browser }}
+          path: review-checks/

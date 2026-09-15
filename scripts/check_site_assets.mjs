@@ -20,7 +20,7 @@ for (const file of ["app/home.module.css", "app/assignment-demo.tsx", "app/insta
 const layout = read("app/layout.tsx"), metadata = read("app/site-metadata.ts"), sitemap = read("app/sitemap.ts");
 assert(layout.includes('applicationName: "DotMatch"') && metadata.includes('siteName: "DotMatch"'), "Metadata identity missing");
 assert(layout.includes('rel="describedby"') && layout.includes("llms.txt"), "Agent discovery link missing");
-assert(metadata.includes('publishedVersion = "0.4.1"'), "Review the published release and its install evidence before changing the public version");
+assert(metadata.includes('publishedVersion = "0.5.0"'), "Keep installation metadata at the verified public v0.5.0 release (6 September 2026); do not use an unreleased source version");
 assert(home.includes("packageMetadata.version") && home.toLowerCase().includes("website source version"), "Keep published and source versions distinct");
 assert(/^\d+\.\d+\.\d+/.test(JSON.parse(read("package.json")).version), "Source version must be semantic");
 for (const route of ["crispr-guide-counting", "tools/library-safety", "assignment-sensitivity"]) {

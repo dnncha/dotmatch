@@ -3,11 +3,14 @@ export const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://dnncha.gith
 export const basePath = (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(/\/+$/, "");
 export const docsUrl = "https://dotmatch.readthedocs.io/en/latest/";
 export const repoUrl = "https://github.com/dnncha/dotmatch";
-export const publishedVersion = "0.4.1";
+export const publishedVersion = "0.5.0";
 export const conceptDoi = "https://doi.org/10.5281/zenodo.20541628";
 export function sitePath(path = ""): string {
   const clean = path.replace(/^\/+|\/+$/g, "");
   return `${basePath}/${clean ? `${clean}/` : ""}`;
+}
+export function siteAsset(path: string): string {
+  return `${basePath}/${path.replace(/^\/+/, "")}`;
 }
 export function canonicalUrl(path = ""): string {
   const clean = path.replace(/^\/+|\/+$/g, "");
