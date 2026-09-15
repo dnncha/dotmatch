@@ -14,6 +14,10 @@ dotmatch sensitivity \
 Open `sensitivity/report.html`. Start with read outcomes and per-guide deltas,
 not the assigned fraction alone. No policy is automatically selected.
 
+The unreleased source candidate adds an [interactive evidence review](sensitivity-review.md)
+to this report. Published 0.5.0 reports retain the earlier static interface; installing
+that release alone does not install the new viewer.
+
 ## Semantics
 
 All three policies use the same library, orientation and fixed extraction window.
@@ -45,8 +49,13 @@ complement search, offset inference, cell/UMI processing or downstream statistic
 | `read_changes.tsv` | Optional changed record ordinals/IDs and policy calls; no raw sequence or quality |
 
 Enable the last file with `--write-read-changes`. Read IDs can repeat; the 1-based
-record ordinal disambiguates occurrences. Report tables show at most 50 changed
-guides; TSVs retain all guides. The source files are never altered.
+record ordinal disambiguates occurrences. Published 0.5.0 report tables show at
+most 50 changed guides. The new source viewer includes every guide, with search,
+filters and 50-row pagination; its TSV export retains every matching row. Read
+IDs are attached explicitly, not embedded in the HTML. Capacity-limited runs
+retain the labelled static report and complete scientific TSVs. See the
+[review limits and evidence boundaries](sensitivity-review.md). The source files
+are never altered.
 
 The summary uses schema `dotmatch.sensitivity.v1`. `changed_reads` counts records
 whose status or unique target differs across policies. `counts_identical` compares

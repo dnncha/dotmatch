@@ -1,0 +1,48 @@
+name: sensitivity-review
+
+on:
+  pull_request:
+    paths:
+      - 'python/dotmatch/sensitivity*.py'
+      - 'python/tests/test_sensitivity*.py'
+      - 'scripts/check_sensitivity_review.py'
+      - '.github/workflows/sensitivity-review.yml'
+  push:
+    paths:
+      - 'python/dotmatch/sensitivity*.py'
+      - 'python/tests/test_sensitivity*.py'
+      - 'scripts/check_sensitivity_review.py'
+      - '.github/workflows/sensitivity-review.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  portable-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Test dependencies
+        run: |
+          python -m pip install pytest==9.0.2 playwright==1.57.0
+          python -m playwright install --with-deps chromium
+      - name: Build native engine
+        run: make shared
+      - name: Existing sensitivity and new review contracts
+        run: python -m pytest -q python/tests/test_sensitivity.py python/tests/test_sensitivity_review.py
+      - name: Real local-file browser acceptance and Node contracts
+        run: |
+          mkdir -p review-checks
+          python scripts/check_sensitivity_review.py --file-mode --screenshots review-checks/screenshots --result review-checks/result.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: sensitivity-review-checks
+          path: review-checks/

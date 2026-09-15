@@ -409,12 +409,31 @@ def run_sensitivity(
                 "Count identity is distinct from read-assignment identity. No read sequence or quality is copied to this bundle.",
             ],
         }
-        (stage / "report.html").write_text(
-            _report(summary, changed_guides), encoding="utf-8"
-        )
+        from .sensitivity_review import ReviewCapacityError, render_sensitivity_report
+
+        # Hash existing artifacts once; in particular, do not reread a large
+        # optional read_changes.tsv just to build the viewer's attachment binding.
         summary["artifacts"] = {
             path.name: {"sha256": _sha256(path), "bytes": path.stat().st_size}
             for path in sorted(stage.iterdir())
+        }
+        try:
+            report = render_sensitivity_report(summary, stage, staged=True)
+        except ReviewCapacityError as exc:
+            # A UI capacity limit must not discard a valid large analysis.
+            # All scientific tables remain complete; only the viewer falls back.
+            summary["interactive_review"] = {"available": False, "reason": str(exc)}
+            report = _report(summary, changed_guides).replace(
+                "<h1>",
+                '<p class="note">Interactive review unavailable: '
+                + html.escape(str(exc))
+                + ". This static summary is limited; TSV artifacts retain all targets.</p><h1>",
+                1,
+            )
+        report_path = stage / "report.html"
+        report_path.write_text(report, encoding="utf-8")
+        summary["artifacts"]["report.html"] = {
+            "sha256": _sha256(report_path), "bytes": report_path.stat().st_size
         }
         (stage / "summary.json").write_text(
             json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
