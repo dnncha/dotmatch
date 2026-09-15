@@ -4,24 +4,94 @@ on:
     branches: ['codex/plain-tool-copy-prep-20260915']
     paths: ['.github/workflows/plain-copy-preparation.yml']
 permissions:
-  contents: read
+  contents: write
 jobs:
-  source:
+  prepare:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
-          ref: '77031ea146da11df65e15ccd50a5a6ba5a6d4171'
-          persist-credentials: false
-      - name: Export exact public source
+          python-version: '3.11'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Apply reviewed changes to the exact source baseline
+        shell: bash
         run: |
-          mkdir -p /tmp/dotmatch-source
-          git rev-parse HEAD > /tmp/dotmatch-source/commit.txt
-          git archive --format=tar HEAD > /tmp/dotmatch-source/source.tar
-          sha256sum /tmp/dotmatch-source/source.tar > /tmp/dotmatch-source/SHA256SUMS
+          set -euo pipefail
+          mkdir -p /tmp/plain-copy-checks
+          cp .github/plain-copy-edits.json /tmp/plain-copy-checks/edits.json
+          git fetch --depth=1 origin 77031ea146da11df65e15ccd50a5a6ba5a6d4171
+          git switch --detach 77031ea146da11df65e15ccd50a5a6ba5a6d4171
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          allowed = {'README.md', 'app/page.tsx', 'app/assignment-demo.tsx',
+                     'app/assignment-sensitivity/page.tsx', 'app/home.module.css',
+                     'python/dotmatch/sensitivity_review_assets.py',
+                     'scripts/build_sensitivity_demo.py', 'scripts/check_sensitivity_demo.py',
+                     'scripts/check_sensitivity_review.py', 'scripts/check_site_browser.py',
+                     'tests/site/tool-language.test.mjs'}
+          changes = json.loads(Path('/tmp/plain-copy-checks/edits.json').read_text())
+          assert set(changes) == allowed, 'Unexpected source paths'
+          ready = {}
+          for name, change in changes.items():
+              path = Path(name)
+              assert not path.is_symlink(), name
+              if change['before'] is None:
+                  assert not path.exists(), name
+                  old = ''
+              else:
+                  raw = path.read_bytes()
+                  assert hashlib.sha256(raw).hexdigest() == change['before'], name + ': source changed'
+                  old = raw.decode('utf-8')
+              prior_end = 0
+              for start, end, text in change['edits']:
+                  assert isinstance(text, str) and prior_end <= start <= end <= len(old), name
+                  prior_end = end
+              new = old
+              for start, end, text in reversed(change['edits']):
+                  new = new[:start] + text + new[end:]
+              raw = new.encode('utf-8')
+              assert hashlib.sha256(raw).hexdigest() == change['after'], name + ': output mismatch'
+              ready[path] = raw
+          for path, raw in ready.items():
+              path.parent.mkdir(parents=True, exist_ok=True)
+              path.write_bytes(raw)
+          print('All 11 source files match the locally tested output hashes.')
+          PY
+      - name: Native and source regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install pytest==9.0.2
+          make shared
+          python -m pytest -q python/tests/test_sensitivity.py python/tests/test_sensitivity_review.py python/tests/test_sensitivity_demo.py | tee /tmp/plain-copy-checks/python.txt
+          node --experimental-strip-types --test tests/site/*.test.mjs | tee /tmp/plain-copy-checks/site-unit.txt
+          git diff --check
+      - name: Publish clean branch without preparation files
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          names = sorted(json.loads(Path('/tmp/plain-copy-checks/edits.json').read_text()))
+          subprocess.run(['git', 'add', '--', *names], check=True)
+          actual = subprocess.check_output(['git', 'diff', '--cached', '--name-only'], text=True).splitlines()
+          assert actual == names, actual
+          PY
+          git diff --cached > /tmp/plain-copy-checks/change.patch
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Use descriptive labels and a compact layout for assignment review'
+          git rev-parse HEAD | tee /tmp/plain-copy-checks/candidate.txt
+          git push origin HEAD:refs/heads/codex/plain-tool-ui-20260915
       - uses: actions/upload-artifact@v7
+        if: always()
         with:
-          name: plain-copy-source
-          path: /tmp/dotmatch-source/
-          retention-days: 2
+          name: plain-copy-transfer-checks
+          path: /tmp/plain-copy-checks/
+          retention-days: 3
