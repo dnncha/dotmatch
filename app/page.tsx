@@ -67,34 +67,39 @@ export default function Home() {
         <section id="top" className={styles.hero} aria-labelledby="hero-title">
           <div>
             <p className={styles.eyebrow}>
-              CRISPR guide counting & barcode assignment
+              DotMatch
             </p>
             <h1 id="hero-title">
-              Count your guides.<span>Account for every read.</span>
+              CRISPR guide counting and barcode assignment
             </h1>
             <p className={styles.lede}>
-              Go from FASTQ and a guide library to MAGeCK-compatible counts. See
-              which reads matched, which were ambiguous, and which need another
-              look.
+              Count known guides from FASTQ files and export MAGeCK-compatible
+              tables. Review unique, ambiguous, unmatched and invalid reads.
             </p>
             <div className={styles.actions}>
               <a
                 className={styles.primary}
                 href={sitePath("crispr-guide-counting")}
               >
-                Start counting guides <span aria-hidden="true">&nbsp;→</span>
+                Count guides
               </a>
               <a
                 className={styles.textLink}
                 href={sitePath("tools/library-safety")}
               >
-                Check a library first
+                Check a library
+              </a>
+              <a
+                className={styles.textLink}
+                href={siteAsset("examples/assignment-review/report.html")}
+              >
+                Open example report
               </a>
             </div>
             <p className={styles.facts}>
               <span>Apache-2.0</span>
               <span>Linux & macOS</span>
-              <span>Your data stays local</span>
+              <span>Local processing</span>
             </p>
           </div>
           <AssignmentDemo />
@@ -105,7 +110,7 @@ export default function Home() {
           aria-labelledby="install-title"
         >
           <div>
-            <h2 id="install-title">Install. Bring your own data.</h2>
+            <h2 id="install-title">Install DotMatch</h2>
             <p>
               Published CLI {publishedVersion} ·{" "}
               <a href={`${docsUrl}getting-started.html`}>
@@ -120,15 +125,11 @@ export default function Home() {
           className={styles.section}
           aria-labelledby="workflow-title"
         >
-          <p className={styles.eyebrow}>From reads to a count matrix</p>
-          <h2 id="workflow-title">
-            A small step in your workflow.
-            <br />A clear account of your data.
-          </h2>
+          <h2 id="workflow-title">Counting workflow</h2>
           <ol className={styles.steps}>
             <li>
               <span className={styles.stepNumber}>01 / PREPARE</span>
-              <h3>Start with the guides you expect.</h3>
+              <h3>Prepare inputs</h3>
               <p>
                 Give DotMatch your library and FASTQs. Review the proposed read
                 window before the analysis starts.
@@ -139,18 +140,18 @@ export default function Home() {
             </li>
             <li>
               <span className={styles.stepNumber}>02 / COUNT</span>
-              <h3>Make the matching rule explicit.</h3>
+              <h3>Run assignment</h3>
               <p>
                 Use exact, substitution-tolerant or indel-aware matching. Keep
                 ambiguous and unmatched reads separate from unique counts.
               </p>
               <a href={sitePath("assignment-sensitivity")}>
-                See why the rule matters
+                Compare matching policies
               </a>
             </li>
             <li>
               <span className={styles.stepNumber}>03 / ANALYSE</span>
-              <h3>Keep the analysis you already trust.</h3>
+              <h3>Export counts and QC</h3>
               <p>
                 Take the raw count matrix into MAGeCK. Carry configuration, QC
                 and methods with the result in a local review bundle.
@@ -169,25 +170,21 @@ export default function Home() {
           <div className={styles.proof}>
             <div>
               <p className={styles.eyebrow}>
-                More assigned reads ≠ better assignments
+                Assignment sensitivity
               </p>
               <h2 id="sensitivity-title">
-                Same reads.
-                <br />
-                Different rules.
-                <br />
-                Different counts.
+                Compare matching policies
               </h2>
               <p>
-                Here, exact matching and radius-one matching both count three
-                reads—but not the same reads or guides. A single mapping
-                percentage would hide that difference.
+                In this nine-read example, exact and radius-one matching each
+                uniquely assign three reads, but produce different per-guide
+                counts.
               </p>
               <a
                 className={styles.textLink}
                 href={siteAsset("examples/assignment-review/report.html")}
               >
-                Open the interactive report →
+                Open example report
               </a>
             </div>
             <div>
@@ -236,7 +233,7 @@ export default function Home() {
           className={styles.section}
           aria-labelledby="use-title"
         >
-          <h2 id="use-title">Built around known sequences.</h2>
+          <h2 id="use-title">Supported assays</h2>
           <div className={styles.routes}>
             <article>
               <h3>Pooled CRISPR screens</h3>
@@ -273,8 +270,7 @@ export default function Home() {
           className={styles.section}
           aria-labelledby="evidence-title"
         >
-          <p className={styles.eyebrow}>Examine it before you adopt it</p>
-          <h2 id="evidence-title">The inputs, methods and results are open.</h2>
+          <h2 id="evidence-title">Benchmarks and examples</h2>
           <p>
             Reproduce a public example, inspect count differences and compare
             DotMatch with your current workflow.
@@ -307,7 +303,7 @@ export default function Home() {
               <p>
                 Nine synthetic reads exercise close targets, duplicate
                 sequences, a literal N, an unmatched read and a short read.
-                Every displayed result is checked from source.
+                Expected assignments are checked against the native matcher.
               </p>
               <a href={`${repoUrl}/tree/main/examples/assignment_sensitivity`}>
                 Inspect the fixture →
@@ -321,7 +317,7 @@ export default function Home() {
           aria-label="Automation and scientific scope"
         >
           <details>
-            <summary>Working in a pipeline or with a local agent?</summary>
+            <summary>Pipelines and local agents</summary>
             <p>
               Use stable files and structured tools to prepare, preflight, run
               and review an assay. Inspect the installed contract before

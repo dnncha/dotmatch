@@ -29,7 +29,8 @@ def main(argv=None):
         page.on("request", lambda r: requests.append(r.url) if r.url.startswith(("http:", "https:", "ws:", "wss:")) else None)
         page.goto((example / "report.html").as_uri())
         expect(page.get_by_role("note", name="Synthetic demonstration")).to_be_visible()
-        expect(page.locator("#headline")).to_contain_text("Same assigned total")
+        expect(page.locator("#headline")).to_have_text("Assignment sensitivity")
+        expect(page.locator("#hero-description")).to_have_text("3 of 5 guide counts differ. Unique assignments: 3 → 3 (change: 0).")
         assert page.evaluate("!!globalThis.crypto?.subtle")
         checks.append("labelled_native_report_with_real_browser_crypto")
         assert page.locator("#guide-rows tr").count() == 3

@@ -23,8 +23,8 @@ An assigned-read percentage cannot tell you which targets gained counts, which
 reads fit several targets, or whether a more permissive matching rule changed the
 result. DotMatch keeps those decisions inspectable.
 
-Every read has an explicit outcome: **unique**, **ambiguous**, **none** (unmatched),
-or **invalid** (the requested window could not be extracted). Only unique calls
+Read outcomes are **unique**, **ambiguous**, **none** (unmatched), or **invalid**
+(the requested window could not be extracted). Only unique calls
 contribute to a target count. Choose the matching policy deliberately; a unique
 call is not proof of biological origin.
 

@@ -144,7 +144,8 @@ def main():
                     assert "bundle/read_changes.tsv" in archive.namelist()
                 page.get_by_role("link", name="Open the interactive example").click()
                 page.wait_for_url("**/examples/assignment-review/report.html")
-                expect(page.locator("#headline")).to_contain_text("Same assigned total")
+                expect(page.locator("#headline")).to_have_text("Assignment sensitivity")
+                expect(page.locator("#hero-description")).to_have_text("3 of 5 guide counts differ. Unique assignments: 3 → 3 (change: 0).")
                 expect(page.get_by_role("note", name="Synthetic demonstration")).to_be_visible()
                 demo_requests = []
                 page.on("request", lambda request: demo_requests.append(request.url))
