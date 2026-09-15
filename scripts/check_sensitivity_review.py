@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise the actual portable reviewer in Chromium and Node's Web Crypto.
+"""Exercise the actual portable reviewer in a real browser and Node's Web Crypto.
 
 Development-only: pytest and playwright are required. This does not claim a
 native matcher run, installed-wheel validation, Safari or a desktop Tauri test.
@@ -96,7 +96,7 @@ try{\n d=JSON.parse($("review-data").textContent);'''
     return json.loads(result.stdout.strip().splitlines()[-1])
 
 
-def browser_checks(t, work, executable=None, screenshot_dir=None, file_mode=False):
+def browser_checks(t, work, executable=None, screenshot_dir=None, file_mode=False, engine="chromium"):
     from playwright.sync_api import sync_playwright, expect
     bundle = work / "browser-fixture"
     summary = t.fixture(bundle, extra_zero_guides=110)
@@ -111,7 +111,7 @@ def browser_checks(t, work, executable=None, screenshot_dir=None, file_mode=Fals
     with sync_playwright() as p:
         kwargs = {"headless": True}
         if executable: kwargs["executable_path"] = executable
-        browser = p.chromium.launch(**kwargs)
+        browser = getattr(p, engine).launch(**kwargs)
         context = browser.new_context(viewport={"width":1440,"height":1000}, accept_downloads=True)
         page = context.new_page()
         page.on("pageerror", lambda e: errors.append(str(e)))
@@ -244,22 +244,25 @@ def browser_checks(t, work, executable=None, screenshot_dir=None, file_mode=Fals
         fallback=nojs.new_page();fallback.set_content(document)
         check(fallback.locator("#fallback").is_visible() and "Recorded outcomes" in fallback.inner_text("body"), "no-JavaScript static snapshot available")
         nojs.close();context.close();browser.close()
-    return {"chromium_dom_checks":tests,"javascript_errors":errors,"outgoing_requests":requests,
+    return {"browser_engine":engine,"browser_version":browser.version,"browser_dom_checks":tests,"javascript_errors":errors,"outgoing_requests":requests,
             "digest_test_double_dom_checks":0 if native_crypto else 8,
-            "browser_scope":"Local-file Chromium with native Web Crypto; Safari and Tauri not covered" if file_mode else "DOM-loaded Chromium; 8 accepted-evidence DOM checks use a Python digest test double. Actual Web Crypto exercised in Node. File/HTTP navigation, browser secure-context acceptance, Safari and Tauri not covered"}
+            "browser_scope":f"Local-file Playwright {engine} with native Web Crypto; branded Safari and Tauri not covered" if file_mode else f"DOM-loaded {engine}; 8 accepted-evidence DOM checks use a Python digest test double. Actual Web Crypto exercised in Node. File/HTTP navigation, browser secure-context acceptance, Safari and Tauri not covered"}
 
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--browser", choices=("chromium", "firefox", "webkit"), default="chromium")
     parser.add_argument("--chromium",help="Optional system Chromium executable")
     parser.add_argument("--screenshots",type=Path)
     parser.add_argument("--file-mode",action="store_true",help="Require local-file navigation and real browser Web Crypto (CI acceptance gate)")
     parser.add_argument("--result",type=Path)
     args=parser.parse_args()
+    if args.chromium and args.browser != "chromium":
+        parser.error("--chromium is only valid with --browser chromium")
     t=fixtures()
     with tempfile.TemporaryDirectory(prefix="dotmatch-review-") as tmp:
         work=Path(tmp)
-        result={**node_checks(t,work),**browser_checks(t,work,args.chromium,args.screenshots,args.file_mode)}
+        result={**node_checks(t,work),**browser_checks(t,work,args.chromium,args.screenshots,args.file_mode,args.browser)}
     text=json.dumps(result,indent=2)
     print(text)
     if args.result: args.result.write_text(text+"\n")

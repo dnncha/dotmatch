@@ -4,6 +4,31 @@
 report, not a new matching engine, a clinical product, or an automatic policy
 selector. Published DotMatch 0.5.0 reports retain the old static interface.
 
+## Try the complete example without installation
+
+The [assignment-sensitivity page](https://dnncha.github.io/dotmatch/assignment-sensitivity/)
+links to the native-generated interactive report and its portable example ZIP.
+Open `report.html`; compare Exact with Radius k=1, open `guide_A`, then attach
+`bundle/read_changes.tsv` to inspect the recorded decisions. The banner labels
+this as synthetic software data, not a biological result.
+
+The public example is generated on every website build from the checked-in
+nine-read inputs. Counts, outcomes and changed-record totals must match the
+independently enumerated website fixture. Every original output artifact is
+hash-checked. `bundle/report.html` is left unchanged; the labelled demonstration
+is a separate manifest-checked rendering. A demo manifest records source and
+implementation identities. These hashes establish consistency, not authenticity.
+
+```sh
+# Developer route; Python, make and a C compiler, no third-party Python package:
+python3 scripts/build_sensitivity_demo.py --out new-example/
+```
+
+`--out` refuses existing files/directories. `npm run build` uses `--site` to
+regenerate only the reserved ignored `public/examples/assignment-review/` build
+output. Generating the demo requires a native build; reviewing it requires none.
+The ZIP contains only public synthetic inputs, not a user-selected assay.
+
 ## Start with a scientific question
 
 The opening view asks whether a different matching rule changes individual guide
@@ -130,15 +155,19 @@ introduced into this read-only report.
 
 ```sh
 make shared
-python -m pytest -q python/tests/test_sensitivity.py python/tests/test_sensitivity_review.py
+python -m pytest -q python/tests/test_sensitivity.py python/tests/test_sensitivity_review.py python/tests/test_sensitivity_demo.py
 python -m pip install pytest==9.0.2 playwright==1.57.0
 python -m playwright install chromium
 python scripts/check_sensitivity_review.py --file-mode --screenshots review-checks/screenshots --result review-checks/result.json
 ```
 
 The dedicated `sensitivity-review` workflow builds the native engine, runs the
-existing sensitivity tests and new renderer tests, then requires real local-file
-Chromium navigation and native browser Web Crypto. Its result must be checked on
+existing sensitivity, renderer and native-demo tests. Its matrix requires real
+local-file navigation and native Web Crypto in Chromium/Firefox on Linux and
+Playwright WebKit on macOS. A second browser check uses the actual native-produced
+public demo, including its original read-decision file. The website gate checks
+the public entry, portable ZIP, guide inspector, attachment and clearing flows.
+WebKit automation is not branded Safari or physical-device acceptance. Its result must be checked on
 the actual candidate commit; configuration is not evidence of a successful run.
 
 Local validation on 15 September 2026: **53 renderer/contract cases passed; three
@@ -159,3 +188,18 @@ Fresh native/installed-wheel checks, complete repository CI, local-file browser
 acceptance, and Safari/macOS acceptance remain release gates until actually run.
 No merge, package release, deployment, customer pilot, scientific validation or
 institutional security certification is implied by this implementation.
+
+### Release follow-through, 15 September 2026
+
+The earlier 159ebd3 candidate's focused native/browser jobs passed; the full CI
+failed its website dependency audit. This follow-through updates sharp to 0.35.4
+and baseline-browser-mapping to 2.11.23 in the resolved lockfile, retains the
+moderate-or-higher audit gate, and lets Linux/macOS build results complete
+independently. A dependency proposal audit recorded zero findings before these
+files were committed. Fresh final-commit CI, not that proposal, is the release gate.
+
+The public GitHub v0.5.0 release was published on 6 September 2026. The former
+website 0.4.1 install pin and "sensitivity is unreleased" copy were stale; install
+metadata and all mirrored agent references now identify the published engine
+correctly while keeping this richer viewer explicitly unreleased. No new package
+tag or publication is authorized by these documentation changes.

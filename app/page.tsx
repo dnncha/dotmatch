@@ -8,6 +8,7 @@ import {
   publishedVersion,
   repoUrl,
   sitePath,
+  siteAsset,
 } from "./site-metadata";
 import { AssignmentDemo } from "./assignment-demo";
 import { InstallCommand } from "./install-command";
@@ -184,9 +185,9 @@ export default function Home() {
               </p>
               <a
                 className={styles.textLink}
-                href={sitePath("assignment-sensitivity")}
+                href={siteAsset("examples/assignment-review/report.html")}
               >
-                Explore the worked example →
+                Open the interactive report →
               </a>
             </div>
             <div>

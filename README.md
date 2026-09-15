@@ -115,6 +115,11 @@ shows why equal assigned totals can hide different per-guide counts.
 [Read the output contract](https://dotmatch.readthedocs.io/en/latest/sensitivity.html).
 This is sensitivity analysis, not an estimate of biological accuracy.
 
+[Explore the interactive review example](https://dnncha.github.io/dotmatch/assignment-sensitivity/)
+without installing anything. The example uses the public nine-read synthetic fixture.
+The richer portable viewer is an unreleased source upgrade; the published 0.5.0
+command retains its earlier static report.
+
 ## Choose by task
 
 | Task | Entry point | Workflow |

@@ -95,3 +95,7 @@ examples/oligo_adapter/data/*
 !examples/oligo_adapter/data/metadata.json
 examples/bcl_demux/data/
 examples/bcl_demux/output/
+
+# Native-generated public viewer demonstration (npm prebuild).
+/public/examples/assignment-review/
+/public/examples/.review-*

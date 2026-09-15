@@ -1,10 +1,10 @@
 name: Site validation
 on:
   pull_request:
-    paths: ['app/**', 'lib/library-safety.ts', 'public/**', 'tests/site/**', 'scripts/check_site_assets.mjs', 'scripts/check_site_export.mjs', 'scripts/generate_assignment_demo.py', 'scripts/check_site_browser.py', 'examples/assignment_sensitivity/**', 'python/dotmatch/sensitivity.py', 'package*.json', 'next.config.ts', '.github/workflows/site-validation.yml']
+    paths: ['app/**', 'lib/library-safety.ts', 'public/**', 'tests/site/**', 'scripts/check_site_assets.mjs', 'scripts/check_site_export.mjs', 'scripts/generate_assignment_demo.py', 'scripts/check_site_browser.py', 'examples/assignment_sensitivity/**', 'python/dotmatch/sensitivity*.py', 'scripts/build_sensitivity_demo.py', 'package*.json', 'next.config.ts', '.github/workflows/site-validation.yml']
   push:
     branches: [main]
-    paths: ['app/**', 'lib/library-safety.ts', 'public/**', 'tests/site/**', 'scripts/check_site_assets.mjs', 'scripts/check_site_export.mjs', 'scripts/generate_assignment_demo.py', 'scripts/check_site_browser.py', 'examples/assignment_sensitivity/**', 'python/dotmatch/sensitivity.py', 'package*.json', 'next.config.ts', '.github/workflows/site-validation.yml']
+    paths: ['app/**', 'lib/library-safety.ts', 'public/**', 'tests/site/**', 'scripts/check_site_assets.mjs', 'scripts/check_site_export.mjs', 'scripts/generate_assignment_demo.py', 'scripts/check_site_browser.py', 'examples/assignment_sensitivity/**', 'python/dotmatch/sensitivity*.py', 'scripts/build_sensitivity_demo.py', 'package*.json', 'next.config.ts', '.github/workflows/site-validation.yml']
 permissions:
   contents: read
 jobs:
