@@ -137,12 +137,12 @@ def main():
                 page.goto(origin + "/dotmatch/assignment-sensitivity/", wait_until="networkidle")
                 assert "dotmatch==0.5.0" in page.inner_text("body")
                 with page.expect_download() as example_download:
-                    page.get_by_role("link", name="Download the complete example").click()
+                    page.get_by_role("link", name="Download example files", exact=True).click()
                 import zipfile
                 with zipfile.ZipFile(example_download.value.path()) as archive:
                     assert "report.html" in archive.namelist()
                     assert "bundle/read_changes.tsv" in archive.namelist()
-                page.get_by_role("link", name="Open the interactive example").click()
+                page.get_by_role("link", name="Open example report", exact=True).click()
                 page.wait_for_url("**/examples/assignment-review/report.html")
                 expect(page.locator("#headline")).to_have_text("Assignment sensitivity")
                 expect(page.locator("#hero-description")).to_have_text("3 of 5 guide counts differ. Unique assignments: 3 → 3 (change: 0).")
