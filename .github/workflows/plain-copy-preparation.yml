@@ -1,0 +1,27 @@
+name: plain-copy-preparation
+on:
+  push:
+    branches: ['codex/plain-tool-copy-prep-20260915']
+    paths: ['.github/workflows/plain-copy-preparation.yml']
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: '77031ea146da11df65e15ccd50a5a6ba5a6d4171'
+          persist-credentials: false
+      - name: Export exact public source
+        run: |
+          mkdir -p /tmp/dotmatch-source
+          git rev-parse HEAD > /tmp/dotmatch-source/commit.txt
+          git archive --format=tar HEAD > /tmp/dotmatch-source/source.tar
+          sha256sum /tmp/dotmatch-source/source.tar > /tmp/dotmatch-source/SHA256SUMS
+      - uses: actions/upload-artifact@v7
+        with:
+          name: plain-copy-source
+          path: /tmp/dotmatch-source/
+          retention-days: 2
