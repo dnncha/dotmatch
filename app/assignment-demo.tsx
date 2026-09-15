@@ -11,12 +11,12 @@ const examples = [
   ["short", "Short read"],
 ] as const;
 const explanations: Record<string, string> = {
-  unique: "One target fits. This read contributes one count.",
+  unique: "One target within one substitution. Adds one count to that target.",
   ambiguous:
-    "Two targets fit. This read is recorded as ambiguous, not assigned twice.",
-  none: "No target fits. This read stays visible in unmatched-read QC.",
+    "Multiple targets within one substitution. No count is added.",
+  none: "No target within one substitution. Recorded as unmatched.",
   invalid:
-    "The read is shorter than the selected window. Record an extraction failure.",
+    "The read is shorter than the required 20-base window. Recorded as invalid.",
 };
 export function AssignmentDemo() {
   const [selected, setSelected] = useState<string>("one_mismatch");
@@ -29,8 +29,8 @@ export function AssignmentDemo() {
       aria-label="Interactive synthetic assignment example"
     >
       <div className={styles.instrumentHeading}>
-        <span>READ ASSIGNMENT</span>
-        <span>Hamming · k = 1</span>
+        <span>Read assignment example</span>
+        <span>Radius-one Hamming</span>
       </div>
       <div
         className={styles.exampleControls}
@@ -83,7 +83,7 @@ export function AssignmentDemo() {
           <strong>
             {result.target_id ??
               (result.status === "ambiguous"
-                ? "No forced call"
+                ? "Not assigned"
                 : "No count added")}
           </strong>
         </div>
@@ -91,7 +91,7 @@ export function AssignmentDemo() {
       </div>
       <p className={styles.instrumentFoot}>
         Synthetic example, checked against the native matcher.{" "}
-        <a href="#evidence">Inspect the evidence</a>
+        <a href="#evidence">Example inputs and tests</a>
       </p>
     </div>
   );

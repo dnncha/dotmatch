@@ -74,8 +74,8 @@ def build(output: Path, *, build_native: bool = True) -> dict:
         banner = ('<aside role="note" aria-label="Synthetic demonstration" '
                   'style="padding:14px 24px;background:#e6f1ef;border-bottom:1px solid #b4ccc8">'
                   '<strong>Synthetic example — not biological data.</strong> '
-                  'Compare Exact with Radius k=1, then open guide_A. To inspect the '
-                  'recorded reads, attach bundle/read_changes.tsv from the example download.'
+                  '9 reads · 5 target IDs. Optional read decisions: load '
+                  'bundle/read_changes.tsv from the example files.'
                   '</aside>')
         report = report.replace('<body>', '<body>' + banner, 1)
         (stage / "report.html").write_text(report, encoding="utf-8")
@@ -88,11 +88,11 @@ def build(output: Path, *, build_native: bool = True) -> dict:
         (stage / "START-HERE.txt").write_text(
             "DOTMATCH ASSIGNMENT REVIEW — SYNTHETIC EXAMPLE\n\n"
             "Open report.html in a current desktop browser. No installation, server, "
-            "account or network is needed. This is an unreleased viewer candidate.\n\n"
+            "account or network is needed. The interactive viewer is available from the source repository, not the published 0.5.0 wheel.\n\n"
             "1. Exact and Radius k=1 both assign three reads, but three guide counts differ.\n"
             "2. Open guide_A: its recorded counts are 1, 0, 1.\n"
             "3. Attach bundle/read_changes.tsv to inspect recorded decisions locally.\n"
-            "4. Swap policies or export a figure. More assignments are not evidence of accuracy.\n\n"
+            "4. Use the policy selectors to compare results; export counts or an SVG figure.\n\n"
             "bundle/report.html is the unchanged producer report; report.html is the separately "
             "labelled, manifest-checked demo. inputs/ contains only the public synthetic fixture.\n"
             "summary.json hashes establish internal consistency, not authentication. No biological "
