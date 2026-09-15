@@ -1,0 +1,41 @@
+name: viewer-release-preflight
+
+on:
+  push:
+    branches: [codex/viewer-release-preflight-20260915]
+    paths: [.github/workflows/viewer-release-preflight.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Capture exact tracked source for offline review
+        run: |
+          mkdir -p preflight/source preflight/dependencies
+          git rev-parse HEAD > preflight/source/commit.txt
+          git archive --format=tar.gz HEAD > preflight/source/source.tar.gz
+          git ls-tree -r HEAD > preflight/source/tree.txt
+      - uses: actions/upload-artifact@v7
+        with:
+          name: viewer-preflight-source
+          path: preflight/source/
+      - name: Resolve only the two security update proposals
+        run: |
+          npm pkg set 'overrides.sharp=^0.35.4' 'overrides.baseline-browser-mapping=^2.11.0'
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          cp package.json package-lock.json preflight/dependencies/
+          git diff -- package.json package-lock.json > preflight/dependencies/dependency-update.patch
+          npm audit --json > preflight/dependencies/audit.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: viewer-dependency-proposal
+          path: preflight/dependencies/
