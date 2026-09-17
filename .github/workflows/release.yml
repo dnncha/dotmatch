@@ -76,7 +76,7 @@ jobs:
         with:
           platforms: arm64
       - name: Build and test repaired Linux wheels
-        uses: pypa/cibuildwheel@v4.2.0
+        uses: pypa/cibuildwheel@v4.2.1
         env:
           CIBW_PLATFORM: linux
           CIBW_ARCHS_LINUX: "x86_64 aarch64"
