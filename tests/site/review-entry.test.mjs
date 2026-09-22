@@ -28,3 +28,12 @@ test('site build generates the real demo before export rather than shipping a mo
   assert.equal(pkg.scripts.prebuild, 'python3 scripts/build_sensitivity_demo.py --site');
   assert(read('scripts/build_sensitivity_demo.py').includes('run_sensitivity('));
 });
+test('every homepage example id exists in the checked demo fixture', () => {
+  const source = read('app/assignment-demo.tsx');
+  const block = source.match(/const examples = \[([\s\S]*?)\] as const;/);
+  assert(block, 'app/assignment-demo.tsx: homepage example list not found');
+  const ids = [...block[1].matchAll(/\n\s*\["([^"]+)",/g)].map(match => match[1]);
+  assert.deepEqual(ids, ['exact_isolated', 'one_mismatch', 'two_candidates', 'unmatched', 'short']);
+  const records = new Set(JSON.parse(read('public/assignment-demo.json')).records.map(row => row.id));
+  for (const id of ids) assert(records.has(id), `public/assignment-demo.json has no ${id} record for the homepage to look up`);
+});
