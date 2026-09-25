@@ -30,13 +30,14 @@ python3 -m pip install dotmatch
 dotmatch --version
 ```
 
-Release 0.5.0 includes the six `dotmatch agent`
-tools described below. Confirm that `dotmatch --version` reports 0.5.0 before
+Release 0.6.0 includes the six `dotmatch agent`
+tools described below. Confirm that `dotmatch --version` reports 0.6.0 before
 using them. Bioconda and BioContainers may lag PyPI; check the installed
 version when using those channels.
 
-Then follow [Getting started](getting-started.md) for a small count or
-demultiplexing run. If you already know which command you need, go straight to
+To verify the installed package before using study data, run the offline
+synthetic check with `dotmatch demo --out-dir first-run/`. Then follow
+[Getting started](getting-started.md) for a small count or demultiplexing run. If you already know which command you need, go straight to
 the [command reference](command-reference.md). Coding and scientific agents can
 use the [Agent guide](agent-guide.md) or the public capability manifest for
 versioned task routing with explicit inputs, outputs, and limitations. Use `dotmatch agent tools --json` to inspect the tools available in your installed version.
@@ -49,7 +50,7 @@ versioned task routing with explicit inputs, outputs, and limitations. Use `dotm
 | Reproduce a public CRISPR example | [Public CRISPR guide-counting example](../examples/crispr_guides/README.md) |
 | Reproduce the multi-guide Perturb-seq case study | [GSE146194 direct-guide-capture report](benchmarks/perturb_seq_gse146194/README.md) |
 | Try the workflow without a local install | [Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb) or [Google Colab](https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb) |
-| Compare my existing counts with DotMatch | [Local count comparison (unreleased)](count-comparison.md) |
+| Compare my existing counts with DotMatch | [Count comparison](count-comparison.md) |
 | Compare guide-counting workflows | [Guide-counting workflow comparison](usability-comparison.md) |
 | Build a checked assay project | [AssaySpec workflows](assayspec.md) |
 | Evaluate and hand off a run | [Lab evaluation and handoff](lab-evaluation.md) |
