@@ -1,0 +1,5 @@
+sgRNA	Gene	control	treatment
+guide_a	GENE_A	100	120
+guide_b	GENE_B	20	0
+guide_c	GENE_C	0	10
+guide_d	GENE_D	8	8
