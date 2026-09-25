@@ -33,7 +33,7 @@ basecaller, cell/UMI pipeline or gene-level hit-calling package.
 
 ## Install
 
-DotMatch 0.6.0 is the current release. It includes the six `dotmatch agent` tools
+Release 0.6.0 is the current DotMatch release. It includes the six `dotmatch agent` tools
 described below:
 
 ```bash
