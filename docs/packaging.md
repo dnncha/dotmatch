@@ -1,10 +1,11 @@
 # Packaging and installation
 
 DotMatch is distributed through PyPI, GitHub releases, Bioconda, and
-containers. Release 0.4.1 is the current release on PyPI, GitHub Releases, and
-GHCR. Its version-specific Zenodo DOI is pending; the prior archived release is
-0.4.0. Bioconda remains at 0.2.2, and its generated BioContainers images can lag
-those channels, so check the provider records before pinning a version.
+containers. Release 0.6.0 is published on PyPI, GitHub Releases, and GHCR. The production
+site and Read the Docs show the 0.6.0 first-run guides. Bioconda currently lists
+0.5.0, while the `assaycode` metapackage remains at 0.2.2. The 0.6.0
+BioContainers image and version-specific Zenodo DOI are not yet verified; check
+the provider records before pinning those channels.
 
 ## PyPI
 
@@ -27,9 +28,9 @@ python3 -m pip install dotmatch==<version>
 
 The PyPI page is <https://pypi.org/project/dotmatch/>.
 
-The release workflow is configured to build repaired `manylinux` and
-`musllinux` wheels for `x86_64` and `aarch64`. Check the release record for
-the architectures confirmed for a specific version before pinning it.
+Release 0.6.0 includes repaired `manylinux` and `musllinux` wheels for
+`x86_64` and `aarch64`, plus a universal macOS wheel. The release finalizer
+verified PyPI artifact hashes and a clean installation.
 
 ## Bioconda
 
@@ -52,7 +53,7 @@ checksums, and release notes:
 
 <https://github.com/dnncha/dotmatch/releases>
 
-Verify a downloaded artifact with the matching entry in `checksums.txt` before
+Verify a downloaded artifact with the matching entry in `SHA256SUMS.txt` before
 installing it outside a package manager.
 
 ## Container image
@@ -64,15 +65,15 @@ docker pull ghcr.io/dnncha/dotmatch:v<version>
 docker run --rm ghcr.io/dnncha/dotmatch:v<version> dist ACGT AGGT
 ```
 
-The release workflow is configured to publish `linux/amd64` and `linux/arm64`
-image manifests and smoke-test both native CLI paths. Check the release record
-before pinning a tag.
+The 0.6.0 image has verified `linux/amd64` and `linux/arm64` manifests, and
+both native CLI paths passed smoke tests. The verified index digest is
+`sha256:59ca4139e9cac19e921f496ef075b0a52a446c05b6cce20cbbb98c5458900dad`.
 
 BioContainers images are generated after the corresponding Bioconda package is
 published. Their tags include the Bioconda build number, so use the tag shown on
 the package page rather than guessing it.
 
-For the latest BioContainers release currently verified here, one available
+For an older BioContainers release previously verified here, one available
 Linux/Python 3.11 tag is:
 
 ```bash
