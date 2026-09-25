@@ -1,164 +1,192 @@
-# CRISPR Guide Counting with DotMatch
+# Your first CRISPR guide-counting run
 
-This tutorial uses the tiny checked workflow fixtures under
-`examples/workflows/fixtures/`. It does not download public data. The goal is to
-show the production assay path, the MAGeCK-compatible count matrix, and the
-sample QC table in a few commands.
+Start with a checked example, then prepare your own reads. Keep the counting
+workflow you already use while you evaluate DotMatch. No study data needs to
+leave your computer.
 
-## 1. Build DotMatch
+## Check which version you are using
 
-```bash
-make
-```
-
-## 2. Recommended: scaffold or start an assay project
-
-The production path is `dotmatch assay new` followed by `dotmatch assay start`
-(or `./run.sh` inside a scaffolded project). That runs preflight `check`, counts
-guides, runs CRISPR QC, and writes a reliability report with suggested
-`assay_fixes.tsv` edits when thresholds fail.
-
-From the checked fixture:
+The released package can be installed with:
 
 ```bash
-cd examples/workflows/fixtures
-../../dotmatch assay start crispr_assay.toml
+python3 -m pip install dotmatch==0.5.0
+dotmatch --version
 ```
 
-To scaffold a fresh project from your own FASTQs:
+**Unreleased additions:** `dotmatch demo`, `dotmatch compare-counts`, and
+`crispr quickstart --link-reads` require a source checkout containing these
+changes, or its CI-built evaluation wheel. They are not in the published 0.5.0
+package. For a checkout, use `python3 -m pip install .` in a virtual environment.
+A review build may still report 0.5.0; retain its exact source commit as well as
+the version. Do not substitute an unreviewed build into a production pipeline.
+
+For a no-install view using the public synthetic fixture, open the
+[assignment review example](https://dnncha.github.io/dotmatch/assignment-sensitivity/).
+
+## 1. Get a checked result without assembling files
+
+From an installed evaluation build:
+
+```bash
+dotmatch demo --out-dir first-run/
+```
+
+Open `first-run/index.html`. The package includes the tiny synthetic inputs;
+the command does not fetch them or upload anything. It runs the existing native
+assignment engine, checks every guide count and the four read-outcome totals
+against the committed expectations, and creates an offline review bundle.
+
+The example deliberately includes a near-neighbour guide pair, duplicate target
+sequences, a short read, an unmatched read, and a literal `N`. Exact and
+radius-one assignment each count three reads, but their counts differ for three
+guides. Best-distance counts five reads. More assigned reads are not proof of
+better biological accuracy. This is a software example, not a biological study.
+
+The start page links to the interactive assignment review, the count-table
+comparison, the complete tables and checksums. A completed `manifest.json`
+marks a successful demo. If verification fails, the command returns status 2
+and does not write that completion marker. Existing output paths are refused.
+
+## 2. Prepare your own guide library and FASTQs
+
+A guide table must identify the guide, its sequence, and, for a useful
+MAGeCK handoff, its gene annotation. For example:
+
+```text
+target_id	sequence	gene
+guide_a	GACTAGCTACGATCGTACGA	GENE_A
+guide_b	TTGGCACCTTAGGACCTGAA	GENE_B
+```
+
+Use a TSV or CSV exported from the intended library revision. Do not replace
+missing annotations by guessing. Retain the library's source and checksum.
+
+Choose the read that contains the guide sequence. **Do not give quickstart both
+R1 and R2 just because they are in the same directory.** Filename-derived sample
+names are not biological replicate declarations, and technical lanes are not
+silently combined into one biological sample.
+
+```bash
+dotmatch crispr quickstart \
+  --library guides.csv \
+  --fastq 'fastqs/*_R1*.fastq.gz' \
+  --out crispr-screen/
+```
+
+Use paths that match your actual naming convention. Repeat `--fastq` for more
+input patterns. In the evaluation build, every argument must resolve: one valid
+file does not excuse a second missing pattern. Duplicate inputs, colliding
+basenames, non-files and invalid resource limits are rejected before a project
+is created. Existing output paths are never overwritten.
+
+The default copies reads into the project. For large FASTQs, the evaluation
+build supports:
+
+```bash
+dotmatch crispr quickstart \
+  --library guides.csv \
+  --fastq 'fastqs/*_R1*.fastq.gz' \
+  --link-reads --out crispr-screen/
+```
+
+Linked reads stay in their original location, avoiding another full-size copy.
+**They must remain available and unchanged. The project is not self-contained.**
+The library is still copied, and `inference_report.json` records the original
+read paths and whether reads were linked or copied.
+
+With published 0.5.0, the existing directory-based route also supports linking:
 
 ```bash
 dotmatch assay new crispr \
-  --library guides.csv \
-  --reads-dir fastqs/ \
-  --out crispr_screen/
-
-cd crispr_screen
-./run.sh
+  --library guides.csv --reads-dir guide-fastqs/ \
+  --link-reads --out crispr-screen/
 ```
 
-Key outputs under the configured `out_dir`:
+Put only the intended guide-read inputs in that directory. Inspect the generated
+status and settings before starting a run; do not assume this older command
+uses the new quickstart's always-draft default.
 
-- `counts.mageck.tsv` — MAGeCK-style count matrix
-- `sample_qc.tsv` — per-sample assignment and representation QC
-- `summary.json` — run metadata and assignment rates
-- `reliability_report.html` — evidence-backed preflight/postrun review
-- `crispr_qc.json` — guide-level QC summary
+## 3. Review the inferred settings before running
 
-CPU remains the assignment authority. GPU Metal is opt-in via `[backend]` in the
-assay spec and requires `--metal-validate` when enabled.
+Open `crispr-screen/inference_report.json`, `samples.generated.tsv`, and
+`assay.toml`. Check the sample mapping, library revision, zero-based guide
+window, read orientation, matching rule and warnings against the assay protocol.
+Inference proposes a configuration; it does not establish biological validity.
 
-After a completed run, create a review package without copying raw FASTQs:
+The quickstart stays in draft by default. After confirming the settings, change
+the top-level `status = "draft"` to `status = "ready"` in `assay.toml`, then run:
 
 ```bash
-dotmatch assay handoff crispr_assay.toml
+dotmatch assay start crispr-screen/assay.toml
 ```
 
-This writes `assay_out/handoff/`, including reports, primary outputs, methods,
-citation material, and SHA-256 records for the declared inputs. See [Lab
-Evaluation and Handoff](../lab-evaluation.md) for the review order and
-acceptance record.
+The evaluation build's explicit `--accept-inference` option only starts a run
+when inference itself reports ready. It no longer promotes an uncertain
+inference automatically. `--no-run` always leaves the project in draft.
 
-## 3. Direct `crispr-count` (single command)
+A setup failure can leave diagnostic files in the newly created project. Do
+not treat an incomplete scaffold as ready; inspect the error and use a new
+output directory for the corrected attempt. Existing projects are not deleted.
 
-For a minimal single command without the full assay wrapper:
+## 4. Review the outputs, not only the assigned percentage
+
+Start with `assay_out/reliability_report.html`, then inspect the sample QC,
+CRISPR QC and `counts.mageck.tsv`. A software QC verdict is not a substitute for
+sample identity, positive and negative controls, or the study's analysis plan.
+
+The matrix contains `sgRNA`, `Gene`, then one raw integer count column per
+sample. Only unique assignments add target counts. Ambiguous, unmatched and
+invalid-window reads remain visible in the QC outputs.
+
+For a side-by-side evaluation in the unreleased build:
 
 ```bash
-mkdir -p tmp/crispr-first-run
-
-cat > tmp/crispr-first-run/samples.tsv <<'EOF'
-sample_id	fastq
-sample_a	examples/workflows/fixtures/sample_a.fastq
-sample_b	examples/workflows/fixtures/sample_b.fastq
-EOF
+dotmatch compare-counts \
+  --baseline existing-workflow/counts.tsv \
+  --candidate crispr-screen/assay_out/counts.mageck.tsv \
+  --out-dir comparison/
 ```
 
-`crispr-count --samples` accepts TSV or CSV sample sheets. With a header, the
-sample column may be named `sample_id`, `sample`, or `label`; the FASTQ column
-may be named `fastq`, `fastq_path`, `reads`, `path`, or `file`. Without a
-header, DotMatch treats the first column as the sample name and the second as
-the FASTQ path.
+Both tables must refer to the same samples, guides and counting unit. Open
+`comparison/report.html`. Equal totals do not guarantee equal guide counts,
+and equal guide counts do not prove biological accuracy. Do not select a policy
+just because it produces more counts or significant hits. See
+[Count comparison](../count-comparison.md) for exclusions and interpretation.
 
-The fixture library contains three guides:
+## 5. Keep a reviewable record
+
+After reviewing a completed run:
 
 ```bash
-cat examples/workflows/fixtures/crispr_library.csv
+dotmatch assay handoff crispr-screen/assay.toml
 ```
 
-Guide libraries may be TSV or CSV. DotMatch detects common CRISPR headers such
-as `sgRNA`, `sgRNAID`, `guide_id`, `gRNA.sequence`, `sgRNA_sequence`,
-`guide_seq`, `sequence`, `Gene`, and `gene_symbol`.
+This packages the configuration, counts, reports, methods, citation and checksums
+without copying raw FASTQs. Reports can still contain private sample names,
+guide identifiers and counts. Review before sharing. Use the
+[lab-evaluation guide](../lab-evaluation.md) to record the technical decision.
+
+Useful optional feedback is specific: what task you tried, what became useful,
+what blocked you, and whether you chose to use DotMatch again. The
+[evaluation form](https://github.com/dnncha/dotmatch/issues/new?template=pilot_feedback.yml)
+is public; do not attach private reads or unpublished study identifiers.
+
+## Direct counting with an explicit sample sheet
+
+The established direct command remains available in released 0.5.0:
 
 ```bash
-./dotmatch crispr-count \
-  --library examples/workflows/fixtures/crispr_library.csv \
-  --samples tmp/crispr-first-run/samples.tsv \
-  --guide-start 0 \
-  --guide-length 4 \
-  --k 1 \
-  --metric hamming \
-  --ambiguity-policy radius \
-  --out tmp/crispr-first-run/counts.mageck.tsv \
-  --summary tmp/crispr-first-run/qc.json \
-  --ambiguous discard
+dotmatch crispr-count \
+  --library guides.csv --samples samples.tsv \
+  --guide-start 0 --guide-length 20 \
+  --k 1 --metric hamming --ambiguity-policy radius \
+  --out counts.mageck.tsv --summary summary.json \
+  --sample-qc sample_qc.tsv --ambiguous discard
 ```
 
-`sample_qc.tsv` is written automatically beside `--out`. Progress and QC review
-warnings go to stderr on long runs.
-
-## 4. Inspect the count matrix
-
-```bash
-cat tmp/crispr-first-run/counts.mageck.tsv
-```
-
-Expected output:
-
-```text
-sgRNA	Gene	sample_a	sample_b
-guide_a	GENEA	0	0
-guide_b	GENEB	0	0
-guide_c	GENEC	0	1
-```
-
-The output is ready for MAGeCK-style downstream analysis: `sgRNA`, `Gene`, then
-one integer count column per sample. DotMatch does not run MAGeCK statistics; it
-only writes the count matrix expected by those tools.
-
-## 5. Inspect sample QC
-
-```bash
-cat tmp/crispr-first-run/sample_qc.tsv
-```
-
-The key columns are:
-
-- `total_reads`: input reads observed for the sample.
-- `assigned_reads`: reads assigned uniquely to one guide.
-- `exact_reads`: exact guide-window matches.
-- `k1_rescued_reads`: one-edit rescued reads.
-- `ambiguous_reads`: reads matching multiple guides within the allowed radius.
-- `no_match_reads`: valid guide windows that matched no guide.
-- `invalid_reads`: reads too short for the configured guide window.
-- `assignment_rate`, `ambiguous_rate`, and `no_match_rate`: the same outcomes
-  divided by valid extracted reads.
-- `targets_observed`, `zero_count_targets`, `gini_index`, and
-  `top_1pct_read_fraction`: guide-representation checks for quick review.
-- `candidates_verified`: native target candidates checked after indexing.
-
-In `sample_a`, the fixture deliberately includes one exact read that is withheld
-because another guide is inside the one-edit radius, one ambiguous one-edit
-read, one unmatched read, and one invalid short read. That is the behavior
-DotMatch is designed to expose rather than hide.
-
-## 6. Verify against the checked fixture outputs
-
-```bash
-diff -u examples/workflows/fixtures/expected_counts.mageck.tsv \
-  tmp/crispr-first-run/counts.mageck.tsv
-```
-
-No diff means the tutorial count matrix matches the repository fixture.
-
-For a public-data CRISPR example, use `examples/crispr_guides/run.sh` and the
-checked evidence reports under `docs/benchmarks/public_crispr/`.
+These extraction and assignment values are examples, not recommendations for
+your assay. Supply your confirmed settings. Sample sheets use `sample_id` and
+`fastq` columns; absolute FASTQ paths avoid ambiguity about the working directory.
+Keep biological sample identities explicit and do not treat separate lanes as
+independent biological replicates. DotMatch writes MAGeCK-compatible counts;
+it does not perform downstream screen statistics.

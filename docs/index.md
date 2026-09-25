@@ -49,6 +49,7 @@ versioned task routing with explicit inputs, outputs, and limitations. Use `dotm
 | Reproduce a public CRISPR example | [Public CRISPR guide-counting example](../examples/crispr_guides/README.md) |
 | Reproduce the multi-guide Perturb-seq case study | [GSE146194 direct-guide-capture report](benchmarks/perturb_seq_gse146194/README.md) |
 | Try the workflow without a local install | [Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb) or [Google Colab](https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb) |
+| Compare my existing counts with DotMatch | [Local count comparison (unreleased)](count-comparison.md) |
 | Compare guide-counting workflows | [Guide-counting workflow comparison](usability-comparison.md) |
 | Build a checked assay project | [AssaySpec workflows](assayspec.md) |
 | Evaluate and hand off a run | [Lab evaluation and handoff](lab-evaluation.md) |
@@ -113,6 +114,7 @@ sensitivity
 tutorials/crispr-count-first-run
 tutorials/scverse-perturb-seq
 lab-evaluation
+count-comparison
 ```
 
 ```{toctree}
