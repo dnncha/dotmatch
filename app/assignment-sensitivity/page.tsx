@@ -44,9 +44,9 @@ export default function SensitivityPage() {
             </a>
           </div>
           <p className={styles.note}>
-            The report uses results computed by the native matcher. The viewer
-            is available in the source repository; published CLI
-            {" "}{publishedVersion} still writes the static report.
+            The report uses results computed by the native matcher. The site
+            viewer reviews the bundled synthetic example. The installed
+            sensitivity command still writes its static report.
           </p>
         </header>
         <section className={styles.section} aria-labelledby="try-review">
@@ -187,8 +187,9 @@ export default function SensitivityPage() {
           <h2>Run on local data</h2>
           <p>
             <code>dotmatch sensitivity</code> is included in published {publishedVersion}.
-            It produces the count tables and a static report. The interactive viewer
-            shown above is an unreleased upgrade, not a feature of that published wheel.
+            It produces the count tables and a static report. The interactive
+            review on this page is a website example; it does not replace the
+            local command's report.
           </p>
           <pre className={styles.code}>
             <code>{`python3 -m pip install dotmatch==${publishedVersion}\n\ndotmatch sensitivity \\\n  --targets guides.tsv \\\n  --reads sample.fastq.gz \\\n  --target-start 23 \\\n  --target-length 20 \\\n  --sample-label sample_1 \\\n  --out-dir sensitivity/`}</code>
