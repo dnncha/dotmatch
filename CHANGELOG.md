@@ -4,6 +4,20 @@ All notable user-facing changes are tracked here. Public statements in release n
 
 ## Unreleased
 
+## 0.6.0 - 2026-09-25
+
+### Added
+
+- Added `dotmatch demo --out-dir` with a packaged synthetic fixture. It runs
+  offline and checks per-guide counts and read-outcome totals against committed
+  expectations before writing a completed review bundle.
+- Added `dotmatch crispr quickstart --link-reads` with strict input-pattern
+  validation, draft-by-default projects, and explicit copied or linked read
+  handling.
+- Added `dotmatch compare-counts` for raw count-table comparisons by guide and
+  sample identity, with exact integer reports and explicit mismatch coverage.
+- Added `python -m dotmatch` as an entry point to the installed CLI dispatcher.
+
 ### Assignment review
 
 - The sensitivity report now supports full-library search, policy comparison,
@@ -11,7 +25,7 @@ All notable user-facing changes are tracked here. Public statements in release n
   scoped TSV/SVG exports. Matching/count semantics are unchanged.
 - A native-generated nine-read example opens without installation and includes
   a portable download with the original completed artifacts. The website points
-  to the published 0.5.0 engine and distinguishes the unreleased viewer.
+  to the published 0.6.0 engine and the portable assignment-review viewer.
 - Update the website's sharp and baseline-browser-mapping dependency chains.
   Add local-file Chromium, Firefox and macOS WebKit acceptance gates; WebKit
   automation is not a branded Safari or physical-device acceptance claim.
@@ -59,9 +73,9 @@ All notable user-facing changes are tracked here. Public statements in release n
   begin with a literal double quote because native TSV serialization would
   otherwise change their downstream interpretation.
 
-These are source changes after 0.5.0, not changes to already-published artifacts.
 The matching kernel, default counting policies, historical benchmark outputs,
-and published biological scope are unchanged.
+and published biological scope are unchanged. The synthetic examples verify
+software behavior, not biological accuracy.
 
 ## 0.5.0 - 2026-09-06
 
