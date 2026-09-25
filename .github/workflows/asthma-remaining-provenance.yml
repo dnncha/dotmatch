@@ -1,0 +1,53 @@
+name: Asthma remaining raw provenance
+on:
+  push:
+    branches: [research/asthma-public-data-20260925]
+    paths: [.github/workflows/asthma-remaining-provenance.yml]
+permissions:
+  contents: read
+jobs:
+  hashes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Hash publicly deposited raw microarrays
+        run: |
+          mkdir asthma-remaining-provenance
+          python -u - <<'PY'
+          import urllib.request,pathlib,json,hashlib,gzip,csv,io,concurrent.futures,time
+          out=pathlib.Path('asthma-remaining-provenance');jobs=[]
+          for acc in ['GSE41861','GSE64913','GSE76227','GSE89809']:
+           url='https://ftp.ncbi.nlm.nih.gov/geo/series/'+acc[:-3]+'nnn/'+acc+'/matrix/'+acc+'_series_matrix.txt.gz'
+           with urllib.request.urlopen(url,timeout=20) as r: text=gzip.decompress(r.read(150_000_001)).decode()
+           lines={};supp=[]
+           for row in csv.reader(io.StringIO(text.split('!series_matrix_table_begin')[0]),delimiter='\t'):
+            if row and row[0] in ['!Sample_geo_accession','!Sample_title']: lines[row[0]]=row[1:]
+            if row and row[0].startswith('!Sample_supplementary_file'): supp.append(row[1:])
+           for i,(sample,title) in enumerate(zip(lines['!Sample_geo_accession'],lines['!Sample_title'])):
+            urls=[row[i].replace('ftp://','https://') for row in supp if row[i].startswith(('ftp://','https://'))]
+            chosen=[u for u in urls if '.cel' in u.lower()]
+            if len(chosen)!=1: raise RuntimeError('Expected one CEL file '+sample+' '+str(urls))
+            jobs.append({'dataset':acc,'sample':sample,'title':title,'url':chosen[0]})
+          (out/'input_manifest.json').write_text(json.dumps(jobs,indent=2))
+          def work(row):
+           for attempt in range(2):
+            try:
+             with urllib.request.urlopen(row['url'],timeout=25) as r: compressed=r.read(60_000_001)
+             if len(compressed)>60_000_000: raise ValueError('Compressed file size guard')
+             raw=gzip.decompress(compressed)
+             if len(raw)>200_000_000: raise ValueError('Raw file size guard')
+             result={**row,'compressed_bytes':len(compressed),'uncompressed_bytes':len(raw),'compressed_sha256':hashlib.sha256(compressed).hexdigest(),'uncompressed_sha256':hashlib.sha256(raw).hexdigest(),'header_hex':raw[:80].hex()}
+             print(row['sample'],len(compressed),result['uncompressed_sha256'],flush=True);return result
+            except Exception as e: err=str(e);time.sleep(1)
+           return {**row,'error':err}
+          with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+           with open(out/'raw_hashes.jsonl','w') as f:
+            for row in pool.map(work,jobs):f.write(json.dumps(row)+'\n');f.flush()
+          print('COMPLETED',len(jobs),flush=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: asthma-remaining-provenance
+          path: asthma-remaining-provenance/
+          retention-days: 30
