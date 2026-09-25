@@ -129,8 +129,10 @@ This is sensitivity analysis, not an estimate of biological accuracy.
 
 [Explore the interactive review example](https://dnncha.github.io/dotmatch/assignment-sensitivity/)
 without installing anything. The example uses the public nine-read synthetic fixture.
-The portable assignment review is included with DotMatch 0.6.0. Its synthetic
-fixture demonstrates software behavior, not biological accuracy.
+The interactive assignment review is published on the DotMatch 0.6.0 site.
+The installed `dotmatch sensitivity` command continues to write its static
+report. The synthetic fixture demonstrates software behavior, not biological
+accuracy.
 
 ## Choose by task
 
