@@ -1,0 +1,58 @@
+name: Asthma public data acquisition
+on:
+  push:
+    branches: [research/asthma-public-data-20260925]
+    paths: [.github/workflows/asthma-public-data.yml]
+permissions:
+  contents: read
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Retrieve GEO matrices and annotations
+        shell: bash
+        run: |
+          mkdir -p asthma-data
+          python - <<'PY'
+          import urllib.request, re, pathlib, hashlib, json, gzip, time
+          out=pathlib.Path('asthma-data'); manifest=[]
+          def get(url,name):
+              p=out/name
+              for attempt in range(3):
+                  try:
+                      req=urllib.request.Request(url,headers={'User-Agent':'asthma-secondary-analysis/0.1'})
+                      with urllib.request.urlopen(req,timeout=90) as r: data=r.read()
+                      p.write_bytes(data)
+                      manifest.append({'url':url,'file':name,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()})
+                      print('DOWNLOADED',name,len(data),flush=True)
+                      return data
+                  except Exception as e:
+                      print('RETRY',url,str(e),flush=True); time.sleep(2*(attempt+1))
+              raise RuntimeError('Could not retrieve '+url)
+          platforms=set()
+          for acc in ['GSE4302','GSE67472','GSE89809','GSE41861']:
+              base='https://ftp.ncbi.nlm.nih.gov/geo/series/'+acc[:-3]+'nnn/'+acc+'/matrix/'
+              listing=get(base,acc+'_matrix_index.html').decode()
+              names=sorted(set(re.findall(r'href="([^"]+series_matrix[^\"]*\.gz)"',listing)))
+              if not names: raise RuntimeError('No matrices for '+acc)
+              for name in names:
+                  text=gzip.decompress(get(base+name,name)).decode()
+                  for line in text.splitlines():
+                      if line.startswith('!Series_platform_id'): platforms.update(re.findall(r'GPL\d+',line))
+                      if line.startswith(('!Series_title','!Series_summary','!Sample_title','!Sample_characteristics_ch1')): print(acc,line[:2000],flush=True)
+          for gpl in sorted(platforms):
+              base='https://ftp.ncbi.nlm.nih.gov/geo/platforms/'+gpl[:-3]+'nnn/'+gpl+'/soft/'
+              try: get(base+gpl+'_family.soft.gz',gpl+'_family.soft.gz')
+              except Exception as e: print('ANNOTATION_UNAVAILABLE',gpl,str(e))
+          (out/'download_manifest.json').write_text(json.dumps(manifest,indent=2))
+          print('COMPLETE',json.dumps(manifest),flush=True)
+          PY
+      - name: Upload public data and checksums
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: asthma-public-data
+          path: asthma-data/
+          retention-days: 30
+          if-no-files-found: error
