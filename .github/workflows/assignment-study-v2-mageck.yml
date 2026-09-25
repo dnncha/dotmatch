@@ -1,0 +1,83 @@
+name: Assignment study v2 downstream sensitivity
+on:
+  push:
+    branches: [research/assignment-study-v2-20260926]
+    paths: ['.github/workflows/assignment-study-v2-mageck.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  downstream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.10'
+      - uses: actions/download-artifact@v7
+        with:
+          run-id: 36202474223
+          github-token: ${{ github.token }}
+          pattern: assignment-study-v2-ERR*
+          path: inputs
+      - name: Build exact MAGeCK source and retain provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir downstream-artifacts mageck-src
+          cp research/assignment-study-v2/acquire_public_runs.py downstream-artifacts/
+          cp .github/workflows/assignment-study-v2*.yml downstream-artifacts/
+          curl -fL --retry 3 https://bitbucket.org/liulab/mageck/get/v0.5.9.5.tar.gz -o downstream-artifacts/mageck-0.5.9.5-source.tar.gz
+          echo 'b06a18036da63959cd7751911a46727aefe2fb1d8dd79d95043c3e3bdaf1d93a  downstream-artifacts/mageck-0.5.9.5-source.tar.gz' | sha256sum -c -
+          tar xzf downstream-artifacts/mageck-0.5.9.5-source.tar.gz --strip-components=1 -C mageck-src
+          python -m pip install numpy==1.23.5 scipy==1.10.1 setuptools==69.5.1
+          (cd mageck-src && python setup.py install) > downstream-artifacts/build.log 2>&1
+          mageck --version > downstream-artifacts/version.txt
+          python -m pip freeze > downstream-artifacts/environment.txt
+          cp "$(command -v RRA)" downstream-artifacts/RRA
+          sha256sum downstream-artifacts/RRA > downstream-artifacts/RRA.sha256
+      - name: Compare fixed and multi-offset count matrices without changing guide universe
+        env:
+          PYTHONHASHSEED: '0'
+        run: |
+          python - <<'PY'
+          import csv,gzip,hashlib,json,os,pathlib,subprocess,time
+          P=pathlib.Path('inputs'); O=pathlib.Path('downstream-artifacts'); accs=['ERR376998','ERR376999','ERR377000']; counts={}; identities=None
+          for acc in accs:
+            d=P/('assignment-study-v2-'+acc)
+            assert json.loads((d/'complete.json').read_text())['complete']
+            paths={}
+            for run in json.loads((d/'native_runs.json').read_text()):
+              stem=run['policy']+'_offset'+str(run['start']); path=d/(stem+'.counts.tsv.gz')
+              raw=gzip.decompress(path.read_bytes());assert hashlib.sha256(raw).hexdigest()==run['plain_count_sha256']
+              rows=list(csv.DictReader(raw.decode().splitlines(),delimiter='\t'))
+              ident=[(r['target_id'],r['gene']) for r in rows]
+              if identities is None:identities=ident
+              assert ident==identities and len(ident)==87437
+              paths[stem]=[int(r[acc+'_count_total']) for r in rows]
+            counts[acc]={'exact23':paths['exact_offset23'],'best23':paths['best1_offset23'],'radius23':paths['radius1_offset23'],'exact_adjacent':[sum(z) for z in zip(*[paths['exact_offset'+str(k)] for k in [22,23,24]])],'best_adjacent':[sum(z) for z in zip(*[paths['best1_offset'+str(k)] for k in [22,23,24]])]}
+          ledger=[]
+          for method in ['exact23','best23','radius23','exact_adjacent','best_adjacent']:
+            mat=O/(method+'.count.txt')
+            with mat.open('w') as f:
+              w=csv.writer(f,delimiter='\t',lineterminator='\n');w.writerow(['sgRNA','Gene','plasmid','ESC1','ESC2'])
+              for i,(sg,gene) in enumerate(identities):w.writerow([sg,gene]+[counts[a][method][i] for a in accs])
+            for norm in ['median','total']:
+              for repeat in range(2 if method=='exact23' else 1):
+                name=f'{method}_{norm}_repeat{repeat}';cmd=['mageck','test','-k',str(mat),'-t','ESC1,ESC2','-c','plasmid','--norm-method',norm,'--gene-lfc-method','median','--remove-zero','none','--adjust-method','fdr','--additional-rra-parameters','--permutation 1000','-n',str(O/name)]
+                t=time.perf_counter();proc=subprocess.run(cmd,text=True,capture_output=True);(O/(name+'.stderr.txt')).write_text(proc.stderr);(O/(name+'.stdout.txt')).write_text(proc.stdout)
+                ledger.append({'method':method,'normalization':norm,'repeat':repeat,'command':cmd,'returncode':proc.returncode,'wall_seconds':time.perf_counter()-t,'input_sha256':hashlib.sha256(mat.read_bytes()).hexdigest()})
+                (O/'runs.json').write_text(json.dumps(ledger,indent=2)+'\n')
+                if proc.returncode:raise RuntimeError(proc.stderr[-3000:])
+                assert (O/(name+'.gene_summary.txt')).exists()
+                print(name,'complete',flush=True)
+          (O/'complete.json').write_text(json.dumps({'complete':True,'runs':len(ledger),'guides':len(identities),'input_acquisition_run':36202474223,'github_sha':os.getenv('GITHUB_SHA'),'github_run_id':os.getenv('GITHUB_RUN_ID'),'status':'Exploratory counting-policy sensitivity; nominal FDR differences are not known false positives or validated biological findings.'},indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: assignment-study-v2-mageck
+          path: downstream-artifacts/
+          retention-days: 14
+          if-no-files-found: warn
