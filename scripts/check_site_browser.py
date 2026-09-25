@@ -135,7 +135,8 @@ def main():
                 # evidence route, not merely a screenshot of a fixture table.
                 page.set_viewport_size({"width": 1440, "height": 1000})
                 page.goto(origin + "/dotmatch/assignment-sensitivity/", wait_until="networkidle")
-                assert "dotmatch==0.5.0" in page.inner_text("body")
+                package_version = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["version"]
+                assert f"dotmatch=={package_version}" in page.inner_text("body")
                 with page.expect_download() as example_download:
                     page.get_by_role("link", name="Download example files", exact=True).click()
                 import zipfile
