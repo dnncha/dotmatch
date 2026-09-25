@@ -9,18 +9,17 @@ one guide and ten gained by another leave the total unchanged. This comparison
 shows that difference rather than hiding it behind a correlation coefficient.
 It does not tell you which result is biologically correct.
 
-**Availability:** this is an unreleased source-checkout addition, not a command
-in the published DotMatch 0.5.0 package. From a checkout containing this change,
-install with `python3 -m pip install .`. The installed entrypoint is
-`dotmatch-compare-counts`; the equivalent module entrypoint is
-`python3 -m dotmatch.count_compare`.
+**Availability:** `dotmatch compare-counts` is included in DotMatch 0.6.0.
+Install the release with `python3 -m pip install dotmatch==0.6.0`. The
+`dotmatch-compare-counts` entrypoint and `python3 -m dotmatch.count_compare`
+module are also available.
 
 ## Try a small, deliberately revealing example
 
-From that checkout:
+From an installed DotMatch 0.6.0 package:
 
 ```bash
-dotmatch-compare-counts \
+dotmatch compare-counts \
   --baseline examples/count_comparison/baseline.tsv \
   --candidate examples/count_comparison/candidate.tsv \
   --out-dir count-comparison-demo/
@@ -42,7 +41,7 @@ matching in two files does not prove that the underlying sample is the same.
 Keep those records with the [lab evaluation and handoff](lab-evaluation.md).
 
 ```bash
-dotmatch-compare-counts \
+dotmatch compare-counts \
   --baseline existing-workflow/counts.tsv \
   --candidate dotmatch-run/counts.mageck.tsv \
   --out-dir comparison/
@@ -85,7 +84,7 @@ By default, differing guide or sample sets stop the comparison. Resolve a
 library or sample-sheet mismatch first. For an intentionally partial comparison:
 
 ```bash
-dotmatch-compare-counts \
+dotmatch compare-counts \
   --baseline baseline.tsv --candidate candidate.tsv \
   --shared-only --out-dir partial-comparison/
 ```

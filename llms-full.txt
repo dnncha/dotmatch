@@ -28,9 +28,13 @@ Linux x86_64 and macOS 11 or newer:
 mkdir -p smoke-output
 python3 -m venv .venv
 . .venv/bin/activate
-python3 -m pip install dotmatch==0.5.0
+python3 -m pip install dotmatch==0.6.0
 dotmatch --version
 ```
+
+Run `dotmatch demo --out-dir first-run/` for the packaged offline synthetic
+check. Use `dotmatch compare-counts` for raw count-table comparisons by guide
+and sample identifier; it does not normalize data or claim biological accuracy.
 
 Published Python wheels currently cover glibc and musl Linux x86_64 and aarch64 plus universal macOS. Windows wheels are not published. Bioconda may lag PyPI, so check the installed version when pinning a release. DotMatch 0.3.0 and later include `dotmatch capabilities --json`.
 
@@ -202,7 +206,7 @@ After cloning this repository, this recipe installs the release into a new virtu
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
-python3 -m pip install dotmatch==0.5.0
+python3 -m pip install dotmatch==0.6.0
 dotmatch count \
   --targets demo-data/crispr_guides.tsv \
   --reads demo-data/reads.fastq \

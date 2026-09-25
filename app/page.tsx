@@ -91,6 +91,12 @@ export default function Home() {
               </a>
               <a
                 className={styles.textLink}
+                href={`${docsUrl}tutorials/crispr-count-first-run.html`}
+              >
+                Try a checked first run
+              </a>
+              <a
+                className={styles.textLink}
                 href={siteAsset("examples/assignment-review/report.html")}
               >
                 Open example report

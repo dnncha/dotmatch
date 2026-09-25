@@ -9,23 +9,21 @@ leave your computer.
 The released package can be installed with:
 
 ```bash
-python3 -m pip install dotmatch==0.5.0
+python3 -m pip install dotmatch==0.6.0
 dotmatch --version
 ```
 
-**Unreleased additions:** `dotmatch demo`, `dotmatch compare-counts`, and
-`crispr quickstart --link-reads` require a source checkout containing these
-changes, or its CI-built evaluation wheel. They are not in the published 0.5.0
-package. For a checkout, use `python3 -m pip install .` in a virtual environment.
-A review build may still report 0.5.0; retain its exact source commit as well as
-the version. Do not substitute an unreviewed build into a production pipeline.
+DotMatch 0.6.0 includes the checked offline demo, `dotmatch compare-counts`,
+and the validated `crispr quickstart --link-reads` option. Use the published
+package and confirm `dotmatch --version` reports 0.6.0 before following this
+tutorial.
 
 For a no-install view using the public synthetic fixture, open the
 [assignment review example](https://dnncha.github.io/dotmatch/assignment-sensitivity/).
 
 ## 1. Get a checked result without assembling files
 
-From an installed evaluation build:
+From an installed DotMatch 0.6.0 package:
 
 ```bash
 dotmatch demo --out-dir first-run/
@@ -74,7 +72,7 @@ dotmatch crispr quickstart \
 ```
 
 Use paths that match your actual naming convention. Repeat `--fastq` for more
-input patterns. In the evaluation build, every argument must resolve: one valid
+input patterns. DotMatch 0.6.0 requires every argument to resolve: one valid
 file does not excuse a second missing pattern. Duplicate inputs, colliding
 basenames, non-files and invalid resource limits are rejected before a project
 is created. Existing output paths are never overwritten.
@@ -94,7 +92,7 @@ Linked reads stay in their original location, avoiding another full-size copy.
 The library is still copied, and `inference_report.json` records the original
 read paths and whether reads were linked or copied.
 
-With published 0.5.0, the existing directory-based route also supports linking:
+The established directory-based route also supports linking:
 
 ```bash
 dotmatch assay new crispr \
@@ -120,7 +118,7 @@ the top-level `status = "draft"` to `status = "ready"` in `assay.toml`, then run
 dotmatch assay start crispr-screen/assay.toml
 ```
 
-The evaluation build's explicit `--accept-inference` option only starts a run
+DotMatch 0.6.0's explicit `--accept-inference` option only starts a run
 when inference itself reports ready. It no longer promotes an uncertain
 inference automatically. `--no-run` always leaves the project in draft.
 
@@ -138,7 +136,7 @@ The matrix contains `sgRNA`, `Gene`, then one raw integer count column per
 sample. Only unique assignments add target counts. Ambiguous, unmatched and
 invalid-window reads remain visible in the QC outputs.
 
-For a side-by-side evaluation in the unreleased build:
+For a side-by-side evaluation with DotMatch 0.6.0:
 
 ```bash
 dotmatch compare-counts \
@@ -173,7 +171,7 @@ is public; do not attach private reads or unpublished study identifiers.
 
 ## Direct counting with an explicit sample sheet
 
-The established direct command remains available in released 0.5.0:
+The direct command also supports an explicit sample sheet:
 
 ```bash
 dotmatch crispr-count \
