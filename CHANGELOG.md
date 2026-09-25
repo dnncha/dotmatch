@@ -27,7 +27,7 @@ No user-facing changes yet.
   scoped TSV/SVG exports. Matching/count semantics are unchanged.
 - A native-generated nine-read example opens without installation and includes
   a portable download with the original completed artifacts. The website points
-  to the published 0.6.0 engine and the portable assignment-review viewer.
+  to the published 0.6.0 engine and the portable web assignment-review viewer; the installed CLI continues to write its static report.
 - Update the website's sharp and baseline-browser-mapping dependency chains.
   Add local-file Chromium, Firefox and macOS WebKit acceptance gates; WebKit
   automation is not a branded Safari or physical-device acceptance claim.
