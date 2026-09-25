@@ -33,11 +33,11 @@ basecaller, cell/UMI pipeline or gene-level hit-calling package.
 
 ## Install
 
-Release 0.5.0 includes the six `dotmatch agent` tools
+DotMatch 0.6.0 is the current release. It includes the six `dotmatch agent` tools
 described below:
 
 ```bash
-python3 -m pip install dotmatch==0.5.0
+python3 -m pip install dotmatch==0.6.0
 dotmatch --version
 ```
 
@@ -48,7 +48,7 @@ conda create -n dotmatch -c conda-forge -c bioconda dotmatch
 conda activate dotmatch
 
 # Or use the pinned release container:
-docker run --rm ghcr.io/dnncha/dotmatch:v0.5.0 --version
+docker run --rm ghcr.io/dnncha/dotmatch:v0.6.0 --version
 ```
 
 Bioconda and its generated BioContainers images can lag PyPI/GHCR. When a
@@ -58,6 +58,18 @@ Review the [packaging details](https://dotmatch.readthedocs.io/en/latest/packagi
 for platform and container verification. See the [installation guide](https://dotmatch.readthedocs.io/en/latest/getting-started.html)
 for platform details, source builds and the third-party Homebrew tap. The desktop Workbench is developed separately as `dotmatch-community`; the
 commands below use the core CLI.
+
+## Try a checked first run
+
+The packaged fixture checks expected native assignment counts without using
+study data or making network requests:
+
+```bash
+dotmatch demo --out-dir first-run/
+```
+
+Open `first-run/index.html` for the local review bundle. To compare existing
+raw-count tables, use [`dotmatch compare-counts`](https://dotmatch.readthedocs.io/en/latest/count-comparison.html).
 
 ## Count a CRISPR screen
 
@@ -99,10 +111,10 @@ best-distance Hamming assignment using the same windows in **one FASTQ pass**.
 It produces three count matrices, per-guide deltas, read-state transitions,
 checksums and a self-contained HTML report. It never selects a policy for you.
 
-Run the included synthetic example from a checkout of the v0.5.0 release:
+Run the included synthetic example from a checkout of the v0.6.0 release:
 
 ```bash
-python3 -m pip install dotmatch==0.5.0
+python3 -m pip install dotmatch==0.6.0
 dotmatch sensitivity \
   --targets examples/assignment_sensitivity/targets.tsv \
   --reads examples/assignment_sensitivity/reads.fastq \
@@ -117,8 +129,8 @@ This is sensitivity analysis, not an estimate of biological accuracy.
 
 [Explore the interactive review example](https://dnncha.github.io/dotmatch/assignment-sensitivity/)
 without installing anything. The example uses the public nine-read synthetic fixture.
-The richer portable viewer is an unreleased source upgrade; the published 0.5.0
-command retains its earlier static report.
+The portable assignment review is included with DotMatch 0.6.0. Its synthetic
+fixture demonstrates software behavior, not biological accuracy.
 
 ## Choose by task
 
