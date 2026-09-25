@@ -1,0 +1,89 @@
+name: Installed count comparison
+
+on:
+  pull_request:
+    paths:
+      - 'python/**'
+      - 'pyproject.toml'
+      - 'setup.py'
+      - 'MANIFEST.in'
+      - 'examples/count_comparison/**'
+      - '.github/workflows/count-comparison.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'python/**'
+      - 'pyproject.toml'
+      - 'setup.py'
+      - 'MANIFEST.in'
+      - 'examples/count_comparison/**'
+      - '.github/workflows/count-comparison.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: installed-count-comparison-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  installed-evaluation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Build installable candidate
+        run: |
+          python -m pip install build
+          python -m build
+      - name: Exercise installed console script outside the checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$PWD"
+          work="$(mktemp -d)"
+          python -m venv "$work/venv"
+          "$work/venv/bin/python" -m pip install --no-index --no-deps "$root"/dist/*.whl
+          cp examples/count_comparison/*.tsv "$work/"
+          cd "$work"
+          unset PYTHONPATH DOTMATCH_LIB
+          "$work/venv/bin/dotmatch-compare-counts" --baseline baseline.tsv --candidate candidate.tsv --out-dir comparison
+          "$work/venv/bin/dotmatch-compare-counts" --baseline baseline.tsv --candidate baseline.tsv --out-dir identical --fail-on-difference
+          status=0
+          "$work/venv/bin/dotmatch-compare-counts" --baseline baseline.tsv --candidate candidate.tsv --out-dir regression --fail-on-difference || status=$?
+          test "$status" = 1
+          "$work/venv/bin/python" - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          report = json.loads(Path('comparison/report.json').read_text())
+          assert report['scope'] == 'complete'
+          assert sum(s['changed_guides'] for s in report['samples']) == 4
+          assert all(s['same_total_different_counts'] for s in report['samples'])
+          for folder in ('comparison', 'identical', 'regression'):
+              base = Path(folder)
+              manifest = json.loads((base / 'manifest.json').read_text())
+              assert manifest['status'] == 'complete'
+              for name, expected in manifest['files'].items():
+                  data = (base / name).read_bytes()
+                  assert hashlib.sha256(data).hexdigest() == expected['sha256']
+                  assert len(data) == expected['bytes']
+          print('Installed console script: differing, identical and regression runs verified')
+          PY
+          mkdir "$root/evaluation-artifact"
+          cp -R comparison identical regression "$root/evaluation-artifact/"
+      - name: Retain exact review source and build identity
+        run: |
+          git rev-parse HEAD > evaluation-artifact/source-commit.txt
+          git archive --format=tar.gz --output=evaluation-artifact/source.tar.gz HEAD
+          cp dist/*.whl dist/*.tar.gz evaluation-artifact/
+          (cd evaluation-artifact && sha256sum *.whl *.tar.gz source-commit.txt > SHA256SUMS)
+          printf '%s\n' 'Unreleased review build. No biological validation or external adoption is implied.' > evaluation-artifact/REVIEW-BUILD.txt
+      - uses: actions/upload-artifact@v7
+        with:
+          name: installed-count-comparison
+          path: evaluation-artifact/
+          retention-days: 7
+          if-no-files-found: error
