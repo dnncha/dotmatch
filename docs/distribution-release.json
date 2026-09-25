@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "not_released",
+  "status": "partially_verified",
   "release_version": "0.6.0",
   "publication_authorized": true,
   "release_tag": "v0.6.0",
@@ -8,55 +8,72 @@
   "channels": [
     {
       "id": "pypi",
-      "status": "prepared",
+      "status": "verified",
       "expected_url": "https://pypi.org/project/dotmatch/0.6.0/",
       "verification_command": "make distribution-channels",
-      "blocker": "Version 0.6.0 has not yet been published and independently verified on this channel.",
-      "next_action": "Publish the source distribution, macOS wheel, and repaired Linux wheels through trusted publishing, then verify their hashes and a clean installation."
+      "verified_date": "2026-09-25",
+      "public_url": "https://pypi.org/project/dotmatch/0.6.0/",
+      "evidence_url": "https://pypi.org/pypi/dotmatch/0.6.0/json",
+      "linux_wheel_architectures": [
+        "x86_64",
+        "aarch64"
+      ]
     },
     {
       "id": "ghcr",
-      "status": "prepared",
+      "status": "verified",
       "expected_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "Version 0.6.0 has not yet been published and independently verified on this channel.",
-      "next_action": "Publish through the approved release workflow, then verify the public version and artifacts."
+      "verified_date": "2026-09-25",
+      "public_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
+      "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/36193230197",
+      "manifest_digest": "sha256:59ca4139e9cac19e921f496ef075b0a52a446c05b6cce20cbbb98c5458900dad",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ]
     },
     {
       "id": "bioconda",
-      "status": "prepared",
+      "status": "blocked",
       "expected_url": "https://anaconda.org/bioconda/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "Version 0.6.0 has not yet been published and independently verified on this channel.",
+      "blocker": "Version 0.6.0 is not yet public on this upstream channel.",
       "next_action": "Submit the immutable 0.6.0 recipe upstream and verify community build propagation; do not infer availability from the source tag."
     },
     {
       "id": "bioconda-assaycode",
-      "status": "prepared",
+      "status": "blocked",
       "expected_url": "https://anaconda.org/bioconda/assaycode",
       "verification_command": "make distribution-channels",
-      "blocker": "Version 0.6.0 has not yet been published and independently verified on this channel.",
+      "blocker": "Version 0.6.0 is not yet public on this upstream channel.",
       "next_action": "Submit the immutable 0.6.0 recipe upstream and verify community build propagation; do not infer availability from the source tag."
     },
     {
       "id": "biocontainers",
-      "status": "prepared",
+      "status": "blocked",
       "expected_url": "https://quay.io/repository/biocontainers/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "Version 0.6.0 has not yet been published and independently verified on this channel.",
+      "blocker": "Version 0.6.0 is not yet public on this upstream channel.",
       "next_action": "Submit the immutable 0.6.0 recipe upstream and verify community build propagation; do not infer availability from the source tag."
     },
     {
       "id": "zenodo",
-      "status": "prepared",
+      "status": "blocked",
       "expected_url": "https://doi.org/10.5281/zenodo.20541628",
       "verification_command": "make distribution-channels",
-      "blocker": "Version 0.6.0 has not yet been published and independently verified on this channel.",
+      "blocker": "No version-specific 0.6.0 Zenodo record has been independently verified.",
       "next_action": "Verify the archive generated for the immutable GitHub release; add only the newly minted version DOI."
     }
   ],
   "blockers": [
-    "Version 0.6.0 is an authorized release candidate; artifact publication and public-channel checks are pending."
+    "Bioconda dotmatch and assaycode 0.6.0 need an accepted recipe and public builds.",
+    "BioContainers follows a published Bioconda build; its 0.6.0 tag is unverified.",
+    "The version-specific Zenodo 0.6.0 record and DOI are unverified."
   ],
-  "next_action": "Pass the release gates, publish the immutable v0.6.0 tag through the existing release workflow, then record each verified channel separately."
+  "next_action": "Submit and verify Bioconda dotmatch/assaycode 0.6.0, then verify BioContainers and Zenodo independently.",
+  "release_commit": "7b1bc0af261b5a0d28b56e43bee1fb1b4c7fb7a3",
+  "tag_object": "c9d8dc8679e8347f5be844036a551e91f0754d7a",
+  "github_release_url": "https://github.com/dnncha/dotmatch/releases/tag/v0.6.0",
+  "release_workflow_url": "https://github.com/dnncha/dotmatch/actions/runs/36193230197"
 }
