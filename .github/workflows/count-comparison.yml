@@ -49,7 +49,7 @@ jobs:
           "$work/venv/bin/python" -m pip install --no-index --no-deps "$root"/dist/*.whl
           cp examples/count_comparison/*.tsv "$work/"
           cd "$work"
-          unset PYTHONPATH DOTMATCH_LIB
+          unset PYTHONPATH DOTMATCH_LIB DOTMATCH_NATIVE_CLI
           "$work/venv/bin/dotmatch-compare-counts" --baseline baseline.tsv --candidate candidate.tsv --out-dir comparison
           "$work/venv/bin/dotmatch-compare-counts" --baseline baseline.tsv --candidate baseline.tsv --out-dir identical --fail-on-difference
           status=0
@@ -72,8 +72,27 @@ jobs:
                   assert len(data) == expected['bytes']
           print('Installed console script: differing, identical and regression runs verified')
           PY
+          "$work/venv/bin/dotmatch" demo --out-dir first-run
+          "$work/venv/bin/dotmatch" crispr quickstart --library first-run/inputs/targets.tsv --fastq first-run/inputs/reads.fastq --link-reads --max-start 0 --out prepared
+          "$work/venv/bin/python" - <<'PYCODE'
+          import json, socket
+          from pathlib import Path
+          from dotmatch.first_run import run_demo
+          def no_network(*args, **kwargs):
+              raise AssertionError("offline demo attempted a network connection")
+          socket.socket.connect = no_network
+          run_demo("offline-first-run")
+          report = json.loads(Path("prepared/inference_report.json").read_text())
+          assert report["input_storage"] == "linked"
+          staged = Path("prepared/reads/reads.fastq")
+          assert staged.is_symlink()
+          assert staged.resolve() == Path("first-run/inputs/reads.fastq").resolve()
+          assert 'status = "draft"' in Path("prepared/assay.toml").read_text()
+          assert not Path("prepared/assay_out").exists()
+          print("Installed offline first run and linked-input preparation verified")
+          PYCODE
           mkdir "$root/evaluation-artifact"
-          cp -R comparison identical regression "$root/evaluation-artifact/"
+          cp -R comparison identical regression first-run "$root/evaluation-artifact/"
       - name: Retain exact review source and build identity
         run: |
           git rev-parse HEAD > evaluation-artifact/source-commit.txt

@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "synthetic": true,
+  "source_fixture": "examples/assignment_sensitivity",
+  "targets_tsv": "target_id\tsequence\tgene\nguide_A\tACGTACGTACGTACGTACGT\tGENE_A\nguide_B\tCCGTACGTACGTACGTACGT\tGENE_B\nguide_C\tTGCATGCATGCATGCATGCA\tGENE_C\nguide_D\tGGTAGGTAGGTAGGTAGGTA\tGENE_D\nguide_D_duplicate\tGGTAGGTAGGTAGGTAGGTA\tGENE_D\n",
+  "reads_fastq": "@exact_near_a\nACGTACGTACGTACGTACGT\n+\nIIIIIIIIIIIIIIIIIIII\n@exact_near_b\nCCGTACGTACGTACGTACGT\n+\nIIIIIIIIIIIIIIIIIIII\n@two_candidates\nGCGTACGTACGTACGTACGT\n+\nIIIIIIIIIIIIIIIIIIII\n@exact_isolated\nTGCATGCATGCATGCATGCA\n+\nIIIIIIIIIIIIIIIIIIII\n@one_mismatch\nCGCATGCATGCATGCATGCA\n+\nIIIIIIIIIIIIIIIIIIII\n@unmatched\nGGGGGGGGGGGGGGGGGGGG\n+\nIIIIIIIIIIIIIIIIIIII\n@short\nAC\n+\nII\n@duplicate_target\nGGTAGGTAGGTAGGTAGGTA\n+\nIIIIIIIIIIIIIIIIIIII\n@literal_n\nNGCATGCATGCATGCATGCA\n+\nIIIIIIIIIIIIIIIIIIII\n",
+  "expected": {
+    "read_count": 9,
+    "outcomes": {
+      "exact": {
+        "unique": 3,
+        "ambiguous": 1,
+        "none": 4,
+        "invalid": 1
+      },
+      "radius_k1": {
+        "unique": 3,
+        "ambiguous": 4,
+        "none": 1,
+        "invalid": 1
+      },
+      "best_k1": {
+        "unique": 5,
+        "ambiguous": 2,
+        "none": 1,
+        "invalid": 1
+      }
+    },
+    "counts": {
+      "exact": {
+        "guide_A": 1,
+        "guide_B": 1,
+        "guide_C": 1,
+        "guide_D": 0,
+        "guide_D_duplicate": 0
+      },
+      "radius_k1": {
+        "guide_A": 0,
+        "guide_B": 0,
+        "guide_C": 3,
+        "guide_D": 0,
+        "guide_D_duplicate": 0
+      },
+      "best_k1": {
+        "guide_A": 1,
+        "guide_B": 1,
+        "guide_C": 3,
+        "guide_D": 0,
+        "guide_D_duplicate": 0
+      }
+    }
+  }
+}
