@@ -1,0 +1,36 @@
+name: Identifiability study inputs
+on:
+  push:
+    branches: [research/identifiability-study-20260925]
+    paths: ['.github/workflows/identifiability-study.yml']
+permissions:
+  contents: read
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Archive source and public reference inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p study-inputs
+          git archive --format=tar.gz --output=study-inputs/dotmatch-source.tar.gz 5c3934d648ff55928db5a9219d7703845941d28e
+          printf '%s\n' '5c3934d648ff55928db5a9219d7703845941d28e' > study-inputs/dotmatch-source.commit
+          if timeout 240 git clone --depth 1 --branch crisprseq https://github.com/nf-core/test-datasets.git /tmp/crisprseq-inputs; then
+            git -C /tmp/crisprseq-inputs rev-parse HEAD > study-inputs/nf-core-crisprseq.commit
+            git -C /tmp/crisprseq-inputs archive --format=tar.gz --output="$PWD/study-inputs/nf-core-crisprseq.tar.gz" HEAD
+          else
+            printf '%s\n' 'Public nf-core input acquisition failed; do not infer results.' > study-inputs/acquisition-failure.txt
+          fi
+          (cd study-inputs && sha256sum *.tar.gz *.commit > SHA256SUMS)
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: identifiability-study-inputs
+          path: study-inputs/
+          retention-days: 14
+          if-no-files-found: error
