@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Metadata-only design resolution; not an outcome analysis."""
-import argparse, pathlib, urllib.request, json, zipfile, io
+"""Resolve tool contracts and library before outcome inspection."""
+import argparse,pathlib,urllib.request,json,subprocess,zipfile,time
 p=argparse.ArgumentParser();p.add_argument('--out',type=pathlib.Path,required=True);a=p.parse_args();a.out.mkdir(parents=True,exist_ok=True)
-url='https://www.ebi.ac.uk/ena/portal/api/filereport?accession=PRJEB4038&result=read_run&fields=run_accession,sample_accession,experiment_accession,sample_title,library_name,read_count,fastq_ftp,fastq_bytes,fastq_md5&format=json'
-with urllib.request.urlopen(url,timeout=90) as r: raw=r.read()
-(a.out/'study_metadata.json').write_bytes(raw)
-rows=json.loads(raw)
-for row in rows: print(json.dumps(row),flush=True)
-for row in rows:
- if row['run_accession'] in ['ERR376998','ERR376999','ERR377000','ERR377001']:
-  for key in ['sample_accession','experiment_accession']:
-   acc=row[key]
-   with urllib.request.urlopen('https://www.ebi.ac.uk/ena/browser/api/xml/'+acc,timeout=90) as r: raw=r.read()
-   (a.out/(acc+'.xml')).write_bytes(raw)
-   print(raw.decode(),flush=True)
+urls=['https://sourceforge.net/projects/mageck/files/libraries/yusa_library.csv.zip/download','https://downloads.sourceforge.net/project/mageck/libraries/yusa_library.csv.zip']
+for url in urls:
+ try:
+  with urllib.request.urlopen(url,timeout=90) as r: raw=r.read()
+  zpath=a.out/'yusa_library.csv.zip';zpath.write_bytes(raw)
+  with zipfile.ZipFile(zpath) as z: data=z.read('yusa_library.csv')
+  (a.out/'yusa_library.csv').write_bytes(data); print('LIBRARY',data[:1000],len(data),flush=True);break
+ except Exception as e: print(repr(e),flush=True)
+else: raise RuntimeError('No original library')
+for i,cmd in enumerate([['make','dotmatch'],['./dotmatch','count','--help'],['python','-m','pip','install','.']]):
+ r=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True); print('COMMAND',cmd,'RC',r.returncode,r.stdout[-20000:],flush=True)
+ (a.out/('tool-probe-'+str(i)+'.txt')).write_text(r.stdout)
