@@ -1,0 +1,40 @@
+name: Asthma source context
+on:
+  push:
+    branches: [research/asthma-public-data-20260925]
+    paths: [.github/workflows/asthma-source-context.yml]
+permissions:
+  contents: read
+jobs:
+  sources:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Retrieve study provenance and original reports
+        run: |
+          mkdir asthma-context
+          python - <<'PY'
+          import urllib.request,pathlib,json,hashlib,concurrent.futures
+          sources={
+           'GSE4302.txt':'https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE4302&targ=self&form=text&view=full',
+           'GSE67472.txt':'https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE67472&targ=self&form=text&view=full',
+           'PMC7395676.xml':'https://www.ebi.ac.uk/europepmc/webservices/rest/PMC7395676/fullTextXML',
+           'PMC4407484.xml':'https://www.ebi.ac.uk/europepmc/webservices/rest/PMC4407484/fullTextXML',
+           'PMC9097074.xml':'https://www.ebi.ac.uk/europepmc/webservices/rest/PMC9097074/fullTextXML',
+           'PMC13513769.xml':'https://www.ebi.ac.uk/europepmc/webservices/rest/PMC13513769/fullTextXML'}
+          out=pathlib.Path('asthma-context')
+          def fetch(item):
+           name,url=item
+           try:
+            with urllib.request.urlopen(url,timeout=25) as r: data=r.read()
+            (out/name).write_bytes(data)
+            return {'file':name,'url':url,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()}
+           except Exception as e: return {'file':name,'url':url,'error':str(e)}
+          with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool: result=list(pool.map(fetch,sources.items()))
+          (out/'manifest.json').write_text(json.dumps(result,indent=2));print(json.dumps(result,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: asthma-source-context
+          path: asthma-context/
+          retention-days: 30
