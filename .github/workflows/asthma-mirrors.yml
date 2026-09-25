@@ -1,0 +1,41 @@
+name: Asthma public mirrors
+on:
+  push:
+    branches: [research/asthma-public-data-20260925]
+    paths: [.github/workflows/asthma-mirrors.yml]
+permissions:
+  contents: read
+jobs:
+  mirrors:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Retrieve public metadata and processed data mirrors
+        run: |
+          mkdir asthma-mirrors
+          python - <<'PY'
+          import urllib.request, pathlib, json, hashlib, concurrent.futures
+          out=pathlib.Path('asthma-mirrors'); sources={}
+          for acc in ['4302','67472','43696','63142','41861','89809']:
+           sources['E-GEOD-'+acc+'.json']='https://www.ebi.ac.uk/biostudies/api/v1/studies/E-GEOD-'+acc
+          sources['Gemma4302.json']='https://gemma.msl.ubc.ca/rest/v2/datasets/GSE4302'
+          sources['NCBI4302_http.gz']='http://ftp.ncbi.nlm.nih.gov/geo/series/GSE4nnn/GSE4302/matrix/GSE4302_series_matrix.txt.gz'
+          def fetch(item):
+           name,url=item
+           try:
+            with urllib.request.urlopen(url,timeout=20) as r: data=r.read()
+            (out/name).write_bytes(data)
+            return {'file':name,'url':url,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()}
+           except Exception as e: return {'file':name,'url':url,'error':str(e)}
+          with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool: result=list(pool.map(fetch,sources.items()))
+          (out/'manifest.json').write_text(json.dumps(result,indent=2));print(json.dumps(result,indent=2))
+          for p in out.glob('E-GEOD-*.json'):
+           try:
+            obj=json.loads(p.read_text());print(p.name,json.dumps(obj)[:4000])
+           except: pass
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: asthma-public-mirrors
+          path: asthma-mirrors/
+          retention-days: 30
