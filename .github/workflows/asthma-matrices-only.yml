@@ -1,0 +1,49 @@
+name: Asthma bounded matrices
+on:
+  push:
+    branches: [research/asthma-public-data-20260925]
+    paths: [.github/workflows/asthma-matrices-only.yml]
+permissions:
+  contents: read
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Retrieve bounded GEO matrices and platform annotation tables
+        run: |
+          mkdir asthma-matrices
+          python -u - <<'PY'
+          import urllib.request, pathlib, json, hashlib, concurrent.futures, re
+          out=pathlib.Path('asthma-matrices'); manifest=[]
+          def get(url,name,limit=150_000_000):
+           try:
+            with urllib.request.urlopen(url,timeout=20) as r:
+             data=r.read(limit+1)
+             if len(data)>limit: raise ValueError('Size guard exceeded')
+            (out/name).write_bytes(data)
+            row={'file':name,'url':url,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()}
+           except Exception as e: row={'file':name,'url':url,'error':str(e)}
+           print(json.dumps(row),flush=True);return row
+          def matrix(acc):
+           base='https://ftp.ncbi.nlm.nih.gov/geo/series/'+acc[:-3]+'nnn/'+acc+'/matrix/'
+           row=get(base,acc+'_index.html',1000000); rows=[row]
+           if 'error' not in row:
+            listing=(out/row['file']).read_text()
+            for name in sorted(set(re.findall(r'href="([^"]+series_matrix[^\"]*\.gz)"',listing))): rows.append(get(base+name,name))
+           return rows
+          with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
+           for rows in pool.map(matrix,['GSE4302','GSE67472','GSE89809','GSE41861','GSE43696','GSE63142','GSE76227','GSE64913']): manifest.extend(rows)
+          for gpl in ['GPL570','GPL6480','GPL16311','GPL13158']:
+           base='https://ftp.ncbi.nlm.nih.gov/geo/platforms/'+gpl[:-3]+'nnn/'+gpl+'/annot/'
+           manifest.append(get(base+gpl+'.annot.gz',gpl+'.annot.gz',30000000))
+          (out/'manifest.json').write_text(json.dumps(manifest,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: asthma-bounded-matrices
+          path: asthma-matrices/
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
