@@ -4,6 +4,8 @@ All notable user-facing changes are tracked here. Public statements in release n
 
 ## Unreleased
 
+No user-facing changes yet.
+
 ## 0.6.0 - 2026-09-25
 
 ### Added
