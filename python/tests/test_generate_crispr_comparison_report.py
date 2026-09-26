@@ -132,6 +132,18 @@ def test_aggregate_guide_total_result_distinguishes_execution_from_identity():
     assert verdict({"status": "non_comparable", "differing_guides": "0", "total_delta": "0"}) == "not_comparable"
     assert verdict({"status": "ok", "differing_guides": "0", "total_delta": "1"}) == "inconsistent_summary"
     assert verdict({"status": "ok", "differing_guides": "", "total_delta": ""}) == "unverified"
+    assert verdict({
+        "status": "ok", "aggregate_counts_identical": "false",
+        "differing_guides": "0", "total_delta": "0",
+    }) == "different"
+    assert verdict({
+        "status": "ok", "aggregate_counts_identical": "true",
+        "differing_guides": "1", "total_delta": "0",
+    }) == "inconsistent_summary"
+    assert verdict({
+        "status": "ok", "aggregate_counts_identical": "unknown",
+        "differing_guides": "0", "total_delta": "0",
+    }) == "unverified"
 
 
 def test_crispr_comparison_report_keeps_hamming_k23_bowtie1_rows_separate(tmp_path, monkeypatch):
