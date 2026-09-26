@@ -1,0 +1,74 @@
+name: Assignment study v2 targeted read trace
+on:
+  push:
+    branches: [research/assignment-study-v2-20260926]
+    paths: ['.github/workflows/assignment-study-v2-trace.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  trace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        accession: [ERR376998, ERR376999, ERR377000]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v7
+        with:
+          run-id: 36202474223
+          github-token: ${{ github.token }}
+          name: assignment-study-v2-${{ matrix.accession }}
+          path: source-evidence
+      - name: Retain every read capable of reaching the selected guide set
+        env:
+          ACCESSION: ${{ matrix.accession }}
+        run: |
+          python - <<'PY'
+          import csv,gzip,hashlib,json,os,pathlib,sys
+          sys.path.insert(0,'research/assignment-study-v2')
+          from acquire_public_runs import download,digest,write,LIB_SHA
+          S=pathlib.Path('source-evidence');O=pathlib.Path('trace-evidence');O.mkdir();acc=os.environ['ACCESSION']
+          selected=['MRPS34','RPLP2','IMP3','UTP23','POLR3E','H2-KE2','ATP5D','BIRC5']
+          assert digest(S/'yusa_library.csv')==LIB_SHA
+          rows=list(csv.DictReader((S/'yusa_library.csv').open()));guides=[r for r in rows if r['Gene'] in selected]
+          assert {r['Gene'] for r in guides}==set(selected)
+          neighborhood=set()
+          for row in guides:
+            s=row['gRNA.sequence'];neighborhood.add(s)
+            for pos,base in enumerate(s):
+              for b in 'ACGT':
+                if b!=base:neighborhood.add(s[:pos]+b+s[pos+1:])
+              # A single literal N also lies within Hamming radius one.
+              neighborhood.add(s[:pos]+'N'+s[pos+1:])
+          audit=json.loads((S/'input_audit.json').read_text());archive=pathlib.Path(acc+'.fastq.gz');download(audit['fastq_url'],archive)
+          assert digest(archive,'md5')==audit['archive_md5'] and archive.stat().st_size==audit['archive_bytes']
+          n=0;retained=0;plain=hashlib.sha256();nonstandard=0
+          with gzip.open(archive,'rt') as f,gzip.open(O/'selected_reads.fastq.gz','wt') as out:
+            while True:
+              a=f.readline()
+              if not a:break
+              b=f.readline();c=f.readline();d=f.readline();s=b.rstrip('\r\n')
+              assert a.startswith('@') and c.startswith('+') and len(s)==len(d.rstrip('\r\n'))
+              if any(s[o:o+19] in neighborhood for o in [22,23,24]):
+                block=a+b+c+d;out.write(block);plain.update(block.encode());retained+=1
+              if any(x not in 'ACGTN' for x in s):nonstandard+=1
+              n+=1
+          assert n==audit['records'] and nonstandard==0
+          write(O/'trace_manifest.json',{'accession':acc,'full_records':n,'archive_md5_verified':audit['archive_md5'],'archive_sha256':digest(archive),'selected_genes':selected,'selected_guide_count':len(guides),'retained_records':retained,'non_ACGTN_records':nonstandard,'retained_plain_sha256':plain.hexdigest(),'retained_gzip_sha256':digest(O/'selected_reads.fastq.gz'),'selection':'Every complete-run read with a 22/23/24 window within <=1 literal Hamming mismatch of any guide in the selected gene set. List selected after full-run count contrasts; not an independent validation dataset.','origin_known':False,'github_sha':os.environ.get('GITHUB_SHA'),'github_run_id':os.environ.get('GITHUB_RUN_ID')})
+          (O/'acquisition_workflow.yml').write_bytes(pathlib.Path('.github/workflows/assignment-study-v2-trace.yml').read_bytes())
+          archive.unlink()
+          print(acc,n,retained,flush=True)
+          PY
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: assignment-study-v2-trace-${{ matrix.accession }}
+          path: trace-evidence/
+          retention-days: 14
+          if-no-files-found: warn
