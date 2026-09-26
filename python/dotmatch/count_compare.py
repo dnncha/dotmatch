@@ -10,9 +10,11 @@ import csv
 import hashlib
 import heapq
 import html
+import io
 import json
 import sys
 import tempfile
+from dataclasses import replace
 from pathlib import Path
 from typing import Iterator, Sequence
 
@@ -45,6 +47,37 @@ def _read_snapshot(path: str | Path) -> tuple[CountTable, dict]:
         table = read_count_table(snapshot)
     # Do not put filesystem paths or filenames in a potentially shared report.
     return table, {"sha256": digest.hexdigest(), "bytes": size}
+
+
+def _read_sample_map(path: str | Path, baseline: CountTable, candidate: CountTable) -> tuple[CountTable, dict]:
+    """Rename candidate sample labels in memory, with a recorded user assertion."""
+    source = Path(path)
+    raw = source.read_bytes()
+    with io.StringIO(raw.decode("utf-8-sig"), newline="") as handle:
+        reader = csv.reader(handle, delimiter="\t", strict=True)
+        if next(reader, None) != ["baseline", "candidate"]:
+            raise ValueError("sample map must have exactly two TSV columns: baseline, candidate")
+        mapping: dict[str, str] = {}
+        for row in reader:
+            if len(row) != 2 or any(not name or name != name.strip() or any(ord(c) < 32 or ord(c) == 127 for c in name) for name in row):
+                raise ValueError(f"invalid sample map row {reader.line_num}")
+            before, after = row
+            if after in mapping or before in mapping.values():
+                raise ValueError(f"duplicate sample mapping at row {reader.line_num}")
+            if before not in baseline.sample_names or after not in candidate.sample_names:
+                raise ValueError(f"sample map row {reader.line_num} references a missing baseline or candidate sample")
+            mapping[after] = before
+    if not mapping:
+        raise ValueError("sample map has no mappings")
+    renamed = tuple(mapping.get(name, name) for name in candidate.sample_names)
+    if len(set(renamed)) != len(renamed):
+        raise ValueError("sample map collides with another candidate sample name")
+    return replace(candidate, sample_names=renamed), {
+        "sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw),
+        "asserted_by_user": True,
+        "pairs": [{"baseline": before, "candidate": after} for after, before in mapping.items()],
+        "note": "Names were asserted to represent the same biological samples; this tool cannot verify sample identity.",
+    }
 
 
 def _alignment(baseline: CountTable, candidate: CountTable, shared_only: bool) -> dict:
@@ -214,6 +247,10 @@ def _report_html(report: dict) -> str:
         f'<dt>{escape(role)} input SHA-256</dt><dd class="hash">{escape(info["sha256"])}</dd>'
         for role, info in report["inputs"].items()
     )
+    mapping = report.get("sample_map")
+    mapping_note = (f'<p>Explicit sample map: {len(mapping["pairs"])} candidate column(s) renamed. '
+                    'The user asserted biological sample identity; DotMatch cannot verify it. '
+                    'See report.json for the exact pairs and map checksum.</p>') if mapping else ""
     return f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
@@ -236,13 +273,15 @@ th,td{{padding:10px 12px;border-bottom:1px solid var(--line);text-align:right;ov
 {''.join(sections)}
 <section><h2>What was compared</h2><ul>{exclusions}</ul>
 <p>Checked identity fields: {escape(identities)}. Missing or differently named annotations are not verified.</p>
+{mapping_note}
 <p>Full exclusion lists, count summaries and bounded previews: <a href="report.json">report.json</a>. Every changed guide/sample cell: <a href="changes.tsv">changes.tsv</a>. File integrity: <a href="manifest.json">manifest.json</a>.</p>
 <dl>{hashes}</dl><p>Private by default: this tool does not send data anywhere. The report still contains guide and sample identifiers and counts. Review it before sharing. Import TSV identifiers as text in spreadsheet software.</p>
 </section></main></body></html>'''
 
 
 def write_comparison(baseline_path: str | Path, candidate_path: str | Path,
-                     out_dir: str | Path, *, shared_only: bool = False) -> dict:
+                     out_dir: str | Path, *, shared_only: bool = False,
+                     sample_map: str | Path | None = None) -> dict:
     """Validate before writing. Never reuse an output directory or overwrite files.
 
     manifest.json is written last and marks completed output. An I/O failure can
@@ -250,7 +289,12 @@ def write_comparison(baseline_path: str | Path, candidate_path: str | Path,
     """
     baseline, left_source = _read_snapshot(baseline_path)
     candidate, right_source = _read_snapshot(candidate_path)
+    mapping_info = None
+    if sample_map is not None:
+        candidate, mapping_info = _read_sample_map(sample_map, baseline, candidate)
     report = compare_tables(baseline, candidate, shared_only=shared_only)
+    if mapping_info is not None:
+        report["sample_map"] = mapping_info
     report["inputs"] = {"baseline": left_source, "candidate": right_source}
     report["implementation_sha256"] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     output = Path(out_dir)
@@ -286,11 +330,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--baseline", required=True, help="existing raw-count TSV or .tsv.gz; not ground truth")
     parser.add_argument("--candidate", required=True, help="candidate raw-count TSV or .tsv.gz")
     parser.add_argument("--out-dir", required=True, help="new directory for HTML, JSON, TSV and integrity manifest")
+    parser.add_argument("--sample-map", help="explicit baseline/candidate sample-name TSV; asserts the same biological samples")
     parser.add_argument("--shared-only", action="store_true", help="explicitly compare only shared guides/samples and report all exclusions")
     parser.add_argument("--fail-on-difference", action="store_true", help="exit 1 on changed counts OR excluded guides/samples, after writing the report")
     args = parser.parse_args(argv)
     try:
-        report = write_comparison(args.baseline, args.candidate, args.out_dir, shared_only=args.shared_only)
+        report = write_comparison(args.baseline, args.candidate, args.out_dir, shared_only=args.shared_only,
+                                  sample_map=args.sample_map)
     except (ValueError, OSError, csv.Error, UnicodeError, EOFError) as exc:
         parser.exit(2, f"count comparison: {exc}\n")
     changed = sum(row["changed_guides"] for row in report["samples"])
