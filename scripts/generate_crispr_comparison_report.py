@@ -254,6 +254,34 @@ def hamming_k23_comparator_rows(rows: list[dict[str, str]]) -> list[dict[str, st
     return sorted(out, key=lambda r: (r["dataset"], r["k"], r["records_per_sample"]))
 
 
+def aggregate_guide_total_result(row: dict[str, str]) -> str:
+    """Interpret recorded guide totals without treating legacy `ok` as equality."""
+    if row.get("status") == "non_comparable":
+        return "not_comparable"
+    if row.get("status") != "ok":
+        return "unverified"
+    try:
+        differing = int(row["differing_guides"])
+        total_delta = int(row["total_delta"])
+    except (KeyError, TypeError, ValueError):
+        return "unverified"
+    if differing < 0 or (differing == 0 and total_delta != 0):
+        return "inconsistent_summary"
+    recorded_identity = row.get("aggregate_counts_identical", "")
+    if recorded_identity:
+        if recorded_identity not in {"true", "false"}:
+            return "unverified"
+        identical = recorded_identity == "true"
+        if identical != (differing == 0 and total_delta == 0):
+            # Different guide axes can make the explicit dictionary identity
+            # false even when every unioned guide has a zero numeric delta.
+            if not identical and differing == 0 and total_delta == 0:
+                return "different"
+            return "inconsistent_summary"
+        return "identical" if identical else "different"
+    return "identical" if differing == 0 else "different"
+
+
 def guide_counter_style_rows(stats: list[dict[str, str]], agreement: list[dict[str, str]]) -> list[dict[str, str]]:
     by_key = {(r.get("dataset", ""), r.get("tool", ""), r.get("records_per_sample", "")): r for r in stats}
     agreement_by_dataset: dict[str, dict[str, str]] = {}
@@ -280,7 +308,9 @@ def guide_counter_style_rows(stats: list[dict[str, str]], agreement: list[dict[s
             "dotmatch_hamming_reads_per_sec": f"{dm_rps:.1f}",
             "guide_counter_reads_per_sec": f"{gc_rps:.1f}",
             "speedup": f"{speedup:.2f}" if speedup else "",
-            "count_agreement_status": agreement_row.get("status", ""),
+            "comparison_execution": agreement_row.get("status", ""),
+            "aggregate_guide_totals": aggregate_guide_total_result(agreement_row),
+            "differing_guides": agreement_row.get("differing_guides", ""),
             "count_total_delta": agreement_row.get("total_delta", ""),
             "semantics": "one mismatch, no indels",
         })
@@ -363,6 +393,9 @@ def main() -> None:
     hamming_k23_comparators = read_rows(HAMMING_K23_COMPARATOR_CSV)
     stats = repeated_stats(repeated)
     hamming_k23_rows = hamming_k23_comparator_rows(hamming_k23_comparators)
+    presented_agreement = [
+        {**row, "aggregate_guide_totals": aggregate_guide_total_result(row)} for row in agreement
+    ]
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     svg_bars(stats, FIG_DIR / "crispr_comparison_throughput.svg")
     svg_hamming_k23_comparators(hamming_k23_rows, FIG_DIR / "crispr_hamming_k23_comparison.svg")
@@ -405,12 +438,12 @@ def main() -> None:
         "",
         "## Guide-Counter-Style Public Paper-Data Lane",
         "",
-        "DotMatch `dotmatch_hamming_k1` versus `guide_counter_one_mismatch` on the public paper-data inputs. This lane uses best-distance Hamming assignment with guide-counter's offset threshold, is limited to one mismatch and no indels, and keeps Levenshtein rows as a separate DotMatch capability lane.",
+        "DotMatch `dotmatch_hamming_k1` versus `guide_counter_one_mismatch` on the public paper-data inputs. This lane uses best-distance Hamming assignment with guide-counter's offset threshold, is limited to one mismatch and no indels, and keeps Levenshtein rows as a separate DotMatch capability lane. `comparison_execution=ok` means the comparison ran; it does not mean the counts agree. Aggregate guide totals sum across samples and cannot establish per-sample agreement.",
         "",
         markdown_table(guide_counter_style_rows(stats, agreement), [
             "dataset", "records_per_sample", "dotmatch_hamming_reads_per_sec",
-            "guide_counter_reads_per_sec", "speedup", "count_agreement_status",
-            "count_total_delta", "semantics",
+            "guide_counter_reads_per_sec", "speedup", "comparison_execution",
+            "aggregate_guide_totals", "differing_guides", "count_total_delta", "semantics",
         ]),
         "",
         "## Full Hamming k1 Guide-Counter Ratio",
@@ -453,10 +486,12 @@ def main() -> None:
             "stratum_contains_n",
         ]),
         "",
-        "## Count Agreement",
+        "## Count Comparison",
         "",
-        markdown_table(agreement, [
-            "dataset", "comparison", "status", "n_guides", "total_delta",
+        "`status=ok` is a legacy execution status, not an identity verdict. `aggregate_guide_totals` compares guide counts summed across samples; a `non_comparable` row is not an accuracy result. The recorded summary does not establish which tool is biologically correct.",
+        "",
+        markdown_table(presented_agreement, [
+            "dataset", "comparison", "status", "aggregate_guide_totals", "n_guides", "total_delta",
             "differing_guides", "max_abs_delta", "pearson", "spearman",
         ]),
         "",

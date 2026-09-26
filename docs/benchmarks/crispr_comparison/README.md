@@ -52,15 +52,15 @@ This report is generated from raw CSV artifacts. It is intentionally stricter th
 
 ## Guide-Counter-Style Public Paper-Data Lane
 
-DotMatch `dotmatch_hamming_k1` versus `guide_counter_one_mismatch` on the public paper-data inputs. This lane uses best-distance Hamming assignment with guide-counter's offset threshold, is limited to one mismatch and no indels, and keeps Levenshtein rows as a separate DotMatch capability lane.
+DotMatch `dotmatch_hamming_k1` versus `guide_counter_one_mismatch` on the public paper-data inputs. This lane uses best-distance Hamming assignment with guide-counter's offset threshold, is limited to one mismatch and no indels, and keeps Levenshtein rows as a separate DotMatch capability lane. `comparison_execution=ok` means the comparison ran; it does not mean the counts agree. Aggregate guide totals sum across samples and cannot establish per-sample agreement.
 
-|dataset|records_per_sample|dotmatch_hamming_reads_per_sec|guide_counter_reads_per_sec|speedup|count_agreement_status|count_total_delta|semantics|
-|---|---|---|---|---|---|---|---|
-|mageck_yusa|10000|213575.6|22849.6|9.35|ok|-24533|one mismatch, no indels|
-|mageck_yusa|100000|754902.5|184061.4|4.10|ok|-24533|one mismatch, no indels|
-|sanson_brunello|10000|136650.6|43986.2|3.11|ok|-1190|one mismatch, no indels|
-|sanson_brunello|100000|721462.1|302166.4|2.39|ok|-1190|one mismatch, no indels|
-|sanson_brunello|full|634950.2|473609.5|1.34|ok|-1190|one mismatch, no indels|
+|dataset|records_per_sample|dotmatch_hamming_reads_per_sec|guide_counter_reads_per_sec|speedup|comparison_execution|aggregate_guide_totals|differing_guides|count_total_delta|semantics|
+|---|---|---|---|---|---|---|---|---|---|
+|mageck_yusa|10000|213575.6|22849.6|9.35|ok|different|13537|-24533|one mismatch, no indels|
+|mageck_yusa|100000|754902.5|184061.4|4.10|ok|different|13537|-24533|one mismatch, no indels|
+|sanson_brunello|10000|136650.6|43986.2|3.11|ok|different|255|-1190|one mismatch, no indels|
+|sanson_brunello|100000|721462.1|302166.4|2.39|ok|different|255|-1190|one mismatch, no indels|
+|sanson_brunello|full|634950.2|473609.5|1.34|ok|different|255|-1190|one mismatch, no indels|
 
 
 ## Full Hamming k1 Guide-Counter Ratio
@@ -105,14 +105,16 @@ The optimizer is advisory and CPU-authoritative: it records the fastest eligible
 |sanson_brunello|RepC|10000|0|bounded_edlib_candidates|8559115|289890|110|21|8048|988|131|833|4|
 
 
-## Count Agreement
+## Count Comparison
 
-|dataset|comparison|status|n_guides|total_delta|differing_guides|max_abs_delta|pearson|spearman|
-|---|---|---|---|---|---|---|---|---|
-|mageck_yusa|mageck_yusa:dotmatch_hamming_vs_guide_counter|ok|87437|-24533|13537|26|0.94176266|0.95124146|
-|mageck_yusa|mageck_yusa:dotmatch_exact_vs_mageck_exact|ok|87437|0|0|0|1.00000000|1.00000000|
-|sanson_brunello|sanson_brunello:dotmatch_hamming_vs_guide_counter|ok|77441|-1190|255|21|0.99639346|0.99659479|
-|sanson_brunello|sanson_brunello:dotmatch_exact_vs_mageck_exact|non_comparable|77441|321536|67253|71|nan|nan|
+`status=ok` is a legacy execution status, not an identity verdict. `aggregate_guide_totals` compares guide counts summed across samples; a `non_comparable` row is not an accuracy result. The recorded summary does not establish which tool is biologically correct.
+
+|dataset|comparison|status|aggregate_guide_totals|n_guides|total_delta|differing_guides|max_abs_delta|pearson|spearman|
+|---|---|---|---|---|---|---|---|---|---|
+|mageck_yusa|mageck_yusa:dotmatch_hamming_vs_guide_counter|ok|different|87437|-24533|13537|26|0.94176266|0.95124146|
+|mageck_yusa|mageck_yusa:dotmatch_exact_vs_mageck_exact|ok|identical|87437|0|0|0|1.00000000|1.00000000|
+|sanson_brunello|sanson_brunello:dotmatch_hamming_vs_guide_counter|ok|different|77441|-1190|255|21|0.99639346|0.99659479|
+|sanson_brunello|sanson_brunello:dotmatch_exact_vs_mageck_exact|non_comparable|not_comparable|77441|321536|67253|71|nan|nan|
 
 
 ## Raw Inputs
