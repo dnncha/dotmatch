@@ -8,11 +8,12 @@ import json
 import random
 import subprocess
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
-from dotmatch.count_compare import TOP_CHANGES, compare_tables, main, write_comparison
+from dotmatch.count_compare import TOP_CHANGES, _read_guide_map, compare_tables, main, write_comparison
 from dotmatch.count_io import read_count_table
 
 
@@ -89,6 +90,24 @@ def test_guide_map_aligns_reordered_ids_and_checks_counts(tmp_path):
                                              {"baseline": "g2", "candidate": "new2"}]
     with (tmp_path / "out/changes.tsv").open(newline="") as handle:
         assert [row["guide"] for row in csv.DictReader(handle, delimiter="\t")] == ["g1", "g2"]
+
+
+def test_guide_map_validation_does_not_scan_axes_for_each_row(tmp_path):
+    class NoLinearContains(tuple):
+        def __contains__(self, value):
+            raise AssertionError("guide-map validation must use precomputed membership sets")
+
+    a = table(tmp_path, "a.tsv", "sgRNA\tGene\ts\ng1\tG1\t1\ng2\tG2\t2\n")
+    b = table(tmp_path, "b.tsv", "sgRNA\tGene\ts\nnew1\tG1\t1\nnew2\tG2\t2\n")
+    mapping = table(tmp_path, "guides.tsv", "baseline\tcandidate\ng1\tnew1\ng2\tnew2\n")
+    baseline = read_count_table(a)
+    candidate = read_count_table(b)
+    baseline = replace(baseline, target_ids=NoLinearContains(baseline.target_ids))
+    candidate = replace(candidate, target_ids=NoLinearContains(candidate.target_ids))
+
+    renamed, _ = _read_guide_map(mapping, baseline, candidate)
+
+    assert renamed.target_ids == ("g1", "g2")
 
 
 @pytest.mark.parametrize("mapping", [

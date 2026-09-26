@@ -53,20 +53,24 @@ def _read_sample_map(path: str | Path, baseline: CountTable, candidate: CountTab
     """Rename candidate sample labels in memory, with a recorded user assertion."""
     source = Path(path)
     raw = source.read_bytes()
+    baseline_names = set(baseline.sample_names)
+    candidate_names = set(candidate.sample_names)
     with io.StringIO(raw.decode("utf-8-sig"), newline="") as handle:
         reader = csv.reader(handle, delimiter="\t", strict=True)
         if next(reader, None) != ["baseline", "candidate"]:
             raise ValueError("sample map must have exactly two TSV columns: baseline, candidate")
         mapping: dict[str, str] = {}
+        mapped_baseline: set[str] = set()
         for row in reader:
             if len(row) != 2 or any(not name or name != name.strip() or any(ord(c) < 32 or ord(c) == 127 for c in name) for name in row):
                 raise ValueError(f"invalid sample map row {reader.line_num}")
             before, after = row
-            if after in mapping or before in mapping.values():
+            if after in mapping or before in mapped_baseline:
                 raise ValueError(f"duplicate sample mapping at row {reader.line_num}")
-            if before not in baseline.sample_names or after not in candidate.sample_names:
+            if before not in baseline_names or after not in candidate_names:
                 raise ValueError(f"sample map row {reader.line_num} references a missing baseline or candidate sample")
             mapping[after] = before
+            mapped_baseline.add(before)
     if not mapping:
         raise ValueError("sample map has no mappings")
     renamed = tuple(mapping.get(name, name) for name in candidate.sample_names)
@@ -83,20 +87,26 @@ def _read_sample_map(path: str | Path, baseline: CountTable, candidate: CountTab
 def _read_guide_map(path: str | Path, baseline: CountTable, candidate: CountTable) -> tuple[CountTable, dict]:
     """Align explicitly asserted guide IDs without changing either count matrix."""
     raw = Path(path).read_bytes()
+    # Guide libraries commonly contain tens of thousands of rows. Build sets
+    # once so validation is linear in the axis and map sizes, not their product.
+    baseline_ids = set(baseline.target_ids)
+    candidate_ids = set(candidate.target_ids)
     with io.StringIO(raw.decode("utf-8-sig"), newline="") as handle:
         reader = csv.reader(handle, delimiter="\t", strict=True)
         if next(reader, None) != ["baseline", "candidate"]:
             raise ValueError("guide map must have exactly two TSV columns: baseline, candidate")
         mapping: dict[str, str] = {}
+        mapped_baseline: set[str] = set()
         for row in reader:
             if len(row) != 2 or any(not name or name != name.strip() or any(ord(c) < 32 or ord(c) == 127 for c in name) for name in row):
                 raise ValueError(f"invalid guide map row {reader.line_num}")
             before, after = row
-            if after in mapping or before in mapping.values():
+            if after in mapping or before in mapped_baseline:
                 raise ValueError(f"duplicate guide mapping at row {reader.line_num}")
-            if before not in baseline.target_ids or after not in candidate.target_ids:
+            if before not in baseline_ids or after not in candidate_ids:
                 raise ValueError(f"guide map row {reader.line_num} references a missing baseline or candidate guide")
             mapping[after] = before
+            mapped_baseline.add(before)
     if not mapping:
         raise ValueError("guide map has no mappings")
     renamed = tuple(mapping.get(name, name) for name in candidate.target_ids)
