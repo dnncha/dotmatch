@@ -267,6 +267,18 @@ def aggregate_guide_total_result(row: dict[str, str]) -> str:
         return "unverified"
     if differing < 0 or (differing == 0 and total_delta != 0):
         return "inconsistent_summary"
+    recorded_identity = row.get("aggregate_counts_identical", "")
+    if recorded_identity:
+        if recorded_identity not in {"true", "false"}:
+            return "unverified"
+        identical = recorded_identity == "true"
+        if identical != (differing == 0 and total_delta == 0):
+            # Different guide axes can make the explicit dictionary identity
+            # false even when every unioned guide has a zero numeric delta.
+            if not identical and differing == 0 and total_delta == 0:
+                return "different"
+            return "inconsistent_summary"
+        return "identical" if identical else "different"
     return "identical" if differing == 0 else "different"
 
 
