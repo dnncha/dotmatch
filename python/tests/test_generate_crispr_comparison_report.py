@@ -119,9 +119,19 @@ def test_crispr_comparison_report_has_explicit_guide_counter_style_public_data_l
     text = (out_dir / "README.md").read_text(encoding="utf-8")
     assert "## Guide-Counter-Style Public Paper-Data Lane" in text
     assert "DotMatch `dotmatch_hamming_k1` versus `guide_counter_one_mismatch`" in text
-    assert "|dataset|records_per_sample|dotmatch_hamming_reads_per_sec|guide_counter_reads_per_sec|speedup|count_agreement_status|count_total_delta|semantics|" in text
-    assert "|mageck_yusa|100000|200.0|100.0|2.00|ok|1000|one mismatch, no indels|" in text
+    assert "|dataset|records_per_sample|dotmatch_hamming_reads_per_sec|guide_counter_reads_per_sec|speedup|comparison_execution|aggregate_guide_totals|differing_guides|count_total_delta|semantics|" in text
+    assert "|mageck_yusa|100000|200.0|100.0|2.00|ok|different|25|1000|one mismatch, no indels|" in text
+    assert "`comparison_execution=ok` means the comparison ran; it does not mean the counts agree." in text
     assert "dotmatch_levenshtein_k1" not in text.split("## Guide-Counter-Style Public Paper-Data Lane", 1)[1].split("## Full Hamming k1 Guide-Counter Ratio", 1)[0]
+
+
+def test_aggregate_guide_total_result_distinguishes_execution_from_identity():
+    verdict = _load_report().aggregate_guide_total_result
+    assert verdict({"status": "ok", "differing_guides": "0", "total_delta": "0"}) == "identical"
+    assert verdict({"status": "ok", "differing_guides": "2", "total_delta": "0"}) == "different"
+    assert verdict({"status": "non_comparable", "differing_guides": "0", "total_delta": "0"}) == "not_comparable"
+    assert verdict({"status": "ok", "differing_guides": "0", "total_delta": "1"}) == "inconsistent_summary"
+    assert verdict({"status": "ok", "differing_guides": "", "total_delta": ""}) == "unverified"
 
 
 def test_crispr_comparison_report_keeps_hamming_k23_bowtie1_rows_separate(tmp_path, monkeypatch):
