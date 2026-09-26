@@ -51,6 +51,10 @@ jobs:
           cd "$work"
           unset PYTHONPATH DOTMATCH_LIB DOTMATCH_NATIVE_CLI
           "$work/venv/bin/dotmatch-compare-counts" --baseline baseline.tsv --candidate candidate.tsv --out-dir comparison
+          printf 'sgRNA\tGene\tsample\nrenamed-guide\tG1\t1\n' > renamed.tsv
+          printf 'baseline\tcandidate\ng1\trenamed-guide\n' > guides.tsv
+          printf 'sgRNA\tGene\tsample\ng1\tG1\t1\n' > mapped-baseline.tsv
+          "$work/venv/bin/dotmatch-compare-counts" --baseline mapped-baseline.tsv --candidate renamed.tsv --guide-map guides.tsv --out-dir mapped --fail-on-difference
           "$work/venv/bin/dotmatch-compare-counts" --baseline baseline.tsv --candidate baseline.tsv --out-dir identical --fail-on-difference
           status=0
           "$work/venv/bin/dotmatch-compare-counts" --baseline baseline.tsv --candidate candidate.tsv --out-dir regression --fail-on-difference || status=$?
@@ -62,7 +66,10 @@ jobs:
           assert report['scope'] == 'complete'
           assert sum(s['changed_guides'] for s in report['samples']) == 4
           assert all(s['same_total_different_counts'] for s in report['samples'])
-          for folder in ('comparison', 'identical', 'regression'):
+          mapped = json.loads(Path('mapped/report.json').read_text())
+          assert mapped['guide_map']['pairs'] == [{'baseline': 'g1', 'candidate': 'renamed-guide'}]
+          assert mapped['any_count_difference'] is False
+          for folder in ('comparison', 'identical', 'regression', 'mapped'):
               base = Path(folder)
               manifest = json.loads((base / 'manifest.json').read_text())
               assert manifest['status'] == 'complete'
@@ -92,7 +99,7 @@ jobs:
           print("Installed offline first run and linked-input preparation verified")
           PYCODE
           mkdir "$root/evaluation-artifact"
-          cp -R comparison identical regression first-run "$root/evaluation-artifact/"
+          cp -R comparison identical regression mapped first-run "$root/evaluation-artifact/"
       - name: Retain exact review source and build identity
         run: |
           git rev-parse HEAD > evaluation-artifact/source-commit.txt
