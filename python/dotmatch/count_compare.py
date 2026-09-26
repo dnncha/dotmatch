@@ -80,6 +80,36 @@ def _read_sample_map(path: str | Path, baseline: CountTable, candidate: CountTab
     }
 
 
+def _read_guide_map(path: str | Path, baseline: CountTable, candidate: CountTable) -> tuple[CountTable, dict]:
+    """Align explicitly asserted guide IDs without changing either count matrix."""
+    raw = Path(path).read_bytes()
+    with io.StringIO(raw.decode("utf-8-sig"), newline="") as handle:
+        reader = csv.reader(handle, delimiter="\t", strict=True)
+        if next(reader, None) != ["baseline", "candidate"]:
+            raise ValueError("guide map must have exactly two TSV columns: baseline, candidate")
+        mapping: dict[str, str] = {}
+        for row in reader:
+            if len(row) != 2 or any(not name or name != name.strip() or any(ord(c) < 32 or ord(c) == 127 for c in name) for name in row):
+                raise ValueError(f"invalid guide map row {reader.line_num}")
+            before, after = row
+            if after in mapping or before in mapping.values():
+                raise ValueError(f"duplicate guide mapping at row {reader.line_num}")
+            if before not in baseline.target_ids or after not in candidate.target_ids:
+                raise ValueError(f"guide map row {reader.line_num} references a missing baseline or candidate guide")
+            mapping[after] = before
+    if not mapping:
+        raise ValueError("guide map has no mappings")
+    renamed = tuple(mapping.get(name, name) for name in candidate.target_ids)
+    if len(set(renamed)) != len(renamed):
+        raise ValueError("guide map collides with another candidate guide ID")
+    return replace(candidate, target_ids=renamed), {
+        "sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw),
+        "asserted_by_user": True,
+        "pairs": [{"baseline": before, "candidate": after} for after, before in mapping.items()],
+        "note": "Guide correspondence was asserted by the user; shared annotations are checked, but this tool cannot establish target identity when annotations are absent.",
+    }
+
+
 def _alignment(baseline: CountTable, candidate: CountTable, shared_only: bool) -> dict:
     left_ids, right_ids = set(baseline.target_ids), set(candidate.target_ids)
     left_samples, right_samples = set(baseline.sample_names), set(candidate.sample_names)
@@ -251,6 +281,10 @@ def _report_html(report: dict) -> str:
     mapping_note = (f'<p>Explicit sample map: {len(mapping["pairs"])} candidate column(s) renamed. '
                     'The user asserted biological sample identity; DotMatch cannot verify it. '
                     'See report.json for the exact pairs and map checksum.</p>') if mapping else ""
+    guide_mapping = report.get("guide_map")
+    guide_mapping_note = (f'<p>Explicit guide map: {len(guide_mapping["pairs"])} candidate ID(s) renamed. '
+                          'The user asserted guide identity; shared annotations were checked, but DotMatch cannot verify identity without them. '
+                          'See report.json for the exact pairs and map checksum.</p>') if guide_mapping else ""
     return f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
@@ -274,6 +308,7 @@ th,td{{padding:10px 12px;border-bottom:1px solid var(--line);text-align:right;ov
 <section><h2>What was compared</h2><ul>{exclusions}</ul>
 <p>Checked identity fields: {escape(identities)}. Missing or differently named annotations are not verified.</p>
 {mapping_note}
+{guide_mapping_note}
 <p>Full exclusion lists, count summaries and bounded previews: <a href="report.json">report.json</a>. Every changed guide/sample cell: <a href="changes.tsv">changes.tsv</a>. File integrity: <a href="manifest.json">manifest.json</a>.</p>
 <dl>{hashes}</dl><p>Private by default: this tool does not send data anywhere. The report still contains guide and sample identifiers and counts. Review it before sharing. Import TSV identifiers as text in spreadsheet software.</p>
 </section></main></body></html>'''
@@ -281,7 +316,8 @@ th,td{{padding:10px 12px;border-bottom:1px solid var(--line);text-align:right;ov
 
 def write_comparison(baseline_path: str | Path, candidate_path: str | Path,
                      out_dir: str | Path, *, shared_only: bool = False,
-                     sample_map: str | Path | None = None) -> dict:
+                     sample_map: str | Path | None = None,
+                     guide_map: str | Path | None = None) -> dict:
     """Validate before writing. Never reuse an output directory or overwrite files.
 
     manifest.json is written last and marks completed output. An I/O failure can
@@ -292,9 +328,14 @@ def write_comparison(baseline_path: str | Path, candidate_path: str | Path,
     mapping_info = None
     if sample_map is not None:
         candidate, mapping_info = _read_sample_map(sample_map, baseline, candidate)
+    guide_mapping_info = None
+    if guide_map is not None:
+        candidate, guide_mapping_info = _read_guide_map(guide_map, baseline, candidate)
     report = compare_tables(baseline, candidate, shared_only=shared_only)
     if mapping_info is not None:
         report["sample_map"] = mapping_info
+    if guide_mapping_info is not None:
+        report["guide_map"] = guide_mapping_info
     report["inputs"] = {"baseline": left_source, "candidate": right_source}
     report["implementation_sha256"] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     output = Path(out_dir)
@@ -331,12 +372,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--candidate", required=True, help="candidate raw-count TSV or .tsv.gz")
     parser.add_argument("--out-dir", required=True, help="new directory for HTML, JSON, TSV and integrity manifest")
     parser.add_argument("--sample-map", help="explicit baseline/candidate sample-name TSV; asserts the same biological samples")
+    parser.add_argument("--guide-map", help="explicit baseline/candidate guide-ID TSV; asserts the same targets")
     parser.add_argument("--shared-only", action="store_true", help="explicitly compare only shared guides/samples and report all exclusions")
     parser.add_argument("--fail-on-difference", action="store_true", help="exit 1 on changed counts OR excluded guides/samples, after writing the report")
     args = parser.parse_args(argv)
     try:
         report = write_comparison(args.baseline, args.candidate, args.out_dir, shared_only=args.shared_only,
-                                  sample_map=args.sample_map)
+                                  sample_map=args.sample_map, guide_map=args.guide_map)
     except (ValueError, OSError, csv.Error, UnicodeError, EOFError) as exc:
         parser.exit(2, f"count comparison: {exc}\n")
     changed = sum(row["changed_guides"] for row in report["samples"])
