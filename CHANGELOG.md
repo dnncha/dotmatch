@@ -4,6 +4,11 @@ All notable user-facing changes are tracked here. Public statements in release n
 
 ## Unreleased
 
+- `compare-counts --guide-map` accepts an explicit baseline/candidate guide-ID
+  map for workflows that name the same target differently. It rejects invalid
+  or colliding mappings, checks shared annotations after mapping, and records
+  the asserted correspondence and map checksum. Users must verify biological
+  target identity from their library files.
 - `compare-counts --sample-map` accepts an explicit TSV of baseline/candidate
   sample names, rejects missing or colliding mappings before output, and records
   the asserted pairs and input checksum in the report. Biological sample identity
