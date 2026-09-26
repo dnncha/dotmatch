@@ -58,6 +58,93 @@ def test_detailed_count_components_are_not_extra_samples(tmp_path):
     assert report["identity"]["candidate_only_fields"] == ["target_seq"]
 
 
+def test_explicit_sample_map_preserves_auditable_source_names(tmp_path):
+    a = table(tmp_path, "a.tsv", "sgRNA\tGene\tpatient_1\tpatient_2\ng1\tG1\t10\t0\n")
+    b = table(tmp_path, "b.tsv", "sgRNA\tGene\tL002\tL001\ng1\tG1\t0\t11\n")
+    mapping = table(tmp_path, "samples.tsv", "baseline\tcandidate\npatient_1\tL001\npatient_2\tL002\n")
+    assert main(["--baseline", str(a), "--candidate", str(b), "--out-dir", str(tmp_path / "out"),
+                 "--sample-map", str(mapping), "--fail-on-difference"]) == 1
+    report = json.loads((tmp_path / "out/report.json").read_text())
+    assert [s["sample"] for s in report["samples"]] == ["patient_1", "patient_2"]
+    assert [s["total_delta"] for s in report["samples"]] == [1, 0]
+    assert report["sample_map"]["sha256"] == hashlib.sha256(mapping.read_bytes()).hexdigest()
+    assert report["sample_map"]["pairs"] == [
+        {"baseline": "patient_1", "candidate": "L001"},
+        {"baseline": "patient_2", "candidate": "L002"},
+    ]
+    assert "asserted biological sample identity" in (tmp_path / "out/report.html").read_text()
+
+
+def test_guide_map_aligns_reordered_ids_and_checks_counts(tmp_path):
+    a = table(tmp_path, "a.tsv", "sgRNA\tGene\ts\ng1\tG1\t10\ng2\tG2\t0\n")
+    b = table(tmp_path, "b.tsv", "sgRNA\tGene\ts\nnew2\tG2\t1\nnew1\tG1\t9\n")
+    mapping = table(tmp_path, "guides.tsv", "baseline\tcandidate\ng1\tnew1\ng2\tnew2\n")
+    assert main(["--baseline", str(a), "--candidate", str(b), "--out-dir", str(tmp_path / "out"),
+                 "--guide-map", str(mapping), "--fail-on-difference"]) == 1
+    report = json.loads((tmp_path / "out/report.json").read_text())
+    assert report["alignment"]["guides"] == ["g1", "g2"]
+    assert report["samples"][0]["same_total_different_counts"]
+    assert report["guide_map"]["sha256"] == hashlib.sha256(mapping.read_bytes()).hexdigest()
+    assert report["guide_map"]["pairs"] == [{"baseline": "g1", "candidate": "new1"},
+                                             {"baseline": "g2", "candidate": "new2"}]
+    with (tmp_path / "out/changes.tsv").open(newline="") as handle:
+        assert [row["guide"] for row in csv.DictReader(handle, delimiter="\t")] == ["g1", "g2"]
+
+
+@pytest.mark.parametrize("mapping", [
+    "baseline\tcandidate\ng1\tnew1\ng1\tnew2\n",
+    "baseline\tcandidate\ng1\tnew1\ng2\tnew1\n",
+    "baseline\tcandidate\ng1\tmissing\n",
+    "baseline\tcandidate\ng1\tnew1\textra\n",
+    "baseline\tcandidate\n",
+])
+def test_invalid_guide_map_refused_before_output(tmp_path, mapping):
+    a = table(tmp_path, "a.tsv", "sgRNA\tGene\ts\ng1\tG1\t1\ng2\tG2\t2\n")
+    b = table(tmp_path, "b.tsv", "sgRNA\tGene\ts\nnew1\tG1\t1\nnew2\tG2\t2\n")
+    m = table(tmp_path, "guides.tsv", mapping)
+    with pytest.raises(ValueError):
+        write_comparison(a, b, tmp_path / "out", guide_map=m)
+    assert not (tmp_path / "out").exists()
+
+
+def test_guide_map_collision_and_annotation_conflict_refused(tmp_path):
+    a = table(tmp_path, "a.tsv", "sgRNA\tGene\ts\ng1\tG1\t1\ng2\tG2\t2\n")
+    b = table(tmp_path, "b.tsv", "sgRNA\tGene\ts\nnew1\tG1\t1\ng2\tG2\t2\n")
+    m = table(tmp_path, "guides.tsv", "baseline\tcandidate\ng2\tnew1\n")
+    with pytest.raises(ValueError, match="collides"):
+        write_comparison(a, b, tmp_path / "out", guide_map=m)
+    m.write_text("baseline\tcandidate\ng1\tnew1\n")
+    b.write_text("sgRNA\tGene\ts\nnew1\tWRONG\t1\ng2\tG2\t2\n")
+    with pytest.raises(ValueError, match="conflicting gene"):
+        write_comparison(a, b, tmp_path / "out", guide_map=m)
+    assert not (tmp_path / "out").exists()
+
+
+@pytest.mark.parametrize("mapping", [
+    "baseline\tcandidate\npatient_1\tL001\npatient_1\tL002\n",
+    "baseline\tcandidate\npatient_1\tL001\npatient_2\tL001\n",
+    "baseline\tcandidate\npatient_1\tmissing\n",
+    "baseline\tcandidate\npatient_1\tL001\textra\n",
+    "baseline\tcandidate\n",
+])
+def test_invalid_sample_map_refused_before_output(tmp_path, mapping):
+    a = table(tmp_path, "a.tsv", "sgRNA\tGene\tpatient_1\tpatient_2\ng1\tG1\t10\t0\n")
+    b = table(tmp_path, "b.tsv", "sgRNA\tGene\tL001\tL002\ng1\tG1\t10\t0\n")
+    m = table(tmp_path, "samples.tsv", mapping)
+    with pytest.raises(ValueError):
+        write_comparison(a, b, tmp_path / "out", sample_map=m)
+    assert not (tmp_path / "out").exists()
+
+
+def test_partial_map_collision_refused(tmp_path):
+    a = table(tmp_path, "a.tsv", "sgRNA\tGene\ta\tb\ng1\tG1\t1\t2\n")
+    b = table(tmp_path, "b.tsv", "sgRNA\tGene\ta\tx\ng1\tG1\t1\t2\n")
+    m = table(tmp_path, "samples.tsv", "baseline\tcandidate\na\tx\n")
+    with pytest.raises(ValueError, match="collides"):
+        write_comparison(a, b, tmp_path / "out", sample_map=m)
+    assert not (tmp_path / "out").exists()
+
+
 @pytest.mark.parametrize("bad", ["", "NaN", "inf", "-1", "0.5", "1e1000", "bad"])
 def test_invalid_counts_refused_before_any_output(tmp_path, bad):
     a, b = pair(tmp_path, after=bad + "\n")
