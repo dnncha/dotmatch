@@ -74,6 +74,28 @@ any output is written. The JSON report records the exact pairs and a hash of
 the mapping file; HTML marks biological identity as a user assertion. Confirm
 identity from your sample sheet first. Counts and source files are not rewritten.
 
+### Different guide IDs (next release)
+
+When two workflows name the same guides differently, make the correspondence
+explicit instead of comparing rows by position. This option is available from
+the source checkout and is **not in the published 0.6.0 package**. Prepare a
+tab-separated map with one row per renamed candidate guide:
+
+```text
+baseline\tcandidate
+sgRNA_001\tguide-A
+sgRNA_002\tguide-B
+```
+
+Pass `--guide-map guides.tsv` along with the ordinary input and output options.
+Unmapped IDs retain their names. Missing IDs, duplicate mappings and collisions
+with unmapped IDs stop before output is created. The report records the pairs
+and a checksum of the map; changed cells use baseline IDs. Matching gene or
+sequence annotation columns must agree after mapping. If an annotation is
+missing, **verify target sequences against the two original library files**:
+the ID map is a user assertion, not proof of biological correspondence. Avoid
+publishing the map or report if its identifiers are private.
+
 ## What you get
 
 | File | Purpose |
