@@ -79,6 +79,21 @@ def project_version() -> str:
     return match.group(1)
 
 
+def reproducible_sdist_environment() -> dict[str, str]:
+    env = os.environ.copy()
+    epoch_text = env.get("SOURCE_DATE_EPOCH")
+    if epoch_text is None:
+        epoch_text = run_text(["git", "log", "-1", "--format=%ct"], cwd=ROOT)
+    try:
+        epoch = int(epoch_text)
+    except ValueError as exc:
+        raise SystemExit("SOURCE_DATE_EPOCH must be an integer") from exc
+    if not 0 <= epoch <= (1 << 32) - 1:
+        raise SystemExit("SOURCE_DATE_EPOCH is outside the gzip timestamp range")
+    env["SOURCE_DATE_EPOCH"] = str(epoch)
+    return env
+
+
 def wheel_native_members(wheel: Path) -> list[str]:
     with zipfile.ZipFile(wheel) as archive:
         return [
@@ -784,11 +799,29 @@ def wheel_supported_by_current_platform(wheel: Path) -> bool:
 
 def build_and_verify_sdist(out_dir: Path, install_root: Path, expected_version: str) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
-    run([sys.executable, "-m", "build", "--sdist", "--outdir", str(out_dir)], cwd=ROOT)
+    build_env = reproducible_sdist_environment()
+    build_cmd = [sys.executable, "-m", "build", "--sdist", "--outdir"]
+    run([*build_cmd, str(out_dir)], cwd=ROOT, env=build_env)
     sdists = sorted(out_dir.glob("dotmatch-*.tar.gz"))
     if len(sdists) != 1:
         raise SystemExit(f"expected exactly one dotmatch sdist in {out_dir}, found {len(sdists)}")
     sdist = sdists[0]
+
+    rebuild_dir = install_root / "sdist-rebuild"
+    rebuild_dir.mkdir(parents=True, exist_ok=True)
+    run([*build_cmd, str(rebuild_dir)], cwd=ROOT, env=build_env)
+    rebuilds = sorted(rebuild_dir.glob("dotmatch-*.tar.gz"))
+    if len(rebuilds) != 1:
+        raise SystemExit(f"expected exactly one rebuilt sdist in {rebuild_dir}, found {len(rebuilds)}")
+    rebuilt = rebuilds[0]
+    if sdist.read_bytes() != rebuilt.read_bytes():
+        first_hash = hashlib.sha256(sdist.read_bytes()).hexdigest()
+        second_hash = hashlib.sha256(rebuilt.read_bytes()).hexdigest()
+        raise SystemExit(
+            f"source distribution is not reproducible under SOURCE_DATE_EPOCH: "
+            f"{first_hash} != {second_hash}"
+        )
+
     check_sdist_members(sdist)
     check_distribution_metadata(sdist, expected_version)
     verify_clean_install(sdist, install_root, expected_version)
