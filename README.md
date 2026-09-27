@@ -33,11 +33,11 @@ basecaller, cell/UMI pipeline or gene-level hit-calling package.
 
 ## Install
 
-Release 0.6.0 is the current DotMatch release. It includes the six `dotmatch agent` tools
+Release 0.6.1 is the current DotMatch release. It includes the six `dotmatch agent` tools
 described below:
 
 ```bash
-python3 -m pip install dotmatch==0.6.0
+python3 -m pip install dotmatch==0.6.1
 dotmatch --version
 ```
 
@@ -48,7 +48,7 @@ conda create -n dotmatch -c conda-forge -c bioconda dotmatch
 conda activate dotmatch
 
 # Or use the pinned release container:
-docker run --rm ghcr.io/dnncha/dotmatch:v0.6.0 --version
+docker run --rm ghcr.io/dnncha/dotmatch:v0.6.1 --version
 ```
 
 Bioconda and its generated BioContainers images can lag PyPI/GHCR. When a
@@ -111,10 +111,10 @@ best-distance Hamming assignment using the same windows in **one FASTQ pass**.
 It produces three count matrices, per-guide deltas, read-state transitions,
 checksums and a self-contained HTML report. It never selects a policy for you.
 
-Run the included synthetic example from a checkout of the v0.6.0 release:
+Run the included synthetic example from a checkout of the v0.6.1 release:
 
 ```bash
-python3 -m pip install dotmatch==0.6.0
+python3 -m pip install dotmatch==0.6.1
 dotmatch sensitivity \
   --targets examples/assignment_sensitivity/targets.tsv \
   --reads examples/assignment_sensitivity/reads.fastq \
@@ -129,7 +129,7 @@ This is sensitivity analysis, not an estimate of biological accuracy.
 
 [Explore the interactive review example](https://dnncha.github.io/dotmatch/assignment-sensitivity/)
 without installing anything. The example uses the public nine-read synthetic fixture.
-The interactive assignment review is published on the DotMatch 0.6.0 site.
+The interactive assignment review is published on the DotMatch 0.6.1 site.
 The installed `dotmatch sensitivity` command continues to write its static
 report. The synthetic fixture demonstrates software behavior, not biological
 accuracy.
