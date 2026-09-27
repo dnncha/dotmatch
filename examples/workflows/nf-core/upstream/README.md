@@ -1,9 +1,10 @@
 # nf-core/modules submission payload
 
 This directory is a self-contained candidate payload for DotMatch modules in
-`nf-core/modules`. It is prepared against DotMatch 0.2.2 and uses the immutable
-BioContainers build `0.2.2--py311h13f8228_1`, which is available from Quay and
-the Galaxy Singularity depot.
+`nf-core/modules`. It is prepared against DotMatch 0.6.3 and uses the immutable
+GHCR manifest `sha256:c43dd55c5c58d4b689af8e76a4d54e19973af52f133f0f77781f6949736708e0`. The release workflow verified that manifest
+for both `linux/amd64` and `linux/arm64`; module pins use `docker://` for
+direct Singularity/Apptainer pulls.
 
 ## Included modules
 
@@ -37,9 +38,9 @@ interpreting a missing-command failure as a module failure.
 
 Copy `modules/nf-core/dotmatch/` into a current `nf-core/modules` checkout and
 run the repository's formatter, module lint, and nf-test commands for each
-module. Keep the exact container tag unless a later DotMatch release has passed
-the distribution checks and is present in both Quay and the Galaxy Singularity
-depot.
+module. Keep the verified 0.6.3 GHCR manifest digest pin. Replace it only with a
+reviewed public Bioconda/BioContainers build after its installed workflow checks
+pass.
 
 After an upstream pull request is accepted, add its public URL to
 `docs/workflow-adoption.json` and run `make workflow-adoption-status`.

@@ -31,7 +31,9 @@ GALAXY_TEST_DATA = [
     "expected_counts.mageck.tsv",
 ]
 NFCORE_MODULES = ["count", "demux", "audit", "panel_check", "crispr_count", "assay_run"]
-NFCORE_CONTAINER_TAG = "0.2.2--py311h13f8228_1"
+NFCORE_CONTAINER_IMAGE = "ghcr.io/dnncha/dotmatch:v0.6.3"
+NFCORE_CONTAINER_DIGEST = "sha256:c43dd55c5c58d4b689af8e76a4d54e19973af52f133f0f77781f6949736708e0"
+NFCORE_CONTAINER_REF = f"{NFCORE_CONTAINER_IMAGE}@{NFCORE_CONTAINER_DIGEST}"
 
 
 class WorkflowAudit:
@@ -268,21 +270,25 @@ def check_nfcore_container_pins(root: Path, result: WorkflowAudit) -> None:
         base / "modules" / "local" / "dotmatch",
         base / "upstream" / "modules" / "nf-core" / "dotmatch",
     ]
-    expected_singularity = f"https://depot.galaxyproject.org/singularity/dotmatch:{NFCORE_CONTAINER_TAG}"
-    expected_docker = f"biocontainers/dotmatch:{NFCORE_CONTAINER_TAG}"
+    expected_singularity = f"docker://{NFCORE_CONTAINER_REF}"
+    expected_docker = NFCORE_CONTAINER_REF
 
     for module_root in module_roots:
         for module_name in NFCORE_MODULES:
             module_path = module_root / module_name / "main.nf"
             module = _read(module_path, result)
-            if expected_singularity not in module or expected_docker not in module:
+            if (
+                expected_singularity not in module
+                or expected_docker not in module
+                or "workflow.containerEngine in ['singularity', 'apptainer']" not in module
+            ):
                 result.failures.append(
-                    f"{module_path.as_posix()} must use the verified immutable nf-core container tag "
-                    f"{NFCORE_CONTAINER_TAG} for both Singularity and Docker"
+                    f"{module_path.as_posix()} must use the verified immutable nf-core container image "
+                    f"{NFCORE_CONTAINER_REF} for Docker, Singularity, and Apptainer"
                 )
 
-    if not any("immutable nf-core container tag" in failure for failure in result.failures):
-        result.passed.append(f"nf-core modules use immutable container tag {NFCORE_CONTAINER_TAG}")
+    if not any("immutable nf-core container image" in failure for failure in result.failures):
+        result.passed.append(f"nf-core modules use immutable container image {NFCORE_CONTAINER_REF}")
 
 
 def _check_nfcore_tool_module(
