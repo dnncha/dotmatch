@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "status": "pass_with_tied_rank_order_variation",
+  "run_date_utc": "2026-09-27",
+  "dotmatch_version": "0.6.1",
+  "dotmatch_commit": "5c82bd405fc49d52e04f429fab429d044ec86997",
+  "mageck_runtime": {
+    "version": "0.5.9.5",
+    "package": "https://conda.anaconda.org/bioconda/linux-64/mageck-0.5.9.5-py310hc52dbad_9.conda",
+    "package_sha256": "dbb85933ced178f86def4c17abacb9d4b6459267fbc5097d5e9dcacf08728426"
+  },
+  "inputs": {
+    "mageck_count_table_sha256": "93814803d0ae9d86d912b4aa438fa88a3b4a69f6b175c0b9592b65ac6a063a02",
+    "dotmatch_count_table_sha256": "88ad3ef533f6c285d36e06fd55a5b562a738a8413512d51e03fc967dc9cbb4c3",
+    "count_table_relationship": "The tables are identifier-keyed count-equivalent but have different row order."
+  },
+  "protocol": {
+    "question": "Does count-table row order change MAGeCK test statistics or downstream hit calls when every keyed guide, gene, and count is identical?",
+    "reference_command": "mageck test -k escneg.count.txt -t ESC1 -c plasmid -n baseline/yusa",
+    "candidate_command": "mageck test -k dotmatch-0.6.1.counts.tsv -t ESC1 -c plasmid -n candidate/yusa",
+    "comparison_command": "python3 scripts/compare_mageck_test_results.py baseline/yusa.gene_summary.txt candidate/yusa.gene_summary.txt baseline/yusa.sgrna_summary.txt candidate/yusa.sgrna_summary.txt --fdr-threshold 0.05",
+    "settings": {
+      "normalization": "median (MAGeCK default)",
+      "remove_zero": "both (MAGeCK default)",
+      "gene_lfc_method": "median (MAGeCK default)",
+      "fdr_threshold": 0.05
+    },
+    "success_criteria": "Exact guide/gene membership, all sgRNA fields, all non-rank gene fields, and FDR hit sets; rank variation allowed only as a permutation within identical score/p-value/FDR tie blocks.",
+    "failure_criteria": "Fail on abnormal or partial output, missing/extra identifiers, any sgRNA-field mismatch, any non-rank gene-statistic mismatch, rank movement across tie blocks, or a changed FDR hit set."
+  },
+  "results": {
+    "loaded_guides": 87437,
+    "guides_tested_after_default_zero_removal": 87252,
+    "genes_tested": 19148,
+    "sgrna_fields_compared": 1311555,
+    "sgrna_field_mismatches": 0,
+    "gene_non_rank_fields_compared": 229776,
+    "gene_non_rank_field_mismatches": 0,
+    "depletion": {
+      "fdr_0_05_hits_reference": 212,
+      "fdr_0_05_hits_candidate": 212,
+      "fdr_hit_set_identical": true,
+      "rank_mismatches": 5002,
+      "max_absolute_rank_displacement": 32,
+      "tie_blocks_with_rank_variation": 1619,
+      "rank_changes_crossing_tie_blocks": 0,
+      "top_10_through_top_1000_sets_identical": true,
+      "top_5000_symmetric_difference": 6,
+      "top_10000_symmetric_difference": 2
+    },
+    "enrichment": {
+      "fdr_0_05_hits_reference": 2,
+      "fdr_0_05_hits_candidate": 2,
+      "fdr_hit_set_identical": true,
+      "rank_mismatches": 1976,
+      "max_absolute_rank_displacement": 3,
+      "tie_blocks_with_rank_variation": 920,
+      "rank_changes_crossing_tie_blocks": 0,
+      "top_10_through_top_10000_sets_identical": true
+    },
+    "genes_with_any_rank_mismatch": 6301,
+    "gene_summary_sha256": {
+      "reference": "50bf20fc062d7d9c650190e1e4203b02441ffe7be2e933b165572634928d7632",
+      "candidate": "53fdad95e2c741978fa15ae7be27bb14aaa472278e80d4c655d21a95031a2fcc"
+    },
+    "sgrna_summary_sha256": {
+      "reference": "3efecd8404d31fa9b2844764407d864d86c8b0067e4e834dec99e9cd66daaf13",
+      "candidate": "7b9d99aa713aaf2edd2524c328317416801d3f0fac26e71d069b34f21ce59b9d"
+    },
+    "comparison_summary_sha256": "9a087fb00454462c0294141a0b244d680a1ecf7a16846165a2159dc5a464ed34"
+  },
+  "resource_use": {
+    "reference_wall_seconds": 16.47,
+    "candidate_wall_seconds": 14.54,
+    "local_downstream_artifacts_mib_approx": 49,
+    "paid_resources": false,
+    "performance_claim": false
+  },
+  "negative_result": "MAGeCK 0.5.9.5 assigns ordinal gene ranks within exact score/p-value/FDR ties according to input-dependent order. A naive exact rank or top-N comparison can therefore report differences even when every count, sgRNA statistic, non-rank gene statistic, and FDR call agrees.",
+  "claim_boundary": "This establishes downstream MAGeCK output equivalence for this single Yusa contrast under explicit tied-rank semantics. It does not establish that MAGeCK statistics, DotMatch counts, the screen design, or the resulting gene hits are biologically correct, and it is not external adoption evidence."
+}
