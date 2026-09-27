@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "evaluation_id": "REPLACE_ME_YUSA_EVALUATION_ID",
+  "protocol": {
+    "protocol_locked_before_results": true,
+    "protocol_owner": "REPLACE_ME_INDEPENDENT_EVALUATOR",
+    "workflow": {
+      "class": "public Yusa CRISPR screen guide counting and MAGeCK testing",
+      "dataset_scope": "ERR376998 plasmid and ERR376999 ESC1 against the 87,437-guide Yusa library",
+      "private_data_handling": "public ENA reads and public MAGeCK library only; no private data"
+    },
+    "inputs": {
+      "library": {
+        "name": "MAGeCK Yusa library",
+        "revision": "public demo library used with ERR376998 and ERR376999",
+        "sha256": "d41a4122a46fdedb47deca61081dde9037d461a1fce1e6f9744522e21005ceba"
+      },
+      "samples": [
+        {
+          "id": "ERR376998",
+          "role": "plasmid control",
+          "read_mate": "R1",
+          "sha256": "7f79b76cec12b70319744417282f963c00818a5f0ae61497bd7b64790ac55f2f"
+        },
+        {
+          "id": "ERR376999",
+          "role": "ESC1 treatment",
+          "read_mate": "R1",
+          "sha256": "cf2bc10938e178d16dfb81ca2f9fda805cae892290fac3cfc243bb637f8cda17"
+        }
+      ]
+    },
+    "dotmatch": {
+      "version": "0.6.1",
+      "install_route": "python3 -m pip install dotmatch==0.6.1",
+      "command": "dotmatch count --targets yusa_library.csv --reads ERR376998.fastq.gz --reads ERR376999.fastq.gz --sample-label plasmid,ESC1 --target-start 23 --target-length 19 --k 0 --metric hamming --format mageck --out dotmatch-0.6.1.counts.tsv --summary dotmatch-0.6.1.summary.json",
+      "settings": {
+        "ambiguity_policy": "radius",
+        "metric": "hamming",
+        "sample_labels": [
+          "plasmid",
+          "ESC1"
+        ],
+        "target_length": 19,
+        "target_start": 23,
+        "threshold": 0
+      }
+    },
+    "comparator": {
+      "name": "MAGeCK count and test",
+      "version": "0.5.9.5",
+      "install_route": "Bioconda mageck-0.5.9.5-py310hc52dbad_9 package SHA-256 dbb85933ced178f86def4c17abacb9d4b6459267fbc5097d5e9dcacf08728426",
+      "command": "mageck count -l yusa_library.csv -n escneg --sample-label plasmid,ESC1 --trim-5 23 --sgrna-len 19 --fastq ERR376998.fastq.gz ERR376999.fastq.gz",
+      "settings": {
+        "guide_length": 19,
+        "sample_labels": [
+          "plasmid",
+          "ESC1"
+        ],
+        "trim_5": 23
+      }
+    },
+    "primary_endpoints": [
+      {
+        "id": "count_table_agreement",
+        "metric": "sgRNA-keyed guide membership, gene strings, integer count cells, and mapped totals",
+        "expected": "87,437 guide rows and 174,874 count cells agree exactly after an identifier-keyed join",
+        "failure_criterion": "any abnormal exit, partial output, missing or extra guide, gene mismatch, count mismatch, or mapped-total mismatch"
+      },
+      {
+        "id": "downstream_fdr_agreement",
+        "metric": "keyed sgRNA fields, non-rank gene statistics, and depleted/enriched FDR<=0.05 hit sets from MAGeCK test",
+        "expected": "all keyed non-rank statistics and both FDR hit sets agree",
+        "failure_criterion": "any identifier, sgRNA-field, non-rank gene-statistic, cross-tie rank, or FDR-hit-set difference"
+      }
+    ],
+    "tie_policy": {
+      "ordinal_ranks": "compare_exact_unless_identical_statistical_tie",
+      "top_n": "report_boundary_ties"
+    },
+    "downstream_endpoint": {
+      "planned": true,
+      "tool": "MAGeCK test",
+      "version": "0.5.9.5",
+      "command": "mageck test -k COUNTS.tsv -t ESC1 -c plasmid -n yusa",
+      "endpoint": "keyed sgRNA and gene statistics plus depleted and enriched FDR<=0.05 hit sets"
+    },
+    "failure_criteria": [
+      "stop before analysis if any input SHA-256 differs from the locked protocol",
+      "fail count equivalence on any guide, gene, count-cell, or mapped-total difference",
+      "fail downstream equivalence on any keyed non-rank statistic or FDR hit-set difference",
+      "report ordinal or top-N differences inside exact statistical ties without treating them as scientific disagreement"
+    ],
+    "scope_limits": [
+      "the evaluator owns protocol locking, execution, interpretation, and permission to publish",
+      "agreement would establish software-output reproducibility for this public workflow, not biological correctness",
+      "released DotMatch 0.6.1 performs the scientific run; any unreleased packet helper must be identified separately",
+      "this draft has not been sent and is not evidence of independent use or adoption"
+    ]
+  }
+}

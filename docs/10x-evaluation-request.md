@@ -35,6 +35,12 @@ DotMatch is not a genome aligner and does not emit SAM/BAM or CIGAR output.
 The project can provide a command template and help interpret a result, but an
 independent evaluator should own the input, comparator, and conclusion.
 
+For a bounded public-data reproduction, use the unsent
+[Yusa evaluation request](yusa-independent-evaluation-request.md). It includes
+fixed input identities, exact released-tool commands, tie-aware downstream
+endpoints, and a deliberately unlockable draft that requires an independent
+evaluator to take ownership before results are viewed.
+
 ## Evidence record
 
 For a public-safe record, open an issue or pull request containing:

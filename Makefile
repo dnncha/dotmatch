@@ -110,6 +110,7 @@ cli-test: dotmatch
 	python3 tests/test_mageck_test_equivalence.py
 	python3 scripts/independent_evaluation_packet.py --help >/dev/null
 	python3 tests/test_independent_evaluation_packet.py
+	python3 tests/test_yusa_independent_evaluation_request.py
 	sh tests/test_crispr_example_expected.sh
 
 coverage:
