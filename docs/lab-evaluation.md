@@ -18,6 +18,11 @@ Confirm all of the following with the assay owner:
 - the intended downstream consumer of the output is known. For CRISPR counts,
   DotMatch writes a MAGeCK-style matrix but does not perform screen statistics.
 
+For a comparative evaluation, create and lock an
+[independent evaluation packet](independent-evaluation-packet.md) before
+viewing either workflow's outcome. This prevents sample identity, thresholds,
+endpoints, and rank-tie handling from being chosen after the result is known.
+
 Create a reviewable project from the release package:
 
 ```bash
