@@ -6,9 +6,9 @@ process DOTMATCH_DEMUX {
     memory { task.ext.memory ?: 8.GB }
     time   { task.ext.time   ?: 4.h  }
 
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/dotmatch:0.2.2--py311h13f8228_1' :
-        'biocontainers/dotmatch:0.2.2--py311h13f8228_1' }"
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?
+        'docker://ghcr.io/dnncha/dotmatch:v0.6.3@sha256:c43dd55c5c58d4b689af8e76a4d54e19973af52f133f0f77781f6949736708e0' :
+        'ghcr.io/dnncha/dotmatch:v0.6.3@sha256:c43dd55c5c58d4b689af8e76a4d54e19973af52f133f0f77781f6949736708e0' }"
 
     input:
     tuple val(meta), path(reads), path(barcodes)
