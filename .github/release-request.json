@@ -1,8 +1,8 @@
 {
-  "version": "0.6.2",
-  "tag": "v0.6.2",
+  "version": "0.6.3",
+  "tag": "v0.6.3",
   "authorized": true,
-  "request": "Ship the reviewed DotMatch 0.6.2 patch release with strict native FASTQ validation, installed prospective evaluation packets, and bounded Yusa comparator evidence.",
+  "request": "Ship the reviewed DotMatch 0.6.3 patch release, superseding the unpublished v0.6.2 candidate after correcting its container smoke assertion.",
   "publication_channels": [
     "GitHub Releases",
     "PyPI",

@@ -99,3 +99,11 @@ def test_publication_gate_checks_the_installed_evaluation_packet_command():
     source = inspect.getsource(release.verify_publication)
     assert "'evaluation-packet', 'template'" in source
     assert "'evaluation_packet_template': True" in source
+
+
+def test_container_release_smoke_matches_the_evaluator_help_text():
+    workflow = (ROOT / '.github/workflows/release.yml').read_text()
+    help_source = (ROOT / 'python/dotmatch/evaluation_packet.py').read_text()
+    assertion = "grep -F 'independent-evaluation packets'"
+    assert workflow.count(assertion) == 2
+    assert 'independent-evaluation packets' in help_source.splitlines()[0]

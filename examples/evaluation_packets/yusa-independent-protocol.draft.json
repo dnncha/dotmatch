@@ -94,7 +94,7 @@
     "scope_limits": [
       "the evaluator owns protocol locking, execution, interpretation, and permission to publish",
       "agreement would establish software-output reproducibility for this public workflow, not biological correctness",
-      "released DotMatch 0.6.1 performs the scientific run; any DotMatch 0.6.2 packet helper must be identified separately",
+      "released DotMatch 0.6.1 performs the scientific run; any DotMatch 0.6.3 packet helper must be identified separately",
       "this draft has not been sent and is not evidence of independent use or adoption"
     ]
   }
