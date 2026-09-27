@@ -9,14 +9,14 @@ one guide and ten gained by another leave the total unchanged. This comparison
 shows that difference rather than hiding it behind a correlation coefficient.
 It does not tell you which result is biologically correct.
 
-**Availability:** `dotmatch compare-counts` is included in DotMatch 0.6.0.
-Install the release with `python3 -m pip install dotmatch==0.6.0`. The
+**Availability:** `dotmatch compare-counts` is included in DotMatch 0.6.1.
+Install the release with `python3 -m pip install dotmatch==0.6.1`. The
 `dotmatch-compare-counts` entrypoint and `python3 -m dotmatch.count_compare`
 module are also available.
 
 ## Try a small, deliberately revealing example
 
-From an installed DotMatch 0.6.0 package, run the checked synthetic first run:
+From an installed DotMatch 0.6.1 package, run the checked synthetic first run:
 
 ```bash
 dotmatch demo --out-dir first-run/
@@ -56,11 +56,10 @@ cell-by-feature matrix. The two tables must use the same counting unit and
 represent the same biological samples. This tool does not aggregate genes,
 correct cell barcodes, or deduplicate UMIs for you.
 
-### Different sample column names (next release)
+### Different sample column names
 
-The source checkout now supports an explicit two-column, tab-separated mapping
-for the same biological samples. This option is **not in the published 0.6.0
-package**. Create `samples.tsv` with this header and one row for each renamed
+DotMatch supports an explicit two-column, tab-separated mapping for the same
+biological samples. Create `samples.tsv` with this header and one row for each renamed
 candidate column:
 
 ```bash
@@ -74,12 +73,11 @@ any output is written. The JSON report records the exact pairs and a hash of
 the mapping file; HTML marks biological identity as a user assertion. Confirm
 identity from your sample sheet first. Counts and source files are not rewritten.
 
-### Different guide IDs (next release)
+### Different guide IDs
 
 When two workflows name the same guides differently, make the correspondence
-explicit instead of comparing rows by position. This option is available from
-the source checkout and is **not in the published 0.6.0 package**. Prepare a
-tab-separated map with one row per renamed candidate guide:
+explicit instead of comparing rows by position. Prepare a tab-separated map
+with one row per renamed candidate guide:
 
 ```text
 baseline\tcandidate

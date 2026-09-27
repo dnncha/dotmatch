@@ -4,6 +4,12 @@ All notable user-facing changes are tracked here. Public statements in release n
 
 ## Unreleased
 
+No user-facing changes yet.
+
+## 0.6.1 - 2026-09-27
+
+### Added
+
 - `compare-counts --guide-map` accepts an explicit baseline/candidate guide-ID
   map for workflows that name the same target differently. It rejects invalid
   or colliding mappings, checks shared annotations after mapping, and records
@@ -13,8 +19,21 @@ All notable user-facing changes are tracked here. Public statements in release n
   sample names, rejects missing or colliding mappings before output, and records
   the asserted pairs and input checksum in the report. Biological sample identity
   must still be verified from the user's sample sheet.
+
+### Fixed
+
 - Correct the installed count-comparison example to use the packaged
   `dotmatch demo` fixture; `examples/count_comparison/` is source-checkout only.
+- Distinguish successful comparison execution from identical aggregate counts
+  in the public CRISPR comparison report. The report now labels totals as
+  identical, different, not comparable, inconsistent, or unverified instead
+  of presenting the legacy execution status as an agreement result.
+- Make Python source distributions byte-for-byte reproducible for identical
+  source, version, and `SOURCE_DATE_EPOCH`, including when built through an
+  isolated PEP 517 frontend.
+
+The matching kernel, assignment policies, benchmark measurements, and
+published biological scope are unchanged.
 
 ## 0.6.0 - 2026-09-25
 

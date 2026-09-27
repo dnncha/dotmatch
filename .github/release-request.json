@@ -1,8 +1,8 @@
 {
-  "version": "0.6.0",
-  "tag": "v0.6.0",
+  "version": "0.6.1",
+  "tag": "v0.6.1",
   "authorized": true,
-  "request": "Ship the reviewed DotMatch 0.6.0 release, including the checked first-run demo, safer CRISPR quickstart, and raw count comparison.",
+  "request": "Ship the reviewed DotMatch 0.6.1 patch release with explicit sample/guide identity maps, corrected comparison reporting, and reproducible source distributions.",
   "publication_channels": [
     "GitHub Releases",
     "PyPI",
