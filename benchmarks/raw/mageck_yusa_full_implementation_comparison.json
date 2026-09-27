@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "run_date_utc": "2026-09-27",
+  "dotmatch_version": "0.6.1",
+  "dotmatch_commit": "5c82bd405fc49d52e04f429fab429d044ec86997",
+  "mageck_runtime": {
+    "version": "0.5.9.5",
+    "package": "https://conda.anaconda.org/bioconda/linux-64/mageck-0.5.9.5-py310hc52dbad_9.conda",
+    "package_sha256": "dbb85933ced178f86def4c17abacb9d4b6459267fbc5097d5e9dcacf08728426",
+    "wall_seconds": 48.26,
+    "peak_memory": null,
+    "instrumentation_note": "The environment did not provide /usr/bin/time, so the run used the shell's portable time -p output and peak memory was not measured."
+  },
+  "inputs": {
+    "ERR376998.fastq.gz": {
+      "ena_md5": "7b552f8efd6fe90fc6bc34879c617040",
+      "sha256": "7f79b76cec12b70319744417282f963c00818a5f0ae61497bd7b64790ac55f2f",
+      "reads": 10093905
+    },
+    "ERR376999.fastq.gz": {
+      "ena_md5": "be96811adce2f5d69efd18a02f8e2416",
+      "sha256": "cf2bc10938e178d16dfb81ca2f9fda805cae892290fac3cfc243bb637f8cda17",
+      "reads": 10300758
+    },
+    "yusa_library.csv": {
+      "sha256": "d41a4122a46fdedb47deca61081dde9037d461a1fce1e6f9744522e21005ceba",
+      "guides": 87437
+    }
+  },
+  "protocol": {
+    "samples": ["plasmid", "ESC1"],
+    "target_start": 23,
+    "target_length": 19,
+    "metric": "exact fixed-offset matching",
+    "dotmatch_command": "dotmatch count --targets yusa_library.csv --reads ERR376998.fastq.gz --reads ERR376999.fastq.gz --sample-label plasmid,ESC1 --target-start 23 --target-length 19 --k 0 --metric hamming --format mageck --out dotmatch-0.6.1.counts.tsv --summary dotmatch-0.6.1.summary.json",
+    "mageck_command": "mageck count -l yusa_library.csv -n escneg --sample-label plasmid,ESC1 --trim-5 23 --sgrna-len 19 --fastq ERR376998.fastq.gz ERR376999.fastq.gz",
+    "comparison_command": "python3 scripts/compare_mageck_count_tables.py escneg.count.txt dotmatch-0.6.1.counts.tsv --samples plasmid,ESC1",
+    "comparison_semantics": "sgRNA-keyed; exact Gene strings; integer counts; row-order independent"
+  },
+  "results": {
+    "total_reads": 20394663,
+    "mapped_or_assigned_exact": {
+      "plasmid": 8615587,
+      "ESC1": 8475790
+    },
+    "reference_rows": 87437,
+    "candidate_rows": 87437,
+    "missing_guides": 0,
+    "extra_guides": 0,
+    "gene_mismatches": 0,
+    "compared_count_cells": 174874,
+    "count_mismatches": 0,
+    "mageck_output_md5": "e61db0a4c8cf818ac94076531bd52cc5",
+    "mageck_output_sha256": "93814803d0ae9d86d912b4aa438fa88a3b4a69f6b175c0b9592b65ac6a063a02",
+    "dotmatch_output_sha256": "88ad3ef533f6c285d36e06fd55a5b562a738a8413512d51e03fc967dc9cbb4c3",
+    "canonical_sorted_output_sha256": "dabac8493ef031802522f18194c43617d0b35193748aa1cedd938c1369cfc500"
+  },
+  "independent_check": "After preserving each header and sorting all data rows by sgRNA with LC_ALL=C, cmp reported byte-identical canonical tables.",
+  "failure_criteria": "Fail on a pinned input/hash mismatch, abnormal tool exit, partial output, guide-set difference, gene mismatch, integer count mismatch, or mapped-total disagreement.",
+  "negative_results": [
+    "The original resource wrapper could not run because /usr/bin/time was absent; no scientific command ran in that attempt, and portable shell timing was used for the successful run.",
+    "No missing guides, extra guides, gene mismatches, count mismatches, or mapped-total disagreements were found."
+  ],
+  "resource_use": {
+    "local_input_and_dotmatch_artifacts_mib_approx": 556,
+    "local_mageck_artifacts_mib_approx": 15,
+    "paid_resources": false
+  },
+  "claim_boundary": "This establishes complete count-table agreement between DotMatch 0.6.1 and a pinned MAGeCK 0.5.9.5 implementation for the full public ERR376998/ERR376999 Yusa workflow under exact fixed-offset semantics. It does not determine which implementation is biologically correct, validate downstream inference, benchmark performance under controlled conditions, or demonstrate external adoption."
+}
