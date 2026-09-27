@@ -1,0 +1,4 @@
+guide_id,expected_gene,observed_gene,expected_plasmid,observed_plasmid,expected_ESC1,observed_ESC1,status
+chr19:5884430-5884453,SLC25A45,SLC25A45,13,13,32,32,match
+chr11:58831475-58831498,OLFR312,OLFR312,94,94,108,108,match
+chr4:49282352-49282375,E130309F12RIK,E130309F12RIK,85,85,128,128,match

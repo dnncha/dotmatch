@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "run_date_utc": "2026-09-27",
+  "dotmatch_version": "0.6.1",
+  "dotmatch_commit": "5c82bd405fc49d52e04f429fab429d044ec86997",
+  "reference_source": "https://sourceforge.net/p/mageck/wiki/demo/",
+  "reference_scope": "three displayed MAGeCK tutorial rows",
+  "source_accessions": {
+    "plasmid": "ERR376998",
+    "ESC1": "ERR376999"
+  },
+  "input_md5": {
+    "ERR376998.fastq.gz": "7b552f8efd6fe90fc6bc34879c617040",
+    "ERR376999.fastq.gz": "be96811adce2f5d69efd18a02f8e2416"
+  },
+  "input_sha256": {
+    "yusa_library.csv": "d41a4122a46fdedb47deca61081dde9037d461a1fce1e6f9744522e21005ceba",
+    "ERR376998.fastq.gz": "7f79b76cec12b70319744417282f963c00818a5f0ae61497bd7b64790ac55f2f",
+    "ERR376999.fastq.gz": "cf2bc10938e178d16dfb81ca2f9fda805cae892290fac3cfc243bb637f8cda17"
+  },
+  "output_sha256": "88ad3ef533f6c285d36e06fd55a5b562a738a8413512d51e03fc967dc9cbb4c3",
+  "input_reads": 20394663,
+  "library_guides": 87437,
+  "reference_rows": 3,
+  "matching_rows": 3,
+  "matching_sample_counts": 6,
+  "command": "dotmatch count --targets yusa_library.csv --reads ERR376998.fastq.gz --reads ERR376999.fastq.gz --sample-label plasmid,ESC1 --target-start 23 --target-length 19 --k 0 --metric hamming --format mageck --out dotmatch-0.6.1.counts.tsv --summary dotmatch-0.6.1.summary.json",
+  "failure_criteria": "Any accession/hash mismatch, missing reference guide, gene mismatch, or count mismatch fails the spot check.",
+  "claim_boundary": "This establishes exact agreement for six displayed sample counts across three guides only. It does not establish whole-table agreement, biological correctness, downstream equivalence, or external adoption."
+}
