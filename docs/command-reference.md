@@ -27,6 +27,22 @@ dotmatch leq K SEQ1 SEQ2
 `dist` prints the global edit distance between two short DNA strings. `leq`
 prints `true` when the edit distance is less than or equal to `K`.
 
+## Independent Evaluation Packets
+
+```bash
+dotmatch evaluation-packet template evaluation.protocol.json
+dotmatch evaluation-packet lock evaluation.protocol.json evaluation.locked.json
+dotmatch evaluation-packet verify evaluation.locked.json
+dotmatch evaluation-packet complete \
+  evaluation.locked.json evaluation.results.json evaluation.completed.json
+```
+
+This command freezes input identities, tool settings, primary endpoints,
+failure criteria, and tie handling before outcomes are viewed. See the
+[independent evaluation packet](independent-evaluation-packet.md) guide. The
+command is packaged by current source for a future release and is not present
+in the already-published 0.6.1 wheel.
+
 ## Fixed-Window Assignment
 
 ```bash

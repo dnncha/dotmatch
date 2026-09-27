@@ -296,6 +296,164 @@ def verify_clean_install(artifact: Path, install_root: Path, expected_version: s
         if observed != expected:
             raise SystemExit(f"{artifact.name} {label} reported {observed!r}, expected {expected!r}")
 
+    dotmatch_cli = str(venv_script(env_dir, "dotmatch"))
+    evaluation_template = probe_dir / "evaluation.protocol.template.json"
+    run(
+        [dotmatch_cli, "evaluation-packet", "template", str(evaluation_template)],
+        cwd=probe_dir,
+        env=env,
+    )
+    template_data = json.loads(evaluation_template.read_text(encoding="utf-8"))
+    if template_data.get("evaluation_id") != "REPLACE_ME":
+        raise SystemExit(f"{artifact.name} installed evaluation template is invalid")
+
+    evaluation_library = probe_dir / "evaluation-library.tsv"
+    evaluation_reads = probe_dir / "evaluation-reads.fastq"
+    evaluation_library.write_text("target_id\tsequence\ng1\tACGT\n", encoding="utf-8")
+    evaluation_reads.write_text("@r1\nACGT\n+\nIIII\n", encoding="utf-8")
+
+    def file_hash(path: Path) -> str:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+
+    evaluation_protocol = {
+        "schema_version": 1,
+        "evaluation_id": "clean-wheel-evaluation-001",
+        "protocol": {
+            "protocol_locked_before_results": True,
+            "protocol_owner": "clean-wheel regression",
+            "workflow": {
+                "class": "synthetic known-target assignment",
+                "dataset_scope": "one synthetic target and one synthetic read",
+                "private_data_handling": "no private data; generated in the clean-install probe",
+            },
+            "inputs": {
+                "library": {
+                    "name": "clean-wheel-library",
+                    "revision": "fixture-v1",
+                    "sha256": file_hash(evaluation_library),
+                },
+                "samples": [
+                    {
+                        "id": "synthetic-sample",
+                        "role": "evaluation",
+                        "read_mate": "R1",
+                        "sha256": file_hash(evaluation_reads),
+                    }
+                ],
+            },
+            "dotmatch": {
+                "version": expected_version,
+                "install_route": f"clean-installed artifact {artifact.name}",
+                "command": "dotmatch count with the recorded synthetic inputs",
+                "settings": {"metric": "hamming", "threshold": 0, "read_start": 0, "read_length": 4},
+            },
+            "comparator": {
+                "name": "literal exact-string oracle",
+                "version": "fixture-v1",
+                "install_route": "inline clean-wheel regression",
+                "command": "compare the four observed bases literally",
+                "settings": {"assignment": "exact"},
+            },
+            "primary_endpoints": [
+                {
+                    "id": "assignment_agreement",
+                    "metric": "identifier-keyed exact assignment",
+                    "expected": "the single read maps to g1",
+                    "failure_criterion": "the read is not uniquely assigned to g1",
+                }
+            ],
+            "tie_policy": {"ordinal_ranks": "not_applicable", "top_n": "not_primary"},
+            "downstream_endpoint": {
+                "planned": False,
+                "tool": None,
+                "version": None,
+                "command": None,
+                "endpoint": None,
+            },
+            "failure_criteria": ["fail on any assignment difference"],
+            "scope_limits": ["packaging test only; no biological or adoption claim"],
+        },
+    }
+    evaluation_protocol_path = probe_dir / "evaluation.protocol.json"
+    evaluation_protocol_path.write_text(json.dumps(evaluation_protocol) + "\n", encoding="utf-8")
+    evaluation_locked = probe_dir / "evaluation.locked.json"
+    locked_hash = run_text(
+        [
+            dotmatch_cli,
+            "evaluation-packet",
+            "lock",
+            str(evaluation_protocol_path),
+            str(evaluation_locked),
+            "--locked-at",
+            "2026-09-27T11:45:00Z",
+        ],
+        cwd=probe_dir,
+        env=env,
+    )
+    locked_data = json.loads(evaluation_locked.read_text(encoding="utf-8"))
+    if locked_data.get("protocol_sha256") != locked_hash:
+        raise SystemExit(f"{artifact.name} installed evaluation lock hash is inconsistent")
+    verify_text = run_text(
+        [dotmatch_cli, "evaluation-packet", "verify", str(evaluation_locked)],
+        cwd=probe_dir,
+        env=env,
+    )
+    if verify_text != f"protocol_locked: {locked_hash}":
+        raise SystemExit(f"{artifact.name} installed evaluation verification is invalid: {verify_text!r}")
+
+    evaluation_results = {
+        "schema_version": 1,
+        "evaluation_id": evaluation_protocol["evaluation_id"],
+        "protocol_sha256": locked_hash,
+        "completed_at": "2026-09-27T11:46:00Z",
+        "protocol_record_reference": "clean-wheel-regression",
+        "observations": [
+            {"endpoint_id": "assignment_agreement", "observed": "single exact match to g1", "status": "pass"}
+        ],
+        "operational_metrics": [],
+        "conclusion": "installed command preserved the locked protocol",
+        "limitations": ["synthetic packaging test; no biological inference"],
+        "public_use_permission": "not an external use record",
+    }
+    evaluation_results_path = probe_dir / "evaluation.results.json"
+    evaluation_results_path.write_text(json.dumps(evaluation_results) + "\n", encoding="utf-8")
+    evaluation_completed = probe_dir / "evaluation.completed.json"
+    completed_hash = run_text(
+        [
+            dotmatch_cli,
+            "evaluation-packet",
+            "complete",
+            str(evaluation_locked),
+            str(evaluation_results_path),
+            str(evaluation_completed),
+        ],
+        cwd=probe_dir,
+        env=env,
+    )
+    if completed_hash != locked_hash:
+        raise SystemExit(f"{artifact.name} installed completion changed the protocol hash")
+    completed_verify = run_text(
+        [dotmatch_cli, "evaluation-packet", "verify", str(evaluation_completed)],
+        cwd=probe_dir,
+        env=env,
+    )
+    if completed_verify != f"completed: {locked_hash}":
+        raise SystemExit(f"{artifact.name} installed completed packet is invalid: {completed_verify!r}")
+
+    tampered = json.loads(evaluation_locked.read_text(encoding="utf-8"))
+    tampered["protocol"]["dotmatch"]["settings"]["threshold"] = 1
+    tampered_path = probe_dir / "evaluation.tampered.json"
+    tampered_path.write_text(json.dumps(tampered) + "\n", encoding="utf-8")
+    tamper_result = run_expect_exit(
+        [dotmatch_cli, "evaluation-packet", "verify", str(tampered_path)],
+        2,
+        cwd=probe_dir,
+        env=env,
+    )
+    if "protocol hash mismatch" not in tamper_result.stderr:
+        raise SystemExit(f"{artifact.name} installed evaluator did not reject protocol tampering")
+    print(f"verified installed evaluation packet lifecycle for {artifact.name}: {locked_hash}")
+
     capability_text = run_text(
         [str(venv_script(env_dir, "dotmatch")), "capabilities", "--json"],
         cwd=probe_dir,

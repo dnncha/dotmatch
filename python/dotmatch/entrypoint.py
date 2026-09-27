@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import sys
-from typing import Sequence
+from collections.abc import Sequence
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -13,6 +13,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args[:1] == ["compare-counts"]:
         from .count_compare import main as compare_main
         return compare_main(args[1:])
+    if args[:1] == ["evaluation-packet"]:
+        from .evaluation_packet import main as evaluation_packet_main
+
+        return evaluation_packet_main(args[1:])
     if args[:2] == ["crispr", "quickstart"]:
         from .first_run import quickstart_main
         return quickstart_main(args[2:])
@@ -24,6 +28,8 @@ def main(argv: Sequence[str] | None = None) -> int:
               "      Run a bundled synthetic example and check its expected results offline.\n"
               "  dotmatch compare-counts --help\n"
               "      Compare existing raw-count tables without replacing your workflow.\n"
+              "  dotmatch evaluation-packet --help\n"
+              "      Lock an independent comparison protocol before viewing outcomes.\n"
               "  dotmatch crispr quickstart --help\n"
               "      Prepare your own reads; --link-reads avoids copying large FASTQs.")
     return result
