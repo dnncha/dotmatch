@@ -90,6 +90,43 @@ python3 scripts/compare_mageck_count_tables.py \
   escneg.count.txt dotmatch-0.6.1.counts.tsv --samples plasmid,ESC1
 ```
 
+## Downstream MAGeCK test comparison
+
+Identical keyed counts do not guarantee byte-identical downstream files when
+the count tables have different row order. MAGeCK 0.5.9.5 was run with the
+same command and defaults on both complete count tables:
+
+```bash
+mageck test -k counts.tsv -t ESC1 -c plasmid -n yusa
+```
+
+All 1,311,555 keyed sgRNA-summary fields and all 229,776 non-rank gene-summary
+fields matched exactly. The depleted FDR≤0.05 hit sets contained the same 212
+genes, and the enriched sets contained the same two genes. The top 10 through
+top 1,000 gene sets also agreed in both directions.
+
+MAGeCK's ordinal rank fields were not invariant to row order. Among 19,148
+genes, 6,301 had at least one changed rank: 5,002 depleted ranks moved by up to
+32 positions and 1,976 enriched ranks moved by up to three. Every change was a
+permutation within a block having identical score, p-value, and FDR. This can
+change an arbitrary top-N set when N cuts through a tie: the depleted top-5,000
+sets differed by three genes on each side, despite identical statistics.
+
+Use the tie-aware, fail-closed comparator for downstream checks:
+
+```bash
+python3 scripts/compare_mageck_test_results.py \
+  reference.gene_summary.txt candidate.gene_summary.txt \
+  reference.sgrna_summary.txt candidate.sgrna_summary.txt \
+  --fdr-threshold 0.05 --summary-out comparison.json
+```
+
+It fails on identifier, sgRNA-field, non-rank gene-statistic, cross-tie rank,
+or FDR-hit differences while reporting within-tie ordering and top-N boundary
+changes separately. The pinned protocol, hashes, commands, results, and
+resource record are in
+`benchmarks/raw/mageck_yusa_full_downstream_comparison.json`.
+
 ## Claim boundary
 
 The tutorial result supplies independently published values for six displayed
@@ -97,7 +134,9 @@ sample counts across three guides. The nf-core result supplies a committed
 external whole-table artifact for a 10,000-read subset. The complete full-run
 comparison establishes cross-implementation agreement, but its MAGeCK output
 was produced during this validation rather than published independently.
-Together these checks do not determine which implementation is biologically
-correct, validate downstream result equivalence, provide a controlled
-performance benchmark, or demonstrate release adoption or independent use of
-DotMatch.
+The downstream check establishes matching MAGeCK statistics and FDR hit sets
+for this one contrast under explicit tied-rank semantics. Together these
+checks do not determine which implementation or statistical model is
+biologically correct, validate other screens or analysis settings, provide a
+controlled performance benchmark, or demonstrate release adoption or
+independent use of DotMatch.
