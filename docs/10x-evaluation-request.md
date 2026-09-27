@@ -21,6 +21,9 @@ DotMatch is not a genome aligner and does not emit SAM/BAM or CIGAR output.
    route.
 2. Record the target-file format, read window, metric (`hamming` or
    `levenshtein`), threshold, ambiguity policy, and DotMatch version.
+   For a formal comparison, lock these fields with the
+   [independent evaluation packet](independent-evaluation-packet.md) before
+   viewing outcomes.
 3. Run the equivalent existing tool or workflow on the same inputs when one
    exists.
 4. Compare at least one outcome and one operational measure: assignment

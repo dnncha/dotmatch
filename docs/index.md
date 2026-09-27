@@ -54,6 +54,7 @@ versioned task routing with explicit inputs, outputs, and limitations. Use `dotm
 | Compare guide-counting workflows | [Guide-counting workflow comparison](usability-comparison.md) |
 | Build a checked assay project | [AssaySpec workflows](assayspec.md) |
 | Evaluate and hand off a run | [Lab evaluation and handoff](lab-evaluation.md) |
+| Lock an independent comparison before results | [Independent evaluation packet](independent-evaluation-packet.md) |
 | Split reads by inline barcode | [Getting started: demultiplexing](getting-started.md#demultiplex-inline-barcodes) |
 | Assign feature-barcode reads | [Feature-barcode and guide-capture tutorial](tutorials/scverse-perturb-seq.md#count-guide-or-feature-barcode-reads) |
 | Assign Perturb-seq guide-capture reads | [Feature-barcode and guide-capture tutorial](tutorials/scverse-perturb-seq.md) |
@@ -115,6 +116,7 @@ sensitivity
 tutorials/crispr-count-first-run
 tutorials/scverse-perturb-seq
 lab-evaluation
+independent-evaluation-packet
 count-comparison
 ```
 

@@ -31,6 +31,20 @@ body:
       description: Describe the target table and read window without sharing private raw data.
     validations:
       required: true
+  - type: textarea
+    id: protocol_record
+    attributes:
+      label: Prospective Protocol Record
+      description: Provide the locked evaluation ID, protocol SHA-256, and commit, timestamp receipt, DOI, or private record reference. Do not expose private data.
+    validations:
+      required: true
+  - type: textarea
+    id: comparator
+    attributes:
+      label: Comparator and Primary Endpoints
+      description: State the comparator version, settings, primary endpoints, failure criteria, and any rank/top-N tie policy fixed before results.
+    validations:
+      required: true
   - type: checkboxes
     id: outputs_reviewed
     attributes:
