@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import shutil
 import tarfile
 import sys
 import zipfile
@@ -136,17 +137,25 @@ def test_python_package_verifier_expects_inferred_assay_blocker() -> None:
     assert "draft_assayspec" in verifier
 
 
-def test_build_and_verify_sdist_builds_sdist_without_wheel(tmp_path, monkeypatch):
+def test_build_and_verify_sdist_builds_twice_without_wheel(tmp_path, monkeypatch):
     checker = _load_checker()
-    calls: list[list[str]] = []
+    build_env = {"SOURCE_DATE_EPOCH": "123"}
+    calls: list[tuple[list[str], dict[str, str] | None]] = []
 
     def fake_run(cmd, *, cwd=None, env=None):
-        calls.append(cmd)
-        if cmd == [sys.executable, "-m", "build", "--sdist", "--outdir", str(tmp_path / "dist")]:
-            (tmp_path / "dist").mkdir(exist_ok=True)
-            _write_sdist(tmp_path / "dist")
+        calls.append((cmd, env))
+        out_dir = Path(cmd[-1])
+        out_dir.mkdir(parents=True, exist_ok=True)
+        if out_dir == tmp_path / "dist":
+            _write_sdist(out_dir)
+        else:
+            shutil.copyfile(
+                tmp_path / "dist" / "dotmatch-0.1.0.tar.gz",
+                out_dir / "dotmatch-0.1.0.tar.gz",
+            )
 
     checked: list[str] = []
+    monkeypatch.setattr(checker, "reproducible_sdist_environment", lambda: build_env)
     monkeypatch.setattr(checker, "run", fake_run)
     monkeypatch.setattr(checker, "check_sdist_members", lambda artifact: checked.append(f"members:{artifact.name}"))
     monkeypatch.setattr(
@@ -162,7 +171,23 @@ def test_build_and_verify_sdist_builds_sdist_without_wheel(tmp_path, monkeypatch
 
     checker.build_and_verify_sdist(tmp_path / "dist", tmp_path / "install", "0.1.0")
 
-    assert calls == [[sys.executable, "-m", "build", "--sdist", "--outdir", str(tmp_path / "dist")]]
+    assert calls == [
+        (
+            [sys.executable, "-m", "build", "--sdist", "--outdir", str(tmp_path / "dist")],
+            build_env,
+        ),
+        (
+            [
+                sys.executable,
+                "-m",
+                "build",
+                "--sdist",
+                "--outdir",
+                str(tmp_path / "install" / "sdist-rebuild"),
+            ],
+            build_env,
+        ),
+    ]
     assert checked == [
         "members:dotmatch-0.1.0.tar.gz",
         "metadata:dotmatch-0.1.0.tar.gz:0.1.0",

@@ -6,11 +6,16 @@ import re
 import shlex
 import shutil
 import subprocess
+import sys
 import sysconfig
 from pathlib import Path
 
 from setuptools import Distribution, setup
 from setuptools.command.build_py import build_py as _build_py
+from setuptools.command.sdist import sdist as _sdist
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _reproducible_sdist import make_reproducible_gztar, parse_source_date_epoch
 
 try:
     from setuptools.command.bdist_wheel import bdist_wheel as _bdist_wheel
@@ -55,6 +60,36 @@ def _macos_deployment_target(arch_flags: list[str]) -> str:
 if platform.system() == "Darwin":
     _initial_arch_flags = _macos_arch_flags()
     os.environ.setdefault("MACOSX_DEPLOYMENT_TARGET", _macos_deployment_target(_initial_arch_flags))
+
+
+class sdist(_sdist):
+    def make_archive(
+        self,
+        base_name,
+        format,
+        root_dir=None,
+        base_dir=None,
+        owner=None,
+        group=None,
+    ):
+        epoch_text = os.environ.get("SOURCE_DATE_EPOCH")
+        if epoch_text is not None and format == "gztar":
+            if base_dir is None:
+                raise RuntimeError("gztar source distribution requires a release-tree directory")
+            return make_reproducible_gztar(
+                base_name,
+                root_dir=root_dir,
+                base_dir=base_dir,
+                epoch=parse_source_date_epoch(epoch_text),
+            )
+        return super().make_archive(
+            base_name,
+            format,
+            root_dir=root_dir,
+            base_dir=base_dir,
+            owner=owner,
+            group=group,
+        )
 
 
 class BinaryDistribution(Distribution):
@@ -201,7 +236,7 @@ class bdist_wheel(_bdist_wheel):
 
 
 setup(
-    cmdclass={"build_py": build_py, "bdist_wheel": bdist_wheel},
+    cmdclass={"build_py": build_py, "bdist_wheel": bdist_wheel, "sdist": sdist},
     distclass=BinaryDistribution,
     package_data={"dotmatch": ["libdotmatch.*", "dotmatch-native", "data/*.json"]},
 )
