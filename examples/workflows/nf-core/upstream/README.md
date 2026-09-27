@@ -1,9 +1,10 @@
 # nf-core/modules submission payload
 
 This directory is a self-contained candidate payload for DotMatch modules in
-`nf-core/modules`. It is prepared against DotMatch 0.2.2 and uses the immutable
-BioContainers build `0.2.2--py311h13f8228_1`, which is available from Quay and
-the Galaxy Singularity depot.
+`nf-core/modules`. It is prepared against DotMatch 0.6.3 and uses the immutable
+GHCR manifest `sha256:c43dd55c5c58d4b689af8e76a4d54e19973af52f133f0f77781f6949736708e0`. The release workflow verified that manifest
+for both `linux/amd64` and `linux/arm64`; module pins use `docker://` for
+direct Singularity/Apptainer pulls.
 
 ## Included modules
 
