@@ -51,8 +51,8 @@ pipelines, reproducibility, MultiQC integration, etc.):
    - Add to the main nf-core CI (they have automated linting + Docker builds).
 
 3. **Enhance for Upstream (Recommended Polish)**
-   - Use exact bioconda/singularity container hashes from a released version
-     (`0.2.2--py311h13f8228_1`, verified in both Quay and the Galaxy Singularity depot).
+   - Use the release-verified DotMatch 0.6.3 GHCR image, pinned to immutable
+     multi-architecture manifest `sha256:c43dd55c5c58d4b689af8e76a4d54e19973af52f133f0f77781f6949736708e0` for Docker, Singularity, and Apptainer.
    - The upstream tree already includes: maintainers + license in meta.yml, stub test case, self-contained tests/data/.
    - Add more nf-test cases (different k, metrics, full vs stub runs) if needed.
    - Support additional common params via `task.ext` (e.g. `--auto-offset`,
@@ -123,6 +123,8 @@ Current state after prep:
 The main remaining work is the actual PR + linting in the nf-core org (see upstream/README.md for exact copy steps). Once merged, record in docs/workflow-adoption.json to unlock "ready" status.
 
 Before opening an upstream PR:
-- Pin a specific DotMatch version/container that has passed all release gates.
+- Keep the verified 0.6.3 GHCR manifest digest pin. Replace it only with a
+  reviewed Bioconda/BioContainers 0.6.3 build after that channel is public and
+  its installed workflow checks pass.
 - Align any changes with current evidence boundaries in this repository.
 - Update the DotMatch CHANGELOG and `docs/workflow-adoption.json` once merged (to record the nf_core_module integration and move the adoption status to ready).
