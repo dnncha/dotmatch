@@ -4,7 +4,13 @@ All notable user-facing changes are tracked here. Public statements in release n
 
 ## Unreleased
 
-No user-facing changes yet.
+### Fixed
+
+- Align native FASTQ structure checks with the strict Python reader across
+  count-only and full-record paths. Missing or invalid identifiers,
+  non-printable sequences and qualities, mismatched repeated separator IDs,
+  empty sequences, truncation, and corrupt gzip input now stop the run with
+  record/line context instead of producing completed-looking count outputs.
 
 ## 0.6.1 - 2026-09-27
 
