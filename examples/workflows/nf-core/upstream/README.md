@@ -38,9 +38,9 @@ interpreting a missing-command failure as a module failure.
 
 Copy `modules/nf-core/dotmatch/` into a current `nf-core/modules` checkout and
 run the repository's formatter, module lint, and nf-test commands for each
-module. Keep the exact container tag unless a later DotMatch release has passed
-the distribution checks and is present in both Quay and the Galaxy Singularity
-depot.
+module. Keep the verified 0.6.3 GHCR manifest digest pin. Replace it only with a
+reviewed public Bioconda/BioContainers build after its installed workflow checks
+pass.
 
 After an upstream pull request is accepted, add its public URL to
 `docs/workflow-adoption.json` and run `make workflow-adoption-status`.
