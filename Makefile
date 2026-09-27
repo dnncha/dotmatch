@@ -105,6 +105,7 @@ test: build/test_qdalign build/test_qdalign_threshold_alloc
 
 cli-test: dotmatch
 	sh tests/test_cli_fastq.sh
+	PYTHONPATH=python DOTMATCH_BIN="$(CURDIR)/dotmatch" python3 tests/test_native_fastq_validation.py
 	sh tests/test_crispr_example_expected.sh
 
 coverage:
@@ -118,6 +119,7 @@ coverage:
 	$(MAKE) $(COVERAGE_METAL_OBJ)
 	$(COVERAGE_CC) -O0 -g -std=c11 -Wall -Wextra -Wpedantic -Iinclude $(DOTMATCH_VERSION_CFLAGS) -fprofile-instr-generate -fcoverage-mapping src/qda.c build/coverage/qdalign.o $(COVERAGE_METAL_OBJ) -o build/coverage/dotmatch $(ZLIB_LIBS) $(PTHREAD_LIBS) $(METAL_LIBS) $(METAL_CXX_LIBS)
 	LLVM_PROFILE_FILE=build/coverage/cli-%p.profraw DOTMATCH_BIN="$(CURDIR)/build/coverage/dotmatch" sh tests/test_cli_fastq.sh
+	LLVM_PROFILE_FILE=build/coverage/fastq-validation-%p.profraw PYTHONPATH=python DOTMATCH_BIN="$(CURDIR)/build/coverage/dotmatch" python3 tests/test_native_fastq_validation.py
 	$(LLVM_PROFDATA) merge -sparse build/coverage/*.profraw -o build/coverage/coverage.profdata
 	$(LLVM_COV) report build/coverage/test_qdalign -object build/coverage/dotmatch -instr-profile=build/coverage/coverage.profdata --sources src/qdalign.c --sources src/qda.c --show-branch-summary | tee build/coverage/coverage.txt
 	$(LLVM_COV) export build/coverage/test_qdalign -object build/coverage/dotmatch -instr-profile=build/coverage/coverage.profdata --sources src/qdalign.c --sources src/qda.c > build/coverage/coverage.json
