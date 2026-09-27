@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import time
 import urllib.request
 from pathlib import Path
 
@@ -130,12 +131,19 @@ def _doi_values(path: Path) -> list[str]:
 
 
 def _doi_resolves(doi: str) -> bool:
-    request = urllib.request.Request(f"https://doi.org/{doi}", method="HEAD")
-    try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            return 200 <= int(response.status) < 400
-    except Exception:
-        return False
+    url = f"https://doi.org/{doi}"
+    headers = {"User-Agent": "DotMatch citation-metadata verifier"}
+    for method in ("HEAD", "GET"):
+        for attempt in range(2):
+            request = urllib.request.Request(url, headers=headers, method=method)
+            try:
+                with urllib.request.urlopen(request, timeout=10) as response:
+                    if 200 <= int(response.status) < 400:
+                        return True
+            except Exception:
+                if attempt == 0:
+                    time.sleep(1)
+    return False
 
 
 def _check_keywords(source: str, keywords: list[str], result: AuditResult) -> None:

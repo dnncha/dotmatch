@@ -6,7 +6,7 @@ All notable user-facing changes are tracked here. Public statements in release n
 
 No user-facing changes yet.
 
-## 0.6.2 - 2026-09-27
+## 0.6.3 - 2026-09-27
 
 ### Added
 
@@ -35,6 +35,13 @@ No user-facing changes yet.
 The matching kernel, assignment policies, and biological scope are unchanged.
 Malformed inputs previously accepted by native high-throughput paths now fail
 closed.
+
+## 0.6.2 - 2026-09-27
+
+Unpublished release candidate. The immutable tag was retained after a
+container smoke assertion searched for wording that differed from the actual
+evaluator help text. No GitHub release, PyPI distribution, or GHCR image was
+published for 0.6.2; 0.6.3 supersedes it without changing matching semantics.
 
 ## 0.6.1 - 2026-09-27
 

@@ -9,14 +9,14 @@ one guide and ten gained by another leave the total unchanged. This comparison
 shows that difference rather than hiding it behind a correlation coefficient.
 It does not tell you which result is biologically correct.
 
-**Availability:** `dotmatch compare-counts` is included in DotMatch 0.6.2.
-Install the release with `python3 -m pip install dotmatch==0.6.2`. The
+**Availability:** `dotmatch compare-counts` is included in DotMatch 0.6.3.
+Install the release with `python3 -m pip install dotmatch==0.6.3`. The
 `dotmatch-compare-counts` entrypoint and `python3 -m dotmatch.count_compare`
 module are also available.
 
 ## Try a small, deliberately revealing example
 
-From an installed DotMatch 0.6.2 package, run the checked synthetic first run:
+From an installed DotMatch 0.6.3 package, run the checked synthetic first run:
 
 ```bash
 dotmatch demo --out-dir first-run/

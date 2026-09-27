@@ -9,10 +9,10 @@ The packet does not send data anywhere. Keep it in the evaluator-controlled
 workspace and replace private paths or names with approved references before
 publishing any part of it.
 
-The installed command is included in DotMatch 0.6.2 and later. Record the
+The installed command is included in DotMatch 0.6.3 and later. Record the
 package version and artifact identity separately from the DotMatch version
 frozen for the scientific comparison; an evaluator may deliberately use the
-0.6.2 packet helper while comparing an earlier released engine.
+0.6.3 packet helper while comparing an earlier released engine.
 
 ## 1. Create the protocol
 

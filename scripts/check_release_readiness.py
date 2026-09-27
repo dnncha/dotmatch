@@ -3,6 +3,7 @@
 import argparse
 import json
 import re
+import time
 import urllib.request
 from pathlib import Path
 from typing import Optional
@@ -88,12 +89,19 @@ def _doi_values(path: Path) -> list[str]:
 
 
 def _doi_resolves(doi: str) -> bool:
-    request = urllib.request.Request(f"https://doi.org/{doi}", method="HEAD")
-    try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            return 200 <= int(response.status) < 400
-    except Exception:
-        return False
+    url = f"https://doi.org/{doi}"
+    headers = {"User-Agent": "DotMatch release-readiness verifier"}
+    for method in ("HEAD", "GET"):
+        for attempt in range(2):
+            request = urllib.request.Request(url, headers=headers, method=method)
+            try:
+                with urllib.request.urlopen(request, timeout=10) as response:
+                    if 200 <= int(response.status) < 400:
+                        return True
+            except Exception:
+                if attempt == 0:
+                    time.sleep(1)
+    return False
 
 
 def _workflow_job_block(workflow: str, job_name: str) -> str:
