@@ -9,11 +9,10 @@ The packet does not send data anywhere. Keep it in the evaluator-controlled
 workspace and replace private paths or names with approved references before
 publishing any part of it.
 
-The installed command is packaged by current source for a future release; it is
-not included in the already-published 0.6.1 wheel. When testing unreleased
-source, build and clean-install its wheel, record the source commit and artifact
-hash, and keep that identity separate from the released DotMatch version used
-for any scientific comparison.
+The installed command is included in DotMatch 0.6.2 and later. Record the
+package version and artifact identity separately from the DotMatch version
+frozen for the scientific comparison; an evaluator may deliberately use the
+0.6.2 packet helper while comparing an earlier released engine.
 
 ## 1. Create the protocol
 

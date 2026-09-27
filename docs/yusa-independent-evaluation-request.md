@@ -28,9 +28,9 @@ You own the conclusion, including a negative or inconclusive result. Raw
 outputs can remain private. Nothing will identify you or your organization
 without approval of the exact wording.
 
-The scientific run uses only released DotMatch 0.6.1. The packet helper now in
-DotMatch source is unreleased and optional; if used only to lock the record,
-its source commit and wheel hash must be recorded separately.
+The scientific run remains frozen to released DotMatch 0.6.1. The packet helper
+is included in DotMatch 0.6.2; if it is used only to lock the record, record
+that package version and artifact identity separately.
 
 Would this bounded public reproduction fit your review process?
 

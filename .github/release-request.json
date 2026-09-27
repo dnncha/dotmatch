@@ -1,8 +1,8 @@
 {
-  "version": "0.6.1",
-  "tag": "v0.6.1",
+  "version": "0.6.2",
+  "tag": "v0.6.2",
   "authorized": true,
-  "request": "Ship the reviewed DotMatch 0.6.1 patch release with explicit sample/guide identity maps, corrected comparison reporting, and reproducible source distributions.",
+  "request": "Ship the reviewed DotMatch 0.6.2 patch release with strict native FASTQ validation, installed prospective evaluation packets, and bounded Yusa comparator evidence.",
   "publication_channels": [
     "GitHub Releases",
     "PyPI",

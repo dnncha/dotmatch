@@ -30,8 +30,8 @@ python3 -m pip install dotmatch
 dotmatch --version
 ```
 
-Release 0.6.1 includes the six `dotmatch agent`
-tools described below. Confirm that `dotmatch --version` reports 0.6.1 before
+Release 0.6.2 includes the six `dotmatch agent`
+tools described below. Confirm that `dotmatch --version` reports 0.6.2 before
 using them. Bioconda and BioContainers may lag PyPI; check the installed
 version when using those channels.
 
