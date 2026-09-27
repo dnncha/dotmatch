@@ -42,6 +42,11 @@ Capture these details before running a comparison:
 Do not place private FASTQ/BAM/BCL files, patient data, customer assay designs,
 or restricted screenshots in the public repository.
 
+Before running both workflows, use the
+[independent evaluation packet](independent-evaluation-packet.md) to freeze the
+input identities, commands, primary endpoints, failure criteria, and downstream
+tie policy. Keep the locked record in the evaluator-controlled workspace.
+
 ## Review Steps
 
 1. Install DotMatch from PyPI or Bioconda unless the review is explicitly testing
