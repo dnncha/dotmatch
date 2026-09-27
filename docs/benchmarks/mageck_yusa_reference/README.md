@@ -65,11 +65,39 @@ python3 scripts/compare_mageck_count_tables.py \
   mageck.count.txt dotmatch.count.txt --samples test,test2
 ```
 
+## Complete full-run implementation comparison
+
+The full public workflow provides a stronger implementation check. A pinned
+MAGeCK 0.5.9.5 package and the immutable DotMatch 0.6.1 release independently
+counted the complete verified ERR376998 and ERR376999 FASTQs against the same
+Yusa library. The run processed 20,394,663 reads. Both tools assigned
+8,615,587 plasmid reads and 8,475,790 ESC1 reads.
+
+After joining by `sgRNA`, all 87,437 guide IDs, every gene value, and all
+174,874 integer count cells matched exactly. There were no missing, extra, or
+mismatching values. As a separate check, preserving the header and sorting
+both tables by guide produced byte-identical canonical files with SHA-256
+`dabac8493ef031802522f18194c43617d0b35193748aa1cedd938c1369cfc500`.
+
+The complete commands, ENA MD5s, input and tool-package hashes, output hashes,
+mapped totals, runtime, failure criteria, and instrumentation limitation are
+recorded in
+`benchmarks/raw/mageck_yusa_full_implementation_comparison.json`. The derived
+87,437-row tables are not committed. Recheck locally produced full tables with:
+
+```bash
+python3 scripts/compare_mageck_count_tables.py \
+  escneg.count.txt dotmatch-0.6.1.counts.tsv --samples plasmid,ESC1
+```
+
 ## Claim boundary
 
-The full-run tutorial result establishes exact agreement only for six
-externally displayed sample counts across three guides. The nf-core result
-establishes whole-table agreement only for its committed 10,000-read subset.
-Neither establishes a complete-table comparison for the full ENA runs, which
-implementation is biologically correct, downstream result equivalence,
-performance, release adoption, or independent use of DotMatch.
+The tutorial result supplies independently published values for six displayed
+sample counts across three guides. The nf-core result supplies a committed
+external whole-table artifact for a 10,000-read subset. The complete full-run
+comparison establishes cross-implementation agreement, but its MAGeCK output
+was produced during this validation rather than published independently.
+Together these checks do not determine which implementation is biologically
+correct, validate downstream result equivalence, provide a controlled
+performance benchmark, or demonstrate release adoption or independent use of
+DotMatch.
