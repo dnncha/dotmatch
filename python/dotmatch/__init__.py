@@ -61,7 +61,7 @@ def _source_tree_version() -> Optional[str]:
 try:
     __version__ = _source_tree_version() or _metadata_version("dotmatch")
 except PackageNotFoundError:
-    __version__ = "0.6.1"
+    __version__ = "0.6.2"
 
 __all__ = [
     "__version__",

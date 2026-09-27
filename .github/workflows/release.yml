@@ -126,6 +126,7 @@ jobs:
           docker run --rm dotmatch:ci --version | grep "^dotmatch ${VERSION}$"
           docker run --rm dotmatch:ci dist ACGT AGGT | grep '^1$'
           docker run --rm dotmatch:ci leq 1 ACGT AGGT | grep '^true$'
+          docker run --rm dotmatch:ci evaluation-packet --help | grep 'prospective independent-evaluation packets'
           docker image inspect dotmatch:ci --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' | grep "^${VERSION}$"
       - name: Build Linux arm64 smoke-test image
         run: docker buildx build --platform linux/arm64 --load -t dotmatch:ci-arm64 .
@@ -135,6 +136,7 @@ jobs:
           docker run --rm --platform linux/arm64 dotmatch:ci-arm64 --version | grep "^dotmatch ${VERSION}$"
           docker run --rm --platform linux/arm64 dotmatch:ci-arm64 dist ACGT AGGT | grep '^1$'
           docker run --rm --platform linux/arm64 dotmatch:ci-arm64 leq 1 ACGT AGGT | grep '^true$'
+          docker run --rm --platform linux/arm64 dotmatch:ci-arm64 evaluation-packet --help | grep 'prospective independent-evaluation packets'
       - uses: docker/metadata-action@v6
         id: meta
         with:

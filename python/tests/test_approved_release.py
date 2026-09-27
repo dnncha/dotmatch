@@ -1,6 +1,7 @@
 """Release guards are tested without publishing or contacting external services."""
 import hashlib
 import importlib.util
+import inspect
 from pathlib import Path
 
 import pytest
@@ -92,3 +93,9 @@ def test_release_manifest_rejects_duplicate_missing_or_empty_artifacts(tmp_path)
     manifest.write_text(line + line)
     with pytest.raises(RuntimeError, match='duplicate'):
         release.checksum_manifest(tmp_path)
+
+
+def test_publication_gate_checks_the_installed_evaluation_packet_command():
+    source = inspect.getsource(release.verify_publication)
+    assert "'evaluation-packet', 'template'" in source
+    assert "'evaluation_packet_template': True" in source

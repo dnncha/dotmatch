@@ -40,8 +40,7 @@ dotmatch evaluation-packet complete \
 This command freezes input identities, tool settings, primary endpoints,
 failure criteria, and tie handling before outcomes are viewed. See the
 [independent evaluation packet](independent-evaluation-packet.md) guide. The
-command is packaged by current source for a future release and is not present
-in the already-published 0.6.1 wheel.
+command is included in DotMatch 0.6.2 and later.
 
 ## Fixed-Window Assignment
 

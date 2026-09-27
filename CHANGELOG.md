@@ -4,6 +4,26 @@ All notable user-facing changes are tracked here. Public statements in release n
 
 ## Unreleased
 
+No user-facing changes yet.
+
+## 0.6.2 - 2026-09-27
+
+### Added
+
+- Add `dotmatch evaluation-packet` to template, prospectively lock, verify,
+  complete, and re-verify an independent evaluation record. The command
+  rejects placeholders, incomplete protocols, unsafe tied-rank policies,
+  protocol tampering, and result packets that do not match the locked
+  evaluation ID, protocol hash, or endpoint set.
+- Add identifier-keyed MAGeCK count and downstream-result comparators with
+  explicit failure criteria for guide/gene/count differences, non-rank
+  statistic changes, FDR hit-set changes, and ordinal movement across exact
+  statistical tie blocks.
+- Add pinned, machine-readable Yusa evidence and an unsent evaluator-owned
+  protocol draft. The retained evidence covers complete count-table agreement
+  and unchanged FDR<=0.05 hit sets for one public workflow; it is not evidence
+  of biological correctness or external adoption.
+
 ### Fixed
 
 - Align native FASTQ structure checks with the strict Python reader across
@@ -11,6 +31,10 @@ All notable user-facing changes are tracked here. Public statements in release n
   non-printable sequences and qualities, mismatched repeated separator IDs,
   empty sequences, truncation, and corrupt gzip input now stop the run with
   record/line context instead of producing completed-looking count outputs.
+
+The matching kernel, assignment policies, and biological scope are unchanged.
+Malformed inputs previously accepted by native high-throughput paths now fail
+closed.
 
 ## 0.6.1 - 2026-09-27
 

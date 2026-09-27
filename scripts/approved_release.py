@@ -193,6 +193,10 @@ def verify_publication():
             time.sleep(10)
         binary = str(environment / 'bin/dotmatch')
         require(command(binary, '--version', cwd=directory) == 'dotmatch ' + version, 'Installed CLI version differs')
+        packet_template = directory / 'evaluation.protocol.template.json'
+        command(binary, 'evaluation-packet', 'template', str(packet_template), cwd=directory)
+        packet = json.loads(packet_template.read_text())
+        require(packet.get('schema_version') == 1 and packet.get('evaluation_id') == 'REPLACE_ME', 'Published evaluation-packet command differs')
         output = directory / 'sensitivity'
         command(binary, 'sensitivity', '--targets', str(ROOT / 'examples/assignment_sensitivity/targets.tsv'), '--reads', str(ROOT / 'examples/assignment_sensitivity/reads.fastq'), '--target-start', '0', '--target-length', '20', '--out-dir', str(output), cwd=directory)
         summary = json.loads((output / 'summary.json').read_text())
@@ -222,7 +226,7 @@ def verify_publication():
     record['blockers'] = [item['blocker'] for item in record['channels'] if item['status'] != 'verified']
     record['next_action'] = 'Verify the matching Bioconda/AssayCode build, generated BioContainers images and newly minted version-specific Zenodo archive independently.'
     (verification / 'distribution-release.json').write_text(json.dumps(record, indent=2) + '\n')
-    (verification / 'verification.json').write_text(json.dumps({'version': version, 'commit': sha, 'tag': tag, 'pypi_files': len(published), 'artifact_hashes_verified': True, 'clean_public_install': True, 'sensitivity_fixture': {'reads': 9, 'changed_reads': 5, 'unique_counts': [3, 3, 5]}, 'ghcr_manifest_digest': digest, 'ghcr_platforms': ['linux/amd64', 'linux/arm64'], 'workflow': run_url}, indent=2) + '\n')
+    (verification / 'verification.json').write_text(json.dumps({'version': version, 'commit': sha, 'tag': tag, 'pypi_files': len(published), 'artifact_hashes_verified': True, 'clean_public_install': True, 'evaluation_packet_template': True, 'sensitivity_fixture': {'reads': 9, 'changed_reads': 5, 'unique_counts': [3, 3, 5]}, 'ghcr_manifest_digest': digest, 'ghcr_platforms': ['linux/amd64', 'linux/arm64'], 'workflow': run_url}, indent=2) + '\n')
     command('gh', 'release', 'upload', tag, str(verification / 'verification.json'), '--repo', REPOSITORY, '--clobber')
     command('gh', 'release', 'edit', tag, '--repo', REPOSITORY, '--draft=false', '--latest', '--title', 'DotMatch ' + version, '--notes-file', str(ROOT / 'docs/releases' / (tag + '.md')))
     print(f'Published {tag}: checked GitHub artifacts, identical public PyPI hashes, clean native workflow installation, and both GHCR architectures.')
