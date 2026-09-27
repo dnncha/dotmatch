@@ -106,6 +106,7 @@ test: build/test_qdalign build/test_qdalign_threshold_alloc
 cli-test: dotmatch
 	sh tests/test_cli_fastq.sh
 	PYTHONPATH=python DOTMATCH_BIN="$(CURDIR)/dotmatch" python3 tests/test_native_fastq_validation.py
+	python3 tests/test_mageck_count_equivalence.py
 	sh tests/test_crispr_example_expected.sh
 
 coverage:
