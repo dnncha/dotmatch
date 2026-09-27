@@ -9,6 +9,10 @@ The packet does not send data anywhere. Keep it in the evaluator-controlled
 workspace and replace private paths or names with approved references before
 publishing any part of it.
 
+The helper currently runs from a DotMatch source checkout and is not included in
+the published 0.6.1 wheel. Record the source commit used for the packet as well
+as the released DotMatch version used for the scientific comparison.
+
 ## 1. Create the protocol
 
 ```bash
