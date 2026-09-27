@@ -6,6 +6,7 @@ import re
 import shlex
 import shutil
 import subprocess
+import sys
 import sysconfig
 from pathlib import Path
 
@@ -13,6 +14,7 @@ from setuptools import Distribution, setup
 from setuptools.command.build_py import build_py as _build_py
 from setuptools.command.sdist import sdist as _sdist
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _reproducible_sdist import make_reproducible_gztar, parse_source_date_epoch
 
 try:
