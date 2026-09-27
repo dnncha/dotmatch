@@ -9,14 +9,16 @@ The packet does not send data anywhere. Keep it in the evaluator-controlled
 workspace and replace private paths or names with approved references before
 publishing any part of it.
 
-The helper currently runs from a DotMatch source checkout and is not included in
-the published 0.6.1 wheel. Record the source commit used for the packet as well
-as the released DotMatch version used for the scientific comparison.
+The installed command is packaged by current source for a future release; it is
+not included in the already-published 0.6.1 wheel. When testing unreleased
+source, build and clean-install its wheel, record the source commit and artifact
+hash, and keep that identity separate from the released DotMatch version used
+for any scientific comparison.
 
 ## 1. Create the protocol
 
 ```bash
-python3 scripts/independent_evaluation_packet.py template evaluation.protocol.json
+dotmatch evaluation-packet template evaluation.protocol.json
 ```
 
 Replace every `REPLACE_ME`. The protocol requires:
@@ -39,9 +41,9 @@ endpoint when identical statistics can tie. Use
 ## 2. Lock it before viewing outcomes
 
 ```bash
-python3 scripts/independent_evaluation_packet.py lock \
+dotmatch evaluation-packet lock \
   evaluation.protocol.json evaluation.locked.json
-python3 scripts/independent_evaluation_packet.py verify evaluation.locked.json
+dotmatch evaluation-packet verify evaluation.locked.json
 ```
 
 `lock` rejects placeholders, missing input identities, duplicate samples or
@@ -88,9 +90,9 @@ Every locked primary endpoint must appear once. Allowed statuses are `pass`,
 visible.
 
 ```bash
-python3 scripts/independent_evaluation_packet.py complete \
+dotmatch evaluation-packet complete \
   evaluation.locked.json evaluation.results.json evaluation.completed.json
-python3 scripts/independent_evaluation_packet.py verify evaluation.completed.json
+dotmatch evaluation-packet verify evaluation.completed.json
 ```
 
 Completion never changes the locked protocol or its hash. It rejects a result

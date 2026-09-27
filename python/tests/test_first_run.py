@@ -110,6 +110,7 @@ def test_public_module_demo_and_help(tmp_path):
     result = subprocess.run([sys.executable, "-m", "dotmatch", "--help"], env=env, capture_output=True, text=True)
     assert result.returncode == 0
     assert "dotmatch demo" in result.stdout and "dotmatch compare-counts" in result.stdout
+    assert "dotmatch evaluation-packet" in result.stdout
 
 
 @pytest.mark.parametrize("linked", [False, True])

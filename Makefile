@@ -108,6 +108,7 @@ cli-test: dotmatch
 	PYTHONPATH=python DOTMATCH_BIN="$(CURDIR)/dotmatch" python3 tests/test_native_fastq_validation.py
 	python3 tests/test_mageck_count_equivalence.py
 	python3 tests/test_mageck_test_equivalence.py
+	python3 scripts/independent_evaluation_packet.py --help >/dev/null
 	python3 tests/test_independent_evaluation_packet.py
 	sh tests/test_crispr_example_expected.sh
 

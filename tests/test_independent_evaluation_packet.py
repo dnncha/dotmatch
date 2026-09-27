@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Regression tests for prospectively locked independent-evaluation packets."""
 
 from __future__ import annotations
@@ -12,9 +11,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts/independent_evaluation_packet.py"
-SPEC = importlib.util.spec_from_file_location("independent_evaluation_packet", SCRIPT)
+MODULE_SCRIPT = ROOT / "python/dotmatch/evaluation_packet.py"
+SPEC = importlib.util.spec_from_file_location(
+    "dotmatch_evaluation_packet", MODULE_SCRIPT
+)
 if SPEC is None or SPEC.loader is None:
-    raise RuntimeError("could not load independent-evaluation packet tool")
+    raise RuntimeError("could not load packaged independent-evaluation implementation")
 MODULE = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = MODULE
 SPEC.loader.exec_module(MODULE)
@@ -201,7 +203,14 @@ def main() -> None:
         tmp = Path(raw_tmp)
         template_path = tmp / "template.json"
         subprocess.run(
-            [sys.executable, str(SCRIPT), "template", str(template_path)], check=True
+            [
+                sys.executable,
+                str(MODULE_SCRIPT),
+                "template",
+                str(template_path),
+            ],
+            check=True,
+            cwd=tmp,
         )
         assert template_path.exists()
 
@@ -223,6 +232,28 @@ def main() -> None:
         subprocess.run(
             [sys.executable, str(SCRIPT), "verify", str(locked_path)], check=True
         )
+
+        tampered_path = tmp / "tampered.json"
+        tampered_path.write_text(
+            MODULE.json.dumps(
+                {**MODULE.read_json(locked_path), "protocol_sha256": "0" * 64}
+            ),
+            encoding="utf-8",
+        )
+        rejected = subprocess.run(
+            [
+                sys.executable,
+                str(MODULE_SCRIPT),
+                "verify",
+                str(tampered_path),
+            ],
+            cwd=tmp,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert rejected.returncode == 2
+        assert "protocol hash mismatch" in rejected.stderr
 
     print("independent evaluation packet: PASS")
 
