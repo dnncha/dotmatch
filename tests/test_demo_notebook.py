@@ -17,5 +17,5 @@ def test_hosted_demo_installs_current_release() -> None:
         for line in cell["source"]
     )
 
-    pins = re.findall(r'pip\\", \\"install\\", \\"dotmatch==([^\\"]+)', source)
+    pins = re.findall(r'dotmatch==([0-9.]+)', source)
     assert pins == [project["project"]["version"]]
