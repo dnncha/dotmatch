@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "run_date_utc": "2026-09-27",
+  "dotmatch_version": "0.6.1",
+  "dotmatch_commit": "5c82bd405fc49d52e04f429fab429d044ec86997",
+  "dataset_repository": "https://github.com/nf-core/test-datasets",
+  "dataset_commit": "c16e7bd8bbc7ed534a3652a608ed0b2098037bdd",
+  "nfcore_module_repository": "https://github.com/nf-core/modules",
+  "nfcore_module_commit": "3137cddd6fa5fd47e1673081fa82a12644e91996",
+  "nfcore_snapshot_path": "modules/nf-core/mageck/count/tests/main.nf.test.snap",
+  "nfcore_snapshot_blob": "db85cabfbdbef3bee239870b0731799a56b40487",
+  "nfcore_expected_mageck_count_md5": "2759bdc010998f863518cf7a2df812dc",
+  "nfcore_recorded_mageck_version": "0.5.9.5",
+  "comparator_runtime": {
+    "package": "https://conda.anaconda.org/bioconda/linux-64/mageck-0.5.9.5-py310hc52dbad_9.conda",
+    "package_sha256": "dbb85933ced178f86def4c17abacb9d4b6459267fbc5097d5e9dcacf08728426",
+    "version": "0.5.9.5",
+    "output_md5": "2759bdc010998f863518cf7a2df812dc",
+    "output_sha256": "af440291b883a805c9b7c210c27fc9b4fff2a6555583fbb28ccebe8c1f09010f"
+  },
+  "inputs": {
+    "ERR376998.small.fastq.gz": "212a4af58aed6233e1cef9d539390032f171b6be9fdfeca6ec23d5846cf93e25",
+    "ERR376999.small.fastq.gz": "92c0ce0c8b658a0146cac5fc87edf4ef7517c807d1bffb1b1a14920b9a35376d",
+    "yusa_library.csv": "d41a4122a46fdedb47deca61081dde9037d461a1fce1e6f9744522e21005ceba"
+  },
+  "decompressed_fastq_sha256": {
+    "ERR376998.small.fastq.gz": "5af33b45ff4ec4349a06e99c0530ea78a34a760d143e7302432ab970725684d7",
+    "ERR376999.small.fastq.gz": "5af33b45ff4ec4349a06e99c0530ea78a34a760d143e7302432ab970725684d7"
+  },
+  "protocol": {
+    "reads_per_file": 10000,
+    "library_guides": 87437,
+    "samples": ["test", "test2"],
+    "target_start": 23,
+    "target_length": 19,
+    "metric": "hamming",
+    "k": 0,
+    "dotmatch_command": "dotmatch count --targets yusa_library.csv --reads ERR376998.small.fastq.gz --reads ERR376999.small.fastq.gz --sample-label test,test2 --target-start 23 --target-length 19 --k 0 --metric hamming --format mageck --out dotmatch.count.txt --summary summary.json --no-progress"
+  },
+  "results": {
+    "mageck_mapped_reads_per_sample": 8499,
+    "dotmatch_assigned_exact_per_sample": 8499,
+    "reference_rows": 87437,
+    "candidate_rows": 87437,
+    "missing_guides": 0,
+    "extra_guides": 0,
+    "gene_mismatches": 0,
+    "compared_count_cells": 174874,
+    "count_mismatches": 0,
+    "dotmatch_output_sha256": "ebfb28d5ac38b95806316faa959dfe84d213fca1a45dbe0d364acd99aebedb81",
+    "canonical_sorted_output_sha256": "84560261c51fb32ad968053236d3c1ae5559e7819472ba1d88c34cba2b6fcee9"
+  },
+  "failure_criteria": "Fail on a pinned input/hash mismatch, MAGeCK output MD5 mismatch, guide-set difference, gene mismatch, or integer count mismatch.",
+  "negative_result": "The two differently compressed nf-core FASTQ files decompress to identical 10,000-record content, so the two count columns are duplicate software checks rather than independent biological samples.",
+  "claim_boundary": "This establishes complete count-table equivalence for nf-core's two committed 10,000-read Yusa subsets under exact fixed-offset semantics. It is not a complete-table oracle for the full ENA runs and does not establish biological correctness, downstream inference equivalence, performance, or external adoption."
+}
