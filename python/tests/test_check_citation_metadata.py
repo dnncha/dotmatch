@@ -228,6 +228,33 @@ def test_citation_metadata_rejects_unresolved_doi_field(tmp_path):
     assert any("DOI does not resolve through doi.org" in failure for failure in result.failures)
 
 
+def test_doi_resolution_retries_head_then_falls_back_to_get(monkeypatch):
+    checker = _load_checker()
+    methods = []
+
+    class Response:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+    def urlopen(request, timeout):
+        assert timeout == 10
+        methods.append(request.get_method())
+        if request.get_method() == "HEAD":
+            raise TimeoutError("simulated HEAD timeout")
+        return Response()
+
+    monkeypatch.setattr(checker.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(checker.time, "sleep", lambda _seconds: None)
+
+    assert checker._doi_resolves("10.5281/zenodo.20541628")
+    assert methods == ["HEAD", "HEAD", "GET"]
+
+
 def test_citation_metadata_requires_user_facing_citation_surface(tmp_path):
     checker = _load_checker()
     _write_repo(tmp_path)
