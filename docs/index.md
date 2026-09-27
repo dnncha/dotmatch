@@ -69,6 +69,7 @@ versioned task routing with explicit inputs, outputs, and limitations. Use `dotm
 | Evaluate DotMatch for a workflow | [Bioinformatics evaluation](bioinformatics-evaluation.md) |
 | Check package and upstream integration status | [Ecosystem status](ecosystem-status.md) |
 | Run an independent evaluation | [10x evaluation request](10x-evaluation-request.md) |
+| Review the public Yusa evaluation draft | [Yusa independent evaluation request](yusa-independent-evaluation-request.md) |
 | Review the 10x evidence gates | [10x goal baseline](10x-goal-baseline.md) |
 | Record the software in a methods section | [Methods and citation](methods-and-citation.md) |
 
@@ -143,6 +144,7 @@ external-review-packet
 agent-discovery-audit
 ecosystem-status
 10x-evaluation-request
+yusa-independent-evaluation-request
 10x-goal-baseline
 10x-performance-control
 ```
