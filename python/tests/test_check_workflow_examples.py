@@ -456,11 +456,12 @@ def test_workflow_examples_ready_rejects_placeholder_nfcore_container(tmp_path):
         / "main.nf"
     )
     module = module_path.read_text(encoding="utf-8")
-    module_path.write_text(module.replace(checker.NFCORE_CONTAINER_TAG, "0.1.9--h*"), encoding="utf-8")
+    bad_ref = "ghcr.io/dnncha/dotmatch:v0.6.3@sha256:" + "0" * 64
+    module_path.write_text(module.replace(checker.NFCORE_CONTAINER_REF, bad_ref), encoding="utf-8")
 
     result = checker.audit(tmp_path)
 
-    assert any("immutable nf-core container tag" in failure for failure in result.failures)
+    assert any("immutable nf-core container image" in failure for failure in result.failures)
 
 
 def test_workflow_examples_ready_requires_assayspec_workflow_pack(tmp_path):
