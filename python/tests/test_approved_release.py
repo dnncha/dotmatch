@@ -107,3 +107,16 @@ def test_container_release_smoke_matches_the_evaluator_help_text():
     assertion = "grep -F 'independent-evaluation packets'"
     assert workflow.count(assertion) == 2
     assert 'independent-evaluation packets' in help_source.splitlines()[0]
+
+def test_existing_release_turns_future_main_change_into_validated_maintenance(monkeypatch, capsys):
+    monkeypatch.setenv('GITHUB_REF', 'refs/heads/main')
+    monkeypatch.setattr(release, 'context', lambda: ('0.6.3', 'v0.6.3', 'maintenance-sha', {}))
+    monkeypatch.setattr(release, 'existing_tag_commit', lambda tag: 'released-sha')
+    monkeypatch.setattr(release, 'github', lambda path: pytest.fail(f'unexpected GitHub poll: {path}'))
+
+    release.tag_release()
+
+    output = capsys.readouterr().out
+    assert 'v0.6.3 already immutably records released commit released-sha' in output
+    assert 'validated maintenance commit maintenance-sha will not be tagged or published' in output
+

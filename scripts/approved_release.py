@@ -98,9 +98,22 @@ def status_verdict(status):
     return ready
 
 
+def existing_tag_commit(tag):
+    existing = command('git', 'ls-remote', 'origin', f'refs/tags/{tag}')
+    if not existing:
+        return None
+    command('git', 'fetch', 'origin', f'refs/tags/{tag}:refs/tags/{tag}')
+    require(command('git', 'cat-file', '-t', f'refs/tags/{tag}') == 'tag', 'Existing tag is not annotated')
+    return command('git', 'rev-parse', f'{tag}^{{commit}}')
+
+
 def tag_release():
     version, tag, sha, _ = context()
     require(os.environ.get('GITHUB_REF') == 'refs/heads/main', 'Tags may only be requested from main')
+    tagged_sha = existing_tag_commit(tag)
+    if tagged_sha is not None and tagged_sha != sha:
+        print(f'{tag} already immutably records released commit {tagged_sha}; validated maintenance commit {sha} will not be tagged or published.')
+        return
     for attempt in range(120):
         require(github('git/ref/heads/main')['object']['sha'] == sha, 'Main moved during release validation; refusing to tag a stale candidate')
         runs = github(f'actions/runs?head_sha={sha}&per_page=100')['workflow_runs']
@@ -111,12 +124,7 @@ def tag_release():
         time.sleep(10)
     else:
         raise RuntimeError('Required checks did not complete within the bounded release gate')
-    existing = command('git', 'ls-remote', 'origin', f'refs/tags/{tag}')
-    if existing:
-        command('git', 'fetch', 'origin', f'refs/tags/{tag}:refs/tags/{tag}')
-        require(command('git', 'cat-file', '-t', f'refs/tags/{tag}') == 'tag', 'Existing tag is not annotated')
-        require(command('git', 'rev-parse', f'{tag}^{{commit}}') == sha, 'Existing tag points elsewhere; tags are never moved')
-    else:
+    if tagged_sha is None:
         command('git', 'config', 'user.name', 'github-actions[bot]')
         command('git', 'config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com')
         command('git', 'tag', '-a', tag, sha, '-m', f'DotMatch {tag}\nValidated main commit: {sha}')
