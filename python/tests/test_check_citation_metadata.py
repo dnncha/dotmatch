@@ -257,6 +257,70 @@ def test_doi_resolution_retries_head_then_falls_back_to_get(monkeypatch):
     assert methods == ["HEAD", "HEAD", "GET"]
 
 
+def test_doi_resolution_uses_exact_zenodo_record_fallback(monkeypatch):
+    checker = _load_checker()
+    urls = []
+
+    class Response:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self, *_args):
+            return b'{"doi": "10.5281/zenodo.23043070"}'
+
+    def urlopen(request, timeout):
+        assert timeout == 10
+        urls.append(request.full_url)
+        if request.full_url.startswith("https://doi.org/"):
+            raise TimeoutError("simulated resolver timeout")
+        assert request.full_url == "https://zenodo.org/api/records/23043070"
+        assert request.get_header("Accept") == "application/json"
+        return Response()
+
+    monkeypatch.setattr(checker.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(checker.time, "sleep", lambda _seconds: None)
+
+    assert checker._doi_resolves("10.5281/zenodo.23043070")
+    assert urls == [
+        "https://doi.org/10.5281/zenodo.23043070",
+        "https://doi.org/10.5281/zenodo.23043070",
+        "https://doi.org/10.5281/zenodo.23043070",
+        "https://doi.org/10.5281/zenodo.23043070",
+        "https://zenodo.org/api/records/23043070",
+    ]
+
+
+def test_doi_resolution_rejects_mismatched_zenodo_record(monkeypatch):
+    checker = _load_checker()
+
+    class Response:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self, *_args):
+            return b'{"doi": "10.5281/zenodo.20541628"}'
+
+    def urlopen(request, _timeout):
+        if request.full_url.startswith("https://doi.org/"):
+            raise TimeoutError("simulated resolver timeout")
+        return Response()
+
+    monkeypatch.setattr(checker.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(checker.time, "sleep", lambda _seconds: None)
+
+    assert not checker._doi_resolves("10.5281/zenodo.23043070")
+
+
 def test_citation_metadata_requires_user_facing_citation_surface(tmp_path):
     checker = _load_checker()
     _write_repo(tmp_path)
