@@ -164,6 +164,19 @@ def required_ghcr_platforms(root: Path, version: str) -> tuple[str, ...]:
     )
 
 
+def recorded_installed_citation_doi(root: Path, version: str, channel_id: str) -> str:
+    record = release_channel_record(root, version, channel_id)
+    value = record.get("installed_citation_doi", "")
+    if value == "":
+        return ""
+    if not isinstance(value, str) or re.fullmatch(r"10\.5281/zenodo\.\d+", value) is None:
+        raise ValueError(
+            "distribution record field installed_citation_doi must be a Zenodo DOI such as "
+            "10.5281/zenodo.1234567"
+        )
+    return value
+
+
 def citation_doi(root: Path) -> str:
     text = (root / "CITATION.cff").read_text(encoding="utf-8")
     match = re.search(r'^\s*doi\s*:\s*["\']?([^"\'\s]+)', text, flags=re.MULTILINE)
@@ -235,6 +248,28 @@ def verify_pypi_install(version: str) -> None:
             raise RuntimeError(f"dotmatch dist smoke test reported {observed_distance!r}, expected '1'")
 
 
+def verify_pypi_citation(version: str, expected_doi: str) -> None:
+    with tempfile.TemporaryDirectory(prefix="dotmatch-pypi-citation-") as tmp:
+        root = Path(tmp)
+        env_dir = root / "venv"
+        venv.EnvBuilder(with_pip=True).create(env_dir)
+        py = venv_python(env_dir)
+        env = clean_install_env()
+        run_checked([str(py), "-m", "pip", "install", "--quiet", f"dotmatch=={version}"], cwd=root, env=env)
+        citation = run_checked([str(venv_script(env_dir, "dotmatch")), "citation"], cwd=root, env=env)
+        if f"DOI: {expected_doi}" not in citation.splitlines():
+            raise RuntimeError(f"dotmatch citation did not report recorded installed DOI {expected_doi!r}")
+        assay_doi = run_checked(
+            [str(py), "-c", "from dotmatch.assayspec import _citation_metadata; print(_citation_metadata()['doi'])"],
+            cwd=root,
+            env=env,
+        )
+        if assay_doi != expected_doi:
+            raise RuntimeError(
+                f"installed assay citation metadata reported {assay_doi!r}, expected {expected_doi!r}"
+            )
+
+
 def verify_ghcr_run(image: str, version: str) -> None:
     env = os.environ.copy()
     cwd = Path.cwd()
@@ -245,6 +280,13 @@ def verify_ghcr_run(image: str, version: str) -> None:
     observed_distance = run_checked(["docker", "run", "--rm", image, "dist", "ACGT", "AGGT"], cwd=cwd, env=env)
     if observed_distance != "1":
         raise RuntimeError(f"docker image dist smoke test reported {observed_distance!r}, expected '1'")
+
+
+def verify_ghcr_citation(image: str, expected_doi: str) -> None:
+    env = os.environ.copy()
+    citation = run_checked(["docker", "run", "--rm", image, "citation"], cwd=Path.cwd(), env=env)
+    if f"DOI: {expected_doi}" not in citation.splitlines():
+        raise RuntimeError(f"container citation did not report recorded installed DOI {expected_doi!r}")
 
 
 def verify_ghcr_manifest(image: str, required_platforms: tuple[str, ...] = DEFAULT_GHCR_PLATFORMS) -> str:
@@ -408,6 +450,7 @@ def check_pypi(root: Path, version: str, result: AuditResult) -> None:
     channel = "pypi"
     try:
         required_architectures = required_pypi_linux_wheel_architectures(root, version)
+        expected_citation_doi = recorded_installed_citation_doi(root, version, channel)
     except ValueError as exc:
         result.failures.append(ChannelMessage(channel, str(exc)))
         return
@@ -454,10 +497,15 @@ def check_pypi(root: Path, version: str, result: AuditResult) -> None:
     )
     try:
         verify_pypi_install(version)
+        if expected_citation_doi:
+            verify_pypi_citation(version, expected_citation_doi)
     except Exception as exc:
         result.failures.append(ChannelMessage("pypi-install", f"PyPI one-command install failed for {version}: {exc}"))
         return
-    result.passed.append(ChannelMessage("pypi-install", f"pip install dotmatch=={version} works in a clean environment"))
+    citation_suffix = f"; installed citation DOI {expected_citation_doi} verified" if expected_citation_doi else ""
+    result.passed.append(
+        ChannelMessage("pypi-install", f"pip install dotmatch=={version} works in a clean environment{citation_suffix}")
+    )
 
 
 def check_bioconda(version: str, result: AuditResult) -> None:
@@ -560,6 +608,7 @@ def check_ghcr(root: Path, version: str, result: AuditResult) -> None:
     image = GHCR_IMAGE.format(version=version)
     try:
         required_platforms = required_ghcr_platforms(root, version)
+        expected_citation_doi = recorded_installed_citation_doi(root, version, channel)
         if required_platforms == DEFAULT_GHCR_PLATFORMS:
             digest = verify_ghcr_manifest(image)
         else:
@@ -572,6 +621,8 @@ def check_ghcr(root: Path, version: str, result: AuditResult) -> None:
     )
     try:
         verify_ghcr_run(image, version)
+        if expected_citation_doi:
+            verify_ghcr_citation(image, expected_citation_doi)
     except FileNotFoundError:
         result.failures.append(ChannelMessage("ghcr-run", "docker is required to run GHCR image smoke tests"))
         return
