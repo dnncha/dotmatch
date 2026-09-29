@@ -1,17 +1,17 @@
 {
   "schema_version": 1,
   "status": "not_released",
-  "release_version": "0.6.3",
+  "release_version": "0.6.4",
   "publication_authorized": true,
-  "release_tag": "v0.6.3",
+  "release_tag": "v0.6.4",
   "post_release_gate": "make distribution-channels",
   "channels": [
     {
       "id": "pypi",
       "status": "prepared",
-      "expected_url": "https://pypi.org/project/dotmatch/0.6.3/",
+      "expected_url": "https://pypi.org/project/dotmatch/0.6.4/",
       "verification_command": "make distribution-channels",
-      "blocker": "Version 0.6.3 has not yet been published and independently verified on this channel.",
+      "blocker": "Version 0.6.4 has not yet been published and independently verified on this channel.",
       "next_action": "Publish the source distribution, macOS wheel, and repaired Linux wheels through trusted publishing, then verify their hashes and a clean installation."
     },
     {
@@ -19,7 +19,7 @@
       "status": "prepared",
       "expected_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "Version 0.6.3 has not yet been published and independently verified on this channel.",
+      "blocker": "Version 0.6.4 has not yet been published and independently verified on this channel.",
       "next_action": "Publish through the approved release workflow, then verify the public version and artifacts."
     },
     {
@@ -27,23 +27,23 @@
       "status": "prepared",
       "expected_url": "https://anaconda.org/bioconda/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "Version 0.6.3 has not yet been published and independently verified on this channel.",
-      "next_action": "Submit the immutable 0.6.3 recipe upstream and verify community build propagation; do not infer availability from the source tag."
+      "blocker": "Version 0.6.4 has not yet been published and independently verified on this channel.",
+      "next_action": "Submit the immutable 0.6.4 recipe upstream and verify community build propagation; do not infer availability from the source tag."
     },
     {
       "id": "bioconda-assaycode",
       "status": "prepared",
       "expected_url": "https://anaconda.org/bioconda/assaycode",
       "verification_command": "make distribution-channels",
-      "blocker": "Version 0.6.3 has not yet been published and independently verified on this channel.",
-      "next_action": "Submit the immutable 0.6.3 recipe upstream and verify community build propagation; do not infer availability from the source tag."
+      "blocker": "Version 0.6.4 has not yet been published and independently verified on this channel.",
+      "next_action": "Submit the immutable 0.6.4 recipe upstream and verify community build propagation; do not infer availability from the source tag."
     },
     {
       "id": "biocontainers",
       "status": "prepared",
       "expected_url": "https://quay.io/repository/biocontainers/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "Version 0.6.3 has not yet been published and independently verified on this channel.",
+      "blocker": "Version 0.6.4 has not yet been published and independently verified on this channel.",
       "next_action": "Submit the immutable release recipe upstream and verify community build propagation; do not infer availability from the source tag."
     },
     {
@@ -51,12 +51,12 @@
       "status": "prepared",
       "expected_url": "https://doi.org/10.5281/zenodo.20541628",
       "verification_command": "make distribution-channels",
-      "blocker": "Version 0.6.3 has not yet been published and independently verified on this channel.",
+      "blocker": "Version 0.6.4 has not yet been published and independently verified on this channel.",
       "next_action": "Verify the archive generated for the immutable GitHub release; add only the newly minted version DOI."
     }
   ],
   "blockers": [
-    "Version 0.6.3 is an authorized release candidate; artifact publication and public-channel checks are pending."
+    "Version 0.6.4 is an authorized release candidate; artifact publication and public-channel checks are pending."
   ],
-  "next_action": "Pass the release gates, publish the immutable v0.6.3 tag through the existing release workflow, then record each verified channel separately."
+  "next_action": "Pass the release gates, publish the immutable v0.6.4 tag through the existing release workflow, then record each verified channel separately."
 }
