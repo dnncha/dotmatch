@@ -243,6 +243,8 @@ def test_doi_resolution_retries_head_then_falls_back_to_get(monkeypatch):
 
     def urlopen(request, timeout):
         assert timeout == 10
+        assert request.get_header("User-agent", "").startswith("Mozilla/5.0")
+        assert request.get_header("Accept") == "text/html,application/xhtml+xml"
         methods.append(request.get_method())
         if request.get_method() == "HEAD":
             raise TimeoutError("simulated HEAD timeout")
