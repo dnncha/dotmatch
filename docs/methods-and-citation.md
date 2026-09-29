@@ -21,6 +21,12 @@ citation. For an exact release, use its version-specific DOI: 0.4.0
 (`10.5281/zenodo.22969176`), 0.6.1 (`10.5281/zenodo.22985881`), 0.6.3
 (`10.5281/zenodo.22998373`), or 0.6.4 (`10.5281/zenodo.23043070`).
 
+Published 0.6.4 packages and containers embed the concept DOI because its
+version DOI was minted only after those immutable artifacts were published.
+The post-release source metadata records the exact 0.6.4 DOI. Both resolve to
+the same Zenodo release family; use the version DOI when exact-release
+provenance matters.
+
 Suggested citation:
 
 > O'Toole D. DotMatch: deterministic known-target short-DNA assignment for sequencing workflows. Software release v0.6.4. https://github.com/dnncha/dotmatch
