@@ -67,7 +67,7 @@ def test_distribution_channels_accepts_mocked_public_release(tmp_path, monkeypat
         if url == "https://quay.io/api/v1/repository/biocontainers/dotmatch/tag/?onlyActiveTags=true&page=1&limit=100":
             return {"tags": [{"name": "0.1.0--h123_0"}], "has_additional": False}
         if url == "https://zenodo.org/api/records/1234567":
-            return {"metadata": {"version": "0.1.0"}}
+            return {"doi": "10.5281/zenodo.1234567", "metadata": {"version": "0.1.0"}}
         raise AssertionError(url)
 
     completed = subprocess.CompletedProcess(["docker"], 0, stdout="ok", stderr="")
@@ -154,13 +154,46 @@ def test_distribution_channels_reports_stale_zenodo_version(tmp_path, monkeypatc
     monkeypatch.setattr(
         checker,
         "fetch_json",
-        lambda url: {"metadata": {"version": "0.0.9"}} if "zenodo.org" in url else {},
+        lambda url: {"doi": "10.5281/zenodo.1234567", "metadata": {"version": "0.0.9"}} if "zenodo.org" in url else {},
     )
     monkeypatch.setattr(checker.subprocess, "run", lambda *args, **kwargs: subprocess.CompletedProcess(["docker"], 0))
 
     result = checker.audit(tmp_path)
 
     assert any("reports version 0.0.9, expected 0.1.0" in failure.message for failure in result.failures)
+
+
+def test_distribution_channels_accepts_exact_zenodo_record_when_resolver_is_unavailable(tmp_path, monkeypatch):
+    checker = _load_checker()
+    _write_repo(tmp_path, doi="10.5281/zenodo.1234567")
+    monkeypatch.setattr(
+        checker,
+        "fetch_json",
+        lambda _url: {"doi": "10.5281/zenodo.1234567", "metadata": {"version": "0.1.0"}},
+    )
+    monkeypatch.setattr(checker, "url_ok", lambda _url: False)
+    result = checker.AuditResult()
+
+    checker.check_zenodo(tmp_path, "0.1.0", result)
+
+    assert result.failures == []
+    assert any("public record confirms DOI and version 0.1.0" in item.message for item in result.passed)
+
+
+def test_distribution_channels_rejects_mismatched_zenodo_record_doi(tmp_path, monkeypatch):
+    checker = _load_checker()
+    _write_repo(tmp_path, doi="10.5281/zenodo.1234567")
+    monkeypatch.setattr(
+        checker,
+        "fetch_json",
+        lambda _url: {"doi": "10.5281/zenodo.7654321", "metadata": {"version": "0.1.0"}},
+    )
+    monkeypatch.setattr(checker, "url_ok", lambda _url: False)
+    result = checker.AuditResult()
+
+    checker.check_zenodo(tmp_path, "0.1.0", result)
+
+    assert any("Zenodo record DOI mismatch" in failure.message for failure in result.failures)
 
 
 def test_distribution_channels_reports_pypi_missing_version(tmp_path, monkeypatch):
