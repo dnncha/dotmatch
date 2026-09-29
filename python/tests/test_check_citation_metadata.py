@@ -322,7 +322,8 @@ def test_doi_resolution_rejects_mismatched_zenodo_record(monkeypatch):
         def read(self, *_args):
             return b'{"doi": "10.5281/zenodo.20541628"}'
 
-    def urlopen(request, _timeout):
+    def urlopen(request, timeout):
+        assert timeout == 10
         if request.full_url.startswith("https://doi.org/"):
             raise TimeoutError("simulated resolver timeout")
         return Response()
@@ -348,7 +349,8 @@ def test_release_readiness_uses_exact_zenodo_record_fallback(monkeypatch):
         def read(self, *_args):
             return b'{"doi": "10.5281/zenodo.23043070"}'
 
-    def urlopen(request, _timeout):
+    def urlopen(request, timeout):
+        assert timeout == 10
         if request.full_url.startswith("https://doi.org/"):
             raise TimeoutError("simulated resolver timeout")
         assert request.full_url == "https://zenodo.org/api/records/23043070"
@@ -376,7 +378,8 @@ def test_release_readiness_rejects_mismatched_zenodo_record(monkeypatch):
         def read(self, *_args):
             return b'{"doi": "10.5281/zenodo.20541628"}'
 
-    def urlopen(request, _timeout):
+    def urlopen(request, timeout):
+        assert timeout == 10
         if request.full_url.startswith("https://doi.org/"):
             raise TimeoutError("simulated resolver timeout")
         return Response()
