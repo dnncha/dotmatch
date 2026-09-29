@@ -132,7 +132,13 @@ def _doi_values(path: Path) -> list[str]:
 
 def _doi_resolves(doi: str) -> bool:
     url = f"https://doi.org/{doi}"
-    headers = {"User-Agent": "DotMatch citation-metadata verifier"}
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (compatible; DotMatch citation-metadata verifier; "
+            "+https://github.com/dnncha/dotmatch)"
+        ),
+        "Accept": "text/html,application/xhtml+xml",
+    }
     for method in ("HEAD", "GET"):
         for attempt in range(2):
             request = urllib.request.Request(url, headers=headers, method=method)
