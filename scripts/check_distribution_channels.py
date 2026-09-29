@@ -597,23 +597,34 @@ def check_zenodo(root: Path, version: str, result: AuditResult) -> None:
         result.failures.append(ChannelMessage(channel, f"Zenodo record metadata is not reachable for {doi}: {exc}"))
         return
     metadata = data.get("metadata") if isinstance(data, dict) else {}
+    record_doi = str(data.get("doi") or "") if isinstance(data, dict) else ""
     record_version = str((metadata or {}).get("version") or "")
     conceptdoi = str((metadata or {}).get("conceptdoi") or "")
     conceptrecid = str((metadata or {}).get("conceptrecid") or "")
     is_concept_doi = doi == conceptdoi or record_id == conceptrecid
+    provider_doi_matches = doi == conceptdoi if is_concept_doi else doi == record_doi
+    if not provider_doi_matches:
+        observed = conceptdoi if is_concept_doi else record_doi
+        result.failures.append(
+            ChannelMessage(channel, f"Zenodo record DOI mismatch: expected {doi}, observed {observed or '<missing>'}")
+        )
+        return
     if not is_concept_doi and record_version != version:
         result.failures.append(
             ChannelMessage(channel, f"Zenodo record {doi} reports version {record_version or '<missing>'}, expected {version}")
         )
         return
     url = f"https://doi.org/{doi}"
-    if not url_ok(url):
-        result.failures.append(ChannelMessage(channel, f"Zenodo DOI does not resolve: {doi}"))
-        return
-    if is_concept_doi:
-        result.passed.append(ChannelMessage(channel, f"Zenodo concept DOI resolves for DotMatch software citation: {doi}"))
+    if url_ok(url):
+        if is_concept_doi:
+            message = f"Zenodo concept DOI resolves for DotMatch software citation: {doi}"
+        else:
+            message = f"Zenodo DOI resolves and reports version {version}: {doi}"
+    elif is_concept_doi:
+        message = f"Zenodo public record confirms concept DOI for DotMatch software citation: {doi}"
     else:
-        result.passed.append(ChannelMessage(channel, f"Zenodo DOI resolves and reports version {version}: {doi}"))
+        message = f"Zenodo public record confirms DOI and version {version}: {doi}"
+    result.passed.append(ChannelMessage(channel, message))
 
 
 def audit(root: Path, version: Optional[str] = None) -> AuditResult:

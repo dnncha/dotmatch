@@ -5,10 +5,22 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CHECKER = ROOT / "scripts" / "check_citation_metadata.py"
+RELEASE_CHECKER = ROOT / "scripts" / "check_release_readiness.py"
 
 
 def _load_checker():
     spec = importlib.util.spec_from_file_location("check_citation_metadata", CHECKER)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+
+
+
+def _load_release_checker():
+    spec = importlib.util.spec_from_file_location("check_release_readiness", RELEASE_CHECKER)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -243,6 +255,8 @@ def test_doi_resolution_retries_head_then_falls_back_to_get(monkeypatch):
 
     def urlopen(request, timeout):
         assert timeout == 10
+        assert request.get_header("User-agent", "").startswith("Mozilla/5.0")
+        assert request.get_header("Accept") == "text/html,application/xhtml+xml"
         methods.append(request.get_method())
         if request.get_method() == "HEAD":
             raise TimeoutError("simulated HEAD timeout")
@@ -253,6 +267,127 @@ def test_doi_resolution_retries_head_then_falls_back_to_get(monkeypatch):
 
     assert checker._doi_resolves("10.5281/zenodo.20541628")
     assert methods == ["HEAD", "HEAD", "GET"]
+
+
+def test_doi_resolution_uses_exact_zenodo_record_fallback(monkeypatch):
+    checker = _load_checker()
+    urls = []
+
+    class Response:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self, *_args):
+            return b'{"doi": "10.5281/zenodo.23043070"}'
+
+    def urlopen(request, timeout):
+        assert timeout == 10
+        urls.append(request.full_url)
+        if request.full_url.startswith("https://doi.org/"):
+            raise TimeoutError("simulated resolver timeout")
+        assert request.full_url == "https://zenodo.org/api/records/23043070"
+        assert request.get_header("Accept") == "application/json"
+        return Response()
+
+    monkeypatch.setattr(checker.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(checker.time, "sleep", lambda _seconds: None)
+
+    assert checker._doi_resolves("10.5281/zenodo.23043070")
+    assert urls == [
+        "https://doi.org/10.5281/zenodo.23043070",
+        "https://doi.org/10.5281/zenodo.23043070",
+        "https://doi.org/10.5281/zenodo.23043070",
+        "https://doi.org/10.5281/zenodo.23043070",
+        "https://zenodo.org/api/records/23043070",
+    ]
+
+
+def test_doi_resolution_rejects_mismatched_zenodo_record(monkeypatch):
+    checker = _load_checker()
+
+    class Response:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self, *_args):
+            return b'{"doi": "10.5281/zenodo.20541628"}'
+
+    def urlopen(request, timeout):
+        assert timeout == 10
+        if request.full_url.startswith("https://doi.org/"):
+            raise TimeoutError("simulated resolver timeout")
+        return Response()
+
+    monkeypatch.setattr(checker.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(checker.time, "sleep", lambda _seconds: None)
+
+    assert not checker._doi_resolves("10.5281/zenodo.23043070")
+
+
+def test_release_readiness_uses_exact_zenodo_record_fallback(monkeypatch):
+    checker = _load_release_checker()
+
+    class Response:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self, *_args):
+            return b'{"doi": "10.5281/zenodo.23043070"}'
+
+    def urlopen(request, timeout):
+        assert timeout == 10
+        if request.full_url.startswith("https://doi.org/"):
+            raise TimeoutError("simulated resolver timeout")
+        assert request.full_url == "https://zenodo.org/api/records/23043070"
+        assert request.get_header("Accept") == "application/json"
+        return Response()
+
+    monkeypatch.setattr(checker.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(checker.time, "sleep", lambda _seconds: None)
+
+    assert checker._doi_resolves("10.5281/zenodo.23043070")
+
+
+def test_release_readiness_rejects_mismatched_zenodo_record(monkeypatch):
+    checker = _load_release_checker()
+
+    class Response:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self, *_args):
+            return b'{"doi": "10.5281/zenodo.20541628"}'
+
+    def urlopen(request, timeout):
+        assert timeout == 10
+        if request.full_url.startswith("https://doi.org/"):
+            raise TimeoutError("simulated resolver timeout")
+        return Response()
+
+    monkeypatch.setattr(checker.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(checker.time, "sleep", lambda _seconds: None)
+
+    assert not checker._doi_resolves("10.5281/zenodo.23043070")
 
 
 def test_citation_metadata_requires_user_facing_citation_surface(tmp_path):
