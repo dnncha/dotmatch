@@ -1936,3 +1936,45 @@ def test_assay_infer_demux_and_pair_reports_are_deterministic(tmp_path: Path) ->
     pair_data = json.loads(pair_report.read_text(encoding="utf-8"))
     assert pair_data["left"]["chosen"]["start"] == 2
     assert pair_data["right"]["chosen"]["start"] == 2
+
+
+def test_pairwise_correlation_gate_only_applies_to_declared_replicates(tmp_path: Path) -> None:
+    from types import SimpleNamespace
+
+    from dotmatch.assayspec import AssaySpec, _crispr_qc_reliability_findings
+
+    qc = tmp_path / "crispr_qc.json"
+    qc.write_text(
+        json.dumps(
+            {
+                "sample_correlations": [
+                    {"sample_a": "plasmid", "sample_b": "day14_rep1", "pearson_log2_count_plus_1": 0.41},
+                    {"sample_a": "plasmid", "sample_b": "day14_rep2", "pearson_log2_count_plus_1": 0.43},
+                    {"sample_a": "day14_rep1", "sample_b": "day14_rep2", "pearson_log2_count_plus_1": 0.62},
+                ],
+                "status": "review",
+                "warnings": [{"code": "low_pairwise_sample_correlation", "scope": "plasmid:day14_rep1"}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    spec = AssaySpec(
+        tmp_path / "assay.toml",
+        {
+            "mode": "count",
+            "assay_type": "crispr",
+            "samples": [
+                {"id": "plasmid", "fastq": "p.fq"},
+                {"id": "day14_rep1", "condition": "day14", "fastq": "a.fq"},
+                {"id": "day14_rep2", "condition": "day14", "fastq": "b.fq"},
+            ],
+        },
+    )
+    findings = _crispr_qc_reliability_findings(SimpleNamespace(spec=spec, artifacts={"crispr_qc": qc}), "postrun")
+    gated = [f for f in findings if f["finding_id"] == "pairwise_sample_correlation_below_min"]
+    assert [f["sample_id"] for f in gated] == ["day14_rep1:day14_rep2"]
+
+    undeclared = AssaySpec(tmp_path / "assay.toml", {"mode": "count", "assay_type": "crispr", "samples": []})
+    findings = _crispr_qc_reliability_findings(SimpleNamespace(spec=undeclared, artifacts={"crispr_qc": qc}), "postrun")
+    assert findings == []
+

@@ -4,7 +4,16 @@ All notable user-facing changes are tracked here. Public statements in release n
 
 ## Unreleased
 
-No user-facing changes yet.
+### Fixed
+
+- `dotmatch crispr quickstart --link-reads` projects now run. `assay check` and
+  `assay start` previously refused the project's own FASTQ symlinks as paths
+  outside the AssaySpec directory; `..` escapes are still refused.
+- The CRISPR pairwise-correlation gate no longer fails runs that compare
+  plasmid, T0 and selected samples, which are expected to diverge. Samples can
+  declare an optional `condition` in `[[samples]]`; only samples that share a
+  condition are held to `min_pairwise_sample_pearson`. All pairwise
+  correlations are still reported in `crispr_qc.json`.
 
 ## 0.6.3 - 2026-09-27
 

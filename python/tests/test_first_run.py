@@ -160,6 +160,17 @@ def test_overlapping_patterns_refused_without_double_counting(tmp_path):
         first_run.resolve_fastqs([str(reads), str(tmp_path / "*.fastq")])
 
 
+
+def test_linked_reads_project_passes_assay_preflight(tmp_path, capsys):
+    library, reads = inputs(tmp_path)
+    project = tmp_path / "project"
+    assert entrypoint.main(["crispr", "quickstart", *quick_args(library, reads, project), "--link-reads"]) == 0
+    spec = project / "assay.toml"
+    spec.write_text(spec.read_text().replace('status = "draft"', 'status = "ready"'))
+    capsys.readouterr()
+    assert entrypoint.main(["assay", "check", str(spec)]) == 0
+    assert "reliability (preflight): passed" in capsys.readouterr().err
+
 def test_symlink_alias_for_same_input_is_duplicate(tmp_path):
     library, reads = inputs(tmp_path)
     alias = tmp_path / "alias.fastq"

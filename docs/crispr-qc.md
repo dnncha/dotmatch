@@ -89,6 +89,9 @@ These are diagnostic thresholds, not biological pass/fail laws. Screens differ
 by library, cell model, selection pressure, PCR depth, and sampling strategy.
 The report is deliberately conservative so suspicious guide-counting or sample
 representation problems are reviewed before downstream modeling.
+In `dotmatch assay start`, the pairwise correlation threshold only fails the
+run for samples that share a `condition` in `assay.toml`; plasmid, T0 and
+selected samples are expected to diverge.
 `qc_status = "pass"` means no configured DotMatch QC threshold was crossed; it
 does not certify screen quality or biological success.
 
