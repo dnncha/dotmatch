@@ -63,7 +63,8 @@
       "public_url": "https://zenodo.org/records/23043070",
       "evidence_url": "https://zenodo.org/records/23043070",
       "verified_date": "2026-09-29",
-      "verification_command": "make distribution-channels"
+      "verification_command": "make distribution-channels",
+      "version_doi": "10.5281/zenodo.23043070"
     }
   ],
   "blockers": [
