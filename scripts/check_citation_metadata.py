@@ -131,7 +131,7 @@ def _doi_values(path: Path) -> list[str]:
 
 
 def _zenodo_record_confirms_doi(doi: str) -> bool:
-    match = re.fullmatch(r"10\\.5281/zenodo\\.(\\d+)", doi, flags=re.I)
+    match = re.fullmatch(r"10\.5281/zenodo\.(\d+)", doi, flags=re.I)
     if not match:
         return False
     url = f"https://zenodo.org/api/records/{match.group(1)}"
