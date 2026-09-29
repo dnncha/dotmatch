@@ -92,8 +92,14 @@ id = "control"
 fastq = "control.fastq.gz"
 
 [[samples]]
-id = "treated"
-fastq = "treated.fastq.gz"
+id = "treated_rep1"
+condition = "treated"
+fastq = "treated_rep1.fastq.gz"
+
+[[samples]]
+id = "treated_rep2"
+condition = "treated"
+fastq = "treated_rep2.fastq.gz"
 
 [run]
 out_dir = "dotmatch_assay_out"
@@ -129,6 +135,12 @@ assignments = true
 ambiguous = true
 unmatched = true
 ```
+
+`condition` is optional. Samples that share a condition are replicates, and in
+CRISPR runs their pairwise log2(count+1) Pearson correlation must reach
+`min_pairwise_sample_pearson` (default 0.80). Pairs without a shared condition,
+such as plasmid versus selected samples, are expected to diverge; their
+correlations are reported in `crispr_qc.json` but do not fail the run.
 
 Count mode writes `counts.mageck.tsv` for CRISPR/MAGeCK output or `counts.tsv`
 for DotMatch output, plus `target_counts.long.tsv`, `sample_qc.tsv`,

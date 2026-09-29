@@ -314,6 +314,8 @@ def validate_assay_spec(assay: AssaySpec) -> None:
             if not sample.get("id"):
                 raise AssaySpecError(f"samples[{i}].id is required")
             _require_safe_identifier(sample.get("id"), f"samples[{i}].id")
+            if "condition" in sample:
+                _require_safe_identifier(sample.get("condition"), f"samples[{i}].condition")
             _require_existing_path(assay, sample.get("fastq"), f"samples[{i}].fastq")
         _require_extract(data, "extract")
     elif mode == "demux":
@@ -1361,6 +1363,8 @@ assay_type = {_toml_string(assay_type)}
 targets = {_toml_string(rel_targets)}
 inference_report = "inference_report.json"
 
+# Give replicate samples the same condition, for example condition = "day14",
+# so DotMatch checks their concordance. Filenames are not replicate declarations.
 {"".join(sample_blocks)}
 [run]
 out_dir = "assay_out"
@@ -2981,9 +2985,19 @@ def _crispr_qc_reliability_findings(plan: AssayPlan, stage: str) -> list[dict[st
     severity = _threshold_severity(plan.spec)
     source = str(plan.artifacts.get("crispr_qc", ""))
     thresholds = _reliability_thresholds(plan.spec)
+    # Only declared replicates (samples sharing a condition) are expected to
+    # agree; plasmid/T0 versus selected samples diverge by design.
+    conditions = {
+        str(sample.get("id", "")): str(sample["condition"])
+        for sample in plan.spec.data.get("samples", []) or []
+        if isinstance(sample, dict) and sample.get("condition")
+    }
     correlation_rows = crispr_qc.get("sample_correlations", crispr_qc.get("replicates", [])) or []
     for pair in correlation_rows:
         if not isinstance(pair, dict):
+            continue
+        condition_a = conditions.get(str(pair.get("sample_a", "")))
+        if condition_a is None or condition_a != conditions.get(str(pair.get("sample_b", ""))):
             continue
         pearson = pair.get("pearson_log2_count_plus_1")
         if not isinstance(pearson, (int, float)):
@@ -3003,7 +3017,7 @@ def _crispr_qc_reliability_findings(plan: AssayPlan, stage: str) -> list[dict[st
                 "pairwise_sample_pearson",
                 f"{pearson:.8f}",
                 f"{threshold:.8f}",
-                f"Pairwise sample log2(count+1) Pearson correlation is {pearson:.3f}.",
+                f"Replicates in condition {condition_a} have log2(count+1) Pearson correlation {pearson:.3f}.",
                 "Review replicate concordance and library representation before hit calling.",
                 source,
             )
@@ -3035,7 +3049,13 @@ def _crispr_qc_reliability_findings(plan: AssayPlan, stage: str) -> list[dict[st
                     source,
                 )
             )
-    if crispr_qc.get("status") == "review" and not findings:
+    qc_warnings = crispr_qc.get("warnings", []) or []
+    # Pairwise correlation warnings are gated above by declared condition only.
+    unexplained_review = not qc_warnings or any(
+        not isinstance(warning, dict) or warning.get("code") != "low_pairwise_sample_correlation"
+        for warning in qc_warnings
+    )
+    if crispr_qc.get("status") == "review" and not findings and unexplained_review:
         findings.append(
             _finding(
                 "crispr_qc_review",
@@ -4777,12 +4797,14 @@ def _path_from_spec(spec_path: Path, value: str, *, allow_absolute: bool = False
             raise AssaySpecError(f"{name} must be relative to the AssaySpec")
         return path
     base = spec_path.parent.resolve()
-    resolved = (base / path).resolve(strict=False)
+    # Check containment lexically so `--link-reads` symlinks inside the
+    # project are accepted while `..` escapes are still refused.
+    joined = Path(os.path.normpath(base / path))
     try:
-        resolved.relative_to(base)
+        joined.relative_to(base)
     except ValueError as exc:
         raise AssaySpecError(f"{name} must stay inside the AssaySpec directory: {value}") from exc
-    return resolved
+    return joined.resolve(strict=False)
 
 
 def _require_safe_identifier(value: Any, name: str) -> None:
