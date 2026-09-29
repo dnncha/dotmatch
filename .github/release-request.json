@@ -1,8 +1,8 @@
 {
-  "version": "0.6.3",
-  "tag": "v0.6.3",
+  "version": "0.6.4",
+  "tag": "v0.6.4",
   "authorized": true,
-  "request": "Ship the reviewed DotMatch 0.6.3 patch release, superseding the unpublished v0.6.2 candidate after correcting its container smoke assertion.",
+  "request": "Ship the reviewed DotMatch 0.6.4 patch release so linked-read CRISPR quickstarts pass preflight and pairwise-correlation failures apply only to declared replicates.",
   "publication_channels": [
     "GitHub Releases",
     "PyPI",

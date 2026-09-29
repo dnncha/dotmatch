@@ -4,6 +4,10 @@ All notable user-facing changes are tracked here. Public statements in release n
 
 ## Unreleased
 
+No user-facing changes yet.
+
+## 0.6.4 - 2026-09-29
+
 ### Fixed
 
 - `dotmatch crispr quickstart --link-reads` projects now run. `assay check` and
