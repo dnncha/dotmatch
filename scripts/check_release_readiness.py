@@ -88,9 +88,41 @@ def _doi_values(path: Path) -> list[str]:
     return []
 
 
+def _zenodo_record_confirms_doi(doi: str) -> bool:
+    match = re.fullmatch(r"10\.5281/zenodo\.(\d+)", doi, flags=re.I)
+    if not match:
+        return False
+    url = f"https://zenodo.org/api/records/{match.group(1)}"
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (compatible; DotMatch release-readiness verifier; "
+            "+https://github.com/dnncha/dotmatch)"
+        ),
+        "Accept": "application/json",
+    }
+    for attempt in range(2):
+        request = urllib.request.Request(url, headers=headers, method="GET")
+        try:
+            with urllib.request.urlopen(request, timeout=10) as response:
+                if not 200 <= int(response.status) < 300:
+                    continue
+                record = json.load(response)
+                return str(record.get("doi") or "").lower() == doi.lower()
+        except Exception:
+            if attempt == 0:
+                time.sleep(1)
+    return False
+
+
 def _doi_resolves(doi: str) -> bool:
     url = f"https://doi.org/{doi}"
-    headers = {"User-Agent": "DotMatch release-readiness verifier"}
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (compatible; DotMatch release-readiness verifier; "
+            "+https://github.com/dnncha/dotmatch)"
+        ),
+        "Accept": "text/html,application/xhtml+xml",
+    }
     for method in ("HEAD", "GET"):
         for attempt in range(2):
             request = urllib.request.Request(url, headers=headers, method=method)
@@ -101,7 +133,7 @@ def _doi_resolves(doi: str) -> bool:
             except Exception:
                 if attempt == 0:
                     time.sleep(1)
-    return False
+    return _zenodo_record_confirms_doi(doi)
 
 
 def _workflow_job_block(workflow: str, job_name: str) -> str:
