@@ -4,7 +4,11 @@ All notable user-facing changes are tracked here. Public statements in release n
 
 ## Unreleased
 
-No user-facing changes yet.
+### Fixed
+
+- Record and verify the citation DOI embedded in immutable PyPI and GHCR
+  artifacts separately from the exact DOI added to post-release source
+  metadata, avoiding claims that already-published packages were rewritten.
 
 ## 0.6.4 - 2026-09-29
 
