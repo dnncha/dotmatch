@@ -135,6 +135,35 @@ def test_distribution_channels_reports_failed_pypi_install(tmp_path, monkeypatch
     assert any("PyPI one-command install failed for 0.1.0" in failure.message for failure in result.failures)
 
 
+def test_recorded_installed_citation_doi_is_channel_specific(tmp_path):
+    checker = _load_checker()
+    _write_repo(tmp_path)
+    _write_distribution_record(
+        tmp_path,
+        [
+            {"id": "pypi", "installed_citation_doi": "10.5281/zenodo.20541628"},
+            {"id": "ghcr", "installed_citation_doi": "10.5281/zenodo.23043070"},
+        ],
+    )
+
+    assert checker.recorded_installed_citation_doi(tmp_path, "0.1.0", "pypi") == "10.5281/zenodo.20541628"
+    assert checker.recorded_installed_citation_doi(tmp_path, "0.1.0", "ghcr") == "10.5281/zenodo.23043070"
+    assert checker.recorded_installed_citation_doi(tmp_path, "0.1.0", "bioconda") == ""
+
+
+def test_recorded_installed_citation_doi_rejects_non_zenodo_value(tmp_path):
+    checker = _load_checker()
+    _write_repo(tmp_path)
+    _write_distribution_record(tmp_path, [{"id": "pypi", "installed_citation_doi": "latest"}])
+
+    try:
+        checker.recorded_installed_citation_doi(tmp_path, "0.1.0", "pypi")
+    except ValueError as exc:
+        assert "must be a Zenodo DOI" in str(exc)
+    else:
+        raise AssertionError("invalid installed citation DOI was accepted")
+
+
 def test_distribution_channels_reports_missing_zenodo_doi(tmp_path, monkeypatch):
     checker = _load_checker()
     _write_repo(tmp_path, doi="")
