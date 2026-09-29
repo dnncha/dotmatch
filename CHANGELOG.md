@@ -9,6 +9,8 @@ All notable user-facing changes are tracked here. Public statements in release n
 - Record and verify the citation DOI embedded in immutable PyPI and GHCR
   artifacts separately from the exact DOI added to post-release source
   metadata, avoiding claims that already-published packages were rewritten.
+- Update the hosted demo's fallback install from DotMatch 0.6.3 to the current
+  0.6.4 release.
 
 ## 0.6.4 - 2026-09-29
 
