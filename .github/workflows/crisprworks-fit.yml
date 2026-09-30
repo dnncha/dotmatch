@@ -90,7 +90,7 @@ jobs:
             echo 'run=true' >> "$GITHUB_OUTPUT"
           else
             git diff --name-only "$BEFORE" HEAD > /tmp/fit-changed-paths
-            if rg -q '(^packages/crisprworks-fit/(src/|benchmarks/.*\.py|pyproject\.toml|container-constraints\.txt)|^\.github/workflows/crisprworks-fit\.yml$)' /tmp/fit-changed-paths; then
+            if grep -Eq '(^packages/crisprworks-fit/(src/|benchmarks/.*\.py|pyproject\.toml|container-constraints\.txt)|^\.github/workflows/crisprworks-fit\.yml$)' /tmp/fit-changed-paths; then
               echo 'run=true' >> "$GITHUB_OUTPUT"
             else
               echo 'run=false' >> "$GITHUB_OUTPUT"

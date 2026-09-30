@@ -21,7 +21,7 @@ class BatchTests(unittest.TestCase):
             screen = {"name": "screen-a", "count_table": "counts with spaces.tsv", "design_matrix": "design.tsv"}
             manifest.write_text(json.dumps([screen]))
             tasks = batch.commands(manifest, root / "results", 2, 42, 10)
-            self.assertIn(str(root / "counts with spaces.tsv"), tasks[0][1])
+            self.assertIn(str((root / "counts with spaces.tsv").resolve()), tasks[0][1])
             manifest.write_text(json.dumps([screen, screen]))
             with self.assertRaisesRegex(ValueError, "Duplicate"):
                 batch.commands(manifest, root / "results", 2, 42, 10)
