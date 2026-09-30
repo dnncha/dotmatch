@@ -12,12 +12,15 @@ inference and review as separate, interoperable steps.
 | Name | Task | Current status |
 | --- | --- | --- |
 | **CRISPRWorks Count** | Turn FASTQ reads and a known guide library into counts and assignment QC | Available through DotMatch |
-| **CRISPRWorks Fit** | Estimate gene-level effects from guide counts and an experimental design | Planned; investigate accelerating MAGeCK-compatible MLE |
+| **CRISPRWorks Fit** | Estimate gene-level effects from guide counts and an experimental design | Experimental MAGeCK2 MLE accelerator [under review](https://github.com/dnncha/dotmatch/pull/151) |
 | **CRISPRWorks Review** | Inspect QC, comparisons and screen results | Planned as a broader tool; DotMatch already provides count and assignment-QC reports |
 
-The Count documentation describes released DotMatch functionality. Fit and the
-broader Review tool have no installable releases, measured speedups or validated
-inference results yet. The desktop Workbench is developed separately in
+The Count documentation describes released DotMatch functionality. Fit now has
+an experimental source package with numerical regression checks and bounded
+benchmarks; see [the implementation PR](https://github.com/dnncha/dotmatch/pull/151)
+and its [measurement record](https://github.com/dnncha/dotmatch/blob/codex/crisprworks-fit-mle/packages/crisprworks-fit/benchmarks/RESULTS.md).
+It has no published package release or independent genome-wide validation yet.
+The broader Review tool is planned. The desktop Workbench is developed separately in
 `dotmatch-community`; its presence does not imply a released Review product.
 
 ## Use Count today
@@ -64,7 +67,7 @@ replace the versioned software citation.
 
 ## Fit development criteria
 
-The first Fit investigation targets the MAGeCK MLE inference step. Before a
+The first Fit implementation targets the MAGeCK2 MLE inference step. Before a
 release or performance claim:
 
 1. Profile a pinned upstream version on reproducible workloads.
