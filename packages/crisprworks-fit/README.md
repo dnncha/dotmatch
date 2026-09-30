@@ -108,6 +108,14 @@ checks dense-versus-compact covariance algebra, restarts, strict permutation
 tails including ties and NaNs, FDR, source compatibility, failure restoration,
 invalid designs, the public upstream count-table fixture and spawned workers.
 
+The [genome-wide HAP1 cohort measurement](benchmarks/HAP1.md) covered 17,445
+complete four-guide gene labels: median wall time was **199.74 s reference vs
+75.63 s accelerated (2.64×)** across three runs per backend. Printed gene
+summaries were byte-identical, permutation p-values/FDR matched exactly, and
+full-precision beta differences were below `1.25e-14`. This selects complete
+four-guide labels before normalization; it is not a timing for the unfiltered
+table or evidence of biological hit accuracy.
+
 Initial measurements are documented in [benchmarks/RESULTS.md](benchmarks/RESULTS.md).
 The initial records cover two bounded workloads at commit `e900ecdb`; they do
 not establish a universal speedup or industry readiness. Full-library public

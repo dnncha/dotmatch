@@ -1,5 +1,9 @@
 # Initial measurements, 2026-09-30
 
+For the newer measured genome-wide cohort, see [HAP1.md](HAP1.md): 17,445
+complete four-guide gene labels, three paired repetitions, 2.64× end-to-end
+speedup, identical printed gene summaries and full-precision parity.
+
 These measurements compare CRISPRWorks Fit's accelerated and reference backends
 at commit `e900ecdb903fe2eb25087ca7544a93412c62f49e`, using MAGeCK2 0.3.0.
 Input counts, design, settings and permutation seed are held
