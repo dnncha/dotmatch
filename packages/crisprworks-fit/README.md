@@ -59,6 +59,10 @@ is all ones; the first row must be a baseline sample with zeros in every
 condition column. Sample labels select the corresponding count-table columns.
 DotMatch's MAGeCK-compatible counts can be used as input.
 
+For several screens, the [batch runner](examples/README.md) accepts a JSON
+screen list, checks inputs and output collisions before running, and retains a
+separate provenance manifest for each screen.
+
 Outputs:
 
 | File | Contents |

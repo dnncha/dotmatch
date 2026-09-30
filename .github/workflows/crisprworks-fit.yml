@@ -51,6 +51,10 @@ jobs:
         run: crisprworks-fit demo --out-dir fit-demo --threads 2
       - name: Build distribution
         run: python -m pip wheel ./packages/crisprworks-fit --no-deps --wheel-dir dist
+      - name: Check multi-screen workflow
+        run: |
+          python -c 'import json; from pathlib import Path; Path("fit-demo/screens.json").write_text(json.dumps([{"name": "screen-a", "count_table": "counts.tsv", "design_matrix": "design.tsv"}, {"name": "screen-b", "count_table": "counts.tsv", "design_matrix": "design.tsv"}]))'
+          python packages/crisprworks-fit/examples/batch.py --screens fit-demo/screens.json --out-dir batch-demo --threads 2 --permutation-round 2
       - name: Reproduce a small paired benchmark
         if: matrix.os == 'ubuntu-latest' && matrix.python == '3.13'
         run: python packages/crisprworks-fit/benchmarks/run.py --out-dir fit-benchmark --genes 200 --repeats 2
@@ -62,6 +66,7 @@ jobs:
             dist/*
             fit-demo/*
             fit-benchmark/*
+            batch-demo/**
           if-no-files-found: ignore
 
   full-library:
@@ -73,11 +78,32 @@ jobs:
       OMP_NUM_THREADS: '1'
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Detect changes requiring expensive benchmark
+        id: changed
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT" = 'workflow_dispatch' ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            echo 'run=true' >> "$GITHUB_OUTPUT"
+          else
+            git diff --name-only "$BEFORE" HEAD > /tmp/fit-changed-paths
+            if rg -q '(^packages/crisprworks-fit/(src/|benchmarks/.*\.py|pyproject\.toml|container-constraints\.txt)|^\.github/workflows/crisprworks-fit\.yml$)' /tmp/fit-changed-paths; then
+              echo 'run=true' >> "$GITHUB_OUTPUT"
+            else
+              echo 'run=false' >> "$GITHUB_OUTPUT"
+            fi
+          fi
       - uses: actions/setup-python@v7
+        if: steps.changed.outputs.run == 'true'
         with:
           python-version: '3.12'
       - run: python -m pip install -c packages/crisprworks-fit/container-constraints.txt ./packages/crisprworks-fit
+        if: steps.changed.outputs.run == 'true'
       - name: Paired public full-library benchmark with numerical parity
+        if: steps.changed.outputs.run == 'true'
         run: python packages/crisprworks-fit/benchmarks/public_hap1.py --out-dir fit-hap1 --repeats 3 --cohort "${{ inputs.cohort || 'four-guide' }}"
       - uses: actions/upload-artifact@v7
         if: always()
