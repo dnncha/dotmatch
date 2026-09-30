@@ -1,6 +1,10 @@
-# DotMatch
+# CRISPRWorks Count
 
 CRISPR guide counts and assignment QC from FASTQ reads.
+
+**CRISPRWorks** is a family of open-source tools for pooled CRISPR screen analysis.
+**CRISPRWorks Count** is its guide-counting component, powered by **DotMatch**.
+Install it as `dotmatch` and use the existing `dotmatch` commands.
 
 DotMatch turns FASTQ reads and a known guide library into count tables and
 assignment QC. Use it for **CRISPR guide counting**, fixed-position **barcode
@@ -16,6 +20,19 @@ on Linux and macOS and writes MAGeCK-compatible counts.
 [Check a library in your browser](https://dnncha.github.io/dotmatch/tools/library-safety/) ·
 [Documentation](https://dotmatch.readthedocs.io/en/latest/) ·
 [Methods and results](https://dotmatch.readthedocs.io/en/latest/benchmarks/crispr_comparison/README.html)
+
+## The CRISPRWorks family
+
+| Component | Purpose | Availability |
+| --- | --- | --- |
+| **Count** | Count guides and inspect read assignments | Available through the DotMatch CLI and Python package |
+| **Fit** | Fit gene-level screen effects | [Experimental alpha available from source](https://github.com/dnncha/dotmatch/tree/main/packages/crisprworks-fit) |
+| **Review** | Review QC, comparisons and screen results | Existing DotMatch reports cover counts and assignment QC; a broader Review tool is planned |
+
+Start with Count using the commands below. Read the
+[family overview and naming plan](docs/crisprworks.md) for scope and development
+criteria. Fit is available as experimental source in the implementation PR; it
+has no published package release. The broader Review tool is planned.
 
 ## What the counts mean
 
