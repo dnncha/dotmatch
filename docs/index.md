@@ -1,4 +1,12 @@
-# DotMatch
+# CRISPRWorks Count
+
+CRISPR guide counts and assignment QC from FASTQ reads.
+
+**CRISPRWorks Count** is the guide-counting component of **CRISPRWorks**,
+a family of open-source tools for pooled CRISPR screen analysis. Count is powered
+by **DotMatch**, the package and command used throughout this documentation.
+See the [family overview](crisprworks.md) for the available component and the
+planned Fit and Review tools.
 
 DotMatch assigns a short window from each FASTQ read to a known list of DNA
 sequences. It is made for CRISPR guides, sample barcodes, feature tags, primers,
@@ -153,6 +161,7 @@ yusa-independent-evaluation-request
 :maxdepth: 2
 :caption: Reference
 
+crisprworks
 trust-and-scope
 benchmarks/README
 methods-and-citation
