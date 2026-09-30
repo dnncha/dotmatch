@@ -36,6 +36,7 @@ def parser():
     arg_mle(subcommands)
     mle = subcommands.choices["mle"]
     mle.add_argument("--backend", choices=("accelerated", "reference"), default="accelerated")
+    mle.add_argument("--kernel", choices=("auto", "native", "numpy"), default="auto")
     mle.add_argument("--seed", type=seed_value, default=0, help="Permutation RNG seed; default 0")
     mle.add_argument("--blas-threads", type=positive_int, default=1,
                      help="BLAS threads per process; default 1")
@@ -44,6 +45,7 @@ def parser():
     demo = subcommands.add_parser("demo", help="Run a reproducible synthetic screen")
     demo.add_argument("--out-dir", type=Path, required=True)
     demo.add_argument("--backend", choices=("accelerated", "reference"), default="accelerated")
+    demo.add_argument("--kernel", choices=("auto", "native", "numpy"), default="auto")
     demo.add_argument("--threads", type=positive_int, default=1)
     return result
 
@@ -101,6 +103,8 @@ def run(args):
     from .backend import accelerated, verify_upstream, REFERENCE_COMMIT
 
     verify_upstream()
+    from .kernels import resolved_engine
+    kernel = resolved_engine(args.kernel) if args.backend == "accelerated" else "reference"
     if args.threads < 1 or args.permutation_round < 1:
         raise ValueError("--threads and --permutation-round must be at least 1")
     if args.max_sgrnapergene_permutation < 2:
@@ -114,7 +118,7 @@ def run(args):
     manifest_path = Path(str(prefix) + ".crisprworks.json")
     manifest = {
         "schema_version": 1, "status": "running", "tool": "CRISPRWorks Fit",
-        "version": __version__, "backend": args.backend,
+        "version": __version__, "backend": args.backend, "kernel": kernel,
         "mageck2_version": mageck2.__version__, "reference_commit": REFERENCE_COMMIT,
         "python": platform.python_version(), "numpy": np.__version__, "scipy": scipy.__version__,
         "platform": platform.platform(), "options": vars(args).copy(),
@@ -129,7 +133,7 @@ def run(args):
     try:
         np.random.seed(args.seed)
         DesignMatCache.cache = {}
-        context = accelerated(args.blas_threads) if args.backend == "accelerated" else nullcontext()
+        context = accelerated(args.blas_threads, args.kernel) if args.backend == "accelerated" else nullcontext()
         with threadpool_limits(limits=args.blas_threads), context:
             manifest["blas"] = threadpool_info()
             result = mageckmle_main(parsedargs=args)
@@ -173,7 +177,7 @@ def main(argv=None):
         counts, design = synthetic_screen(args.out_dir)
         args = cli.parse_args([
             "mle", "-k", str(counts), "-d", str(design), "-n", str(args.out_dir / "screen"),
-            "--backend", args.backend, "--threads", str(args.threads),
+            "--backend", args.backend, "--kernel", args.kernel, "--threads", str(args.threads),
         ])
     try:
         run(args)

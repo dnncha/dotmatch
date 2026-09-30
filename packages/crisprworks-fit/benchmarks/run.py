@@ -24,6 +24,8 @@ def main():
     parser.add_argument("--design-matrix", type=Path)
     parser.add_argument("--update-efficiency", action="store_true")
     parser.add_argument("--genes-varmodeling", type=int, default=0)
+    parser.add_argument("--compare-numpy", action="store_true", help="Also benchmark the previous NumPy accelerator")
+    parser.add_argument("--kernel", choices=("auto", "native", "numpy"), default="auto")
     parser.add_argument("--timeout", type=int, default=3600,
                         help="Maximum seconds per backend run (default: 3600)")
     args = parser.parse_args()
@@ -60,16 +62,17 @@ def main():
     }
     summaries = []
     precisions = []
+    backends = ("reference", "accelerated", "numpy") if args.compare_numpy else ("reference", "accelerated")
     for repeat in range(args.repeats):
         # Alternate order to reduce a systematic warm-cache advantage.
-        order = ("reference", "accelerated") if repeat % 2 == 0 else ("accelerated", "reference")
+        order = backends[repeat % len(backends):] + backends[:repeat % len(backends)]
         for backend in order:
             prefix = args.out_dir / f"{backend}-{repeat}"
             command = [
                 sys.executable, "-m", "crisprworks_fit", "mle", "-k", str(counts),
-                "-d", str(design), "-n", str(prefix), "--backend", backend,
+                "-d", str(design), "-n", str(prefix), "--backend", "accelerated" if backend == "numpy" else backend,
                 "--threads", "1", "--blas-threads", "1", "--seed", "42", "--permutation-round", "2",
-                "--write-fit-details", "--genes-varmodeling", str(args.genes_varmodeling),
+                "--kernel", "numpy" if backend == "numpy" else args.kernel, "--write-fit-details", "--genes-varmodeling", str(args.genes_varmodeling),
             ]
             if args.update_efficiency:
                 command.append("--update-efficiency")
@@ -110,10 +113,12 @@ def main():
     medians = {
         backend: statistics.median(run["wall_seconds_including_startup"] for run in report["runs"]
                                    if run["backend"] == backend)
-        for backend in ("reference", "accelerated")
+        for backend in backends
     }
     report["median_wall_seconds"] = medians
     report["median_speedup"] = medians["reference"] / medians["accelerated"]
+    if args.compare_numpy:
+        report["speedup_over_numpy"] = medians["numpy"] / medians["accelerated"]
     output = args.out_dir / "benchmark.json"
     output.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps({key: report[key] for key in (

@@ -20,6 +20,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--repeats", type=int, default=3)
+    parser.add_argument("--compare-numpy", action="store_true")
+    parser.add_argument("--kernel", choices=("auto", "native", "numpy"), default="auto")
     parser.add_argument("--cohort", choices=("full", "four-guide"), default="full",
                         help="Full table or complete four-guide gene labels; selection is recorded")
     parser.add_argument("--local-counts", type=Path,
@@ -59,6 +61,8 @@ def main():
         "--out-dir", str(args.out_dir / "paired"), "--count-table", str(counts),
         "--design-matrix", str(design), "--update-efficiency",
         "--genes-varmodeling", "1000", "--repeats", str(args.repeats),
+        "--kernel", args.kernel,
+        *(["--compare-numpy"] if args.compare_numpy else []),
     ], check=True)
     print((args.out_dir / "paired" / "benchmark.json").read_text(), flush=True)
 

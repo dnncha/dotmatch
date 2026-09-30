@@ -7,6 +7,54 @@ Copyright (c) 2021 Wei Li, BSD-3-Clause; see LICENSE.
 import numpy as np
 from scipy.special import gammaln, xlog1py
 
+try:
+    from . import _native
+except ImportError:
+    _native = None
+
+_engine = "auto"
+
+
+def resolved_engine(requested="auto"):
+    if requested not in ("auto", "native", "numpy"):
+        raise ValueError("Kernel must be auto, native or numpy")
+    if requested == "native" and _native is None:
+        raise RuntimeError("Native Fit extension unavailable; build the package or select --kernel numpy")
+    return "native" if requested != "numpy" and _native is not None else "numpy"
+
+
+def em_whileloop(sk, beta_init_mat_0, size_vec, wfrac_list_0,
+                 alpha_dispersion, alpha_val, estimateeff, updateeff,
+                 removeoutliers, debug):
+    if debug or resolved_engine(_engine) == "numpy":
+        return em_whileloop_numpy(sk, beta_init_mat_0, size_vec, wfrac_list_0,
+                                 alpha_dispersion, alpha_val, estimateeff, updateeff,
+                                 removeoutliers, debug)
+    from mageck2.mledesignmat import DesignMatCache
+    n = sk.nb_count.shape[1]
+    other = sk.design_mat.shape[0] - 1
+    conditions = sk.design_mat.shape[1] - 1
+    design = np.require(np.asarray(DesignMatCache.get_record(n)[2]), dtype=np.float64, requirements=["C", "A"])
+    m, p = design.shape
+    def buffer(values):
+        return np.require(np.asarray(values).reshape(-1), dtype=np.float64, requirements=["C", "A"])
+    dispersion = np.require(np.broadcast_to(np.asarray(alpha_dispersion), (m,)), dtype=np.float64, requirements=["C", "A"])
+    try:
+        result = _native.loop(design, buffer(sk.sgrna_kvalue), buffer(size_vec),
+                              buffer(beta_init_mat_0), buffer(wfrac_list_0), dispersion,
+                              n, conditions, other, alpha_val, estimateeff, updateeff)
+    except ArithmeticError as error:
+        raise np.linalg.LinAlgError(str(error)) from error
+    efficiency, beta, mean, residual, weights, gram, regularized = (
+        np.frombuffer(value, dtype=np.float64) for value in result[1:]
+    )
+    mean = mean.reshape(m, 1)
+    residual = residual.reshape(m, 1)
+    covariance = uncertainty(design, weights, gram.reshape(p, p),
+                             regularized.reshape(p, p), residual / mean, n)
+    return (result[0], efficiency.copy(), np.matrix(beta.reshape(p, 1)),
+            np.matrix(covariance), np.matrix(mean), np.matrix(residual))
+
 
 def negative_binomial_loglikelihood(counts, mean, dispersion):
     """Evaluate the reference NB log PMF without scipy.stats argument parsing.
@@ -63,7 +111,7 @@ def uncertainty(design, weights, gram, regularized, residual_ratio, n_guides):
     return scale * covariance
 
 
-def em_whileloop(sk, beta_init_mat_0, size_vec, wfrac_list_0,
+def em_whileloop_numpy(sk, beta_init_mat_0, size_vec, wfrac_list_0,
                  alpha_dispersion, alpha_val, estimateeff, updateeff,
                  removeoutliers, debug):
     """Replacement for the pinned MAGeCK2 EM loop, retaining its conventions.

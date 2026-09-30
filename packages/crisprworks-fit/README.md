@@ -3,7 +3,8 @@
 **Experimental acceleration of MAGeCK2 MLE for pooled CRISPR screens.**
 
 Fit runs MAGeCK2's count-table-to-gene-results workflow with faster numerical
-kernels and worker reuse. It belongs to the CRISPRWorks family alongside
+kernels and worker reuse. Alpha 2 adds a compiled C EM loop; the earlier
+NumPy engine remains selectable for reproducible comparisons. It belongs to the CRISPRWorks family alongside
 CRISPRWorks Count, powered by DotMatch. This is a separate installable package;
 the existing DotMatch package remains independent of its dependencies.
 
@@ -23,7 +24,11 @@ crisprworks-fit demo --out-dir fit-demo/
 
 MAGeCK2 is an installation dependency and currently builds its bundled C++
 helpers, so its installation requires a C++ compiler and `make`. Python 3.10+
-is required by Fit. The package has not been published to PyPI.
+is required by Fit. Building the optional native loop requires a C compiler.
+`--kernel auto` uses the native loop when available and otherwise NumPy;
+`--kernel native` fails explicitly if the compiled engine is unavailable;
+`--kernel numpy` selects the previous engine. The provenance manifest records
+the engine actually used. The package has not been published to PyPI.
 
 The demo creates a small synthetic count table and design, then writes gene
 and guide summaries. It demonstrates software behavior, not biological accuracy.
@@ -80,6 +85,9 @@ processes; `--blas-threads` controls BLAS threads within each worker.
 
 ## What is faster
 
+- Execute the EM loop in compiled C, with working storage reused across
+  iterations. For finite inputs, process exact nonzero design entries while
+  preserving row summation order; nonfinite inputs use the dense calculation.
 - Apply IRLS weights by vector multiplication and solve the smaller ridge
   system directly. No dense diagonal weight matrix is constructed.
 - Calculate the sandwich covariance after the last iteration, and compute the
@@ -108,18 +116,25 @@ checks dense-versus-compact covariance algebra, restarts, strict permutation
 tails including ties and NaNs, FDR, source compatibility, failure restoration,
 invalid designs, the public upstream count-table fixture and spawned workers.
 
-The [genome-wide HAP1 cohort measurement](benchmarks/HAP1.md) covered 17,445
-complete four-guide gene labels: median wall time was **199.74 s reference vs
-75.63 s accelerated (2.64×)** across three runs per backend. Printed gene
-summaries were byte-identical, permutation p-values/FDR matched exactly, and
-full-precision beta differences were below `1.25e-14`. This selects complete
-four-guide labels before normalization; it is not a timing for the unfiltered
-table or evidence of biological hit accuracy.
+The [native-engine HAP1 measurement](benchmarks/NATIVE.md) covered 17,445
+complete four-guide gene labels and 69,780 guides. Three paired runs per engine
+measured **332.45 s MAGeCK2 reference, 131.06 s NumPy accelerator, and 38.68 s
+native accelerator**: **8.59× versus reference and 3.39× versus NumPy**.
+All nine printed gene summaries were byte-identical; permutation p-values and
+FDR matched exactly. Maximum full-precision beta differences were `2.49e-14`.
+These timings include startup and diagnostic output on one shared CI runner.
 
-The unfiltered 71,090-guide table also passed a separate cross-environment
-full-precision comparison with identical printed gene results; see the HAP1
-record for how the CI reference and local accelerated outputs were compared.
-No unfiltered-table timing claim is made.
+This cohort selects complete four-guide labels before normalization and
+excludes larger control bins. The unfiltered 71,090-guide, 18,056-label table
+also matched the reference in a separate cross-environment full-precision
+comparison. That comparison establishes numerical agreement, with no
+unfiltered-table timing ratio claimed. These checks preserve the reference
+results; they do not establish superior biological hit accuracy or a universal
+speedup. Chronos and JACKS have not been benchmarked in this comparison.
+
+The [earlier NumPy measurement](benchmarks/HAP1.md) remains archived with its
+original implementation commit and runner timings. Compare engines within each
+paired experiment rather than combining times from different environments.
 
 Initial measurements are documented in [benchmarks/RESULTS.md](benchmarks/RESULTS.md).
 The initial records cover two bounded workloads at commit `e900ecdb`; they do
@@ -162,8 +177,9 @@ commands and input hashes. The underlying covariance algebra is tested at
 CNV correction and `--debug-gene` are rejected until separately evaluated.
 Experimental Bayes options retain upstream's explicit rejection. The upstream
 active fitting path does not apply `--remove-outliers`; Fit preserves that
-behavior. Fit is currently an optional Python/NumPy accelerator, with native
-linear algebra provided by BLAS. It does not implement counting or change
+behavior. Fit offers a compiled C EM engine and a NumPy fallback, with BLAS
+used for covariance calculations. The native loop omits exact zero design
+entries for finite inputs and retains a dense path for nonfinite inputs. It does not implement counting or change
 DotMatch's read-assignment rules.
 
 Keep counting comparisons separate from inference comparisons. A faster fit
