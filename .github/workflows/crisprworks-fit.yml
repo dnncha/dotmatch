@@ -1,0 +1,130 @@
+name: CRISPRWorks Fit
+
+on:
+  workflow_dispatch:
+    inputs:
+      cohort:
+        type: choice
+        options: [full, four-guide]
+        default: full
+        description: Public HAP1 cohort for the paired benchmark
+  push:
+    paths:
+      - 'packages/crisprworks-fit/**'
+      - '.github/workflows/crisprworks-fit.yml'
+  pull_request:
+    paths:
+      - 'packages/crisprworks-fit/**'
+      - '.github/workflows/crisprworks-fit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  parity:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python: '3.10'
+          - os: ubuntu-latest
+            python: '3.11'
+          - os: ubuntu-latest
+            python: '3.13'
+          - os: macos-latest
+            python: '3.12'
+    runs-on: ${{ matrix.os }}
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install experimental package
+        run: python -m pip install ./packages/crisprworks-fit
+      - name: Test scientific and workflow parity
+        run: python -m unittest discover -s packages/crisprworks-fit/tests -v
+      - name: Check installed command
+        run: crisprworks-fit demo --out-dir fit-demo --threads 2
+      - name: Build distribution
+        run: python -m pip wheel ./packages/crisprworks-fit --no-deps --wheel-dir dist
+      - name: Check multi-screen workflow
+        run: |
+          python -c 'import json; from pathlib import Path; Path("fit-demo/screens.json").write_text(json.dumps([{"name": "screen-a", "count_table": "counts.tsv", "design_matrix": "design.tsv"}, {"name": "screen-b", "count_table": "counts.tsv", "design_matrix": "design.tsv"}]))'
+          python packages/crisprworks-fit/examples/batch.py --screens fit-demo/screens.json --out-dir batch-demo --threads 2 --permutation-round 2
+      - name: Reproduce a small paired benchmark
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.13'
+        run: python packages/crisprworks-fit/benchmarks/run.py --out-dir fit-benchmark --genes 200 --repeats 2
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: crisprworks-fit-${{ matrix.os }}-${{ matrix.python }}
+          path: |
+            dist/*
+            fit-demo/*
+            fit-benchmark/*
+            batch-demo/**
+          if-no-files-found: ignore
+
+  full-library:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Detect changes requiring expensive benchmark
+        id: changed
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT" = 'workflow_dispatch' ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            echo 'run=true' >> "$GITHUB_OUTPUT"
+          else
+            git diff --name-only "$BEFORE" HEAD > /tmp/fit-changed-paths
+            if grep -Eq '^packages/crisprworks-fit/(src/|benchmarks/.*\.py|pyproject\.toml|container-constraints\.txt)' /tmp/fit-changed-paths; then
+              echo 'run=true' >> "$GITHUB_OUTPUT"
+            else
+              echo 'run=false' >> "$GITHUB_OUTPUT"
+            fi
+          fi
+      - uses: actions/setup-python@v7
+        if: steps.changed.outputs.run == 'true'
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -c packages/crisprworks-fit/container-constraints.txt ./packages/crisprworks-fit
+        if: steps.changed.outputs.run == 'true'
+      - name: Paired public full-library benchmark with numerical parity
+        if: steps.changed.outputs.run == 'true'
+        run: python packages/crisprworks-fit/benchmarks/public_hap1.py --out-dir fit-hap1 --repeats 3 --cohort "${{ inputs.cohort || 'four-guide' }}"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: crisprworks-fit-public-hap1
+          path: fit-hap1/**
+          if-no-files-found: ignore
+
+  container:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build reproducible dependency set
+        run: docker build -t crisprworks-fit:test packages/crisprworks-fit
+      - name: Run installed two-worker demo and preserve outputs
+        run: docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/data" crisprworks-fit:test demo --out-dir container-demo --threads 2
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: crisprworks-fit-container-demo
+          path: container-demo/**
+          if-no-files-found: ignore

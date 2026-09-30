@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "crisprworks-fit"
+version = "0.1.0a1"
+description = "Experimental acceleration of MAGeCK2 MLE for pooled CRISPR screens"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["mageck2==0.3.0", "numpy>=1.24", "scipy>=1.10", "threadpoolctl>=3.1"]
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
+authors = [{name = "Donncha O'Toole"}]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+  "Programming Language :: Python :: 3",
+]
+
+[project.scripts]
+crisprworks-fit = "crisprworks_fit.cli:main"
+
+[project.urls]
+Repository = "https://github.com/dnncha/dotmatch/tree/main/packages/crisprworks-fit"
+Issues = "https://github.com/dnncha/dotmatch/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]

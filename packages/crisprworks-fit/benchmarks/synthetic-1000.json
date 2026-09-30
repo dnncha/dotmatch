@@ -1,0 +1,135 @@
+{
+  "dataset": "synthetic NB counts; not biological validation",
+  "genes": 1000,
+  "guides_per_gene": 6,
+  "samples": 6,
+  "permutation_rounds": 2,
+  "seed": 42,
+  "worker_processes": 1,
+  "blas_threads_per_process": 1,
+  "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+  "python": "3.12.14",
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+  "counts_sha256": "4e9b985be9492439892c34e73449b1931c94d406a3ce313d8a8efa2ff3e1c810",
+  "design_sha256": "c7f90ac08abe3271c22250c2e1f7e75ca73b9c2374608af38bf8bd57cda04906",
+  "identical_gene_summary_bytes": true,
+  "full_precision_max_absolute_errors": {
+    "beta_estimate": 1.1546319456101628e-14,
+    "beta_zscore": 8.415490526658687e-14,
+    "w_estimate": 0,
+    "beta_pval": 4.907185768843192e-14,
+    "beta_pval_fdr": 5.417888360170764e-14,
+    "beta_permute_pval": 0,
+    "beta_permute_pval_fdr": 0,
+    "beta_permute_pval_neg": 0,
+    "beta_permute_pval_pos": 0,
+    "beta_permute_pval_neg_fdr": 0,
+    "beta_permute_pval_pos_fdr": 0
+  },
+  "full_precision_tolerances": {
+    "rtol": 1e-07,
+    "atol": 1e-08
+  },
+  "median_wall_seconds": {
+    "reference": 7.972205810001469,
+    "accelerated": 3.5321005650002917
+  },
+  "median_speedup": 2.2570721482276968,
+  "cpu": "AMD EPYC 9V74 80-Core Processor (shared virtual runner)",
+  "software": {
+    "version": "0.1.0a1",
+    "mageck2_version": "0.3.0",
+    "numpy": "2.3.5",
+    "scipy": "1.17.0"
+  },
+  "blas": [
+    {
+      "internal_api": "openblas",
+      "version": "0.3.30",
+      "num_threads": 1,
+      "architecture": "SkylakeX"
+    },
+    {
+      "internal_api": "openblas",
+      "version": "0.3.30",
+      "num_threads": 1,
+      "architecture": "SkylakeX"
+    }
+  ],
+  "runs": [
+    {
+      "backend": "reference",
+      "repeat": 0,
+      "wall_seconds_including_startup": 7.954725138999493,
+      "workflow_seconds": 7.287221501999738,
+      "gene_summary_sha256": "c906fd8c0728292ae7b463d7442e9ff90bfcb97cd2843f557555eda86e224d08"
+    },
+    {
+      "backend": "accelerated",
+      "repeat": 0,
+      "wall_seconds_including_startup": 3.5393298849994608,
+      "workflow_seconds": 2.8770440260013856,
+      "gene_summary_sha256": "c906fd8c0728292ae7b463d7442e9ff90bfcb97cd2843f557555eda86e224d08"
+    },
+    {
+      "backend": "accelerated",
+      "repeat": 1,
+      "wall_seconds_including_startup": 3.5320304359993315,
+      "workflow_seconds": 2.8472345230002247,
+      "gene_summary_sha256": "c906fd8c0728292ae7b463d7442e9ff90bfcb97cd2843f557555eda86e224d08"
+    },
+    {
+      "backend": "reference",
+      "repeat": 1,
+      "wall_seconds_including_startup": 8.050478801000281,
+      "workflow_seconds": 7.289203172000271,
+      "gene_summary_sha256": "c906fd8c0728292ae7b463d7442e9ff90bfcb97cd2843f557555eda86e224d08"
+    },
+    {
+      "backend": "reference",
+      "repeat": 2,
+      "wall_seconds_including_startup": 7.972205810001469,
+      "workflow_seconds": 7.271080995997181,
+      "gene_summary_sha256": "c906fd8c0728292ae7b463d7442e9ff90bfcb97cd2843f557555eda86e224d08"
+    },
+    {
+      "backend": "accelerated",
+      "repeat": 2,
+      "wall_seconds_including_startup": 3.5321005650002917,
+      "workflow_seconds": 2.854496112999186,
+      "gene_summary_sha256": "c906fd8c0728292ae7b463d7442e9ff90bfcb97cd2843f557555eda86e224d08"
+    }
+  ],
+  "options": {
+    "subcmd": "mle",
+    "day0_label": null,
+    "include_samples": null,
+    "beta_labels": null,
+    "control_sgrna": null,
+    "control_gene": null,
+    "cnv_norm": null,
+    "cell_line": null,
+    "cnv_est": null,
+    "debug": false,
+    "debug_gene": null,
+    "norm_method": "median",
+    "genes_varmodeling": 0,
+    "permutation_round": 2,
+    "no_permutation_by_group": false,
+    "max_sgrnapergene_permutation": 40,
+    "remove_outliers": false,
+    "threads": 1,
+    "adjust_method": "fdr",
+    "sgrna_efficiency": null,
+    "sgrna_eff_name_column": 0,
+    "sgrna_eff_score_column": 1,
+    "update_efficiency": false,
+    "bayes": false,
+    "PPI_prior": false,
+    "PPI_weighting": null,
+    "negative_control": null,
+    "seed": 42,
+    "blas_threads": 1,
+    "write_fit_details": true
+  }
+}
