@@ -3,7 +3,8 @@
 **Experimental acceleration of MAGeCK2 MLE for pooled CRISPR screens.**
 
 Fit runs MAGeCK2's count-table-to-gene-results workflow with faster numerical
-kernels and worker reuse. It belongs to the CRISPRWorks family alongside
+kernels and worker reuse. Alpha 2 adds a compiled C EM loop; the earlier
+NumPy engine remains selectable for reproducible comparisons. It belongs to the CRISPRWorks family alongside
 CRISPRWorks Count, powered by DotMatch. This is a separate installable package;
 the existing DotMatch package remains independent of its dependencies.
 
@@ -23,7 +24,11 @@ crisprworks-fit demo --out-dir fit-demo/
 
 MAGeCK2 is an installation dependency and currently builds its bundled C++
 helpers, so its installation requires a C++ compiler and `make`. Python 3.10+
-is required by Fit. The package has not been published to PyPI.
+is required by Fit. Building the optional native loop requires a C compiler.
+`--kernel auto` uses the native loop when available and otherwise NumPy;
+`--kernel native` fails explicitly if the compiled engine is unavailable;
+`--kernel numpy` selects the previous engine. The provenance manifest records
+the engine actually used. The package has not been published to PyPI.
 
 The demo creates a small synthetic count table and design, then writes gene
 and guide summaries. It demonstrates software behavior, not biological accuracy.

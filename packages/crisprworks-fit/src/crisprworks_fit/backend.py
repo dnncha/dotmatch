@@ -39,8 +39,9 @@ def verify_upstream():
                 raise RuntimeError(f"Untested MAGeCK2 implementation of {name}; use the pinned release")
 
 
-def _worker_init(blas_threads):
+def _worker_init(blas_threads, kernel):
     verify_upstream()
+    kernels._engine = kernels.resolved_engine(kernel)
     from mageck2 import mleem
     from mageck2.mledesignmat import DesignMatCache
     DesignMatCache.cache = {}
@@ -63,10 +64,11 @@ def _fit_one(task):
 class Runner:
     """Reuse a worker pool across fitting stages and permutation rounds."""
 
-    def __init__(self, blas_threads=1):
+    def __init__(self, blas_threads=1, kernel="auto"):
         self.executor = None
         self.workers = None
         self.blas_threads = blas_threads
+        self.kernel = kernels.resolved_engine(kernel)
 
     def close(self):
         if self.executor is not None:
@@ -100,7 +102,7 @@ class Runner:
             self.executor = ProcessPoolExecutor(
                 max_workers=nproc, mp_context=multiprocessing.get_context("spawn"),
                 initializer=_worker_init,
-                initargs=(self.blas_threads,),
+                initargs=(self.blas_threads, self.kernel),
             )
         # map yields in input order, preserving gene order for permutations.
         chunk = max(1, len(tasks) // (nproc * 4))
@@ -109,7 +111,7 @@ class Runner:
 
 
 @contextmanager
-def accelerated(blas_threads=1):
+def accelerated(blas_threads=1, kernel="auto"):
     """Enable kernels for one workflow, restoring upstream state on exit.
 
     Patches are process-global: concurrent calls to unwrapped MAGeCK2 in the
@@ -124,7 +126,9 @@ def accelerated(blas_threads=1):
         from mageck2.mledesignmat import DesignMatCache
         original = (mleem.em_whileloop, mlemultiprocessing.runem_multiproc,
                     mlemultiprocessing.assign_p_value_from_permuted_beta, DesignMatCache.cache)
-        runner = Runner(blas_threads)
+        runner = Runner(blas_threads, kernel)
+        previous_engine = kernels._engine
+        kernels._engine = runner.kernel
         _active = True
         DesignMatCache.cache = {}
         mleem.em_whileloop = kernels.em_whileloop
@@ -138,4 +142,5 @@ def accelerated(blas_threads=1):
             finally:
                 (mleem.em_whileloop, mlemultiprocessing.runem_multiproc,
                  mlemultiprocessing.assign_p_value_from_permuted_beta, DesignMatCache.cache) = original
+                kernels._engine = previous_engine
                 _active = False
