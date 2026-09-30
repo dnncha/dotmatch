@@ -5,6 +5,34 @@ Copyright (c) 2021 Wei Li, BSD-3-Clause; see LICENSE.
 """
 
 import numpy as np
+from scipy.special import gammaln, xlog1py
+
+
+def negative_binomial_loglikelihood(counts, mean, dispersion):
+    """Evaluate the reference NB log PMF without scipy.stats argument parsing.
+
+    Retain upstream's variance arithmetic, rounded counts, distribution support
+    and NaN-to-zero convention. In particular, do not simplify r to 1/alpha:
+    that changes cancellation behavior for small means and dispersions.
+    """
+    counts = np.asarray(counts)
+    mean = np.asarray(mean)
+    if counts.shape[0] != mean.shape[0]:
+        raise ValueError("Count table dimension is not the same as mu vector dimension.")
+    with np.errstate(all="ignore"):
+        k = np.round(counts)
+        mean_squared = mean * mean
+        variance = mean + np.asarray(dispersion) * mean_squared
+        p = mean / variance
+        r = mean_squared / (variance - mean)
+        k, r, p = np.broadcast_arrays(k, r, p)
+        valid_parameters = (r > 0) & (p > 0) & (p <= 1)
+        supported = (k >= 0) & (k <= np.inf) & (k == np.floor(k))
+        values = (gammaln(r + k) - gammaln(k + 1) - gammaln(r)
+                  + r * np.log(p) + xlog1py(k, -p))
+        result = np.where(supported, values, -np.inf)
+        result = np.where(valid_parameters & ~np.isnan(k), result, np.nan)
+        return np.where(np.isnan(result), 0, result)
 
 
 def weighted_fit(design, weights, response, ridge):
@@ -44,7 +72,6 @@ def em_whileloop(sk, beta_init_mat_0, size_vec, wfrac_list_0,
     np.matrix types at the adapter boundary for its existing downstream code.
     """
     from mageck2.mledesignmat import DesignMatCache
-    from mageck2.mleem import getloglikelihood2
 
     beta = np.asarray(beta_init_mat_0).copy()
     efficiency = np.asarray(wfrac_list_0).copy()
@@ -75,15 +102,15 @@ def em_whileloop(sk, beta_init_mat_0, size_vec, wfrac_list_0,
 
         # In upstream this likelihood is otherwise a discarded diagnostic.
         if (estimateeff and updateeff) or debug:
-            likelihood = getloglikelihood2(
-                np.matrix(counts), np.matrix(mean), likelihood_dispersion,
+            likelihood = negative_binomial_loglikelihood(
+                counts, mean, likelihood_dispersion,
             )
         if estimateeff and updateeff:
             baseline = beta.copy()
             baseline[n_guides:n_guides + n_conditions] = 0
             baseline_mean = sizes * np.exp(design @ baseline)
-            baseline_likelihood = getloglikelihood2(
-                np.matrix(counts), np.matrix(baseline_mean), likelihood_dispersion,
+            baseline_likelihood = negative_binomial_loglikelihood(
+                counts, baseline_mean, likelihood_dispersion,
             )
             difference = np.asarray(baseline_likelihood - likelihood)
             difference = difference[n_guides:n_guides * (n_other + 1)]

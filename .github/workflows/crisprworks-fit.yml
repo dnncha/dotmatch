@@ -54,3 +54,42 @@ jobs:
             fit-demo/*
             fit-benchmark/*
           if-no-files-found: ignore
+
+  full-library:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -c packages/crisprworks-fit/container-constraints.txt ./packages/crisprworks-fit
+      - name: Paired public full-library benchmark with numerical parity
+        run: python packages/crisprworks-fit/benchmarks/public_hap1.py --out-dir fit-hap1 --repeats 3
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: crisprworks-fit-public-hap1
+          path: fit-hap1/**
+          if-no-files-found: ignore
+
+  container:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build reproducible dependency set
+        run: docker build -t crisprworks-fit:test packages/crisprworks-fit
+      - name: Run installed two-worker demo and preserve outputs
+        run: docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/data" crisprworks-fit:test demo --out-dir container-demo --threads 2
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: crisprworks-fit-container-demo
+          path: container-demo/**
+          if-no-files-found: ignore

@@ -1,6 +1,7 @@
 """Reproducible paired CLI benchmark; reports measurements, not guarantees."""
 
 import argparse
+import csv
 import hashlib
 import json
 from pathlib import Path
@@ -23,8 +24,10 @@ def main():
     parser.add_argument("--design-matrix", type=Path)
     parser.add_argument("--update-efficiency", action="store_true")
     parser.add_argument("--genes-varmodeling", type=int, default=0)
+    parser.add_argument("--timeout", type=int, default=3600,
+                        help="Maximum seconds per backend run (default: 3600)")
     args = parser.parse_args()
-    if min(args.genes, args.guides, args.repeats) < 1:
+    if min(args.genes, args.guides, args.repeats, args.timeout) < 1:
         parser.error("genes, guides and repeats must be positive")
     from crisprworks_fit.cli import synthetic_screen
     from crisprworks_fit.backend import REFERENCE_COMMIT
@@ -38,14 +41,17 @@ def main():
         samples = 6
     else:
         counts, design = args.count_table, args.design_matrix
-        lines = [line.split() for line in counts.read_text().splitlines()[1:] if line.strip()]
+        raw_lines = counts.read_text().splitlines()
+        delimiter = "," if counts.suffix.lower() == ".csv" else "\t"
+        lines = [line for line in csv.reader(raw_lines[1:], delimiter=delimiter) if line]
         genes = len({line[1] for line in lines})
         guides = None
         samples = len(lines[0]) - 2
         dataset = "supplied count table; provenance and validation must be recorded separately"
     report = {
         "dataset": dataset, "genes": genes, "guides_per_gene": guides,
-        "samples": samples, "permutation_rounds": 2, "seed": 42,
+        "samples": samples, "total_guides": len(lines) if args.count_table else genes * guides,
+        "permutation_rounds": 2, "seed": 42,
         "worker_processes": 1, "blas_threads_per_process": 1,
         "reference_commit": REFERENCE_COMMIT,
         "python": platform.python_version(), "platform": platform.platform(),
@@ -68,7 +74,7 @@ def main():
             if args.update_efficiency:
                 command.append("--update-efficiency")
             started = time.perf_counter()
-            completed = subprocess.run(command, capture_output=True, text=True, timeout=600)
+            completed = subprocess.run(command, capture_output=True, text=True, timeout=args.timeout)
             elapsed = time.perf_counter() - started
             Path(str(prefix) + ".stderr.txt").write_text(completed.stderr)
             if completed.returncode:

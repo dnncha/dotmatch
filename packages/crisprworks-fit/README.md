@@ -28,6 +28,22 @@ is required by Fit. The package has not been published to PyPI.
 The demo creates a small synthetic count table and design, then writes gene
 and guide summaries. It demonstrates software behavior, not biological accuracy.
 
+For an isolated installation with pinned numerical dependencies:
+
+```bash
+docker build -t crisprworks-fit:alpha packages/crisprworks-fit
+docker run --rm --user "$(id -u):$(id -g)" \
+  -v "$PWD:/data" crisprworks-fit:alpha demo --out-dir fit-demo --threads 2
+docker run --rm --user "$(id -u):$(id -g)" \
+  -v "$PWD:/data" crisprworks-fit:alpha mle \
+  -k counts.tsv -d design.tsv -n results/screen --seed 42
+```
+
+This builds locally; no published container image is implied. The container
+uses Python 3.12, MAGeCK2 0.3.0, NumPy 2.3.5 and SciPy 1.17.0. CI builds it
+and checks an installed two-worker demo. The base image is a version tag rather
+than an immutable digest, so rebuilds are not byte-for-byte reproducible.
+
 ## Analyze counts
 
 Use a MAGeCK-format count table and a labeled design matrix:
@@ -67,6 +83,8 @@ processes; `--blas-threads` controls BLAS threads within each worker.
   observation hat matrix is constructed.
 - Skip discarded diagnostic likelihood evaluations when efficiency updates and
   debug output do not require them.
+- Evaluate required negative-binomial log likelihoods directly using SciPy
+  special functions, preserving reference arithmetic and distribution support.
 - Run single-worker fitting directly; reuse a spawned worker pool across
   fitting stages and permutation rounds for multiple workers.
 - Sort permutation-null columns once and use binary searches. Strict greater-
@@ -87,8 +105,21 @@ tails including ties and NaNs, FDR, source compatibility, failure restoration,
 invalid designs, the public upstream count-table fixture and spawned workers.
 
 Initial measurements are documented in [benchmarks/RESULTS.md](benchmarks/RESULTS.md).
-They cover two bounded workloads; they do not establish a universal speedup or
-industry readiness. Independent genome-wide evaluations remain to be done.
+The initial records cover two bounded workloads at commit `e900ecdb`; they do
+not establish a universal speedup or industry readiness. Full-library public
+parity and performance are also checked in CI using a pinned HAP1 screen:
+
+```bash
+python3 packages/crisprworks-fit/benchmarks/public_hap1.py \
+  --out-dir hap1-benchmark --repeats 3
+```
+
+The script downloads the Hart Lab BAGEL HAP1 count table at an immutable commit,
+checks its SHA-256, and analyzes 71,090 guides across 18,056 gene labels with
+efficiency updates and mean-variance modeling. Controls with 10 or more guides
+retain upstream's default permutation skip behavior. See the generated
+`provenance.json` and `paired/benchmark.json`. This checks numerical agreement
+on real counts; it does not establish biological hit accuracy.
 
 From the repository root:
 

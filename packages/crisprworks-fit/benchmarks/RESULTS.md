@@ -1,7 +1,8 @@
 # Initial measurements, 2026-09-30
 
 These measurements compare CRISPRWorks Fit's accelerated and reference backends
-using MAGeCK2 0.3.0. Input counts, design, settings and permutation seed are held
+at commit `e900ecdb903fe2eb25087ca7544a93412c62f49e`, using MAGeCK2 0.3.0.
+Input counts, design, settings and permutation seed are held
 fixed. They establish a working prototype on two bounded workloads, not
 biological accuracy or a universal speed guarantee.
 
@@ -58,3 +59,8 @@ Fixture provenance is recorded in [tests/data/README.md](../tests/data/README.md
 
 Genome-wide public screens, larger designs, numerical boundary cases and
 independent workflow evaluations remain release gates.
+
+The newer `public_hap1.py` harness performs a pinned full-library HAP1
+comparison in CI. Results from that run must be assessed separately from the
+initial measurements above; the required-likelihood optimization was added
+after these initial records.

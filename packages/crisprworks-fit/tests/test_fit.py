@@ -49,6 +49,19 @@ def gene_case(seed=1, guides=6, design=None):
 
 
 class LinearAlgebraTests(unittest.TestCase):
+    def test_direct_likelihood_matches_reference_support_and_parameter_edges(self):
+        rng = np.random.default_rng(88)
+        counts = np.concatenate((rng.uniform(0, 10000, 500),
+                                 [0, -1, np.nan, np.inf, 0.5, 1.5, 2.5]))[:, None]
+        means = np.concatenate((10 ** rng.uniform(-8, 8, 500),
+                                [0, 0, np.nan, np.inf, 1, 1, 1]))[:, None]
+        for dispersion in (0.01, 0.0, -0.01, np.nan,
+                           (10 ** rng.uniform(-12, 2, len(counts)))[:, None]):
+            with np.errstate(all="ignore"):
+                expected = mleem.getloglikelihood2(np.matrix(counts), np.matrix(means), dispersion)
+                actual = kernels.negative_binomial_loglikelihood(counts, means, dispersion)
+            assert_array_equal(actual, expected)
+
     def test_covariance_and_degrees_match_dense_hat_matrix(self):
         rng = np.random.default_rng(71)
         for rows, columns in ((12, 3), (66, 8), (400, 13)):
