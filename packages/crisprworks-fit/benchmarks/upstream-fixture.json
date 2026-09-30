@@ -1,0 +1,135 @@
+{
+  "dataset": "supplied count table; provenance and validation must be recorded separately",
+  "genes": 100,
+  "guides_per_gene": null,
+  "samples": 4,
+  "permutation_rounds": 2,
+  "seed": 42,
+  "worker_processes": 1,
+  "blas_threads_per_process": 1,
+  "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+  "python": "3.12.14",
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+  "counts_sha256": "9a4b6322272d3f1eb3cc3c0ca0e89c68b7f9f61260992ace131494eef9efddcb",
+  "design_sha256": "5e30d53f469ec182049fd360678b7041e801bba8912d6f8966ac9acf74abbf63",
+  "identical_gene_summary_bytes": true,
+  "full_precision_max_absolute_errors": {
+    "beta_estimate": 9.325873406851315e-15,
+    "beta_zscore": 3.2862601528904634e-14,
+    "w_estimate": 5.551115123125783e-15,
+    "beta_pval": 2.3314683517128287e-14,
+    "beta_pval_fdr": 2.681188604469753e-14,
+    "beta_permute_pval": 0,
+    "beta_permute_pval_fdr": 0,
+    "beta_permute_pval_neg": 0,
+    "beta_permute_pval_pos": 0,
+    "beta_permute_pval_neg_fdr": 0,
+    "beta_permute_pval_pos_fdr": 0
+  },
+  "full_precision_tolerances": {
+    "rtol": 1e-07,
+    "atol": 1e-08
+  },
+  "median_wall_seconds": {
+    "reference": 3.618694549997599,
+    "accelerated": 1.815569501999562
+  },
+  "median_speedup": 1.993145702223011,
+  "cpu": "AMD EPYC 9V74 80-Core Processor (shared virtual runner)",
+  "software": {
+    "version": "0.1.0a1",
+    "mageck2_version": "0.3.0",
+    "numpy": "2.3.5",
+    "scipy": "1.17.0"
+  },
+  "blas": [
+    {
+      "internal_api": "openblas",
+      "version": "0.3.30",
+      "num_threads": 1,
+      "architecture": "SkylakeX"
+    },
+    {
+      "internal_api": "openblas",
+      "version": "0.3.30",
+      "num_threads": 1,
+      "architecture": "SkylakeX"
+    }
+  ],
+  "runs": [
+    {
+      "backend": "reference",
+      "repeat": 0,
+      "wall_seconds_including_startup": 3.621206859999802,
+      "workflow_seconds": 2.924563548000151,
+      "gene_summary_sha256": "28334bd8cd6e97216681d30991b3e0bdd98bfc58f6beb605fd68f4301e9e1ef9"
+    },
+    {
+      "backend": "accelerated",
+      "repeat": 0,
+      "wall_seconds_including_startup": 1.77301005100162,
+      "workflow_seconds": 1.103160153998033,
+      "gene_summary_sha256": "28334bd8cd6e97216681d30991b3e0bdd98bfc58f6beb605fd68f4301e9e1ef9"
+    },
+    {
+      "backend": "accelerated",
+      "repeat": 1,
+      "wall_seconds_including_startup": 1.8553779119974934,
+      "workflow_seconds": 1.2183827469998505,
+      "gene_summary_sha256": "28334bd8cd6e97216681d30991b3e0bdd98bfc58f6beb605fd68f4301e9e1ef9"
+    },
+    {
+      "backend": "reference",
+      "repeat": 1,
+      "wall_seconds_including_startup": 3.5112141690005956,
+      "workflow_seconds": 2.8153175769984955,
+      "gene_summary_sha256": "28334bd8cd6e97216681d30991b3e0bdd98bfc58f6beb605fd68f4301e9e1ef9"
+    },
+    {
+      "backend": "reference",
+      "repeat": 2,
+      "wall_seconds_including_startup": 3.618694549997599,
+      "workflow_seconds": 2.945310186001734,
+      "gene_summary_sha256": "28334bd8cd6e97216681d30991b3e0bdd98bfc58f6beb605fd68f4301e9e1ef9"
+    },
+    {
+      "backend": "accelerated",
+      "repeat": 2,
+      "wall_seconds_including_startup": 1.815569501999562,
+      "workflow_seconds": 1.1282128689999809,
+      "gene_summary_sha256": "28334bd8cd6e97216681d30991b3e0bdd98bfc58f6beb605fd68f4301e9e1ef9"
+    }
+  ],
+  "options": {
+    "subcmd": "mle",
+    "day0_label": null,
+    "include_samples": null,
+    "beta_labels": null,
+    "control_sgrna": null,
+    "control_gene": null,
+    "cnv_norm": null,
+    "cell_line": null,
+    "cnv_est": null,
+    "debug": false,
+    "debug_gene": null,
+    "norm_method": "median",
+    "genes_varmodeling": 20,
+    "permutation_round": 2,
+    "no_permutation_by_group": false,
+    "max_sgrnapergene_permutation": 40,
+    "remove_outliers": false,
+    "threads": 1,
+    "adjust_method": "fdr",
+    "sgrna_efficiency": null,
+    "sgrna_eff_name_column": 0,
+    "sgrna_eff_score_column": 1,
+    "update_efficiency": true,
+    "bayes": false,
+    "PPI_prior": false,
+    "PPI_weighting": null,
+    "negative_control": null,
+    "seed": 42,
+    "blas_threads": 1,
+    "write_fit_details": true
+  }
+}
