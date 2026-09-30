@@ -26,12 +26,13 @@ on Linux and macOS and writes MAGeCK-compatible counts.
 | Component | Purpose | Availability |
 | --- | --- | --- |
 | **Count** | Count guides and inspect read assignments | Available through the DotMatch CLI and Python package |
-| **Fit** | Fit gene-level screen effects | Planned; MAGeCK-compatible MLE acceleration is the initial investigation |
+| **Fit** | Fit gene-level screen effects | [Experimental MAGeCK2 MLE accelerator under review](https://github.com/dnncha/dotmatch/pull/151) |
 | **Review** | Review QC, comparisons and screen results | Existing DotMatch reports cover counts and assignment QC; a broader Review tool is planned |
 
 Start with Count using the commands below. Read the
 [family overview and naming plan](docs/crisprworks.md) for scope and development
-criteria. Fit and the broader Review tool do not yet have installable releases.
+criteria. Fit is available as experimental source in the implementation PR; it
+has no published package release. The broader Review tool is planned.
 
 ## What the counts mean
 
