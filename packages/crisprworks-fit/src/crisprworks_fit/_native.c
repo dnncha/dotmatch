@@ -83,6 +83,8 @@ static PyObject *loop(PyObject *self, PyObject *args) {
     double ridge;
     PyObject *result=NULL;
     double *storage=NULL;
+    Py_ssize_t *row_offsets=NULL;
+    int *columns=NULL;
     if (!PyArg_ParseTuple(args,"OOOOOOiiidpp",&objects[0],&objects[1],&objects[2],
                           &objects[3],&objects[4],&objects[5],&n,&c,&other,&ridge,&estimate,&update)) return NULL;
     if (n<1 || c<1 || other<1 || n>10000 || c>10000 || other>10000) {
@@ -110,6 +112,24 @@ static PyObject *loop(PyObject *self, PyObject *args) {
     double *response=weights+m,*rounded=response+m,*factorial=rounded+m,*logmean=factorial+m;
     double *proposal=logmean+m,*gram=proposal+p,*regularized=gram+p*p,*factor=regularized+p*p;
     memcpy(beta,buffers[3].buf,p*sizeof(double)); memcpy(eff,buffers[4].buf,n*sizeof(double));
+    /* Preserve row summation order, but omit exact zero design entries for
+     * finite inputs. Invalid values use the dense path so 0*NaN conventions
+     * remain unchanged. No statistical approximation or sparsity threshold. */
+    Py_ssize_t nonzero=0;
+    int finite_design=1;
+    for (Py_ssize_t i=0;i<m*p;i++) {
+        if (x[i]!=0) nonzero++;
+        if (!isfinite(x[i])) finite_design=0;
+    }
+    row_offsets=PyMem_Calloc((size_t)m+1,sizeof(Py_ssize_t));
+    columns=PyMem_Malloc((size_t)(nonzero ? nonzero : 1)*sizeof(int));
+    if (!row_offsets || !columns) {PyErr_NoMemory();goto cleanup;}
+    Py_ssize_t offset=0;
+    for (Py_ssize_t i=0;i<m;i++) {
+        row_offsets[i]=offset;
+        for (Py_ssize_t j=0;j<p;j++) if (x[i*p+j]!=0) columns[offset++]=(int)j;
+    }
+    row_offsets[m]=offset;
     int status=0, iteration=1, singular=0;
     Py_BEGIN_ALLOW_THREADS
     for (Py_ssize_t i=0;i<m;i++) {rounded[i]=nearbyint(counts[i]); factorial[i]=loggamma_fn(rounded[i]+1,1);}
@@ -156,6 +176,30 @@ static PyObject *loop(PyObject *self, PyObject *args) {
             if (isnan(floor_weight)) weights[i]=NAN;
             else if (weights[i]<floor_weight) weights[i]=floor_weight;
         }
+        int finite_inputs=finite_design;
+        for (Py_ssize_t i=0;i<m && finite_inputs;i++) {
+            if (!isfinite(weights[i]) || !isfinite(response[i]) ||
+                !isfinite(weights[i]*response[i])) finite_inputs=0;
+            for (Py_ssize_t a=row_offsets[i];a<row_offsets[i+1] && finite_inputs;a++)
+                if (!isfinite(weights[i]*x[i*p+columns[a]])) finite_inputs=0;
+        }
+        if (finite_inputs) {
+            memset(proposal,0,p*sizeof(double)); memset(gram,0,p*p*sizeof(double));
+            for (Py_ssize_t i=0;i<m;i++) {
+                double weighted_response=weights[i]*response[i];
+                for (Py_ssize_t a=row_offsets[i];a<row_offsets[i+1];a++) {
+                    int j=columns[a];
+                    double left=x[i*p+j];
+                    proposal[j]+=left*weighted_response;
+                    for (Py_ssize_t b=row_offsets[i];b<row_offsets[i+1];b++) {
+                        int k=columns[b];
+                        gram[j*p+k]+=left*(weights[i]*x[i*p+k]);
+                    }
+                }
+            }
+            memcpy(regularized,gram,p*p*sizeof(double));
+            for (Py_ssize_t j=0;j<p;j++) regularized[j*p+j]+=ridge;
+        } else {
         for (Py_ssize_t j=0;j<p;j++) {
             double value=0;
             for (Py_ssize_t i=0;i<m;i++) value+=x[i*p+j]*(weights[i]*response[i]);
@@ -165,6 +209,7 @@ static PyObject *loop(PyObject *self, PyObject *args) {
                 for (Py_ssize_t i=0;i<m;i++) value+=x[i*p+j]*(weights[i]*x[i*p+k]);
                 gram[j*p+k]=value; regularized[j*p+k]=value+(j==k ? ridge : 0);
             }
+        }
         }
         memcpy(factor,regularized,p*p*sizeof(double));
         if (solve(factor,proposal,(int)p)<0) {singular=1;break;}
@@ -195,6 +240,8 @@ static PyObject *loop(PyObject *self, PyObject *args) {
         PyTuple_SET_ITEM(result,i+1,bytes);
     }
 cleanup:
+    PyMem_Free(columns);
+    PyMem_Free(row_offsets);
     PyMem_Free(storage);
     for (int i=0;i<6;i++) if (buffers[i].obj) PyBuffer_Release(&buffers[i]);
     return result;

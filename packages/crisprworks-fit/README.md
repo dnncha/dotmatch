@@ -167,8 +167,9 @@ commands and input hashes. The underlying covariance algebra is tested at
 CNV correction and `--debug-gene` are rejected until separately evaluated.
 Experimental Bayes options retain upstream's explicit rejection. The upstream
 active fitting path does not apply `--remove-outliers`; Fit preserves that
-behavior. Fit is currently an optional Python/NumPy accelerator, with native
-linear algebra provided by BLAS. It does not implement counting or change
+behavior. Fit offers a compiled C EM engine and a NumPy fallback, with BLAS
+used for covariance calculations. The native loop omits exact zero design
+entries for finite inputs and retains a dense path for nonfinite inputs. It does not implement counting or change
 DotMatch's read-assignment rules.
 
 Keep counting comparisons separate from inference comparisons. A faster fit

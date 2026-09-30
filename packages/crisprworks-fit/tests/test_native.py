@@ -1,6 +1,7 @@
 """Compiled engine contracts and direct comparison with the NumPy accelerator."""
 import copy
 import unittest
+import warnings
 from unittest.mock import patch
 import numpy as np
 from numpy.testing import assert_allclose
@@ -58,3 +59,18 @@ class NativeTests(unittest.TestCase):
             kernels._native.loop(*arrays, 1, 1, 1, .01, True, True)
         with self.assertRaises(ValueError):
             kernels._native.loop(*arrays, -1, 1, 1, .01, True, True)
+
+    @unittest.skipIf(kernels._native is None, "Native extension not installed")
+    def test_nonfinite_initialization_matches_numpy_failure_conventions(self):
+        original = gene_case(guides=4)
+        original.nb_count[0, 0] = 0
+        expected, actual = copy.deepcopy(original), copy.deepcopy(original)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            for kernel, gene in (("numpy", expected), ("native", actual)):
+                with accelerated(kernel=kernel):
+                    mleem.iteratenbem(gene, debug=False, logem=False, estimateeff=True, updateeff=True)
+        for field in ("beta_estimate", "beta_zscore", "beta_pval", "w_estimate",
+                      "mu_estimate", "sgrna_residule"):
+            assert_allclose(getattr(actual, field), getattr(expected, field),
+                            rtol=1e-7, atol=1e-8, equal_nan=True)
