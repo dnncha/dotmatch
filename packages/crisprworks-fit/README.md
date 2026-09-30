@@ -85,6 +85,9 @@ processes; `--blas-threads` controls BLAS threads within each worker.
 
 ## What is faster
 
+- Execute the EM loop in compiled C, with working storage reused across
+  iterations. For finite inputs, process exact nonzero design entries while
+  preserving row summation order; nonfinite inputs use the dense calculation.
 - Apply IRLS weights by vector multiplication and solve the smaller ridge
   system directly. No dense diagonal weight matrix is constructed.
 - Calculate the sandwich covariance after the last iteration, and compute the
@@ -113,18 +116,25 @@ checks dense-versus-compact covariance algebra, restarts, strict permutation
 tails including ties and NaNs, FDR, source compatibility, failure restoration,
 invalid designs, the public upstream count-table fixture and spawned workers.
 
-The [genome-wide HAP1 cohort measurement](benchmarks/HAP1.md) covered 17,445
-complete four-guide gene labels: median wall time was **199.74 s reference vs
-75.63 s accelerated (2.64×)** across three runs per backend. Printed gene
-summaries were byte-identical, permutation p-values/FDR matched exactly, and
-full-precision beta differences were below `1.25e-14`. This selects complete
-four-guide labels before normalization; it is not a timing for the unfiltered
-table or evidence of biological hit accuracy.
+The [native-engine HAP1 measurement](benchmarks/NATIVE.md) covered 17,445
+complete four-guide gene labels and 69,780 guides. Three paired runs per engine
+measured **332.45 s MAGeCK2 reference, 131.06 s NumPy accelerator, and 38.68 s
+native accelerator**: **8.59× versus reference and 3.39× versus NumPy**.
+All nine printed gene summaries were byte-identical; permutation p-values and
+FDR matched exactly. Maximum full-precision beta differences were `2.49e-14`.
+These timings include startup and diagnostic output on one shared CI runner.
 
-The unfiltered 71,090-guide table also passed a separate cross-environment
-full-precision comparison with identical printed gene results; see the HAP1
-record for how the CI reference and local accelerated outputs were compared.
-No unfiltered-table timing claim is made.
+This cohort selects complete four-guide labels before normalization and
+excludes larger control bins. The unfiltered 71,090-guide, 18,056-label table
+also matched the reference in a separate cross-environment full-precision
+comparison. That comparison establishes numerical agreement, with no
+unfiltered-table timing ratio claimed. These checks preserve the reference
+results; they do not establish superior biological hit accuracy or a universal
+speedup. Chronos and JACKS have not been benchmarked in this comparison.
+
+The [earlier NumPy measurement](benchmarks/HAP1.md) remains archived with its
+original implementation commit and runner timings. Compare engines within each
+paired experiment rather than combining times from different environments.
 
 Initial measurements are documented in [benchmarks/RESULTS.md](benchmarks/RESULTS.md).
 The initial records cover two bounded workloads at commit `e900ecdb`; they do

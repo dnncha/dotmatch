@@ -1,0 +1,1278 @@
+{
+  "implementation_commit": "2938b8e6e2219e80404280facf14f323e55ee0c3",
+  "ci_run": 36724219194,
+  "artifact_id": 11102737825,
+  "artifact_digest": "sha256:cf30d6e98a92efb8e2252e66592e9c59fd6afcc3bf8e4a2c8645e9c954b097ae",
+  "provenance": {
+    "source_url": "https://raw.githubusercontent.com/hart-lab/bagel/53388adbb4fb0931e5c9dda135502be19e4555f0/reads_hap1.txt",
+    "source_commit": "53388adbb4fb0931e5c9dda135502be19e4555f0",
+    "source_sha256": "7638bc6237cf8a3e2302fcd969d014b041819669b37f2f87bc1f7cfbc45ca8a7",
+    "counts_sha256": "bf24bf255b75cde8cb01279290bdbbbbbba5773596245b8c0300b07b879c36bf",
+    "cohort": "four-guide",
+    "guides": 69780,
+    "gene_labels_including_controls": 17445,
+    "selection": "labels having exactly four guides; incomplete labels and larger control bins excluded before normalization",
+    "design": "one T0 baseline; three T18 replicates; single treatment effect",
+    "scope": "numerical parity against MAGeCK2, not validation of biological hits",
+    "control_caveat": "Upstream default skips fitting labels with >=40 guides; their permutation tails use the preceding guide-count group",
+    "source_license": "MIT; dataset retrieved separately, not redistributed in this package"
+  },
+  "benchmark": {
+    "dataset": "supplied count table; provenance and validation must be recorded separately",
+    "genes": 17445,
+    "guides_per_gene": null,
+    "samples": 4,
+    "total_guides": 69780,
+    "permutation_rounds": 2,
+    "seed": 42,
+    "worker_processes": 1,
+    "blas_threads_per_process": 1,
+    "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+    "python": "3.12.14",
+    "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+    "counts_sha256": "bf24bf255b75cde8cb01279290bdbbbbbba5773596245b8c0300b07b879c36bf",
+    "design_sha256": "bc4f06905509e0180146e20ae3d3228a59406b2422ed193e7f0e0e7cc9fd5d2e",
+    "runs": [
+      {
+        "backend": "reference",
+        "repeat": 0,
+        "wall_seconds_including_startup": 336.550612808,
+        "workflow_seconds": 335.542093153,
+        "command": [
+          "/opt/hostedtoolcache/Python/3.12.14/x64/bin/python",
+          "-m",
+          "crisprworks_fit",
+          "mle",
+          "-k",
+          "fit-hap1/counts.tsv",
+          "-d",
+          "fit-hap1/design.tsv",
+          "-n",
+          "fit-hap1/paired/reference-0",
+          "--backend",
+          "reference",
+          "--threads",
+          "1",
+          "--blas-threads",
+          "1",
+          "--seed",
+          "42",
+          "--permutation-round",
+          "2",
+          "--kernel",
+          "native",
+          "--write-fit-details",
+          "--genes-varmodeling",
+          "1000",
+          "--update-efficiency"
+        ],
+        "manifest": {
+          "schema_version": 1,
+          "status": "complete",
+          "tool": "CRISPRWorks Fit",
+          "version": "0.1.0a2",
+          "backend": "reference",
+          "kernel": "reference",
+          "mageck2_version": "0.3.0",
+          "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+          "python": "3.12.14",
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+          "options": {
+            "subcmd": "mle",
+            "count_table": "fit-hap1/counts.tsv",
+            "design_matrix": "fit-hap1/design.tsv",
+            "day0_label": null,
+            "output_prefix": "fit-hap1/paired/reference-0",
+            "include_samples": null,
+            "beta_labels": null,
+            "control_sgrna": null,
+            "control_gene": null,
+            "cnv_norm": null,
+            "cell_line": null,
+            "cnv_est": null,
+            "debug": false,
+            "debug_gene": null,
+            "norm_method": "median",
+            "genes_varmodeling": 1000,
+            "permutation_round": 2,
+            "no_permutation_by_group": false,
+            "max_sgrnapergene_permutation": 40,
+            "remove_outliers": false,
+            "threads": 1,
+            "adjust_method": "fdr",
+            "sgrna_efficiency": null,
+            "sgrna_eff_name_column": 0,
+            "sgrna_eff_score_column": 1,
+            "update_efficiency": true,
+            "bayes": false,
+            "PPI_prior": false,
+            "PPI_weighting": null,
+            "negative_control": null,
+            "backend": "reference",
+            "kernel": "native",
+            "seed": 42,
+            "blas_threads": 1,
+            "write_fit_details": true
+          },
+          "inputs": {
+            "count_table": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/counts.tsv",
+              "sha256": "bf24bf255b75cde8cb01279290bdbbbbbba5773596245b8c0300b07b879c36bf"
+            },
+            "design_matrix": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/design.tsv",
+              "sha256": "bc4f06905509e0180146e20ae3d3228a59406b2422ed193e7f0e0e7cc9fd5d2e"
+            },
+            "sgrna_efficiency": null,
+            "control_sgrna": null,
+            "control_gene": null
+          },
+          "blas": [
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-fdde5778.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "Haswell"
+            },
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "Haswell"
+            }
+          ],
+          "outputs": {
+            "gene_summary": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/reference-0.gene_summary.txt",
+              "sha256": "dfeb15a7e1f113891a56b8cd23d575ffb124289d6c948367d1027c20ce2256ee"
+            },
+            "sgrna_summary": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/reference-0.sgrna_summary.txt",
+              "sha256": "16f5ded25d4b6321808ea405132cbf39c6fe1185aec1bf6dced07ca9e9a2bd29"
+            },
+            "fit_details": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/reference-0.fit-details.json",
+              "sha256": "4317c2db4819af2c6ad2fe8659af4ce2bd23cba69ad843bc8a4a091aaae7c082"
+            }
+          },
+          "elapsed_seconds": 335.542093153
+        }
+      },
+      {
+        "backend": "accelerated",
+        "repeat": 0,
+        "wall_seconds_including_startup": 38.837820647,
+        "workflow_seconds": 37.80452142799999,
+        "command": [
+          "/opt/hostedtoolcache/Python/3.12.14/x64/bin/python",
+          "-m",
+          "crisprworks_fit",
+          "mle",
+          "-k",
+          "fit-hap1/counts.tsv",
+          "-d",
+          "fit-hap1/design.tsv",
+          "-n",
+          "fit-hap1/paired/accelerated-0",
+          "--backend",
+          "accelerated",
+          "--threads",
+          "1",
+          "--blas-threads",
+          "1",
+          "--seed",
+          "42",
+          "--permutation-round",
+          "2",
+          "--kernel",
+          "native",
+          "--write-fit-details",
+          "--genes-varmodeling",
+          "1000",
+          "--update-efficiency"
+        ],
+        "manifest": {
+          "schema_version": 1,
+          "status": "complete",
+          "tool": "CRISPRWorks Fit",
+          "version": "0.1.0a2",
+          "backend": "accelerated",
+          "kernel": "native",
+          "mageck2_version": "0.3.0",
+          "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+          "python": "3.12.14",
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+          "options": {
+            "subcmd": "mle",
+            "count_table": "fit-hap1/counts.tsv",
+            "design_matrix": "fit-hap1/design.tsv",
+            "day0_label": null,
+            "output_prefix": "fit-hap1/paired/accelerated-0",
+            "include_samples": null,
+            "beta_labels": null,
+            "control_sgrna": null,
+            "control_gene": null,
+            "cnv_norm": null,
+            "cell_line": null,
+            "cnv_est": null,
+            "debug": false,
+            "debug_gene": null,
+            "norm_method": "median",
+            "genes_varmodeling": 1000,
+            "permutation_round": 2,
+            "no_permutation_by_group": false,
+            "max_sgrnapergene_permutation": 40,
+            "remove_outliers": false,
+            "threads": 1,
+            "adjust_method": "fdr",
+            "sgrna_efficiency": null,
+            "sgrna_eff_name_column": 0,
+            "sgrna_eff_score_column": 1,
+            "update_efficiency": true,
+            "bayes": false,
+            "PPI_prior": false,
+            "PPI_weighting": null,
+            "negative_control": null,
+            "backend": "accelerated",
+            "kernel": "native",
+            "seed": 42,
+            "blas_threads": 1,
+            "write_fit_details": true
+          },
+          "inputs": {
+            "count_table": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/counts.tsv",
+              "sha256": "bf24bf255b75cde8cb01279290bdbbbbbba5773596245b8c0300b07b879c36bf"
+            },
+            "design_matrix": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/design.tsv",
+              "sha256": "bc4f06905509e0180146e20ae3d3228a59406b2422ed193e7f0e0e7cc9fd5d2e"
+            },
+            "sgrna_efficiency": null,
+            "control_sgrna": null,
+            "control_gene": null
+          },
+          "blas": [
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-fdde5778.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "Haswell"
+            },
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "Haswell"
+            }
+          ],
+          "outputs": {
+            "gene_summary": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/accelerated-0.gene_summary.txt",
+              "sha256": "dfeb15a7e1f113891a56b8cd23d575ffb124289d6c948367d1027c20ce2256ee"
+            },
+            "sgrna_summary": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/accelerated-0.sgrna_summary.txt",
+              "sha256": "16f5ded25d4b6321808ea405132cbf39c6fe1185aec1bf6dced07ca9e9a2bd29"
+            },
+            "fit_details": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/accelerated-0.fit-details.json",
+              "sha256": "3d0a1ad86a65e537f72ab6dd1cebf971743c12e2ca4024c787364f01a7107e11"
+            }
+          },
+          "elapsed_seconds": 37.80452142799999
+        }
+      },
+      {
+        "backend": "numpy",
+        "repeat": 0,
+        "wall_seconds_including_startup": 131.05977701799998,
+        "workflow_seconds": 130.05577189500002,
+        "command": [
+          "/opt/hostedtoolcache/Python/3.12.14/x64/bin/python",
+          "-m",
+          "crisprworks_fit",
+          "mle",
+          "-k",
+          "fit-hap1/counts.tsv",
+          "-d",
+          "fit-hap1/design.tsv",
+          "-n",
+          "fit-hap1/paired/numpy-0",
+          "--backend",
+          "accelerated",
+          "--threads",
+          "1",
+          "--blas-threads",
+          "1",
+          "--seed",
+          "42",
+          "--permutation-round",
+          "2",
+          "--kernel",
+          "numpy",
+          "--write-fit-details",
+          "--genes-varmodeling",
+          "1000",
+          "--update-efficiency"
+        ],
+        "manifest": {
+          "schema_version": 1,
+          "status": "complete",
+          "tool": "CRISPRWorks Fit",
+          "version": "0.1.0a2",
+          "backend": "accelerated",
+          "kernel": "numpy",
+          "mageck2_version": "0.3.0",
+          "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+          "python": "3.12.14",
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+          "options": {
+            "subcmd": "mle",
+            "count_table": "fit-hap1/counts.tsv",
+            "design_matrix": "fit-hap1/design.tsv",
+            "day0_label": null,
+            "output_prefix": "fit-hap1/paired/numpy-0",
+            "include_samples": null,
+            "beta_labels": null,
+            "control_sgrna": null,
+            "control_gene": null,
+            "cnv_norm": null,
+            "cell_line": null,
+            "cnv_est": null,
+            "debug": false,
+            "debug_gene": null,
+            "norm_method": "median",
+            "genes_varmodeling": 1000,
+            "permutation_round": 2,
+            "no_permutation_by_group": false,
+            "max_sgrnapergene_permutation": 40,
+            "remove_outliers": false,
+            "threads": 1,
+            "adjust_method": "fdr",
+            "sgrna_efficiency": null,
+            "sgrna_eff_name_column": 0,
+            "sgrna_eff_score_column": 1,
+            "update_efficiency": true,
+            "bayes": false,
+            "PPI_prior": false,
+            "PPI_weighting": null,
+            "negative_control": null,
+            "backend": "accelerated",
+            "kernel": "numpy",
+            "seed": 42,
+            "blas_threads": 1,
+            "write_fit_details": true
+          },
+          "inputs": {
+            "count_table": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/counts.tsv",
+              "sha256": "bf24bf255b75cde8cb01279290bdbbbbbba5773596245b8c0300b07b879c36bf"
+            },
+            "design_matrix": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/design.tsv",
+              "sha256": "bc4f06905509e0180146e20ae3d3228a59406b2422ed193e7f0e0e7cc9fd5d2e"
+            },
+            "sgrna_efficiency": null,
+            "control_sgrna": null,
+            "control_gene": null
+          },
+          "blas": [
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-fdde5778.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "Haswell"
+            },
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "Haswell"
+            }
+          ],
+          "outputs": {
+            "gene_summary": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/numpy-0.gene_summary.txt",
+              "sha256": "dfeb15a7e1f113891a56b8cd23d575ffb124289d6c948367d1027c20ce2256ee"
+            },
+            "sgrna_summary": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/numpy-0.sgrna_summary.txt",
+              "sha256": "16f5ded25d4b6321808ea405132cbf39c6fe1185aec1bf6dced07ca9e9a2bd29"
+            },
+            "fit_details": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/numpy-0.fit-details.json",
+              "sha256": "b5693aa3831b79707e6e5ec2ad5409cc1ef7bcca1cf5b8160ffef496137d3c05"
+            }
+          },
+          "elapsed_seconds": 130.05577189500002
+        }
+      },
+      {
+        "backend": "accelerated",
+        "repeat": 1,
+        "wall_seconds_including_startup": 38.589507603000015,
+        "workflow_seconds": 37.62997877099997,
+        "command": [
+          "/opt/hostedtoolcache/Python/3.12.14/x64/bin/python",
+          "-m",
+          "crisprworks_fit",
+          "mle",
+          "-k",
+          "fit-hap1/counts.tsv",
+          "-d",
+          "fit-hap1/design.tsv",
+          "-n",
+          "fit-hap1/paired/accelerated-1",
+          "--backend",
+          "accelerated",
+          "--threads",
+          "1",
+          "--blas-threads",
+          "1",
+          "--seed",
+          "42",
+          "--permutation-round",
+          "2",
+          "--kernel",
+          "native",
+          "--write-fit-details",
+          "--genes-varmodeling",
+          "1000",
+          "--update-efficiency"
+        ],
+        "manifest": {
+          "schema_version": 1,
+          "status": "complete",
+          "tool": "CRISPRWorks Fit",
+          "version": "0.1.0a2",
+          "backend": "accelerated",
+          "kernel": "native",
+          "mageck2_version": "0.3.0",
+          "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+          "python": "3.12.14",
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+          "options": {
+            "subcmd": "mle",
+            "count_table": "fit-hap1/counts.tsv",
+            "design_matrix": "fit-hap1/design.tsv",
+            "day0_label": null,
+            "output_prefix": "fit-hap1/paired/accelerated-1",
+            "include_samples": null,
+            "beta_labels": null,
+            "control_sgrna": null,
+            "control_gene": null,
+            "cnv_norm": null,
+            "cell_line": null,
+            "cnv_est": null,
+            "debug": false,
+            "debug_gene": null,
+            "norm_method": "median",
+            "genes_varmodeling": 1000,
+            "permutation_round": 2,
+            "no_permutation_by_group": false,
+            "max_sgrnapergene_permutation": 40,
+            "remove_outliers": false,
+            "threads": 1,
+            "adjust_method": "fdr",
+            "sgrna_efficiency": null,
+            "sgrna_eff_name_column": 0,
+            "sgrna_eff_score_column": 1,
+            "update_efficiency": true,
+            "bayes": false,
+            "PPI_prior": false,
+            "PPI_weighting": null,
+            "negative_control": null,
+            "backend": "accelerated",
+            "kernel": "native",
+            "seed": 42,
+            "blas_threads": 1,
+            "write_fit_details": true
+          },
+          "inputs": {
+            "count_table": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/counts.tsv",
+              "sha256": "bf24bf255b75cde8cb01279290bdbbbbbba5773596245b8c0300b07b879c36bf"
+            },
+            "design_matrix": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/design.tsv",
+              "sha256": "bc4f06905509e0180146e20ae3d3228a59406b2422ed193e7f0e0e7cc9fd5d2e"
+            },
+            "sgrna_efficiency": null,
+            "control_sgrna": null,
+            "control_gene": null
+          },
+          "blas": [
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-fdde5778.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "Haswell"
+            },
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "Haswell"
+            }
+          ],
+          "outputs": {
+            "gene_summary": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/accelerated-1.gene_summary.txt",
+              "sha256": "dfeb15a7e1f113891a56b8cd23d575ffb124289d6c948367d1027c20ce2256ee"
+            },
+            "sgrna_summary": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/accelerated-1.sgrna_summary.txt",
+              "sha256": "16f5ded25d4b6321808ea405132cbf39c6fe1185aec1bf6dced07ca9e9a2bd29"
+            },
+            "fit_details": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/accelerated-1.fit-details.json",
+              "sha256": "3d0a1ad86a65e537f72ab6dd1cebf971743c12e2ca4024c787364f01a7107e11"
+            }
+          },
+          "elapsed_seconds": 37.62997877099997
+        }
+      },
+      {
+        "backend": "numpy",
+        "repeat": 1,
+        "wall_seconds_including_startup": 129.38647600599995,
+        "workflow_seconds": 128.41233042300007,
+        "command": [
+          "/opt/hostedtoolcache/Python/3.12.14/x64/bin/python",
+          "-m",
+          "crisprworks_fit",
+          "mle",
+          "-k",
+          "fit-hap1/counts.tsv",
+          "-d",
+          "fit-hap1/design.tsv",
+          "-n",
+          "fit-hap1/paired/numpy-1",
+          "--backend",
+          "accelerated",
+          "--threads",
+          "1",
+          "--blas-threads",
+          "1",
+          "--seed",
+          "42",
+          "--permutation-round",
+          "2",
+          "--kernel",
+          "numpy",
+          "--write-fit-details",
+          "--genes-varmodeling",
+          "1000",
+          "--update-efficiency"
+        ],
+        "manifest": {
+          "schema_version": 1,
+          "status": "complete",
+          "tool": "CRISPRWorks Fit",
+          "version": "0.1.0a2",
+          "backend": "accelerated",
+          "kernel": "numpy",
+          "mageck2_version": "0.3.0",
+          "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+          "python": "3.12.14",
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+          "options": {
+            "subcmd": "mle",
+            "count_table": "fit-hap1/counts.tsv",
+            "design_matrix": "fit-hap1/design.tsv",
+            "day0_label": null,
+            "output_prefix": "fit-hap1/paired/numpy-1",
+            "include_samples": null,
+            "beta_labels": null,
+            "control_sgrna": null,
+            "control_gene": null,
+            "cnv_norm": null,
+            "cell_line": null,
+            "cnv_est": null,
+            "debug": false,
+            "debug_gene": null,
+            "norm_method": "median",
+            "genes_varmodeling": 1000,
+            "permutation_round": 2,
+            "no_permutation_by_group": false,
+            "max_sgrnapergene_permutation": 40,
+            "remove_outliers": false,
+            "threads": 1,
+            "adjust_method": "fdr",
+            "sgrna_efficiency": null,
+            "sgrna_eff_name_column": 0,
+            "sgrna_eff_score_column": 1,
+            "update_efficiency": true,
+            "bayes": false,
+            "PPI_prior": false,
+            "PPI_weighting": null,
+            "negative_control": null,
+            "backend": "accelerated",
+            "kernel": "numpy",
+            "seed": 42,
+            "blas_threads": 1,
+            "write_fit_details": true
+          },
+          "inputs": {
+            "count_table": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/counts.tsv",
+              "sha256": "bf24bf255b75cde8cb01279290bdbbbbbba5773596245b8c0300b07b879c36bf"
+            },
+            "design_matrix": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/design.tsv",
+              "sha256": "bc4f06905509e0180146e20ae3d3228a59406b2422ed193e7f0e0e7cc9fd5d2e"
+            },
+            "sgrna_efficiency": null,
+            "control_sgrna": null,
+            "control_gene": null
+          },
+          "blas": [
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-fdde5778.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "Haswell"
+            },
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "Haswell"
+            }
+          ],
+          "outputs": {
+            "gene_summary": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/numpy-1.gene_summary.txt",
+              "sha256": "dfeb15a7e1f113891a56b8cd23d575ffb124289d6c948367d1027c20ce2256ee"
+            },
+            "sgrna_summary": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/numpy-1.sgrna_summary.txt",
+              "sha256": "16f5ded25d4b6321808ea405132cbf39c6fe1185aec1bf6dced07ca9e9a2bd29"
+            },
+            "fit_details": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/numpy-1.fit-details.json",
+              "sha256": "b5693aa3831b79707e6e5ec2ad5409cc1ef7bcca1cf5b8160ffef496137d3c05"
+            }
+          },
+          "elapsed_seconds": 128.41233042300007
+        }
+      },
+      {
+        "backend": "reference",
+        "repeat": 1,
+        "wall_seconds_including_startup": 330.83726006200004,
+        "workflow_seconds": 329.8490432809999,
+        "command": [
+          "/opt/hostedtoolcache/Python/3.12.14/x64/bin/python",
+          "-m",
+          "crisprworks_fit",
+          "mle",
+          "-k",
+          "fit-hap1/counts.tsv",
+          "-d",
+          "fit-hap1/design.tsv",
+          "-n",
+          "fit-hap1/paired/reference-1",
+          "--backend",
+          "reference",
+          "--threads",
+          "1",
+          "--blas-threads",
+          "1",
+          "--seed",
+          "42",
+          "--permutation-round",
+          "2",
+          "--kernel",
+          "native",
+          "--write-fit-details",
+          "--genes-varmodeling",
+          "1000",
+          "--update-efficiency"
+        ],
+        "manifest": {
+          "schema_version": 1,
+          "status": "complete",
+          "tool": "CRISPRWorks Fit",
+          "version": "0.1.0a2",
+          "backend": "reference",
+          "kernel": "reference",
+          "mageck2_version": "0.3.0",
+          "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+          "python": "3.12.14",
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+          "options": {
+            "subcmd": "mle",
+            "count_table": "fit-hap1/counts.tsv",
+            "design_matrix": "fit-hap1/design.tsv",
+            "day0_label": null,
+            "output_prefix": "fit-hap1/paired/reference-1",
+            "include_samples": null,
+            "beta_labels": null,
+            "control_sgrna": null,
+            "control_gene": null,
+            "cnv_norm": null,
+            "cell_line": null,
+            "cnv_est": null,
+            "debug": false,
+            "debug_gene": null,
+            "norm_method": "median",
+            "genes_varmodeling": 1000,
+            "permutation_round": 2,
+            "no_permutation_by_group": false,
+            "max_sgrnapergene_permutation": 40,
+            "remove_outliers": false,
+            "threads": 1,
+            "adjust_method": "fdr",
+            "sgrna_efficiency": null,
+            "sgrna_eff_name_column": 0,
+            "sgrna_eff_score_column": 1,
+            "update_efficiency": true,
+            "bayes": false,
+            "PPI_prior": false,
+            "PPI_weighting": null,
+            "negative_control": null,
+            "backend": "reference",
+            "kernel": "native",
+            "seed": 42,
+            "blas_threads": 1,
+            "write_fit_details": true
+          },
+          "inputs": {
+            "count_table": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/counts.tsv",
+              "sha256": "bf24bf255b75cde8cb01279290bdbbbbbba5773596245b8c0300b07b879c36bf"
+            },
+            "design_matrix": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/design.tsv",
+              "sha256": "bc4f06905509e0180146e20ae3d3228a59406b2422ed193e7f0e0e7cc9fd5d2e"
+            },
+            "sgrna_efficiency": null,
+            "control_sgrna": null,
+            "control_gene": null
+          },
+          "blas": [
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-fdde5778.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "Haswell"
+            },
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "Haswell"
+            }
+          ],
+          "outputs": {
+            "gene_summary": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/reference-1.gene_summary.txt",
+              "sha256": "dfeb15a7e1f113891a56b8cd23d575ffb124289d6c948367d1027c20ce2256ee"
+            },
+            "sgrna_summary": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/reference-1.sgrna_summary.txt",
+              "sha256": "16f5ded25d4b6321808ea405132cbf39c6fe1185aec1bf6dced07ca9e9a2bd29"
+            },
+            "fit_details": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/reference-1.fit-details.json",
+              "sha256": "4317c2db4819af2c6ad2fe8659af4ce2bd23cba69ad843bc8a4a091aaae7c082"
+            }
+          },
+          "elapsed_seconds": 329.8490432809999
+        }
+      },
+      {
+        "backend": "numpy",
+        "repeat": 2,
+        "wall_seconds_including_startup": 132.548807613,
+        "workflow_seconds": 131.574272264,
+        "command": [
+          "/opt/hostedtoolcache/Python/3.12.14/x64/bin/python",
+          "-m",
+          "crisprworks_fit",
+          "mle",
+          "-k",
+          "fit-hap1/counts.tsv",
+          "-d",
+          "fit-hap1/design.tsv",
+          "-n",
+          "fit-hap1/paired/numpy-2",
+          "--backend",
+          "accelerated",
+          "--threads",
+          "1",
+          "--blas-threads",
+          "1",
+          "--seed",
+          "42",
+          "--permutation-round",
+          "2",
+          "--kernel",
+          "numpy",
+          "--write-fit-details",
+          "--genes-varmodeling",
+          "1000",
+          "--update-efficiency"
+        ],
+        "manifest": {
+          "schema_version": 1,
+          "status": "complete",
+          "tool": "CRISPRWorks Fit",
+          "version": "0.1.0a2",
+          "backend": "accelerated",
+          "kernel": "numpy",
+          "mageck2_version": "0.3.0",
+          "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+          "python": "3.12.14",
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+          "options": {
+            "subcmd": "mle",
+            "count_table": "fit-hap1/counts.tsv",
+            "design_matrix": "fit-hap1/design.tsv",
+            "day0_label": null,
+            "output_prefix": "fit-hap1/paired/numpy-2",
+            "include_samples": null,
+            "beta_labels": null,
+            "control_sgrna": null,
+            "control_gene": null,
+            "cnv_norm": null,
+            "cell_line": null,
+            "cnv_est": null,
+            "debug": false,
+            "debug_gene": null,
+            "norm_method": "median",
+            "genes_varmodeling": 1000,
+            "permutation_round": 2,
+            "no_permutation_by_group": false,
+            "max_sgrnapergene_permutation": 40,
+            "remove_outliers": false,
+            "threads": 1,
+            "adjust_method": "fdr",
+            "sgrna_efficiency": null,
+            "sgrna_eff_name_column": 0,
+            "sgrna_eff_score_column": 1,
+            "update_efficiency": true,
+            "bayes": false,
+            "PPI_prior": false,
+            "PPI_weighting": null,
+            "negative_control": null,
+            "backend": "accelerated",
+            "kernel": "numpy",
+            "seed": 42,
+            "blas_threads": 1,
+            "write_fit_details": true
+          },
+          "inputs": {
+            "count_table": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/counts.tsv",
+              "sha256": "bf24bf255b75cde8cb01279290bdbbbbbba5773596245b8c0300b07b879c36bf"
+            },
+            "design_matrix": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/design.tsv",
+              "sha256": "bc4f06905509e0180146e20ae3d3228a59406b2422ed193e7f0e0e7cc9fd5d2e"
+            },
+            "sgrna_efficiency": null,
+            "control_sgrna": null,
+            "control_gene": null
+          },
+          "blas": [
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-fdde5778.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "Haswell"
+            },
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "Haswell"
+            }
+          ],
+          "outputs": {
+            "gene_summary": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/numpy-2.gene_summary.txt",
+              "sha256": "dfeb15a7e1f113891a56b8cd23d575ffb124289d6c948367d1027c20ce2256ee"
+            },
+            "sgrna_summary": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/numpy-2.sgrna_summary.txt",
+              "sha256": "16f5ded25d4b6321808ea405132cbf39c6fe1185aec1bf6dced07ca9e9a2bd29"
+            },
+            "fit_details": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/numpy-2.fit-details.json",
+              "sha256": "b5693aa3831b79707e6e5ec2ad5409cc1ef7bcca1cf5b8160ffef496137d3c05"
+            }
+          },
+          "elapsed_seconds": 131.574272264
+        }
+      },
+      {
+        "backend": "reference",
+        "repeat": 2,
+        "wall_seconds_including_startup": 332.45245166199993,
+        "workflow_seconds": 331.4501148710001,
+        "command": [
+          "/opt/hostedtoolcache/Python/3.12.14/x64/bin/python",
+          "-m",
+          "crisprworks_fit",
+          "mle",
+          "-k",
+          "fit-hap1/counts.tsv",
+          "-d",
+          "fit-hap1/design.tsv",
+          "-n",
+          "fit-hap1/paired/reference-2",
+          "--backend",
+          "reference",
+          "--threads",
+          "1",
+          "--blas-threads",
+          "1",
+          "--seed",
+          "42",
+          "--permutation-round",
+          "2",
+          "--kernel",
+          "native",
+          "--write-fit-details",
+          "--genes-varmodeling",
+          "1000",
+          "--update-efficiency"
+        ],
+        "manifest": {
+          "schema_version": 1,
+          "status": "complete",
+          "tool": "CRISPRWorks Fit",
+          "version": "0.1.0a2",
+          "backend": "reference",
+          "kernel": "reference",
+          "mageck2_version": "0.3.0",
+          "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+          "python": "3.12.14",
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+          "options": {
+            "subcmd": "mle",
+            "count_table": "fit-hap1/counts.tsv",
+            "design_matrix": "fit-hap1/design.tsv",
+            "day0_label": null,
+            "output_prefix": "fit-hap1/paired/reference-2",
+            "include_samples": null,
+            "beta_labels": null,
+            "control_sgrna": null,
+            "control_gene": null,
+            "cnv_norm": null,
+            "cell_line": null,
+            "cnv_est": null,
+            "debug": false,
+            "debug_gene": null,
+            "norm_method": "median",
+            "genes_varmodeling": 1000,
+            "permutation_round": 2,
+            "no_permutation_by_group": false,
+            "max_sgrnapergene_permutation": 40,
+            "remove_outliers": false,
+            "threads": 1,
+            "adjust_method": "fdr",
+            "sgrna_efficiency": null,
+            "sgrna_eff_name_column": 0,
+            "sgrna_eff_score_column": 1,
+            "update_efficiency": true,
+            "bayes": false,
+            "PPI_prior": false,
+            "PPI_weighting": null,
+            "negative_control": null,
+            "backend": "reference",
+            "kernel": "native",
+            "seed": 42,
+            "blas_threads": 1,
+            "write_fit_details": true
+          },
+          "inputs": {
+            "count_table": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/counts.tsv",
+              "sha256": "bf24bf255b75cde8cb01279290bdbbbbbba5773596245b8c0300b07b879c36bf"
+            },
+            "design_matrix": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/design.tsv",
+              "sha256": "bc4f06905509e0180146e20ae3d3228a59406b2422ed193e7f0e0e7cc9fd5d2e"
+            },
+            "sgrna_efficiency": null,
+            "control_sgrna": null,
+            "control_gene": null
+          },
+          "blas": [
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-fdde5778.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "Haswell"
+            },
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "Haswell"
+            }
+          ],
+          "outputs": {
+            "gene_summary": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/reference-2.gene_summary.txt",
+              "sha256": "dfeb15a7e1f113891a56b8cd23d575ffb124289d6c948367d1027c20ce2256ee"
+            },
+            "sgrna_summary": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/reference-2.sgrna_summary.txt",
+              "sha256": "16f5ded25d4b6321808ea405132cbf39c6fe1185aec1bf6dced07ca9e9a2bd29"
+            },
+            "fit_details": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/reference-2.fit-details.json",
+              "sha256": "4317c2db4819af2c6ad2fe8659af4ce2bd23cba69ad843bc8a4a091aaae7c082"
+            }
+          },
+          "elapsed_seconds": 331.4501148710001
+        }
+      },
+      {
+        "backend": "accelerated",
+        "repeat": 2,
+        "wall_seconds_including_startup": 38.68067711100002,
+        "workflow_seconds": 37.72639602000004,
+        "command": [
+          "/opt/hostedtoolcache/Python/3.12.14/x64/bin/python",
+          "-m",
+          "crisprworks_fit",
+          "mle",
+          "-k",
+          "fit-hap1/counts.tsv",
+          "-d",
+          "fit-hap1/design.tsv",
+          "-n",
+          "fit-hap1/paired/accelerated-2",
+          "--backend",
+          "accelerated",
+          "--threads",
+          "1",
+          "--blas-threads",
+          "1",
+          "--seed",
+          "42",
+          "--permutation-round",
+          "2",
+          "--kernel",
+          "native",
+          "--write-fit-details",
+          "--genes-varmodeling",
+          "1000",
+          "--update-efficiency"
+        ],
+        "manifest": {
+          "schema_version": 1,
+          "status": "complete",
+          "tool": "CRISPRWorks Fit",
+          "version": "0.1.0a2",
+          "backend": "accelerated",
+          "kernel": "native",
+          "mageck2_version": "0.3.0",
+          "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+          "python": "3.12.14",
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+          "options": {
+            "subcmd": "mle",
+            "count_table": "fit-hap1/counts.tsv",
+            "design_matrix": "fit-hap1/design.tsv",
+            "day0_label": null,
+            "output_prefix": "fit-hap1/paired/accelerated-2",
+            "include_samples": null,
+            "beta_labels": null,
+            "control_sgrna": null,
+            "control_gene": null,
+            "cnv_norm": null,
+            "cell_line": null,
+            "cnv_est": null,
+            "debug": false,
+            "debug_gene": null,
+            "norm_method": "median",
+            "genes_varmodeling": 1000,
+            "permutation_round": 2,
+            "no_permutation_by_group": false,
+            "max_sgrnapergene_permutation": 40,
+            "remove_outliers": false,
+            "threads": 1,
+            "adjust_method": "fdr",
+            "sgrna_efficiency": null,
+            "sgrna_eff_name_column": 0,
+            "sgrna_eff_score_column": 1,
+            "update_efficiency": true,
+            "bayes": false,
+            "PPI_prior": false,
+            "PPI_weighting": null,
+            "negative_control": null,
+            "backend": "accelerated",
+            "kernel": "native",
+            "seed": 42,
+            "blas_threads": 1,
+            "write_fit_details": true
+          },
+          "inputs": {
+            "count_table": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/counts.tsv",
+              "sha256": "bf24bf255b75cde8cb01279290bdbbbbbba5773596245b8c0300b07b879c36bf"
+            },
+            "design_matrix": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/design.tsv",
+              "sha256": "bc4f06905509e0180146e20ae3d3228a59406b2422ed193e7f0e0e7cc9fd5d2e"
+            },
+            "sgrna_efficiency": null,
+            "control_sgrna": null,
+            "control_gene": null
+          },
+          "blas": [
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-fdde5778.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "Haswell"
+            },
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "Haswell"
+            }
+          ],
+          "outputs": {
+            "gene_summary": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/accelerated-2.gene_summary.txt",
+              "sha256": "dfeb15a7e1f113891a56b8cd23d575ffb124289d6c948367d1027c20ce2256ee"
+            },
+            "sgrna_summary": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/accelerated-2.sgrna_summary.txt",
+              "sha256": "16f5ded25d4b6321808ea405132cbf39c6fe1185aec1bf6dced07ca9e9a2bd29"
+            },
+            "fit_details": {
+              "path": "/home/runner/work/dotmatch/dotmatch/fit-hap1/paired/accelerated-2.fit-details.json",
+              "sha256": "3d0a1ad86a65e537f72ab6dd1cebf971743c12e2ca4024c787364f01a7107e11"
+            }
+          },
+          "elapsed_seconds": 37.72639602000004
+        }
+      }
+    ],
+    "identical_gene_summary_bytes": true,
+    "full_precision_max_absolute_errors": {
+      "beta_estimate": 2.4868995751603507e-14,
+      "beta_zscore": 3.26405569239796e-14,
+      "w_estimate": 1.4432899320127035e-15,
+      "beta_pval": 1.9761969838327786e-14,
+      "beta_pval_fdr": 2.0095036745715333e-14,
+      "beta_permute_pval": 0,
+      "beta_permute_pval_fdr": 0,
+      "beta_permute_pval_neg": 0,
+      "beta_permute_pval_pos": 0,
+      "beta_permute_pval_neg_fdr": 0,
+      "beta_permute_pval_pos_fdr": 0
+    },
+    "full_precision_tolerances": {
+      "rtol": 1e-07,
+      "atol": 1e-08
+    },
+    "median_wall_seconds": {
+      "reference": 332.45245166199993,
+      "accelerated": 38.68067711100002,
+      "numpy": 131.05977701799998
+    },
+    "median_speedup": 8.594794002906868,
+    "speedup_over_numpy": 3.3882492967200193
+  }
+}

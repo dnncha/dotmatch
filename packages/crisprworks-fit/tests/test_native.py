@@ -74,3 +74,10 @@ class NativeTests(unittest.TestCase):
                       "mu_estimate", "sgrna_residule"):
             assert_allclose(getattr(actual, field), getattr(expected, field),
                             rtol=1e-7, atol=1e-8, equal_nan=True)
+
+    @unittest.skipIf(kernels._native is None, "Native extension not installed")
+    def test_native_singular_solve_rejects_without_extra_regularization(self):
+        arrays = [np.ones((3, 2)), np.full(3, 10.), np.ones(3),
+                  np.ones(2), np.ones(1), np.full(3, .1)]
+        with self.assertRaisesRegex(ArithmeticError, "Singular"):
+            kernels._native.loop(*arrays, 1, 1, 1, 0., False, False)
