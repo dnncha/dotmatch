@@ -116,10 +116,16 @@ python3 packages/crisprworks-fit/benchmarks/public_hap1.py \
 
 The script downloads the Hart Lab BAGEL HAP1 count table at an immutable commit,
 checks its SHA-256, and analyzes 71,090 guides across 18,056 gene labels with
-efficiency updates and mean-variance modeling. Controls with 10 or more guides
+efficiency updates and mean-variance modeling. Labels with 40 or more guides
 retain upstream's default permutation skip behavior. See the generated
 `provenance.json` and `paired/benchmark.json`. This checks numerical agreement
 on real counts; it does not establish biological hit accuracy.
+
+Normal push CI uses `--cohort four-guide`: 17,445 complete four-guide gene labels
+and 69,780 guides. This excludes incomplete labels and larger control bins
+before normalization, and compares the same resulting counts in both backends.
+The full table retains all seven guide-count groups and is a separate, more
+expensive stress test. The manual CI workflow defaults to that full table.
 
 From the repository root:
 

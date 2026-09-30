@@ -1,6 +1,7 @@
 """Fetch a pinned public full-library screen and run the paired benchmark."""
 
 import argparse
+from collections import Counter
 import hashlib
 import json
 from pathlib import Path
@@ -19,6 +20,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--repeats", type=int, default=3)
+    parser.add_argument("--cohort", choices=("full", "four-guide"), default="full",
+                        help="Full table or complete four-guide gene labels; selection is recorded")
     parser.add_argument("--local-counts", type=Path,
                         help="Use a previously downloaded file; the same hash is required")
     args = parser.parse_args()
@@ -30,16 +33,24 @@ def main():
             data = response.read()
     if hashlib.sha256(data).hexdigest() != SHA256:
         raise ValueError("Public count-table hash does not match the pinned dataset")
+    rows = data.decode().splitlines()
+    guide_counts = Counter(row.split("\t")[1] for row in rows[1:])
+    if args.cohort == "four-guide":
+        rows = [rows[0]] + [row for row in rows[1:] if guide_counts[row.split("\t")[1]] == 4]
+        data = ("\n".join(rows) + "\n").encode()
+        guide_counts = {gene: count for gene, count in guide_counts.items() if count == 4}
     counts = args.out_dir / "counts.tsv"
     design = args.out_dir / "design.tsv"
     counts.write_bytes(data)
     design.write_text(DESIGN)
     provenance = {
-        "source_url": URL, "source_commit": COMMIT, "counts_sha256": SHA256,
-        "guides": 71090, "gene_labels_including_controls": 18056,
+        "source_url": URL, "source_commit": COMMIT, "source_sha256": SHA256,
+        "counts_sha256": hashlib.sha256(data).hexdigest(), "cohort": args.cohort,
+        "guides": len(rows) - 1, "gene_labels_including_controls": len(guide_counts),
+        "selection": "all labels" if args.cohort == "full" else "labels having exactly four guides; incomplete labels and larger control bins excluded before normalization",
         "design": "one T0 baseline; three T18 replicates; single treatment effect",
         "scope": "numerical parity against MAGeCK2, not validation of biological hits",
-        "control_caveat": "Upstream default skips labels with >=10 guides during permutations",
+        "control_caveat": "Upstream default skips fitting labels with >=40 guides; their permutation tails use the preceding guide-count group",
         "source_license": "MIT; dataset retrieved separately, not redistributed in this package",
     }
     (args.out_dir / "provenance.json").write_text(json.dumps(provenance, indent=2) + "\n")
@@ -49,6 +60,7 @@ def main():
         "--design-matrix", str(design), "--update-efficiency",
         "--genes-varmodeling", "1000", "--repeats", str(args.repeats),
     ], check=True)
+    print((args.out_dir / "paired" / "benchmark.json").read_text(), flush=True)
 
 
 if __name__ == "__main__":
