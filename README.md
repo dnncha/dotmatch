@@ -26,7 +26,7 @@ on Linux and macOS and writes MAGeCK-compatible counts.
 | Component | Purpose | Availability |
 | --- | --- | --- |
 | **Count** | Count guides and inspect read assignments | Available through the DotMatch CLI and Python package |
-| **Fit** | Fit gene-level screen effects | [Experimental MAGeCK2 MLE accelerator under review](https://github.com/dnncha/dotmatch/pull/151) |
+| **Fit** | Fit gene-level screen effects | [Experimental alpha available from source](https://github.com/dnncha/dotmatch/tree/main/packages/crisprworks-fit) |
 | **Review** | Review QC, comparisons and screen results | Existing DotMatch reports cover counts and assignment QC; a broader Review tool is planned |
 
 Start with Count using the commands below. Read the

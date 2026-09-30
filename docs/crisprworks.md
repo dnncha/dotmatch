@@ -12,14 +12,16 @@ inference and review as separate, interoperable steps.
 | Name | Task | Current status |
 | --- | --- | --- |
 | **CRISPRWorks Count** | Turn FASTQ reads and a known guide library into counts and assignment QC | Available through DotMatch |
-| **CRISPRWorks Fit** | Estimate gene-level effects from guide counts and an experimental design | Experimental MAGeCK2 MLE accelerator [under review](https://github.com/dnncha/dotmatch/pull/151) |
+| **CRISPRWorks Fit** | Estimate gene-level effects from guide counts and an experimental design | [Experimental alpha available from source](https://github.com/dnncha/dotmatch/tree/main/packages/crisprworks-fit) |
 | **CRISPRWorks Review** | Inspect QC, comparisons and screen results | Planned as a broader tool; DotMatch already provides count and assignment-QC reports |
 
-The Count documentation describes released DotMatch functionality. Fit now has
-an experimental source package with numerical regression checks and bounded
-benchmarks; see [the implementation PR](https://github.com/dnncha/dotmatch/pull/151)
-and its [measurement record](https://github.com/dnncha/dotmatch/blob/codex/crisprworks-fit-mle/packages/crisprworks-fit/benchmarks/RESULTS.md).
-It has no published package release or independent genome-wide validation yet.
+The Count documentation describes released DotMatch functionality. Fit is an
+experimental source package with numerical regression checks, a tested
+container build and a batch runner. Its [genome-wide HAP1 cohort measurement](https://github.com/dnncha/dotmatch/blob/main/packages/crisprworks-fit/benchmarks/HAP1.md)
+covered 17,445 complete four-guide gene labels and measured 2.64× faster
+end-to-end fitting with identical printed gene summaries. The cohort selection
+and settings are recorded; this is not a universal speed or biological accuracy
+claim. Fit has no PyPI release or independent lab evaluation yet.
 The broader Review tool is planned. The desktop Workbench is developed separately in
 `dotmatch-community`; its presence does not imply a released Review product.
 
@@ -39,6 +41,20 @@ perform gene-level inference.
 
 The DotMatch engine also supports barcode demultiplexing and other known-target
 short-DNA assays. Those capabilities remain documented under DotMatch.
+
+## Try Fit from source
+
+From a repository checkout:
+
+```bash
+python3 -m pip install ./packages/crisprworks-fit
+crisprworks-fit demo --out-dir fit-demo/
+```
+
+Fit currently requires Python 3.10+, a C++ compiler and `make` for its MAGeCK2
+dependency. The [Fit README](https://github.com/dnncha/dotmatch/tree/main/packages/crisprworks-fit)
+also covers the tested container build, count-table analysis and batch workflow.
+The synthetic demo checks installation; it does not validate biological hits.
 
 ## Names and compatibility
 
@@ -68,14 +84,16 @@ replace the versioned software citation.
 ## Fit development criteria
 
 The first Fit implementation targets the MAGeCK2 MLE inference step. Before a
-release or performance claim:
+broader production release or expanded performance claim:
 
 1. Profile a pinned upstream version on reproducible workloads.
 2. Compare inference using identical frozen count matrices, design matrices,
    settings and permutation inputs. Record numerical tolerances and differences
    in effect estimates, standard errors, p-values and adjusted p-values.
-3. Measure runtime and peak memory on documented hardware.
-4. Obtain independent workflow evaluation and investigate discrepancies.
+3. Measure runtime on a documented environment. Measure peak memory before
+   making memory claims; report workload-specific limits.
+4. Obtain independent lab workflow evaluation and investigate discrepancies
+   before claiming production readiness.
 
 Evaluate guide-counting changes separately from inference changes. DotMatch
 count comparisons can help establish the former; they do not validate
