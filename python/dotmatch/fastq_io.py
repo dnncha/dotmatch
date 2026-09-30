@@ -6,9 +6,13 @@ printable ASCII, not whether a read originated from a particular DNA target.
 from __future__ import annotations
 
 import gzip
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterator, TextIO
+
+
+_INVALID_PRINTABLE_ASCII = re.compile(r"[^\x21-\x7e]")
 
 
 @dataclass(frozen=True)
@@ -43,9 +47,9 @@ def iter_fastq_records(handle: TextIO, source: str | Path, *, content_digest: An
             raise ValueError(f"invalid FASTQ read identifier {location}")
         if not seq or len(seq) != len(qual):
             raise ValueError(f"invalid FASTQ record {location}: sequence and quality lengths differ or are empty")
-        if not seq.isascii() or any(ord(ch) <= 32 or ord(ch) >= 127 for ch in seq):
+        if _INVALID_PRINTABLE_ASCII.search(seq) is not None:
             raise ValueError(f"invalid FASTQ sequence {location}: expected printable ASCII without whitespace")
-        if any(ord(ch) < 33 or ord(ch) > 126 for ch in qual):
+        if _INVALID_PRINTABLE_ASCII.search(qual) is not None:
             raise ValueError(f"invalid Phred+33 quality {location}: expected ASCII 33–126")
         if plus[1:].strip() and plus[1:].split()[0] != identifiers[0]:
             raise ValueError(f"invalid FASTQ separator {location}: repeated read identifier does not match")
