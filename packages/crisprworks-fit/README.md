@@ -116,6 +116,11 @@ full-precision beta differences were below `1.25e-14`. This selects complete
 four-guide labels before normalization; it is not a timing for the unfiltered
 table or evidence of biological hit accuracy.
 
+The unfiltered 71,090-guide table also passed a separate cross-environment
+full-precision comparison with identical printed gene results; see the HAP1
+record for how the CI reference and local accelerated outputs were compared.
+No unfiltered-table timing claim is made.
+
 Initial measurements are documented in [benchmarks/RESULTS.md](benchmarks/RESULTS.md).
 The initial records cover two bounded workloads at commit `e900ecdb`; they do
 not establish a universal speedup or industry readiness. Full-library public

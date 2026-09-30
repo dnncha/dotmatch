@@ -63,3 +63,25 @@ same selected matrix with both backends. Full-precision comparisons use
 commands, run times, manifests, hashes, provenance and differences.
 The [successful CI run](https://github.com/dnncha/dotmatch/actions/runs/36713005248)
 also retains the six complete result sets in its public HAP1 artifact.
+
+## Additional full-table numerical comparison
+
+The **unfiltered 71,090-guide, 18,056-label table** was also compared at full
+precision. The complete MAGeCK2 reference output came from the CI stress run;
+the complete accelerated output came from a local Linux run using the same
+input hashes, options and seed. Printed gene summaries were byte-identical,
+permutation p-values/FDR matched exactly, and maximum absolute differences were
+`7.50e-15` for beta and `6.17e-14` for Wald z-scores.
+
+This is a cross-environment numerical comparison, **not a timing comparison**.
+The original 30-minute CI job finished its reference run but timed out near the
+end of its first accelerated run. It did not finish three paired repetitions.
+The [full-table parity record](hap1-full-parity.json) includes both completed
+run manifests, settings, hashes and numerical differences. No full-table
+speedup is claimed. One 96-guide label retains upstream's fitting skip and
+permutation fallback behavior; all output labels are included in the comparison.
+
+For a paired rerun, use `public_hap1.py --cohort full --repeats 1` with the
+output directory option. The manual CI workflow supports the full-table case
+and has a larger time budget. Three full-table timing repetitions and
+independent lab evaluation remain further checks.

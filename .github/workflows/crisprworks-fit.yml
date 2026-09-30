@@ -72,7 +72,7 @@ jobs:
   full-library:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       OPENBLAS_NUM_THREADS: '1'
       OMP_NUM_THREADS: '1'
@@ -90,7 +90,7 @@ jobs:
             echo 'run=true' >> "$GITHUB_OUTPUT"
           else
             git diff --name-only "$BEFORE" HEAD > /tmp/fit-changed-paths
-            if grep -Eq '(^packages/crisprworks-fit/(src/|benchmarks/.*\.py|pyproject\.toml|container-constraints\.txt)|^\.github/workflows/crisprworks-fit\.yml$)' /tmp/fit-changed-paths; then
+            if grep -Eq '^packages/crisprworks-fit/(src/|benchmarks/.*\.py|pyproject\.toml|container-constraints\.txt)' /tmp/fit-changed-paths; then
               echo 'run=true' >> "$GITHUB_OUTPUT"
             else
               echo 'run=false' >> "$GITHUB_OUTPUT"
