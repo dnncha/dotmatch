@@ -68,11 +68,16 @@ def test_malformed_native_libraries_fail_before_output_creation(content, tmp_pat
         read_target_table(path)
 
 
-def test_native_parser_rejects_corrupt_gzip_and_long_rows(tmp_path):
+@pytest.mark.parametrize('trailer_bytes', range(1, 9))
+@pytest.mark.parametrize('final_newline', [b'', b'\n'])
+def test_native_parser_rejects_corrupt_gzip(tmp_path, trailer_bytes, final_newline):
     path = tmp_path / 'targets.tsv.gz'
-    path.write_bytes(gzip.compress(b'id\tsequence\ng\tACGTACGT\n')[:-6])
+    path.write_bytes(gzip.compress(b'id\tsequence\ng\tACGTACGT' + final_newline)[:-trailer_bytes])
     result, output = count(path, tmp_path)
     assert result.returncode != 0 and not output.exists()
+
+
+def test_native_parser_rejects_long_rows(tmp_path):
     path = tmp_path / 'targets.tsv'
     path.write_text('id\tsequence\ng\t' + 'A' * (1024 * 1024 + 1) + '\n')
     result, output = count(path, tmp_path)
