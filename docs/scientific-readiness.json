@@ -44,14 +44,18 @@
         "docs/benchmarks/crispr_comparison/README.md",
         "benchmarks/raw/native_edlib_assignment_summary.csv",
         "benchmarks/raw/public_crispr_edlib_validation.csv",
-        "benchmarks/raw/crispr_comparison_edlib_validation.csv"
+        "benchmarks/raw/crispr_comparison_edlib_validation.csv",
+        "tests/test_guide_counter_compatibility.py",
+        "docs/benchmarks/guide_counter/README.md",
+        "benchmarks/raw/guide_counter_comparison_validation.json"
       ],
       "gates": [
         "make native-exact-gate",
         "make public-crispr-evidence-gate",
-        "make crispr-comparison-gate"
+        "make crispr-comparison-gate",
+        "make guide-counter-gate"
       ],
-      "acceptance": "Native fixed-window indexed assignment and public CRISPR assignment claims require zero mismatches against exact or native Edlib oracles and must satisfy scoped speed floors."
+      "acceptance": "Native fixed-window indexed assignment and public CRISPR assignment claims require zero mismatches against exact or native Edlib oracles and must satisfy scoped speed floors. The guide-counter compatibility comparison requires identical full counts and checked output/protocol evidence; byte-oracle regressions verify its distinct offset and counting rules."
     },
     {
       "id": "public_assay_evidence",

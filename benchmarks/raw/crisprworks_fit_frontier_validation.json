@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "checkpoint": "Joint-model and whole-gene-control calibration stage",
+  "fit_tests": {
+    "passed": 40,
+    "installed_wheel": true,
+    "loaded_outside_checkout": true,
+    "native_kernel_required": true,
+    "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m unittest discover -s packages/crisprworks-fit/tests -v"
+  },
+  "required_checks": {
+    "command": "make test cli-test python-test python-package-test repository-ready",
+    "passed": true,
+    "dotmatch_python_tests": 1523
+  },
+  "native_coverage": {
+    "command": "make coverage COVERAGE_CC=<LLVM19 clang> LLVM_PROFDATA=<LLVM19 llvm-profdata> LLVM_COV=<LLVM19 llvm-cov>",
+    "line_percent": 78.0,
+    "threshold_percent": 75.0
+  },
+  "independent_oracles": {
+    "joint_fixture": "unmodified JACKS commit dd5c4be5e83baa5ee79a589b0a8c3a2ac3f7d6ad; effects, standard deviations and efficacies",
+    "fdr_adjustment": "scipy.stats.false_discovery_control, BH and BY with ties and boundary values"
+  },
+  "public_panel": {
+    "libraries": 2,
+    "cell_lines": 3,
+    "external_gene_folds": 5,
+    "heldout_rows": 3489,
+    "heldout_training_control_exclusion": true,
+    "strict_same_numpy_oracle_runs": 10,
+    "maximum_same_numpy_effect_error": 4.440892098500626e-16,
+    "maximum_cross_numpy_effect_error": 0.0019449967766040355,
+    "joint_ap_improvements_over_mle": 6,
+    "joint_ap_improvements_over_chronos": 4,
+    "chronos_all_ten_training_costs_decreased": true,
+    "preparation_regeneration": "all prepared input tables byte-identical",
+    "report_regeneration": "metrics, paired intervals and report byte-identical from recorded scores",
+    "comparator_worker_function_audit": "Chronos and JACKS worker function bodies unchanged from their executed versions"
+  },
+  "null_simulation": {
+    "scenarios": 4,
+    "independent_seeds_per_scenario": 200,
+    "callers": 3,
+    "score_level_only": true,
+    "regeneration": "all 2400 replicate/caller rows byte-identical"
+  },
+  "wheel_sha256": "eb7a89fe3b97b331f9c8de68d63bae30fe483620286d027c126ec61970768cdd",
+  "source_and_evidence_sha256": {
+    "benchmarks/figures/crisprworks_fit_frontier.pdf": "d10b2797e977deb469289f5f46c2d2d139e191f8d8c5cc2c880971dcbf3afe99",
+    "benchmarks/figures/crisprworks_fit_frontier.png": "fbce939cdb294d16901e150792cfded175af4ff785cf5cd40d3919a7a68c98ce",
+    "benchmarks/figures/crisprworks_fit_frontier.svg": "2a621348b48f87956a0a13b26dd63749d5c1d75c9756d36bd01d9b1df0868ea8",
+    "benchmarks/raw/crisprworks_fit_correlated_null.csv": "d0ee76073a847c8f212ac5cdb5fb61826ef44dcdb82bf01e7fce7294498552ae",
+    "benchmarks/raw/crisprworks_fit_correlated_null_metrics.csv": "7dd57c1af824366362ba2b9cce1750d3aba04d59f5086f6c453adcee4cfee9cb",
+    "benchmarks/raw/crisprworks_fit_frontier.csv": "8bd8b9a663073a8cdbe49380cbdac6460db83d822f0d95093a10d41106099e7f",
+    "benchmarks/raw/crisprworks_fit_frontier_metrics.csv": "fcab3574a46195b54844086a035598832726eeb79c0c9ef481d79eabe77a4fbc",
+    "benchmarks/raw/crisprworks_fit_frontier_paired.csv": "6dcc4e197ea3ae2c38c00e73b462c60865a8972aa97312deb5f23f94a1494f8e",
+    "benchmarks/raw/crisprworks_fit_frontier_provenance.json": "950a56d5f3cda0dd6eddcbbedc180cbb2eefac97a17edc7a847c6eda13817894",
+    "packages/crisprworks-fit/pyproject.toml": "c49541e60665b75b7e342cf89a368e4769ab3c3093341381cae1f0447fe51b35",
+    "packages/crisprworks-fit/src/crisprworks_fit/__init__.py": "4c535bf8f6840c9d21b024791bd95c0a84591a694016e53d0c374e64a7e1c232",
+    "packages/crisprworks-fit/src/crisprworks_fit/__main__.py": "307299fda7b77d22c64cb51430ec75e5f59d78e9c948786afb3b2544fe45e4b7",
+    "packages/crisprworks-fit/src/crisprworks_fit/_joint_kernel.py": "f3f9ade175d7bbee184769549ea1ae06a1b92ca7df2ed5e4bdb2a56136554050",
+    "packages/crisprworks-fit/src/crisprworks_fit/backend.py": "b3f1981df5158571847379956acf9cddea22bad3619e7d383d13da2128977749",
+    "packages/crisprworks-fit/src/crisprworks_fit/calibration.py": "f480846e8365feb5bc0abcea85e63b41bfd59330de1567e9d7c2504fa65e907f",
+    "packages/crisprworks-fit/src/crisprworks_fit/cli.py": "711a969419b091f9f431acc75d148270d52cf43d271267f4e333e6aa527a27fd",
+    "packages/crisprworks-fit/src/crisprworks_fit/inference.py": "c6ff1704e7ffae90f0a92cdd9e2c8cae107658601f83d6792c3c04976ce59e27",
+    "packages/crisprworks-fit/src/crisprworks_fit/joint.py": "ac18244dc252cbfcd19018e002fd19baabd38b9b1bba0558ede4b69b6598370a",
+    "packages/crisprworks-fit/src/crisprworks_fit/kernels.py": "f864b17a8c44ec08940576dc5a2ef24b37fbe92fc48f2ed4c76d19ad95ce750b",
+    "packages/crisprworks-fit/tests/fixtures/joint_upstream.json": "d7aa0d46c13a7465c13380890dcb081b760d6548fa72c18e78fda0bffc8857b5"
+  },
+  "scope": "Curated control-enriched public subsets and a specified score simulation; no universal SOTA, genome-wide FDR or independent biological-truth guarantee."
+}

@@ -1,0 +1,62 @@
+name: Retry immutable release
+on:
+  push:
+    branches: [main]
+    paths: ['.github/release-retry.json', '.github/workflows/release-retry.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: write
+concurrency:
+  group: retry-immutable-release
+  cancel-in-progress: false
+jobs:
+  retry:
+    if: github.repository == 'dnncha/dotmatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Retry failed jobs only for the authorized immutable tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python - <<'PY'
+          import json, os, subprocess, time
+          from pathlib import Path
+          repository = os.environ['GITHUB_REPOSITORY']
+          request = json.loads(Path('.github/release-request.json').read_text())
+          retry = json.loads(Path('.github/release-retry.json').read_text())
+          if (repository != 'dnncha/dotmatch' or request.get('authorized') is not True
+                  or retry['tag'] != request['tag'] or type(retry['run_id']) is not int
+                  or retry['run_id'] < 1):
+              raise SystemExit('Retry does not match the authorized release')
+          def api(path):
+              return json.loads(subprocess.check_output(['gh', 'api', 'repos/' + repository + '/' + path]))
+          ref = api('git/ref/tags/' + retry['tag'])['object']
+          if ref['type'] != 'tag':
+              raise SystemExit('Release tag must remain annotated')
+          target = api('git/tags/' + ref['sha'])['object']
+          if target['type'] != 'commit' or target['sha'] != retry['commit']:
+              raise SystemExit('Immutable release tag differs from the retry request')
+          for attempt in range(45):
+              run = api('actions/runs/' + str(retry['run_id']))
+              if (run['head_sha'] != retry['commit'] or run['head_branch'] != retry['tag']
+                      or run['path'].split('@')[0] != '.github/workflows/release.yml'):
+                  raise SystemExit('Workflow run does not match the checked release tag')
+              if run['status'] == 'completed':
+                  if run['conclusion'] == 'success':
+                      print('Release already succeeded; no retry needed.')
+                  elif run['conclusion'] == 'failure':
+                      subprocess.run(['gh', 'run', 'rerun', str(retry['run_id']), '--failed', '--repo', repository], check=True)
+                      print('Retried failed jobs and their dependents against the immutable tag.')
+                  else:
+                      raise SystemExit('Release was not a failed publication attempt')
+                  break
+              time.sleep(20)
+          else:
+              raise SystemExit('Release attempt did not finish; no retry requested.')
+          PY

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -8,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 project = "DotMatch"
 author = "Donncha O'Toole"
 copyright = "2026, Donncha O'Toole"
-release = "0.5.0"
+release = re.search(r'^version\s*=\s*"([^"]+)"', (ROOT / "pyproject.toml").read_text(), re.MULTILINE).group(1)
 version = release
 
 extensions = [
@@ -65,6 +66,8 @@ NAVIGATION_DOCS = {
     "agent-discovery-audit",
     "command-reference",
     "tutorials/crispr-count-first-run",
+    "tutorials/crispr-fit-first-run",
+    "crisprworks",
     "tutorials/scverse-perturb-seq",
     "assayspec",
     "crispr-qc",

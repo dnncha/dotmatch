@@ -2474,7 +2474,7 @@ def _citation_metadata() -> dict[str, str]:
         "family_names": "O'Toole",
         "given_names": "Donncha",
         "version": PYTHON_PACKAGE_VERSION,
-        "doi": "10.5281/zenodo.23043070",
+        "doi": "10.5281/zenodo.20541628",
         "url": "https://github.com/dnncha/dotmatch",
         "year": "2026",
     }

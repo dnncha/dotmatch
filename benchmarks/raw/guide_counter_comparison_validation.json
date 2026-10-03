@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "commands": 80,
+  "count_mismatches": 0,
+  "extended_mismatches": 0,
+  "stats_mismatches": 0,
+  "csv_sha256": "bd957ceb9ad23edf3611dac82d118a3b7414dcb0370bbc90ed131f8714038183",
+  "report_sha256": "3adb654cb7e992a7ca2230c06d4bd20c535a01fdbc237aca0c00402d1530f7b9",
+  "report_script_sha256": "0833061bdeb6475532fae419df7d77d5948c0b51a3abf6ff12c4110bb24a5666",
+  "matplotlib_version": "3.11.2",
+  "figures": {
+    "guide_counter_throughput.svg": "f296719e26cacd7f770c4424307825fc29b83bdec401430377ce9746c2b31f9c",
+    "guide_counter_throughput.png": "d8cccfcb894cd4bcfef8f0784cb1a1c94f6d80023e992812f87d22d6f53e3077",
+    "guide_counter_throughput.pdf": "278a1529951f3b722d3ef63316e391700369ac5f14a7e5c3017e307fb5b9941f",
+    "guide_counter_memory.svg": "e71dccaf9860c6eab0946794728ebae8a7484565505d7fc77564fd6e6d2daf72",
+    "guide_counter_memory.png": "0a92ac3105a8928687d4bb809965929bf23c063cdc290983a374348e24b0c4be",
+    "guide_counter_memory.pdf": "6aa68b940c167faf9a4b7aad956eece52c52211825d0545584c37ae467f51c5e"
+  }
+}

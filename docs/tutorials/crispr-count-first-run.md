@@ -4,18 +4,31 @@ Start with a checked example, then prepare your own reads. Keep the counting
 workflow you already use while you evaluate DotMatch. No study data needs to
 leave your computer.
 
+:::{admonition} Benchmark spotlight: speed and memory with matched counts
+:class: tip
+
+The benchmarked source checkout's `dotmatch guide-counter count` is
+**1.6–5.5× faster with 11.3–14.4× lower peak memory** than guide-counter 0.1.3
+in the tested one-mismatch workflows, with identical full counts. The result
+covers controlled 100k/1M-read FASTQs and the public Yusa library, using one CPU
+thread and five paired repeats. Guide-counter is faster in the tested
+exact-mode million-read cases. These results apply to the compatibility
+command; evaluate your assay and matching policy separately.
+[Read the graphs, commands and limits](../benchmarks/guide_counter/README.md).
+:::
+
 ## Check which version you are using
 
 The released package can be installed with:
 
 ```bash
-python3 -m pip install dotmatch==0.6.4
+python3 -m pip install dotmatch==0.7.0
 dotmatch --version
 ```
 
-DotMatch 0.6.4 includes the checked offline demo, `dotmatch compare-counts`,
+DotMatch 0.7.0 includes the checked offline demo, `dotmatch compare-counts`,
 and the validated `crispr quickstart --link-reads` option. Use the published
-package and confirm `dotmatch --version` reports 0.6.4 before following this
+package and confirm `dotmatch --version` reports 0.7.0 before following this
 tutorial.
 
 For a no-install view using the public synthetic fixture, open the
@@ -23,7 +36,7 @@ For a no-install view using the public synthetic fixture, open the
 
 ## 1. Get a checked result without assembling files
 
-From an installed DotMatch 0.6.4 package:
+From an installed DotMatch 0.7.0 package:
 
 ```bash
 dotmatch demo --out-dir first-run/
@@ -72,7 +85,7 @@ dotmatch crispr quickstart \
 ```
 
 Use paths that match your actual naming convention. Repeat `--fastq` for more
-input patterns. DotMatch 0.6.4 requires every argument to resolve: one valid
+input patterns. DotMatch 0.7.0 requires every argument to resolve: one valid
 file does not excuse a second missing pattern. Duplicate inputs, colliding
 basenames, non-files and invalid resource limits are rejected before a project
 is created. Existing output paths are never overwritten.
@@ -118,7 +131,7 @@ the top-level `status = "draft"` to `status = "ready"` in `assay.toml`, then run
 dotmatch assay start crispr-screen/assay.toml
 ```
 
-DotMatch 0.6.4's explicit `--accept-inference` option only starts a run
+DotMatch 0.7.0's explicit `--accept-inference` option only starts a run
 when inference itself reports ready. It no longer promotes an uncertain
 inference automatically. `--no-run` always leaves the project in draft.
 
@@ -136,7 +149,7 @@ The matrix contains `sgRNA`, `Gene`, then one raw integer count column per
 sample. Only unique assignments add target counts. Ambiguous, unmatched and
 invalid-window reads remain visible in the QC outputs.
 
-For a side-by-side evaluation with DotMatch 0.6.4:
+For a side-by-side evaluation with DotMatch 0.7.0:
 
 ```bash
 dotmatch compare-counts \
@@ -187,4 +200,8 @@ your assay. Supply your confirmed settings. Sample sheets use `sample_id` and
 `fastq` columns; absolute FASTQ paths avoid ambiguity about the working directory.
 Keep biological sample identities explicit and do not treat separate lanes as
 independent biological replicates. DotMatch writes MAGeCK-compatible counts;
-it does not perform downstream screen statistics.
+it does not perform downstream screen statistics. To analyze reviewed counts
+with the separate experimental Fit package, continue with
+[From counts to gene effects](crispr-fit-first-run.md). It covers MLE designs,
+joint guide-efficacy learning, control calibration and the scope of the current
+validation.

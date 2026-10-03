@@ -1,0 +1,59 @@
+{
+  "created_utc": "2026-10-02T16:45:29.110332+00:00",
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+  "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
+  "baseline_ref": "076b1644f130f3810fc3e5b64936658ee44e2096",
+  "baseline_rebuilt_from_pinned_archive_matches_original_binaries": true,
+  "native_tests": "passed: exhaustive byte oracle through length 5, boundaries 0..33, dense seeds, literal metric regression, zero query heap allocation",
+  "cli_tests": "passed, including best/radius unknown-read counts with/without assignment output",
+  "python_tests": {
+    "passed": 1529
+  },
+  "packaging": "fresh wheel and sdist source build/install passed, including literal Hamming metric/policy regressions outside checkout",
+  "sanitizers": {
+    "address": "passed",
+    "undefined_behavior": "passed",
+    "leak": "passed",
+    "execution": "outside tracing sandbox for LeakSanitizer"
+  },
+  "coverage": {
+    "count": 10582,
+    "covered": 8239,
+    "percent": 77.85862785862786,
+    "minimum_percent": 75
+  },
+  "documentation": "Sphinx warnings-as-errors passed; repository-ready and source/evidence audit passed",
+  "historical_comparator_gates": [
+    "native-exact-gate passed",
+    "crispr-comparison-gate passed"
+  ],
+  "commands": [
+    "make test cli-test python-test python-package-test repository-ready",
+    "make native-exact-gate crispr-comparison-gate hamming-seed-layout-gate",
+    "python3 scripts/report_hamming_seed_layout.py --check --check-source",
+    "make coverage",
+    "gcc -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -std=c11 -Iinclude tests/test_qdalign.c src/qdalign.c -o test-qdalign-sanitized",
+    "ASAN_OPTIONS=detect_leaks=1 ./test-qdalign-sanitized",
+    "gcc -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -std=c11 -Iinclude tests/test_qdalign_threshold_alloc.c -o test-allocation-sanitized",
+    "ASAN_OPTIONS=detect_leaks=1 ./test-allocation-sanitized"
+  ],
+  "source_and_evidence_sha256": {
+    "src/qdalign.c": "e83334676da0dfdac82e4f2050429c61668537a99ea266716d4083c774b7983c",
+    "tests/test_qdalign.c": "03bf4b2b9834df84d934e850f137c10099d05cad538b0f00f99e2007505db99b",
+    "tests/test_qdalign_threshold_alloc.c": "8ad666ce748e1ef27acc80d37246b5a08dd7939bdd359532a2826ddd266e39fa",
+    "tests/test_native_fastq_validation.py": "554fc378e6491e230f3014f3a51cd3c9b5b64f719db4871ac1416561fbc1ed99",
+    "python/tests/test_matcher.py": "218720165a6c60ce7e820214f21f24687da98ddb9b44baef81bcd056c16e4949",
+    "python/tests/test_report_hamming_seed_layout.py": "9188a00748263c0b6baa5572092bc3a9f8b3e12d34b9840503824560216ae1c7",
+    "scripts/check_python_wheel.py": "c3f1f8e930efd2cb49154d2e58617b742bbec7b5bc32d7f9273c3e56b2b2413c",
+    "scripts/bench_hamming_seed_layout.py": "249c6640b2df4efbcce5a89abc8ab22e9b88f698baf45e0a9cce6a90adc7fea4",
+    "scripts/bench_hamming_count_layout.py": "84748d97ff3a19863136f3d6a2df7a3785265dc1031d4e945fc5c9ac9be4e178",
+    "scripts/report_hamming_seed_layout.py": "a88cdb19ab98dbb628a871b649c2a604390a8e363d50df30788fc9f526cfa1c2",
+    "Makefile": "757e921d9afb957885a1f276cfe28664322c3cbd73ba3baebfcfe1fc018f8549",
+    "docs/benchmarks/hamming_seed_layout/README.md": "4d6c50195e099a46edde0d14ae9574a596163e415b3cd67eb31ca16f47860804",
+    "benchmarks/raw/hamming_seed_layout.csv": "76724059fbbbb3d25c5eeaf162c11415ad20f1ee2b511d5ad7de493e8a2e0957",
+    "benchmarks/raw/hamming_seed_layout.json": "bcbb22edd61c4fc0d93fee80bd07e1f0d188a4b96ec8dd0fdda7f20c2772a3fa",
+    "benchmarks/raw/hamming_seed_layout_cli.csv": "8d9476a08a9c065ad4c207df8c086ec5ad50ffdd92082384064dfef36dd49eb6",
+    "benchmarks/raw/hamming_seed_layout_cli.json": "77882f84a9645e4a8ad089161b74a7377cd99a2e506d3d178172c83bf746bde0"
+  },
+  "limits": "Performance is before/after on simulated reads, including a real Yusa target library, with five paired repeats on one runner. No new public FASTQ, external competitor, indel, multi-thread or biological-inference claims."
+}

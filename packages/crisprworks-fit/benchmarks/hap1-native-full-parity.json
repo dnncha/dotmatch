@@ -1,0 +1,122 @@
+{
+  "scope": "Cross-environment full-table numerical parity only; timing ratios are not valid",
+  "implementation_commit": "2938b8e6e2219e80404280facf14f323e55ee0c3",
+  "reference_ci_run": 36712090800,
+  "reference_artifact": 11095429626,
+  "genes": 18056,
+  "identical_gene_summary_bytes": true,
+  "full_precision_max_absolute_errors": {
+    "beta_estimate": 9.131584377541913e-15,
+    "beta_zscore": 5.5289106626332796e-14,
+    "w_estimate": 2.220446049250313e-15,
+    "beta_pval": 3.5416114485542494e-14,
+    "beta_pval_fdr": 3.7636560534792807e-14,
+    "beta_permute_pval": 0.0,
+    "beta_permute_pval_fdr": 0.0,
+    "beta_permute_pval_neg": 0.0,
+    "beta_permute_pval_pos": 0.0,
+    "beta_permute_pval_neg_fdr": 0.0,
+    "beta_permute_pval_pos_fdr": 0.0
+  },
+  "native_manifest": {
+    "schema_version": 1,
+    "status": "complete",
+    "tool": "CRISPRWorks Fit",
+    "version": "0.1.0a2",
+    "backend": "accelerated",
+    "kernel": "native",
+    "mageck2_version": "0.3.0",
+    "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+    "python": "3.12.14",
+    "numpy": "2.3.5",
+    "scipy": "1.17.0",
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+    "options": {
+      "subcmd": "mle",
+      "count_table": "fit-hap1-inputs/source.tsv",
+      "design_matrix": "fit-hap1-inputs/design.tsv",
+      "day0_label": null,
+      "output_prefix": "fit-sparse-full/screen",
+      "include_samples": null,
+      "beta_labels": null,
+      "control_sgrna": null,
+      "control_gene": null,
+      "cnv_norm": null,
+      "cell_line": null,
+      "cnv_est": null,
+      "debug": false,
+      "debug_gene": null,
+      "norm_method": "median",
+      "genes_varmodeling": 1000,
+      "permutation_round": 2,
+      "no_permutation_by_group": false,
+      "max_sgrnapergene_permutation": 40,
+      "remove_outliers": false,
+      "threads": 1,
+      "adjust_method": "fdr",
+      "sgrna_efficiency": null,
+      "sgrna_eff_name_column": 0,
+      "sgrna_eff_score_column": 1,
+      "update_efficiency": true,
+      "bayes": false,
+      "PPI_prior": false,
+      "PPI_weighting": null,
+      "negative_control": null,
+      "backend": "accelerated",
+      "kernel": "native",
+      "seed": 42,
+      "blas_threads": 1,
+      "write_fit_details": true
+    },
+    "inputs": {
+      "count_table": {
+        "path": "/workspace/scratch/cba091351f29/fit-hap1-inputs/source.tsv",
+        "sha256": "7638bc6237cf8a3e2302fcd969d014b041819669b37f2f87bc1f7cfbc45ca8a7"
+      },
+      "design_matrix": {
+        "path": "/workspace/scratch/cba091351f29/fit-hap1-inputs/design.tsv",
+        "sha256": "bc4f06905509e0180146e20ae3d3228a59406b2422ed193e7f0e0e7cc9fd5d2e"
+      },
+      "sgrna_efficiency": null,
+      "control_sgrna": null,
+      "control_gene": null
+    },
+    "blas": [
+      {
+        "user_api": "blas",
+        "internal_api": "openblas",
+        "num_threads": 1,
+        "prefix": "libscipy_openblas",
+        "filepath": "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-fdde5778.so",
+        "version": "0.3.30",
+        "threading_layer": "pthreads",
+        "architecture": "SkylakeX"
+      },
+      {
+        "user_api": "blas",
+        "internal_api": "openblas",
+        "num_threads": 1,
+        "prefix": "libscipy_openblas",
+        "filepath": "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+        "version": "0.3.30",
+        "threading_layer": "pthreads",
+        "architecture": "SkylakeX"
+      }
+    ],
+    "outputs": {
+      "gene_summary": {
+        "path": "/workspace/scratch/cba091351f29/fit-sparse-full/screen.gene_summary.txt",
+        "sha256": "0304f6cd4afaf1b43b2cbc82c2166948200786ed99885b7a05a910e701875792"
+      },
+      "sgrna_summary": {
+        "path": "/workspace/scratch/cba091351f29/fit-sparse-full/screen.sgrna_summary.txt",
+        "sha256": "8785435d5a14be7c82354009d5a87289222fc44d475d4fd380627e4b100990d2"
+      },
+      "fit_details": {
+        "path": "/workspace/scratch/cba091351f29/fit-sparse-full/screen.fit-details.json",
+        "sha256": "d897f4c7cd2af93a85e67fb8791f6ea6a9eeff855ffcca15dbda451b2e6adbf5"
+      }
+    },
+    "elapsed_seconds": 151.5760336050007
+  }
+}

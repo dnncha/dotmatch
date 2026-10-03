@@ -283,6 +283,12 @@ def verify_clean_install(artifact: Path, install_root: Path, expected_version: s
         "import dotmatch, quickdna; "
         "assert dotmatch.distance('ACGT', 'AGGT') == 1; "
         "assert quickdna.distance_leq('ACGT', 'AGGT', 1); "
+        "reads = ['ANATGGAT', 'ARATGGAT', 'AaATGGAT']; "
+        "targets = ['AATCGGAT', 'AAACGGAT']; "
+        "best = dotmatch.assign_hamming(reads, targets, k=3, policy='best'); "
+        "radius = dotmatch.assign_hamming(reads, targets, k=3, policy='radius'); "
+        "assert all(r == dotmatch.MatchResult(1, 2, 3, 2, dotmatch.MATCH_UNIQUE) for r in best); "
+        "assert all(r == dotmatch.MatchResult(1, 2, 3, 2, dotmatch.MATCH_AMBIGUOUS) for r in radius); "
         "print('dotmatch package import ok')"
     )
     env = clean_import_env()
@@ -297,6 +303,11 @@ def verify_clean_install(artifact: Path, install_root: Path, expected_version: s
             raise SystemExit(f"{artifact.name} {label} reported {observed!r}, expected {expected!r}")
 
     dotmatch_cli = str(venv_script(env_dir, "dotmatch"))
+    run(
+        [str(py), str(ROOT / "tests/test_guide_counter_compatibility.py")],
+        cwd=probe_dir,
+        env={**env, "DOTMATCH_BIN": dotmatch_cli},
+    )
     evaluation_template = probe_dir / "evaluation.protocol.template.json"
     run(
         [dotmatch_cli, "evaluation-packet", "template", str(evaluation_template)],

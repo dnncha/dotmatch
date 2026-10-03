@@ -1,0 +1,5 @@
+# Validated container dependency set; Python package requirements remain broader.
+mageck2==0.3.0
+numpy==2.3.5
+scipy==1.17.0
+threadpoolctl==3.6.0

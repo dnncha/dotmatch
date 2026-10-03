@@ -70,12 +70,60 @@ static void hamming_seed_index_build_tests(void) {
     assert(idx->hamming_seed_ready == 1);
     assert(idx->n_hamming_seeds == 27);
     assert(idx->hamming_seed_hash_cap >= 8);
+    assert(idx->hamming_seed_heads[0] == 0);
+    assert(idx->hamming_seed_heads[idx->hamming_seed_hash_cap] == idx->n_hamming_seeds);
+    for (size_t slot = 0; slot < idx->hamming_seed_hash_cap; ++slot) {
+        assert(idx->hamming_seed_heads[slot] <= idx->hamming_seed_heads[slot + 1]);
+        for (size_t e = idx->hamming_seed_heads[slot]; e < idx->hamming_seed_heads[slot + 1]; ++e) {
+            const qdaln_hamming_seed_entry *seed = &idx->hamming_seeds[e];
+            assert(hamming_seed_hash(seed->code, seed->seed_len, seed->seed_id,
+                                     idx->hamming_seed_hash_cap) == slot);
+            assert(seed->target_code == idx->codes[seed->target_index]);
+            assert(seed->target_len == idx->target_lens[seed->target_index]);
+        }
+    }
+    qdaln_index_free(idx);
+}
+
+static void hamming_dense_query_no_heap_tests(void) {
+    enum { N_TARGETS = 512, LEN = 8 };
+    char words[N_TARGETS][LEN + 1];
+    const char *targets[N_TARGETS];
+    size_t lens[N_TARGETS];
+    const char *reads[] = {"AACCCCCC", "AAGGGGGG", "AAAAAAAA"};
+    size_t read_lens[] = {LEN, LEN, LEN};
+    qdaln_match_result results[3];
+    for (size_t i = 0; i < N_TARGETS; ++i) {
+        words[i][0] = words[i][1] = 'A';
+        size_t v = i;
+        for (size_t p = 2; p < LEN; ++p) {
+            words[i][p] = "ACGT"[v & 3U];
+            v >>= 2;
+        }
+        words[i][LEN] = '\0';
+        targets[i] = words[i];
+        lens[i] = LEN;
+    }
+    words[N_TARGETS - 1][LEN - 1] = 'N';
+    qdaln_index *idx = qdaln_index_build(targets, lens, N_TARGETS);
+    assert(idx != NULL);
+    for (int k = 1; k <= 3; ++k) {
+        reset_alloc_counts();
+        qdaln_index_stats stats;
+        assert(qdaln_index_assign_hamming_stats(idx, reads, read_lens, 3, k, results, &stats) == 0);
+        assert(test_malloc_calls == 0);
+        assert(test_calloc_calls == 0);
+        assert(test_free_calls == 0);
+        assert(stats.candidates_considered == stats.candidates_verified);
+        assert(results[2].best_distance == 0);
+    }
     qdaln_index_free(idx);
 }
 
 int main(void) {
     packed_hamming_tests();
     hamming_seed_index_build_tests();
+    hamming_dense_query_no_heap_tests();
     assert_k1_leq_no_heap("ACGT", 4, "ACGT", 4, 1);
     assert_k1_leq_no_heap("ACGT", 4, "ACGA", 4, 1);
     assert_k1_leq_no_heap("ACGT", 4, "ACGTT", 5, 1);

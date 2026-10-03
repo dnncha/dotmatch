@@ -18,10 +18,11 @@
 
 typedef struct qdaln_hamming_seed_entry {
     uint64_t code;
+    uint64_t target_code;
     size_t target_index;
-    size_t seed_len;
+    unsigned char seed_len;
     unsigned char seed_id;
-    size_t next;
+    unsigned char target_len;
 } qdaln_hamming_seed_entry;
 
 struct qdaln_index {
@@ -825,17 +826,17 @@ int qdaln_assign_many(const char *const *reads, const size_t *read_lens, size_t 
     return 0;
 }
 
-static int index_hamming_seed_insert(qdaln_index *index, unsigned char seed_id, uint64_t code,
-                                     size_t seed_len, size_t target_index) {
+static void index_hamming_seed_insert(qdaln_index *index, unsigned char seed_id, uint64_t code,
+                                      size_t seed_len, size_t target_index) {
     size_t slot = hamming_seed_hash(code, seed_len, seed_id, index->hamming_seed_hash_cap);
-    size_t e = index->n_hamming_seeds++;
+    size_t e = index->hamming_seed_heads[slot]++;
+    ++index->n_hamming_seeds;
     index->hamming_seeds[e].code = code;
+    index->hamming_seeds[e].target_code = index->codes[target_index];
     index->hamming_seeds[e].target_index = target_index;
-    index->hamming_seeds[e].seed_len = seed_len;
+    index->hamming_seeds[e].seed_len = (unsigned char)seed_len;
     index->hamming_seeds[e].seed_id = seed_id;
-    index->hamming_seeds[e].next = index->hamming_seed_heads[slot];
-    index->hamming_seed_heads[slot] = e;
-    return 0;
+    index->hamming_seeds[e].target_len = (unsigned char)index->target_lens[target_index];
 }
 
 static int index_exact_table_insert(qdaln_index *index, uint64_t code, size_t len, size_t target_index) {
@@ -988,12 +989,31 @@ qdaln_index *qdaln_index_build(const char *const *targets, const size_t *target_
     if (hamming_seed_need != 0) {
         idx->hamming_seed_hash_cap = next_pow2_size(hamming_seed_need * 2 + 1);
         idx->hamming_seeds = (qdaln_hamming_seed_entry *)malloc(hamming_seed_need * sizeof(qdaln_hamming_seed_entry));
-        idx->hamming_seed_heads = (size_t *)malloc(idx->hamming_seed_hash_cap * sizeof(size_t));
+        idx->hamming_seed_heads = (size_t *)calloc(idx->hamming_seed_hash_cap + 1U, sizeof(size_t));
         if (idx->hamming_seeds == NULL || idx->hamming_seed_heads == NULL) {
             qdaln_index_free(idx);
             return NULL;
         }
-        for (size_t i = 0; i < idx->hamming_seed_hash_cap; ++i) idx->hamming_seed_heads[i] = SIZE_MAX;
+        /* Count bucket sizes, then scatter into contiguous ranges. Store the
+         * full target code beside each seed to avoid pointer chasing at query
+         * time. The offset array doubles as the insertion cursor, so building
+         * this layout does not need a second table of temporary cursors. */
+        for (size_t i = 0; i < n_targets; ++i) {
+            if (!idx->encodable[i] || idx->target_lens[i] > 32) continue;
+            for (size_t n_seeds = 2; n_seeds <= 4; ++n_seeds) {
+                for (size_t seed_id = 0; seed_id < n_seeds; ++seed_id) {
+                    size_t start = 0, seed_len = 0;
+                    hamming_seed_partition(idx->target_lens[i], n_seeds, seed_id, &start, &seed_len);
+                    uint64_t seed = code_segment_qd(idx->codes[i], start, seed_len);
+                    size_t slot = hamming_seed_hash(seed, seed_len, hamming_seed_key(n_seeds, seed_id),
+                                                    idx->hamming_seed_hash_cap);
+                    ++idx->hamming_seed_heads[slot + 1U];
+                }
+            }
+        }
+        for (size_t slot = 1; slot <= idx->hamming_seed_hash_cap; ++slot) {
+            idx->hamming_seed_heads[slot] += idx->hamming_seed_heads[slot - 1U];
+        }
 
         for (size_t i = 0; i < n_targets; ++i) {
             if (!idx->encodable[i] || idx->target_lens[i] > 32) continue;
@@ -1003,13 +1023,16 @@ qdaln_index *qdaln_index_build(const char *const *targets, const size_t *target_
                     size_t seed_len = 0;
                     hamming_seed_partition(idx->target_lens[i], n_seeds, seed_id, &start, &seed_len);
                     uint64_t seed = code_segment_qd(idx->codes[i], start, seed_len);
-                    if (index_hamming_seed_insert(idx, hamming_seed_key(n_seeds, seed_id), seed, seed_len, i) != 0) {
-                        qdaln_index_free(idx);
-                        return NULL;
-                    }
+                    index_hamming_seed_insert(idx, hamming_seed_key(n_seeds, seed_id), seed, seed_len, i);
                 }
             }
         }
+        /* Insertion advanced each start to its bucket end; shift back to
+         * recover [heads[slot], heads[slot + 1]) for every bucket. */
+        for (size_t slot = idx->hamming_seed_hash_cap; slot > 0; --slot) {
+            idx->hamming_seed_heads[slot] = idx->hamming_seed_heads[slot - 1U];
+        }
+        idx->hamming_seed_heads[0] = 0;
         idx->hamming_seed_ready = 1;
     }
 
@@ -1938,80 +1961,46 @@ static int hamming_distance_within_k(const char *a, size_t a_len, const char *b,
     return same_length_hamming_distance_within_k(a, b, a_len, k);
 }
 
-static int index_visit_hamming_exact_seen_candidates(const qdaln_index *index, uint64_t code, size_t len,
-                                                     candidate_seen *seen, int distance,
-                                                     qdaln_match_result *result, int *best_tie_count,
-                                                     qdaln_index_stats *stats) {
-    size_t slot = code_hash(code, len, index->hash_cap);
-    for (size_t j = index->hash_heads[slot]; j != SIZE_MAX; ) {
-        size_t nextj = index->hash_next[j];
-        if (!index->encodable[j] || index->target_lens[j] != len || index->codes[j] != code) {
-            j = nextj;
-            continue;
-        }
-        int seen_rc = candidate_seen_add(seen, j);
-        if (seen_rc < 0) return -1;
-        if (seen_rc == 0) {
-            j = nextj;
-            continue;
-        }
-        if (stats != NULL) {
-            ++stats->candidates_considered;
-            ++stats->candidates_verified;
-        }
-        index_update_verified(result, (int)j, distance, best_tie_count);
-        j = nextj;
-    }
-    return 0;
-}
-
 static int index_visit_hamming_seed_candidates(const qdaln_index *index, unsigned char seed_id,
-                                               uint64_t seed_code, size_t seed_len, candidate_seen *seen,
+                                               uint64_t seed_code, size_t seed_len,
+                                               const uint64_t *prior_seed_masks, size_t n_prior_seeds,
                                                uint64_t read_code, size_t read_len, int k,
                                                qdaln_match_result *result, int *best_tie_count,
                                                qdaln_index_stats *stats) {
     if (!index->hamming_seed_ready || index->hamming_seed_hash_cap == 0) return 0;
     size_t slot = hamming_seed_hash(seed_code, seed_len, seed_id, index->hamming_seed_hash_cap);
-    for (size_t e = index->hamming_seed_heads[slot]; e != SIZE_MAX; ) {
-        size_t nexte = index->hamming_seeds[e].next;
+    for (size_t e = index->hamming_seed_heads[slot]; e < index->hamming_seed_heads[slot + 1U]; ++e) {
         const qdaln_hamming_seed_entry *entry = &index->hamming_seeds[e];
         size_t j = entry->target_index;
         if (entry->seed_id != seed_id || entry->seed_len != seed_len || entry->code != seed_code ||
-            index->target_lens[j] != read_len) {
-            e = nexte;
+            entry->target_len != read_len) {
             continue;
         }
-        int seen_rc = candidate_seen_add(seen, j);
-        if (seen_rc < 0) return -1;
-        if (seen_rc == 0) {
-            e = nexte;
+        /* A target belongs to its first matching partition. This proves that
+         * it is verified once, without a per-read set or heap allocation.
+         * Keep target rows distinct: duplicate sequences still produce ties. */
+        uint64_t diff = read_code ^ entry->target_code;
+        size_t prior = 0;
+        while (prior < n_prior_seeds && (diff & prior_seed_masks[prior]) != 0) ++prior;
+        if (prior != n_prior_seeds) {
             continue;
         }
         if (stats != NULL) ++stats->candidates_considered;
-        int d = code_hamming_distance_qd(read_code, index->codes[j], read_len);
+        int d = code_hamming_distance_qd(read_code, entry->target_code, read_len);
         if (stats != NULL) ++stats->candidates_verified;
         if (d > k) {
-            e = nexte;
             continue;
         }
         index_update_verified(result, (int)j, d, best_tie_count);
-        e = nexte;
     }
     return 0;
 }
 
 static int index_assign_hamming_seed_one(const qdaln_index *index, const char *read, uint64_t read_code, size_t read_len,
                                          int k, qdaln_match_result *result, qdaln_index_stats *stats) {
-    candidate_seen seen;
-    candidate_seen_init(&seen);
+    uint64_t prior_seed_masks[4];
     int best_tie_count = 0;
     *result = empty_match_result(QDALN_MATCH_NONE);
-
-    if (index_visit_hamming_exact_seen_candidates(index, read_code, read_len, &seen, 0, result,
-                                                  &best_tie_count, stats) != 0) {
-        candidate_seen_free(&seen);
-        return 0;
-    }
 
     size_t n_seeds = (size_t)k + 1U;
     for (size_t seed_id = 0; seed_id < n_seeds; ++seed_id) {
@@ -2020,23 +2009,15 @@ static int index_assign_hamming_seed_one(const qdaln_index *index, const char *r
         hamming_seed_partition(read_len, n_seeds, seed_id, &start, &seed_len);
         uint64_t seed = code_segment_qd(read_code, start, seed_len);
         if (index_visit_hamming_seed_candidates(index, hamming_seed_key(n_seeds, seed_id), seed, seed_len,
-                                                &seen, read_code, read_len, k, result, &best_tie_count,
-                                                stats) != 0) {
-            candidate_seen_free(&seen);
-            return 0;
-        }
+                                                prior_seed_masks, seed_id, read_code, read_len, k,
+                                                result, &best_tie_count, stats) != 0) return 0;
+        prior_seed_masks[seed_id] = code_low_mask_qd(seed_len) << (2 * start);
     }
 
     if (index->n_nonencodable != 0) {
         for (size_t ni = 0; ni < index->n_nonencodable; ++ni) {
             size_t j = index->nonencodable_targets[ni];
             if (index->target_lens[j] != read_len) continue;
-            int seen_rc = candidate_seen_add(&seen, j);
-            if (seen_rc < 0) {
-                candidate_seen_free(&seen);
-                return 0;
-            }
-            if (seen_rc == 0) continue;
             if (stats != NULL) ++stats->candidates_considered;
             int d = hamming_distance_within_k(read, read_len, index->targets[j], index->target_lens[j], k);
             if (stats != NULL) ++stats->candidates_verified;
@@ -2046,7 +2027,6 @@ static int index_assign_hamming_seed_one(const qdaln_index *index, const char *r
     }
 
     index_finalize_result(result, best_tie_count);
-    candidate_seen_free(&seen);
     return 1;
 }
 
@@ -2125,8 +2105,23 @@ typedef struct hamming_unknown_replacement_ctx {
 
 static int visit_hamming_unknown_code(uint64_t code, void *ctx) {
     hamming_unknown_visit_ctx *v = (hamming_unknown_visit_ctx *)ctx;
-    return index_visit_exact_seed_candidates(v->index, code, v->read_len, v->seen, v->read, v->read_len,
-                                             v->k, v->result, v->best_tie_count, v->stats, 0);
+    size_t slot = code_hash(code, v->read_len, v->index->hash_cap);
+    for (size_t j = v->index->hash_heads[slot]; j != SIZE_MAX; j = v->index->hash_next[j]) {
+        if (!v->index->encodable[j] || v->index->target_lens[j] != v->read_len ||
+            v->index->codes[j] != code) continue;
+        int seen_rc = candidate_seen_add(v->seen, j);
+        if (seen_rc < 0) return -1;
+        if (seen_rc == 0) continue;
+        if (v->stats != NULL) ++v->stats->candidates_considered;
+        /* Generated codes locate candidates; the requested metric must still
+         * verify the original literal read. Levenshtein can be smaller than
+         * Hamming when an unknown byte shifts a repeated sequence. */
+        int d = hamming_distance_within_k(v->read, v->read_len, v->index->targets[j],
+                                         v->index->target_lens[j], v->k);
+        if (v->stats != NULL) ++v->stats->candidates_verified;
+        if (d >= 0) index_update_verified(v->result, (int)j, d, v->best_tie_count);
+    }
+    return 0;
 }
 
 static int visit_hamming_unknown_replacements(size_t depth, hamming_unknown_replacement_ctx *ctx) {

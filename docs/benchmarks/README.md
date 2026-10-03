@@ -1,5 +1,21 @@
 # Benchmarks
 
+:::{admonition} Spotlight: DotMatch versus guide-counter
+:class: tip
+
+**1.6–5.5× faster one-mismatch counting, 11.3–14.4× lower peak memory,
+identical full counts.** The benchmarked source checkout's
+`dotmatch guide-counter count` was compared with unmodified guide-counter 0.1.3
+on controlled 100k/1M-read FASTQs against the public Yusa library, using one CPU
+thread and five paired repeats. Guide-counter is faster in the tested
+exact-mode million-read cases. Full experimental-screen performance and
+biological accuracy require separate validation.
+[See the throughput and memory graphs and reproduce the comparison](guide_counter/README.md).
+:::
+
+The platform and plots below describe the core short global edit-distance
+benchmark. Each workflow report records its own datasets and hardware.
+
 - Platform: `macOS-26.2-arm64-arm-64bit`
 - Python: `3.9.6`
 - External exact edit-distance baseline: Edlib Python binding with `mode="NW"`, `task="distance"`.
@@ -24,6 +40,8 @@
 
 - [Evidence gallery and report examples](../evidence-gallery/README.md)
 - [Native Edlib assignment report](native/README.md)
+- [Hamming seed-layout improvement and literal-read correction](hamming_seed_layout/README.md)
+- [DotMatch versus guide-counter: matched counts, throughput and memory](guide_counter/README.md)
 - [Experimental GPU acceleration report](gpu/README.md)
 - [Public CRISPR guide-counting report](public_crispr/README.md)
 - [MAGeCK/Yusa public reference spot check](mageck_yusa_reference/README.md)

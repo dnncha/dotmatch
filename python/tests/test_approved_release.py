@@ -120,3 +120,13 @@ def test_existing_release_turns_future_main_change_into_validated_maintenance(mo
     assert 'v0.6.3 already immutably records released commit released-sha' in output
     assert 'validated maintenance commit maintenance-sha will not be tagged or published' in output
 
+
+
+def test_release_request_triggers_every_path_filtered_required_workflow():
+    import re
+
+    for workflow in release.REQUIRED_WORKFLOWS:
+        text = (ROOT / workflow).read_text()
+        match = re.search(r"^  push:\n(.*?)(?=^  [a-z_]+:|^permissions:|^jobs:)", text, re.M | re.S)
+        if match and "paths:" in match.group(1):
+            assert ".github/release-request.json" in match.group(1), workflow
