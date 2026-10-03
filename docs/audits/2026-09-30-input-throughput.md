@@ -63,3 +63,22 @@ optional package dependencies are imported outside the measured interval.
 Validation uses Linux and Python 3.12. The repository's complete GitHub Actions
 matrix, other Python versions, macOS, containers and web checks remain required
 before merge. The change does not modify native matching or scientific policies.
+
+## Integration validation, 3 October 2026
+
+Main already contains the equivalent compiled-ASCII FASTQ validation change.
+The reconciled branch retains main's implementation; the remaining production
+change in this PR is the exact-integer fast path in `count_io.py`. The boundary
+tests, benchmark script, and dated evidence above are retained. The benchmark
+results describe the original baseline/candidate pair and were not rerun during
+this integration check.
+
+After incorporating main through `2fa3532549d5945991aba2d7645af66108206497`,
+including the strict native gzip error fix, Linux/CPython 3.12 validation passes:
+
+- `make all shared test cli-test python-test`: both native test executables,
+  CLI fixtures and native/Python FASTQ parity pass; **2,069 Python tests pass**
+  with **7 optional-integration skips**.
+- `git diff --check`: clean.
+
+The updated branch still requires the complete hosted CI matrix before merge.
