@@ -1,0 +1,2856 @@
+{
+  "schema_version": 1,
+  "source_commit": "53388adbb4fb0931e5c9dda135502be19e4555f0",
+  "source_hashes": {
+    "BAGEL.py": "89f9ba4115513caf9838ce40ab4ca8d47e5e2bc82cd128f356185997ddf9a6c7",
+    "CEGv2.txt": "1b1df46f829e2c47dc8a4c164f60f5f1dc67513bafba7d8b9609421e0c75d27e",
+    "NEGv1.txt": "18a6b37a8f182a1bf501548e6b28fe4fcef02fcd296f873ef500a21eeb433739",
+    "reads_hap1.txt": "7638bc6237cf8a3e2302fcd969d014b041819669b37f2f87bc1f7cfbc45ca8a7",
+    "pipeline-script-example/HAP1-TKOv3-EXAMPLE.txt": "9c8e3c81efef6b1761a28ec54813f5c3c8d596466f8dc85caa49d673817681a1"
+  },
+  "seed": 1729,
+  "folds": 5,
+  "permutation_rounds": 2,
+  "runs": [
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "-m",
+        "crisprworks_fit",
+        "mle",
+        "-k",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/counts.tsv",
+        "-d",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/design.tsv",
+        "-n",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit",
+        "--kernel",
+        "native",
+        "--seed",
+        "1729",
+        "--threads",
+        "1",
+        "--blas-threads",
+        "1",
+        "--permutation-round",
+        "2",
+        "--update-efficiency",
+        "--genes-varmodeling",
+        "1000",
+        "--write-fit-details",
+        "--permutation-pvalues",
+        "finite"
+      ],
+      "wall_seconds": 44.89857872399989,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit.stdout.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "/workspace/.scientific-fit/bagel/BAGEL.py",
+        "fc",
+        "-i",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/counts.tsv",
+        "-o",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/bagel",
+        "-c",
+        "HAP1_T0"
+      ],
+      "wall_seconds": 2.278484011000728,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/bagel-fc.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "/workspace/.scientific-fit/bagel/BAGEL.py",
+        "bf",
+        "-i",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/bagel.foldchange",
+        "-o",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-0.bf.tsv",
+        "-e",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-0-essential.txt",
+        "-n",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-0-nonessential.txt",
+        "-c",
+        "HAP1_T18A,HAP1_T18B,HAP1_T18C",
+        "-NS"
+      ],
+      "wall_seconds": 4.000357131999408,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/bagel-fold-0.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "-m",
+        "crisprworks_fit",
+        "mle",
+        "-k",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/counts.tsv",
+        "-d",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/design.tsv",
+        "-n",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-0",
+        "--kernel",
+        "native",
+        "--seed",
+        "1729",
+        "--threads",
+        "1",
+        "--blas-threads",
+        "1",
+        "--permutation-round",
+        "2",
+        "--update-efficiency",
+        "--genes-varmodeling",
+        "1000",
+        "--write-fit-details",
+        "--permutation-pvalues",
+        "finite",
+        "--norm-method",
+        "control",
+        "--control-gene",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-0-fit-controls.txt"
+      ],
+      "wall_seconds": 55.698637114999656,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-0.stdout.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "/workspace/.scientific-fit/bagel/BAGEL.py",
+        "bf",
+        "-i",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/bagel.foldchange",
+        "-o",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-1.bf.tsv",
+        "-e",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-1-essential.txt",
+        "-n",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-1-nonessential.txt",
+        "-c",
+        "HAP1_T18A,HAP1_T18B,HAP1_T18C",
+        "-NS"
+      ],
+      "wall_seconds": 3.528329054000096,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/bagel-fold-1.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "-m",
+        "crisprworks_fit",
+        "mle",
+        "-k",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/counts.tsv",
+        "-d",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/design.tsv",
+        "-n",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-1",
+        "--kernel",
+        "native",
+        "--seed",
+        "1729",
+        "--threads",
+        "1",
+        "--blas-threads",
+        "1",
+        "--permutation-round",
+        "2",
+        "--update-efficiency",
+        "--genes-varmodeling",
+        "1000",
+        "--write-fit-details",
+        "--permutation-pvalues",
+        "finite",
+        "--norm-method",
+        "control",
+        "--control-gene",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-1-fit-controls.txt"
+      ],
+      "wall_seconds": 58.778195589999996,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-1.stdout.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "/workspace/.scientific-fit/bagel/BAGEL.py",
+        "bf",
+        "-i",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/bagel.foldchange",
+        "-o",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-2.bf.tsv",
+        "-e",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-2-essential.txt",
+        "-n",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-2-nonessential.txt",
+        "-c",
+        "HAP1_T18A,HAP1_T18B,HAP1_T18C",
+        "-NS"
+      ],
+      "wall_seconds": 3.429092225000204,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/bagel-fold-2.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "-m",
+        "crisprworks_fit",
+        "mle",
+        "-k",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/counts.tsv",
+        "-d",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/design.tsv",
+        "-n",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-2",
+        "--kernel",
+        "native",
+        "--seed",
+        "1729",
+        "--threads",
+        "1",
+        "--blas-threads",
+        "1",
+        "--permutation-round",
+        "2",
+        "--update-efficiency",
+        "--genes-varmodeling",
+        "1000",
+        "--write-fit-details",
+        "--permutation-pvalues",
+        "finite",
+        "--norm-method",
+        "control",
+        "--control-gene",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-2-fit-controls.txt"
+      ],
+      "wall_seconds": 45.84592661199986,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-2.stdout.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "/workspace/.scientific-fit/bagel/BAGEL.py",
+        "bf",
+        "-i",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/bagel.foldchange",
+        "-o",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-3.bf.tsv",
+        "-e",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-3-essential.txt",
+        "-n",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-3-nonessential.txt",
+        "-c",
+        "HAP1_T18A,HAP1_T18B,HAP1_T18C",
+        "-NS"
+      ],
+      "wall_seconds": 3.4312510940007996,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/bagel-fold-3.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "-m",
+        "crisprworks_fit",
+        "mle",
+        "-k",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/counts.tsv",
+        "-d",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/design.tsv",
+        "-n",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-3",
+        "--kernel",
+        "native",
+        "--seed",
+        "1729",
+        "--threads",
+        "1",
+        "--blas-threads",
+        "1",
+        "--permutation-round",
+        "2",
+        "--update-efficiency",
+        "--genes-varmodeling",
+        "1000",
+        "--write-fit-details",
+        "--permutation-pvalues",
+        "finite",
+        "--norm-method",
+        "control",
+        "--control-gene",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-3-fit-controls.txt"
+      ],
+      "wall_seconds": 47.862860793000436,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-3.stdout.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "/workspace/.scientific-fit/bagel/BAGEL.py",
+        "bf",
+        "-i",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/bagel.foldchange",
+        "-o",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-4.bf.tsv",
+        "-e",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-4-essential.txt",
+        "-n",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-4-nonessential.txt",
+        "-c",
+        "HAP1_T18A,HAP1_T18B,HAP1_T18C",
+        "-NS"
+      ],
+      "wall_seconds": 3.991879700000027,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/bagel-fold-4.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "-m",
+        "crisprworks_fit",
+        "mle",
+        "-k",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/counts.tsv",
+        "-d",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/design.tsv",
+        "-n",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-4",
+        "--kernel",
+        "native",
+        "--seed",
+        "1729",
+        "--threads",
+        "1",
+        "--blas-threads",
+        "1",
+        "--permutation-round",
+        "2",
+        "--update-efficiency",
+        "--genes-varmodeling",
+        "1000",
+        "--write-fit-details",
+        "--permutation-pvalues",
+        "finite",
+        "--norm-method",
+        "control",
+        "--control-gene",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-4-fit-controls.txt"
+      ],
+      "wall_seconds": 44.84231323499989,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-4.stdout.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "-m",
+        "crisprworks_fit",
+        "mle",
+        "-k",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/counts.tsv",
+        "-d",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/design.tsv",
+        "-n",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit",
+        "--kernel",
+        "native",
+        "--seed",
+        "1729",
+        "--threads",
+        "1",
+        "--blas-threads",
+        "1",
+        "--permutation-round",
+        "2",
+        "--update-efficiency",
+        "--genes-varmodeling",
+        "1000",
+        "--write-fit-details",
+        "--permutation-pvalues",
+        "finite"
+      ],
+      "wall_seconds": 38.40400900900022,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit.stdout.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "/workspace/.scientific-fit/bagel/BAGEL.py",
+        "fc",
+        "-i",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/counts.tsv",
+        "-o",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/bagel",
+        "-c",
+        "T0_-"
+      ],
+      "wall_seconds": 2.4943286170000647,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/bagel-fc.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "/workspace/.scientific-fit/bagel/BAGEL.py",
+        "bf",
+        "-i",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/bagel.foldchange",
+        "-o",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-0.bf.tsv",
+        "-e",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-0-essential.txt",
+        "-n",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-0-nonessential.txt",
+        "-c",
+        "T18_A,T18_B,T18_C",
+        "-NS"
+      ],
+      "wall_seconds": 3.6765723750004327,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/bagel-fold-0.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "-m",
+        "crisprworks_fit",
+        "mle",
+        "-k",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/counts.tsv",
+        "-d",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/design.tsv",
+        "-n",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-0",
+        "--kernel",
+        "native",
+        "--seed",
+        "1729",
+        "--threads",
+        "1",
+        "--blas-threads",
+        "1",
+        "--permutation-round",
+        "2",
+        "--update-efficiency",
+        "--genes-varmodeling",
+        "1000",
+        "--write-fit-details",
+        "--permutation-pvalues",
+        "finite",
+        "--norm-method",
+        "control",
+        "--control-gene",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-0-fit-controls.txt"
+      ],
+      "wall_seconds": 49.58469505999983,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-0.stdout.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "/workspace/.scientific-fit/bagel/BAGEL.py",
+        "bf",
+        "-i",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/bagel.foldchange",
+        "-o",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-1.bf.tsv",
+        "-e",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-1-essential.txt",
+        "-n",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-1-nonessential.txt",
+        "-c",
+        "T18_A,T18_B,T18_C",
+        "-NS"
+      ],
+      "wall_seconds": 3.6359545909999724,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/bagel-fold-1.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "-m",
+        "crisprworks_fit",
+        "mle",
+        "-k",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/counts.tsv",
+        "-d",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/design.tsv",
+        "-n",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-1",
+        "--kernel",
+        "native",
+        "--seed",
+        "1729",
+        "--threads",
+        "1",
+        "--blas-threads",
+        "1",
+        "--permutation-round",
+        "2",
+        "--update-efficiency",
+        "--genes-varmodeling",
+        "1000",
+        "--write-fit-details",
+        "--permutation-pvalues",
+        "finite",
+        "--norm-method",
+        "control",
+        "--control-gene",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-1-fit-controls.txt"
+      ],
+      "wall_seconds": 53.10776103999979,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-1.stdout.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "/workspace/.scientific-fit/bagel/BAGEL.py",
+        "bf",
+        "-i",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/bagel.foldchange",
+        "-o",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-2.bf.tsv",
+        "-e",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-2-essential.txt",
+        "-n",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-2-nonessential.txt",
+        "-c",
+        "T18_A,T18_B,T18_C",
+        "-NS"
+      ],
+      "wall_seconds": 3.5297603420003725,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/bagel-fold-2.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "-m",
+        "crisprworks_fit",
+        "mle",
+        "-k",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/counts.tsv",
+        "-d",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/design.tsv",
+        "-n",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-2",
+        "--kernel",
+        "native",
+        "--seed",
+        "1729",
+        "--threads",
+        "1",
+        "--blas-threads",
+        "1",
+        "--permutation-round",
+        "2",
+        "--update-efficiency",
+        "--genes-varmodeling",
+        "1000",
+        "--write-fit-details",
+        "--permutation-pvalues",
+        "finite",
+        "--norm-method",
+        "control",
+        "--control-gene",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-2-fit-controls.txt"
+      ],
+      "wall_seconds": 49.56320086799951,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-2.stdout.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "/workspace/.scientific-fit/bagel/BAGEL.py",
+        "bf",
+        "-i",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/bagel.foldchange",
+        "-o",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-3.bf.tsv",
+        "-e",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-3-essential.txt",
+        "-n",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-3-nonessential.txt",
+        "-c",
+        "T18_A,T18_B,T18_C",
+        "-NS"
+      ],
+      "wall_seconds": 5.69653132700023,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/bagel-fold-3.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "-m",
+        "crisprworks_fit",
+        "mle",
+        "-k",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/counts.tsv",
+        "-d",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/design.tsv",
+        "-n",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-3",
+        "--kernel",
+        "native",
+        "--seed",
+        "1729",
+        "--threads",
+        "1",
+        "--blas-threads",
+        "1",
+        "--permutation-round",
+        "2",
+        "--update-efficiency",
+        "--genes-varmodeling",
+        "1000",
+        "--write-fit-details",
+        "--permutation-pvalues",
+        "finite",
+        "--norm-method",
+        "control",
+        "--control-gene",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-3-fit-controls.txt"
+      ],
+      "wall_seconds": 62.450006379000115,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-3.stdout.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "/workspace/.scientific-fit/bagel/BAGEL.py",
+        "bf",
+        "-i",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/bagel.foldchange",
+        "-o",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-4.bf.tsv",
+        "-e",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-4-essential.txt",
+        "-n",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-4-nonessential.txt",
+        "-c",
+        "T18_A,T18_B,T18_C",
+        "-NS"
+      ],
+      "wall_seconds": 6.5416306410006655,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/bagel-fold-4.log"
+    },
+    {
+      "command": [
+        "/workspace/dotmatch/.venv/bin/python",
+        "-m",
+        "crisprworks_fit",
+        "mle",
+        "-k",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/counts.tsv",
+        "-d",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/design.tsv",
+        "-n",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-4",
+        "--kernel",
+        "native",
+        "--seed",
+        "1729",
+        "--threads",
+        "1",
+        "--blas-threads",
+        "1",
+        "--permutation-round",
+        "2",
+        "--update-efficiency",
+        "--genes-varmodeling",
+        "1000",
+        "--write-fit-details",
+        "--permutation-pvalues",
+        "finite",
+        "--norm-method",
+        "control",
+        "--control-gene",
+        "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-4-fit-controls.txt"
+      ],
+      "wall_seconds": 48.8401116039995,
+      "exit_code": 0,
+      "log": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-4.stdout.log"
+    }
+  ],
+  "python": "3.12.14",
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+  "versions": {
+    "crisprworks-fit": "0.1.0a2",
+    "mageck2": "0.3.0",
+    "numpy": "2.3.5",
+    "scipy": "1.17.0",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.7.2",
+    "joblib": "1.5.2",
+    "click": "8.5.0"
+  },
+  "fit_engine": "native",
+  "source_urls": {
+    "BAGEL.py": "https://raw.githubusercontent.com/hart-lab/bagel/53388adbb4fb0931e5c9dda135502be19e4555f0/BAGEL.py",
+    "CEGv2.txt": "https://raw.githubusercontent.com/hart-lab/bagel/53388adbb4fb0931e5c9dda135502be19e4555f0/CEGv2.txt",
+    "NEGv1.txt": "https://raw.githubusercontent.com/hart-lab/bagel/53388adbb4fb0931e5c9dda135502be19e4555f0/NEGv1.txt",
+    "reads_hap1.txt": "https://raw.githubusercontent.com/hart-lab/bagel/53388adbb4fb0931e5c9dda135502be19e4555f0/reads_hap1.txt",
+    "pipeline-script-example/HAP1-TKOv3-EXAMPLE.txt": "https://raw.githubusercontent.com/hart-lab/bagel/53388adbb4fb0931e5c9dda135502be19e4555f0/pipeline-script-example/HAP1-TKOv3-EXAMPLE.txt"
+  },
+  "implementation_hashes": {
+    "benchmarks/hit_quality.py": "d46b2abf256b9b41922e8fdc195655b58c10be1c006bdc7350695bd871004a69",
+    "src/crisprworks_fit/inference.py": "c6ff1704e7ffae90f0a92cdd9e2c8cae107658601f83d6792c3c04976ce59e27",
+    "src/crisprworks_fit/backend.py": "b3f1981df5158571847379956acf9cddea22bad3619e7d383d13da2128977749",
+    "src/crisprworks_fit/cli.py": "a4d0e8665cdeee4d5224cd6728fab7a0d5003101cc5d06640e4021e7127cb324",
+    "src/crisprworks_fit/kernels.py": "f864b17a8c44ec08940576dc5a2ef24b37fbe92fc48f2ed4c76d19ad95ce750b",
+    "src/crisprworks_fit/_native.c": "352e45dbb61855822f3528cac7ebfa6446cda61fc50e5b532251b7ebe7156a4b"
+  },
+  "duplicate_reference_rows_collapsed": [
+    "SLC34A1"
+  ],
+  "screens": {
+    "hap1-tko": {
+      "counts_sha256": "adf0fe361f60578aa85f0f8a015ac52e6b7c59897a3a30200ff6809c6f3d5cc8",
+      "design_sha256": "bc4f06905509e0180146e20ae3d3228a59406b2422ed193e7f0e0e7cc9fd5d2e",
+      "guides": 69780,
+      "gene_labels": 17445,
+      "samples": [
+        "HAP1_T0",
+        "HAP1_T18A",
+        "HAP1_T18B",
+        "HAP1_T18C"
+      ],
+      "selection": "exactly four guides per gene before normalization; T0 plus three T18 samples",
+      "missing_reference_genes": [
+        "",
+        "ACTB",
+        "ADGRG7",
+        "ALPG",
+        "ANKRD60",
+        "AQP12A",
+        "ATP5F1A",
+        "ATP5F1B",
+        "ATP5F1C",
+        "ATP5F1D",
+        "ATP5J2-PTCD1",
+        "ATP5MG",
+        "ATP5PO",
+        "BPY2",
+        "BUD23",
+        "C1orf146",
+        "C20orf203",
+        "CBLL2",
+        "CDY1",
+        "CDY1B",
+        "CDY2A",
+        "CDY2B",
+        "CELA3A",
+        "CELA3B",
+        "CFAP298",
+        "CFHR2",
+        "CIAO2B",
+        "CIAO3",
+        "CSH1",
+        "CSHL1",
+        "CST4",
+        "CT45A2",
+        "CT45A4",
+        "CT45A5",
+        "CT47A11",
+        "CXorf1",
+        "CYCS",
+        "CYP2C19",
+        "CYP4A22",
+        "CYP4F8",
+        "DAZ1",
+        "DAZ2",
+        "DAZ3",
+        "DAZ4",
+        "DCANP1",
+        "DEFB103B",
+        "DEFB104A",
+        "DEFB106A",
+        "DEFB107A",
+        "DEFB127",
+        "DGKK",
+        "DUX4",
+        "DUX4L7",
+        "EIF2S2",
+        "EIF3C",
+        "EIF5A",
+        "ELOA2",
+        "ELOA3",
+        "FOXD4L3",
+        "FOXD4L4",
+        "FRG2",
+        "GAGE1",
+        "GAGE2C",
+        "GSTA5",
+        "GTF2H2C",
+        "GTF3A",
+        "HHLA1",
+        "HIST1H2AJ",
+        "HIST2H2AA3",
+        "HNRNPC",
+        "HSFY1",
+        "HSFY2",
+        "HSPD1",
+        "HTN3",
+        "IFNA10",
+        "IFNA14",
+        "IFNA16",
+        "IFNA17",
+        "IFNA21",
+        "IFNA4",
+        "IFNA5",
+        "IFNA6",
+        "IFNA7",
+        "IFNA8",
+        "IFNL2",
+        "IFNL3",
+        "KIR2DL1",
+        "KRTAP1-1",
+        "KRTAP10-1",
+        "KRTAP10-10",
+        "KRTAP10-11",
+        "KRTAP10-12",
+        "KRTAP10-2",
+        "KRTAP10-4",
+        "KRTAP10-5",
+        "KRTAP10-6",
+        "KRTAP10-7",
+        "KRTAP10-8",
+        "KRTAP10-9",
+        "KRTAP19-3",
+        "KRTAP3-2",
+        "KRTAP4-11",
+        "KRTAP4-12",
+        "KRTAP4-2",
+        "KRTAP4-4",
+        "KRTAP4-7",
+        "KRTAP5-2",
+        "KRTAP9-2",
+        "KRTAP9-3",
+        "KRTAP9-4",
+        "LGALS13",
+        "LHFPL5",
+        "LSM8",
+        "LTO1",
+        "LYZL1",
+        "LYZL2",
+        "MBD3L2",
+        "MMP20",
+        "MRPL57",
+        "MS4A13",
+        "MT1B",
+        "MUCL3",
+        "NEDD8",
+        "NEPRO",
+        "NSA2",
+        "OOSP2",
+        "OPN1LW",
+        "OR10H1",
+        "OR1E2",
+        "OR1L6",
+        "OR1S1",
+        "OR1S2",
+        "OR2J2",
+        "OR2L3",
+        "OR2T12",
+        "OR2T2",
+        "OR2T27",
+        "OR2T33",
+        "OR2T5",
+        "OR52I2",
+        "OR5M1",
+        "OR5M10",
+        "OR5T3",
+        "PBOV1",
+        "PCARE",
+        "PGAM1",
+        "PHF5A",
+        "PKD1L3",
+        "PNLIPRP2",
+        "POTEA",
+        "POTED",
+        "POTEG",
+        "POTEH",
+        "PRAMEF1",
+        "PRAMEF19",
+        "PRAMEF2",
+        "PRAMEF3",
+        "PRAMEF4",
+        "PRAMEF7",
+        "PRB1",
+        "PRDM7",
+        "PRDM9",
+        "PRELID3B",
+        "PRR27",
+        "PRSS41",
+        "PRY2",
+        "PTPA",
+        "RACK1",
+        "RBMX",
+        "RBMY1A1",
+        "RBMY1B",
+        "RBMY1D",
+        "RBMY1E",
+        "RBMY1F",
+        "RBMY1J",
+        "REXO1L1",
+        "RFPL3",
+        "RHOXF2",
+        "RPL10A",
+        "RPL18A",
+        "RPL24",
+        "RPL27",
+        "RPL30",
+        "RPL35A",
+        "RPL37A",
+        "RPL6",
+        "RPLP1",
+        "RPS12",
+        "RPS15A",
+        "RPS18",
+        "RPS19",
+        "RPS20",
+        "RPS4X",
+        "RPS6",
+        "RPS7",
+        "RPS8",
+        "RTL4",
+        "S100A7A",
+        "S100G",
+        "SHOX",
+        "SKP1",
+        "SNRNP25",
+        "SNRPF",
+        "SNU13",
+        "SPACA5",
+        "SPATA31A7",
+        "SPHAR",
+        "SPOUT1",
+        "SSX3",
+        "SSX5",
+        "SSX7",
+        "SSX8",
+        "SSX9",
+        "STATH",
+        "STPG4",
+        "TAAR9",
+        "TAS2R43",
+        "TAS2R46",
+        "TBXT",
+        "TCP10L2",
+        "TEX28",
+        "TEX44",
+        "TEX45",
+        "TFAP2D",
+        "TGIF2LX",
+        "TGIF2LY",
+        "TRIM48",
+        "TRIM49",
+        "TRIM51",
+        "TSPY1",
+        "TSSK2",
+        "TWNK",
+        "TXN",
+        "TXNDC8",
+        "UBA52",
+        "UBE2N",
+        "USP17L2",
+        "UTP25",
+        "UTP4",
+        "VCX3A",
+        "VN1R5",
+        "WFDC10A",
+        "WFDC11",
+        "XAGE2",
+        "XAGE5",
+        "YJU2",
+        "ZAN",
+        "ZNF679",
+        "ZPR1"
+      ],
+      "fit_manifest": {
+        "schema_version": 1,
+        "status": "complete",
+        "tool": "CRISPRWorks Fit",
+        "version": "0.1.0a2",
+        "backend": "accelerated",
+        "kernel": "native",
+        "mageck2_version": "0.3.0",
+        "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+        "python": "3.12.14",
+        "numpy": "2.3.5",
+        "scipy": "1.17.0",
+        "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+        "options": {
+          "subcmd": "mle",
+          "count_table": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/counts.tsv",
+          "design_matrix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/design.tsv",
+          "day0_label": null,
+          "output_prefix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit",
+          "include_samples": null,
+          "beta_labels": null,
+          "control_sgrna": null,
+          "control_gene": null,
+          "cnv_norm": null,
+          "cell_line": null,
+          "cnv_est": null,
+          "debug": false,
+          "debug_gene": null,
+          "norm_method": "median",
+          "genes_varmodeling": 1000,
+          "permutation_round": 2,
+          "no_permutation_by_group": false,
+          "max_sgrnapergene_permutation": 40,
+          "remove_outliers": false,
+          "threads": 1,
+          "adjust_method": "fdr",
+          "sgrna_efficiency": null,
+          "sgrna_eff_name_column": 0,
+          "sgrna_eff_score_column": 1,
+          "update_efficiency": true,
+          "bayes": false,
+          "PPI_prior": false,
+          "PPI_weighting": null,
+          "negative_control": null,
+          "backend": "accelerated",
+          "kernel": "native",
+          "seed": 1729,
+          "blas_threads": 1,
+          "write_fit_details": true,
+          "permutation_pvalues": "finite"
+        },
+        "inputs": {
+          "count_table": {
+            "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/counts.tsv",
+            "sha256": "adf0fe361f60578aa85f0f8a015ac52e6b7c59897a3a30200ff6809c6f3d5cc8"
+          },
+          "design_matrix": {
+            "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/design.tsv",
+            "sha256": "bc4f06905509e0180146e20ae3d3228a59406b2422ed193e7f0e0e7cc9fd5d2e"
+          },
+          "sgrna_efficiency": null,
+          "control_sgrna": null,
+          "control_gene": null
+        },
+        "permutation_calibration": {
+          "method": "inclusive-add-one",
+          "two_sided": "min(1, 2 * min(upper, lower))",
+          "invalid_fit_policy": "all tails equal one",
+          "skipped_fit_policy": "all tails equal one",
+          "null_source": "all guides",
+          "scope": "finite-tail safeguard; pooled-guide exchangeability and biological FDR are not established",
+          "groups": [
+            {
+              "genes": 17445,
+              "guide_counts": [
+                4
+              ],
+              "null_draws": 34890,
+              "conditions": 1,
+              "minimum_directional_p": 2.8660686136826114e-05,
+              "minimum_two_sided_p": 5.732137227365223e-05,
+              "nonfinite_null_draws_by_condition": [
+                0
+              ],
+              "nonfinite_observed_by_condition": [
+                0
+              ],
+              "skipped_genes": 0
+            }
+          ]
+        },
+        "blas": [
+          {
+            "user_api": "blas",
+            "internal_api": "openblas",
+            "num_threads": 1,
+            "prefix": "libscipy_openblas",
+            "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-fdde5778.so",
+            "version": "0.3.30",
+            "threading_layer": "pthreads",
+            "architecture": "SkylakeX"
+          },
+          {
+            "user_api": "blas",
+            "internal_api": "openblas",
+            "num_threads": 1,
+            "prefix": "libscipy_openblas",
+            "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+            "version": "0.3.30",
+            "threading_layer": "pthreads",
+            "architecture": "SkylakeX"
+          }
+        ],
+        "outputs": {
+          "gene_summary": {
+            "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit.gene_summary.txt",
+            "sha256": "ff9ad64eaf4737a74a8592daa9071718a815e24d10f6805b2d62e1a90df90846"
+          },
+          "sgrna_summary": {
+            "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit.sgrna_summary.txt",
+            "sha256": "16f5ded25d4b6321808ea405132cbf39c6fe1185aec1bf6dced07ca9e9a2bd29"
+          },
+          "fit_details": {
+            "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit.fit-details.json",
+            "sha256": "838c8e58b9e49c36449eb8c8db4db59c7480629e2d7312f2e0f2f89775b5f0b2"
+          }
+        },
+        "elapsed_seconds": 43.72330142900046
+      },
+      "control_fit_manifests": [
+        {
+          "schema_version": 1,
+          "status": "complete",
+          "tool": "CRISPRWorks Fit",
+          "version": "0.1.0a2",
+          "backend": "accelerated",
+          "kernel": "native",
+          "mageck2_version": "0.3.0",
+          "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+          "python": "3.12.14",
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+          "options": {
+            "subcmd": "mle",
+            "count_table": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/counts.tsv",
+            "design_matrix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/design.tsv",
+            "day0_label": null,
+            "output_prefix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-0",
+            "include_samples": null,
+            "beta_labels": null,
+            "control_sgrna": null,
+            "control_gene": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-0-fit-controls.txt",
+            "cnv_norm": null,
+            "cell_line": null,
+            "cnv_est": null,
+            "debug": false,
+            "debug_gene": null,
+            "norm_method": "control",
+            "genes_varmodeling": 1000,
+            "permutation_round": 2,
+            "no_permutation_by_group": false,
+            "max_sgrnapergene_permutation": 40,
+            "remove_outliers": false,
+            "threads": 1,
+            "adjust_method": "fdr",
+            "sgrna_efficiency": null,
+            "sgrna_eff_name_column": 0,
+            "sgrna_eff_score_column": 1,
+            "update_efficiency": true,
+            "bayes": false,
+            "PPI_prior": false,
+            "PPI_weighting": null,
+            "negative_control": null,
+            "backend": "accelerated",
+            "kernel": "native",
+            "seed": 1729,
+            "blas_threads": 1,
+            "write_fit_details": true,
+            "permutation_pvalues": "finite"
+          },
+          "inputs": {
+            "count_table": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/counts.tsv",
+              "sha256": "adf0fe361f60578aa85f0f8a015ac52e6b7c59897a3a30200ff6809c6f3d5cc8"
+            },
+            "design_matrix": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/design.tsv",
+              "sha256": "bc4f06905509e0180146e20ae3d3228a59406b2422ed193e7f0e0e7cc9fd5d2e"
+            },
+            "sgrna_efficiency": null,
+            "control_sgrna": null,
+            "control_gene": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-0-fit-controls.txt",
+              "sha256": "ab69d78180bf9be487c40b47ee6370f90b281e7df56c03bc2dfec7f831c5d21e"
+            }
+          },
+          "permutation_calibration": {
+            "method": "inclusive-add-one",
+            "two_sided": "min(1, 2 * min(upper, lower))",
+            "invalid_fit_policy": "all tails equal one",
+            "skipped_fit_policy": "all tails equal one",
+            "null_source": "control guides",
+            "scope": "finite-tail safeguard; pooled-guide exchangeability and biological FDR are not established",
+            "groups": [
+              {
+                "genes": 17445,
+                "guide_counts": [
+                  4
+                ],
+                "null_draws": 34890,
+                "conditions": 1,
+                "minimum_directional_p": 2.8660686136826114e-05,
+                "minimum_two_sided_p": 5.732137227365223e-05,
+                "nonfinite_null_draws_by_condition": [
+                  0
+                ],
+                "nonfinite_observed_by_condition": [
+                  0
+                ],
+                "skipped_genes": 0
+              }
+            ]
+          },
+          "blas": [
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-fdde5778.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "SkylakeX"
+            },
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "SkylakeX"
+            }
+          ],
+          "outputs": {
+            "gene_summary": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-0.gene_summary.txt",
+              "sha256": "989dcd84d1e5ba6fb0edee0c41fbb5b3640052c0f80520e18437f65888c4a827"
+            },
+            "sgrna_summary": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-0.sgrna_summary.txt",
+              "sha256": "a840b85127739974c24a0f9eead0edeee1dd592ee779b3bb76de3b35f59c8db7"
+            },
+            "fit_details": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-0.fit-details.json",
+              "sha256": "0f6252d6f4ab0d8cb9b819de21f1e48a5b1fe786a3bb6a53c9ac04cb367c5e31"
+            }
+          },
+          "elapsed_seconds": 54.5596211839993
+        },
+        {
+          "schema_version": 1,
+          "status": "complete",
+          "tool": "CRISPRWorks Fit",
+          "version": "0.1.0a2",
+          "backend": "accelerated",
+          "kernel": "native",
+          "mageck2_version": "0.3.0",
+          "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+          "python": "3.12.14",
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+          "options": {
+            "subcmd": "mle",
+            "count_table": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/counts.tsv",
+            "design_matrix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/design.tsv",
+            "day0_label": null,
+            "output_prefix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-1",
+            "include_samples": null,
+            "beta_labels": null,
+            "control_sgrna": null,
+            "control_gene": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-1-fit-controls.txt",
+            "cnv_norm": null,
+            "cell_line": null,
+            "cnv_est": null,
+            "debug": false,
+            "debug_gene": null,
+            "norm_method": "control",
+            "genes_varmodeling": 1000,
+            "permutation_round": 2,
+            "no_permutation_by_group": false,
+            "max_sgrnapergene_permutation": 40,
+            "remove_outliers": false,
+            "threads": 1,
+            "adjust_method": "fdr",
+            "sgrna_efficiency": null,
+            "sgrna_eff_name_column": 0,
+            "sgrna_eff_score_column": 1,
+            "update_efficiency": true,
+            "bayes": false,
+            "PPI_prior": false,
+            "PPI_weighting": null,
+            "negative_control": null,
+            "backend": "accelerated",
+            "kernel": "native",
+            "seed": 1729,
+            "blas_threads": 1,
+            "write_fit_details": true,
+            "permutation_pvalues": "finite"
+          },
+          "inputs": {
+            "count_table": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/counts.tsv",
+              "sha256": "adf0fe361f60578aa85f0f8a015ac52e6b7c59897a3a30200ff6809c6f3d5cc8"
+            },
+            "design_matrix": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/design.tsv",
+              "sha256": "bc4f06905509e0180146e20ae3d3228a59406b2422ed193e7f0e0e7cc9fd5d2e"
+            },
+            "sgrna_efficiency": null,
+            "control_sgrna": null,
+            "control_gene": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-1-fit-controls.txt",
+              "sha256": "1a06b1f6f12b008e8edc1590371488af43ae26529dd5f5da2624e7d26cdd8cec"
+            }
+          },
+          "permutation_calibration": {
+            "method": "inclusive-add-one",
+            "two_sided": "min(1, 2 * min(upper, lower))",
+            "invalid_fit_policy": "all tails equal one",
+            "skipped_fit_policy": "all tails equal one",
+            "null_source": "control guides",
+            "scope": "finite-tail safeguard; pooled-guide exchangeability and biological FDR are not established",
+            "groups": [
+              {
+                "genes": 17445,
+                "guide_counts": [
+                  4
+                ],
+                "null_draws": 34890,
+                "conditions": 1,
+                "minimum_directional_p": 2.8660686136826114e-05,
+                "minimum_two_sided_p": 5.732137227365223e-05,
+                "nonfinite_null_draws_by_condition": [
+                  0
+                ],
+                "nonfinite_observed_by_condition": [
+                  0
+                ],
+                "skipped_genes": 0
+              }
+            ]
+          },
+          "blas": [
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-fdde5778.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "SkylakeX"
+            },
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "SkylakeX"
+            }
+          ],
+          "outputs": {
+            "gene_summary": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-1.gene_summary.txt",
+              "sha256": "c69931608442d98e66a59a531f9cb08f205187fa9e39656babbf68101b378814"
+            },
+            "sgrna_summary": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-1.sgrna_summary.txt",
+              "sha256": "c393f6a9ead0a926686d2b717521305a8eef7c3f8db35dd9fce5993b6291c325"
+            },
+            "fit_details": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-1.fit-details.json",
+              "sha256": "0aa46135e0f0519848c97e1af8c806681f45dca309a620d2bb062beeb48dae0e"
+            }
+          },
+          "elapsed_seconds": 57.4005429609997
+        },
+        {
+          "schema_version": 1,
+          "status": "complete",
+          "tool": "CRISPRWorks Fit",
+          "version": "0.1.0a2",
+          "backend": "accelerated",
+          "kernel": "native",
+          "mageck2_version": "0.3.0",
+          "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+          "python": "3.12.14",
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+          "options": {
+            "subcmd": "mle",
+            "count_table": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/counts.tsv",
+            "design_matrix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/design.tsv",
+            "day0_label": null,
+            "output_prefix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-2",
+            "include_samples": null,
+            "beta_labels": null,
+            "control_sgrna": null,
+            "control_gene": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-2-fit-controls.txt",
+            "cnv_norm": null,
+            "cell_line": null,
+            "cnv_est": null,
+            "debug": false,
+            "debug_gene": null,
+            "norm_method": "control",
+            "genes_varmodeling": 1000,
+            "permutation_round": 2,
+            "no_permutation_by_group": false,
+            "max_sgrnapergene_permutation": 40,
+            "remove_outliers": false,
+            "threads": 1,
+            "adjust_method": "fdr",
+            "sgrna_efficiency": null,
+            "sgrna_eff_name_column": 0,
+            "sgrna_eff_score_column": 1,
+            "update_efficiency": true,
+            "bayes": false,
+            "PPI_prior": false,
+            "PPI_weighting": null,
+            "negative_control": null,
+            "backend": "accelerated",
+            "kernel": "native",
+            "seed": 1729,
+            "blas_threads": 1,
+            "write_fit_details": true,
+            "permutation_pvalues": "finite"
+          },
+          "inputs": {
+            "count_table": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/counts.tsv",
+              "sha256": "adf0fe361f60578aa85f0f8a015ac52e6b7c59897a3a30200ff6809c6f3d5cc8"
+            },
+            "design_matrix": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/design.tsv",
+              "sha256": "bc4f06905509e0180146e20ae3d3228a59406b2422ed193e7f0e0e7cc9fd5d2e"
+            },
+            "sgrna_efficiency": null,
+            "control_sgrna": null,
+            "control_gene": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-2-fit-controls.txt",
+              "sha256": "25abbc6e13442ce9c0987bb94fb3f031eb81c4125779d794b8ec9cf105e8ee90"
+            }
+          },
+          "permutation_calibration": {
+            "method": "inclusive-add-one",
+            "two_sided": "min(1, 2 * min(upper, lower))",
+            "invalid_fit_policy": "all tails equal one",
+            "skipped_fit_policy": "all tails equal one",
+            "null_source": "control guides",
+            "scope": "finite-tail safeguard; pooled-guide exchangeability and biological FDR are not established",
+            "groups": [
+              {
+                "genes": 17445,
+                "guide_counts": [
+                  4
+                ],
+                "null_draws": 34890,
+                "conditions": 1,
+                "minimum_directional_p": 2.8660686136826114e-05,
+                "minimum_two_sided_p": 5.732137227365223e-05,
+                "nonfinite_null_draws_by_condition": [
+                  0
+                ],
+                "nonfinite_observed_by_condition": [
+                  0
+                ],
+                "skipped_genes": 0
+              }
+            ]
+          },
+          "blas": [
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-fdde5778.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "SkylakeX"
+            },
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "SkylakeX"
+            }
+          ],
+          "outputs": {
+            "gene_summary": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-2.gene_summary.txt",
+              "sha256": "ff1f9bd1003fc57456fe583ef78a13b8fad983c6ea311ef4d04ffe36eb8fa0a9"
+            },
+            "sgrna_summary": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-2.sgrna_summary.txt",
+              "sha256": "179f9b5cd43a4cdee06ec2592441afc0d6d3b3b74e1a51b3dd0f2efaf8e8410a"
+            },
+            "fit_details": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-2.fit-details.json",
+              "sha256": "32c857d7d15960c79a33f2d3949cd8aa004fae4620bc18960d638d574bad9c8a"
+            }
+          },
+          "elapsed_seconds": 44.82000728299954
+        },
+        {
+          "schema_version": 1,
+          "status": "complete",
+          "tool": "CRISPRWorks Fit",
+          "version": "0.1.0a2",
+          "backend": "accelerated",
+          "kernel": "native",
+          "mageck2_version": "0.3.0",
+          "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+          "python": "3.12.14",
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+          "options": {
+            "subcmd": "mle",
+            "count_table": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/counts.tsv",
+            "design_matrix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/design.tsv",
+            "day0_label": null,
+            "output_prefix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-3",
+            "include_samples": null,
+            "beta_labels": null,
+            "control_sgrna": null,
+            "control_gene": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-3-fit-controls.txt",
+            "cnv_norm": null,
+            "cell_line": null,
+            "cnv_est": null,
+            "debug": false,
+            "debug_gene": null,
+            "norm_method": "control",
+            "genes_varmodeling": 1000,
+            "permutation_round": 2,
+            "no_permutation_by_group": false,
+            "max_sgrnapergene_permutation": 40,
+            "remove_outliers": false,
+            "threads": 1,
+            "adjust_method": "fdr",
+            "sgrna_efficiency": null,
+            "sgrna_eff_name_column": 0,
+            "sgrna_eff_score_column": 1,
+            "update_efficiency": true,
+            "bayes": false,
+            "PPI_prior": false,
+            "PPI_weighting": null,
+            "negative_control": null,
+            "backend": "accelerated",
+            "kernel": "native",
+            "seed": 1729,
+            "blas_threads": 1,
+            "write_fit_details": true,
+            "permutation_pvalues": "finite"
+          },
+          "inputs": {
+            "count_table": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/counts.tsv",
+              "sha256": "adf0fe361f60578aa85f0f8a015ac52e6b7c59897a3a30200ff6809c6f3d5cc8"
+            },
+            "design_matrix": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/design.tsv",
+              "sha256": "bc4f06905509e0180146e20ae3d3228a59406b2422ed193e7f0e0e7cc9fd5d2e"
+            },
+            "sgrna_efficiency": null,
+            "control_sgrna": null,
+            "control_gene": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-3-fit-controls.txt",
+              "sha256": "a079930ebcac0c0e5a4df756c00c7b46b92ff8980430ff5d8c87b43595454c9b"
+            }
+          },
+          "permutation_calibration": {
+            "method": "inclusive-add-one",
+            "two_sided": "min(1, 2 * min(upper, lower))",
+            "invalid_fit_policy": "all tails equal one",
+            "skipped_fit_policy": "all tails equal one",
+            "null_source": "control guides",
+            "scope": "finite-tail safeguard; pooled-guide exchangeability and biological FDR are not established",
+            "groups": [
+              {
+                "genes": 17445,
+                "guide_counts": [
+                  4
+                ],
+                "null_draws": 34890,
+                "conditions": 1,
+                "minimum_directional_p": 2.8660686136826114e-05,
+                "minimum_two_sided_p": 5.732137227365223e-05,
+                "nonfinite_null_draws_by_condition": [
+                  0
+                ],
+                "nonfinite_observed_by_condition": [
+                  0
+                ],
+                "skipped_genes": 0
+              }
+            ]
+          },
+          "blas": [
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-fdde5778.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "SkylakeX"
+            },
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "SkylakeX"
+            }
+          ],
+          "outputs": {
+            "gene_summary": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-3.gene_summary.txt",
+              "sha256": "69668785d3cb2228ee07e54af82005a22ec2f3313304d73b750e25b25d917db3"
+            },
+            "sgrna_summary": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-3.sgrna_summary.txt",
+              "sha256": "a7abf5763feb56c93cb645a765c7208a8ea3e37d7d9fd40bd409125a14a16cb4"
+            },
+            "fit_details": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-3.fit-details.json",
+              "sha256": "785cdc5e5630b30c8cd77e7cc96e6c0f5ee4773b0e8be0102f65a7d0ca17b2eb"
+            }
+          },
+          "elapsed_seconds": 46.648888636000265
+        },
+        {
+          "schema_version": 1,
+          "status": "complete",
+          "tool": "CRISPRWorks Fit",
+          "version": "0.1.0a2",
+          "backend": "accelerated",
+          "kernel": "native",
+          "mageck2_version": "0.3.0",
+          "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+          "python": "3.12.14",
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+          "options": {
+            "subcmd": "mle",
+            "count_table": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/counts.tsv",
+            "design_matrix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/design.tsv",
+            "day0_label": null,
+            "output_prefix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-4",
+            "include_samples": null,
+            "beta_labels": null,
+            "control_sgrna": null,
+            "control_gene": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-4-fit-controls.txt",
+            "cnv_norm": null,
+            "cell_line": null,
+            "cnv_est": null,
+            "debug": false,
+            "debug_gene": null,
+            "norm_method": "control",
+            "genes_varmodeling": 1000,
+            "permutation_round": 2,
+            "no_permutation_by_group": false,
+            "max_sgrnapergene_permutation": 40,
+            "remove_outliers": false,
+            "threads": 1,
+            "adjust_method": "fdr",
+            "sgrna_efficiency": null,
+            "sgrna_eff_name_column": 0,
+            "sgrna_eff_score_column": 1,
+            "update_efficiency": true,
+            "bayes": false,
+            "PPI_prior": false,
+            "PPI_weighting": null,
+            "negative_control": null,
+            "backend": "accelerated",
+            "kernel": "native",
+            "seed": 1729,
+            "blas_threads": 1,
+            "write_fit_details": true,
+            "permutation_pvalues": "finite"
+          },
+          "inputs": {
+            "count_table": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/counts.tsv",
+              "sha256": "adf0fe361f60578aa85f0f8a015ac52e6b7c59897a3a30200ff6809c6f3d5cc8"
+            },
+            "design_matrix": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/design.tsv",
+              "sha256": "bc4f06905509e0180146e20ae3d3228a59406b2422ed193e7f0e0e7cc9fd5d2e"
+            },
+            "sgrna_efficiency": null,
+            "control_sgrna": null,
+            "control_gene": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fold-4-fit-controls.txt",
+              "sha256": "0e1febc2aaa464d61d6c7bfe4a5e9413ccf3503a015272be79010fc260966867"
+            }
+          },
+          "permutation_calibration": {
+            "method": "inclusive-add-one",
+            "two_sided": "min(1, 2 * min(upper, lower))",
+            "invalid_fit_policy": "all tails equal one",
+            "skipped_fit_policy": "all tails equal one",
+            "null_source": "control guides",
+            "scope": "finite-tail safeguard; pooled-guide exchangeability and biological FDR are not established",
+            "groups": [
+              {
+                "genes": 17445,
+                "guide_counts": [
+                  4
+                ],
+                "null_draws": 34890,
+                "conditions": 1,
+                "minimum_directional_p": 2.8660686136826114e-05,
+                "minimum_two_sided_p": 5.732137227365223e-05,
+                "nonfinite_null_draws_by_condition": [
+                  0
+                ],
+                "nonfinite_observed_by_condition": [
+                  0
+                ],
+                "skipped_genes": 0
+              }
+            ]
+          },
+          "blas": [
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-fdde5778.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "SkylakeX"
+            },
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "SkylakeX"
+            }
+          ],
+          "outputs": {
+            "gene_summary": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-4.gene_summary.txt",
+              "sha256": "19a52cf98e8051e21ab9807bdded22188b028ae68dec70cbf676948b613b8955"
+            },
+            "sgrna_summary": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-4.sgrna_summary.txt",
+              "sha256": "0715ee7b2be94e96690cc62bbca8c29c6b39e70b63cfeaebdeee79dca902e133"
+            },
+            "fit_details": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tko/fit-control-4.fit-details.json",
+              "sha256": "c799fcd793bcc0159d368c832321749239f5649e1caad582a53c5bfefc015f4c"
+            }
+          },
+          "elapsed_seconds": 43.71021466499951
+        }
+      ]
+    },
+    "hap1-tkov3": {
+      "counts_sha256": "30f8333be1841094960d516f9362ec1b017702fc1bc04ad505fb9b27307a7fbc",
+      "design_sha256": "8e81d1df816485664729558cd98dbf67bf99d5fe06dcb586a1f6805af3c79982",
+      "guides": 68988,
+      "gene_labels": 17247,
+      "samples": [
+        "T0_-",
+        "T18_A",
+        "T18_B",
+        "T18_C"
+      ],
+      "selection": "exactly four guides per gene before normalization; T0 plus three T18 samples",
+      "missing_reference_genes": [
+        "",
+        "ACTB",
+        "ADGRG7",
+        "ALPG",
+        "ANKRD60",
+        "AQP12A",
+        "ATP5F1A",
+        "ATP5F1B",
+        "ATP5F1C",
+        "ATP5F1D",
+        "ATP5J2-PTCD1",
+        "ATP5MG",
+        "ATP5PO",
+        "BPY2",
+        "BUD23",
+        "C1orf146",
+        "C20orf203",
+        "CBLL2",
+        "CDY1",
+        "CDY1B",
+        "CDY2A",
+        "CDY2B",
+        "CELA3A",
+        "CELA3B",
+        "CFAP298",
+        "CFHR2",
+        "CHMP6",
+        "CIAO2B",
+        "CIAO3",
+        "CSH1",
+        "CSHL1",
+        "CST4",
+        "CT45A2",
+        "CT45A4",
+        "CT45A5",
+        "CT47A11",
+        "CXorf1",
+        "CYCS",
+        "CYP2C19",
+        "CYP4A22",
+        "CYP4F8",
+        "DAZ1",
+        "DAZ2",
+        "DAZ3",
+        "DAZ4",
+        "DCANP1",
+        "DEFB103B",
+        "DEFB104A",
+        "DEFB106A",
+        "DEFB107A",
+        "DEFB127",
+        "DGKK",
+        "DUX4",
+        "DUX4L7",
+        "EIF2S2",
+        "EIF3C",
+        "EIF5A",
+        "ELOA2",
+        "ELOA3",
+        "FOXD4L3",
+        "FOXD4L4",
+        "FRG2",
+        "GAGE1",
+        "GAGE2C",
+        "GALR1",
+        "GPR111",
+        "GSTA5",
+        "GTF2H2C",
+        "GTF3A",
+        "HAUS1",
+        "HHLA1",
+        "HIST1H2AJ",
+        "HIST2H2AA3",
+        "HNRNPC",
+        "HSFY1",
+        "HSFY2",
+        "HSPD1",
+        "HTN3",
+        "IFNA10",
+        "IFNA14",
+        "IFNA16",
+        "IFNA17",
+        "IFNA21",
+        "IFNA4",
+        "IFNA5",
+        "IFNA6",
+        "IFNA7",
+        "IFNA8",
+        "IFNL2",
+        "IFNL3",
+        "KIF2B",
+        "KIR2DL1",
+        "KRT84",
+        "KRTAP1-1",
+        "KRTAP10-1",
+        "KRTAP10-10",
+        "KRTAP10-11",
+        "KRTAP10-12",
+        "KRTAP10-2",
+        "KRTAP10-4",
+        "KRTAP10-5",
+        "KRTAP10-6",
+        "KRTAP10-7",
+        "KRTAP10-8",
+        "KRTAP10-9",
+        "KRTAP19-3",
+        "KRTAP3-2",
+        "KRTAP4-11",
+        "KRTAP4-12",
+        "KRTAP4-2",
+        "KRTAP4-4",
+        "KRTAP4-7",
+        "KRTAP5-2",
+        "KRTAP9-2",
+        "KRTAP9-3",
+        "KRTAP9-4",
+        "LGALS13",
+        "LHFPL5",
+        "LSM12",
+        "LSM8",
+        "LTO1",
+        "LYZL1",
+        "LYZL2",
+        "MBD3L2",
+        "MMP20",
+        "MRGPRX1",
+        "MRPL38",
+        "MRPL57",
+        "MS4A13",
+        "MT1B",
+        "MUCL3",
+        "NEDD8",
+        "NEPRO",
+        "NSA2",
+        "OOSP2",
+        "OPN1LW",
+        "OR10H1",
+        "OR1E2",
+        "OR1L6",
+        "OR1S1",
+        "OR1S2",
+        "OR2J2",
+        "OR2L3",
+        "OR2T12",
+        "OR2T2",
+        "OR2T27",
+        "OR2T33",
+        "OR2T5",
+        "OR52I2",
+        "OR5M1",
+        "OR5M10",
+        "OR5T3",
+        "OR7C2",
+        "OR7G2",
+        "PBOV1",
+        "PCARE",
+        "PGAM1",
+        "PHF5A",
+        "PKD1L3",
+        "PNLIPRP2",
+        "POLR2D",
+        "POTEA",
+        "POTED",
+        "POTEG",
+        "POTEH",
+        "PRAMEF1",
+        "PRAMEF19",
+        "PRAMEF2",
+        "PRAMEF3",
+        "PRAMEF4",
+        "PRAMEF7",
+        "PRB1",
+        "PRDM7",
+        "PRDM9",
+        "PRELID3B",
+        "PRR27",
+        "PRSS41",
+        "PRY2",
+        "PTPA",
+        "RACK1",
+        "RBM8A",
+        "RBMX",
+        "RBMY1A1",
+        "RBMY1B",
+        "RBMY1D",
+        "RBMY1E",
+        "RBMY1F",
+        "RBMY1J",
+        "RESP18",
+        "REXO1L1",
+        "RFPL3",
+        "RHOXF2",
+        "RPL10A",
+        "RPL13",
+        "RPL18A",
+        "RPL24",
+        "RPL27",
+        "RPL30",
+        "RPL35A",
+        "RPL37A",
+        "RPL6",
+        "RPLP1",
+        "RPS12",
+        "RPS15A",
+        "RPS18",
+        "RPS19",
+        "RPS20",
+        "RPS4X",
+        "RPS6",
+        "RPS7",
+        "RPS8",
+        "RTL4",
+        "S100A7A",
+        "S100G",
+        "SHOX",
+        "SKP1",
+        "SNRNP25",
+        "SNRPF",
+        "SNU13",
+        "SPACA5",
+        "SPATA31A7",
+        "SPC24",
+        "SPHAR",
+        "SPOUT1",
+        "SSX3",
+        "SSX5",
+        "SSX7",
+        "SSX8",
+        "SSX9",
+        "STATH",
+        "STPG4",
+        "TAAR9",
+        "TAS2R1",
+        "TAS2R43",
+        "TAS2R46",
+        "TBXT",
+        "TCP10L2",
+        "TEX28",
+        "TEX44",
+        "TEX45",
+        "TFAP2D",
+        "TGIF2LX",
+        "TGIF2LY",
+        "TRIM48",
+        "TRIM49",
+        "TRIM51",
+        "TSPY1",
+        "TSSK2",
+        "TWNK",
+        "TXN",
+        "TXNDC8",
+        "UBA52",
+        "UBE2N",
+        "USP17L2",
+        "UTP25",
+        "UTP4",
+        "VCX3A",
+        "VN1R5",
+        "WFDC10A",
+        "WFDC11",
+        "XAB2",
+        "XAGE2",
+        "XAGE5",
+        "YJU2",
+        "ZAN",
+        "ZNF679",
+        "ZPR1"
+      ],
+      "fit_manifest": {
+        "schema_version": 1,
+        "status": "complete",
+        "tool": "CRISPRWorks Fit",
+        "version": "0.1.0a2",
+        "backend": "accelerated",
+        "kernel": "native",
+        "mageck2_version": "0.3.0",
+        "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+        "python": "3.12.14",
+        "numpy": "2.3.5",
+        "scipy": "1.17.0",
+        "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+        "options": {
+          "subcmd": "mle",
+          "count_table": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/counts.tsv",
+          "design_matrix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/design.tsv",
+          "day0_label": null,
+          "output_prefix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit",
+          "include_samples": null,
+          "beta_labels": null,
+          "control_sgrna": null,
+          "control_gene": null,
+          "cnv_norm": null,
+          "cell_line": null,
+          "cnv_est": null,
+          "debug": false,
+          "debug_gene": null,
+          "norm_method": "median",
+          "genes_varmodeling": 1000,
+          "permutation_round": 2,
+          "no_permutation_by_group": false,
+          "max_sgrnapergene_permutation": 40,
+          "remove_outliers": false,
+          "threads": 1,
+          "adjust_method": "fdr",
+          "sgrna_efficiency": null,
+          "sgrna_eff_name_column": 0,
+          "sgrna_eff_score_column": 1,
+          "update_efficiency": true,
+          "bayes": false,
+          "PPI_prior": false,
+          "PPI_weighting": null,
+          "negative_control": null,
+          "backend": "accelerated",
+          "kernel": "native",
+          "seed": 1729,
+          "blas_threads": 1,
+          "write_fit_details": true,
+          "permutation_pvalues": "finite"
+        },
+        "inputs": {
+          "count_table": {
+            "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/counts.tsv",
+            "sha256": "30f8333be1841094960d516f9362ec1b017702fc1bc04ad505fb9b27307a7fbc"
+          },
+          "design_matrix": {
+            "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/design.tsv",
+            "sha256": "8e81d1df816485664729558cd98dbf67bf99d5fe06dcb586a1f6805af3c79982"
+          },
+          "sgrna_efficiency": null,
+          "control_sgrna": null,
+          "control_gene": null
+        },
+        "permutation_calibration": {
+          "method": "inclusive-add-one",
+          "two_sided": "min(1, 2 * min(upper, lower))",
+          "invalid_fit_policy": "all tails equal one",
+          "skipped_fit_policy": "all tails equal one",
+          "null_source": "all guides",
+          "scope": "finite-tail safeguard; pooled-guide exchangeability and biological FDR are not established",
+          "groups": [
+            {
+              "genes": 17247,
+              "guide_counts": [
+                4
+              ],
+              "null_draws": 34494,
+              "conditions": 1,
+              "minimum_directional_p": 2.8989708653428032e-05,
+              "minimum_two_sided_p": 5.7979417306856065e-05,
+              "nonfinite_null_draws_by_condition": [
+                0
+              ],
+              "nonfinite_observed_by_condition": [
+                0
+              ],
+              "skipped_genes": 0
+            }
+          ]
+        },
+        "blas": [
+          {
+            "user_api": "blas",
+            "internal_api": "openblas",
+            "num_threads": 1,
+            "prefix": "libscipy_openblas",
+            "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-fdde5778.so",
+            "version": "0.3.30",
+            "threading_layer": "pthreads",
+            "architecture": "SkylakeX"
+          },
+          {
+            "user_api": "blas",
+            "internal_api": "openblas",
+            "num_threads": 1,
+            "prefix": "libscipy_openblas",
+            "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+            "version": "0.3.30",
+            "threading_layer": "pthreads",
+            "architecture": "SkylakeX"
+          }
+        ],
+        "outputs": {
+          "gene_summary": {
+            "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit.gene_summary.txt",
+            "sha256": "8b45d87ff27e53440a37480d17d2962b0d62edc587ab21bdf7d89a9f78f28ef5"
+          },
+          "sgrna_summary": {
+            "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit.sgrna_summary.txt",
+            "sha256": "a470d647e9a03d1cc38c00aea5bf1a807ff09d9d4443a9e1958dbba4c34d5333"
+          },
+          "fit_details": {
+            "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit.fit-details.json",
+            "sha256": "216af68d264b1db7e1c94a6e657d49ebbf243245e38cc66009789b50dd5cfd81"
+          }
+        },
+        "elapsed_seconds": 37.35546680199968
+      },
+      "control_fit_manifests": [
+        {
+          "schema_version": 1,
+          "status": "complete",
+          "tool": "CRISPRWorks Fit",
+          "version": "0.1.0a2",
+          "backend": "accelerated",
+          "kernel": "native",
+          "mageck2_version": "0.3.0",
+          "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+          "python": "3.12.14",
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+          "options": {
+            "subcmd": "mle",
+            "count_table": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/counts.tsv",
+            "design_matrix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/design.tsv",
+            "day0_label": null,
+            "output_prefix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-0",
+            "include_samples": null,
+            "beta_labels": null,
+            "control_sgrna": null,
+            "control_gene": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-0-fit-controls.txt",
+            "cnv_norm": null,
+            "cell_line": null,
+            "cnv_est": null,
+            "debug": false,
+            "debug_gene": null,
+            "norm_method": "control",
+            "genes_varmodeling": 1000,
+            "permutation_round": 2,
+            "no_permutation_by_group": false,
+            "max_sgrnapergene_permutation": 40,
+            "remove_outliers": false,
+            "threads": 1,
+            "adjust_method": "fdr",
+            "sgrna_efficiency": null,
+            "sgrna_eff_name_column": 0,
+            "sgrna_eff_score_column": 1,
+            "update_efficiency": true,
+            "bayes": false,
+            "PPI_prior": false,
+            "PPI_weighting": null,
+            "negative_control": null,
+            "backend": "accelerated",
+            "kernel": "native",
+            "seed": 1729,
+            "blas_threads": 1,
+            "write_fit_details": true,
+            "permutation_pvalues": "finite"
+          },
+          "inputs": {
+            "count_table": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/counts.tsv",
+              "sha256": "30f8333be1841094960d516f9362ec1b017702fc1bc04ad505fb9b27307a7fbc"
+            },
+            "design_matrix": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/design.tsv",
+              "sha256": "8e81d1df816485664729558cd98dbf67bf99d5fe06dcb586a1f6805af3c79982"
+            },
+            "sgrna_efficiency": null,
+            "control_sgrna": null,
+            "control_gene": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-0-fit-controls.txt",
+              "sha256": "8c81a75b878927da5995e5946db72e7045b4b8c99e196626cd65abdda6be83b4"
+            }
+          },
+          "permutation_calibration": {
+            "method": "inclusive-add-one",
+            "two_sided": "min(1, 2 * min(upper, lower))",
+            "invalid_fit_policy": "all tails equal one",
+            "skipped_fit_policy": "all tails equal one",
+            "null_source": "control guides",
+            "scope": "finite-tail safeguard; pooled-guide exchangeability and biological FDR are not established",
+            "groups": [
+              {
+                "genes": 17247,
+                "guide_counts": [
+                  4
+                ],
+                "null_draws": 34494,
+                "conditions": 1,
+                "minimum_directional_p": 2.8989708653428032e-05,
+                "minimum_two_sided_p": 5.7979417306856065e-05,
+                "nonfinite_null_draws_by_condition": [
+                  0
+                ],
+                "nonfinite_observed_by_condition": [
+                  0
+                ],
+                "skipped_genes": 0
+              }
+            ]
+          },
+          "blas": [
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-fdde5778.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "SkylakeX"
+            },
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "SkylakeX"
+            }
+          ],
+          "outputs": {
+            "gene_summary": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-0.gene_summary.txt",
+              "sha256": "0eef7da4a3d8a9e413a4eae9d4526ec1fad23e0868f4a018eda5ad3ab737ecea"
+            },
+            "sgrna_summary": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-0.sgrna_summary.txt",
+              "sha256": "6f1aaf6be9eeab4d5f4b84a07d20a88d1bbeaf1eec41ff141fc2f5724a64244e"
+            },
+            "fit_details": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-0.fit-details.json",
+              "sha256": "aa979871620153e5acb23658136366121bd20fa226ae87e4449a3a4a9a341cfd"
+            }
+          },
+          "elapsed_seconds": 48.38607269400018
+        },
+        {
+          "schema_version": 1,
+          "status": "complete",
+          "tool": "CRISPRWorks Fit",
+          "version": "0.1.0a2",
+          "backend": "accelerated",
+          "kernel": "native",
+          "mageck2_version": "0.3.0",
+          "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+          "python": "3.12.14",
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+          "options": {
+            "subcmd": "mle",
+            "count_table": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/counts.tsv",
+            "design_matrix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/design.tsv",
+            "day0_label": null,
+            "output_prefix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-1",
+            "include_samples": null,
+            "beta_labels": null,
+            "control_sgrna": null,
+            "control_gene": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-1-fit-controls.txt",
+            "cnv_norm": null,
+            "cell_line": null,
+            "cnv_est": null,
+            "debug": false,
+            "debug_gene": null,
+            "norm_method": "control",
+            "genes_varmodeling": 1000,
+            "permutation_round": 2,
+            "no_permutation_by_group": false,
+            "max_sgrnapergene_permutation": 40,
+            "remove_outliers": false,
+            "threads": 1,
+            "adjust_method": "fdr",
+            "sgrna_efficiency": null,
+            "sgrna_eff_name_column": 0,
+            "sgrna_eff_score_column": 1,
+            "update_efficiency": true,
+            "bayes": false,
+            "PPI_prior": false,
+            "PPI_weighting": null,
+            "negative_control": null,
+            "backend": "accelerated",
+            "kernel": "native",
+            "seed": 1729,
+            "blas_threads": 1,
+            "write_fit_details": true,
+            "permutation_pvalues": "finite"
+          },
+          "inputs": {
+            "count_table": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/counts.tsv",
+              "sha256": "30f8333be1841094960d516f9362ec1b017702fc1bc04ad505fb9b27307a7fbc"
+            },
+            "design_matrix": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/design.tsv",
+              "sha256": "8e81d1df816485664729558cd98dbf67bf99d5fe06dcb586a1f6805af3c79982"
+            },
+            "sgrna_efficiency": null,
+            "control_sgrna": null,
+            "control_gene": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-1-fit-controls.txt",
+              "sha256": "7164634564403c0d2f7c0521a919b89ff2bcd1f4f02badec31af602e0bd0b25a"
+            }
+          },
+          "permutation_calibration": {
+            "method": "inclusive-add-one",
+            "two_sided": "min(1, 2 * min(upper, lower))",
+            "invalid_fit_policy": "all tails equal one",
+            "skipped_fit_policy": "all tails equal one",
+            "null_source": "control guides",
+            "scope": "finite-tail safeguard; pooled-guide exchangeability and biological FDR are not established",
+            "groups": [
+              {
+                "genes": 17247,
+                "guide_counts": [
+                  4
+                ],
+                "null_draws": 34494,
+                "conditions": 1,
+                "minimum_directional_p": 2.8989708653428032e-05,
+                "minimum_two_sided_p": 5.7979417306856065e-05,
+                "nonfinite_null_draws_by_condition": [
+                  0
+                ],
+                "nonfinite_observed_by_condition": [
+                  0
+                ],
+                "skipped_genes": 0
+              }
+            ]
+          },
+          "blas": [
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-fdde5778.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "SkylakeX"
+            },
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "SkylakeX"
+            }
+          ],
+          "outputs": {
+            "gene_summary": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-1.gene_summary.txt",
+              "sha256": "eb215483184c7ae398d757d29f2264be37fce080de729f729dea14aca9a5fd7a"
+            },
+            "sgrna_summary": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-1.sgrna_summary.txt",
+              "sha256": "91a764bc944807254a2f813d21cfc5f090d9ff772e87824dbcefaba16367b9f9"
+            },
+            "fit_details": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-1.fit-details.json",
+              "sha256": "45215b815becacb8a4c6db2d6704b1ece7e8145d643298dbacfe81a790c2c078"
+            }
+          },
+          "elapsed_seconds": 52.00287076999939
+        },
+        {
+          "schema_version": 1,
+          "status": "complete",
+          "tool": "CRISPRWorks Fit",
+          "version": "0.1.0a2",
+          "backend": "accelerated",
+          "kernel": "native",
+          "mageck2_version": "0.3.0",
+          "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+          "python": "3.12.14",
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+          "options": {
+            "subcmd": "mle",
+            "count_table": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/counts.tsv",
+            "design_matrix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/design.tsv",
+            "day0_label": null,
+            "output_prefix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-2",
+            "include_samples": null,
+            "beta_labels": null,
+            "control_sgrna": null,
+            "control_gene": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-2-fit-controls.txt",
+            "cnv_norm": null,
+            "cell_line": null,
+            "cnv_est": null,
+            "debug": false,
+            "debug_gene": null,
+            "norm_method": "control",
+            "genes_varmodeling": 1000,
+            "permutation_round": 2,
+            "no_permutation_by_group": false,
+            "max_sgrnapergene_permutation": 40,
+            "remove_outliers": false,
+            "threads": 1,
+            "adjust_method": "fdr",
+            "sgrna_efficiency": null,
+            "sgrna_eff_name_column": 0,
+            "sgrna_eff_score_column": 1,
+            "update_efficiency": true,
+            "bayes": false,
+            "PPI_prior": false,
+            "PPI_weighting": null,
+            "negative_control": null,
+            "backend": "accelerated",
+            "kernel": "native",
+            "seed": 1729,
+            "blas_threads": 1,
+            "write_fit_details": true,
+            "permutation_pvalues": "finite"
+          },
+          "inputs": {
+            "count_table": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/counts.tsv",
+              "sha256": "30f8333be1841094960d516f9362ec1b017702fc1bc04ad505fb9b27307a7fbc"
+            },
+            "design_matrix": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/design.tsv",
+              "sha256": "8e81d1df816485664729558cd98dbf67bf99d5fe06dcb586a1f6805af3c79982"
+            },
+            "sgrna_efficiency": null,
+            "control_sgrna": null,
+            "control_gene": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-2-fit-controls.txt",
+              "sha256": "05dd9a9a2593d67d4c8f924cb55057f05c8ef5f01009ab138e7339482fa6d570"
+            }
+          },
+          "permutation_calibration": {
+            "method": "inclusive-add-one",
+            "two_sided": "min(1, 2 * min(upper, lower))",
+            "invalid_fit_policy": "all tails equal one",
+            "skipped_fit_policy": "all tails equal one",
+            "null_source": "control guides",
+            "scope": "finite-tail safeguard; pooled-guide exchangeability and biological FDR are not established",
+            "groups": [
+              {
+                "genes": 17247,
+                "guide_counts": [
+                  4
+                ],
+                "null_draws": 34494,
+                "conditions": 1,
+                "minimum_directional_p": 2.8989708653428032e-05,
+                "minimum_two_sided_p": 5.7979417306856065e-05,
+                "nonfinite_null_draws_by_condition": [
+                  0
+                ],
+                "nonfinite_observed_by_condition": [
+                  0
+                ],
+                "skipped_genes": 0
+              }
+            ]
+          },
+          "blas": [
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-fdde5778.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "SkylakeX"
+            },
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "SkylakeX"
+            }
+          ],
+          "outputs": {
+            "gene_summary": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-2.gene_summary.txt",
+              "sha256": "c2b82156a19dac3bcd332fb8647cd6ce7a16c2926b696f5d6716e519c431f58b"
+            },
+            "sgrna_summary": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-2.sgrna_summary.txt",
+              "sha256": "05ed54558818d463242bb89441cefdf33f0cee3236cc443180c0009540a2877a"
+            },
+            "fit_details": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-2.fit-details.json",
+              "sha256": "859931b8f13e3db8ae6cf9911c3a0a353f0dbed3b1e440b24274aecc2b731d04"
+            }
+          },
+          "elapsed_seconds": 48.3717802150004
+        },
+        {
+          "schema_version": 1,
+          "status": "complete",
+          "tool": "CRISPRWorks Fit",
+          "version": "0.1.0a2",
+          "backend": "accelerated",
+          "kernel": "native",
+          "mageck2_version": "0.3.0",
+          "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+          "python": "3.12.14",
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+          "options": {
+            "subcmd": "mle",
+            "count_table": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/counts.tsv",
+            "design_matrix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/design.tsv",
+            "day0_label": null,
+            "output_prefix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-3",
+            "include_samples": null,
+            "beta_labels": null,
+            "control_sgrna": null,
+            "control_gene": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-3-fit-controls.txt",
+            "cnv_norm": null,
+            "cell_line": null,
+            "cnv_est": null,
+            "debug": false,
+            "debug_gene": null,
+            "norm_method": "control",
+            "genes_varmodeling": 1000,
+            "permutation_round": 2,
+            "no_permutation_by_group": false,
+            "max_sgrnapergene_permutation": 40,
+            "remove_outliers": false,
+            "threads": 1,
+            "adjust_method": "fdr",
+            "sgrna_efficiency": null,
+            "sgrna_eff_name_column": 0,
+            "sgrna_eff_score_column": 1,
+            "update_efficiency": true,
+            "bayes": false,
+            "PPI_prior": false,
+            "PPI_weighting": null,
+            "negative_control": null,
+            "backend": "accelerated",
+            "kernel": "native",
+            "seed": 1729,
+            "blas_threads": 1,
+            "write_fit_details": true,
+            "permutation_pvalues": "finite"
+          },
+          "inputs": {
+            "count_table": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/counts.tsv",
+              "sha256": "30f8333be1841094960d516f9362ec1b017702fc1bc04ad505fb9b27307a7fbc"
+            },
+            "design_matrix": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/design.tsv",
+              "sha256": "8e81d1df816485664729558cd98dbf67bf99d5fe06dcb586a1f6805af3c79982"
+            },
+            "sgrna_efficiency": null,
+            "control_sgrna": null,
+            "control_gene": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-3-fit-controls.txt",
+              "sha256": "be7d6996d1fe7a855d90953a285a92074626de32dc1a85c5dfb940ac323a568b"
+            }
+          },
+          "permutation_calibration": {
+            "method": "inclusive-add-one",
+            "two_sided": "min(1, 2 * min(upper, lower))",
+            "invalid_fit_policy": "all tails equal one",
+            "skipped_fit_policy": "all tails equal one",
+            "null_source": "control guides",
+            "scope": "finite-tail safeguard; pooled-guide exchangeability and biological FDR are not established",
+            "groups": [
+              {
+                "genes": 17247,
+                "guide_counts": [
+                  4
+                ],
+                "null_draws": 34494,
+                "conditions": 1,
+                "minimum_directional_p": 2.8989708653428032e-05,
+                "minimum_two_sided_p": 5.7979417306856065e-05,
+                "nonfinite_null_draws_by_condition": [
+                  0
+                ],
+                "nonfinite_observed_by_condition": [
+                  0
+                ],
+                "skipped_genes": 0
+              }
+            ]
+          },
+          "blas": [
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-fdde5778.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "SkylakeX"
+            },
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "SkylakeX"
+            }
+          ],
+          "outputs": {
+            "gene_summary": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-3.gene_summary.txt",
+              "sha256": "68e3bd85fe28fe08ff7f9d2e073fa63b1ab4305a750f46c636764a1cf901fe26"
+            },
+            "sgrna_summary": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-3.sgrna_summary.txt",
+              "sha256": "3a1b7624220c245f5e2f594d97eee2164dd975829a73680e9cb835eee52fdd58"
+            },
+            "fit_details": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-3.fit-details.json",
+              "sha256": "f24e36076e0e10acdcd14da9c0c81555443a9f46791924cf641d00cf8ca4ec98"
+            }
+          },
+          "elapsed_seconds": 61.37947925000026
+        },
+        {
+          "schema_version": 1,
+          "status": "complete",
+          "tool": "CRISPRWorks Fit",
+          "version": "0.1.0a2",
+          "backend": "accelerated",
+          "kernel": "native",
+          "mageck2_version": "0.3.0",
+          "reference_commit": "630aea0b6fc152a81006435f21d629297275c911",
+          "python": "3.12.14",
+          "numpy": "2.3.5",
+          "scipy": "1.17.0",
+          "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+          "options": {
+            "subcmd": "mle",
+            "count_table": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/counts.tsv",
+            "design_matrix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/design.tsv",
+            "day0_label": null,
+            "output_prefix": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-4",
+            "include_samples": null,
+            "beta_labels": null,
+            "control_sgrna": null,
+            "control_gene": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-4-fit-controls.txt",
+            "cnv_norm": null,
+            "cell_line": null,
+            "cnv_est": null,
+            "debug": false,
+            "debug_gene": null,
+            "norm_method": "control",
+            "genes_varmodeling": 1000,
+            "permutation_round": 2,
+            "no_permutation_by_group": false,
+            "max_sgrnapergene_permutation": 40,
+            "remove_outliers": false,
+            "threads": 1,
+            "adjust_method": "fdr",
+            "sgrna_efficiency": null,
+            "sgrna_eff_name_column": 0,
+            "sgrna_eff_score_column": 1,
+            "update_efficiency": true,
+            "bayes": false,
+            "PPI_prior": false,
+            "PPI_weighting": null,
+            "negative_control": null,
+            "backend": "accelerated",
+            "kernel": "native",
+            "seed": 1729,
+            "blas_threads": 1,
+            "write_fit_details": true,
+            "permutation_pvalues": "finite"
+          },
+          "inputs": {
+            "count_table": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/counts.tsv",
+              "sha256": "30f8333be1841094960d516f9362ec1b017702fc1bc04ad505fb9b27307a7fbc"
+            },
+            "design_matrix": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/design.tsv",
+              "sha256": "8e81d1df816485664729558cd98dbf67bf99d5fe06dcb586a1f6805af3c79982"
+            },
+            "sgrna_efficiency": null,
+            "control_sgrna": null,
+            "control_gene": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fold-4-fit-controls.txt",
+              "sha256": "9e3d5ea95afabd136f2f71c6c971aeacabbaa10b30574cd3165e1307ad0759c8"
+            }
+          },
+          "permutation_calibration": {
+            "method": "inclusive-add-one",
+            "two_sided": "min(1, 2 * min(upper, lower))",
+            "invalid_fit_policy": "all tails equal one",
+            "skipped_fit_policy": "all tails equal one",
+            "null_source": "control guides",
+            "scope": "finite-tail safeguard; pooled-guide exchangeability and biological FDR are not established",
+            "groups": [
+              {
+                "genes": 17247,
+                "guide_counts": [
+                  4
+                ],
+                "null_draws": 34494,
+                "conditions": 1,
+                "minimum_directional_p": 2.8989708653428032e-05,
+                "minimum_two_sided_p": 5.7979417306856065e-05,
+                "nonfinite_null_draws_by_condition": [
+                  0
+                ],
+                "nonfinite_observed_by_condition": [
+                  0
+                ],
+                "skipped_genes": 0
+              }
+            ]
+          },
+          "blas": [
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-fdde5778.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "SkylakeX"
+            },
+            {
+              "user_api": "blas",
+              "internal_api": "openblas",
+              "num_threads": 1,
+              "prefix": "libscipy_openblas",
+              "filepath": "/workspace/dotmatch/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+              "version": "0.3.30",
+              "threading_layer": "pthreads",
+              "architecture": "SkylakeX"
+            }
+          ],
+          "outputs": {
+            "gene_summary": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-4.gene_summary.txt",
+              "sha256": "8195b879cd0decd9f44296e27ed048c88d6b9bc692cd89f8395204eff7b4c8b1"
+            },
+            "sgrna_summary": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-4.sgrna_summary.txt",
+              "sha256": "1c3195536df5bd233af11dbb23d89f0cc399d7ba923b7afc5e193219c929bd83"
+            },
+            "fit_details": {
+              "path": "/workspace/.scientific-fit/hit-quality-controls/hap1-tkov3/fit-control-4.fit-details.json",
+              "sha256": "d689769aa44968f4f044fe160260fe11e7ec1b1b4e0742998fc622d673c03870"
+            }
+          },
+          "elapsed_seconds": 47.69188566599951
+        }
+      ]
+    }
+  },
+  "scores_sha256": "2ce9a260b77cbb446f68184e4963a9049115bd036b634b89be5eebeb05598348"
+}

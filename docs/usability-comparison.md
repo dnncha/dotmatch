@@ -11,6 +11,18 @@ This table summarizes workflow fit and usability boundaries. It is not a benchma
 | Bowtie2 | reference alignment | yes | no | yes | yes | mapping-centered | no | Over-general for known short-target assignment |
 | Edlib scan | exact pairwise oracle | no workflow shell | no | yes | yes | yes if wrapped | no | Exact semantic comparator; exhaustive over targets |
 
+:::{admonition} Measured guide-counter comparison
+:class: tip
+
+The benchmarked source checkout's `dotmatch guide-counter count` records
+**1.6–5.5× faster one-mismatch commands and 11.3–14.4× lower peak memory**, with
+identical full count matrices across five paired repeats. The comparison uses
+controlled 100k/1M-read FASTQs, the public Yusa library and one CPU thread.
+Guide-counter is faster in the tested exact-mode million-read cases.
+[Both modes, graphs and reproduction commands](benchmarks/guide_counter/README.md)
+are available; full experimental-screen performance remains unmeasured.
+:::
+
 ## Example Workflow
 
 The target user-facing workflow is:
@@ -38,7 +50,7 @@ This should produce:
 - deterministic assignment policy;
 - ambiguity and unmatched diagnostics;
 - exact Levenshtein semantics including one-base indels;
-- a hamming mode for fair one-mismatch/no-indel guide-counter comparisons;
+- a separate guide-counter compatibility command for comparisons using the same offset and per-window counting rules;
 - selected guide offset in the summary JSON when auto-offset detection is used;
 - reproducible validation against native Edlib scan.
 

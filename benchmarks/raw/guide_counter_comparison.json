@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "command": [
+    "/workspace/dotmatch/.venv/bin/python",
+    "scripts/bench_guide_counter.py",
+    "--guide-counter",
+    "/workspace/.scientific-dotmatch/guide-counter/target/release/guide-counter",
+    "--guide-counter-source",
+    "/workspace/.scientific-dotmatch/guide-counter",
+    "--rustc",
+    "/workspace/.scientific-dotmatch/rust/rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/rustc",
+    "--sizes",
+    "100000,1000000",
+    "--repeats",
+    "5",
+    "--experimental-fastq",
+    "benchmarks/real/data/ERR376998.fastq.gz",
+    "--experimental-fastq",
+    "benchmarks/real/data/ERR376999.fastq.gz",
+    "--work-dir",
+    "benchmarks/work/guide_counter_precision",
+    "--reuse-inputs"
+  ],
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+  "python": "3.12.14",
+  "cpu_count": 5,
+  "dotmatch_version": "dotmatch 0.6.4",
+  "cc_version": "cc (Debian 14.2.0-19) 14.2.0",
+  "rustc_version": "rustc 1.95.0 (59807616e 2026-04-14)",
+  "affinity": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "guide_counter_commit": "f24de175282064773328e35baf03373e7e3b895d",
+  "guide_counter_version": "0.1.3",
+  "guide_counter_build": "cargo build --release --locked; upstream fat LTO and one codegen unit",
+  "dotmatch_build": "make dotmatch CC=cc; default -O3 and -mavx2 on x86-64",
+  "thread_scope": "both commands single-threaded; fresh process per timing",
+  "timing_scope": "includes index/library construction, offset detection, gzip parsing, counting and all three output files; excludes generation and checks",
+  "offset_sample_size": 100000,
+  "offset_min_fraction": 0.0025,
+  "counting_unit": "one unique best-distance guide assignment per selected offset; multiple assignments per read permitted",
+  "protocol": {
+    "schema_version": 1,
+    "seed": 20261002,
+    "cases": [
+      {
+        "workload": "controlled_yusa_100000_1sample",
+        "scope": "controlled_simulation",
+        "library": "/workspace/dotmatch/benchmarks/real/data/yusa_library.csv",
+        "reads": [
+          "/workspace/dotmatch/benchmarks/work/guide_counter_final/controlled_yusa_100000_1sample-0.fastq.gz"
+        ],
+        "labels": [
+          "sample0"
+        ],
+        "n_reads": 100000,
+        "n_targets": 87437,
+        "guide_length": 19,
+        "seed": 20361102
+      },
+      {
+        "workload": "controlled_yusa_1000000_1sample",
+        "scope": "controlled_simulation",
+        "library": "/workspace/dotmatch/benchmarks/real/data/yusa_library.csv",
+        "reads": [
+          "/workspace/dotmatch/benchmarks/work/guide_counter_final/controlled_yusa_1000000_1sample-0.fastq.gz"
+        ],
+        "labels": [
+          "sample0"
+        ],
+        "n_reads": 1000000,
+        "n_targets": 87437,
+        "guide_length": 19,
+        "seed": 21261102
+      },
+      {
+        "workload": "controlled_yusa_1000000_4sample",
+        "scope": "controlled_simulation",
+        "library": "/workspace/dotmatch/benchmarks/real/data/yusa_library.csv",
+        "reads": [
+          "/workspace/dotmatch/benchmarks/work/guide_counter_final/controlled_yusa_1000000_4sample-0.fastq.gz",
+          "/workspace/dotmatch/benchmarks/work/guide_counter_final/controlled_yusa_1000000_4sample-1.fastq.gz",
+          "/workspace/dotmatch/benchmarks/work/guide_counter_final/controlled_yusa_1000000_4sample-2.fastq.gz",
+          "/workspace/dotmatch/benchmarks/work/guide_counter_final/controlled_yusa_1000000_4sample-3.fastq.gz"
+        ],
+        "labels": [
+          "sample0",
+          "sample1",
+          "sample2",
+          "sample3"
+        ],
+        "n_reads": 1000000,
+        "n_targets": 87437,
+        "guide_length": 19,
+        "seed": 21261402
+      },
+      {
+        "workload": "yusa_experimental_cached_prefix",
+        "scope": "experimental_prefix",
+        "library": "/workspace/dotmatch/benchmarks/real/data/yusa_library.csv",
+        "reads": [
+          "/workspace/dotmatch/benchmarks/real/data/ERR376998.fastq.gz",
+          "/workspace/dotmatch/benchmarks/real/data/ERR376999.fastq.gz"
+        ],
+        "labels": [
+          "ERR376998",
+          "ERR376999"
+        ],
+        "n_reads": 50,
+        "n_targets": 87437,
+        "guide_length": 19,
+        "records_by_sample": [
+          25,
+          25
+        ],
+        "source_urls": [
+          "https://ftp.sra.ebi.ac.uk/vol1/fastq/ERR376/ERR376998/ERR376998.fastq.gz",
+          "https://ftp.sra.ebi.ac.uk/vol1/fastq/ERR376/ERR376999/ERR376999.fastq.gz"
+        ]
+      }
+    ],
+    "controlled_read_recipe": "70% exact, 20% one substitution, 5% two substitutions, 5% random decoys.\n\n    Guides start at offsets 23/24/25 in 50-base reads; every byte is uppercase ACGT.\n    The generation label describes construction, not guaranteed source identity.\n    ",
+    "files": {
+      "/workspace/dotmatch/benchmarks/real/data/yusa_library.csv": "d41a4122a46fdedb47deca61081dde9037d461a1fce1e6f9744522e21005ceba",
+      "/workspace/dotmatch/benchmarks/work/guide_counter_final/controlled_yusa_100000_1sample-0.fastq.gz": "71bd336ef99ef0376cbce45d41d2340bfe5d2b1ce6d24d21438e68d4991d7e69",
+      "/workspace/dotmatch/benchmarks/work/guide_counter_final/controlled_yusa_1000000_1sample-0.fastq.gz": "dac951627e7138db24fbc4bbe668bd5114123f02debff0db8c297ad9fdaeb18e",
+      "/workspace/dotmatch/benchmarks/work/guide_counter_final/controlled_yusa_1000000_4sample-0.fastq.gz": "05051636695074b41240cb724976a2964a0b1a87b5e5f0b23593f017b12f81ad",
+      "/workspace/dotmatch/benchmarks/work/guide_counter_final/controlled_yusa_1000000_4sample-1.fastq.gz": "25d8d2c5fa4624e52fb6f51eb53781207d2fdc098b65fc2a0d3fdebc65cbb4b3",
+      "/workspace/dotmatch/benchmarks/work/guide_counter_final/controlled_yusa_1000000_4sample-2.fastq.gz": "7d20b3509da8c280f9c606a1d5943c95ca3dd81fd803eb13d67293f5c8e91acc",
+      "/workspace/dotmatch/benchmarks/work/guide_counter_final/controlled_yusa_1000000_4sample-3.fastq.gz": "59386fed045ea370fa0f16bf044bab37cf589c577595cb879aa09703e4ce5bc9",
+      "/workspace/dotmatch/benchmarks/real/data/ERR376998.fastq.gz": "8a190d3ccadea030c558ed3819b73679eace16fe7210b996cc15018ac3cda6ca",
+      "/workspace/dotmatch/benchmarks/real/data/ERR376999.fastq.gz": "11b476220ab94b53ee814c1cab9a6d17660b71542bb725e431c72d2809609e69"
+    }
+  },
+  "files": {
+    "/workspace/dotmatch/dotmatch": "11be4ffbd4b2f96a4e8e74321c27735210537ab05d42e4d2446cbbd3f7ffd3fe",
+    "/workspace/.scientific-dotmatch/guide-counter/target/release/guide-counter": "d0d4dbedaffafe19dc4116ee3350d2c241c6ddf6be618fa25fb1489d50a09d16",
+    "/workspace/dotmatch/src/qda.c": "3c7abfbcc2c65c450b4ba94afd55b94c6fc6fe6004d810a1d7100995a527a2d9",
+    "/workspace/dotmatch/src/qdalign.c": "e83334676da0dfdac82e4f2050429c61668537a99ea266716d4083c774b7983c",
+    "/workspace/dotmatch/scripts/bench_guide_counter.py": "7ca4bf88f5f9b3eecec2ba3ba2de1d16bd9adbc762af1a82445bdd5c2ffba2ad",
+    "/workspace/.scientific-dotmatch/guide-counter/Cargo.lock": "5d3faaa84b441d38d68ebdfb39a90e04364083cb45d94019d71cba2012dd65c8",
+    "/workspace/.scientific-dotmatch/guide-counter/Cargo.toml": "6d067884fd13d226fb27bb3791f2e8b6359195f0dd86036e3609f3d5fc66f769"
+  },
+  "measurement": {
+    "method": "fresh native launcher with monotonic clock and per-child wait4 rusage",
+    "source_sha256": "e1d8d69ed591c40f4f907450c7ad344b70becd977e2da91d8e82a6ba6b86cb47",
+    "binary_sha256": "efb994b784829652c0fe7887d8300fbb110a9f49f60efc16d5bbbc92b4ee8338"
+  },
+  "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
+  "csv_sha256": "bd957ceb9ad23edf3611dac82d118a3b7414dcb0370bbc90ed131f8714038183"
+}

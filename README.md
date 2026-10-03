@@ -21,18 +21,33 @@ on Linux and macOS and writes MAGeCK-compatible counts.
 [Documentation](https://dotmatch.readthedocs.io/en/latest/) ·
 [Methods and results](https://dotmatch.readthedocs.io/en/latest/benchmarks/crispr_comparison/README.html)
 
+> **Benchmark spotlight: faster one-mismatch counting, identical counts.**
+>
+> The benchmarked source checkout's `dotmatch guide-counter count` is
+> **1.6–5.5× faster with 11.3–14.4× lower peak memory** than unmodified
+> guide-counter 0.1.3 in the tested one-mismatch workflows. Every paired run
+> produced identical full guide/sample count matrices.
+>
+> Measured on controlled 100k/1M-read FASTQs against the public 87,437-guide
+> Yusa library, using one CPU thread and five paired repeats. Guide-counter is
+> faster in the tested exact-mode million-read cases. Full experimental-screen
+> performance and biological accuracy require separate validation.
+> [See the throughput and memory graphs, protocol and raw results](https://dotmatch.readthedocs.io/en/latest/benchmarks/guide_counter/README.html).
+
 ## The CRISPRWorks family
 
 | Component | Purpose | Availability |
 | --- | --- | --- |
 | **Count** | Count guides and inspect read assignments | Available through the DotMatch CLI and Python package |
-| **Fit** | Fit gene-level screen effects | [Experimental alpha available from source](https://github.com/dnncha/dotmatch/tree/main/packages/crisprworks-fit) |
+| **Fit** | Fit gene effects, learn guide efficacy across screens and calibrate control-gene tails | [Experimental alpha available from source](https://github.com/dnncha/dotmatch/tree/main/packages/crisprworks-fit) |
 | **Review** | Review QC, comparisons and screen results | Existing DotMatch reports cover counts and assignment QC; a broader Review tool is planned |
 
 Start with Count using the commands below. Read the
-[family overview and naming plan](docs/crisprworks.md) for scope and development
-criteria. Fit is available as experimental source in the implementation PR; it
-has no published package release. The broader Review tool is planned.
+[family overview](https://dotmatch.readthedocs.io/en/latest/crisprworks.html) for
+component status and scientific scope. For gene-level analysis, follow
+[From counts to gene effects](https://dotmatch.readthedocs.io/en/latest/tutorials/crispr-fit-first-run.html).
+Fit is a separate source install and has no published package release.
+The broader Review tool is planned.
 
 ## What the counts mean
 
@@ -50,11 +65,11 @@ basecaller, cell/UMI pipeline or gene-level hit-calling package.
 
 ## Install
 
-Release 0.6.4 is the current DotMatch release. It includes the six `dotmatch agent` tools
+Release 0.7.0 is published on PyPI and GHCR. It includes the six `dotmatch agent` tools
 described below:
 
 ```bash
-python3 -m pip install dotmatch==0.6.4
+python3 -m pip install dotmatch==0.7.0
 dotmatch --version
 ```
 
@@ -65,7 +80,7 @@ conda create -n dotmatch -c conda-forge -c bioconda dotmatch
 conda activate dotmatch
 
 # Or use the pinned release container:
-docker run --rm ghcr.io/dnncha/dotmatch:v0.6.4 --version
+docker run --rm ghcr.io/dnncha/dotmatch:v0.7.0 --version
 ```
 
 Bioconda and its generated BioContainers images can lag PyPI/GHCR. When a
@@ -128,10 +143,10 @@ best-distance Hamming assignment using the same windows in **one FASTQ pass**.
 It produces three count matrices, per-guide deltas, read-state transitions,
 checksums and a self-contained HTML report. It never selects a policy for you.
 
-Run the included synthetic example from a checkout of the v0.6.4 release:
+Run the included synthetic example from a checkout of the v0.7.0 release:
 
 ```bash
-python3 -m pip install dotmatch==0.6.4
+python3 -m pip install dotmatch==0.7.0
 dotmatch sensitivity \
   --targets examples/assignment_sensitivity/targets.tsv \
   --reads examples/assignment_sensitivity/reads.fastq \
@@ -146,7 +161,7 @@ This is sensitivity analysis, not an estimate of biological accuracy.
 
 [Explore the interactive review example](https://dnncha.github.io/dotmatch/assignment-sensitivity/)
 without installing anything. The example uses the public nine-read synthetic fixture.
-The interactive assignment review is published on the DotMatch 0.6.4 site.
+The interactive assignment review is published on the DotMatch 0.7.0 site.
 The installed `dotmatch sensitivity` command continues to write its static
 report. The synthetic fixture demonstrates software behavior, not biological
 accuracy.
@@ -178,6 +193,22 @@ below and record the release and assignment policy used in your own run.
 The [benchmark reports](https://dotmatch.readthedocs.io/en/latest/benchmarks/README.html)
 include commands, hardware and assignment rules. Those reports cover the tested workloads;
 they are not universal speed or biological-accuracy guarantees.
+
+The [guide-counter comparison](https://dotmatch.readthedocs.io/en/latest/benchmarks/guide_counter/README.html)
+records complete-command throughput and peak memory with identical full counts.
+The figures below show exact and one-mismatch modes, with median bars and the
+observed range across five runs. They cover the benchmarked source checkout
+and controlled 100k/1M-read FASTQs against the Yusa library.
+
+![DotMatch versus guide-counter: complete-command throughput in exact and one-mismatch modes](https://raw.githubusercontent.com/dnncha/dotmatch/main/benchmarks/figures/guide_counter_throughput.svg)
+
+![DotMatch versus guide-counter: peak memory for the same complete commands](https://raw.githubusercontent.com/dnncha/dotmatch/main/benchmarks/figures/guide_counter_memory.svg)
+
+The current source engine's [Hamming improvement report](https://dotmatch.readthedocs.io/en/latest/benchmarks/hamming_seed_layout/README.html)
+records 5.2–5.7× faster complete `k=3` counting against the previous engine on
+30,000 simulated reads and the real Yusa guide library, with identical counts.
+It also documents a corrected false-tie bug in Hamming queries containing
+literal unknown bytes and 136,096 independent oracle checks.
 
 [Public CRISPR comparisons](https://dotmatch.readthedocs.io/en/latest/benchmarks/crispr_comparison/README.html)
 record Yusa and Brunello inputs, methods, count differences, runtime and memory.

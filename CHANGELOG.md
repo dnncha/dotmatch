@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.0 — 2026-10-03
+
+- Add a guide-counter-compatible counting path, precision boundary fixes, and an audited five-repeat comparison with matching counts.
+- Add experimental joint gene-level inference and whole-gene control calibration to CRISPRWorks Fit, with convergence and attainable-FDR diagnostics.
+- Stage Fit output bundles, verify consumed inputs, prevent overlapping publication, and reject malformed MLE counts before fitting.
+- Add first-run tutorials, scientific audit findings, benchmark graphs and scoped comparison callouts.
+- Keep biological validation limitations explicit; experimental Fit is not evidence of general scientific superiority.
+
+
 All notable user-facing changes are tracked here. Public statements in release notes must stay aligned with `docs/scientific-claims.md`.
 
 ## Unreleased

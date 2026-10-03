@@ -1,14 +1,16 @@
 # CRISPRWorks Fit
 
-**Experimental acceleration of MAGeCK2 MLE for pooled CRISPR screens.**
+**Experimental gene-level inference for pooled CRISPR screens.**
 
 Fit runs MAGeCK2's count-table-to-gene-results workflow with faster numerical
-kernels and worker reuse. Alpha 2 adds a compiled C EM loop; the earlier
+kernels and worker reuse. A separate JACKS-derived engine learns guide efficacy
+jointly across replicated screens, and a gene-control calibrator preserves
+within-gene guide correlation. Alpha 2 adds a compiled C EM loop; the earlier
 NumPy engine remains selectable for reproducible comparisons. It belongs to the CRISPRWorks family alongside
 CRISPRWorks Count, powered by DotMatch. This is a separate installable package;
 the existing DotMatch package remains independent of its dependencies.
 
-The prototype targets **MAGeCK2 0.3.0**. It checks the upstream functions against
+The MLE adapter targets **MAGeCK2 0.3.0**. It checks the upstream functions against
 the tested source before enabling acceleration. It is not a drop-in replacement
 for every version of legacy MAGeCK.
 
@@ -20,6 +22,7 @@ From a checkout containing this directory:
 python3 -m pip install ./packages/crisprworks-fit
 crisprworks-fit --version
 crisprworks-fit demo --out-dir fit-demo/
+crisprworks-fit demo --model joint --out-dir fit-joint-demo/
 ```
 
 MAGeCK2 is an installation dependency and currently builds its bundled C++
@@ -30,8 +33,18 @@ is required by Fit. Building the optional native loop requires a C compiler.
 `--kernel numpy` selects the previous engine. The provenance manifest records
 the engine actually used. The package has not been published to PyPI.
 
-The demo creates a small synthetic count table and design, then writes gene
-and guide summaries. It demonstrates software behavior, not biological accuracy.
+The default demo creates a small synthetic count table and design, then writes
+MLE gene and guide summaries. The joint demo creates 48 genes, four guides per
+gene, a sample map and 32 independently declared synthetic control genes. It
+fits two conditions and writes whole-gene calibration with default global BY
+adjustment. A `demo.json` completion marker records input/output hashes. The
+joint demo requires a new output directory and uses fixed seed 1729. Both
+demos demonstrate software behavior, not biological accuracy.
+
+The [Count-to-Fit tutorial](https://dotmatch.readthedocs.io/en/latest/tutorials/crispr-fit-first-run.html)
+covers model choice, file formats, named conditions and result interpretation.
+`--backend`, `--kernel` and `--threads` select MLE demo behavior; joint inference
+uses its own NumPy model.
 
 For an isolated installation with pinned numerical dependencies:
 
@@ -75,13 +88,125 @@ Outputs:
 | `screen.gene_summary.txt` | Upstream-compatible beta, z-score, permutation p-value/FDR and Wald p-value/FDR columns |
 | `screen.sgrna_summary.txt` | Upstream-compatible guide results |
 | `screen.crisprworks.json` | Backend, seed, options, input/output hashes, versions, BLAS configuration and elapsed time |
-| `screen.fit-details.json` | Optional full-precision estimates, efficiencies, p-values and FDR for numerical comparisons |
+| `screen.fit-details.json` | Optional full-precision estimates, efficiencies, p-values/FDR, condition labels and effect units for comparison or calibration |
 | `screen.log` | MAGeCK2 workflow log |
 
 Use `--backend reference` to run the same workflow with the original MAGeCK2
 functions. Use identical input files, options and seed when comparing backends.
 Both modes default to one BLAS thread per process. `--threads` controls worker
 processes; `--blas-threads` controls BLAS threads within each worker.
+
+### Finite permutation inference with negative controls
+
+For an analysis with independently justified nonessential control genes:
+
+```bash
+crisprworks-fit mle -k counts.tsv -d design.tsv -n results/screen \
+  --control-gene nonessential-controls.txt --norm-method control \
+  --permutation-pvalues finite --update-efficiency --seed 42 \
+  --permutation-round 10 --write-fit-details
+```
+
+The control file contains one gene name per line, without a header. Choose
+controls independently of the effects you are testing. This uses their guides
+for normalization and the grouped permutation background. A matched null can
+matter much more for hit sensitivity than a high ranking score; the
+[held-out HAP1 benchmark](benchmarks/SCIENTIFIC-VALIDATION.md) measures both.
+Controls are assay-specific: an annotation of nonessentiality elsewhere does
+not prove that a gene is neutral in your treatment or cell line.
+
+`--permutation-pvalues finite` counts ties and uses `(extreme + 1)/(draws + 1)`
+in each directional tail. Two-sided p-values double the smaller tail, capped
+at one. An observation outside a finite simulated null never receives `p=0`;
+an all-tied null receives `p=1`. Nonfinite observations or null columns and
+genes skipped by the upstream guide-count threshold receive `p=1`. The
+manifest records the null source, draw counts, p-value resolution and failed
+fits. More draws improve numerical resolution; they do not repair an invalid
+null model. Finite control inference rejects `--no-permutation-by-group`
+because that upstream branch ignores the control-guide background.
+
+The default `--permutation-pvalues legacy` retains MAGeCK compatibility,
+including strict tails and zero p-values. Finite mode changes permutation
+p-values and their FDR, while preserving beta estimates, guide efficiencies
+and Wald statistics. It also works with `--backend reference`, where only the
+fitting is the original implementation. The add-one safeguard follows
+[Phipson and Smyth (2010)](https://doi.org/10.2202/1544-6115.1585);
+valid randomization inference still requires exchangeability. Pooled-guide
+pseudo-genes do not establish that assumption or biological FDR control.
+
+### Learn guide efficacy jointly across screens
+
+For screens using the same guide library, provide a tab-separated sample map:
+
+```text
+Sample	Condition	Control
+baseline	BASE	BASE
+cell_a_1	CELL_A	BASE
+cell_a_2	CELL_A	BASE
+cell_b_1	CELL_B	BASE
+cell_b_2	CELL_B	BASE
+```
+
+Every count-table sample must appear once. Baseline conditions map to
+themselves; treatment conditions name their matched baseline and require at
+least two replicates. Baselines may have one replicate. Different treatment
+conditions can use different baseline groups. The table needs at least 64
+guides for variance smoothing; counts must be finite and nonnegative.
+
+```bash
+crisprworks-fit joint -k counts.tsv --sample-map samples.tsv \
+  --control-gene nonessential-controls.txt -n results/joint
+```
+
+This writes `joint.joint.tsv` and full-precision `joint.joint-details.json`.
+Effects use log2 relative-abundance units. Guide efficacies are continuous
+relative weights shared across conditions, rather than editing probabilities.
+Posterior standard deviations and z scores describe the model; they are not
+calibrated biological hit probabilities. The model adapts
+[JACKS](https://doi.org/10.1101/gr.238923.118), with pseudocount 32 and its
+default variational updates. No pretrained efficacy reference, hierarchical
+effect prior or copy-number correction is enabled. Omitting the control file
+uses all-guide median normalization. MLE remains separately selectable.
+
+### Calibrate frozen effects with whole control genes
+
+```bash
+crisprworks-fit calibrate --fit-details results/joint.joint-details.json \
+  --control-gene nonessential-controls.txt -n results/calibrated
+```
+
+The same command accepts MLE's `screen.fit-details.json`. It compares each
+effect with entire control-gene effects having the same guide count, retaining
+within-gene correlation. Ties use inclusive add-one empirical tails. Training
+controls cannot become hits and are excluded from the testing family. Missing
+support, nonfinite fits and excluded guide-count strata receive p=1 with an
+explicit status. The default requires 20 controls per stratum and excludes
+genes with 40 or more guides; those policy limits are configurable.
+
+New MLE details preserve design-coefficient labels, and joint details preserve
+sample-map condition labels. Calibration carries these names into its TSV as
+`condition_label`, alongside a one-based `condition` index. Older details without
+labels retain numeric indices; keep the corresponding design or sample map.
+
+Outputs are `calibrated.calibration.tsv` and a JSON manifest with input/output
+hashes, strata, p-value resolution and testing-family size. `--score effect`
+uses the fitted effect; `--score z` uses its descriptive posterior/Wald z
+score. The default `--family global` adjusts every tested gene/condition
+hypothesis together. `--family condition` declares a separate family per
+condition. Each alternative has its own family; use two-sided results when
+choosing effect direction after seeing the data.
+
+The default `--adjust by` uses Benjamini–Yekutieli adjustment for arbitrary
+dependence of valid marginal p-values. It can lose substantial power: it made
+no calls on the bounded public panel because control counts limit resolution.
+`--adjust bh` offers more power when independence or suitable positive
+dependence is justified. Neither adjustment repairs an invalid control null.
+Controls must remain exchangeable with tested null genes after the complete
+normalization and fitting procedure; selecting controls from observed effects
+or using unrepresentative annotations can violate that requirement.
+
+The [correlated-guide simulation](benchmarks/NULL-CALIBRATION.md) demonstrates
+why preserving gene correlation matters and quantifies the power tradeoff.
 
 ## What is faster
 
@@ -99,16 +224,37 @@ processes; `--blas-threads` controls BLAS threads within each worker.
   special functions, preserving reference arithmetic and distribution support.
 - Run single-worker fitting directly; reuse a spawned worker pool across
   fitting stages and permutation rounds for multiple workers.
-- Sort permutation-null columns once and use binary searches. Strict greater-
-  than/less-than comparisons preserve the reference treatment of ties.
+- Sort permutation-null columns once and use binary searches. Legacy mode's
+  strict greater-than/less-than comparisons preserve the reference treatment
+  of ties; finite mode uses inclusive comparisons and the add-one correction.
 
-The dispersion model, normalization, convergence threshold, efficiency rules,
+In MLE acceleration, the dispersion model, normalization, convergence threshold,
+efficiency rules,
 permutation grouping, gene skip threshold and FDR calculation retain upstream
 conventions. The adapter restores upstream functions and the design cache when
 it exits. Its scoped patches are process-global; concurrent unwrapped MAGeCK2
 calls in the same interpreter are unsupported.
 
 ## Validation and measurements
+
+The [scientific inference evaluation](benchmarks/SCIENTIFIC-VALIDATION.md)
+includes current Chronos and JACKS on a frozen Broad/Sanger panel, plus
+BAGEL2 on two public HAP1 complete-four-guide cohorts. The production joint
+engine improves AP over Fit MLE in all six panel comparisons (three cell
+lines, two libraries) and exceeds Chronos in four. This is a curated vignette
+subset enriched for controls; several paired intervals overlap zero. Exact
+same-dependency JACKS parity, versions and cross-version differences are
+recorded in the [frontier report](benchmarks/FRONTIER.md).
+
+For the earlier HAP1 analysis, five external gene folds exclude evaluation genes from both BAGEL2 training
+and Fit's nonessential controls. With finite tails, using control genes for
+normalization and the permutation null raised reference-essential recall at
+nominal directional FDR 0.05 from **1.6% to 94.5%** and **57.2% to 98.7%**.
+Held-out nonessential call rates were **0.7% and 1.2%**. These class-specific
+false-positive frequencies do not estimate genome-wide FDR. Control-based
+ranking AP was **0.9983 and 0.9984**, comparable to BAGEL2's **0.9980 and
+0.9985** on these annotations. The screens share a cell line and data source;
+this evidence does not establish superiority across assays or overall SOTA.
 
 The regression suite checks 54 unrounded fits across three designs, three guide
 counts, two random seeds, and disabled/fixed/updated efficiency modes. It also
@@ -130,7 +276,8 @@ also matched the reference in a separate cross-environment full-precision
 comparison. That comparison establishes numerical agreement, with no
 unfiltered-table timing ratio claimed. These checks preserve the reference
 results; they do not establish superior biological hit accuracy or a universal
-speedup. Chronos and JACKS have not been benchmarked in this comparison.
+speedup. The native timing experiment compares MLE engines; the separate
+frontier report evaluates Chronos/JACKS ranking and calling choices.
 
 The [earlier NumPy measurement](benchmarks/HAP1.md) remains archived with its
 original implementation commit and runner timings. Compare engines within each
@@ -194,3 +341,49 @@ BSD-3-Clause. The notice is retained in [LICENSE](LICENSE). The reference releas
 commit is `630aea0b6fc152a81006435f21d629297275c911`. Cite the upstream methods
 and actual software versions used in analyses. CRISPRWorks Fit does not imply
 upstream endorsement.
+
+The joint variational updates and posterior variance smoothing are adapted
+from [JACKS](https://github.com/felicityallen/JACKS), copyright Felicity Allen
+and Leopold Parts, commit `dd5c4be5e83baa5ee79a589b0a8c3a2ac3f7d6ad`.
+The source package's MIT notice and repository-root Apache-2.0 license are
+bundled under [licenses](licenses/README.txt); adapted source files record their
+changes. Cite [JACKS's method](https://doi.org/10.1101/gr.238923.118) for this
+model as well as the software versions used.
+
+Joint details include per-gene iteration counts, termination reasons and final
+stopping-statistic changes. The CLI exposes `--max-iterations` (default 50) and
+`--tolerance` (default 0.1). Meeting this inherited stopping rule is not an
+independent posterior-accuracy guarantee. Calibration rejects records explicitly
+marked nonconverged and verifies any recorded companion summary hash before
+writing outputs. Older standalone files without these records remain supported
+with the corresponding verification limitations.
+
+Calibration's `resolution` manifest block reports optimistic attainable q-value
+bounds for its actual declared family and eligible strata. `--fdr-alpha` selects
+the diagnostic threshold (default 0.05), without changing p/q values. A warning
+identifies families where no discovery is attainable; zero calls in that case
+must not be interpreted as evidence of no effects. These bounds do not predict
+power or validate the negative-control assumptions.
+
+Joint and calibration guard publication with a nonblocking OS lock. Overlapping
+publishers at one prefix fail before replacement; distinct prefixes retain both
+runs. Hidden `.publish.lock` files remain in place, and the OS releases the lock
+on process exit. Input provenance hashes the exact bytes parsed; input changes
+or late output/input aliases abort publication before replacing prior results.
+Completion manifests and hashes must still be checked. Filesystem crash durability remains separate work.
+
+MLE now runs upstream fitting from private input copies and stages both summary
+tables plus optional full-precision details. Failed fitting/staging preserves
+an earlier completed bundle. Publication validates input hashes, locks the
+prefix, invalidates the old completion manifest, replaces the outputs and
+publishes a new complete manifest last. A failure during replacement leaves no
+completion manifest; individual table existence does not establish completion.
+A successful rerun without `--write-fit-details` removes stale details. Failed
+attempts report errors without replacing an earlier completion manifest with a
+failure record. Check the command exit status as well as the manifest/hashes.
+
+MLE validates its private count snapshot before fitting: columns must be distinct
+and nonempty, rows must have matching widths, guide IDs must be globally unique,
+and counts must be finite and nonnegative. It preserves upstream literal TSV/CSV
+parsing and filename-suffix delimiter selection. These checks validate input
+structure, not the biological assumptions of the fitted model.

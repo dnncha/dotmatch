@@ -1192,6 +1192,19 @@ typedef struct count_stats {
     unsigned long long candidates_verified;
 } count_stats;
 
+typedef struct guide_counter_output {
+    const char *prefix;
+    seq_table *prepared_targets;
+    const string_list *essential_genes;
+    const string_list *nonessential_genes;
+    const string_list *control_guides;
+    const regex_t *control_re;
+} guide_counter_output;
+
+static int guide_counter_write_outputs(const guide_counter_output *output, const seq_table *targets,
+                                       const string_list *reads, const string_list *labels,
+                                       const unsigned long long *counts, const count_stats *stats_by_sample);
+
 typedef struct count_progress {
     int enabled;
     const char *sample_label;
@@ -1360,6 +1373,7 @@ typedef struct hamming_lookup {
     size_t seed0_len;
     int ready;
     int seed_ready;
+    int guide_counter_compatible;
 } hamming_lookup;
 
 typedef struct levenshtein1_lookup {
@@ -1426,29 +1440,18 @@ static int hamming_code_distance_local(uint64_t a, uint64_t b, size_t len) {
 #endif
 }
 
+/* Values are encoded plus one so every other byte has the invalid value zero.
+ * This avoids a branch cascade for each base in guide lookup and offset scans. */
+static const unsigned char acgt_code_values[256] = {['A'] = 1, ['C'] = 2, ['G'] = 3, ['T'] = 4};
+
 static int dna2_code_local(const char *s, size_t len, uint64_t *code_out) {
     if (s == NULL && len != 0) return 0;
     if (len > 32) return 0;
     uint64_t code = 0;
     for (size_t i = 0; i < len; ++i) {
-        uint64_t v;
-        switch (s[i]) {
-            case 'A':
-                v = 0;
-                break;
-            case 'C':
-                v = 1;
-                break;
-            case 'G':
-                v = 2;
-                break;
-            case 'T':
-                v = 3;
-                break;
-            default:
-                return 0;
-        }
-        code |= v << (2 * i);
+        uint64_t value = acgt_code_values[(unsigned char)s[i]];
+        if (value == 0) return 0;
+        code |= (value - 1) << (2 * i);
     }
     *code_out = code;
     return 1;
@@ -3469,6 +3472,77 @@ static void direct_hamming_visit_seed(const count_sample_job *job, unsigned char
     }
 }
 
+/* guide-counter counts each selected window independently, using strict
+ * uppercase ACGT and preferring exact hits over unique distance-one hits. */
+static int guide_counter_lookup_target(const hamming_lookup *lookup, uint64_t code, int k,
+                                       count_stats *stats, int *distance) {
+    const hamming_lookup_entry *entry = hamming_lookup_find(lookup->exact, lookup->exact_cap, code);
+    if (entry != NULL) {
+        if (stats != NULL) {
+            stats->candidates_considered += (unsigned long long)entry->match_count;
+            stats->candidates_verified += (unsigned long long)entry->match_count;
+        }
+        *distance = 0;
+        return entry->match_count == 1 ? entry->target_index : -1;
+    }
+    if (k == 0) return -1;
+    *distance = 1;
+    if (!lookup->seed_ready) {
+        entry = hamming_lookup_find(lookup->mismatch, lookup->mismatch_cap, code);
+        if (entry == NULL) return -1;
+        if (stats != NULL) {
+            stats->candidates_considered += (unsigned long long)entry->match_count;
+            stats->candidates_verified += (unsigned long long)entry->match_count;
+        }
+        return entry->match_count == 1 ? entry->target_index : -1;
+    }
+    int target = -1, ambiguous = 0;
+    for (unsigned char seed_id = 0; seed_id < 2; ++seed_id) {
+        size_t start = seed_id == 0 ? 0 : lookup->seed0_len;
+        size_t len = seed_id == 0 ? lookup->seed0_len : lookup->target_len - start;
+        uint64_t seed = code_segment_local(code, start, len);
+        size_t slot = seed_hash_local(seed, len, seed_id, lookup->seed_hash_cap);
+        for (int e = lookup->seed_heads[slot]; e >= 0; e = lookup->seeds[e].next) {
+            const hamming_seed_entry *candidate = &lookup->seeds[e];
+            if (candidate->seed_id != seed_id || candidate->code != seed) continue;
+            if (stats != NULL) {
+                ++stats->candidates_considered;
+                ++stats->candidates_verified;
+            }
+            if (hamming_code_distance_local(code, lookup->target_codes[candidate->target_index],
+                                           lookup->target_len) > 1) continue;
+            direct_hamming_record_hit(candidate->target_index, 1, &target, &ambiguous);
+            if (ambiguous) return -1;
+        }
+    }
+    return target;
+}
+
+static int guide_counter_count_seq(count_sample_job *job, const char *seq, size_t seq_len) {
+    ++job->stats->total;
+    count_progress_tick(job->progress);
+    int mapped = 0;
+    if (job->selected_offsets != NULL) {
+        for (size_t i = 0; i < job->selected_offsets->count; ++i) {
+            size_t offset = job->selected_offsets->items[i];
+            if (offset > seq_len || job->target_len > seq_len - offset) continue;
+            uint64_t code = 0;
+            if (!dna2_code_local(seq + offset, job->target_len, &code)) continue;
+            int distance = 0;
+            int target = guide_counter_lookup_target(job->hlookup, code, job->k, job->stats, &distance);
+            if (target < 0) continue;
+            size_t slot = (job->sample_index * job->targets->count + (size_t)target) * 5 + (size_t)distance;
+            if (increment_count_slot(job, slot) != 0) return -1;
+            ++job->stats->unique;
+            if (distance == 0) ++job->stats->exact;
+            else ++job->stats->corrected;
+            mapped = 1;
+        }
+    }
+    if (!mapped) ++job->stats->unmatched;
+    return 0;
+}
+
 static size_t selected_offset_at(const offset_list *offsets, size_t fallback_offset, size_t i) {
     return offsets == NULL || offsets->count == 0 ? fallback_offset : offsets->items[i];
 }
@@ -3581,6 +3655,7 @@ static void fill_direct_hamming_codes(const char *seq, size_t seq_len, const off
 
 static int direct_hamming_count_seq(count_sample_job *job, const char *seq, size_t seq_len) {
     if (job->hlookup == NULL || !job->hlookup->ready) return 0;
+    if (job->hlookup->guide_counter_compatible) return guide_counter_count_seq(job, seq, seq_len);
     ++job->stats->total;
     count_progress_tick(job->progress);
 
@@ -4054,6 +4129,28 @@ static void score_offsets_for_seq(const hamming_lookup *lookup, const char *seq,
                                   size_t target_start, size_t target_len, size_t range,
                                   unsigned long long *scores) {
     if (lookup == NULL || !lookup->ready || lookup->target_len != target_len) return;
+    if (lookup->guide_counter_compatible) {
+        /* Roll through the sequence once instead of encoding every window from
+         * scratch. A non-ACGT byte invalidates every window containing it. */
+        uint64_t code = 0;
+        size_t valid_run = 0;
+        uint64_t mask = target_len == 32 ? UINT64_MAX : (1ULL << (2 * target_len)) - 1ULL;
+        for (size_t p = 0; p < seq_len; ++p) {
+            uint64_t value = acgt_code_values[(unsigned char)seq[p]];
+            if (value == 0) { code = 0; valid_run = 0; continue; }
+            code = ((code >> 2) | ((value - 1) << (2 * (target_len - 1)))) & mask;
+            ++valid_run;
+            if (valid_run < target_len) continue;
+            size_t offset = p + 1 - target_len;
+            size_t lower = target_start > range ? target_start - range : 0;
+            if (offset < lower || offset > target_start + range) continue;
+            size_t oi = range + offset - target_start;
+            int distance = 0;
+            int k = lookup->seed_ready || lookup->mismatch_cap != 0 ? 1 : 0;
+            if (guide_counter_lookup_target(lookup, code, k, NULL, &distance) >= 0) ++scores[oi];
+        }
+        return;
+    }
     size_t n_offsets = 0;
     if (offset_count_for_range(range, &n_offsets) != 0) return;
     for (size_t oi = 0; oi < n_offsets; ++oi) {
@@ -4071,6 +4168,24 @@ static void score_offsets_for_seq(const hamming_lookup *lookup, const char *seq,
 static int select_offsets_from_scores(size_t target_start, size_t range, const unsigned long long *scores,
                                       size_t checked, offset_mode mode, double min_fraction,
                                       offset_list *selected_offsets);
+
+static int select_guide_counter_offsets(size_t target_start, size_t range,
+                                        const unsigned long long *scores, double min_fraction,
+                                        offset_list *selected_offsets) {
+    size_t n_offsets = 0;
+    if (offset_count_for_range(range, &n_offsets) != 0) return -1;
+    free_offset_list(selected_offsets);
+    unsigned long long matched = 0;
+    for (size_t oi = 0; oi < n_offsets; ++oi) matched += scores[oi];
+    if (matched == 0) return 0;
+    for (size_t oi = 0; oi < n_offsets; ++oi) {
+        if (scores[oi] == 0 || (double)scores[oi] / (double)matched < min_fraction) continue;
+        if (oi < range && target_start < range - oi) continue;
+        size_t offset = oi < range ? target_start - (range - oi) : target_start + (oi - range);
+        if (push_offset_unique(selected_offsets, offset) != 0) return -1;
+    }
+    return 0;
+}
 
 static int count_sample_worker_direct_hamming(count_sample_job *job) {
     fastq_reader reader = {0};
@@ -4114,9 +4229,12 @@ static int count_sample_worker_direct_hamming(count_sample_job *job) {
             }
             ++checked;
         }
-        if (got < 0 ||
-            select_offsets_from_scores(job->target_start, job->auto_offset, scores, checked, job->offsets_mode,
-                                       job->offset_min_fraction, job->selected_offsets) != 0) {
+        int selection_rc = job->hlookup->guide_counter_compatible
+                ? select_guide_counter_offsets(job->target_start, job->auto_offset, scores,
+                                               job->offset_min_fraction, job->selected_offsets)
+                : select_offsets_from_scores(job->target_start, job->auto_offset, scores, checked, job->offsets_mode,
+                                             job->offset_min_fraction, job->selected_offsets);
+        if (got < 0 || selection_rc != 0) {
             free_seq_buffer(&buffered);
             free(scores);
             fastq_reader_close(&reader);
@@ -4879,7 +4997,8 @@ static int detect_offsets_for_samples(const qdaln_index *index, const hamming_lo
     return rc;
 }
 
-static int run_count(const char *argv0, int argc, char **argv) {
+static int run_count(const char *argv0, int argc, char **argv, const guide_counter_output *compatible_output) {
+    int guide_counter_compatible = compatible_output != NULL;
     const char *targets_path = NULL;
     const char *samples_path = NULL;
     const char *out_path = NULL;
@@ -5171,11 +5290,31 @@ static int run_count(const char *argv0, int argc, char **argv) {
     uint64_t *metal_target_codes = NULL;
 
     double phase_start_seconds = seconds_now();
-    if (read_target_table(targets_path, &targets) != 0) {
+    if (compatible_output != NULL) {
+        targets = *compatible_output->prepared_targets;
+        memset(compatible_output->prepared_targets, 0, sizeof(seq_table));
+    } else if (read_target_table(targets_path, &targets) != 0) {
         fprintf(stderr, "failed to read targets\n");
         goto done;
     }
-    int target_id_check = validate_unique_seq_ids(&targets, crispr_mode ? "guide" : "target");
+    if (guide_counter_compatible) {
+        if (target_len == 0 || target_len > 32) {
+            fprintf(stderr, "GuideCounter compatibility currently requires guide lengths 1..32\n");
+            goto done;
+        }
+        for (size_t t = 0; t < targets.count; ++t) {
+            for (size_t p = 0; p < targets.records[t].len; ++p) {
+                char base = targets.records[t].seq[p];
+                if (base >= 'a' && base <= 'z') targets.records[t].seq[p] = (char)(base - 'a' + 'A');
+            }
+            uint64_t code = 0;
+            if (!dna2_code_local(targets.records[t].seq, targets.records[t].len, &code)) {
+                fprintf(stderr, "GuideCounter compatibility requires ACGT guide sequences\n");
+                goto done;
+            }
+        }
+    }
+    int target_id_check = guide_counter_compatible ? 0 : validate_unique_seq_ids(&targets, crispr_mode ? "guide" : "target");
     if (target_id_check != 0) {
         if (target_id_check == -1) fprintf(stderr, "out of memory\n");
         goto done;
@@ -5188,6 +5327,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
 
     int hamming_lookup_eligible = hamming_lookup_counts_eligible(
             count_only, max_correction_qual, metric, indel_window, k, target_len, hamming_strategy);
+    if (guide_counter_compatible) hamming_lookup_eligible = 1;
     int direct_hamming_counts = hamming_direct_worker_eligible(hamming_lookup_eligible, assignment_policy, k);
     int may_use_metal = backend_mode == COUNT_BACKEND_METAL && hamming_lookup_eligible && qdmetal_available() &&
             (k == 0 || assignment_policy == AMBIGUITY_POLICY_BEST);
@@ -5210,6 +5350,15 @@ static int run_count(const char *argv0, int argc, char **argv) {
             goto done;
         }
         hamming_precompute_seconds = seconds_now() - phase_start_seconds;
+        hlookup.guide_counter_compatible = guide_counter_compatible;
+        if (guide_counter_compatible) {
+            for (size_t slot = 0; slot < hlookup.exact_cap; ++slot) {
+                if (hlookup.exact[slot].match_count > 1) {
+                    fprintf(stderr, "GuideCounter compatibility requires unique guide sequences\n");
+                    goto done;
+                }
+            }
+        }
         if (hlookup.ready) {
             count_engine = "hamming_lookup_direct";
         } else {
@@ -5482,6 +5631,14 @@ static int run_count(const char *argv0, int argc, char **argv) {
     }
 
     counting_seconds = seconds_now() - phase_start_seconds;
+    if (compatible_output != NULL) {
+        if (guide_counter_write_outputs(compatible_output, &targets, &reads, &labels, counts, stats_by_sample) != 0) {
+            fprintf(stderr, "failed to write GuideCounter-compatible outputs\n");
+            goto done;
+        }
+        rc = 0;
+        goto done;
+    }
     if (show_progress && progress_by_sample != NULL) {
         for (size_t sample = 0; sample < reads.count; ++sample) {
             count_progress_finish(&progress_by_sample[sample]);
@@ -5612,7 +5769,7 @@ static int run_count(const char *argv0, int argc, char **argv) {
             fprintf(summary, "null");
         }
         fprintf(summary,
-                ",\n  \"indel_window\": %zu,\n  \"target_start\": %zu,\n  \"auto_offset\": %zu,\n  \"offset_mode\": \"%s\",\n  \"offset_min_fraction\": %.8f,\n  \"offset_detection_strategy\": \"%s\",\n  \"backend_requested\": \"%s\",\n  \"backend_effective\": \"%s\",\n  \"metal_device\": ",
+                ",\n  \"indel_window\": %zu,\n  \"target_start\": %zu,\n  \"auto_offset\": %zu,\n  \"offset_mode\": \"%s\",\n  \"offset_min_fraction\": %.17g,\n  \"offset_detection_strategy\": \"%s\",\n  \"backend_requested\": \"%s\",\n  \"backend_effective\": \"%s\",\n  \"metal_device\": ",
                 indel_window, target_start, auto_offset, offset_mode_name(offsets_mode), offset_min_fraction,
                 offset_detection_strategy, count_backend_mode_name(backend_mode), backend_effective);
         if (metal_hamming_counts && qdmetal_device_name() != NULL) {
@@ -5792,7 +5949,7 @@ static int guide_counter_push_sample_name(string_list *labels, const char *path,
 static const char *guide_counter_type_for_target(const seq_record *target, const string_list *essential_genes,
                                                  const string_list *nonessential_genes,
                                                  const string_list *control_guides,
-                                                 regex_t *control_re) {
+                                                 const regex_t *control_re) {
     if (string_list_contains_exact(essential_genes, target->gene)) return "Essential";
     if (string_list_contains_exact(nonessential_genes, target->gene)) return "Nonessential";
     if (string_list_contains_exact(control_guides, target->id)) return "Control";
@@ -5804,16 +5961,6 @@ static const char *guide_counter_type_for_target(const seq_record *target, const
     return "Other";
 }
 
-static int parse_ull_value(const char *s, unsigned long long *out) {
-    if (s == NULL || s[0] == '-' || s[0] == '\0') return -1;
-    char *end = NULL;
-    errno = 0;
-    unsigned long long v = strtoull(s, &end, 10);
-    if (errno == ERANGE || end == s || *end != '\0') return -1;
-    *out = v;
-    return 0;
-}
-
 static double round_positive_dp(double value, int places) {
     double factor = 1.0;
     for (int i = 0; i < places; ++i) factor *= 10.0;
@@ -5821,156 +5968,54 @@ static double round_positive_dp(double value, int places) {
     return (double)scaled / factor;
 }
 
-static int guide_counter_write_outputs(const char *output_prefix, const char *tmp_counts_path,
-                                       const char *tmp_qc_path, const seq_table *targets,
+static int guide_counter_write_outputs(const guide_counter_output *output, const seq_table *targets,
                                        const string_list *reads, const string_list *labels,
-                                       const string_list *essential_genes,
-                                       const string_list *nonessential_genes,
-                                       const string_list *control_guides, regex_t *control_re) {
-    char counts_path[4096];
-    char extended_path[4096];
-    char stats_path[4096];
-    int n = snprintf(counts_path, sizeof(counts_path), "%s.counts.txt", output_prefix);
+                                       const unsigned long long *counts, const count_stats *stats_by_sample) {
+    char counts_path[4096], extended_path[4096], stats_path[4096];
+    int n = snprintf(counts_path, sizeof(counts_path), "%s.counts.txt", output->prefix);
     if (n < 0 || (size_t)n >= sizeof(counts_path)) return -1;
-    n = snprintf(extended_path, sizeof(extended_path), "%s.extended-counts.txt", output_prefix);
+    n = snprintf(extended_path, sizeof(extended_path), "%s.extended-counts.txt", output->prefix);
     if (n < 0 || (size_t)n >= sizeof(extended_path)) return -1;
-    n = snprintf(stats_path, sizeof(stats_path), "%s.stats.txt", output_prefix);
+    n = snprintf(stats_path, sizeof(stats_path), "%s.stats.txt", output->prefix);
     if (n < 0 || (size_t)n >= sizeof(stats_path)) return -1;
-
-    size_t matrix_slots = 0;
-    if (checked_mul_size(targets->count, labels->count, &matrix_slots) != 0) return -1;
-    unsigned long long *matrix = (unsigned long long *)calloc(alloc_count_or_one(matrix_slots),
-                                                             sizeof(unsigned long long));
-    const char **types = (const char **)calloc(alloc_count_or_one(targets->count), sizeof(const char *));
-    if (matrix == NULL || types == NULL) {
-        free(matrix);
-        free(types);
-        return -1;
-    }
+    const char **types = calloc(alloc_count_or_one(targets->count), sizeof(*types));
+    if (types == NULL) return -1;
     for (size_t t = 0; t < targets->count; ++t) {
-        types[t] = guide_counter_type_for_target(&targets->records[t], essential_genes, nonessential_genes,
-                                                 control_guides, control_re);
+        types[t] = guide_counter_type_for_target(&targets->records[t], output->essential_genes,
+                                                output->nonessential_genes, output->control_guides, output->control_re);
     }
-
-    FILE *in = fopen(tmp_counts_path, "r");
-    FILE *counts = open_output_file(counts_path);
+    FILE *count_file = open_output_file(counts_path);
     FILE *extended = open_output_file(extended_path);
-    if (in == NULL || counts == NULL || extended == NULL) {
-        if (in != NULL) fclose(in);
-        if (counts != NULL) fclose(counts);
+    if (count_file == NULL || extended == NULL) {
+        if (count_file != NULL) fclose(count_file);
         if (extended != NULL) fclose(extended);
-        free(matrix);
         free(types);
         return -1;
     }
-
-    fprintf(counts, "guide\tgene");
+    fprintf(count_file, "guide\tgene");
     fprintf(extended, "guide\tgene\tguide_type");
-    for (size_t sample = 0; sample < labels->count; ++sample) {
-        fprintf(counts, "\t%s", labels->items[sample]);
-        fprintf(extended, "\t%s", labels->items[sample]);
+    for (size_t s = 0; s < labels->count; ++s) {
+        fprintf(count_file, "\t%s", labels->items[s]);
+        fprintf(extended, "\t%s", labels->items[s]);
     }
-    fprintf(counts, "\n");
-    fprintf(extended, "\n");
-
-    char buf[65536];
-    size_t row = 0;
-    int first = 1;
-    while (fgets(buf, sizeof(buf), in) != NULL) {
-        trim_line(buf);
-        if (first) {
-            first = 0;
-            continue;
+    fprintf(count_file, "\n"); fprintf(extended, "\n");
+    for (size_t t = 0; t < targets->count; ++t) {
+        fprintf(count_file, "%s\t%s", targets->records[t].id, targets->records[t].gene);
+        fprintf(extended, "%s\t%s\t%s", targets->records[t].id, targets->records[t].gene, types[t]);
+        for (size_t s = 0; s < labels->count; ++s) {
+            unsigned long long total = 0;
+            for (size_t kind = 0; kind < 5; ++kind) total += counts[(s * targets->count + t) * 5 + kind];
+            fprintf(count_file, "\t%llu", total);
+            fprintf(extended, "\t%llu", total);
         }
-        char *fields[1024];
-        size_t nf = split_fields(buf, '\t', fields, sizeof(fields) / sizeof(fields[0]));
-        if (nf < 2 + labels->count || row >= targets->count) {
-            fclose(in);
-            fclose(counts);
-            fclose(extended);
-            free(matrix);
-            free(types);
-            return -1;
-        }
-        fprintf(counts, "%s\t%s", targets->records[row].id, targets->records[row].gene);
-        fprintf(extended, "%s\t%s\t%s", targets->records[row].id, targets->records[row].gene, types[row]);
-        for (size_t sample = 0; sample < labels->count; ++sample) {
-            unsigned long long value = 0;
-            if (parse_ull_value(fields[2 + sample], &value) != 0) {
-                fclose(in);
-                fclose(counts);
-                fclose(extended);
-                free(matrix);
-                free(types);
-                return -1;
-            }
-            matrix[row * labels->count + sample] = value;
-            fprintf(counts, "\t%llu", value);
-            fprintf(extended, "\t%llu", value);
-        }
-        fprintf(counts, "\n");
-        fprintf(extended, "\n");
-        ++row;
+        fprintf(count_file, "\n"); fprintf(extended, "\n");
     }
-    int matrix_ok = !ferror(in) && row == targets->count;
-    fclose(in);
-    fclose(counts);
-    fclose(extended);
-    if (!matrix_ok) {
-        free(matrix);
-        free(types);
-        return -1;
-    }
-
-    unsigned long long *total_reads = (unsigned long long *)calloc(alloc_count_or_one(labels->count),
-                                                                   sizeof(unsigned long long));
-    if (total_reads == NULL) {
-        free(matrix);
-        free(types);
-        return -1;
-    }
-    FILE *qc = fopen(tmp_qc_path, "r");
-    if (qc == NULL) {
-        free(total_reads);
-        free(matrix);
-        free(types);
-        return -1;
-    }
-    int total_reads_col = -1;
-    size_t qc_row = 0;
-    first = 1;
-    while (fgets(buf, sizeof(buf), qc) != NULL) {
-        trim_line(buf);
-        char *fields[64];
-        size_t nf = split_fields(buf, '\t', fields, sizeof(fields) / sizeof(fields[0]));
-        if (first) {
-            total_reads_col = find_column(fields, nf, "total_reads", NULL, NULL);
-            first = 0;
-            continue;
-        }
-        if (total_reads_col < 0 || (size_t)total_reads_col >= nf || qc_row >= labels->count ||
-            parse_ull_value(fields[total_reads_col], &total_reads[qc_row]) != 0) {
-            fclose(qc);
-            free(total_reads);
-            free(matrix);
-            free(types);
-            return -1;
-        }
-        ++qc_row;
-    }
-    int qc_ok = !ferror(qc) && qc_row == labels->count;
-    fclose(qc);
-    if (!qc_ok) {
-        free(total_reads);
-        free(matrix);
-        free(types);
-        return -1;
-    }
-
+    int ok = !ferror(count_file) && !ferror(extended);
+    if (fclose(count_file) != 0) ok = 0;
+    if (fclose(extended) != 0) ok = 0;
+    if (!ok) { free(types); return -1; }
     FILE *stats = open_output_file(stats_path);
     if (stats == NULL) {
-        free(total_reads);
-        free(matrix);
         free(types);
         return -1;
     }
@@ -5987,7 +6032,8 @@ static int guide_counter_write_outputs(const char *output_prefix, const char *tm
         size_t control_count = 0;
         size_t other_count = 0;
         for (size_t t = 0; t < targets->count; ++t) {
-            unsigned long long value = matrix[t * labels->count + sample];
+            unsigned long long value = 0;
+            for (size_t kind = 0; kind < 5; ++kind) value += counts[(sample * targets->count + t) * 5 + kind];
             mapped += value;
             if (value == 0) ++zero;
             if (strcmp(types[t], "Essential") == 0) {
@@ -6004,7 +6050,7 @@ static int guide_counter_write_outputs(const char *output_prefix, const char *tm
                 ++other_count;
             }
         }
-        double total = (double)total_reads[sample];
+        double total = (double)stats_by_sample[sample].total;
         double frac = total == 0.0 ? 0.0 : round_positive_dp((double)mapped / total, 4);
         double mean_all = targets->count == 0 ? 0.0 : round_positive_dp((double)mapped / (double)targets->count, 2);
         double mean_essential = essential_count == 0 ? 0.0 : round_positive_dp(essential_sum / (double)essential_count, 2);
@@ -6012,14 +6058,13 @@ static int guide_counter_write_outputs(const char *output_prefix, const char *tm
         double mean_control = control_count == 0 ? 0.0 : round_positive_dp(control_sum / (double)control_count, 2);
         double mean_other = other_count == 0 ? 0.0 : round_positive_dp(other_sum / (double)other_count, 2);
         fprintf(stats, "%s\t%s\t%zu\t%llu\t%llu\t%.4f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%llu\n",
-                reads->items[sample], labels->items[sample], targets->count, total_reads[sample], mapped,
+                reads->items[sample], labels->items[sample], targets->count, stats_by_sample[sample].total, mapped,
                 frac, mean_all, mean_essential, mean_nonessential, mean_control, mean_other, zero);
     }
-    fclose(stats);
-    free(total_reads);
-    free(matrix);
+    ok = !ferror(stats);
+    if (fclose(stats) != 0) ok = 0;
     free(types);
-    return 0;
+    return ok ? 0 : -1;
 }
 
 static int push_count_arg(string_list *args, const char *s) {
@@ -6123,7 +6168,6 @@ static int run_guide_counter_compatible(const char *argv0, int argc, char **argv
     char offset_min_s[64];
     char label_csv[8192];
     char tmp_counts_path[4096] = "";
-    char tmp_qc_path[4096] = "";
 
     if (read_target_table(library_path, &targets) != 0 || targets.count == 0) {
         fprintf(stderr, "failed to read guide library\n");
@@ -6165,15 +6209,13 @@ static int run_guide_counter_compatible(const char *argv0, int argc, char **argv
             goto done;
         }
     }
-    int n = snprintf(tmp_counts_path, sizeof(tmp_counts_path), "%s.dotmatch-counts.tmp", output_prefix);
+    int n = snprintf(tmp_counts_path, sizeof(tmp_counts_path), "%s.counts.txt", output_prefix);
     if (n < 0 || (size_t)n >= sizeof(tmp_counts_path)) goto done;
-    n = snprintf(tmp_qc_path, sizeof(tmp_qc_path), "%s.dotmatch-qc.tmp", output_prefix);
-    if (n < 0 || (size_t)n >= sizeof(tmp_qc_path)) goto done;
     snprintf(target_len_s, sizeof(target_len_s), "%zu", guide_len);
     snprintf(k_s, sizeof(k_s), "%d", exact_match ? 0 : 1);
     snprintf(auto_offset_s, sizeof(auto_offset_s), "%d", 499);
     snprintf(offset_sample_s, sizeof(offset_sample_s), "%zu", offset_sample_size);
-    snprintf(offset_min_s, sizeof(offset_min_s), "%.8g", offset_min_fraction);
+    snprintf(offset_min_s, sizeof(offset_min_s), "%.17g", offset_min_fraction);
 
     if (push_count_arg(&count_args, argv0) != 0 ||
         push_count_arg(&count_args, "count") != 0 ||
@@ -6196,13 +6238,14 @@ static int run_guide_counter_compatible(const char *argv0, int argc, char **argv
         "--k", k_s,
         "--metric", "hamming",
         "--ambiguity-policy", "best",
+        "--hamming-index", "query",
+        "--threads", "1",
         "--format", "mageck",
         "--auto-offset", auto_offset_s,
         "--auto-offset-sample", offset_sample_s,
         "--offset-mode", "multi",
         "--offset-min-fraction", offset_min_s,
-        "--out", tmp_counts_path,
-        "--sample-qc", tmp_qc_path
+        "--out", tmp_counts_path
     };
     for (size_t ai = 0; ai < sizeof(fixed_args) / sizeof(fixed_args[0]); ++ai) {
         if (push_count_arg(&count_args, fixed_args[ai]) != 0) {
@@ -6211,21 +6254,14 @@ static int run_guide_counter_compatible(const char *argv0, int argc, char **argv
         }
     }
 
-    rc = run_count(argv0, (int)count_args.count, count_args.items);
-    if (rc != 0) goto done;
-    if (guide_counter_write_outputs(output_prefix, tmp_counts_path, tmp_qc_path, &targets, &reads, &labels,
-                                    &essential_genes, &nonessential_genes, &control_guides,
-                                    have_control_re ? &control_re : NULL) != 0) {
-        fprintf(stderr, "failed to write GuideCounter-compatible outputs\n");
-        rc = 1;
-        goto done;
-    }
-    rc = 0;
+    guide_counter_output compatible = {
+        output_prefix, &targets, &essential_genes, &nonessential_genes, &control_guides,
+        have_control_re ? &control_re : NULL
+    };
+    rc = run_count(argv0, (int)count_args.count, count_args.items, &compatible);
 
 done:
     if (have_control_re) regfree(&control_re);
-    unlink(tmp_counts_path);
-    unlink(tmp_qc_path);
     free_string_list(&count_args);
     free_string_list(&essential_genes);
     free_string_list(&nonessential_genes);
@@ -9511,7 +9547,7 @@ static int run_edlib_validate_helper(const char *targets_path, const char *reads
     snprintf(auto_offset_buf, sizeof(auto_offset_buf), "%zu", auto_offset);
     snprintf(auto_offset_sample_buf, sizeof(auto_offset_sample_buf), "%zu", auto_offset_sample);
     snprintf(threads_buf, sizeof(threads_buf), "%zu", threads);
-    snprintf(offset_min_fraction_buf, sizeof(offset_min_fraction_buf), "%.8f", offset_min_fraction);
+    snprintf(offset_min_fraction_buf, sizeof(offset_min_fraction_buf), "%.17g", offset_min_fraction);
 
     pid_t pid = fork();
     if (pid < 0) {
@@ -9850,7 +9886,7 @@ int main(int argc, char **argv) {
             count_help_manual(stdout, argv[0], strcmp(argv[1], "crispr-count") == 0);
             return 0;
         }
-        return run_count(argv[0], argc, argv);
+        return run_count(argv[0], argc, argv, NULL);
     }
 
     if (strcmp(argv[1], "guide-counter") == 0 || strcmp(argv[1], "guide-counter-count") == 0 ||

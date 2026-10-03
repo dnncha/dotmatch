@@ -111,3 +111,38 @@ Avoid:
 - Run `make distribution-channels` after PyPI, Bioconda, GHCR, and Zenodo are public.
 - Update `docs/distribution-release.json` with verified public and evidence links, exact PyPI Linux wheel architectures, and exact GHCR platforms after public channels are live.
 - Update `docs/scientific-claims.md` only when new evidence is committed and a corresponding gate passes.
+
+## Current 0.7.0 handoff
+
+The user authorized all configured publication channels. DotMatch 0.7.0 is published on GitHub, PyPI and GHCR; the previous 0.6.4 distribution record is preserved in
+`releases/v0.6.4-distribution.json`. The current record verifies PyPI and GHCR against the completed release
+workflow; the version-specific Zenodo archive is also verified. Bioconda and
+BioContainers remain independently unverified.
+
+The approved-release workflow tagged checked commit
+`5736f9dd14fde44f3d89fa99966802af344bb0a0`; publication and public artifact
+verification passed after retrying an ARM64 build-image pull. GitHub API requests are blocked from this environment; git pushes and
+public workflow pages remain accessible. Hosted acceptance checks must pass
+before the workflow tags and publishes the exact main commit. Do not manually
+tag the local work branch.
+
+After the public source archive exists, download the archive referenced by the
+recipe and run `scripts/prepare_bioconda_handoff.py --release-tarball
+release/v0.7.0.tar.gz --out bioconda-handoff`. Submit the generated DotMatch
+and AssayCode recipes to bioconda-recipes. PR #69711 merged the older DotMatch 0.6.4 recipe on September 30, 2026.
+Check for a new BiocondaBot update before opening a duplicate 0.7.0 PR; neither
+the older merge nor its generated image tags verifies the new release.
+Verify Anaconda propagation and the generated BioContainers image separately.
+
+The experimental `crisprworks-fit` package has scientific CI and build artifacts
+but no configured trusted PyPI publication workflow. Publishing DotMatch does
+not publish that separate package; its alpha status and outstanding scientific
+validation must remain explicit when adding a publisher.
+
+The public GitHub source archive for 0.7.0 has SHA256
+`c1b2bae12b56738c76d0b24d095c1c3c1deb42242c4553913187122de0575bd1`.
+Both recipes are prepared, preserving the upstream platform declarations and
+AssayCode run exports. Existing PR #68663 still targets 0.4.0; update it instead
+of opening a duplicate once fork write access and GitHub API access are restored.
+The working environment received HTTP 401 when pushing the recipe fork, so no
+0.7.0 upstream submission or channel propagation is claimed.

@@ -21,6 +21,7 @@ FUNCTION_HASHES = {
 }
 _lock = threading.RLock()
 _active = False
+_calibration_active = False
 
 
 def verify_upstream():
@@ -37,6 +38,41 @@ def verify_upstream():
             digest = hashlib.sha256(inspect.getsource(getattr(module, name)).encode()).hexdigest()
             if digest != FUNCTION_HASHES[name]:
                 raise RuntimeError(f"Untested MAGeCK2 implementation of {name}; use the pinned release")
+
+
+@contextmanager
+def permutation_calibration(mode="legacy", *, max_guides=None, diagnostics=None):
+    """Select inference after entering the reference or accelerated context.
+
+    Like acceleration, this patch is scoped and process-global. The reference
+    mode is still MAGeCK fitting when finite tails are explicitly requested;
+    its inference then deliberately differs from unmodified MAGeCK.
+    """
+    global _calibration_active
+    if mode not in ("legacy", "finite"):
+        raise ValueError("Permutation p-values must be legacy or finite")
+    if mode == "legacy":
+        yield
+        return
+    with _lock:
+        if _calibration_active:
+            raise RuntimeError("Nested permutation calibration contexts are unsupported")
+        if not _active:
+            verify_upstream()
+        from mageck2 import mlemultiprocessing
+        from .inference import assign_finite_permutation_pvalues
+        original = mlemultiprocessing.assign_p_value_from_permuted_beta
+        def assign(null, genes):
+            return assign_finite_permutation_pvalues(
+                null, genes, max_guides=max_guides, diagnostics=diagnostics,
+            )
+        _calibration_active = True
+        mlemultiprocessing.assign_p_value_from_permuted_beta = assign
+        try:
+            yield
+        finally:
+            mlemultiprocessing.assign_p_value_from_permuted_beta = original
+            _calibration_active = False
 
 
 def _worker_init(blas_threads, kernel):

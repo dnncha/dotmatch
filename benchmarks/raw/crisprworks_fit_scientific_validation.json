@@ -1,0 +1,29 @@
+{
+  "fit_unit_tests": {
+    "passed": 30,
+    "installed_wheel": true,
+    "includes_spawned_finite_inference": true
+  },
+  "dotmatch_python_tests": {
+    "passed": 1523
+  },
+  "required_repository_checks": "make test cli-test python-test python-package-test repository-ready: passed",
+  "native_coverage": {
+    "line_percent": 78.0,
+    "threshold_percent": 75.0
+  },
+  "metric_oracle": {
+    "comparator": "scikit-learn 1.7.2",
+    "random_tied_rankings": 500,
+    "max_absolute_difference": 2.220446049250313e-16
+  },
+  "raw_scores_sha256": "2ce9a260b77cbb446f68184e4963a9049115bd036b634b89be5eebeb05598348",
+  "scope": "Conditional HAP1 reference-annotation evaluation; no overall SOTA or genome-wide FDR guarantee",
+  "training_exclusion_audit": {
+    "heldout_scored_genes": 2706,
+    "passed": true
+  },
+  "report_regeneration": "scores -> metrics/report: byte-identical",
+  "inference_source_hash_audit": "Recorded hashes matched the initial finite-tail-stage snapshot; later CLI/model additions change source hashes",
+  "checkpoint": "Initial finite-tail/HAP1 stage; later joint/calibration validation is recorded separately"
+}

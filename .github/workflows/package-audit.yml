@@ -25,6 +25,10 @@ jobs:
       - name: Install real scientific integrations
         run: python -m pip install '.[dev]' build
       - name: Build native engine and run all Python tests with optional integrations
+        env:
+          # Keep child CLIs on the same checkout as pytest; wheel/container
+          # installations are verified separately.
+          PYTHONPATH: ${{ github.workspace }}/python
         run: |
           make -j2 all shared
           python -m pytest python/tests -q --junitxml=package-tests.xml

@@ -106,6 +106,7 @@ test: build/test_qdalign build/test_qdalign_threshold_alloc
 cli-test: dotmatch
 	sh tests/test_cli_fastq.sh
 	PYTHONPATH=python DOTMATCH_BIN="$(CURDIR)/dotmatch" python3 tests/test_native_fastq_validation.py
+	DOTMATCH_BIN="$(CURDIR)/dotmatch" python3 tests/test_guide_counter_compatibility.py
 	python3 tests/test_mageck_count_equivalence.py
 	python3 tests/test_mageck_test_equivalence.py
 	python3 scripts/independent_evaluation_packet.py --help >/dev/null
@@ -125,6 +126,7 @@ coverage:
 	$(COVERAGE_CC) -O0 -g -std=c11 -Wall -Wextra -Wpedantic -Iinclude $(DOTMATCH_VERSION_CFLAGS) -fprofile-instr-generate -fcoverage-mapping src/qda.c build/coverage/qdalign.o $(COVERAGE_METAL_OBJ) -o build/coverage/dotmatch $(ZLIB_LIBS) $(PTHREAD_LIBS) $(METAL_LIBS) $(METAL_CXX_LIBS)
 	LLVM_PROFILE_FILE=build/coverage/cli-%p.profraw DOTMATCH_BIN="$(CURDIR)/build/coverage/dotmatch" sh tests/test_cli_fastq.sh
 	LLVM_PROFILE_FILE=build/coverage/fastq-validation-%p.profraw PYTHONPATH=python DOTMATCH_BIN="$(CURDIR)/build/coverage/dotmatch" python3 tests/test_native_fastq_validation.py
+	LLVM_PROFILE_FILE=build/coverage/guide-counter-%p.profraw DOTMATCH_BIN="$(CURDIR)/build/coverage/dotmatch" python3 tests/test_guide_counter_compatibility.py
 	$(LLVM_PROFDATA) merge -sparse build/coverage/*.profraw -o build/coverage/coverage.profdata
 	$(LLVM_COV) report build/coverage/test_qdalign -object build/coverage/dotmatch -instr-profile=build/coverage/coverage.profdata --sources src/qdalign.c --sources src/qda.c --show-branch-summary | tee build/coverage/coverage.txt
 	$(LLVM_COV) export build/coverage/test_qdalign -object build/coverage/dotmatch -instr-profile=build/coverage/coverage.profdata --sources src/qdalign.c --sources src/qda.c > build/coverage/coverage.json
@@ -446,6 +448,20 @@ benchmark-report-native: build/bench_edlib_native
 native-exact-gate:
 	python3 scripts/check_native_exact_gate.py
 
+.PHONY: hamming-seed-layout-gate hamming-seed-layout-report
+hamming-seed-layout-gate:
+	python3 scripts/report_hamming_seed_layout.py --check
+
+hamming-seed-layout-report:
+	python3 scripts/report_hamming_seed_layout.py
+
+.PHONY: guide-counter-gate guide-counter-report
+guide-counter-gate:
+	python3 scripts/report_guide_counter.py --check
+
+guide-counter-report:
+	python3 scripts/report_guide_counter.py
+
 evidence-gallery:
 	python3 scripts/generate_evidence_gallery.py
 
@@ -487,7 +503,7 @@ repository-ready:
 	python3 scripts/check_reviewer_readiness_assets.py
 	$(MAKE) docs-ready
 
-release-ready: python-test python-package-test docs-ready scientific-readiness-ready assay-evidence-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready evidence-gallery-ready distribution-record-ready bioconda-recipe-ready gpu-evidence-gate native-exact-gate public-crispr-evidence-gate crispr-comparison-gate barcode-comparison-gate feature-barcode-public-gate perturb-seq-public-gate perturb-seq-case-study-fixture-gate perturb-seq-case-study-public-gate amplicon-panel-public-gate bcl-tiny-public-gate oligo-adapter-public-gate reviewer-readiness-ready assaycode-readiness-ready agent-tools-ready agent-skill-ready agent-reference-workflows-ready
+release-ready: python-test python-package-test docs-ready scientific-readiness-ready assay-evidence-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready evidence-gallery-ready distribution-record-ready bioconda-recipe-ready gpu-evidence-gate native-exact-gate hamming-seed-layout-gate guide-counter-gate public-crispr-evidence-gate crispr-comparison-gate barcode-comparison-gate feature-barcode-public-gate perturb-seq-public-gate perturb-seq-case-study-fixture-gate perturb-seq-case-study-public-gate amplicon-panel-public-gate bcl-tiny-public-gate oligo-adapter-public-gate reviewer-readiness-ready assaycode-readiness-ready agent-tools-ready agent-skill-ready agent-reference-workflows-ready
 	python3 scripts/check_release_readiness.py
 
 pretag-ready:

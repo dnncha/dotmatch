@@ -213,7 +213,11 @@ class WorkflowTests(unittest.TestCase):
                     "--write-fit-details", "--seed", "42",
                 ], capture_output=True, text=True, timeout=90)
                 self.assertEqual(completed.returncode, 0, completed.stderr)
-                details.append(json.loads(Path(str(prefix) + ".fit-details.json").read_text())["genes"])
+                fitted = json.loads(Path(str(prefix) + ".fit-details.json").read_text())
+                self.assertEqual(fitted["conditions"], ["HL60", "KBM7"])
+                self.assertEqual(fitted["model"], "MAGeCK2 MLE")
+                self.assertEqual(fitted["effect_units"], "natural-log beta coefficient")
+                details.append(fitted["genes"])
             self.assertEqual(details[0].keys(), details[1].keys())
             for gene_id, expected in details[0].items():
                 for field, values in expected.items():

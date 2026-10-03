@@ -12,6 +12,7 @@ import {
 } from "./site-metadata";
 import { AssignmentDemo } from "./assignment-demo";
 import { InstallCommand } from "./install-command";
+import { GuideCounterBenchmark } from "./guide-counter-benchmark";
 import styles from "./home.module.css";
 const structuredData = {
   "@context": "https://schema.org",
@@ -110,6 +111,7 @@ export default function Home() {
           </div>
           <AssignmentDemo />
         </section>
+        <GuideCounterBenchmark />
         <section
           id="install"
           className={styles.installStrip}

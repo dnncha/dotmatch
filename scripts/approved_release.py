@@ -20,6 +20,7 @@ REPOSITORY = 'dnncha/dotmatch'
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_WORKFLOWS = {
     '.github/workflows/ci.yml',
+    '.github/workflows/crisprworks-fit.yml',
     '.github/workflows/site-validation.yml',
     '.github/workflows/codeql.yml',
     '.github/workflows/workflow-ecosystem.yml',

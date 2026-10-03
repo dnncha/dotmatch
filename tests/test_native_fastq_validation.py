@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import gzip
+import csv
 import importlib.util
 import os
 from pathlib import Path
@@ -171,6 +172,24 @@ def main() -> None:
             )
             if completed.returncode == 0 or bad_output.exists():
                 raise AssertionError(f"native path accepted corrupt gzip {name}")
+
+        # A literal unknown must not change a Hamming query into edit distance.
+        # At k=3 the correct best assignment is unique, but radius is ambiguous.
+        metric_targets = tmp / "metric-targets.tsv"
+        metric_targets.write_text("shifted\tAATCGGAT\nclosest\tAAACGGAT\n")
+        metric_reads = tmp / "metric-reads.fastq"
+        metric_reads.write_bytes(b"@unknown\nANATGGAT\n+\nIIIIIIII\n")
+        for policy in ("best", "radius"):
+            for full_record in (False, True):
+                metric_output = tmp / f"metric-{policy}-{full_record}.tsv"
+                command = count_command(metric_targets, metric_reads, metric_output, full_record=full_record)
+                command[command.index("--k") + 1] = "3"
+                command.extend(["--ambiguity-policy", policy])
+                subprocess.run(command, check=True, text=True, capture_output=True)
+                with metric_output.open(newline="") as handle:
+                    rows = list(csv.DictReader(handle, delimiter="\t"))
+                counts = {row["sgRNA"]: int(row["sample"]) for row in rows}
+                assert counts == {"shifted": 0, "closest": 1 if policy == "best" else 0}
 
     print("native FASTQ validation parity: PASS")
 
