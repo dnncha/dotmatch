@@ -1,0 +1,57 @@
+name: Verified release notes
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/releases/v*.md'
+      - '.github/workflows/release-notes.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: verified-release-notes
+  cancel-in-progress: false
+jobs:
+  notes:
+    if: github.repository == 'dnncha/dotmatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Resolve the authorized release
+        id: release
+        run: |
+          python - <<'PY'
+          import json, os, re, tomllib
+          from pathlib import Path
+          request = json.loads(Path('.github/release-request.json').read_text())
+          version = tomllib.loads(Path('pyproject.toml').read_text())['project']['version']
+          tag = 'v' + version
+          if (request.get('authorized') is not True or request.get('version') != version
+                  or request.get('tag') != tag or re.fullmatch(r'v\d+\.\d+\.\d+', tag) is None
+                  or not Path('docs/releases', tag + '.md').is_file()):
+              raise SystemExit('Release notes do not match the authorized source version')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('tag=' + tag + '\n')
+          PY
+      - name: Update notes only after verified publication
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          for attempt in $(seq 1 120); do
+            published=$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+              --json isDraft,publishedAt \
+              --jq 'select(.isDraft == false and .publishedAt != null) | .publishedAt' 2>/dev/null || true)
+            if [ -n "$published" ]; then
+              gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+                --notes-file "docs/releases/$RELEASE_TAG.md"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo 'Verified public release did not appear; notes were not edited.' >&2
+          exit 1
