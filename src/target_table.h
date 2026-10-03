@@ -12,6 +12,10 @@ static int target_table_line(gzFile input, char **buf, size_t *capacity) {
     size_t used = 0;
     int c;
     while ((c = gzgetc(input)) != -1) {
+        /* A read can return data with a trailer error that later reads clear. */
+        int error = Z_OK;
+        (void)gzerror(input, &error);
+        if (error != Z_OK && error != Z_STREAM_END) return -1;
         if (c == '\0' || used >= TARGET_TABLE_MAX_LINE) return -1;
         if (used + 2 > *capacity) {
             size_t next = *capacity ? *capacity * 2 : 1024;

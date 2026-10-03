@@ -672,7 +672,9 @@ static int fastq_getline_len(fastq_reader *reader, char *buf, size_t cap, size_t
                     return 1;
                 }
                 int n = gzread(reader->gz, reader->gz_buf, (unsigned int)reader->gz_cap);
-                if (n < 0) return -1;
+                int zerr = Z_OK;
+                (void)gzerror(reader->gz, &zerr);
+                if (n < 0 || (zerr != Z_OK && zerr != Z_STREAM_END)) return -1;
                 if (n == 0) {
                     int zerr = Z_OK;
                     (void)gzerror(reader->gz, &zerr);
@@ -725,7 +727,9 @@ static int fastq_getline_alloc(fastq_reader *reader, char **buf, size_t *cap, si
                 return 1;
             }
             int n = gzread(reader->gz, reader->gz_buf, (unsigned int)reader->gz_cap);
-            if (n < 0) return -1;
+            int zerr = Z_OK;
+            (void)gzerror(reader->gz, &zerr);
+            if (n < 0 || (zerr != Z_OK && zerr != Z_STREAM_END)) return -1;
             if (n == 0) {
                 int zerr = Z_OK;
                 (void)gzerror(reader->gz, &zerr);
@@ -773,7 +777,9 @@ static int fastq_getline_view(fastq_reader *reader, const char **line_out, size_
         if (reader->gz_pos == reader->gz_len) {
             if (reader->gz_eof) return 0;
             int n = gzread(reader->gz, reader->gz_buf, (unsigned int)reader->gz_cap);
-            if (n < 0) return -1;
+            int zerr = Z_OK;
+            (void)gzerror(reader->gz, &zerr);
+            if (n < 0 || (zerr != Z_OK && zerr != Z_STREAM_END)) return -1;
             if (n == 0) {
                 int zerr = Z_OK;
                 (void)gzerror(reader->gz, &zerr);
