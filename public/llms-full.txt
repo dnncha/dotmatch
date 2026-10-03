@@ -22,8 +22,8 @@ Each invocation accepts a JSON object, returns one stable JSON envelope on stdou
 
 ## Install and verify
 
-Version 0.7.0 is an unpublished release candidate. The 0.7.0 commands below
-apply after verified publication; use 0.6.4 for the currently verified release.
+Version 0.7.0 is published and verified on PyPI and GHCR. Bioconda and
+BioContainers 0.7.0 still require upstream submission and public verification.
 
 Linux x86_64 and macOS 11 or newer:
 

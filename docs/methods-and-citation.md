@@ -21,18 +21,17 @@ citation. For an exact release, use its version-specific DOI: 0.4.0
 (`10.5281/zenodo.22969176`), 0.6.1 (`10.5281/zenodo.22985881`), 0.6.3
 (`10.5281/zenodo.22998373`), or 0.6.4 (`10.5281/zenodo.23043070`).
 
-Published 0.6.4 packages and containers embed the concept DOI because its
-version DOI was minted only after those immutable artifacts were published.
-The 0.7.0 candidate has no minted version DOI; its source metadata defers
-that identifier until publication. Both resolve to
-the same Zenodo release family; use the version DOI when exact-release
-provenance matters.
+Published 0.6.4 and 0.7.0 packages and containers embed the concept DOI.
+The 0.6.4 version DOI was minted after its immutable artifacts were published.
+The 0.7.0 version-specific archive has not been independently verified; source
+metadata defers that identifier until verification. Use a verified version DOI
+when exact-release provenance matters.
 
-Suggested citation for the 0.7.0 candidate (record the commit until the release is public):
+Suggested citation:
 
 > O'Toole D. DotMatch: deterministic known-target short-DNA assignment for sequencing workflows. Software release v0.7.0. https://github.com/dnncha/dotmatch
 
-Latest verified release DOI (v0.6.4): <https://doi.org/10.5281/zenodo.23043070>
+Latest verified version-specific DOI (v0.6.4): <https://doi.org/10.5281/zenodo.23043070>
 
 Concept DOI (all versions): <https://doi.org/10.5281/zenodo.20541628>
 
@@ -40,7 +39,7 @@ Concept DOI (all versions): <https://doi.org/10.5281/zenodo.20541628>
 
 For CRISPR guide-counting workflows:
 
-> Reads were assigned to the guide library using DotMatch v0.6.4 with known-target assignment, literal-byte sequence semantics, and the radius ambiguity policy. Count matrices retained only reads for which exactly one guide lay inside the configured edit-distance radius; ambiguous and unmatched reads were excluded from target counts and retained in diagnostic summaries.
+> Reads were assigned to the guide library using DotMatch v0.7.0 with known-target assignment, literal-byte sequence semantics, and the radius ambiguity policy. Count matrices retained only reads for which exactly one guide lay inside the configured edit-distance radius; ambiguous and unmatched reads were excluded from target counts and retained in diagnostic summaries.
 
 For one-edit Levenshtein rescue:
 
@@ -154,7 +153,7 @@ statements out until real-data comparator evidence is in the repository.
 
 ## Evidence Boundary
 
-Describe DotMatch v0.6.4 as a known-target short-DNA assignment engine. It is
+Describe DotMatch v0.7.0 as a known-target short-DNA assignment engine. It is
 not a genome aligner, general Edlib replacement, production Illumina
 demultiplexer, full Perturb-seq analysis pipeline, adapter trimmer, UMI grouper,
 read merger, or amplicon consensus/variant-calling workflow. Current public

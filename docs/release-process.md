@@ -114,13 +114,13 @@ Avoid:
 
 ## Current 0.7.0 handoff
 
-The user authorized all configured publication channels. The local candidate is
-0.7.0; the previous 0.6.4 distribution record is preserved in
-`releases/v0.6.4-distribution.json`. The current record deliberately marks every
-new channel as prepared, rather than inheriting verification of older artifacts.
+The user authorized all configured publication channels. DotMatch 0.7.0 is published on GitHub, PyPI and GHCR; the previous 0.6.4 distribution record is preserved in
+`releases/v0.6.4-distribution.json`. The current record verifies PyPI and GHCR against the completed release
+workflow; Bioconda, BioContainers and Zenodo remain independently unverified.
 
-The candidate has been pushed to main and the approved-release workflow has
-started. GitHub API requests are blocked from this environment; git pushes and
+The approved-release workflow tagged checked commit
+`5736f9dd14fde44f3d89fa99966802af344bb0a0`; publication and public artifact
+verification passed after retrying an ARM64 build-image pull. GitHub API requests are blocked from this environment; git pushes and
 public workflow pages remain accessible. Hosted acceptance checks must pass
 before the workflow tags and publishes the exact main commit. Do not manually
 tag the local work branch.
@@ -137,3 +137,11 @@ The experimental `crisprworks-fit` package has scientific CI and build artifacts
 but no configured trusted PyPI publication workflow. Publishing DotMatch does
 not publish that separate package; its alpha status and outstanding scientific
 validation must remain explicit when adding a publisher.
+
+The public GitHub source archive for 0.7.0 has SHA256
+`c1b2bae12b56738c76d0b24d095c1c3c1deb42242c4553913187122de0575bd1`.
+Both recipes are prepared, preserving the upstream platform declarations and
+AssayCode run exports. Existing PR #68663 still targets 0.4.0; update it instead
+of opening a duplicate once fork write access and GitHub API access are restored.
+The working environment received HTTP 401 when pushing the recipe fork, so no
+0.7.0 upstream submission or channel propagation is claimed.

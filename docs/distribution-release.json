@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "not_released",
+  "status": "partially_verified",
   "release_version": "0.7.0",
   "publication_authorized": true,
   "release_tag": "v0.7.0",
@@ -8,55 +8,69 @@
   "channels": [
     {
       "id": "pypi",
-      "status": "prepared",
+      "status": "verified",
       "expected_url": "https://pypi.org/project/dotmatch/0.7.0/",
       "verification_command": "make distribution-channels",
-      "blocker": "Version 0.7.0 is prepared locally and has not been published or independently verified.",
-      "next_action": "Publish the source distribution and repaired Linux wheels through trusted publishing, then verify all public artifacts."
+      "public_url": "https://pypi.org/project/dotmatch/0.7.0/",
+      "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/37109177013",
+      "verified_date": "2026-10-03",
+      "installed_citation_doi": "10.5281/zenodo.20541628",
+      "linux_wheel_architectures": [
+        "x86_64",
+        "aarch64"
+      ]
     },
     {
       "id": "ghcr",
-      "status": "prepared",
+      "status": "verified",
       "expected_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "Version 0.7.0 is prepared locally and has not been published or independently verified.",
-      "next_action": "Publish the checked release, then run make distribution-channels against the public artifacts."
+      "public_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
+      "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/37109177013",
+      "verified_date": "2026-10-03",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "manifest_digest": "sha256:78aeae6cb78bd0dcc7d70954a7cf8614e7cb7b300de4dca9629826cc5bacfb3f"
     },
     {
       "id": "bioconda",
       "status": "prepared",
       "expected_url": "https://anaconda.org/bioconda/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "Version 0.7.0 is prepared locally and has not been published or independently verified.",
-      "next_action": "Publish the checked release, then run make distribution-channels against the public artifacts."
+      "blocker": "The exact 0.7.0 recipe is prepared using the public immutable archive, but recipe-fork pushes fail with HTTP 401 and GitHub API access is blocked.",
+      "next_action": "Update existing upstream PR #68663 after restoring write access, then verify public channel artifacts."
     },
     {
       "id": "bioconda-assaycode",
       "status": "prepared",
       "expected_url": "https://anaconda.org/bioconda/assaycode",
       "verification_command": "make distribution-channels",
-      "blocker": "Version 0.7.0 is prepared locally and has not been published or independently verified.",
-      "next_action": "Publish the checked release, then run make distribution-channels against the public artifacts."
+      "blocker": "The exact 0.7.0 recipe is prepared using the public immutable archive, but recipe-fork pushes fail with HTTP 401 and GitHub API access is blocked.",
+      "next_action": "Update existing upstream PR #68663 after restoring write access, then verify public channel artifacts."
     },
     {
       "id": "biocontainers",
       "status": "prepared",
       "expected_url": "https://quay.io/repository/biocontainers/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "Version 0.7.0 is prepared locally and has not been published or independently verified.",
-      "next_action": "Publish the checked release, then run make distribution-channels against the public artifacts."
+      "blocker": "No generated 0.7.0 image has been independently verified.",
+      "next_action": "Verify the generated image after the matching Bioconda recipes merge and propagate."
     },
     {
       "id": "zenodo",
       "status": "prepared",
       "expected_url": "https://doi.org/10.5281/zenodo.20541628",
       "verification_command": "make distribution-channels",
-      "blocker": "Version 0.7.0 is prepared locally and has not been published or independently verified.",
-      "next_action": "Publish the checked release, then run make distribution-channels against the public artifacts."
+      "blocker": "The version-specific 0.7.0 archive is unverified; API requests fail with proxy HTTP 403.",
+      "next_action": "Verify the version-specific archive and DOI before changing CITATION.cff or marking this channel verified."
     }
   ],
   "blockers": [
-    "Hosted acceptance and release publication have not completed; GitHub API requests are blocked in the working environment."
+    "Bioconda 0.7.0 and its AssayCode metapackage have not been submitted or propagated: the working environment cannot push to the recipe fork (HTTP 401).",
+    "BioContainers 0.7.0 depends on the matching Bioconda build and is not independently verified.",
+    "The 0.7.0 Zenodo archive cannot be independently verified because requests to its API are blocked (proxy HTTP 403)."
   ],
-  "next_action": "Complete the approved-release workflow on the checked main commit, verify public artifacts, then submit and verify matching Bioconda and BioContainers recipes."
+  "next_action": "Restore recipe-fork write access and GitHub API access, update existing bioconda-recipes PR #68663 with the checksum-backed 0.7.0 patch, then verify Anaconda, BioContainers and the version-specific Zenodo archive."
 }

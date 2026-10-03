@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.7.0 — release candidate
+## 0.7.0 — 2026-10-03
 
 - Add a guide-counter-compatible counting path, precision boundary fixes, and an audited five-repeat comparison with matching counts.
 - Add experimental joint gene-level inference and whole-gene control calibration to CRISPRWorks Fit, with convergence and attainable-FDR diagnostics.
