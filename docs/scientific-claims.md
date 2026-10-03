@@ -78,9 +78,10 @@ Techniques deliberately not claimed:
 - `assaycode watch` is an experimental bounded-memory monitor over assignment
   JSONL. Its threshold decisions are workflow QC signals, not sequencer control
   or validated adaptive sampling;
-- calibrated statistical screen interpretation is left to downstream tools such
-  as MAGeCK, BAGEL, drugZ, or CERES because DotMatch stops at read assignment
-  and QC;
+- the DotMatch engine stops at read assignment and QC. The separate experimental
+  [CRISPRWorks Fit](crisprworks.md) package evaluates gene inference and
+  whole-gene control calibration against BAGEL2, Chronos and JACKS; its bounded
+  evidence does not establish overall biological superiority;
 - probabilistic basecalling, UMI modeling, cell-level quantification, genome
   alignment, variant calling, adapter trimming, and production BCL conversion
   are outside the current evidence boundary.
@@ -91,6 +92,16 @@ These are the strongest current performance statements. They are intentionally
 scoped to the benchmark rows and gates named here, not to global short-read
 alignment or all demultiplexing tasks.
 
+- The current source Hamming seed layout has paired before/after evidence
+  against commit `076b1644`: 5.24× and 5.69× median complete-count speedups
+  at `k=3` under best and radius policies on 30,000 simulated reads against
+  the real 87,437-guide Yusa library. All guide counts and read outcomes agree.
+  The [report](benchmarks/hamming_seed_layout/README.md) records five paired
+  repeats, 136,096 independent exhaustive byte-oracle checks with zero new-engine
+  mismatches, and the corrected literal unknown-read Hamming verifier. Run
+  `make hamming-seed-layout-gate`. These are source-snapshot measurements,
+  not new public FASTQ or external-competitor comparisons. Historical `k=3`
+  results involving non-ACGT reads need regeneration before reuse.
 - Native fixed-window indexed assignment has comparator-backed scaling evidence
   against native Edlib exhaustive scan. `make native-exact-gate` currently
   records large-library `k=1` rows with at most `1.00` verified
@@ -109,10 +120,18 @@ alignment or all demultiplexing tasks.
   `>=2x` vs Bowtie 1. The current Bowtie 1 artifact records `9.71x` for
   Hamming `k=2` and the current Bowtie 1 artifact records `2.36x` for Hamming
   `k=3`.
-- The fair guide-counter compatibility lane is Hamming `k=1`, no indels,
-  best-distance fixed-window assignment. It must stay separate from the
-  Levenshtein capability lane, which supports substitutions plus one-base
-  insertions/deletions with explicit ambiguity reporting.
+- The guide-counter compatibility command uses exact or Hamming `k=1`
+  matching without indels. Offset detection and counting share the same
+  lookup; offset fractions use all matched windows as the denominator.
+  Each selected offset contributes independently, exact hits take precedence,
+  ties are excluded, and read windows require uppercase ACGT. The
+  [paired report](benchmarks/guide_counter/README.md) records five repeats
+  per workload/mode, identical full counts and 1.6–5.5× faster one-mismatch
+  commands with 11.3–14.4× lower peak memory. Guide-counter is faster in the
+  tested exact-mode million-read cases. Controlled simulated FASTQs and the
+  50-read experimental smoke check do not establish full-screen performance
+  or biological accuracy. `make guide-counter-gate` audits the raw evidence,
+  report and graphs. The Levenshtein assignment lane has separate semantics.
 
 ## Current Defensible Statements
 
@@ -123,6 +142,7 @@ alignment or all demultiplexing tasks.
 | Indexed assignment preserves native exhaustive-scan semantics for `unique`, `ambiguous`, `none`, and `invalid` outcomes in the supported fixed-window lanes. | Supported | `dotmatch validate`, native assignment tests, `make native-exact-gate`, Edlib validation artifacts under `benchmarks/raw/`, Levenshtein `k=2` CLI regression cases, Hamming `k=2`/`k=3` comparator artifacts | The native gate requires zero Edlib mismatches; large-library exact rows must beat `exact_hash_lookup`; large-library indexed `k=1` rows must beat exhaustive Edlib by >10x, beat the best BK-tree/neighbor baseline, and verify no more than 1.05 candidates/read; large-library fixed-length `k=2` substitution rows must beat exhaustive Edlib by >8x while verifying no more than 1.05 candidates/read; and large-library Levenshtein `k=2` insertion/deletion rows must beat exhaustive Edlib by >8x while verifying no more than 25 candidates/read. Levenshtein `k=2` uses packed A/C/G/T hash-neighborhood pruning for windows up to 32 bases, with fallback preserving semantics for unsupported cases. Hamming `k=2`/`k=3` is same-length substitution-only fixed-window matching. Current `N`/IUPAC behavior is literal-byte matching, not wildcard expansion semantics. |
 | Public CRISPR guide-counting rows are validated. | Supported | `make public-crispr-evidence-gate` passes; report at `docs/benchmarks/public_crispr/README.md` | Supports the documented MAGeCK/Yusa public-data workflow, not universal CRISPR superiority. |
 | Extended CRISPR comparison rows are validated. | Supported | `make crispr-comparison-gate` passes; report at `docs/benchmarks/crispr_comparison/README.md` | Applies to the recorded CRISPR guide-counting lanes and their documented comparator semantics. |
+| Current source guide-counter-compatible one-mismatch commands are 1.6–5.5× faster with 11.3–14.4× lower peak memory in the recorded controlled workloads. | Supported, scoped | `make guide-counter-gate`; [paired counts, throughput and memory report](benchmarks/guide_counter/README.md); independent byte-oracle compatibility tests | Same 87,437-guide Yusa library, 100k/1M simulated reads, one/four samples, one thread, five alternating repeats. All full count matrices agree. Exact-mode million-read commands favor guide-counter. Full experimental screens and biological gene-hit accuracy remain unmeasured. |
 | AssayCode exposes experimental AssayScript v2 compilation and synchronized multi-read execution, calibrated decoding primitives, allowed-tuple inference, deterministic panel simulation, and sequential JSONL QC. | Experimental | Python unit tests for compiler validation/fingerprints/strategy selection, runtime synchronization/extraction/ambiguity/tuple rescue/atomic failure, posterior calibration mathematics, joint decoding, simulator outcome accounting, and streaming thresholds | These are foundations, not a production universal assay runtime, throughput statement, or public-data superiority claim. Deterministic DotMatch assignment remains authoritative. |\n| DotMatch has an experimental GPU acceleration evidence lane. | Experimental | `make bench-gpu`, `make gpu-evidence-gate`, report at `docs/benchmarks/gpu/README.md` | Current evidence is Apple Metal-only for packed Hamming `k=1`, including synthetic rows and a public CRISPR FASTQ extract-pack-dispatch-readback-count row. It is not a production speed claim. Promotion requires additional real-workload gates, non-A/C/G/T fallback, and production scheduling. |
 | FASTQ count and demux workflows can optionally gate one-edit substitution and read-insertion rescue by observed Sanger Phred quality. | Supported | `make cli-test`; `--max-correction-qual` CLI regression cases | This is a deterministic correction filter, not a calibrated sequencing-error probability model. Read-deletion rescue has no observed edited base to score and is not rejected by this gate. |
 | FASTQ count workflows can optionally reject same-length unique calls whose Phred-quality posterior is below a configured threshold. | Experimental | Python and CLI posterior regression tests | The posterior model is an opt-in conservative filter over fixed-window calls. It is not calibrated public evidence, not supported for demux output routing, and not a throughput claim. |

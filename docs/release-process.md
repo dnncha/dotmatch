@@ -111,3 +111,27 @@ Avoid:
 - Run `make distribution-channels` after PyPI, Bioconda, GHCR, and Zenodo are public.
 - Update `docs/distribution-release.json` with verified public and evidence links, exact PyPI Linux wheel architectures, and exact GHCR platforms after public channels are live.
 - Update `docs/scientific-claims.md` only when new evidence is committed and a corresponding gate passes.
+
+## Current 0.7.0 handoff
+
+The user authorized all configured publication channels. The local candidate is
+0.7.0; the previous 0.6.4 distribution record is preserved in
+`releases/v0.6.4-distribution.json`. The current record deliberately marks every
+new channel as prepared, rather than inheriting verification of older artifacts.
+
+GitHub API authentication currently fails, while git pushes work. Submit the
+candidate changes for review and merge only after required checks pass. The
+approved-release workflow creates the immutable tag from the checked main commit
+and dispatches publication. Do not manually tag the local work branch.
+
+After the public source archive exists, download the archive referenced by the
+recipe and run `scripts/prepare_bioconda_handoff.py --release-tarball
+release/v0.7.0.tar.gz --out bioconda-handoff`. Submit the generated DotMatch
+and AssayCode recipes to bioconda-recipes. Check existing PR #69711 before
+opening a duplicate; its previously recorded 0.6.4 status does not verify 0.7.0.
+Verify Anaconda propagation and the generated BioContainers image separately.
+
+The experimental `crisprworks-fit` package has scientific CI and build artifacts
+but no configured trusted PyPI publication workflow. Publishing DotMatch does
+not publish that separate package; its alpha status and outstanding scientific
+validation must remain explicit when adding a publisher.

@@ -25,10 +25,11 @@ JSON envelope to stdout and progress or diagnostics to stderr. The Python API
 exposes the same contract through `dotmatch.agent_tools.list_tools()` and
 `dotmatch.agent_tools.invoke_tool()`.
 
-This six-tool interface is included in release 0.6.4.
+Version 0.7.0 is an unpublished candidate; the interface is also available
+in the verified 0.6.4 release. This six-tool interface is included in release 0.7.0.
 Check `dotmatch --version` before following this route. If a channel provides
 an older package, use the ordinary CLI commands or `dotmatch capabilities
---json` until that channel reaches 0.6.4.
+--json` until that channel reaches 0.7.0.
 
 The canonical contract and schema are also published as
 [`agent-tools.json`](https://dnncha.github.io/dotmatch/agent-tools.json) and

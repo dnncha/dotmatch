@@ -821,7 +821,7 @@ static void hamming_k2_k3_seed_index_semantics_tests(void) {
     qdaln_index_free(idx);
 }
 
-static void hamming_seed_seen_hash_semantics_tests(void) {
+static void hamming_dense_seed_semantics_tests(void) {
     enum { N_TARGETS = 192, TARGET_LEN = 8 };
     char target_buf[N_TARGETS][TARGET_LEN + 1];
     const char *targets[N_TARGETS];
@@ -854,6 +854,124 @@ static void hamming_seed_seen_hash_semantics_tests(void) {
     }
     assert(stats.candidates_considered == stats.candidates_verified);
 
+    qdaln_index_free(idx);
+}
+
+static void hamming_seed_boundary_tests(void) {
+    enum { N_TARGETS = 384, N_READS = 10 };
+    char target_buf[N_TARGETS][35], read_buf[N_READS][35];
+    const char *targets[N_TARGETS], *reads[N_READS];
+    size_t target_lens[N_TARGETS], read_lens[N_READS];
+    qdaln_match_result indexed[N_READS];
+
+    /* Empty partitions, uneven partitions, the full 64-bit packed boundary,
+     * dense shared seeds, duplicate rows, and the long/literal fallback. */
+    for (size_t len = 0; len <= 33; ++len) {
+        for (size_t j = 0; j < N_TARGETS; ++j) {
+            rand_seq(target_buf[j], len);
+            memset(target_buf[j], 'A', len / 2);
+            targets[j] = target_buf[j];
+            target_lens[j] = len;
+        }
+        memcpy(target_buf[1], target_buf[0], len + 1);
+        if (len != 0) target_buf[2][len - 1] = 'N';
+        /* A hash bucket can contain seeds from other target lengths. */
+        target_buf[N_TARGETS - 1][len] = 'A';
+        target_buf[N_TARGETS - 1][len + 1] = '\0';
+        target_lens[N_TARGETS - 1] = len + 1;
+        for (size_t i = 0; i < N_READS; ++i) {
+            memcpy(read_buf[i], target_buf[i * 3], len + 1);
+            reads[i] = read_buf[i];
+            read_lens[i] = len;
+        }
+        memset(read_buf[0], 'A', len);
+        memset(read_buf[3], 'T', len);
+        if (len != 0) read_buf[4][len - 1] = 'C';
+
+        qdaln_index *idx = qdaln_index_build(targets, target_lens, N_TARGETS);
+        assert(idx != NULL);
+        for (int k = 1; k <= 3; ++k) {
+            qdaln_index_stats stats;
+            assert(qdaln_index_assign_hamming_stats(idx, reads, read_lens, N_READS, k, indexed, &stats) == 0);
+            size_t expected_candidates = 0;
+            for (size_t i = 0; i < N_READS; ++i) {
+                assert_match_result(indexed[i], hamming_oracle_one(reads[i], len, targets,
+                                                                 target_lens, N_TARGETS, k));
+                /* Count the union of matching partitions independently using
+                 * byte comparisons: each target row must be verified once. */
+                for (size_t j = 0; j < N_TARGETS; ++j) {
+                    if (target_lens[j] != len) continue;
+                    int candidate = len > 32 || (len != 0 && j == 2);
+                    size_t pos = 0;
+                    size_t parts = (size_t)k + 1;
+                    for (size_t part = 0; part < parts && !candidate; ++part) {
+                        size_t width = len / parts + (part < len % parts);
+                        if (memcmp(reads[i] + pos, targets[j] + pos, width) == 0) candidate = 1;
+                        pos += width;
+                    }
+                    expected_candidates += (size_t)candidate;
+                }
+            }
+            assert(stats.candidates_considered == expected_candidates);
+            assert(stats.candidates_verified == expected_candidates);
+        }
+        qdaln_index_free(idx);
+    }
+}
+
+static void hamming_exhaustive_small_tests(void) {
+    enum { MAX_WORDS = 1024 };
+    char words[MAX_WORDS][6];
+    const char *targets[MAX_WORDS + 2];
+    size_t lens[MAX_WORDS + 2];
+    qdaln_match_result indexed[MAX_WORDS];
+    for (size_t len = 0; len <= 5; ++len) {
+        size_t n = (size_t)1 << (2 * len);
+        for (size_t i = 0; i < n; ++i) {
+            size_t v = i;
+            for (size_t p = 0; p < len; ++p) {
+                words[i][p] = "ACGT"[v & 3U];
+                v >>= 2;
+            }
+            words[i][len] = '\0';
+            targets[i] = words[i];
+            lens[i] = len;
+        }
+        targets[n] = words[0];
+        targets[n + 1] = words[n - 1];
+        lens[n] = lens[n + 1] = len;
+        qdaln_index *idx = qdaln_index_build(targets, lens, n + 2);
+        assert(idx != NULL);
+        for (int k = 1; k <= 3; ++k) {
+            assert(qdaln_index_assign_hamming_stats(idx, targets, lens, n, k, indexed, NULL) == 0);
+            for (size_t i = 0; i < n; ++i) {
+                assert_match_result(indexed[i], hamming_oracle_one(targets[i], len, targets, lens, n + 2, k));
+            }
+        }
+        qdaln_index_free(idx);
+    }
+}
+
+static void hamming_unknown_does_not_use_levenshtein_tests(void) {
+    const char *targets[] = {"AATCGGAT", "AAACGGAT"};
+    size_t lens[] = {8, 8};
+    const char *reads[] = {"ANATGGAT", "ARATGGAT", "AaATGGAT"};
+    size_t read_lens[] = {8, 8, 8};
+    qdaln_match_result results[3];
+    qdaln_index *idx = qdaln_index_build(targets, lens, 2);
+    assert(idx != NULL);
+    /* The first target is Hamming 3 but Levenshtein 2. Using the wrong
+     * verifier used to create a false tie with the true Hamming-2 target. */
+    assert(qdaln_edit_distance_dp(reads[0], 8, targets[0], 8) == 2);
+    assert(qdaln_index_assign_hamming_stats(idx, reads, read_lens, 3, 3, results, NULL) == 0);
+    for (size_t i = 0; i < 3; ++i) {
+        assert_match_result(results[i], hamming_oracle_one(reads[i], 8, targets, lens, 2, 3));
+        assert(results[i].status == QDALN_MATCH_UNIQUE);
+        assert(results[i].target_index == 1);
+        assert(results[i].best_distance == 2);
+        assert(results[i].second_best_distance == 3);
+        assert(results[i].match_count == 2);
+    }
     qdaln_index_free(idx);
 }
 
@@ -1308,7 +1426,10 @@ int main(void) {
     hamming_multi_unknown_k2_k3_uses_bounded_candidates_tests();
     hamming_seed_index_semantics_tests();
     hamming_k2_k3_seed_index_semantics_tests();
-    hamming_seed_seen_hash_semantics_tests();
+    hamming_dense_seed_semantics_tests();
+    hamming_seed_boundary_tests();
+    hamming_exhaustive_small_tests();
+    hamming_unknown_does_not_use_levenshtein_tests();
     levenshtein_non_acgt_indel_uses_index_tests();
     index_status_shortcut_stops_after_ambiguity_tests();
     index_status_shortcut_stops_unknown_after_ambiguity_tests();

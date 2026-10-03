@@ -12,10 +12,12 @@ on:
     paths:
       - 'packages/crisprworks-fit/**'
       - '.github/workflows/crisprworks-fit.yml'
+      - '.github/release-request.json'
   pull_request:
     paths:
       - 'packages/crisprworks-fit/**'
       - '.github/workflows/crisprworks-fit.yml'
+      - '.github/release-request.json'
 
 permissions:
   contents: read
@@ -44,13 +46,15 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Install experimental package
-        run: python -m pip install ./packages/crisprworks-fit
+        run: python -m pip install './packages/crisprworks-fit[test]'
       - name: Require compiled engine
         run: python -c 'from crisprworks_fit.kernels import resolved_engine; assert resolved_engine("native") == "native"'
       - name: Test scientific and workflow parity
-        run: python -m unittest discover -s packages/crisprworks-fit/tests -v
+        run: python -m pytest packages/crisprworks-fit/tests -v
       - name: Check installed command
         run: crisprworks-fit demo --out-dir fit-demo --threads 2
+      - name: Check joint fit and control-calibration demo
+        run: crisprworks-fit demo --model joint --out-dir fit-joint-demo
       - name: Build distribution
         run: python -m pip wheel ./packages/crisprworks-fit --no-deps --wheel-dir dist
       - name: Check multi-screen workflow
@@ -67,6 +71,7 @@ jobs:
           path: |
             dist/*
             fit-demo/*
+            fit-joint-demo/*
             fit-benchmark/*
             batch-demo/**
           if-no-files-found: ignore

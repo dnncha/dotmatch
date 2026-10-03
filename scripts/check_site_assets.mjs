@@ -2,12 +2,13 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = path => readFileSync(join(root, path), "utf8");
 const required = ["README.md", "app/page.tsx", "app/layout.tsx", "app/robots.ts", "app/sitemap.ts", "app/globals.css", "app/site-metadata.ts", "app/research-shell.tsx", "app/research.module.css", "app/crispr-guide-counting/page.tsx", "app/tools/library-safety/page.tsx", "app/tools/library-safety/explorer.tsx", "lib/library-safety.ts", "tests/site/library-safety.test.mjs", "tests/site/metadata.test.mjs", "docs/index.md", "docs/getting-started.md", "docs/command-reference.md", "docs/agent-guide.md", "docs/agent-crispr.md", "docs/agent-perturb-seq.md", "public/llms.txt", "public/llms-full.txt", "public/agent-capabilities.json", "public/agent-capabilities.schema.json", "public/agent-tools.json", "public/agent-tools.schema.json", "public/agent-reference-crispr.json", "public/dotmatch-read-assignment-v2.webp", "public/dotmatch-read-assignment-mobile-v2.webp", "public/dotmatch-og.png", "public/dotmatch-twitter.png"];
 for (const path of required) assert(existsSync(join(root, path)), `Missing public file: ${path}`);
 const home = read("app/page.tsx");
-const homeContent = home + read("app/assignment-demo.tsx") + read("app/install-command.tsx");
+const homeContent = home + read("app/assignment-demo.tsx") + read("app/install-command.tsx") + read("app/guide-counter-benchmark.tsx");
 for (const anchor of ["top", "workflow", "failure-modes", "use-cases", "evidence", "install", "agent-workflow"]) assert(home.includes(`id="${anchor}"`), `Missing homepage section: ${anchor}`);
 for (const path of ["app/page.tsx", "app/crispr-guide-counting/page.tsx", "app/tools/library-safety/page.tsx", "app/assignment-sensitivity/page.tsx"]) {
   const page = read(path);
@@ -16,6 +17,10 @@ for (const path of ["app/page.tsx", "app/crispr-guide-counting/page.tsx", "app/t
 }
 for (const phrase of ["CRISPR", "ambiguous", "unique", "none", "invalid", "dotmatch agent tools --json", "python3 -m pip install dotmatch", "getting-started.html", "SoftwareApplication", "softwareVersion: publishedVersion", "featureList", 'type="application/ld+json"']) assert(homeContent.includes(phrase), `Missing scientific/task content: ${phrase}`);
 assert(home.includes("AssignmentDemo") && home.includes("assignment-demo.json"), "Homepage must use the checked native example");
+for (const name of ["guide_counter_throughput.svg", "guide_counter_memory.svg"]) {
+  const hash = path => createHash("sha256").update(readFileSync(join(root, path))).digest("hex");
+  assert.equal(hash(`public/benchmarks/${name}`), hash(`benchmarks/figures/${name}`), `Published benchmark figure differs from audited evidence: ${name}`);
+}
 for (const file of ["app/home.module.css", "app/assignment-demo.tsx", "app/install-command.tsx", "public/assignment-demo.json", "scripts/generate_assignment_demo.py"]) assert(existsSync(join(root, file)), `Missing checked-example asset: ${file}`);
 const layout = read("app/layout.tsx"), metadata = read("app/site-metadata.ts"), sitemap = read("app/sitemap.ts");
 assert(layout.includes('applicationName: "DotMatch"') && metadata.includes('siteName: "DotMatch"'), "Metadata identity missing");
@@ -59,7 +64,7 @@ function markdownFiles(dir) {
     return statSync(join(root, path)).isDirectory() ? markdownFiles(path) : name.endsWith(".md") ? [path] : [];
   });
 }
-const languageFiles = ["README.md", "app/page.tsx", "app/layout.tsx", "app/crispr-guide-counting/page.tsx", "app/tools/library-safety/page.tsx", "pyproject.toml", "codemeta.json", ".zenodo.json", "CITATION.cff", ...markdownFiles("docs")];
+const languageFiles = ["README.md", "app/page.tsx", "app/layout.tsx", "app/crispr-guide-counting/page.tsx", "app/guide-counter-benchmark.tsx", "app/tools/library-safety/page.tsx", "pyproject.toml", "codemeta.json", ".zenodo.json", "CITATION.cff", ...markdownFiles("docs")];
 const forbidden = ["adoption evidence", "adoption trust", "AI slop", "big wins", "evidence-bounded", "industry exposure", "massive industry impact", "next wins", "pilot conversations", "private feedback", "quote-approved", "turning private evaluation into public adoption evidence", "without turning private feedback into public evidence", "game-changing", "revolutionary", "world-class", "best-in-class", "enterprise-grade", "just works"];
 for (const path of languageFiles) for (const phrase of forbidden) assert(!read(path).toLowerCase().includes(phrase.toLowerCase()), `${path}: internal or inflated language: ${phrase}`);
 console.log("Public routes, accessibility hooks, release identity, documentation links, and scientific language checks passed");

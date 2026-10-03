@@ -1,12 +1,15 @@
 {
-  "version": "0.6.4",
-  "tag": "v0.6.4",
+  "version": "0.7.0",
+  "tag": "v0.7.0",
   "authorized": true,
-  "request": "Ship the reviewed DotMatch 0.6.4 patch release so linked-read CRISPR quickstarts pass preflight and pairwise-correlation failures apply only to declared replicates.",
+  "request": "Ship the reviewed DotMatch counting, CRISPRWorks Fit and documentation changes through all configured publication channels, including the Bioconda handoff.",
   "publication_channels": [
     "GitHub Releases",
     "PyPI",
-    "GHCR"
+    "GHCR",
+    "Bioconda",
+    "BioContainers",
+    "Zenodo"
   ],
   "production_website": "GitHub Pages",
   "non_release_integration": "Vercel optional previews report an account-level block. That exact administrative status is reported, not treated as a successful deployment; production Pages and all code/security checks must pass.",

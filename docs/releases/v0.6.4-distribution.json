@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "status": "partially_verified",
+  "release_version": "0.6.4",
+  "publication_authorized": true,
+  "release_tag": "v0.6.4",
+  "post_release_gate": "make distribution-channels",
+  "channels": [
+    {
+      "id": "pypi",
+      "status": "verified",
+      "expected_url": "https://pypi.org/project/dotmatch/0.6.4/",
+      "public_url": "https://pypi.org/project/dotmatch/0.6.4/",
+      "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/36584902184",
+      "verified_date": "2026-09-29",
+      "installed_citation_doi": "10.5281/zenodo.20541628",
+      "linux_wheel_architectures": [
+        "x86_64",
+        "aarch64"
+      ],
+      "verification_command": "make distribution-channels"
+    },
+    {
+      "id": "ghcr",
+      "status": "verified",
+      "expected_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
+      "public_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
+      "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/36584902184",
+      "verified_date": "2026-09-29",
+      "installed_citation_doi": "10.5281/zenodo.20541628",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "verification_command": "make distribution-channels"
+    },
+    {
+      "id": "bioconda",
+      "status": "prepared",
+      "expected_url": "https://anaconda.org/bioconda/dotmatch",
+      "verification_command": "make distribution-channels",
+      "blocker": "Version 0.6.4 has passed Bioconda PR checks but is not merged or independently verified on the public channel.",
+      "next_action": "After bioconda-recipes PR #69711 merges, verify all declared Anaconda artifacts before marking the channel verified."
+    },
+    {
+      "id": "bioconda-assaycode",
+      "status": "prepared",
+      "expected_url": "https://anaconda.org/bioconda/assaycode",
+      "verification_command": "make distribution-channels",
+      "blocker": "The 0.6.4 metapackage is not merged or independently verified on the public channel.",
+      "next_action": "After bioconda-recipes PR #69711 merges, verify the generated metapackage artifact before marking the channel verified."
+    },
+    {
+      "id": "biocontainers",
+      "status": "prepared",
+      "expected_url": "https://quay.io/repository/biocontainers/dotmatch",
+      "verification_command": "make distribution-channels",
+      "blocker": "The BioContainers image generated from the 0.6.4 Bioconda recipe is not yet public and verified.",
+      "next_action": "After Bioconda propagation, verify the generated image tag and installed DotMatch version before marking the channel verified."
+    },
+    {
+      "id": "zenodo",
+      "status": "verified",
+      "expected_url": "https://doi.org/10.5281/zenodo.23043070",
+      "public_url": "https://zenodo.org/records/23043070",
+      "evidence_url": "https://zenodo.org/records/23043070",
+      "verified_date": "2026-09-29",
+      "verification_command": "make distribution-channels",
+      "version_doi": "10.5281/zenodo.23043070"
+    }
+  ],
+  "blockers": [
+    "Bioconda 0.6.4, its assaycode metapackage and the generated BioContainers image remain unmerged or unpropagated."
+  ],
+  "next_action": "Wait for bioconda-recipes PR #69711 to merge, then verify Anaconda and BioContainers artifacts before updating downstream workflow pins."
+}

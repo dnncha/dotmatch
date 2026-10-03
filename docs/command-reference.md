@@ -195,13 +195,28 @@ The `crispr` namespace wraps AssaySpec helpers for guide-count workflows.
 
 ```bash
 dotmatch guide-counter count --input sample.fastq.gz --samples sample \
-  --library guides.tsv --output guide_counts
+  --library guides.tsv --output guide_counts \
+  --offset-sample-size 100000 --offset-min-fraction .0025
 dotmatch guide-counter-count ...
 dotmatch guide-count ...
 ```
 
-These GuideCounter-compatible entrypoints preserve familiar input/output shapes
-while delegating assignment to DotMatch's deterministic CPU counting engine.
+These entrypoints write `.counts.txt`, `.extended-counts.txt` and `.stats.txt`
+using guide-counter's exact/one-substitution rules. The default allows one
+substitution; add `--exact-match` for exact counting. The current source supports
+ACGT guide libraries with a shared length of 1–32 bases, normalizes library
+sequences to uppercase, and rejects duplicate sequences.
+
+Offset detection uses the same matching rule as counting. The fraction is the
+offset's matched windows divided by all matched windows in the training reads;
+an empty selection produces no counts. Each selected offset contributes
+independently, so one read can contribute multiple counts. Read windows must
+contain uppercase ACGT; `N`, IUPAC and lowercase windows are excluded. Exact
+hits take precedence over one-substitution hits, and equal-distance ties are
+excluded. These rules differ from ordinary `dotmatch count`.
+
+These commands run one CPU thread. The [direct comparison](benchmarks/guide_counter/README.md)
+records full count agreement, throughput, memory, source pins and commands.
 
 ## Diagnostics
 

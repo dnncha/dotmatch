@@ -6,11 +6,24 @@ CRISPR guide counts and assignment QC from FASTQ reads.
 a family of open-source tools for pooled CRISPR screen analysis. Count is powered
 by **DotMatch**, the package and command used throughout this documentation.
 See the [family overview](crisprworks.md) for the available component and the
-experimental Fit accelerator and planned Review tool.
+experimental Fit gene-inference package and planned Review tool.
 
 DotMatch assigns a short window from each FASTQ read to a known list of DNA
 sequences. It is made for CRISPR guides, sample barcodes, feature tags, primers,
 adapter checks, and other assays where the expected targets are already known.
+
+:::{admonition} Benchmark spotlight: faster counting, identical counts
+:class: tip
+
+The benchmarked source checkout's `dotmatch guide-counter count` is
+**1.6–5.5× faster with 11.3–14.4× lower peak memory** than guide-counter 0.1.3
+in the tested one-mismatch workflows, with identical full count matrices.
+Controlled 100k/1M-read FASTQs, the public 87,437-guide Yusa library, one CPU
+thread and five paired repeats define this result. Guide-counter is faster in
+the tested exact-mode million-read cases; full experimental-screen performance
+and biological accuracy require separate validation.
+[Explore the graphs, protocol and raw results](benchmarks/guide_counter/README.md).
+:::
 
 For every read, DotMatch records one of four outcomes:
 
@@ -38,7 +51,7 @@ python3 -m pip install dotmatch
 dotmatch --version
 ```
 
-Release 0.6.4 includes the six `dotmatch agent`
+Release 0.7.0 is an unpublished candidate and includes the six `dotmatch agent`
 tools described below. Confirm that `dotmatch --version` reports 0.6.4 before
 using them. Bioconda and BioContainers may lag PyPI; check the installed
 version when using those channels.
@@ -55,6 +68,7 @@ versioned task routing with explicit inputs, outputs, and limitations. Use `dotm
 | I want to… | Start here |
 | --- | --- |
 | Count guides from a CRISPR screen | [CRISPR guide-counting first run](tutorials/crispr-count-first-run.md) |
+| Fit gene effects from reviewed counts | [From counts to gene effects](tutorials/crispr-fit-first-run.md) |
 | Reproduce a public CRISPR example | [Public CRISPR guide-counting example](../examples/crispr_guides/README.md) |
 | Reproduce the multi-guide Perturb-seq case study | [GSE146194 direct-guide-capture report](benchmarks/perturb_seq_gse146194/README.md) |
 | Try the workflow without a local install | [Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb) or [Google Colab](https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb) |
@@ -123,6 +137,7 @@ agent-perturb-seq
 command-reference
 sensitivity
 tutorials/crispr-count-first-run
+tutorials/crispr-fit-first-run
 tutorials/scverse-perturb-seq
 lab-evaluation
 independent-evaluation-packet
@@ -163,7 +178,10 @@ yusa-independent-evaluation-request
 
 crisprworks
 trust-and-scope
+scientific-audit
 benchmarks/README
+benchmarks/hamming_seed_layout/README
+benchmarks/guide_counter/README
 methods-and-citation
 packaging
 ```

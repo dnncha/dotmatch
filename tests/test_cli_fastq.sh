@@ -1571,16 +1571,16 @@ GCFASTQ
 cat > "$TMPDIR/gc_expected_counts.tsv" <<'GCCOUNTS'
 guide	gene	gc_sample
 g_exact	GENE_ESS	2
-g_control	CTRL_SAFE	1
+g_control	CTRL_SAFE	2
 g_other	GENE_OTHER	1
 GCCOUNTS
 diff -u "$TMPDIR/gc_expected_counts.tsv" "$TMPDIR/gc_out.counts.txt"
 grep '^guide	gene	guide_type	gc_sample$' "$TMPDIR/gc_out.extended-counts.txt" >/dev/null
 grep '^g_exact	GENE_ESS	Essential	2$' "$TMPDIR/gc_out.extended-counts.txt" >/dev/null
-grep '^g_control	CTRL_SAFE	Control	1$' "$TMPDIR/gc_out.extended-counts.txt" >/dev/null
+grep '^g_control	CTRL_SAFE	Control	2$' "$TMPDIR/gc_out.extended-counts.txt" >/dev/null
 grep '^g_other	GENE_OTHER	Nonessential	1$' "$TMPDIR/gc_out.extended-counts.txt" >/dev/null
 grep '^file	label	total_guides	total_reads	mapped_reads	frac_mapped	mean_reads_per_guide	mean_reads_essential	mean_reads_nonessential	mean_reads_control	mean_reads_other	zero_read_guides$' "$TMPDIR/gc_out.stats.txt" >/dev/null
-grep "^$TMPDIR/gc_sample.fastq	gc_sample	3	5	4	0.8000	1.33	2.00	1.00	1.00	0.00	0$" "$TMPDIR/gc_out.stats.txt" >/dev/null
+grep "^$TMPDIR/gc_sample.fastq	gc_sample	3	5	5	1.0000	1.67	2.00	1.00	2.00	0.00	0$" "$TMPDIR/gc_out.stats.txt" >/dev/null
 
 if "$DOTMATCH_BIN" guide-counter count \
   --input "$TMPDIR/gc_sample.fastq" "$TMPDIR/gc_sample.fastq" \

@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "checkpoint": "2026-10-02 workflow and documentation update",
+  "validation": {
+    "installed_fit_tests": 43,
+    "core_python_tests": 1523,
+    "site_tests": 26,
+    "required_checks": "make test cli-test python-test python-package-test repository-ready: passed",
+    "documentation": "make docs-ready (Sphinx warnings as errors): passed",
+    "coverage_line_percent": 77.94,
+    "coverage_threshold_percent": 75.0
+  },
+  "executed_examples": [
+    "crisprworks-fit demo --model joint",
+    "MLE with finite control tails, guide-efficiency updates, 10 permutation rounds and full-precision details",
+    "joint inference and global BY calibration",
+    "named MLE calibration",
+    "two-screen MLE batch with full-precision details and guide-efficiency updates"
+  ],
+  "compatibility": "MLE numerical fits and upstream summaries retain their tested conventions; condition names and model units are additive detail metadata",
+  "benchmark_scope": "Earlier scientific benchmark artifacts retain their original source snapshots; this update makes no new comparative accuracy or runtime claim.",
+  "wheel_sha256": "088acd6f4c0b4e0b1fed1b67d9f0cae47b6cf4cd7f22ba473d225de7fb1400a8",
+  "source_sha256": {
+    "README.md": "46b75359a45b084ca0a67d220941e9c5f43d40a2bbd1fef271b9568b4ef2672d",
+    "docs/conf.py": "5df392e624e274ea46b05c582347ad1be4d874741b1e683474da460937b6e5b6",
+    "docs/crisprworks.md": "59a7d107a211f88dfcc2bbbe6ad9862cbcdafd3b5521e531dd3d815a4777bc30",
+    "docs/index.md": "8f895894ffbb694af8f6628febef053985108197ab3e22cd8ac1ce85f30b3e6e",
+    "docs/crispr-qc.md": "9d3d0f8553857046fa2d051f907af1a29f7d48e7d45d1c8cab786f80005e4dc8",
+    "docs/methods-and-citation.md": "bea6d21780ebbb178c6d74aef1573dae6b50e2b12b5866486451896aeabb8c45",
+    "docs/tutorials/crispr-count-first-run.md": "d9194ae7a1bd08524b5ca29795031ae77b9c8aceba69124813c997fb2b08293a",
+    "docs/tutorials/crispr-fit-first-run.md": "3c70d075919305016d6d1eb2ac6ad7ed5f18819d40c05d0dd7c46f000df094b0",
+    "packages/crisprworks-fit/README.md": "55fa1955de872bc80007ef3a3a021d49524bdef85ae5a398ea9473e61ce013b4",
+    "packages/crisprworks-fit/examples/README.md": "e10f7eca9efda01f693314191c7cc992d6f64c4152bbd3cb8c13480e4cab5540",
+    "packages/crisprworks-fit/examples/batch.py": "0a3390a644b413cae0a4809ff2265008ede75672499f6f55b0e5dcd98efdd1fa",
+    "packages/crisprworks-fit/src/crisprworks_fit/cli.py": "8a8553f682a2e3d36ab97e4a57fb79a71fd36364c2d444ca1eaa599f2543aaa6",
+    "packages/crisprworks-fit/src/crisprworks_fit/calibration.py": "d4fe27693adf92e1b13f63d5b59523823522c330d60cbdf1084e1bace79119fe",
+    "packages/crisprworks-fit/src/crisprworks_fit/demo.py": "76b19170e2b5421b3201cd6132b8a2c318bbeac998810def39749e815a88b75b",
+    ".github/workflows/crisprworks-fit.yml": "93edb040a22c97818f3a212cac3f6e39943714b1a1f2f3ed3664c546165cc04f"
+  }
+}

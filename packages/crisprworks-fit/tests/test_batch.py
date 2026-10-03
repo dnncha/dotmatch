@@ -33,3 +33,25 @@ class BatchTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "exists"):
                 batch.commands(manifest, root / "results", 2, 42, 10)
             self.assertEqual(len(batch.commands(manifest, root / "results", 2, 42, 10, True)), 1)
+
+    def test_finite_control_inference_and_missing_controls_are_preflighted(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            for name in ('counts.tsv', 'design.tsv', 'controls.txt'):
+                (root / name).touch()
+            manifest = root / 'screens.json'
+            manifest.write_text(json.dumps([{'name': 'a', 'count_table': 'counts.tsv',
+                                            'design_matrix': 'design.tsv', 'control_gene': 'controls.txt'}]))
+            command = batch.commands(manifest, root / 'results', 1, 42, 2,
+                                     permutation_pvalues='finite')[0][1]
+            self.assertIn('--control-gene', command)
+            self.assertEqual(command[command.index('--norm-method') + 1], 'control')
+            self.assertEqual(command[command.index('--permutation-pvalues') + 1], 'finite')
+            self.assertNotIn('--write-fit-details', command)
+            full = batch.commands(manifest, root / 'results', 1, 42, 2,
+                                  permutation_pvalues='finite', write_fit_details=True, update_efficiency=True)[0][1]
+            self.assertIn('--write-fit-details', full)
+            self.assertIn('--update-efficiency', full)
+            (root / 'controls.txt').unlink()
+            with self.assertRaisesRegex(ValueError, 'Missing control-gene'):
+                batch.commands(manifest, root / 'results', 1, 42, 2, permutation_pvalues='finite')

@@ -1,0 +1,24 @@
+{
+  "command": [
+    "/workspace/dotmatch/.venv/bin/python",
+    "scripts/bench_hamming_count_layout.py",
+    "--baseline-bin",
+    "/workspace/.scientific-dotmatch/baseline/dotmatch",
+    "--library",
+    "benchmarks/real/data/yusa_library.csv"
+  ],
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+  "seed": 20261002,
+  "timing_scope": "single-thread count subprocess, including index build, gzip parsing and TSV/JSON output",
+  "input_scope": "Yusa public guide library; simulated ACGT reads, five equal error groups; not public FASTQ evidence",
+  "files": {
+    "/workspace/.scientific-dotmatch/baseline/dotmatch": "5470eb659322ed64ffd18333761664daa634ff90b1e220591f7505f085194a36",
+    "/workspace/dotmatch/dotmatch": "7cc57d0e35b607ca6230a66349888d8fff6fc8779e7c94908b43bd4e532d3212",
+    "/workspace/dotmatch/libdotmatch.so": "91d0e442ad4c1e2091e0ae5027e5fc37692cf19baac3efee2265958fd14c4b2a",
+    "benchmarks/real/data/yusa_library.csv": "d41a4122a46fdedb47deca61081dde9037d461a1fce1e6f9744522e21005ceba",
+    "/workspace/dotmatch/benchmarks/work/hamming_seed_layout/simulated.fastq.gz": "fb054582c4a4f85432cbad4bb264c65874b58c399ac6e78e8e337bf926ec0de2",
+    "/workspace/dotmatch/scripts/bench_hamming_count_layout.py": "84748d97ff3a19863136f3d6a2df7a3785265dc1031d4e945fc5c9ac9be4e178",
+    "/workspace/dotmatch/scripts/bench_hamming_seed_layout.py": "249c6640b2df4efbcce5a89abc8ab22e9b88f698baf45e0a9cce6a90adc7fea4"
+  },
+  "csv_sha256": "8d9476a08a9c065ad4c207df8c086ec5ad50ffdd92082384064dfef36dd49eb6"
+}

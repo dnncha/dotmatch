@@ -97,6 +97,12 @@ does not certify screen quality or biological success.
 
 ## Scientific Boundary
 
+After reviewing counting QC, the separate experimental CRISPRWorks Fit package
+can consume the raw count matrix. See
+[From counts to gene effects](tutorials/crispr-fit-first-run.md) for explicit
+designs, joint sample maps and control-gene calibration. Keep counting QC and
+the inference model's assumptions in the analysis record.
+
 CRISPR QC provides diagnostics for the counting layer. It does not prove that a
 count table is biologically correct, call enriched or depleted genes, infer
 essentiality, quantify editing outcomes, evaluate off-target biology, or decide

@@ -4,6 +4,19 @@ Start with a checked example, then prepare your own reads. Keep the counting
 workflow you already use while you evaluate DotMatch. No study data needs to
 leave your computer.
 
+:::{admonition} Benchmark spotlight: speed and memory with matched counts
+:class: tip
+
+The benchmarked source checkout's `dotmatch guide-counter count` is
+**1.6–5.5× faster with 11.3–14.4× lower peak memory** than guide-counter 0.1.3
+in the tested one-mismatch workflows, with identical full counts. The result
+covers controlled 100k/1M-read FASTQs and the public Yusa library, using one CPU
+thread and five paired repeats. Guide-counter is faster in the tested
+exact-mode million-read cases. These results apply to the compatibility
+command; evaluate your assay and matching policy separately.
+[Read the graphs, commands and limits](../benchmarks/guide_counter/README.md).
+:::
+
 ## Check which version you are using
 
 The released package can be installed with:
@@ -187,4 +200,8 @@ your assay. Supply your confirmed settings. Sample sheets use `sample_id` and
 `fastq` columns; absolute FASTQ paths avoid ambiguity about the working directory.
 Keep biological sample identities explicit and do not treat separate lanes as
 independent biological replicates. DotMatch writes MAGeCK-compatible counts;
-it does not perform downstream screen statistics.
+it does not perform downstream screen statistics. To analyze reviewed counts
+with the separate experimental Fit package, continue with
+[From counts to gene effects](crispr-fit-first-run.md). It covers MLE designs,
+joint guide-efficacy learning, control calibration and the scope of the current
+validation.

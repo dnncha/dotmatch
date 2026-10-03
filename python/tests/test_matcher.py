@@ -56,6 +56,15 @@ def test_matcher_hamming_matches_levenshtein_for_equal_length_substitutions():
     assert 0 < stats.candidates_verified < len(reads) * len(targets)
 
 
+@pytest.mark.parametrize("read", ["ANATGGAT", "ARATGGAT", "AaATGGAT"])
+def test_hamming_literal_unknowns_preserve_metric_and_ambiguity_policy(read):
+    with dotmatch.Matcher(["AATCGGAT", "AAACGGAT"]) as matcher:
+        best = matcher.assign_hamming([read], k=3, policy="best")[0]
+        radius = matcher.assign_hamming([read], k=3, policy="radius")[0]
+        assert best == dotmatch.MatchResult(1, 2, 3, 2, dotmatch.MATCH_UNIQUE)
+        assert radius == dotmatch.MatchResult(1, 2, 3, 2, dotmatch.MATCH_AMBIGUOUS)
+
+
 def test_top_level_hamming_and_exact_helpers():
     targets = ["ACGT", "TTTT"]
 
