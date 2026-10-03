@@ -28,11 +28,11 @@ that identifier until publication. Both resolve to
 the same Zenodo release family; use the version DOI when exact-release
 provenance matters.
 
-Suggested citation:
+Suggested citation for the 0.7.0 candidate (record the commit until the release is public):
 
-> O'Toole D. DotMatch: deterministic known-target short-DNA assignment for sequencing workflows. Software release v0.6.4. https://github.com/dnncha/dotmatch
+> O'Toole D. DotMatch: deterministic known-target short-DNA assignment for sequencing workflows. Software release v0.7.0. https://github.com/dnncha/dotmatch
 
-Current release DOI (v0.6.4): <https://doi.org/10.5281/zenodo.23043070>
+Latest verified release DOI (v0.6.4): <https://doi.org/10.5281/zenodo.23043070>
 
 Concept DOI (all versions): <https://doi.org/10.5281/zenodo.20541628>
 

@@ -119,16 +119,18 @@ The user authorized all configured publication channels. The local candidate is
 `releases/v0.6.4-distribution.json`. The current record deliberately marks every
 new channel as prepared, rather than inheriting verification of older artifacts.
 
-GitHub API authentication currently fails, while git pushes work. Submit the
-candidate changes for review and merge only after required checks pass. The
-approved-release workflow creates the immutable tag from the checked main commit
-and dispatches publication. Do not manually tag the local work branch.
+The candidate has been pushed to main and the approved-release workflow has
+started. GitHub API requests are blocked from this environment; git pushes and
+public workflow pages remain accessible. Hosted acceptance checks must pass
+before the workflow tags and publishes the exact main commit. Do not manually
+tag the local work branch.
 
 After the public source archive exists, download the archive referenced by the
 recipe and run `scripts/prepare_bioconda_handoff.py --release-tarball
 release/v0.7.0.tar.gz --out bioconda-handoff`. Submit the generated DotMatch
-and AssayCode recipes to bioconda-recipes. Check existing PR #69711 before
-opening a duplicate; its previously recorded 0.6.4 status does not verify 0.7.0.
+and AssayCode recipes to bioconda-recipes. PR #69711 merged the older DotMatch 0.6.4 recipe on September 30, 2026.
+Check for a new BiocondaBot update before opening a duplicate 0.7.0 PR; neither
+the older merge nor its generated image tags verifies the new release.
 Verify Anaconda propagation and the generated BioContainers image separately.
 
 The experimental `crisprworks-fit` package has scientific CI and build artifacts

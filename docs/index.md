@@ -52,7 +52,7 @@ dotmatch --version
 ```
 
 Release 0.7.0 is an unpublished candidate and includes the six `dotmatch agent`
-tools described below. Confirm that `dotmatch --version` reports 0.6.4 before
+tools described below. Confirm that `dotmatch --version` reports 0.7.0 before
 using them. Bioconda and BioContainers may lag PyPI; check the installed
 version when using those channels.
 

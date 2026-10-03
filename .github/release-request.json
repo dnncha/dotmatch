@@ -2,7 +2,7 @@
   "version": "0.7.0",
   "tag": "v0.7.0",
   "authorized": true,
-  "request": "Ship the reviewed DotMatch counting, CRISPRWorks Fit and documentation changes through all configured publication channels, including the Bioconda handoff.",
+  "request": "Ship DotMatch 0.7.0 counting, experimental CRISPRWorks Fit 0.1.0a3 and documentation through all configured channels after the exact main commit passes release acceptance, including aligned scientific citation surfaces and the Bioconda handoff.",
   "publication_channels": [
     "GitHub Releases",
     "PyPI",

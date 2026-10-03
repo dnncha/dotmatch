@@ -56,7 +56,7 @@
     }
   ],
   "blockers": [
-    "GitHub credentials currently fail authentication; candidate publication and public verification have not run."
+    "Hosted acceptance and release publication have not completed; GitHub API requests are blocked in the working environment."
   ],
-  "next_action": "Restore GitHub access, merge the checked candidate to main, let the approved release workflow tag and publish, then submit and verify Bioconda and BioContainers."
+  "next_action": "Complete the approved-release workflow on the checked main commit, verify public artifacts, then submit and verify matching Bioconda and BioContainers recipes."
 }
