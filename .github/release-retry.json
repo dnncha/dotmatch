@@ -1,0 +1,6 @@
+{
+  "run_id": 37109177013,
+  "tag": "v0.7.0",
+  "commit": "5736f9dd14fde44f3d89fa99966802af344bb0a0",
+  "reason": "Retry the failed ARM64 manylinux image pull and dependent publication jobs without changing the checked release tag."
+}
