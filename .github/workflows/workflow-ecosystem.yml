@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - ".github/workflows/workflow-ecosystem.yml"
+      - ".github/release-request.json"
       - "examples/workflows/**"
       - "python/dotmatch/**"
       - "scripts/check_workflow_examples.py"
@@ -13,6 +14,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/workflow-ecosystem.yml"
+      - ".github/release-request.json"
       - "examples/workflows/**"
       - "python/dotmatch/**"
       - "scripts/check_workflow_examples.py"
