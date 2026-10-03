@@ -19,19 +19,19 @@ Use the Zenodo concept DOI `10.5281/zenodo.20541628` for general software
 citation. For an exact release, use its version-specific DOI: 0.4.0
 (`10.5281/zenodo.22214073`), 0.5.0 (`10.5281/zenodo.22431034`), 0.6.0
 (`10.5281/zenodo.22969176`), 0.6.1 (`10.5281/zenodo.22985881`), 0.6.3
-(`10.5281/zenodo.22998373`), or 0.6.4 (`10.5281/zenodo.23043070`).
+(`10.5281/zenodo.22998373`), 0.6.4 (`10.5281/zenodo.23043070`), or 0.7.0 (`10.5281/zenodo.23118107`).
 
 Published 0.6.4 and 0.7.0 packages and containers embed the concept DOI.
 The 0.6.4 version DOI was minted after its immutable artifacts were published.
-The 0.7.0 version-specific archive has not been independently verified; source
-metadata defers that identifier until verification. Use a verified version DOI
+The post-release source metadata records the independently verified 0.7.0
+version DOI; the already published packages retain their embedded concept DOI. Use a verified version DOI
 when exact-release provenance matters.
 
 Suggested citation:
 
 > O'Toole D. DotMatch: deterministic known-target short-DNA assignment for sequencing workflows. Software release v0.7.0. https://github.com/dnncha/dotmatch
 
-Latest verified version-specific DOI (v0.6.4): <https://doi.org/10.5281/zenodo.23043070>
+Current version-specific DOI (v0.7.0): <https://doi.org/10.5281/zenodo.23118107>
 
 Concept DOI (all versions): <https://doi.org/10.5281/zenodo.20541628>
 

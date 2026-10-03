@@ -29,7 +29,7 @@ The broader Review tool is planned. The desktop Workbench is developed separatel
 Install the published package and use its existing command:
 
 ```bash
-python3 -m pip install dotmatch==0.6.4
+python3 -m pip install dotmatch==0.7.0
 dotmatch --version
 dotmatch demo --out-dir first-run/
 ```

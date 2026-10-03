@@ -32,7 +32,8 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "manifest_digest": "sha256:78aeae6cb78bd0dcc7d70954a7cf8614e7cb7b300de4dca9629826cc5bacfb3f"
+      "manifest_digest": "sha256:78aeae6cb78bd0dcc7d70954a7cf8614e7cb7b300de4dca9629826cc5bacfb3f",
+      "installed_citation_doi": "10.5281/zenodo.20541628"
     },
     {
       "id": "bioconda",
@@ -60,17 +61,18 @@
     },
     {
       "id": "zenodo",
-      "status": "prepared",
-      "expected_url": "https://doi.org/10.5281/zenodo.20541628",
+      "status": "verified",
+      "expected_url": "https://doi.org/10.5281/zenodo.23118107",
       "verification_command": "make distribution-channels",
-      "blocker": "The version-specific 0.7.0 archive is unverified; API requests fail with proxy HTTP 403.",
-      "next_action": "Verify the version-specific archive and DOI before changing CITATION.cff or marking this channel verified."
+      "public_url": "https://zenodo.org/records/23118107",
+      "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/37112296284",
+      "verified_date": "2026-10-03",
+      "version_doi": "10.5281/zenodo.23118107"
     }
   ],
   "blockers": [
     "Bioconda 0.7.0 and its AssayCode metapackage have not been submitted or propagated: the working environment cannot push to the recipe fork (HTTP 401).",
-    "BioContainers 0.7.0 depends on the matching Bioconda build and is not independently verified.",
-    "The 0.7.0 Zenodo archive cannot be independently verified because requests to its API are blocked (proxy HTTP 403)."
+    "BioContainers 0.7.0 depends on the matching Bioconda build and is not independently verified."
   ],
-  "next_action": "Restore recipe-fork write access and GitHub API access, update existing bioconda-recipes PR #68663 with the checksum-backed 0.7.0 patch, then verify Anaconda, BioContainers and the version-specific Zenodo archive."
+  "next_action": "Restore recipe-fork write access and GitHub API access, update existing bioconda-recipes PR #68663 with the checksum-backed 0.7.0 patch, then verify Anaconda and BioContainers propagation."
 }

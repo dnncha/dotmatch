@@ -116,7 +116,8 @@ Avoid:
 
 The user authorized all configured publication channels. DotMatch 0.7.0 is published on GitHub, PyPI and GHCR; the previous 0.6.4 distribution record is preserved in
 `releases/v0.6.4-distribution.json`. The current record verifies PyPI and GHCR against the completed release
-workflow; Bioconda, BioContainers and Zenodo remain independently unverified.
+workflow; the version-specific Zenodo archive is also verified. Bioconda and
+BioContainers remain independently unverified.
 
 The approved-release workflow tagged checked commit
 `5736f9dd14fde44f3d89fa99966802af344bb0a0`; publication and public artifact

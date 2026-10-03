@@ -22,13 +22,13 @@ command; evaluate your assay and matching policy separately.
 The released package can be installed with:
 
 ```bash
-python3 -m pip install dotmatch==0.6.4
+python3 -m pip install dotmatch==0.7.0
 dotmatch --version
 ```
 
-DotMatch 0.6.4 includes the checked offline demo, `dotmatch compare-counts`,
+DotMatch 0.7.0 includes the checked offline demo, `dotmatch compare-counts`,
 and the validated `crispr quickstart --link-reads` option. Use the published
-package and confirm `dotmatch --version` reports 0.6.4 before following this
+package and confirm `dotmatch --version` reports 0.7.0 before following this
 tutorial.
 
 For a no-install view using the public synthetic fixture, open the
@@ -36,7 +36,7 @@ For a no-install view using the public synthetic fixture, open the
 
 ## 1. Get a checked result without assembling files
 
-From an installed DotMatch 0.6.4 package:
+From an installed DotMatch 0.7.0 package:
 
 ```bash
 dotmatch demo --out-dir first-run/
@@ -85,7 +85,7 @@ dotmatch crispr quickstart \
 ```
 
 Use paths that match your actual naming convention. Repeat `--fastq` for more
-input patterns. DotMatch 0.6.4 requires every argument to resolve: one valid
+input patterns. DotMatch 0.7.0 requires every argument to resolve: one valid
 file does not excuse a second missing pattern. Duplicate inputs, colliding
 basenames, non-files and invalid resource limits are rejected before a project
 is created. Existing output paths are never overwritten.
@@ -131,7 +131,7 @@ the top-level `status = "draft"` to `status = "ready"` in `assay.toml`, then run
 dotmatch assay start crispr-screen/assay.toml
 ```
 
-DotMatch 0.6.4's explicit `--accept-inference` option only starts a run
+DotMatch 0.7.0's explicit `--accept-inference` option only starts a run
 when inference itself reports ready. It no longer promotes an uncertain
 inference automatically. `--no-run` always leaves the project in draft.
 
@@ -149,7 +149,7 @@ The matrix contains `sgRNA`, `Gene`, then one raw integer count column per
 sample. Only unique assignments add target counts. Ambiguous, unmatched and
 invalid-window reads remain visible in the QC outputs.
 
-For a side-by-side evaluation with DotMatch 0.6.4:
+For a side-by-side evaluation with DotMatch 0.7.0:
 
 ```bash
 dotmatch compare-counts \
