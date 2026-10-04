@@ -28,6 +28,11 @@ def parse_count_value(text: str, guide_id: str, sample: str) -> int:
     text = text.strip()
     if len(text) > 4096:
         raise ValueError(f"count too large for {location}")
+    # Raw-count tables overwhelmingly contain short unsigned ASCII integers.
+    # Keep longer inputs on Decimal, preserving its significant-digit limit and
+    # independence from Python's configurable integer-string conversion limit.
+    if len(text) <= 64 and text.isascii() and text.isdecimal():
+        return int(text)
     if text.lower().lstrip("+-") in {"inf", "infinity", "nan", "snan"}:
         raise ValueError(f"non-finite count for {location}")
     if re.fullmatch(r"[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?", text) is None:
