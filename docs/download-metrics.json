@@ -8,10 +8,10 @@
       "zenodo",
       "github_releases"
     ],
-    "reported_downloads": 20078,
+    "reported_downloads": 40114,
     "scope": "aggregate public package download events; not distinct users"
   },
-  "captured_at_utc": "2026-09-28T15:25:26+00:00",
+  "captured_at_utc": "2026-10-05T15:59:10+00:00",
   "channels": {
     "anaconda_bioconda": {
       "automation_indicators": [
@@ -19,11 +19,11 @@
         "the provider does not expose client identity or runtime use"
       ],
       "breakdown": {
-        "artifact_files": 89,
+        "artifact_files": 125,
         "artifacts": [
           {
             "basename": "linux-64/dotmatch-0.1.2-h118bc1c_0.conda",
-            "downloads": 75,
+            "downloads": 76,
             "platform": "linux-64",
             "python": "not_applicable",
             "upload_time": "2026-05-18 20:29:28.329000+00:00",
@@ -47,7 +47,7 @@
           },
           {
             "basename": "linux-64/dotmatch-0.1.4-py314h118bc1c_0.conda",
-            "downloads": 65,
+            "downloads": 66,
             "platform": "linux-64",
             "python": "3.14",
             "upload_time": "2026-05-23 11:00:30.653000+00:00",
@@ -63,7 +63,7 @@
           },
           {
             "basename": "linux-64/dotmatch-0.1.7-py314h118bc1c_0.conda",
-            "downloads": 62,
+            "downloads": 63,
             "platform": "linux-64",
             "python": "3.14",
             "upload_time": "2026-06-07 13:54:38.015000+00:00",
@@ -87,7 +87,7 @@
           },
           {
             "basename": "linux-64/dotmatch-0.1.8-py314h118bc1c_0.conda",
-            "downloads": 50,
+            "downloads": 51,
             "platform": "linux-64",
             "python": "3.14",
             "upload_time": "2026-06-17 01:14:17.037000+00:00",
@@ -111,7 +111,7 @@
           },
           {
             "basename": "linux-64/dotmatch-0.1.9-py310hfe4f656_0.conda",
-            "downloads": 108,
+            "downloads": 109,
             "platform": "linux-64",
             "python": "3.10",
             "upload_time": "2026-07-08 07:14:03.167000+00:00",
@@ -119,7 +119,7 @@
           },
           {
             "basename": "linux-64/dotmatch-0.1.9-py310hfe4f656_1.conda",
-            "downloads": 93,
+            "downloads": 94,
             "platform": "linux-64",
             "python": "3.10",
             "upload_time": "2026-07-13 15:43:07.511000+00:00",
@@ -127,7 +127,7 @@
           },
           {
             "basename": "linux-64/dotmatch-0.1.9-py311h13f8228_0.conda",
-            "downloads": 108,
+            "downloads": 109,
             "platform": "linux-64",
             "python": "3.11",
             "upload_time": "2026-07-08 07:14:00.171000+00:00",
@@ -135,7 +135,7 @@
           },
           {
             "basename": "linux-64/dotmatch-0.1.9-py311h13f8228_1.conda",
-            "downloads": 93,
+            "downloads": 94,
             "platform": "linux-64",
             "python": "3.11",
             "upload_time": "2026-07-13 15:43:15.203000+00:00",
@@ -143,7 +143,7 @@
           },
           {
             "basename": "linux-64/dotmatch-0.1.9-py312h9639c01_0.conda",
-            "downloads": 108,
+            "downloads": 109,
             "platform": "linux-64",
             "python": "3.12",
             "upload_time": "2026-07-08 07:13:57.132000+00:00",
@@ -151,7 +151,7 @@
           },
           {
             "basename": "linux-64/dotmatch-0.1.9-py312h9639c01_1.conda",
-            "downloads": 93,
+            "downloads": 94,
             "platform": "linux-64",
             "python": "3.12",
             "upload_time": "2026-07-13 15:43:10.043000+00:00",
@@ -159,7 +159,7 @@
           },
           {
             "basename": "linux-64/dotmatch-0.1.9-py313hfeada96_0.conda",
-            "downloads": 109,
+            "downloads": 110,
             "platform": "linux-64",
             "python": "3.13",
             "upload_time": "2026-07-08 07:13:54.160000+00:00",
@@ -167,7 +167,7 @@
           },
           {
             "basename": "linux-64/dotmatch-0.1.9-py313hfeada96_1.conda",
-            "downloads": 93,
+            "downloads": 94,
             "platform": "linux-64",
             "python": "3.13",
             "upload_time": "2026-07-13 15:43:12.674000+00:00",
@@ -247,7 +247,7 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.1.9-py310hcb0f2e8_0.conda",
-            "downloads": 25,
+            "downloads": 26,
             "platform": "osx-arm64",
             "python": "3.10",
             "upload_time": "2026-07-08 07:13:08.302000+00:00",
@@ -255,7 +255,7 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.1.9-py310hcb0f2e8_1.conda",
-            "downloads": 25,
+            "downloads": 26,
             "platform": "osx-arm64",
             "python": "3.10",
             "upload_time": "2026-07-13 15:45:00.274000+00:00",
@@ -263,7 +263,7 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.1.9-py311h96f8d8c_0.conda",
-            "downloads": 26,
+            "downloads": 27,
             "platform": "osx-arm64",
             "python": "3.11",
             "upload_time": "2026-07-08 07:13:05.275000+00:00",
@@ -271,7 +271,7 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.1.9-py311h96f8d8c_1.conda",
-            "downloads": 26,
+            "downloads": 27,
             "platform": "osx-arm64",
             "python": "3.11",
             "upload_time": "2026-07-13 15:44:57.483000+00:00",
@@ -279,7 +279,7 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.1.9-py312h8615eaa_0.conda",
-            "downloads": 25,
+            "downloads": 26,
             "platform": "osx-arm64",
             "python": "3.12",
             "upload_time": "2026-07-08 07:13:03.076000+00:00",
@@ -287,7 +287,7 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.1.9-py312h8615eaa_1.conda",
-            "downloads": 24,
+            "downloads": 25,
             "platform": "osx-arm64",
             "python": "3.12",
             "upload_time": "2026-07-13 15:45:02.797000+00:00",
@@ -295,7 +295,7 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.1.9-py313hc2bdd96_0.conda",
-            "downloads": 26,
+            "downloads": 27,
             "platform": "osx-arm64",
             "python": "3.13",
             "upload_time": "2026-07-08 07:12:59.952000+00:00",
@@ -303,7 +303,7 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.1.9-py313hc2bdd96_1.conda",
-            "downloads": 24,
+            "downloads": 25,
             "platform": "osx-arm64",
             "python": "3.13",
             "upload_time": "2026-07-13 15:44:55.501000+00:00",
@@ -311,7 +311,7 @@
           },
           {
             "basename": "linux-64/dotmatch-0.2.0-py314h118bc1c_0.conda",
-            "downloads": 82,
+            "downloads": 83,
             "platform": "linux-64",
             "python": "3.14",
             "upload_time": "2026-07-17 14:18:19.745000+00:00",
@@ -327,7 +327,7 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.2.0-py314h6bd33b9_0.conda",
-            "downloads": 25,
+            "downloads": 26,
             "platform": "osx-arm64",
             "python": "3.14",
             "upload_time": "2026-07-17 14:23:35.192000+00:00",
@@ -335,7 +335,7 @@
           },
           {
             "basename": "linux-64/dotmatch-0.2.1-py314h118bc1c_0.conda",
-            "downloads": 79,
+            "downloads": 80,
             "platform": "linux-64",
             "python": "3.14",
             "upload_time": "2026-07-20 15:28:56.541000+00:00",
@@ -351,7 +351,7 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.2.1-py314h6bd33b9_0.conda",
-            "downloads": 26,
+            "downloads": 27,
             "platform": "osx-arm64",
             "python": "3.14",
             "upload_time": "2026-07-20 15:29:14.563000+00:00",
@@ -359,7 +359,7 @@
           },
           {
             "basename": "linux-64/dotmatch-0.2.2-py314h118bc1c_0.conda",
-            "downloads": 215,
+            "downloads": 249,
             "platform": "linux-64",
             "python": "3.14",
             "upload_time": "2026-07-24 08:38:04.638000+00:00",
@@ -391,7 +391,7 @@
           },
           {
             "basename": "linux-aarch64/dotmatch-0.2.2-py313h6b429ba_1.conda",
-            "downloads": 25,
+            "downloads": 26,
             "platform": "linux-aarch64",
             "python": "3.13",
             "upload_time": "2026-08-09 07:54:43.154000+00:00",
@@ -439,7 +439,7 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.2.2-py310hcb0f2e8_1.conda",
-            "downloads": 24,
+            "downloads": 25,
             "platform": "osx-arm64",
             "python": "3.10",
             "upload_time": "2026-08-09 07:55:14.110000+00:00",
@@ -447,7 +447,7 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.2.2-py311h96f8d8c_1.conda",
-            "downloads": 24,
+            "downloads": 25,
             "platform": "osx-arm64",
             "python": "3.11",
             "upload_time": "2026-08-09 07:54:08.414000+00:00",
@@ -455,7 +455,7 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.2.2-py312h8615eaa_1.conda",
-            "downloads": 26,
+            "downloads": 29,
             "platform": "osx-arm64",
             "python": "3.12",
             "upload_time": "2026-08-09 07:53:30.735000+00:00",
@@ -463,7 +463,7 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.2.2-py313hc2bdd96_1.conda",
-            "downloads": 27,
+            "downloads": 28,
             "platform": "osx-arm64",
             "python": "3.13",
             "upload_time": "2026-08-09 07:54:59.411000+00:00",
@@ -471,7 +471,7 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.2.2-py314h6bd33b9_0.conda",
-            "downloads": 26,
+            "downloads": 27,
             "platform": "osx-arm64",
             "python": "3.14",
             "upload_time": "2026-07-24 08:42:24.126000+00:00",
@@ -479,7 +479,7 @@
           },
           {
             "basename": "linux-64/dotmatch-0.4.1-py310hfe4f656_0.conda",
-            "downloads": 347,
+            "downloads": 349,
             "platform": "linux-64",
             "python": "3.10",
             "upload_time": "2026-09-04 13:29:49.453000+00:00",
@@ -487,7 +487,7 @@
           },
           {
             "basename": "linux-64/dotmatch-0.4.1-py311h13f8228_0.conda",
-            "downloads": 342,
+            "downloads": 344,
             "platform": "linux-64",
             "python": "3.11",
             "upload_time": "2026-09-04 13:29:56.315000+00:00",
@@ -495,7 +495,7 @@
           },
           {
             "basename": "linux-64/dotmatch-0.4.1-py312h9639c01_0.conda",
-            "downloads": 341,
+            "downloads": 343,
             "platform": "linux-64",
             "python": "3.12",
             "upload_time": "2026-09-04 13:29:52.702000+00:00",
@@ -503,7 +503,7 @@
           },
           {
             "basename": "linux-64/dotmatch-0.4.1-py313hfeada96_0.conda",
-            "downloads": 339,
+            "downloads": 342,
             "platform": "linux-64",
             "python": "3.13",
             "upload_time": "2026-09-04 13:29:59.687000+00:00",
@@ -519,7 +519,7 @@
           },
           {
             "basename": "linux-aarch64/dotmatch-0.4.1-py311h7696b9a_0.conda",
-            "downloads": 334,
+            "downloads": 335,
             "platform": "linux-aarch64",
             "python": "3.11",
             "upload_time": "2026-09-04 13:28:50.481000+00:00",
@@ -527,7 +527,7 @@
           },
           {
             "basename": "linux-aarch64/dotmatch-0.4.1-py312h2c93283_0.conda",
-            "downloads": 337,
+            "downloads": 338,
             "platform": "linux-aarch64",
             "python": "3.12",
             "upload_time": "2026-09-04 13:28:56.585000+00:00",
@@ -551,7 +551,7 @@
           },
           {
             "basename": "osx-64/dotmatch-0.4.1-py311h5061d0e_0.conda",
-            "downloads": 331,
+            "downloads": 332,
             "platform": "osx-64",
             "python": "3.11",
             "upload_time": "2026-09-04 13:33:46.660000+00:00",
@@ -567,7 +567,7 @@
           },
           {
             "basename": "osx-64/dotmatch-0.4.1-py313hda89df1_0.conda",
-            "downloads": 322,
+            "downloads": 324,
             "platform": "osx-64",
             "python": "3.13",
             "upload_time": "2026-09-04 13:33:51.050000+00:00",
@@ -575,7 +575,7 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.4.1-py310hcb0f2e8_0.conda",
-            "downloads": 332,
+            "downloads": 336,
             "platform": "osx-arm64",
             "python": "3.10",
             "upload_time": "2026-09-04 13:30:32.387000+00:00",
@@ -583,7 +583,7 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.4.1-py311h96f8d8c_0.conda",
-            "downloads": 332,
+            "downloads": 334,
             "platform": "osx-arm64",
             "python": "3.11",
             "upload_time": "2026-09-04 13:30:28.070000+00:00",
@@ -591,7 +591,7 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.4.1-py312h8615eaa_0.conda",
-            "downloads": 331,
+            "downloads": 332,
             "platform": "osx-arm64",
             "python": "3.12",
             "upload_time": "2026-09-04 13:30:35.195000+00:00",
@@ -599,7 +599,7 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.4.1-py313hc2bdd96_0.conda",
-            "downloads": 334,
+            "downloads": 335,
             "platform": "osx-arm64",
             "python": "3.13",
             "upload_time": "2026-09-04 13:30:30.283000+00:00",
@@ -607,7 +607,7 @@
           },
           {
             "basename": "linux-64/dotmatch-0.5.0-py310hfe4f656_0.conda",
-            "downloads": 31,
+            "downloads": 33,
             "platform": "linux-64",
             "python": "3.10",
             "upload_time": "2026-09-09 01:14:14.273000+00:00",
@@ -615,7 +615,7 @@
           },
           {
             "basename": "linux-64/dotmatch-0.5.0-py311h13f8228_0.conda",
-            "downloads": 30,
+            "downloads": 32,
             "platform": "linux-64",
             "python": "3.11",
             "upload_time": "2026-09-09 01:14:16.345000+00:00",
@@ -623,7 +623,7 @@
           },
           {
             "basename": "linux-64/dotmatch-0.5.0-py312h9639c01_0.conda",
-            "downloads": 30,
+            "downloads": 32,
             "platform": "linux-64",
             "python": "3.12",
             "upload_time": "2026-09-09 01:14:09.874000+00:00",
@@ -631,7 +631,7 @@
           },
           {
             "basename": "linux-64/dotmatch-0.5.0-py313hfeada96_0.conda",
-            "downloads": 42,
+            "downloads": 51,
             "platform": "linux-64",
             "python": "3.13",
             "upload_time": "2026-09-09 01:14:12.046000+00:00",
@@ -639,7 +639,7 @@
           },
           {
             "basename": "linux-aarch64/dotmatch-0.5.0-py310hdf9d5a2_0.conda",
-            "downloads": 24,
+            "downloads": 25,
             "platform": "linux-aarch64",
             "python": "3.10",
             "upload_time": "2026-09-09 01:13:40.673000+00:00",
@@ -703,7 +703,7 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.5.0-py310hcb0f2e8_0.conda",
-            "downloads": 1427,
+            "downloads": 1948,
             "platform": "osx-arm64",
             "python": "3.10",
             "upload_time": "2026-09-14 01:00:47.324000+00:00",
@@ -711,7 +711,7 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.5.0-py311h96f8d8c_0.conda",
-            "downloads": 1437,
+            "downloads": 1963,
             "platform": "osx-arm64",
             "python": "3.11",
             "upload_time": "2026-09-14 01:00:50.871000+00:00",
@@ -719,7 +719,7 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.5.0-py312h8615eaa_0.conda",
-            "downloads": 1435,
+            "downloads": 1957,
             "platform": "osx-arm64",
             "python": "3.12",
             "upload_time": "2026-09-14 01:00:39.408000+00:00",
@@ -727,61 +727,349 @@
           },
           {
             "basename": "osx-arm64/dotmatch-0.5.0-py313hc2bdd96_0.conda",
-            "downloads": 1432,
+            "downloads": 1954,
             "platform": "osx-arm64",
             "python": "3.13",
             "upload_time": "2026-09-14 01:00:44.101000+00:00",
             "version": "0.5.0"
+          },
+          {
+            "basename": "osx-64/dotmatch-0.6.2-py310hdd601c5_0.conda",
+            "downloads": 516,
+            "platform": "osx-64",
+            "python": "3.10",
+            "upload_time": "2026-09-28 22:19:40.967000+00:00",
+            "version": "0.6.2"
+          },
+          {
+            "basename": "osx-64/dotmatch-0.6.2-py311h5061d0e_0.conda",
+            "downloads": 518,
+            "platform": "osx-64",
+            "python": "3.11",
+            "upload_time": "2026-09-28 22:19:35.613000+00:00",
+            "version": "0.6.2"
+          },
+          {
+            "basename": "osx-64/dotmatch-0.6.2-py312h616936a_0.conda",
+            "downloads": 517,
+            "platform": "osx-64",
+            "python": "3.12",
+            "upload_time": "2026-09-28 22:19:30.489000+00:00",
+            "version": "0.6.2"
+          },
+          {
+            "basename": "osx-64/dotmatch-0.6.2-py313hda89df1_0.conda",
+            "downloads": 516,
+            "platform": "osx-64",
+            "python": "3.13",
+            "upload_time": "2026-09-28 22:19:17.688000+00:00",
+            "version": "0.6.2"
+          },
+          {
+            "basename": "linux-64/dotmatch-0.6.3-py310hfe4f656_0.conda",
+            "downloads": 521,
+            "platform": "linux-64",
+            "python": "3.10",
+            "upload_time": "2026-09-28 22:14:06.915000+00:00",
+            "version": "0.6.3"
+          },
+          {
+            "basename": "linux-64/dotmatch-0.6.3-py311h13f8228_0.conda",
+            "downloads": 522,
+            "platform": "linux-64",
+            "python": "3.11",
+            "upload_time": "2026-09-28 22:14:13.265000+00:00",
+            "version": "0.6.3"
+          },
+          {
+            "basename": "linux-64/dotmatch-0.6.3-py312h9639c01_0.conda",
+            "downloads": 519,
+            "platform": "linux-64",
+            "python": "3.12",
+            "upload_time": "2026-09-28 22:14:11.294000+00:00",
+            "version": "0.6.3"
+          },
+          {
+            "basename": "linux-64/dotmatch-0.6.3-py313hfeada96_0.conda",
+            "downloads": 517,
+            "platform": "linux-64",
+            "python": "3.13",
+            "upload_time": "2026-09-28 22:14:09.482000+00:00",
+            "version": "0.6.3"
+          },
+          {
+            "basename": "linux-aarch64/dotmatch-0.6.3-py310hdf9d5a2_0.conda",
+            "downloads": 521,
+            "platform": "linux-aarch64",
+            "python": "3.10",
+            "upload_time": "2026-09-28 22:13:52.783000+00:00",
+            "version": "0.6.3"
+          },
+          {
+            "basename": "linux-aarch64/dotmatch-0.6.3-py311h7696b9a_0.conda",
+            "downloads": 520,
+            "platform": "linux-aarch64",
+            "python": "3.11",
+            "upload_time": "2026-09-28 22:13:59.619000+00:00",
+            "version": "0.6.3"
+          },
+          {
+            "basename": "linux-aarch64/dotmatch-0.6.3-py312h2c93283_0.conda",
+            "downloads": 523,
+            "platform": "linux-aarch64",
+            "python": "3.12",
+            "upload_time": "2026-09-28 22:14:04.274000+00:00",
+            "version": "0.6.3"
+          },
+          {
+            "basename": "linux-aarch64/dotmatch-0.6.3-py313h6b429ba_0.conda",
+            "downloads": 521,
+            "platform": "linux-aarch64",
+            "python": "3.13",
+            "upload_time": "2026-09-28 22:14:02.115000+00:00",
+            "version": "0.6.3"
+          },
+          {
+            "basename": "osx-64/dotmatch-0.6.3-py310hdd601c5_0.conda",
+            "downloads": 522,
+            "platform": "osx-64",
+            "python": "3.10",
+            "upload_time": "2026-09-28 22:19:23.698000+00:00",
+            "version": "0.6.3"
+          },
+          {
+            "basename": "osx-64/dotmatch-0.6.3-py311h5061d0e_0.conda",
+            "downloads": 520,
+            "platform": "osx-64",
+            "python": "3.11",
+            "upload_time": "2026-09-28 22:19:55.863000+00:00",
+            "version": "0.6.3"
+          },
+          {
+            "basename": "osx-64/dotmatch-0.6.3-py312h616936a_0.conda",
+            "downloads": 517,
+            "platform": "osx-64",
+            "python": "3.12",
+            "upload_time": "2026-09-28 22:19:51.376000+00:00",
+            "version": "0.6.3"
+          },
+          {
+            "basename": "osx-64/dotmatch-0.6.3-py313hda89df1_0.conda",
+            "downloads": 522,
+            "platform": "osx-64",
+            "python": "3.13",
+            "upload_time": "2026-09-28 22:19:46.274000+00:00",
+            "version": "0.6.3"
+          },
+          {
+            "basename": "osx-arm64/dotmatch-0.6.3-py310hcb0f2e8_0.conda",
+            "downloads": 506,
+            "platform": "osx-arm64",
+            "python": "3.10",
+            "upload_time": "2026-09-28 22:14:33.576000+00:00",
+            "version": "0.6.3"
+          },
+          {
+            "basename": "osx-arm64/dotmatch-0.6.3-py311h96f8d8c_0.conda",
+            "downloads": 510,
+            "platform": "osx-arm64",
+            "python": "3.11",
+            "upload_time": "2026-09-28 22:14:31.251000+00:00",
+            "version": "0.6.3"
+          },
+          {
+            "basename": "osx-arm64/dotmatch-0.6.3-py312h8615eaa_0.conda",
+            "downloads": 504,
+            "platform": "osx-arm64",
+            "python": "3.12",
+            "upload_time": "2026-09-28 22:14:28.623000+00:00",
+            "version": "0.6.3"
+          },
+          {
+            "basename": "osx-arm64/dotmatch-0.6.3-py313hc2bdd96_0.conda",
+            "downloads": 506,
+            "platform": "osx-arm64",
+            "python": "3.13",
+            "upload_time": "2026-09-28 22:14:35.961000+00:00",
+            "version": "0.6.3"
+          },
+          {
+            "basename": "linux-64/dotmatch-0.6.4-py310hfe4f656_0.conda",
+            "downloads": 420,
+            "platform": "linux-64",
+            "python": "3.10",
+            "upload_time": "2026-09-30 00:34:56.369000+00:00",
+            "version": "0.6.4"
+          },
+          {
+            "basename": "linux-64/dotmatch-0.6.4-py311h13f8228_0.conda",
+            "downloads": 421,
+            "platform": "linux-64",
+            "python": "3.11",
+            "upload_time": "2026-09-30 00:34:52.917000+00:00",
+            "version": "0.6.4"
+          },
+          {
+            "basename": "linux-64/dotmatch-0.6.4-py312h9639c01_0.conda",
+            "downloads": 420,
+            "platform": "linux-64",
+            "python": "3.12",
+            "upload_time": "2026-09-30 00:34:49.565000+00:00",
+            "version": "0.6.4"
+          },
+          {
+            "basename": "linux-64/dotmatch-0.6.4-py313hfeada96_0.conda",
+            "downloads": 424,
+            "platform": "linux-64",
+            "python": "3.13",
+            "upload_time": "2026-09-30 00:34:59.677000+00:00",
+            "version": "0.6.4"
+          },
+          {
+            "basename": "linux-aarch64/dotmatch-0.6.4-py310hdf9d5a2_0.conda",
+            "downloads": 418,
+            "platform": "linux-aarch64",
+            "python": "3.10",
+            "upload_time": "2026-09-30 00:34:25.007000+00:00",
+            "version": "0.6.4"
+          },
+          {
+            "basename": "linux-aarch64/dotmatch-0.6.4-py311h7696b9a_0.conda",
+            "downloads": 417,
+            "platform": "linux-aarch64",
+            "python": "3.11",
+            "upload_time": "2026-09-30 00:34:30.364000+00:00",
+            "version": "0.6.4"
+          },
+          {
+            "basename": "linux-aarch64/dotmatch-0.6.4-py312h2c93283_0.conda",
+            "downloads": 417,
+            "platform": "linux-aarch64",
+            "python": "3.12",
+            "upload_time": "2026-09-30 00:34:39.572000+00:00",
+            "version": "0.6.4"
+          },
+          {
+            "basename": "linux-aarch64/dotmatch-0.6.4-py313h6b429ba_0.conda",
+            "downloads": 411,
+            "platform": "linux-aarch64",
+            "python": "3.13",
+            "upload_time": "2026-09-30 00:34:32.685000+00:00",
+            "version": "0.6.4"
+          },
+          {
+            "basename": "osx-64/dotmatch-0.6.4-py310hdd601c5_0.conda",
+            "downloads": 419,
+            "platform": "osx-64",
+            "python": "3.10",
+            "upload_time": "2026-09-30 00:36:18.303000+00:00",
+            "version": "0.6.4"
+          },
+          {
+            "basename": "osx-64/dotmatch-0.6.4-py311h5061d0e_0.conda",
+            "downloads": 416,
+            "platform": "osx-64",
+            "python": "3.11",
+            "upload_time": "2026-09-30 00:36:02.813000+00:00",
+            "version": "0.6.4"
+          },
+          {
+            "basename": "osx-64/dotmatch-0.6.4-py312h616936a_0.conda",
+            "downloads": 420,
+            "platform": "osx-64",
+            "python": "3.12",
+            "upload_time": "2026-09-30 00:36:07.889000+00:00",
+            "version": "0.6.4"
+          },
+          {
+            "basename": "osx-64/dotmatch-0.6.4-py313hda89df1_0.conda",
+            "downloads": 417,
+            "platform": "osx-64",
+            "python": "3.13",
+            "upload_time": "2026-09-30 00:36:13.752000+00:00",
+            "version": "0.6.4"
+          },
+          {
+            "basename": "osx-arm64/dotmatch-0.6.4-py310hcb0f2e8_0.conda",
+            "downloads": 403,
+            "platform": "osx-arm64",
+            "python": "3.10",
+            "upload_time": "2026-09-30 00:34:21.523000+00:00",
+            "version": "0.6.4"
+          },
+          {
+            "basename": "osx-arm64/dotmatch-0.6.4-py311h96f8d8c_0.conda",
+            "downloads": 406,
+            "platform": "osx-arm64",
+            "python": "3.11",
+            "upload_time": "2026-09-30 00:34:24.443000+00:00",
+            "version": "0.6.4"
+          },
+          {
+            "basename": "osx-arm64/dotmatch-0.6.4-py312h8615eaa_0.conda",
+            "downloads": 410,
+            "platform": "osx-arm64",
+            "python": "3.12",
+            "upload_time": "2026-09-30 00:34:19.176000+00:00",
+            "version": "0.6.4"
+          },
+          {
+            "basename": "osx-arm64/dotmatch-0.6.4-py313hc2bdd96_0.conda",
+            "downloads": 406,
+            "platform": "osx-arm64",
+            "python": "3.13",
+            "upload_time": "2026-09-30 00:34:27.421000+00:00",
+            "version": "0.6.4"
           }
         ],
         "by_platform": {
           "linux-64": {
-            "artifact_files": 23,
-            "downloads": 2935
+            "artifact_files": 31,
+            "downloads": 6771
           },
           "linux-aarch64": {
-            "artifact_files": 12,
-            "downloads": 1548
+            "artifact_files": 20,
+            "downloads": 5300
           },
           "osx-64": {
-            "artifact_files": 29,
-            "downloads": 2895
+            "artifact_files": 41,
+            "downloads": 8718
           },
           "osx-arm64": {
-            "artifact_files": 25,
-            "downloads": 7491
+            "artifact_files": 33,
+            "downloads": 13258
           }
         },
         "by_python": {
           "3.10": {
-            "artifact_files": 17,
-            "downloads": 3348
+            "artifact_files": 26,
+            "downloads": 8129
           },
           "3.11": {
-            "artifact_files": 17,
-            "downloads": 3354
+            "artifact_files": 26,
+            "downloads": 8143
           },
           "3.12": {
-            "artifact_files": 17,
-            "downloads": 3357
+            "artifact_files": 26,
+            "downloads": 8139
           },
           "3.13": {
-            "artifact_files": 17,
-            "downloads": 3354
+            "artifact_files": 26,
+            "downloads": 8137
           },
           "3.14": {
             "artifact_files": 18,
-            "downloads": 1230
+            "downloads": 1272
           },
           "not_applicable": {
             "artifact_files": 3,
-            "downloads": 226
+            "downloads": 227
           }
         },
         "by_version": {
           "0.1.2": {
             "artifact_files": 2,
-            "downloads": 155
+            "downloads": 156
           },
           "0.1.3": {
             "artifact_files": 1,
@@ -789,48 +1077,60 @@
           },
           "0.1.4": {
             "artifact_files": 2,
-            "downloads": 134
+            "downloads": 135
           },
           "0.1.7": {
             "artifact_files": 3,
-            "downloads": 127
+            "downloads": 128
           },
           "0.1.8": {
             "artifact_files": 3,
-            "downloads": 248
+            "downloads": 249
           },
           "0.1.9": {
             "artifact_files": 25,
-            "downloads": 1777
+            "downloads": 1793
           },
           "0.2.0": {
             "artifact_files": 3,
-            "downloads": 170
+            "downloads": 172
           },
           "0.2.1": {
             "artifact_files": 3,
-            "downloads": 162
+            "downloads": 164
           },
           "0.2.2": {
             "artifact_files": 15,
-            "downloads": 614
+            "downloads": 656
           },
           "0.4.1": {
             "artifact_files": 16,
-            "downloads": 5346
+            "downloads": 5368
           },
           "0.5.0": {
             "artifact_files": 16,
-            "downloads": 6065
+            "downloads": 8172
+          },
+          "0.6.2": {
+            "artifact_files": 4,
+            "downloads": 2067
+          },
+          "0.6.3": {
+            "artifact_files": 16,
+            "downloads": 8271
+          },
+          "0.6.4": {
+            "artifact_files": 16,
+            "downloads": 6645
           }
         },
-        "total_downloads": 14869
+        "total_downloads": 34047
       },
       "classification": "mixed_unknown",
-      "download_count_reported_by_provider": 14869,
+      "download_count_reported_by_provider": 34047,
       "human_discovery_indicators": [],
-      "latest_version": "0.5.0",
-      "metadata_updated_at": "2026-09-14 01:00:51.807000+00:00",
+      "latest_version": "0.6.4",
+      "metadata_updated_at": "2026-09-30 00:36:19.791000+00:00",
       "metric": "cumulative artifact downloads",
       "repocore_source_url": "https://api.anaconda.org/repocore/channels/bioconda/artifacts/conda/dotmatch",
       "source_url": "https://api.anaconda.org/package/bioconda/dotmatch"
@@ -846,34 +1146,6 @@
         "by_platform": {},
         "by_version": {},
         "daily_downloads": [
-          {
-            "date": "2026-06-28",
-            "downloads": 8
-          },
-          {
-            "date": "2026-06-29",
-            "downloads": 0
-          },
-          {
-            "date": "2026-06-30",
-            "downloads": 4
-          },
-          {
-            "date": "2026-07-01",
-            "downloads": 0
-          },
-          {
-            "date": "2026-07-02",
-            "downloads": 4
-          },
-          {
-            "date": "2026-07-03",
-            "downloads": 4
-          },
-          {
-            "date": "2026-07-04",
-            "downloads": 4
-          },
           {
             "date": "2026-07-05",
             "downloads": 0
@@ -1213,12 +1485,40 @@
           {
             "date": "2026-09-27",
             "downloads": 27
+          },
+          {
+            "date": "2026-09-28",
+            "downloads": 51
+          },
+          {
+            "date": "2026-09-29",
+            "downloads": 31
+          },
+          {
+            "date": "2026-09-30",
+            "downloads": 55
+          },
+          {
+            "date": "2026-10-01",
+            "downloads": 0
+          },
+          {
+            "date": "2026-10-02",
+            "downloads": 107
+          },
+          {
+            "date": "2026-10-03",
+            "downloads": 35
+          },
+          {
+            "date": "2026-10-04",
+            "downloads": 0
           }
         ],
         "fetch_error": null,
-        "observed_end": "2026-09-27",
-        "observed_start": "2026-06-28",
-        "tag_count": 27,
+        "observed_end": "2026-10-04",
+        "observed_start": "2026-07-05",
+        "tag_count": 35,
         "tag_names": [
           "0.1.2--h118bc1c_0",
           "0.1.4--py314h118bc1c_0",
@@ -1246,13 +1546,21 @@
           "0.5.0--py310hfe4f656_0",
           "0.5.0--py311h13f8228_0",
           "0.5.0--py312h9639c01_0",
-          "0.5.0--py313hfeada96_0"
+          "0.5.0--py313hfeada96_0",
+          "0.6.3--py310hfe4f656_0",
+          "0.6.3--py311h13f8228_0",
+          "0.6.3--py312h9639c01_0",
+          "0.6.3--py313hfeada96_0",
+          "0.6.4--py310hfe4f656_0",
+          "0.6.4--py311h13f8228_0",
+          "0.6.4--py312h9639c01_0",
+          "0.6.4--py313hfeada96_0"
         ],
-        "total_downloads": 1450
+        "total_downloads": 1705
       },
       "classification": "mixed_unknown",
       "count_source_url": "https://quay.io/api/v1/repository/biocontainers/dotmatch?includeStats=true",
-      "download_count_reported_by_provider": 1450,
+      "download_count_reported_by_provider": 1705,
       "fetch_error": null,
       "human_discovery_indicators": [],
       "included_in_aggregate_total": true,
@@ -1274,7 +1582,7 @@
       ],
       "availability": "available",
       "breakdown": {
-        "asset_files": 124,
+        "asset_files": 142,
         "assets": [
           {
             "downloads": 3,
@@ -2237,6 +2545,150 @@
             "version": "0.6.3"
           },
           {
+            "downloads": 1,
+            "name": "SHA256SUMS.txt",
+            "platform": "metadata_or_other",
+            "published_at": "2026-09-29T15:02:53Z",
+            "release_url": "https://github.com/dnncha/dotmatch/releases/tag/v0.6.4",
+            "version": "0.6.4"
+          },
+          {
+            "downloads": 1,
+            "name": "dotmatch-0.6.4-py3-none-linux_x86_64.whl",
+            "platform": "linux",
+            "published_at": "2026-09-29T15:02:53Z",
+            "release_url": "https://github.com/dnncha/dotmatch/releases/tag/v0.6.4",
+            "version": "0.6.4"
+          },
+          {
+            "downloads": 1,
+            "name": "dotmatch-0.6.4-py3-none-macosx_11_0_universal2.whl",
+            "platform": "macos",
+            "published_at": "2026-09-29T15:02:53Z",
+            "release_url": "https://github.com/dnncha/dotmatch/releases/tag/v0.6.4",
+            "version": "0.6.4"
+          },
+          {
+            "downloads": 1,
+            "name": "dotmatch-0.6.4-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl",
+            "platform": "linux",
+            "published_at": "2026-09-29T15:02:53Z",
+            "release_url": "https://github.com/dnncha/dotmatch/releases/tag/v0.6.4",
+            "version": "0.6.4"
+          },
+          {
+            "downloads": 1,
+            "name": "dotmatch-0.6.4-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+            "platform": "linux",
+            "published_at": "2026-09-29T15:02:53Z",
+            "release_url": "https://github.com/dnncha/dotmatch/releases/tag/v0.6.4",
+            "version": "0.6.4"
+          },
+          {
+            "downloads": 1,
+            "name": "dotmatch-0.6.4-py3-none-musllinux_1_2_aarch64.whl",
+            "platform": "linux",
+            "published_at": "2026-09-29T15:02:53Z",
+            "release_url": "https://github.com/dnncha/dotmatch/releases/tag/v0.6.4",
+            "version": "0.6.4"
+          },
+          {
+            "downloads": 1,
+            "name": "dotmatch-0.6.4-py3-none-musllinux_1_2_x86_64.whl",
+            "platform": "linux",
+            "published_at": "2026-09-29T15:02:53Z",
+            "release_url": "https://github.com/dnncha/dotmatch/releases/tag/v0.6.4",
+            "version": "0.6.4"
+          },
+          {
+            "downloads": 1,
+            "name": "dotmatch-0.6.4.tar.gz",
+            "platform": "source_or_archive",
+            "published_at": "2026-09-29T15:02:53Z",
+            "release_url": "https://github.com/dnncha/dotmatch/releases/tag/v0.6.4",
+            "version": "0.6.4"
+          },
+          {
+            "downloads": 0,
+            "name": "verification.json",
+            "platform": "metadata_or_other",
+            "published_at": "2026-09-29T15:02:53Z",
+            "release_url": "https://github.com/dnncha/dotmatch/releases/tag/v0.6.4",
+            "version": "0.6.4"
+          },
+          {
+            "downloads": 1,
+            "name": "SHA256SUMS.txt",
+            "platform": "metadata_or_other",
+            "published_at": "2026-10-03T08:42:03Z",
+            "release_url": "https://github.com/dnncha/dotmatch/releases/tag/v0.7.0",
+            "version": "0.7.0"
+          },
+          {
+            "downloads": 1,
+            "name": "dotmatch-0.7.0-py3-none-linux_x86_64.whl",
+            "platform": "linux",
+            "published_at": "2026-10-03T08:42:03Z",
+            "release_url": "https://github.com/dnncha/dotmatch/releases/tag/v0.7.0",
+            "version": "0.7.0"
+          },
+          {
+            "downloads": 1,
+            "name": "dotmatch-0.7.0-py3-none-macosx_11_0_universal2.whl",
+            "platform": "macos",
+            "published_at": "2026-10-03T08:42:03Z",
+            "release_url": "https://github.com/dnncha/dotmatch/releases/tag/v0.7.0",
+            "version": "0.7.0"
+          },
+          {
+            "downloads": 1,
+            "name": "dotmatch-0.7.0-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl",
+            "platform": "linux",
+            "published_at": "2026-10-03T08:42:03Z",
+            "release_url": "https://github.com/dnncha/dotmatch/releases/tag/v0.7.0",
+            "version": "0.7.0"
+          },
+          {
+            "downloads": 1,
+            "name": "dotmatch-0.7.0-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+            "platform": "linux",
+            "published_at": "2026-10-03T08:42:03Z",
+            "release_url": "https://github.com/dnncha/dotmatch/releases/tag/v0.7.0",
+            "version": "0.7.0"
+          },
+          {
+            "downloads": 1,
+            "name": "dotmatch-0.7.0-py3-none-musllinux_1_2_aarch64.whl",
+            "platform": "linux",
+            "published_at": "2026-10-03T08:42:03Z",
+            "release_url": "https://github.com/dnncha/dotmatch/releases/tag/v0.7.0",
+            "version": "0.7.0"
+          },
+          {
+            "downloads": 1,
+            "name": "dotmatch-0.7.0-py3-none-musllinux_1_2_x86_64.whl",
+            "platform": "linux",
+            "published_at": "2026-10-03T08:42:03Z",
+            "release_url": "https://github.com/dnncha/dotmatch/releases/tag/v0.7.0",
+            "version": "0.7.0"
+          },
+          {
+            "downloads": 1,
+            "name": "dotmatch-0.7.0.tar.gz",
+            "platform": "source_or_archive",
+            "published_at": "2026-10-03T08:42:03Z",
+            "release_url": "https://github.com/dnncha/dotmatch/releases/tag/v0.7.0",
+            "version": "0.7.0"
+          },
+          {
+            "downloads": 0,
+            "name": "verification.json",
+            "platform": "metadata_or_other",
+            "published_at": "2026-10-03T08:42:03Z",
+            "release_url": "https://github.com/dnncha/dotmatch/releases/tag/v0.7.0",
+            "version": "0.7.0"
+          },
+          {
             "downloads": 3,
             "name": "SHA256SUMS",
             "platform": "metadata_or_other",
@@ -2272,20 +2724,20 @@
         "availability": "available",
         "by_platform": {
           "linux": {
-            "asset_files": 65,
-            "downloads": 59
+            "asset_files": 75,
+            "downloads": 69
           },
           "macos": {
-            "asset_files": 17,
-            "downloads": 14
+            "asset_files": 19,
+            "downloads": 16
           },
           "metadata_or_other": {
-            "asset_files": 22,
-            "downloads": 23
+            "asset_files": 26,
+            "downloads": 25
           },
           "source_or_archive": {
-            "asset_files": 19,
-            "downloads": 25
+            "asset_files": 21,
+            "downloads": 27
           },
           "wheel_other": {
             "asset_files": 1,
@@ -2361,17 +2813,25 @@
             "asset_files": 9,
             "downloads": 16
           },
+          "0.6.4": {
+            "asset_files": 9,
+            "downloads": 8
+          },
+          "0.7.0": {
+            "asset_files": 9,
+            "downloads": 8
+          },
           "editwitness-v0.2.0a1": {
             "asset_files": 4,
             "downloads": 12
           }
         },
         "fetch_error": null,
-        "release_count": 18,
-        "total_downloads": 124
+        "release_count": 20,
+        "total_downloads": 140
       },
       "classification": "mixed_unknown",
-      "download_count_reported_by_provider": 124,
+      "download_count_reported_by_provider": 140,
       "fetch_error": null,
       "human_discovery_indicators": [],
       "included_in_aggregate_total": true,
@@ -2384,8 +2844,8 @@
         "the retained series explicitly excludes mirrors but does not identify clients or workflows"
       ],
       "classification": "mixed_unknown",
-      "cumulative_downloads_excluding_mirrors": 3627,
-      "current_window_downloads_excluding_mirrors": 3627,
+      "cumulative_downloads_excluding_mirrors": 4214,
+      "current_window_downloads_excluding_mirrors": 4214,
       "daily_downloads_excluding_mirrors": [
         {
           "date": "2026-06-05",
@@ -2746,14 +3206,42 @@
         {
           "date": "2026-09-27",
           "downloads": 604
+        },
+        {
+          "date": "2026-09-28",
+          "downloads": 15
+        },
+        {
+          "date": "2026-09-29",
+          "downloads": 198
+        },
+        {
+          "date": "2026-09-30",
+          "downloads": 24
+        },
+        {
+          "date": "2026-10-01",
+          "downloads": 16
+        },
+        {
+          "date": "2026-10-02",
+          "downloads": 27
+        },
+        {
+          "date": "2026-10-03",
+          "downloads": 279
+        },
+        {
+          "date": "2026-10-04",
+          "downloads": 28
         }
       ],
       "human_discovery_indicators": [],
-      "latest_version": "0.6.3",
+      "latest_version": "0.7.0",
       "metric": "observed cumulative downloads excluding mirrors from retained daily series",
       "recent_availability": "available",
       "recent_fetch_error": null,
-      "recent_month_downloads": 1652,
+      "recent_month_downloads": 1899,
       "recent_source_url": "https://pypistats.org/api/packages/dotmatch/recent?period=month",
       "series_scope": "dated observations retained from the public metrics snapshot; starts at the first retained snapshot and is not a provider lifetime counter",
       "source_url": "https://pypistats.org/api/packages/dotmatch/overall?mirrors=false"
@@ -2790,7 +3278,7 @@
           }
         ],
         "provider_unique_downloads": 6,
-        "provider_views": 188,
+        "provider_views": 676,
         "record_id": 21511337,
         "total_downloads": 8,
         "version": "0.2.2"
