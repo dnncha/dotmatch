@@ -326,7 +326,7 @@ def test_artifact_size_must_be_integer(tmp_path):
 def test_public_review_dispatch_preserves_validation_and_no_overwrite(tmp_path):
     from dotmatch import entrypoint
     bundle = tmp_path / "bundle"
-    fixture(bundle)
+    seal(bundle, fixture(bundle))
     output = tmp_path / "review.html"
     args = ["sensitivity-review", "--bundle", str(bundle), "--out", str(output)]
     assert entrypoint.main(args) == 0
