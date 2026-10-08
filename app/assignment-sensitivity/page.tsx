@@ -6,7 +6,8 @@ import {
   sitePath,
   siteAsset,
   pageMetadata,
-  publishedVersion,
+  releaseVersion,
+  releaseInstallCommand,
 } from "../site-metadata";
 import styles from "../research.module.css";
 export const metadata = pageMetadata(
@@ -186,13 +187,14 @@ export default function SensitivityPage() {
         <section className={styles.section}>
           <h2>Run on local data</h2>
           <p>
-            <code>dotmatch sensitivity</code> is included in published {publishedVersion}.
-            It produces the count tables and a static report. The interactive
-            review on this page is a website example; it does not replace the
-            local command's report.
+            <code>dotmatch sensitivity</code> is included in GitHub release {releaseVersion}.
+            It produces the count tables and an interactive offline report.
+            The public example uses synthetic reads; your local report uses
+            your completed analysis. Large bundles retain complete TSV tables
+            and fall back to a static summary if the viewer reaches its capacity.
           </p>
           <pre className={styles.code}>
-            <code>{`python3 -m pip install dotmatch==${publishedVersion}\n\ndotmatch sensitivity \\\n  --targets guides.tsv \\\n  --reads sample.fastq.gz \\\n  --target-start 23 \\\n  --target-length 20 \\\n  --sample-label sample_1 \\\n  --out-dir sensitivity/`}</code>
+            <code>{`${releaseInstallCommand}\n\ndotmatch sensitivity \\\n  --targets guides.tsv \\\n  --reads sample.fastq.gz \\\n  --target-start 23 \\\n  --target-length 20 \\\n  --sample-label sample_1 \\\n  --out-dir sensitivity/`}</code>
           </pre>
           <p>
             Open <code>sensitivity/report.html</code>. The bundle contains three
@@ -204,12 +206,11 @@ export default function SensitivityPage() {
           <details>
             <summary>Open an existing run in the interactive viewer</summary>
             <p>
-              From a current <a href={`${repoUrl}/tree/main`}>source checkout</a>,
-              the standard-library renderer opens a completed v1 bundle without
-              installing the native engine or rerunning your reads. The destination
+              In release {releaseVersion}, <code>dotmatch sensitivity-review</code>
+              opens a completed v1 bundle without rerunning your reads. The destination
               must be a new file; your original analysis is unchanged.
             </p>
-            <pre className={styles.code}><code>{`python3 python/dotmatch/sensitivity_review.py --bundle sensitivity/ --out review.html`}</code></pre>
+            <pre className={styles.code}><code>{`dotmatch sensitivity-review --bundle sensitivity/ --out review.html`}</code></pre>
           </details>
           <p>
             The implementation reuses one native index and reads the FASTQ once.

@@ -15,7 +15,7 @@ from importlib import resources
 from pathlib import Path
 from typing import Sequence
 
-from .assayspec import AssaySpecError, FASTQ_SUFFIXES, command_assay, scaffold_assay_project
+from .assayspec import AssaySpecError, FASTQ_SUFFIXES, command_assay, scaffold_assay_project, write_scaffold_index
 from .count_compare import write_comparison
 from .count_io import read_count_table
 from .sensitivity import MODES, run_sensitivity
@@ -108,6 +108,8 @@ def quickstart_main(argv: Sequence[str] | None = None) -> int:
             sample["source_fastq"] = original[Path(sample["fastq"]).name]
         report["input_storage"] = "linked" if args.link_reads else "copied"
         report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        write_scaffold_index(project, report)
+        print(f"Open: {result['index']}")
         print(f"Created reviewable CRISPR project: {result['project']}")
         print(f"Inputs: {len(sources)} FASTQ files; {'linked to originals' if args.link_reads else 'copied into project'}.")
         if args.link_reads:
@@ -122,7 +124,9 @@ def quickstart_main(argv: Sequence[str] | None = None) -> int:
         if report["status"] != "ready":
             print("Inference still needs review; no run was started. Inspect inference_report.json and assay.toml.", file=sys.stderr)
             return 2
-        return command_assay(["start", str(project / "assay.toml")])
+        exit_code = command_assay(["start", str(project / "assay.toml")])
+        write_scaffold_index(project, report)
+        return exit_code
     except (AssaySpecError, ValueError, OSError) as exc:
         print(f"dotmatch crispr: {exc}", file=sys.stderr)
         return 2

@@ -970,6 +970,11 @@ def test_assay_new_scaffolds_multi_sample_crispr_project(tmp_path: Path) -> None
     assert rc.returncode == 0, rc.stderr
     assert (project / "assay.toml").exists()
     assert (project / "inference_report.json").exists()
+    index = (project / "index.html").read_text()
+    assert "Status: ready" in index
+    assert "sample_a" in index and "sample_b" in index
+    assert str(tmp_path) not in index
+    assert 'href="inference_candidates.tsv"' in index
     assert (project / "samples.generated.tsv").exists()
     assert (project / "README.md").exists()
     assert (project / "run.sh").exists()
@@ -1176,6 +1181,7 @@ def test_assay_new_writes_draft_when_inference_is_low_confidence(tmp_path: Path)
     assert rc.returncode == 0, rc.stderr
     assert 'status = "draft"' in (project / "assay.toml").read_text(encoding="utf-8")
     assert "Promote To Ready" in (project / "README.md").read_text(encoding="utf-8")
+    assert "Status: draft" in (project / "index.html").read_text()
 
 
 def test_detect_pythonpath_for_scaffold_ignores_relative_env_entries(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1978,3 +1984,49 @@ def test_pairwise_correlation_gate_only_applies_to_declared_replicates(tmp_path:
     findings = _crispr_qc_reliability_findings(SimpleNamespace(spec=undeclared, artifacts={"crispr_qc": qc}), "postrun")
     assert findings == []
 
+
+
+def test_reliability_review_preserves_summary_and_safe_available_links(tmp_path: Path) -> None:
+    import dotmatch.assayspec as assayspec
+    artifact = tmp_path / "counts.tsv"
+    artifact.write_text("target_id\tsample\ng1\t3\n")
+    source = tmp_path / "private" / "reads.fastq"
+    summary = {
+        "overall_status": "blocked", "stage": "preflight", "profile": "production",
+        "findings": [{"severity": "blocked", "message": "Review <script>alert(1)</script>",
+                      "recommended_action": f"Inspect {source}", "source_artifact": str(source)}],
+        "assay_fixes": [{"current_value": str(source)}],
+        "artifacts": {"counts": str(artifact), "missing": str(tmp_path / "missing.tsv")},
+    }
+    before = json.dumps(summary, sort_keys=True)
+    report = tmp_path / "reliability_report.html"
+    assayspec._write_reliability_report(report, summary)
+    page = report.read_text()
+    assert "Status: blocked" in page
+    assert "&lt;script&gt;" in page and "<script>" not in page
+    assert str(tmp_path) not in page
+    assert 'href="counts.tsv"' in page and 'href="missing.tsv"' not in page
+    assert page.index("Findings and next actions") < page.index("Backend")
+    assert "Sample metrics are unavailable" in page
+    assert json.dumps(summary, sort_keys=True) == before
+
+
+@pytest.mark.parametrize(("action", "expected"), [
+    ("Inspect /private/source/reads.fastq", "Inspect reads.fastq"),
+    ('Inspect "/private/source with spaces/reads.fastq".', 'Inspect &quot;reads.fastq&quot;.'),
+    ("Inspect (/private/source/reads.fastq).", "Inspect (reads.fastq)."),
+    ("See https://example.org/evidence/read-qc and http://example.org/reference.",
+     "See https://example.org/evidence/read-qc and http://example.org/reference."),
+])
+def test_reliability_review_redacts_prose_paths_without_structured_path_fields(tmp_path, action, expected):
+    import dotmatch.assayspec as assayspec
+    summary = {"overall_status": "blocked", "findings": [
+        {"severity": "blocked", "recommended_action": action},
+    ]}
+    before = json.dumps(summary, sort_keys=True)
+    report = tmp_path / "reliability_report.html"
+    assayspec._write_reliability_report(report, summary)
+    page = report.read_text()
+    assert "/private/source" not in page
+    assert expected in page
+    assert json.dumps(summary, sort_keys=True) == before
