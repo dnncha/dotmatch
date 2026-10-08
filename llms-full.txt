@@ -22,16 +22,16 @@ Each invocation accepts a JSON object, returns one stable JSON envelope on stdou
 
 ## Install and verify
 
-Version 0.7.0 is published and verified on PyPI and GHCR. Bioconda and
+Version 0.8.0 is distributed through GitHub Releases. Its source installation requires a C compiler and zlib headers. PyPI and GHCR remain at 0.7.0. Bioconda and
 BioContainers 0.7.0 still require upstream submission and public verification.
 
-Linux x86_64 and macOS 11 or newer:
+Source installation, with local verification of Linux x86_64 artifacts:
 
 ```bash
 mkdir -p smoke-output
 python3 -m venv .venv
 . .venv/bin/activate
-python3 -m pip install dotmatch==0.7.0
+python3 -m pip install https://github.com/dnncha/dotmatch/releases/download/v0.8.0/dotmatch-0.8.0.tar.gz
 dotmatch --version
 ```
 
@@ -209,7 +209,7 @@ After cloning this repository, this recipe installs the release into a new virtu
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
-python3 -m pip install dotmatch==0.7.0
+python3 -m pip install https://github.com/dnncha/dotmatch/releases/download/v0.8.0/dotmatch-0.8.0.tar.gz
 dotmatch count \
   --targets demo-data/crispr_guides.tsv \
   --reads demo-data/reads.fastq \

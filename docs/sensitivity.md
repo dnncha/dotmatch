@@ -2,7 +2,11 @@
 
 The `dotmatch sensitivity` command, introduced in 0.5.0, compares exact, Hamming radius-one,
 and best-distance Hamming assignments on the same fixed windows of one FASTQ.
-Install the matching release with `python3 -m pip install dotmatch==0.5.0`.
+Install the 0.8.0 source release with a C compiler and zlib headers available:
+
+```bash
+python3 -m pip install https://github.com/dnncha/dotmatch/releases/download/v0.8.0/dotmatch-0.8.0.tar.gz
+```
 
 ```bash
 dotmatch sensitivity \
@@ -14,9 +18,8 @@ dotmatch sensitivity \
 Open `sensitivity/report.html`. Start with read outcomes and per-guide deltas,
 not the assigned fraction alone. No policy is automatically selected.
 
-The unreleased source candidate adds an [interactive evidence review](sensitivity-review.md)
-to this report. Published 0.5.0 reports retain the earlier static interface; installing
-that release alone does not install the new viewer.
+DotMatch 0.8.0 writes an [interactive evidence review](sensitivity-review.md)
+to this report. Older 0.5.0 reports retain the earlier static interface.
 
 ## Semantics
 
@@ -50,7 +53,7 @@ complement search, offset inference, cell/UMI processing or downstream statistic
 
 Enable the last file with `--write-read-changes`. Read IDs can repeat; the 1-based
 record ordinal disambiguates occurrences. Published 0.5.0 report tables show at
-most 50 changed guides. The new source viewer includes every guide, with search,
+most 50 changed guides. The 0.8.0 viewer includes every guide, with search,
 filters and 50-row pagination; its TSV export retains every matching row. Read
 IDs are attached explicitly, not embedded in the HTML. Capacity-limited runs
 retain the labelled static report and complete scientific TSVs. See the

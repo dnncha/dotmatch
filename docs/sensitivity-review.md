@@ -1,8 +1,8 @@
 # Interactive assignment evidence review
 
-**Unreleased source candidate.** This is an upgrade to the existing sensitivity
-report, not a new matching engine, a clinical product, or an automatic policy
-selector. Published DotMatch 0.5.0 reports retain the old static interface.
+DotMatch 0.8.0 writes an interactive offline sensitivity report. It uses the
+existing matching engine and recorded analysis. It does not select a policy
+or establish biological accuracy. Older DotMatch 0.5.0 reports retain the static interface.
 
 ## Try the complete example without installation
 
@@ -52,7 +52,7 @@ subset, scale and interpretation labels. Print output labels page scope.
 
 ## Generate or rebuild a review
 
-From a built checkout of this candidate, the existing command automatically
+In DotMatch 0.8.0, the existing command automatically
 writes the interactive `report.html` when within viewer capacity:
 
 ```sh
@@ -70,11 +70,11 @@ browsers receive a labelled static snapshot; they do not receive a misleading
 empty interactive result. The no-JavaScript table contains the first 50 guides.
 
 Existing completed v1 bundles can be reviewed without rerunning the reads. This
-source-only rebuilding route uses the Python standard library, not the native
+rebuilding route uses the Python standard library, not the native
 engine, and never replaces a file or modifies the original bundle:
 
 ```sh
-python python/dotmatch/sensitivity_review.py \
+dotmatch sensitivity-review \
   --bundle path/to/completed-sensitivity --out new-review.html
 ```
 

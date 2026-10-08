@@ -6,6 +6,7 @@ import {
   conceptDoi,
   docsUrl,
   publishedVersion,
+  releaseVersion,
   repoUrl,
   sitePath,
   siteAsset,
@@ -31,7 +32,7 @@ const structuredData = {
       name: "DotMatch",
       applicationCategory: "Bioinformatics software",
       operatingSystem: "Linux, macOS",
-      softwareVersion: publishedVersion,
+      softwareVersion: releaseVersion,
       subjectOf: `${canonicalUrl()}agent-capabilities.json`,
       softwareHelp: docsUrl,
       codeRepository: repoUrl,
@@ -120,7 +121,7 @@ export default function Home() {
           <div>
             <h2 id="install-title">Install DotMatch</h2>
             <p>
-              Published CLI {publishedVersion} ·{" "}
+              GitHub release {releaseVersion}. Source installation requires a C compiler and zlib headers. ·{" "}
               <a href={`${docsUrl}getting-started.html`}>
                 Conda, containers & installation help
               </a>
@@ -350,7 +351,7 @@ export default function Home() {
             <a href={`${docsUrl}trust-and-scope.html`}>Methods & scope</a> ·{" "}
             <a href={`${docsUrl}methods-and-citation.html`}>Cite DotMatch</a>
             <br />
-            Published package {publishedVersion}; website source version{" "}
+            GitHub release {releaseVersion}; PyPI and GHCR {publishedVersion}; website source version{" "}
             {packageMetadata.version}.
           </p>
         </section>

@@ -1025,6 +1025,7 @@ def write_scaffold_index(project_dir: Path, report: Mapping[str, Any]) -> None:
 <p>Sampled inference suggests settings. It does not establish biological accuracy or replace experimental review.</p>
 <h2>Chosen extraction</h2><p>Start {esc(chosen['start'])} (zero-based), length {esc(chosen['length'])}; orientation {esc(chosen.get('orientation', 'forward'))}.</p>
 <p>Sampled reads: {esc(chosen.get('sampled_reads', 'unavailable'))}. Assignment rate: {esc(chosen.get('assignment_rate', 'unavailable'))}.</p>
+<p>Sampled scores use Hamming k=1 with radius ambiguity. Review the assignment settings in assay.toml before running.</p>
 <h2>Warnings and next steps</h2><ul>{warnings or '<li>No inference warnings. Review is still required.</li>'}</ul><p>{reliability}</p>
 <h2>Inputs and sample mapping</h2><p>FASTQs are {esc(report.get('input_storage', 'copied'))}. The {'barcode' if report.get('mode') == 'demux' else 'target'} table is copied into {esc(report.get('input_table', 'inputs/'))}.</p>
 <p>{'Linked originals must remain available and unchanged; this project is not self-contained.' if report.get('input_storage') == 'linked' else 'Copied inputs travel with this project.'} Filenames do not declare biological replicates.</p>
