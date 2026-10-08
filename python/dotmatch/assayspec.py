@@ -962,12 +962,16 @@ def scaffold_assay_project(
             "inference_reads": str(infer_reads.relative_to(project_dir)),
         }
 
+    report_data["input_storage"] = "linked" if link_reads else "copied"
+    report_data["input_table"] = str(staged_table.relative_to(project_dir))
     report_path.write_text(json.dumps(report_data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_scaffold_index(project_dir, report_data)
     _write_candidates_tsv(candidates_path, report_data)
     _write_generated_samples_tsv(samples_tsv, staged_samples, project_dir)
     _write_scaffold_readme(project_dir, template=template, status=status, warnings=warnings)
     _write_scaffold_run_script(project_dir, status=status, launcher=_detect_dotmatch_launcher(), native_cli=_detect_native_cli_for_scaffold())
     return {
+        "index": project_dir / "index.html",
         "project": project_dir,
         "spec": spec_path,
         "report": report_path,
@@ -977,6 +981,56 @@ def scaffold_assay_project(
         "run": project_dir / "run.sh",
         staged_table_key: staged_table,
     }
+
+
+_REVIEW_STYLE = """body{font-family:system-ui,sans-serif;color:#18212f;background:#f8fafb;margin:0;line-height:1.6}
+main{max-width:1080px;margin:auto;padding:40px 24px}h1{font-size:clamp(2rem,5vw,3.4rem);line-height:1.12}
+h2{margin-top:2.5rem;border-top:1px solid #cad4d9;padding-top:1rem}a{color:#075c72;text-underline-offset:3px}
+a:focus-visible{outline:3px solid #b65316;outline-offset:4px}table{border-collapse:collapse;width:100%;margin:16px 0}
+th,td{text-align:left;vertical-align:top;padding:10px;border-bottom:1px solid #cad4d9;overflow-wrap:anywhere}
+th{background:#e7eef1}pre,code{overflow-wrap:anywhere;white-space:pre-wrap}.table-scroll{overflow-x:auto}.table-scroll table{min-width:680px}
+.verdict{border-left:5px solid #b65316;padding:12px 20px;background:#fff}small{color:#455560}
+@media(max-width:600px){main{padding:24px 16px}th,td{padding:8px}table{font-size:.9rem}}"""
+
+
+def write_scaffold_index(project_dir: Path, report: Mapping[str, Any]) -> None:
+    def esc(value: Any) -> str:
+        return html.escape(str(value))
+    chosen = report["chosen"]
+    status = report["status"]
+    warnings = "".join(f"<li>{esc(value)}</li>" for value in report.get("warnings", []))
+    samples = "".join(
+        f"<tr><th scope=\"row\">{esc(sample['sample_id'])}</th><td>{esc(sample['fastq'])}</td>"
+        f"<td>{esc(Path(sample['source_fastq']).name)}</td></tr>" for sample in report["samples"]
+    )
+    columns = ("start", "length", "orientation", "sampled_reads", "assignment_rate", "ambiguous_rate", "invalid_rate", "score")
+    candidates = "<div class=\"table-scroll\"><table><caption>Leading sampled candidates</caption><thead><tr>" + "".join(
+        f"<th scope=\"col\">{esc(key)}</th>" for key in columns
+    ) + "</tr></thead><tbody>" + "".join(
+        "<tr>" + "".join(f"<td>{esc(candidate.get(key, 'unavailable'))}</td>" for key in columns) + "</tr>"
+        for candidate in report.get("candidates", [])[:10]
+    ) + "</tbody></table></div>"
+    links = "".join(f'<li><a href="{name}">{name}</a></li>' for name in
+                    ("assay.toml", "inference_report.json", "inference_candidates.tsv", "samples.generated.tsv", "README.md", "run.sh"))
+    next_step = ('Review the extraction, orientation and sample mapping before setting status to ready in assay.toml.'
+                 if status != "ready" else 'Review the settings, then run ./run.sh. Read the reliability verdict before using outputs.')
+    reliability = ('<a href="assay_out/reliability_report.html">Open reliability report</a>'
+                   if (project_dir / "assay_out/reliability_report.html").is_file()
+                   else 'The run writes assay_out/reliability_report.html. Open it after ./run.sh completes.')
+    page = f'''<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>DotMatch assay review</title>
+<style>{_REVIEW_STYLE}</style></head><body><main><p>DOTMATCH / LOCAL ASSAY REVIEW</p>
+<h1>Review your assay.</h1><div class="verdict"><strong>Inference Status: {esc(status)}</strong><p>{next_step}</p></div>
+<p>This page records the original inference; assay.toml controls execution.</p>
+<p>Sampled inference suggests settings. It does not establish biological accuracy or replace experimental review.</p>
+<h2>Chosen extraction</h2><p>Start {esc(chosen['start'])} (zero-based), length {esc(chosen['length'])}; orientation {esc(chosen.get('orientation', 'forward'))}.</p>
+<p>Sampled reads: {esc(chosen.get('sampled_reads', 'unavailable'))}. Assignment rate: {esc(chosen.get('assignment_rate', 'unavailable'))}.</p>
+<h2>Warnings and next steps</h2><ul>{warnings or '<li>No inference warnings. Review is still required.</li>'}</ul><p>{reliability}</p>
+<h2>Inputs and sample mapping</h2><p>FASTQs are {esc(report.get('input_storage', 'copied'))}. The {'barcode' if report.get('mode') == 'demux' else 'target'} table is copied into {esc(report.get('input_table', 'inputs/'))}.</p>
+<p>{'Linked originals must remain available and unchanged; this project is not self-contained.' if report.get('input_storage') == 'linked' else 'Copied inputs travel with this project.'} Filenames do not declare biological replicates.</p>
+<div class="table-scroll"><table><caption>Confirm against your run sheet</caption><thead><tr><th scope="col">Sample</th><th scope="col">Project FASTQ</th><th scope="col">Original filename</th></tr></thead><tbody>{samples}</tbody></table></div>
+<h2>Candidate evidence</h2>{candidates}<h2>Review artifacts</h2><ul>{links}</ul></main></body></html>'''
+    (project_dir / "index.html").write_text(page, encoding="utf-8")
 
 
 def run_autopsy(assay: AssaySpec, out_dir: Path) -> dict[str, Path]:
@@ -1457,6 +1511,7 @@ Status: `{status}`
 ## What Was Generated
 
 - `assay.toml` — AssaySpec for check/plan/run
+- `index.html` — offline review of settings, samples and candidate evidence
 - `inference_report.json` — chosen extract window and warnings
 - `inference_candidates.tsv` — ranked window candidates
 - `samples.generated.tsv` — sample_id to FASTQ mapping
@@ -4171,12 +4226,12 @@ def _html_assay_fixes_table(fixes: Sequence[Mapping[str, str]]) -> str:
         return "<p class=\"ok\">No assay.toml edits were suggested.</p>"
     rows = ["<table><tr>"]
     for column in ASSAY_FIX_COLUMNS:
-        rows.append(f"<th>{html.escape(column)}</th>")
+        rows.append(f'<th scope="col">{html.escape(column)}</th>')
     rows.append("</tr>")
     for fix in fixes:
         rows.append("<tr>")
         for column in ASSAY_FIX_COLUMNS:
-            rows.append(f"<td>{html.escape(str(fix.get(column, '')))}</td>")
+            rows.append(f"<td>{_html_review_text(fix.get(column, ''))}</td>")
         rows.append("</tr>")
     rows.append("</table>")
     return "".join(rows)
@@ -4264,27 +4319,68 @@ def _write_reliability_manifest_summary(path: Path, summary: Mapping[str, Any]) 
         writer.writerow(row)
 
 
+def _html_review_text(value: Any) -> str:
+    text = str(value)
+    if Path(text).is_absolute():
+        return html.escape(Path(text).name)
+    pattern = r"""https?://[^\s<>"']+|(?P<quote>["'])(?P<quoted>/[^"'\r\n]+)(?P=quote)|(?<![\w:/<])(?P<bare>/[^\s<>"']+)"""
+
+    def label(match: re.Match[str]) -> str:
+        if match.group("quoted"):
+            return match.group("quote") + Path(match.group("quoted")).name + match.group("quote")
+        if match.group("bare"):
+            token = match.group("bare")
+            path = token.rstrip(".,;:!?)]}")
+            return Path(path).name + token[len(path):]
+        return match.group(0)
+
+    return html.escape(re.sub(pattern, label, text))
+
+
+def _html_review_mapping(values: Mapping[str, Any]) -> str:
+    if not values:
+        return "<p>No values recorded.</p>"
+    rows = "".join(
+        f'<tr><th scope="row">{html.escape(str(key))}</th>'
+        f"<td>{_html_review_text(value)}</td></tr>"
+        for key, value in values.items()
+    )
+    return f"<table>{rows}</table>"
+
+
 def _write_reliability_report(path: Path, summary: Mapping[str, Any]) -> None:
     evidence = summary.get("evidence_boundary", {}) or {}
     backend = summary.get("backend", {}) or {}
+    artifacts = summary.get("artifacts", {}) or {}
+    links = "".join(f"<li>{_artifact_link(str(value), path.parent)}</li>" for value in artifacts.values()
+                    if Path(str(value)).is_file() and Path(str(value)).resolve() != path.resolve())
+    sample_qc = Path(str(artifacts.get("sample_qc", "")))
+    sample_metrics = (_tsv_preview_table(sample_qc, 40) if sample_qc.is_file()
+                      else "<p>Sample metrics are unavailable at this stage. Run the assay to collect read-dependent QC.</p>")
+    actions = "".join(
+        f"<li><strong>{_html_review_text(finding.get('severity', ''))}</strong>: "
+        f"{_html_review_text(finding.get('message', ''))} "
+        f"{_html_review_text(finding.get('recommended_action', ''))}</li>"
+        for finding in _top_actionable_findings(summary)
+    )
     sections = [
-        "<!doctype html>",
-        "<html><head><meta charset=\"utf-8\"><title>DotMatch Reliability Report</title>",
-        "<style>body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;margin:32px;color:#18212f}"
-        "table{border-collapse:collapse;width:100%;margin:12px 0}th,td{border:1px solid #d8dee4;padding:7px 9px;text-align:left;vertical-align:top}"
-        "th{background:#eef2f7}.ok{color:#1a7f37}.warn{color:#9a6700}.bad{color:#cf222e}code{background:#eef2f7;padding:2px 4px;border-radius:4px}</style>",
-        "</head><body>",
-        "<h1>DotMatch Reliability Report</h1>",
-        f"<p>Status: <strong>{html.escape(str(summary.get('overall_status', '')))}</strong></p>",
-        "<h2>Backend</h2>",
-        _mapping_table(backend),
-        "<h2>Evidence Boundary</h2>",
-        _mapping_table(evidence),
-        "<h2>Recommended Assay Fixes</h2>",
-        _html_assay_fixes_table(summary.get("assay_fixes", []) or []),
-        "<h2>Findings</h2>",
-        _html_findings_table(summary.get("findings", []) or []),
-        "</body></html>\n",
+        '<!doctype html><html lang="en"><head><meta charset="utf-8">',
+        '<meta name="viewport" content="width=device-width,initial-scale=1"><title>DotMatch Reliability Report</title>',
+        f"<style>{_REVIEW_STYLE}</style></head><body><main><p>DOTMATCH / RELIABILITY REVIEW</p>",
+        '<h1>Reliability verdict</h1><div class="verdict">',
+        f"<strong>Status: {_html_review_text(summary.get('overall_status', 'unavailable'))}</strong>",
+        f"<p>Stage: {_html_review_text(summary.get('stage', 'unavailable'))}. Profile: {_html_review_text(summary.get('profile', 'unavailable'))}.</p></div>",
+        f"<p>Primary reason: {_html_review_text(_primary_reliability_reason(summary))}</p>",
+        "<h2>Findings and next actions</h2><ul>", actions, "</ul><div class=\"table-scroll\">",
+        _html_findings_table(summary.get("findings", []) or []), "</div>",
+        "<h2>Recommended Assay Fixes</h2><div class=\"table-scroll\">",
+        _html_assay_fixes_table(summary.get("assay_fixes", []) or []), "</div>",
+        "<h2>Evidence Boundary</h2>", _html_review_mapping(evidence),
+        "<h2>Finding totals</h2>", _html_review_mapping(summary.get("finding_counts", {}) or {}),
+        "<h2>Thresholds</h2>", _html_review_mapping(summary.get("thresholds", {}) or {}),
+        "<h2>Sample metrics</h2><div class=\"table-scroll\">", sample_metrics, "</div>",
+        "<h2>Backend</h2>", _html_review_mapping(backend),
+        "<h2>Available artifacts</h2><ul>", links, "</ul></main></body></html>\n",
     ]
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("".join(sections), encoding="utf-8")
@@ -4295,12 +4391,12 @@ def _html_findings_table(findings: Sequence[Mapping[str, str]]) -> str:
         return "<p class=\"ok\">No reliability findings were recorded.</p>"
     rows = ["<table><tr>"]
     for column in RELIABILITY_FINDING_COLUMNS:
-        rows.append(f"<th>{html.escape(column)}</th>")
+        rows.append(f'<th scope="col">{html.escape(column)}</th>')
     rows.append("</tr>")
     for finding in findings:
         rows.append("<tr>")
         for column in RELIABILITY_FINDING_COLUMNS:
-            rows.append(f"<td>{html.escape(str(finding.get(column, '')))}</td>")
+            rows.append(f"<td>{_html_review_text(finding.get(column, ''))}</td>")
         rows.append("</tr>")
     rows.append("</table>")
     return "".join(rows)

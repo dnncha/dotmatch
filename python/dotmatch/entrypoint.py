@@ -7,6 +7,9 @@ from collections.abc import Sequence
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
+    if args[:1] == ["sensitivity-review"]:
+        from .sensitivity_review import main as review_main
+        return review_main(args[1:])
     if args[:1] == ["demo"]:
         from .first_run import demo_main
         return demo_main(args[1:])
@@ -30,6 +33,8 @@ def main(argv: Sequence[str] | None = None) -> int:
               "      Compare existing raw-count tables without replacing your workflow.\n"
               "  dotmatch evaluation-packet --help\n"
               "      Lock an independent comparison protocol before viewing outcomes.\n"
+              "  dotmatch sensitivity-review --help\n"
+              "      Rebuild an offline review from a completed sensitivity bundle.\n"
               "  dotmatch crispr quickstart --help\n"
               "      Prepare your own reads; --link-reads avoids copying large FASTQs.")
     return result

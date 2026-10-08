@@ -231,3 +231,17 @@ dotmatch validate --targets targets.tsv --reads sample.fastq.gz \
 Use `inspect-unmatched` to diagnose frequent unassigned windows. Use `validate`
 to compare indexed assignment with an exhaustive scan or Edlib oracle when
 checking correctness-sensitive workflows.
+
+## Rebuild a sensitivity review
+
+Available in DotMatch 0.8.0. Follow the tagged source installation in
+[Getting started](getting-started.md#install) if your package channel provides
+an earlier version.
+
+```bash
+dotmatch sensitivity-review --bundle sensitivity/ --out review.html
+```
+
+Rebuild the offline HTML from a completed sensitivity bundle. The command checks
+manifest hashes and reconciles the recorded data. It refuses an existing output
+file and incomplete or altered bundles. Preserve all bundle files when sharing.

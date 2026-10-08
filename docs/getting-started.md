@@ -7,6 +7,10 @@ adapter prefixes.
 
 ## Install
 
+The generated assay review page and installed `sensitivity-review` command
+require DotMatch 0.8.0. Install its tagged source release using the source
+instructions below. PyPI and Bioconda may still provide an earlier version.
+
 For the current PyPI release:
 
 ```bash
@@ -23,10 +27,10 @@ conda activate dotmatch
 dotmatch --version
 ```
 
-From a source checkout:
+From the 0.8.0 source release:
 
 ```bash
-git clone https://github.com/dnncha/dotmatch.git
+git clone --branch v0.8.0 https://github.com/dnncha/dotmatch.git
 cd dotmatch
 make
 python3 -m pip install .
@@ -36,9 +40,8 @@ dotmatch --version
 The source build needs a C compiler, `make`, Python 3.9 or newer, and zlib for
 FASTQ.gz support.
 
-PyPI is normally the first channel to receive a new release. Bioconda can lag a
-tag while its recipe is reviewed and built, so check the version printed by
-`dotmatch --version` when an exact release matters.
+Check that `dotmatch --version` reports 0.8.0 for the review journey below.
+Package channels can lag the tagged source release.
 
 ## Recommended Workflow: Assay Project
 
@@ -115,13 +118,19 @@ dotmatch crispr quickstart \
   --out crispr_screen/
 ```
 
-Review `crispr_screen/inference_report.json`. Then set `status = "ready"` in
+Open `crispr_screen/index.html` to review the inferred window, orientation,
+sampled evidence, candidate alternatives and sample mapping. Then inspect
+`inference_report.json` and set `status = "ready"` in
 `assay.toml` and run `dotmatch assay start crispr_screen/assay.toml`. For an
 immediate explicit run, pass `--accept-inference` on the initial quickstart
-command. A non-zero result means the run completed but a
-reliability gate needs review; inspect `assay_out/reliability_report.html` and
+command. Uncertain inference stays draft and does not start a run. A non-zero
+result needs investigation; inspect `assay_out/reliability_report.html` and
 `assay_out/assay_fixes.tsv` before using counts downstream. `--no-run` is an
 explicit review-only form.
+
+Inference uses sampled reads and does not establish biological accuracy. Copied
+inputs travel with the project; linked FASTQs require the unchanged originals.
+After running `./run.sh`, resolve the reliability findings before using counts.
 
 Use `dotmatch count` when reads contain one fixed target window.
 

@@ -19,24 +19,27 @@ command; evaluate your assay and matching policy separately.
 
 ## Check which version you are using
 
-The released package can be installed with:
+This tutorial targets DotMatch 0.8.0, including the generated assay review page
+and installed `sensitivity-review` command. Install the tagged source release;
+PyPI and Bioconda may still provide an earlier version.
 
 ```bash
-python3 -m pip install dotmatch==0.7.0
+git clone --branch v0.8.0 https://github.com/dnncha/dotmatch.git
+cd dotmatch
+make
+python3 -m pip install .
 dotmatch --version
 ```
 
-DotMatch 0.7.0 includes the checked offline demo, `dotmatch compare-counts`,
-and the validated `crispr quickstart --link-reads` option. Use the published
-package and confirm `dotmatch --version` reports 0.7.0 before following this
-tutorial.
+The source build needs a C compiler, `make`, Python 3.9 or newer, and zlib.
+Confirm `dotmatch --version` reports 0.8.0 before following this tutorial.
 
 For a no-install view using the public synthetic fixture, open the
 [assignment review example](https://dnncha.github.io/dotmatch/assignment-sensitivity/).
 
 ## 1. Get a checked result without assembling files
 
-From an installed DotMatch 0.7.0 package:
+From an installed DotMatch 0.8.0 package:
 
 ```bash
 dotmatch demo --out-dir first-run/
@@ -85,7 +88,7 @@ dotmatch crispr quickstart \
 ```
 
 Use paths that match your actual naming convention. Repeat `--fastq` for more
-input patterns. DotMatch 0.7.0 requires every argument to resolve: one valid
+input patterns. DotMatch 0.8.0 requires every argument to resolve: one valid
 file does not excuse a second missing pattern. Duplicate inputs, colliding
 basenames, non-files and invalid resource limits are rejected before a project
 is created. Existing output paths are never overwritten.
@@ -119,7 +122,8 @@ uses the new quickstart's always-draft default.
 
 ## 3. Review the inferred settings before running
 
-Open `crispr-screen/inference_report.json`, `samples.generated.tsv`, and
+Open `crispr-screen/index.html` for the offline review of settings and candidate
+evidence. Inspect `inference_report.json`, `samples.generated.tsv`, and
 `assay.toml`. Check the sample mapping, library revision, zero-based guide
 window, read orientation, matching rule and warnings against the assay protocol.
 Inference proposes a configuration; it does not establish biological validity.
@@ -131,7 +135,7 @@ the top-level `status = "draft"` to `status = "ready"` in `assay.toml`, then run
 dotmatch assay start crispr-screen/assay.toml
 ```
 
-DotMatch 0.7.0's explicit `--accept-inference` option only starts a run
+DotMatch 0.8.0's explicit `--accept-inference` option only starts a run
 when inference itself reports ready. It no longer promotes an uncertain
 inference automatically. `--no-run` always leaves the project in draft.
 
@@ -149,7 +153,7 @@ The matrix contains `sgRNA`, `Gene`, then one raw integer count column per
 sample. Only unique assignments add target counts. Ambiguous, unmatched and
 invalid-window reads remain visible in the QC outputs.
 
-For a side-by-side evaluation with DotMatch 0.7.0:
+For a side-by-side evaluation with DotMatch 0.8.0:
 
 ```bash
 dotmatch compare-counts \
