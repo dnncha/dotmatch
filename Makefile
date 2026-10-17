@@ -105,6 +105,7 @@ test: build/test_qdalign build/test_qdalign_threshold_alloc
 
 cli-test: dotmatch
 	sh tests/test_cli_fastq.sh
+	DOTMATCH_BIN="$(CURDIR)/dotmatch" python3 tests/test_native_count_output_safety.py
 	PYTHONPATH=python DOTMATCH_BIN="$(CURDIR)/dotmatch" python3 tests/test_native_fastq_validation.py
 	DOTMATCH_BIN="$(CURDIR)/dotmatch" python3 tests/test_guide_counter_compatibility.py
 	python3 tests/test_mageck_count_equivalence.py

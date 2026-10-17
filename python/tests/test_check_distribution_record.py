@@ -2,6 +2,8 @@ import importlib.util
 import json
 from pathlib import Path
 
+import pytest
+
 
 ROOT = Path(__file__).resolve().parents[2]
 CHECKER = ROOT / "scripts" / "check_distribution_record.py"
@@ -253,6 +255,38 @@ def test_distribution_record_accepts_explicit_unpublished_candidate(tmp_path):
     result = checker.audit(tmp_path)
 
     assert result.failures == []
+
+
+def _github_candidate():
+    manifest = _manifest()
+    manifest.update(candidate_version='0.2.0', candidate_status='github_released',
+                    publication_authorized=False, github_release={
+        'version': '0.2.0', 'tag': 'v0.2.0', 'status': 'verified',
+        'public_url': 'https://github.com/dnncha/dotmatch/releases/tag/v0.2.0',
+        'source_sha': 'a' * 40,
+        'evidence_url': 'https://github.com/dnncha/dotmatch/releases/download/v0.2.0/verification.json',
+        'artifact_sha256': {'dotmatch-0.2.0.tar.gz': 'b' * 64},
+    })
+    return manifest
+
+
+def test_github_release_can_advance_without_claiming_new_pypi_publication(tmp_path):
+    checker = _load_checker()
+    _write_repo(tmp_path, _github_candidate())
+    (tmp_path / 'pyproject.toml').write_text('[project]\nname="dotmatch"\nversion="0.2.0"\n')
+
+    assert checker.audit(tmp_path).failures == []
+
+
+@pytest.mark.parametrize('field', ['source_sha', 'artifact_sha256', 'evidence_url', 'public_url', 'version', 'status'])
+def test_github_release_requires_complete_publication_evidence(tmp_path, field):
+    checker = _load_checker()
+    manifest = _github_candidate()
+    del manifest['github_release'][field]
+    _write_repo(tmp_path, manifest)
+    (tmp_path / 'pyproject.toml').write_text('[project]\nname="dotmatch"\nversion="0.2.0"\n')
+
+    assert any('GitHub release requires' in failure for failure in checker.audit(tmp_path).failures)
 
 
 def test_distribution_record_rejects_duplicate_channel_ids(tmp_path):

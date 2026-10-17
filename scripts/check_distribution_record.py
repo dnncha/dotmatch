@@ -18,7 +18,7 @@ REQUIRED_CHANNELS = ["pypi", "bioconda", "ghcr", "biocontainers", "zenodo"]
 VALID_OVERALL_STATUSES = {"not_released", "partially_verified", "released"}
 VALID_CHANNEL_STATUSES = {"prepared", "blocked", "manifest_verified", "verified"}
 VERIFIED_CHANNEL_STATUSES = {"manifest_verified", "verified"}
-VALID_CANDIDATE_STATUSES = {"prepared_not_published"}
+VALID_CANDIDATE_STATUSES = {"prepared_not_published", "github_released"}
 SUPPORTED_PYPI_LINUX_WHEEL_ARCHITECTURES = {"x86_64", "aarch64"}
 SUPPORTED_GHCR_PLATFORMS = {"linux/amd64", "linux/arm64"}
 
@@ -163,7 +163,24 @@ def audit(root: Path) -> AuditResult:
                 "candidate_version must identify the local package candidate"
             )
         if candidate_status not in VALID_CANDIDATE_STATUSES:
-            result.failures.append("an unreleased package candidate must declare candidate_status prepared_not_published")
+            result.failures.append("candidate_status must be prepared_not_published or github_released")
+        if candidate_status == "github_released":
+            github = manifest.get("github_release")
+            if not isinstance(github, dict):
+                github = {}
+            digests = github.get("artifact_sha256")
+            prefix = f"https://github.com/dnncha/dotmatch/releases/download/v{project_version}/"
+            if not (
+                github.get("status") == "verified" and github.get("version") == project_version
+                and github.get("tag") == f"v{project_version}"
+                and github.get("public_url") == f"https://github.com/dnncha/dotmatch/releases/tag/v{project_version}"
+                and re.fullmatch(r"[0-9a-f]{40}", str(github.get("source_sha", "")))
+                and github.get("evidence_url") == prefix + "verification.json"
+                and isinstance(digests, dict) and digests
+                and f"dotmatch-{project_version}.tar.gz" in digests
+                and all(re.fullmatch(r"[0-9a-f]{64}", str(value)) for value in digests.values())
+            ):
+                result.failures.append("GitHub release requires verified version, source SHA, public URLs and artifact SHA256 evidence")
         if publication_authorized is not False:
             result.failures.append("an unreleased package candidate must declare publication_authorized false")
 

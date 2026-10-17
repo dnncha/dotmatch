@@ -8,14 +8,14 @@ const read = path => readFileSync(join(root, path), "utf8");
 const required = ["README.md", "app/page.tsx", "app/layout.tsx", "app/robots.ts", "app/sitemap.ts", "app/globals.css", "app/site-metadata.ts", "app/research-shell.tsx", "app/research.module.css", "app/crispr-guide-counting/page.tsx", "app/tools/library-safety/page.tsx", "app/tools/library-safety/explorer.tsx", "lib/library-safety.ts", "tests/site/library-safety.test.mjs", "tests/site/metadata.test.mjs", "docs/index.md", "docs/getting-started.md", "docs/command-reference.md", "docs/agent-guide.md", "docs/agent-crispr.md", "docs/agent-perturb-seq.md", "public/llms.txt", "public/llms-full.txt", "public/agent-capabilities.json", "public/agent-capabilities.schema.json", "public/agent-tools.json", "public/agent-tools.schema.json", "public/agent-reference-crispr.json", "public/dotmatch-read-assignment-v2.webp", "public/dotmatch-read-assignment-mobile-v2.webp", "public/dotmatch-og.png", "public/dotmatch-twitter.png"];
 for (const path of required) assert(existsSync(join(root, path)), `Missing public file: ${path}`);
 const home = read("app/page.tsx");
-const homeContent = home + read("app/assignment-demo.tsx") + read("app/install-command.tsx") + read("app/guide-counter-benchmark.tsx");
+const homeContent = home + read("app/assignment-demo.tsx") + read("app/install-command.tsx") + read("app/guide-counter-benchmark.tsx") + read("app/site-metadata.ts");
 for (const anchor of ["top", "workflow", "failure-modes", "use-cases", "evidence", "install", "agent-workflow"]) assert(home.includes(`id="${anchor}"`), `Missing homepage section: ${anchor}`);
 for (const path of ["app/page.tsx", "app/crispr-guide-counting/page.tsx", "app/tools/library-safety/page.tsx", "app/assignment-sensitivity/page.tsx"]) {
   const page = read(path);
   assert.equal((page.match(/<h1\b/g) ?? []).length, 1, `${path}: exactly one H1 required`);
   assert(!page.includes("github.com/dnncha/dotmatch/blob/main/docs/"), `${path}: use rendered documentation links`);
 }
-for (const phrase of ["CRISPR", "ambiguous", "unique", "none", "invalid", "dotmatch agent tools --json", "python3 -m pip install dotmatch", "getting-started.html", "SoftwareApplication", "softwareVersion: publishedVersion", "featureList", 'type="application/ld+json"']) assert(homeContent.includes(phrase), `Missing scientific/task content: ${phrase}`);
+for (const phrase of ["CRISPR", "ambiguous", "unique", "none", "invalid", "dotmatch agent tools --json", "python3 -m pip install", "getting-started.html", "SoftwareApplication", "softwareVersion: releaseVersion", "featureList", 'type="application/ld+json"']) assert(homeContent.includes(phrase), `Missing scientific/task content: ${phrase}`);
 assert(home.includes("AssignmentDemo") && home.includes("assignment-demo.json"), "Homepage must use the checked native example");
 for (const name of ["guide_counter_throughput.svg", "guide_counter_memory.svg"]) {
   const hash = path => createHash("sha256").update(readFileSync(join(root, path))).digest("hex");
@@ -26,19 +26,28 @@ const layout = read("app/layout.tsx"), metadata = read("app/site-metadata.ts"), 
 assert(layout.includes('applicationName: "DotMatch"') && metadata.includes('siteName: "DotMatch"'), "Metadata identity missing");
 assert(layout.includes('rel="describedby"') && layout.includes("llms.txt"), "Agent discovery link missing");
 const siteVersion = metadata.match(/publishedVersion = "([^"]+)"/)?.[1];
+const releaseVersion = metadata.match(/releaseVersion = "([^"]+)"/)?.[1];
 const packageVersion = JSON.parse(read("package.json")).version;
 const releaseRequest = JSON.parse(read(".github/release-request.json"));
 const releaseRecord = JSON.parse(read("docs/distribution-release.json"));
-assert.equal(siteVersion, packageVersion, "Published CLI version must match the package version");
+const githubRelease = releaseRecord.github_release;
+assert.equal(releaseVersion, packageVersion, "GitHub release version must match the package version");
 assert(
   releaseRequest.authorized === true &&
-    releaseRequest.version === siteVersion &&
-    releaseRequest.tag === `v${siteVersion}` &&
-    releaseRecord.publication_authorized === true &&
+    releaseRequest.version === releaseVersion &&
+    releaseRequest.tag === `v${releaseVersion}` &&
+    releaseRequest.publication_channels.includes("GitHub Releases") &&
+    releaseRecord.candidate_version === releaseVersion &&
+    ["prepared_not_published", "github_released"].includes(releaseRecord.candidate_status) &&
+    githubRelease.version === releaseVersion &&
+    githubRelease.tag === `v${releaseVersion}` &&
+    githubRelease.public_url === `https://github.com/dnncha/dotmatch/releases/tag/v${releaseVersion}` &&
+    githubRelease.status === (releaseRecord.candidate_status === "github_released" ? "verified" : "prepared") &&
     releaseRecord.release_version === siteVersion &&
     releaseRecord.release_tag === `v${siteVersion}`,
   "Installation metadata may advance only for an explicitly authorized matching release candidate"
 );
+if (process.env.DOTMATCH_REQUIRE_PUBLISHED_GITHUB === "1") assert.equal(githubRelease.status, "verified", "Public site deployment requires verified GitHub publication");
 assert(home.includes("packageMetadata.version") && home.toLowerCase().includes("website source version"), "Keep published and source versions distinct");
 assert(/^\d+\.\d+\.\d+/.test(JSON.parse(read("package.json")).version), "Source version must be semantic");
 for (const route of ["crispr-guide-counting", "tools/library-safety", "assignment-sensitivity"]) {

@@ -321,3 +321,20 @@ def test_artifact_size_must_be_integer(tmp_path):
     s = seal(tmp_path, fixture(tmp_path))
     s["artifacts"]["guide_deltas.tsv"]["bytes"] = float(s["artifacts"]["guide_deltas.tsv"]["bytes"])
     with pytest.raises(ValueError): review.build_review_data(s, tmp_path)
+
+
+def test_public_review_dispatch_preserves_validation_and_no_overwrite(tmp_path):
+    from dotmatch import entrypoint
+    bundle = tmp_path / "bundle"
+    seal(bundle, fixture(bundle))
+    output = tmp_path / "review.html"
+    args = ["sensitivity-review", "--bundle", str(bundle), "--out", str(output)]
+    assert entrypoint.main(args) == 0
+    before = output.read_bytes()
+    assert b"<!doctype html>" in before
+    assert entrypoint.main(args) == 2
+    assert output.read_bytes() == before
+    (bundle / "guide_deltas.tsv").write_text("tampered")
+    missing = tmp_path / "invalid.html"
+    assert entrypoint.main(["sensitivity-review", "--bundle", str(bundle), "--out", str(missing)]) == 2
+    assert not missing.exists()

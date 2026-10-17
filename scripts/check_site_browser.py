@@ -136,7 +136,7 @@ def main():
                 page.set_viewport_size({"width": 1440, "height": 1000})
                 page.goto(origin + "/dotmatch/assignment-sensitivity/", wait_until="networkidle")
                 package_version = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["version"]
-                assert f"dotmatch=={package_version}" in page.inner_text("body")
+                assert f"releases/download/v{package_version}/dotmatch-{package_version}.tar.gz" in page.inner_text("body")
                 with page.expect_download() as example_download:
                     page.get_by_role("link", name="Download example files", exact=True).click()
                 import zipfile

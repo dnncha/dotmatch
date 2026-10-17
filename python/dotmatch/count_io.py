@@ -66,8 +66,9 @@ def read_count_table(path: str | Path, *, sample_cols: Sequence[str] | None = No
                      var_cols: Sequence[str] = (), mageck_only: bool = False) -> CountTable:
     """Read MAGeCK or DotMatch TSV without guessing numeric columns from values.
 
-    DotMatch detailed output contributes only *_count_total columns by default;
-    exact/corrected components and QC fields must not become additional samples.
+    DotMatch detailed output contributes only total-count columns by default.
+    Unprefixed count_total is one sample named "sample". Exact/corrected
+    components and QC fields must not become additional samples.
     sample_cols names source columns and preserves the requested order.
     """
     source = Path(path)
@@ -84,18 +85,28 @@ def read_count_table(path: str | Path, *, sample_cols: Sequence[str] | None = No
         lower = {name.lower(): name for name in header}
         id_col = header[0] if mageck_only else next((lower[name] for name in ID_COLUMNS if name in lower), header[0])
         metadata_cols = [name for name in header if name != id_col and (name.lower() in METADATA_COLUMNS or name in var_cols)]
-        detailed = not mageck_only and "target_seq" in lower and any(name.endswith("_count_total") for name in header)
+        detailed = not mageck_only and "target_seq" in lower
+        prefixed_totals = [name for name in header if name.endswith("_count_total")]
+        single_total = detailed and "count_total" in header
+        if single_total and prefixed_totals:
+            raise ValueError("mixed prefixed and unprefixed DotMatch count-total columns")
+        detailed = detailed and bool(single_total or prefixed_totals)
         if mageck_only:
             metadata_cols = [header[1]]
             candidates = header[2:]
         elif detailed:
-            candidates = [name for name in header if name.endswith("_count_total")]
+            candidates = ["count_total"] if single_total else prefixed_totals
         else:
             candidates = [name for name in header if name != id_col and name not in metadata_cols]
         selected = list(candidates) if sample_cols is None else list(sample_cols)
         if not selected or len(set(selected)) != len(selected) or any(name not in candidates for name in selected):
             raise ValueError("sample_cols must contain distinct existing count-column names")
-        sample_names = [name[:-len("_count_total")] if detailed else name for name in selected]
+        if single_total:
+            sample_names = ["sample"]
+        elif detailed:
+            sample_names = [name[:-len("_count_total")] for name in selected]
+        else:
+            sample_names = selected
         if any(not name for name in sample_names) or len(set(sample_names)) != len(sample_names):
             raise ValueError("sample names derived from count columns must be nonempty and unique")
         ids, counts, metadata, seen = [], [], {name: [] for name in metadata_cols}, set()

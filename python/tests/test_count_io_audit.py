@@ -49,6 +49,35 @@ def test_dotmatch_detailed_output_does_not_double_count_components(tmp_path):
     assert read_count_table(path, sample_cols=['B_count_total']).counts == ((0,),)
 
 
+def test_python_count_output_is_one_sample_with_only_total_counts(tmp_path, monkeypatch):
+    from dotmatch.entrypoint import main
+
+    monkeypatch.setenv('DOTMATCH_PYTHON_NO_DELEGATE', '1')
+    library = tmp_path / 'guides.tsv'
+    library.write_text('target_id\tsequence\tgene\ng1\tACGT\tG1\ng2\tTGCA\tG2\n')
+    reads = tmp_path / 'reads.fastq'
+    reads.write_text('@exact\nACGT\n+\nIIII\n@corrected\nACGA\n+\nIIII\n')
+    output = tmp_path / 'counts.tsv'
+    assert main(['count', '--targets', str(library), '--reads', str(reads),
+                 '--target-start', '0', '--target-length', '4', '--k', '1',
+                 '--out', str(output)]) == 0
+    table = read_count_table(output)
+    assert table.sample_columns == ('count_total',)
+    assert table.sample_names == ('sample',)
+    assert table.target_ids == ('g1', 'g2')
+    assert table.counts == ((2,), (0,))
+    assert read_count_table(output, sample_cols=['count_total']).counts == ((2,), (0,))
+    with pytest.raises(ValueError, match='sample_cols'):
+        read_count_table(output, sample_cols=['count_exact'])
+
+
+def test_mixed_detailed_count_schemas_are_rejected(tmp_path):
+    path = tmp_path / 'counts.tsv'
+    path.write_text('target_id\ttarget_seq\tcount_total\tA_count_total\ng\tACGT\t2\t3\n')
+    with pytest.raises(ValueError, match='mixed'):
+        read_count_table(path)
+
+
 @pytest.mark.parametrize('selection', [[], ['missing'], ['A', 'A']])
 def test_bad_sample_selection_fails(tmp_path, selection):
     path = tmp_path / 'counts.tsv'
