@@ -12,6 +12,12 @@ DotMatch is an open source toolkit for deterministic short-DNA known-target assi
 
 ## Development Setup
 
+Start with [the architecture and checks guide](docs/architecture.md).
+Install `requirements-quality.txt` in an activated Python 3.11+ virtual
+environment and run `make check` for the local lint, types, architecture,
+compiler-warning, native, CLI, and Python checks. Optional hooks are available
+through `pre-commit install`. Runtime compatibility remains Python 3.9–3.14.
+
 ```bash
 make
 make shared

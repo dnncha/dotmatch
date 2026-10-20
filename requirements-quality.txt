@@ -1,0 +1,4 @@
+# Keep local hooks and CI on the same tool versions; updated by Dependabot.
+ruff==0.17.1
+mypy==2.4.0
+pre-commit==4.3.0

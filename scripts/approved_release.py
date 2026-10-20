@@ -115,7 +115,7 @@ def tag_release():
     if tagged_sha is not None and tagged_sha != sha:
         print(f'{tag} already immutably records released commit {tagged_sha}; validated maintenance commit {sha} will not be tagged or published.')
         return
-    for attempt in range(120):
+    for _attempt in range(120):
         require(github('git/ref/heads/main')['object']['sha'] == sha, 'Main moved during release validation; refusing to tag a stale candidate')
         runs = github(f'actions/runs?head_sha={sha}&per_page=100')['workflow_runs']
         external_ready = status_verdict(github(f'commits/{sha}/status'))

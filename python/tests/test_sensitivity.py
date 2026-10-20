@@ -4,7 +4,6 @@ import hashlib
 import itertools
 import json
 import random
-from pathlib import Path
 
 import pytest
 
@@ -14,16 +13,12 @@ from dotmatch.core import (
     MATCH_NONE,
     MATCH_AMBIGUOUS,
     MATCH_INVALID,
-    load_targets,
 )
 from dotmatch.sensitivity import (
     compare_hamming_policies,
     run_sensitivity,
     MODES,
-    STATES,
-    main,
 )
-from dotmatch.target_io import read_target_table
 
 
 def oracle(window, targets, k, policy):

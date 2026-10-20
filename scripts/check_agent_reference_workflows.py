@@ -49,7 +49,7 @@ def main() -> int:
     if reference.get("spec", {}).get("sha256") != expected_hashes["crispr_assay.toml"]:
         failures.append("CRISPR fixture envelope spec hash differs")
     reference_artifacts = {item.get("role"): item for item in reference.get("artifacts", [])}
-    for role, name in {
+    for role, _name in {
         "counts": "expected_counts.mageck.tsv",
         "sample_qc": "expected_sample_qc.tsv",
     }.items():

@@ -311,8 +311,6 @@ def test_distribution_docs_include_biocontainers_runtime_verification() -> None:
     packaging = (ROOT / "docs" / "packaging.md").read_text(encoding="utf-8")
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     checker = (ROOT / "scripts" / "check_distribution_channels.py").read_text(encoding="utf-8")
-    version = _pyproject_version()
-
     assert "quay.io/api/v1/repository/biocontainers/dotmatch/tag/" in checker
     assert '"docker", "run", "--rm", image, "dotmatch", "leq", "1", "ACGT", "AGGT"' in checker
     assert "quay.io/biocontainers/dotmatch:<version>--<build>" in packaging

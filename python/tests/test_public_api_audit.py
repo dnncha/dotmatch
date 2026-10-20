@@ -8,7 +8,6 @@ from concurrent.futures import ThreadPoolExecutor
 import pytest
 import dotmatch
 from dotmatch import core
-from dotmatch.fastq_io import iter_fastq_records
 
 
 @pytest.mark.parametrize('bad', [True, False, 0.5, 1.9, '1', -1, 2**31, 2**32, 2**32+1])
@@ -126,28 +125,28 @@ def test_unrelated_pyproject_does_not_override_package_version(tmp_path, monkeyp
 
 
 def test_native_lookup_never_searches_the_working_directory(monkeypatch, tmp_path):
-    from dotmatch import core, native
+    from dotmatch import _bindings, native
     for key in ('DOTMATCH_LIB', 'QUICKDNA_LIB', 'DOTMATCH_NATIVE_CLI'):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.chdir(tmp_path)
-    assert all(path.parent != tmp_path for path in core._candidate_paths())
+    assert all(path.parent != tmp_path for path in _bindings._candidate_paths())
     assert all(path.parent != tmp_path for path in native.native_cli_candidates())
     monkeypatch.setenv('DOTMATCH_NATIVE_CLI', str(tmp_path / 'missing'))
     with pytest.raises(FileNotFoundError, match='missing'):
         native.find_native_cli()
     monkeypatch.setenv('DOTMATCH_LIB', str(tmp_path / 'missing.so'))
     with pytest.raises(RuntimeError, match='missing.so'):
-        core._load_lib()
+        _bindings._load_lib()
 
 
 def test_installed_native_lookup_does_not_walk_unrelated_ancestors(monkeypatch, tmp_path):
-    from dotmatch import core, native
+    from dotmatch import _bindings, native
     for key in ('DOTMATCH_LIB', 'QUICKDNA_LIB', 'DOTMATCH_NATIVE_CLI'):
         monkeypatch.delenv(key, raising=False)
     installed = tmp_path / 'site-packages' / 'dotmatch'
-    monkeypatch.setattr(core, '__file__', str(installed / 'core.py'))
+    monkeypatch.setattr(_bindings, '__file__', str(installed / '_bindings.py'))
     monkeypatch.setattr(native, '__file__', str(installed / 'native.py'))
-    assert all(path.parent == installed for path in core._candidate_paths())
+    assert all(path.parent == installed for path in _bindings._candidate_paths())
     assert native.native_cli_candidates() == [installed / 'dotmatch-native']
 
 

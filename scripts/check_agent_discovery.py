@@ -357,7 +357,6 @@ def local_measure(root: Path) -> dict[str, Any]:
     copies_valid = not validate_copies(root) if manifest_path.is_file() else False
     readme = _read(root, "README.md") if (root / "README.md").is_file() else ""
     cli = _read(root, "python/dotmatch/cli.py") if (root / "python/dotmatch/cli.py").is_file() else ""
-    docs_conf = _read(root, "docs/conf.py") if (root / "docs/conf.py").is_file() else ""
     layout = _read(root, "app/layout.tsx") if (root / "app/layout.tsx").is_file() else ""
     page = _read(root, "app/page.tsx") if (root / "app/page.tsx").is_file() else ""
     pyproject = _read(root, "pyproject.toml") if (root / "pyproject.toml").is_file() else ""

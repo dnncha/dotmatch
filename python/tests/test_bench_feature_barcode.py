@@ -98,7 +98,6 @@ def test_public_benchmark_rows_require_metadata_and_include_exact_baseline(tmp_p
     metadata = tmp_path / "metadata.json"
     targets = tmp_path / "feature_barcodes.tsv"
     reads = tmp_path / "reads.fastq"
-    summary = tmp_path / "public_k0_summary.json"
     targets.write_text(
         "target_id\ttarget_seq\tgene\n"
         "CD3\tCTCATTGTAACTCCT\tCD3\n",

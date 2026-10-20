@@ -35,6 +35,47 @@ endif
 
 all: dotmatch libdotmatch.a qda libqdalign.a
 
+# Activate a development venv and install requirements-quality.txt first.
+PYTHON_QUALITY_PATHS := python scripts tests setup.py _reproducible_sdist.py
+PYTHON_FORMAT_PATHS := python/dotmatch/_bindings.py python/dotmatch/_optional.py python/dotmatch/_validation.py python/dotmatch/fastq_io.py python/dotmatch/target_io.py python/dotmatch/count_io.py python/dotmatch/native.py scripts/check_architecture.py python/tests/test_architecture.py
+ANALYZER_CC ?= gcc
+.PHONY: quality python-lint python-format-check python-format python-types architecture-check native-lint native-analyze check
+
+python-lint:
+	python3 -m ruff check $(PYTHON_QUALITY_PATHS)
+
+python-format-check:
+	python3 -m ruff format --check $(PYTHON_FORMAT_PATHS)
+
+python-format:
+	python3 -m ruff format $(PYTHON_FORMAT_PATHS)
+
+python-types:
+	python3 -m mypy
+
+architecture-check:
+	python3 scripts/check_architecture.py
+
+native-lint:
+	$(CC) $(CFLAGS) -Werror -fsyntax-only src/qdalign.c src/qda.c src/qdmetal_stub.c tests/test_qdalign.c tests/test_qdalign_threshold_alloc.c tests/test_qda_string_list.c
+ifeq ($(UNAME_S),Darwin)
+	$(CXX) $(CXXFLAGS) -Werror -fsyntax-only src/qdmetal.mm
+endif
+
+# Dedicated outputs avoid overwriting normal, sanitizer, or coverage objects.
+native-analyze:
+	mkdir -p build/static-analysis
+	$(ANALYZER_CC) -std=c11 -Wall -Wextra -Wpedantic -Werror -fanalyzer -Iinclude -c src/qdalign.c -o build/static-analysis/qdalign.o
+	$(ANALYZER_CC) -std=c11 -Wall -Wextra -Wpedantic -Werror -fanalyzer -Iinclude -c src/qda.c -o build/static-analysis/qda.o
+	$(ANALYZER_CC) -std=c11 -Wall -Wextra -Wpedantic -Werror -fanalyzer -Iinclude -c src/qdmetal_stub.c -o build/static-analysis/qdmetal_stub.o
+
+quality: python-lint python-format-check python-types architecture-check native-lint
+
+# Do not run these prerequisites in parallel: existing package tests may build.
+check:
+	$(MAKE) quality
+	$(MAKE) test cli-test python-test
+
 build:
 	mkdir -p build
 
@@ -99,9 +140,13 @@ build/test_qdalign: tests/test_qdalign.c build/qdalign.o include/qdalign.h | bui
 build/test_qdalign_threshold_alloc: tests/test_qdalign_threshold_alloc.c src/qdalign.c include/qdalign.h | build
 	$(CC) $(CFLAGS) tests/test_qdalign_threshold_alloc.c -o $@ $(LDFLAGS)
 
-test: build/test_qdalign build/test_qdalign_threshold_alloc
+build/test_qda_string_list: tests/test_qda_string_list.c src/qda.c src/target_table.h build/qdalign.o $(METAL_OBJ) include/qdalign.h include/qdmetal.h Makefile | build
+	$(CC) $(CFLAGS) $(DOTMATCH_VERSION_CFLAGS) tests/test_qda_string_list.c build/qdalign.o $(METAL_OBJ) -o $@ $(LDFLAGS) $(ZLIB_LIBS) $(PTHREAD_LIBS) $(METAL_LIBS) $(METAL_CXX_LIBS)
+
+test: build/test_qdalign build/test_qdalign_threshold_alloc build/test_qda_string_list
 	./build/test_qdalign
 	./build/test_qdalign_threshold_alloc
+	./build/test_qda_string_list
 
 cli-test: dotmatch
 	sh tests/test_cli_fastq.sh
@@ -590,7 +635,8 @@ repro repro-small:
 
 asan:
 	$(MAKE) clean
-	$(MAKE) CFLAGS='-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -std=c11 -Wall -Wextra -Wpedantic -Iinclude' LDFLAGS='-fsanitize=address,undefined' test
+	$(MAKE) CFLAGS='-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -std=c11 -Wall -Wextra -Wpedantic -Iinclude' LDFLAGS='-fsanitize=address,undefined' test dotmatch
+	UBSAN_OPTIONS=halt_on_error=1 sh tests/test_cli_fastq.sh
 	$(MAKE) clean
 
 clean:

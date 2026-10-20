@@ -4,6 +4,9 @@
 
 ## Evidence
 
+- [ ] `make quality` (lint, boundary types/formatting, architecture, compiler warnings)
+- [ ] `npm run lint && npm run typecheck && npm run check:site` if website code changed.
+- [ ] `make native-analyze` if native code changed.
 - [ ] `make test`
 - [ ] `make cli-test`
 - [ ] `make python-test`
