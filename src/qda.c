@@ -1001,6 +1001,15 @@ static void free_string_list(string_list *list) {
     list->cap = 0;
 }
 
+/* GCC 13's analyzer loses ownership of strings stored through list->items
+ * across repeated push_unique_string calls. Successful pushes retain the string
+ * in the caller-owned list; free_string_list frees each entry, including after
+ * a later allocation failure. Limit this false-positive suppression to this
+ * ownership-transfer helper, keeping leak analysis enabled everywhere else. */
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-malloc-leak"
+#endif
 static int push_string(string_list *list, const char *s) {
     if (list->count == list->cap) {
         size_t next_cap = list->cap == 0 ? 4 : list->cap * 2;
@@ -1014,6 +1023,9 @@ static int push_string(string_list *list, const char *s) {
     ++list->count;
     return 0;
 }
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 static int split_string_list(string_list *list, const char *s, char delim) {
     const char *start = s;
@@ -6785,7 +6797,7 @@ static int audit_fast_outputs(const seq_table *targets, const char *out_dir, int
         }
         free_string_list(&local);
     }
-    qsort(variants.items, variants.count, sizeof(variant_record), cmp_variant_record);
+    if (variants.count > 1) qsort(variants.items, variants.count, sizeof(variant_record), cmp_variant_record);
 
     if (path_join(path, sizeof(path), out_dir, "ambiguous_variants.tsv") != 0) goto done;
     variants_out = open_output_file(path);
@@ -6821,7 +6833,7 @@ static int audit_fast_outputs(const seq_table *targets, const char *out_dir, int
     fclose(variants_out);
     variants_out = NULL;
 
-    qsort(candidate_pairs.items, candidate_pairs.count, sizeof(pair_record), cmp_pair_record);
+    if (candidate_pairs.count > 1) qsort(candidate_pairs.items, candidate_pairs.count, sizeof(pair_record), cmp_pair_record);
     for (size_t i = 0; i < candidate_pairs.count; ++i) {
         if (i > 0 && candidate_pairs.items[i].a == candidate_pairs.items[i - 1].a &&
             candidate_pairs.items[i].b == candidate_pairs.items[i - 1].b) {
@@ -7539,7 +7551,7 @@ static int run_inspect_unmatched(const char *argv0, int argc, char **argv) {
         goto done;
     }
 
-    qsort(unmatched.entries, unmatched.count, sizeof(unmatched_entry), cmp_unmatched_entry_desc);
+    if (unmatched.count > 1) qsort(unmatched.entries, unmatched.count, sizeof(unmatched_entry), cmp_unmatched_entry_desc);
     out = open_output_file(out_path);
     if (out == NULL) {
         fprintf(stderr, "failed to open unmatched inspection output\n");
@@ -9382,7 +9394,7 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
     fclose(stats);
 
     if (unknowns.count > 0) {
-        qsort(unknowns.items, unknowns.count, sizeof(unknowns.items[0]), cmp_bcl_unknown_desc);
+        if (unknowns.count > 1) qsort(unknowns.items, unknowns.count, sizeof(unknowns.items[0]), cmp_bcl_unknown_desc);
         char unknown_path[4096];
         if (path_join(unknown_path, sizeof(unknown_path), out_dir, "Top_Unknown_Barcodes.csv") != 0) goto done;
         FILE *unknown = open_output_file(unknown_path);

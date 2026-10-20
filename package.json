@@ -6,10 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "tsc --noEmit",
+    "lint": "eslint app lib --max-warnings=0",
     "check:site": "node scripts/check_site_assets.mjs && npm run test:site",
     "test:site": "node --experimental-strip-types --test tests/site/*.test.mjs",
-    "prebuild": "python3 scripts/build_sensitivity_demo.py --site"
+    "prebuild": "python3 scripts/build_sensitivity_demo.py --site",
+    "typecheck": "node node_modules/@typescript/native/bin/tsc --noEmit"
   },
   "repository": {
     "type": "git",
@@ -22,14 +23,19 @@
     "baseline-browser-mapping": "^2.11.0"
   },
   "dependencies": {
-    "next": "^16.3.6",
+    "next": "^16.4.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
     "@types/node": "^26.6.3",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "typescript": "^7.0.2"
+    "@typescript/native": "npm:typescript@7.0.2",
+    "eslint": "10.13.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0"
   }
 }

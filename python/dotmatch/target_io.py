@@ -7,8 +7,31 @@ import gzip
 from dataclasses import dataclass
 from pathlib import Path
 
-ID_COLUMNS = ("target_id", "guide_id", "barcode_id", "id", "name", "sgrna", "guide", "sgrnaid", "sgrna_id")
-SEQ_COLUMNS = ("target_seq", "guide_seq", "barcode_seq", "sequence", "seq", "grna.sequence", "bases", "sgrna.sequence", "sgrna_sequence", "sgrna_seq", "guide_sequence", "guidesequence")
+ID_COLUMNS = (
+    "target_id",
+    "guide_id",
+    "barcode_id",
+    "id",
+    "name",
+    "sgrna",
+    "guide",
+    "sgrnaid",
+    "sgrna_id",
+)
+SEQ_COLUMNS = (
+    "target_seq",
+    "guide_seq",
+    "barcode_seq",
+    "sequence",
+    "seq",
+    "grna.sequence",
+    "bases",
+    "sgrna.sequence",
+    "sgrna_sequence",
+    "sgrna_seq",
+    "guide_sequence",
+    "guidesequence",
+)
 GENE_COLUMNS = ("gene", "gene_id", "gene_symbol", "gene.symbol", "target_gene")
 
 
@@ -50,32 +73,32 @@ def read_target_table(path: str | Path) -> list[TargetRecord]:
             if width is None:
                 width = len(cols)
             if len(cols) != width:
-                raise ValueError(f"row has a different number of fields in {source} at line {reader.line_num}")
+                raise ValueError(
+                    f"row has a different number of fields in {source} at line {reader.line_num}"
+                )
             if first:
                 header = [cell.lower() for cell in cols]
                 sequence_only = len(header) == 1 and header[0] in SEQ_COLUMNS
                 named = sequence_only or (
-                    any(c in header for c in ID_COLUMNS)
-                    and any(c in header for c in SEQ_COLUMNS)
+                    any(c in header for c in ID_COLUMNS) and any(c in header for c in SEQ_COLUMNS)
                 )
                 first = False
                 if named:
-                    if any(sum(name in group for name in header) > 1 for group in (ID_COLUMNS, SEQ_COLUMNS, GENE_COLUMNS)):
-                        raise ValueError(f"multiple possible ID, sequence or gene columns in {source}; provide an unambiguous library")
+                    if any(
+                        sum(name in group for name in header) > 1
+                        for group in (ID_COLUMNS, SEQ_COLUMNS, GENE_COLUMNS)
+                    ):
+                        raise ValueError(
+                            f"multiple possible ID, sequence or gene columns in {source}; provide an unambiguous library"
+                        )
                     if len(set(header)) != len(header) or any(not name for name in header):
                         raise ValueError(f"duplicate header columns in {source}")
                     if sequence_only:
                         seq_col = 0
                     else:
-                        id_col = next(
-                            header.index(c) for c in ID_COLUMNS if c in header
-                        )
-                        seq_col = next(
-                            header.index(c) for c in SEQ_COLUMNS if c in header
-                        )
-                    gene_col = next(
-                        (header.index(c) for c in GENE_COLUMNS if c in header), -1
-                    )
+                        id_col = next(header.index(c) for c in ID_COLUMNS if c in header)
+                        seq_col = next(header.index(c) for c in SEQ_COLUMNS if c in header)
+                    gene_col = next((header.index(c) for c in GENE_COLUMNS if c in header), -1)
                     continue
             if sequence_only or (not named and len(cols) == 1):
                 if len(cols) != 1:
@@ -92,19 +115,17 @@ def read_target_table(path: str | Path) -> list[TargetRecord]:
                 target_id, sequence = cols[id_col], cols[seq_col]
                 gene = cols[gene_col] if 0 <= gene_col < len(cols) else ""
             if target_id.startswith('"') or gene.startswith('"'):
-                raise ValueError("target ID and gene may not start with a literal double quote (TSV identity boundary)")
-            if not target_id:
                 raise ValueError(
-                    f"empty target ID in {source} at line {reader.line_num}"
+                    "target ID and gene may not start with a literal double quote (TSV identity boundary)"
                 )
+            if not target_id:
+                raise ValueError(f"empty target ID in {source} at line {reader.line_num}")
             if target_id in seen:
                 raise ValueError(
                     f"duplicate target ID {target_id!r} in {source}; use distinct IDs, even for duplicate sequences"
                 )
             if not sequence:
-                raise ValueError(
-                    f"empty target sequence in {source} at line {reader.line_num}"
-                )
+                raise ValueError(f"empty target sequence in {source} at line {reader.line_num}")
             if not sequence.isascii() or any(
                 ch.isspace() or ord(ch) < 32 or ord(ch) == 127 for ch in sequence
             ):

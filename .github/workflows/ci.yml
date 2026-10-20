@@ -2,10 +2,44 @@ name: ci
 
 on:
   push:
+    branches: [main]
   pull_request:
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  quality:
+    name: Quality guardrails
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-quality.txt
+      - run: python -m pip install -r requirements-quality.txt pytest
+      - run: make quality
+      - name: Prove architecture violations fail
+        run: python -m pytest python/tests/test_architecture.py -q --junitxml=architecture-tests.xml
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: architecture-tests
+          path: architecture-tests.xml
+          retention-days: 7
+
   build-test:
+    needs: quality
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -16,6 +50,8 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
+      - name: Native compiler warnings as errors
+        run: make native-lint
       - name: Build
         run: make
       - name: Test
@@ -41,65 +77,10 @@ jobs:
           make release-ready
           make assay-evidence-ready
           make joss-paper-ready
-      - uses: actions/setup-node@v7
-        if: runner.os == 'Linux'
-        with:
-          node-version: 22
-          cache: npm
-      - name: Web install
-        if: runner.os == 'Linux'
-        run: npm ci
-      - name: Web lint
-        if: runner.os == 'Linux'
-        run: npm run lint
-      - name: Web audit
-        if: runner.os == 'Linux'
-        run: npm audit --audit-level=moderate
-      - name: Web build
-        if: runner.os == 'Linux'
-        run: npm run build
-      - name: Workbench install
-        if: runner.os == 'Linux' && hashFiles('apps/workbench/package.json') != ''
-        run: npm --prefix apps/workbench ci
-      - name: Workbench lint
-        if: runner.os == 'Linux' && hashFiles('apps/workbench/package.json') != ''
-        run: npm --prefix apps/workbench run lint
-      - name: Workbench tests
-        if: runner.os == 'Linux' && hashFiles('apps/workbench/package.json') != ''
-        run: npm --prefix apps/workbench run test
-      - name: Workbench web build
-        if: runner.os == 'Linux' && hashFiles('apps/workbench/package.json') != ''
-        run: npm --prefix apps/workbench run build
-      - uses: dtolnay/rust-toolchain@stable
-        if: runner.os == 'Linux' && hashFiles('apps/workbench/src-tauri/Cargo.toml') != ''
-      - name: Workbench Linux system dependencies
-        if: runner.os == 'Linux' && hashFiles('apps/workbench/src-tauri/Cargo.toml') != ''
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libayatana-appindicator3-dev \
-            libgtk-3-dev \
-            librsvg2-dev \
-            libwebkit2gtk-4.1-dev \
-            patchelf
-      - name: Workbench Rust tests
-        if: runner.os == 'Linux' && hashFiles('apps/workbench/src-tauri/Cargo.toml') != ''
-        run: cargo test --manifest-path apps/workbench/src-tauri/Cargo.toml
-      - name: Coverage tool dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang llvm
-      - name: Sanitizers
-        if: runner.os == 'Linux'
-        run: make asan
-      - name: Coverage
-        if: runner.os == 'Linux'
-        run: make coverage
-      - name: Shared library
-        run: make shared
 
   python-compat:
+    needs: quality
+    timeout-minutes: 20
     name: Python ${{ matrix.python-version }} compatibility
     runs-on: ubuntu-latest
     strategy:
@@ -119,6 +100,8 @@ jobs:
         run: make python-package-test
 
   reviewer-repro:
+    needs: quality
+    timeout-minutes: 20
     name: Reviewer reproducibility packet
     runs-on: ubuntu-latest
     steps:
@@ -133,3 +116,78 @@ jobs:
         with:
           name: reviewer-repro-packet
           path: repro/small/
+
+  web:
+    name: Website checks
+    needs: quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run check:site
+      - run: npm audit --audit-level=moderate
+      - run: npm run build
+
+  native-safety:
+    name: Native analysis and sanitizers
+    needs: quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Native analysis tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang llvm gcc-13
+      - name: GCC static analysis (warnings are errors)
+        run: |
+          set -o pipefail
+          make native-analyze ANALYZER_CC=gcc-13 2>&1 | tee native-analysis.log
+      - name: Address and undefined-behavior sanitizers
+        run: make asan CC=clang
+      - name: Native coverage
+        run: make coverage
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: native-analysis-and-coverage
+          path: |
+            native-analysis.log
+            build/coverage/coverage.txt
+            build/coverage/coverage.json
+            build/coverage/html/
+          retention-days: 7
+
+  required:
+    name: CI required
+    if: always()
+    needs: [quality, build-test, python-compat, reviewer-repro, web, native-safety]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require every CI job to succeed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          results = json.loads(os.environ["RESULTS"])
+          failed = [name for name, job in results.items() if job["result"] != "success"]
+          if failed:
+              raise SystemExit("Required CI jobs did not succeed: " + ", ".join(failed))
+          print("All required CI jobs passed")
+          PY

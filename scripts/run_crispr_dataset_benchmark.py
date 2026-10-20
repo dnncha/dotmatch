@@ -9,7 +9,6 @@ import json
 import os
 import shutil
 import subprocess
-import tempfile
 import sys
 from pathlib import Path
 
@@ -18,12 +17,11 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 from run_public_crispr_benchmark import (
     ROOT,
-    command_text,
     count_fastq_gz,
     dotmatch_stats,
     guide_counter_stats,
     guide_counter_hamming_policy_args,
-    guide_counter_offset_args,
+    guide_counter_offset_args as guide_counter_offset_args,
     mageck_stats,
     make_row,
     n_targets,

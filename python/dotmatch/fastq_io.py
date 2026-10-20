@@ -3,13 +3,20 @@
 Sequence symbols compare literally. This parser checks the file structure and
 printable ASCII, not whether a read originated from a particular DNA target.
 """
+
 from __future__ import annotations
 
 import gzip
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterator, TextIO
+from typing import Iterator, Protocol, TextIO
+
+
+class ContentDigest(Protocol):
+    """The digest operation needed by the streaming parser."""
+
+    def update(self, data: bytes) -> None: ...
 
 
 _INVALID_PRINTABLE_ASCII = re.compile(r"[^\x21-\x7e]")
@@ -22,7 +29,9 @@ class FastqRecord:
     qual: str
 
 
-def iter_fastq_records(handle: TextIO, source: str | Path, *, content_digest: Any = None) -> Iterator[FastqRecord]:
+def iter_fastq_records(
+    handle: TextIO, source: str | Path, *, content_digest: ContentDigest | None = None
+) -> Iterator[FastqRecord]:
     """Consume a text handle without closing it; hash before normalization."""
     ordinal = 0
     while True:
@@ -46,17 +55,25 @@ def iter_fastq_records(handle: TextIO, source: str | Path, *, content_digest: An
         if any(ord(ch) < 32 or ord(ch) == 127 for ch in identifiers[0]):
             raise ValueError(f"invalid FASTQ read identifier {location}")
         if not seq or len(seq) != len(qual):
-            raise ValueError(f"invalid FASTQ record {location}: sequence and quality lengths differ or are empty")
+            raise ValueError(
+                f"invalid FASTQ record {location}: sequence and quality lengths differ or are empty"
+            )
         if _INVALID_PRINTABLE_ASCII.search(seq) is not None:
-            raise ValueError(f"invalid FASTQ sequence {location}: expected printable ASCII without whitespace")
+            raise ValueError(
+                f"invalid FASTQ sequence {location}: expected printable ASCII without whitespace"
+            )
         if _INVALID_PRINTABLE_ASCII.search(qual) is not None:
             raise ValueError(f"invalid Phred+33 quality {location}: expected ASCII 33–126")
         if plus[1:].strip() and plus[1:].split()[0] != identifiers[0]:
-            raise ValueError(f"invalid FASTQ separator {location}: repeated read identifier does not match")
+            raise ValueError(
+                f"invalid FASTQ separator {location}: repeated read identifier does not match"
+            )
         yield FastqRecord(identifiers[0], seq.upper(), qual)
 
 
-def iter_fastq(path: str | Path, *, content_digest: Any = None) -> Iterator[FastqRecord]:
+def iter_fastq(
+    path: str | Path, *, content_digest: ContentDigest | None = None
+) -> Iterator[FastqRecord]:
     """Read plain/gzipped FASTQ, optionally hashing original decompressed bytes.
 
     The entire iterator must be consumed before its digest describes the whole

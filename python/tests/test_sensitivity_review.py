@@ -3,7 +3,6 @@
 Fixtures enumerate the documented synthetic reads, not real biological data.
 The existing test_sensitivity.py remains the native producer integration gate.
 """
-import copy
 import csv
 import hashlib
 import importlib.util

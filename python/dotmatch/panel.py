@@ -11,7 +11,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from itertools import combinations
 from pathlib import Path
-from typing import Iterable, Iterator, Sequence
+from typing import Sequence
 
 
 DNA = "ACGT"
@@ -1691,7 +1691,6 @@ def _per_target_safe_hamming_radius(records: Sequence[PanelRecord], constraints:
     for source_index, source in enumerate(records):
         safe_radius = 0
         for radius in range(MAX_EXACT_CERTIFICATE_RADIUS + 1):
-            assignment = AssignmentConfig(metric="hamming", k=radius, ambiguity_policy="radius")
             unsafe = False
             for variant in variants_within(source.sequence, "hamming", radius):
                 outcome = assign_query(variant, records, "hamming", radius, "radius")

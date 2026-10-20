@@ -89,3 +89,29 @@ test-command = "python -c \"import dotmatch, quickdna; assert dotmatch.distance(
 
 [tool.pytest.ini_options]
 pythonpath = ["python"]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+extend-exclude = ["repos", "packages", "benchmarks/work"]
+
+[tool.ruff.lint]
+# Correctness rules apply to runtime code, tests, and repository scripts.
+select = ["E9", "F", "B"]
+
+[tool.mypy]
+# Tooling runs on 3.11; the existing 3.9–3.14 matrix checks runtime compatibility.
+python_version = "3.10"
+mypy_path = "python"
+strict = true
+follow_imports = "silent"
+files = [
+    "python/dotmatch/_bindings.py",
+    "python/dotmatch/_optional.py",
+    "python/dotmatch/_validation.py",
+    "python/dotmatch/fastq_io.py",
+    "python/dotmatch/target_io.py",
+    "python/dotmatch/count_io.py",
+    "python/dotmatch/native.py",
+    "scripts/check_architecture.py",
+]

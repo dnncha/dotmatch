@@ -184,4 +184,5 @@ benchmarks/hamming_seed_layout/README
 benchmarks/guide_counter/README
 methods-and-citation
 packaging
+architecture
 ```

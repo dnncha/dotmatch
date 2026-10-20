@@ -37,7 +37,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 from ._optional import optional_module
 
@@ -49,7 +49,7 @@ pd, _HAS_PANDAS = optional_module("pandas")
 from dotmatch.core import (
     Matcher,
     assignments_to_anndata,
-    counts_tsv_to_anndata,
+    counts_tsv_to_anndata as counts_tsv_to_anndata,
     targets_from_dataframe,
 )
 

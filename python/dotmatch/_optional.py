@@ -1,4 +1,5 @@
 """Keep optional dataframe stacks off the native matching and CLI import path."""
+
 from __future__ import annotations
 
 from importlib import import_module

@@ -1,0 +1,27 @@
+repos:
+  - repo: local
+    hooks:
+      - id: python-lint
+        name: Python correctness lint
+        entry: make python-lint
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: python-format
+        name: Python boundary formatting
+        entry: make python-format-check
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: python-types
+        name: Strict boundary types
+        entry: make python-types
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: architecture
+        name: Runtime architecture boundaries
+        entry: make architecture-check
+        language: system
+        pass_filenames: false
+        always_run: true

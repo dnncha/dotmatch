@@ -1004,7 +1004,7 @@ def _barcode_infer_candidates(
                         observed.append(seq)
                 results = matcher.assign(observed, k=k)
                 unique = exact = ambiguous = no_match = 0
-                for obs, result in zip(observed, results):
+                for result in results:
                     if result.status == MATCH_UNIQUE:
                         unique += 1
                         if result.best_distance == 0:
@@ -1617,8 +1617,6 @@ def _write_barcode_autopsy_reports(out_dir: Path, provenance: dict[str, object])
     assignment_rate = inference.get("assignment_rate", "")
     inference_status = inference.get("status", "ready")
     inference_warnings = inference.get("warnings") if isinstance(inference.get("warnings"), list) else []
-    ambiguous_rate = inference.get("ambiguous_rate", "")
-    no_match_rate = inference.get("no_match_rate", "")
     total_reads = _as_int(run_summary.get("total_reads"))
     assigned_unique = _as_int(run_summary.get("assigned_unique"))
     assigned_exact = _as_int(run_summary.get("assigned_exact"))
@@ -1654,7 +1652,7 @@ def _write_barcode_autopsy_reports(out_dir: Path, provenance: dict[str, object])
             f"- Inference status: `{inference_status}`",
             f"- Assignment rate: `{run_assignment_rate}`",
             f"- Top finding: `{findings[0]['finding'] if findings else diagnosis}`",
-            f"- Primary report: `report.html`",
+            "- Primary report: `report.html`",
             "",
             "## Comparator check",
             "",

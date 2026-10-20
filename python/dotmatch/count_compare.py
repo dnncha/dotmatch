@@ -12,7 +12,6 @@ import heapq
 import html
 import io
 import json
-import sys
 import tempfile
 from dataclasses import replace
 from pathlib import Path

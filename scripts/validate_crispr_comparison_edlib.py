@@ -7,6 +7,7 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import csv
 import gzip
+from functools import partial
 import json
 import os
 import subprocess
@@ -262,6 +263,20 @@ def sanson_dataset(records: int) -> tuple[str, Path, int, int, int, int, str, fl
     )
 
 
+def _validate_sample(item: tuple[str, Path], *, dataset_id: str, targets: Path,
+                     target_start: int, target_length: int, auto_offset: int,
+                     auto_offset_sample: int, offset_mode: str,
+                     offset_min_fraction: float, args: argparse.Namespace,
+                     work_dir: Path) -> dict[str, str]:
+    sample, reads = item
+    return validate_one(
+        dataset_id, sample, targets, reads, target_start, target_length,
+        auto_offset, auto_offset_sample, args.records_per_sample,
+        offset_mode, offset_min_fraction,
+        min(args.sample, args.records_per_sample), work_dir, args.edlib_threads,
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--records-per-sample", type=int, default=int(os.environ.get("DOTMATCH_COMPARISON_VALIDATION_RECORDS", "10000")))
@@ -300,14 +315,14 @@ def main() -> None:
         dataset_id, targets, target_start, target_length, auto_offset, auto_offset_sample, offset_mode, offset_min_fraction, samples = (
             dataset_factories[dataset_name](args.records_per_sample)
         )
-        def run_sample(item: tuple[str, Path]) -> dict[str, str]:
-            sample, reads = item
-            return validate_one(
-                dataset_id, sample, targets, reads, target_start, target_length,
-                auto_offset, auto_offset_sample, args.records_per_sample,
-                offset_mode, offset_min_fraction,
-                min(args.sample, args.records_per_sample), work_dir, args.edlib_threads
-            )
+        # Bind this dataset before submitting work to the thread pool.
+        run_sample = partial(
+            _validate_sample,
+            dataset_id=dataset_id, targets=targets, target_start=target_start,
+            target_length=target_length, auto_offset=auto_offset,
+            auto_offset_sample=auto_offset_sample, offset_mode=offset_mode,
+            offset_min_fraction=offset_min_fraction, args=args, work_dir=work_dir,
+        )
         sample_size = min(args.sample, args.records_per_sample)
         pending = [
             item for item in samples
