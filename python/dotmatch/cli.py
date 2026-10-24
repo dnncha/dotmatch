@@ -289,6 +289,18 @@ def _write_assignment_row(
 
 def command_count(args: argparse.Namespace) -> int:
     _validate_window_args(args)
+    from ._outputs import staged_outputs
+
+    destinations = {role: getattr(args, role) for role in ('out', 'assignments', 'summary')
+                    if getattr(args, role)}
+    with staged_outputs(destinations, inputs=(args.targets, args.reads)) as paths:
+        staged = argparse.Namespace(**vars(args))
+        for role, path in paths.items():
+            setattr(staged, role, path)
+        return _count_to_staged(staged)
+
+
+def _count_to_staged(args: argparse.Namespace) -> int:
     targets = _read_targets(args.targets)
     matcher = Matcher([t.seq for t in targets])
     counts = {

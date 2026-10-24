@@ -129,6 +129,13 @@ def test_quickstart_original_sources_survive_temporary_staging(tmp_path, linked,
     report = json.loads((project / "inference_report.json").read_text())
     assert report["samples"][0]["source_fastq"] == str(reads)
     assert report["input_storage"] == ("linked" if linked else "copied")
+    page = (project / "index.html").read_text()
+    assert "Status: draft" in page
+    assert str(tmp_path) not in page and ".dotmatch-inputs-" not in page
+    assert 'href="assay.toml"' in page
+    assert 'href="assay_out/reliability_report.html"' not in page
+    assert "not establish biological accuracy" in page
+    assert ("not self-contained" in page) is linked
     assert not list(tmp_path.glob(".project.dotmatch-inputs-*"))
     output = capsys.readouterr().out
     assert "filenames are not biological replicate declarations" in output
@@ -258,6 +265,7 @@ def test_uncertain_inference_is_not_promoted_automatically(tmp_path, monkeypatch
     monkeypatch.setattr(first_run, "scaffold_assay_project", uncertain)
     monkeypatch.setattr(first_run, "command_assay", refuse)
     assert first_run.quickstart_main(quick_args(library, reads, tmp_path / "project") + ["--accept-inference"]) == 2
+    assert "Status: draft" in (tmp_path / "project/index.html").read_text()
 
 
 def test_ready_inference_delegates_to_existing_assay_engine(tmp_path, monkeypatch):
@@ -271,11 +279,19 @@ def test_ready_inference_delegates_to_existing_assay_engine(tmp_path, monkeypatc
         path.write_text(json.dumps(report))
         return result
     calls = []
-    monkeypatch.setattr(first_run, "scaffold_assay_project", ready)
-    monkeypatch.setattr(first_run, "command_assay", lambda args: calls.append(args) or 0)
     project = tmp_path / "project"
+    def run(args):
+        calls.append(args)
+        report = project / "assay_out/reliability_report.html"
+        report.parent.mkdir()
+        report.write_text("reliability report")
+        return 0
+    monkeypatch.setattr(first_run, "scaffold_assay_project", ready)
+    monkeypatch.setattr(first_run, "command_assay", run)
     assert first_run.quickstart_main(quick_args(library, reads, project) + ["--accept-inference"]) == 0
     assert calls == [["start", str(project / "assay.toml")]]
+    assert "Status: ready" in (project / "index.html").read_text()
+    assert 'href="assay_out/reliability_report.html"' in (project / "index.html").read_text()
 
 
 def test_other_commands_keep_the_existing_router(monkeypatch):
@@ -292,3 +308,15 @@ def test_compare_counts_alias_uses_existing_implementation(monkeypatch):
     monkeypatch.setattr(count_compare, "main", lambda args: calls.append(args) or 1)
     assert entrypoint.main(["compare-counts", "--help"]) == 1
     assert calls == [["--help"]]
+
+
+def test_quickstart_index_escapes_input_names(tmp_path):
+    library, reads = inputs(tmp_path)
+    hostile = tmp_path / "sample<script>.fastq"
+    reads.rename(hostile)
+    project = tmp_path / "project"
+    assert entrypoint.main(["crispr", "quickstart", *quick_args(library, hostile, project)]) == 0
+    page = (project / "index.html").read_text()
+    assert "sample&lt;script&gt;.fastq" in page
+    assert "<script>" not in page
+    assert str(tmp_path) not in page

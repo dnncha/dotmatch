@@ -1,12 +1,12 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { publishedVersion } from "./site-metadata";
+import { releaseInstallCommand } from "./site-metadata";
 import styles from "./home.module.css";
 export function InstallCommand() {
   const [copied, setCopied] = useState(false);
   const [failed, setFailed] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const command = `python3 -m pip install dotmatch==${publishedVersion}`;
+  const command = releaseInstallCommand;
   useEffect(
     () => () => {
       if (timer.current) clearTimeout(timer.current);

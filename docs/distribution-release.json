@@ -2,7 +2,7 @@
   "schema_version": 1,
   "status": "partially_verified",
   "release_version": "0.7.0",
-  "publication_authorized": true,
+  "publication_authorized": false,
   "release_tag": "v0.7.0",
   "post_release_gate": "make distribution-channels",
   "channels": [
@@ -74,5 +74,16 @@
     "Bioconda 0.7.0 and its AssayCode metapackage have not been submitted or propagated: the working environment cannot push to the recipe fork (HTTP 401).",
     "BioContainers 0.7.0 depends on the matching Bioconda build and is not independently verified."
   ],
-  "next_action": "Restore recipe-fork write access and GitHub API access, update existing bioconda-recipes PR #68663 with the checksum-backed 0.7.0 patch, then verify Anaconda and BioContainers propagation."
+  "next_action": "Restore recipe-fork write access and GitHub API access, update existing bioconda-recipes PR #68663 with the checksum-backed 0.7.0 patch, then verify Anaconda and BioContainers propagation.",
+  "candidate_version": "0.8.0",
+  "candidate_status": "prepared_not_published",
+  "github_release": {
+    "version": "0.8.0",
+    "tag": "v0.8.0",
+    "status": "prepared",
+    "public_url": "https://github.com/dnncha/dotmatch/releases/tag/v0.8.0",
+    "evidence_url": "https://github.com/dnncha/dotmatch/releases/download/v0.8.0/verification.json",
+    "scope": "Source distribution and locally verified Linux x86_64 wheel. Other publication channels retain their independently verified versions.",
+    "record_context": "Prepublication source snapshot. The attached verification.json records published artifact checks after release."
+  }
 }

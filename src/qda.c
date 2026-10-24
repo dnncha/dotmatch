@@ -300,6 +300,214 @@ static FILE *open_output_file(const char *path) {
     return out;
 }
 
+typedef struct count_output_entry {
+    const char *path;
+    char *canonical;
+    char *temporary;
+    char *backup;
+    FILE *stream;
+    struct stat owned;
+    struct stat previous;
+    int previously_present;
+    int published;
+} count_output_entry;
+
+typedef struct count_output_set {
+    count_output_entry entries[8];
+    size_t count;
+} count_output_set;
+
+static char *count_output_canonical(const char *path) {
+    char *copy = strdup(path);
+    if (copy == NULL) return NULL;
+    char *slash = strrchr(copy, '/');
+    const char *name = slash == NULL ? copy : slash + 1;
+    char *parent;
+    if (slash == NULL) parent = realpath(".", NULL);
+    else {
+        *slash = '\0';
+        parent = realpath(slash == copy ? "/" : copy, NULL);
+    }
+    char *result = NULL;
+    if (parent != NULL && name[0] != '\0' && strcmp(name, ".") != 0 && strcmp(name, "..") != 0) {
+        size_t size = strlen(parent) + strlen(name) + 2;
+        result = malloc(size);
+        if (result != NULL) snprintf(result, size, "%s/%s", parent, name);
+    }
+    free(parent);
+    free(copy);
+    return result;
+}
+
+static int count_paths_alias(const char *a, const char *b) {
+    if (b == NULL) return 0;
+    struct stat sa, sb;
+    if (stat(a, &sa) == 0 && stat(b, &sb) == 0 && sa.st_dev == sb.st_dev && sa.st_ino == sb.st_ino) return 1;
+    char *ca = count_output_canonical(a);
+    char *cb = count_output_canonical(b);
+    int same = ca != NULL && cb != NULL && strcmp(ca, cb) == 0;
+    free(ca);
+    free(cb);
+    return same;
+}
+
+static char *count_output_sibling(const char *canonical, const char *kind) {
+    char *path = malloc(strlen(canonical) + 32);
+    if (path == NULL) return NULL;
+    strcpy(path, canonical);
+    snprintf(strrchr(path, '/') + 1, 32, ".dotmatch-%s-XXXXXX", kind);
+    return path;
+}
+
+static int count_output_add(count_output_set *set, const char *path, const char **inputs, size_t input_count) {
+    if (path == NULL) return 0;
+    struct stat st;
+    int previously_present = lstat(path, &st) == 0;
+    if (previously_present) {
+        if (!S_ISREG(st.st_mode)) goto invalid;
+    } else if (errno != ENOENT) goto invalid;
+    for (size_t i = 0; i < input_count; ++i) {
+        if (count_paths_alias(path, inputs[i])) goto invalid;
+    }
+    for (size_t i = 0; i < set->count; ++i) {
+        if (count_paths_alias(path, set->entries[i].path)) goto invalid;
+    }
+    if (set->count == sizeof(set->entries) / sizeof(set->entries[0])) goto invalid;
+    count_output_entry *entry = &set->entries[set->count++];
+    entry->path = path;
+    entry->previously_present = previously_present;
+    if (previously_present) entry->previous = st;
+    entry->canonical = count_output_canonical(path);
+    if (entry->canonical == NULL) goto invalid;
+    entry->temporary = count_output_sibling(entry->canonical, "stage");
+    if (entry->temporary == NULL) goto invalid;
+    int fd = mkstemp(entry->temporary);
+    if (fd < 0) goto invalid;
+    if (fstat(fd, &entry->owned) != 0) { close(fd); unlink(entry->temporary); goto invalid; }
+    entry->stream = fdopen(fd, "w");
+    if (entry->stream == NULL) { close(fd); unlink(entry->temporary); goto invalid; }
+    return 0;
+invalid:
+    fprintf(stderr, "unsafe or unavailable count output: %s\n", path);
+    return -1;
+}
+
+static FILE *count_output_stream(count_output_set *set, const char *path) {
+    for (size_t i = 0; i < set->count; ++i) {
+        if (strcmp(set->entries[i].path, path) == 0) return set->entries[i].stream;
+    }
+    return NULL;
+}
+
+static int count_output_owned(const count_output_entry *entry, const char *path) {
+    struct stat st;
+    return path != NULL && lstat(path, &st) == 0 &&
+           st.st_dev == entry->owned.st_dev && st.st_ino == entry->owned.st_ino;
+}
+
+static void count_output_dispose(count_output_set *set) {
+    for (size_t i = 0; i < set->count; ++i) {
+        count_output_entry *entry = &set->entries[i];
+        if (entry->stream != NULL) fclose(entry->stream);
+        if (count_output_owned(entry, entry->temporary)) unlink(entry->temporary);
+        free(entry->canonical);
+        free(entry->temporary);
+        free(entry->backup);
+    }
+}
+
+static int count_file_version_equal(const struct stat *a, const struct stat *b, int check_ctime) {
+    if (a->st_dev != b->st_dev || a->st_ino != b->st_ino || a->st_size != b->st_size ||
+        a->st_mtime != b->st_mtime || (check_ctime && a->st_ctime != b->st_ctime)) return 0;
+#ifdef __APPLE__
+    return a->st_mtimespec.tv_nsec == b->st_mtimespec.tv_nsec &&
+           (!check_ctime || a->st_ctimespec.tv_nsec == b->st_ctimespec.tv_nsec);
+#else
+    return a->st_mtim.tv_nsec == b->st_mtim.tv_nsec &&
+           (!check_ctime || a->st_ctim.tv_nsec == b->st_ctim.tv_nsec);
+#endif
+}
+
+static int count_output_unchanged(const count_output_entry *entry) {
+    struct stat current;
+    if (lstat(entry->canonical, &current) != 0)
+        return !entry->previously_present && errno == ENOENT;
+    return entry->previously_present && S_ISREG(current.st_mode) &&
+           count_file_version_equal(&entry->previous, &current, 1);
+}
+
+static int count_output_commit(count_output_set *set) {
+    int failed = 0;
+    for (size_t i = 0; i < set->count; ++i) {
+        count_output_entry *entry = &set->entries[i];
+        if (ferror(entry->stream) || fflush(entry->stream) != 0) failed = 1;
+        if (fclose(entry->stream) != 0) failed = 1;
+        entry->stream = NULL;
+    }
+    if (failed) {
+        fprintf(stderr, "failed to finish count output streams\n");
+        return -1;
+    }
+    for (size_t i = 0; i < set->count; ++i) {
+        if (!count_output_unchanged(&set->entries[i])) {
+            fprintf(stderr, "count destination changed before publication: %s\n", set->entries[i].path);
+            return -1;
+        }
+    }
+    for (size_t i = 0; i < set->count; ++i) {
+        count_output_entry *entry = &set->entries[i];
+        if (!count_output_unchanged(entry)) { errno = ESTALE; goto rollback; }
+        if (entry->previously_present) {
+            entry->backup = count_output_sibling(entry->canonical, "backup");
+            if (entry->backup == NULL) goto rollback;
+            int fd = mkstemp(entry->backup);
+            if (fd < 0) { free(entry->backup); entry->backup = NULL; goto rollback; }
+            close(fd);
+            if (unlink(entry->backup) != 0) goto rollback;
+            if (link(entry->canonical, entry->backup) != 0) {
+                free(entry->backup); entry->backup = NULL; goto rollback;
+            }
+            struct stat linked;
+            if (lstat(entry->canonical, &linked) != 0 ||
+                !count_file_version_equal(&entry->previous, &linked, 0)) { errno = ESTALE; goto rollback; }
+            entry->previous = linked;
+        }
+    }
+    for (size_t i = 0; i < set->count; ++i) {
+        count_output_entry *entry = &set->entries[i];
+        if (!count_output_unchanged(entry)) { errno = ESTALE; goto rollback; }
+        if (!count_output_owned(entry, entry->temporary)) { errno = ESTALE; goto rollback; }
+        if (rename(entry->temporary, entry->canonical) != 0) goto rollback;
+        entry->published = 1;
+    }
+    for (size_t i = 0; i < set->count; ++i) {
+        if (set->entries[i].backup != NULL && unlink(set->entries[i].backup) != 0)
+            fprintf(stderr, "retained count output backup: %s\n", set->entries[i].backup);
+    }
+    return 0;
+rollback:
+    fprintf(stderr, "failed to publish count outputs: %s\n", strerror(errno));
+    for (size_t i = set->count; i > 0; --i) {
+        count_output_entry *entry = &set->entries[i - 1];
+        if (entry->published) {
+            if (!count_output_owned(entry, entry->canonical)) {
+                fprintf(stderr, "count output changed during rollback: %s; retained backup: %s\n",
+                        entry->path, entry->backup == NULL ? "none" : entry->backup);
+                continue;
+            }
+            int rc = entry->backup != NULL ? rename(entry->backup, entry->canonical) : unlink(entry->canonical);
+            if (rc != 0) {
+                fprintf(stderr, "failed to restore %s; retained backup: %s\n", entry->path,
+                        entry->backup == NULL ? "none" : entry->backup);
+                continue;
+            }
+        }
+        if (entry->backup != NULL && unlink(entry->backup) != 0 && errno != ENOENT)
+            fprintf(stderr, "retained count output backup: %s\n", entry->backup);
+    }
+    return -1;
+}
+
 static void uppercase_ascii(char *s) {
     for (; *s != '\0'; ++s) {
         if (*s >= 'a' && *s <= 'z') *s = (char)(*s - 'a' + 'A');
@@ -1205,9 +1413,10 @@ typedef struct guide_counter_output {
     const string_list *nonessential_genes;
     const string_list *control_guides;
     const regex_t *control_re;
+    const char *input_paths[3];
 } guide_counter_output;
 
-static int guide_counter_write_outputs(const guide_counter_output *output, const seq_table *targets,
+static int guide_counter_write_outputs(count_output_set *outputs, const guide_counter_output *output, const seq_table *targets,
                                        const string_list *reads, const string_list *labels,
                                        const unsigned long long *counts, const count_stats *stats_by_sample);
 
@@ -2088,13 +2297,11 @@ static void write_tsv_preview_table(FILE *out, const char *title, const char *pa
     fclose(in);
 }
 
-static int write_count_html_report(const char *path, const seq_table *targets, const string_list *reads,
+static int write_count_html_report(FILE *out, const seq_table *targets, const string_list *reads,
                                    const string_list *labels, const unsigned long long *counts,
                                    const count_stats *stats_by_sample, const offset_list *selected_offsets,
                                    int k, count_metric metric, ambiguity_policy policy, size_t target_len,
                                    const char *audit_dir, const char *unmatched_report_path) {
-    FILE *out = open_output_file(path);
-    if (out == NULL) return -1;
 
     int needs_review = 0;
     for (size_t sample = 0; sample < reads->count; ++sample) {
@@ -2202,7 +2409,6 @@ static int write_count_html_report(const char *path, const seq_table *targets, c
     }
 
     fprintf(out, "</main></body></html>\n");
-    fclose(out);
     return 0;
 }
 
@@ -5278,10 +5484,8 @@ static int run_count(const char *argv0, int argc, char **argv, const guide_count
     FILE *assignments = NULL;
     FILE *ambiguous_out = NULL;
     FILE *unmatched_out = NULL;
-    int out_created = 0;
-    int assignments_created = 0;
-    int ambiguous_created = 0;
-    int unmatched_created = 0;
+    count_output_set outputs = {0};
+    char compatible_paths[3][4096];
     int rc = 1;
     double run_start_seconds = seconds_now();
     double target_index_seconds = 0.0;
@@ -5296,6 +5500,40 @@ static int run_count(const char *argv0, int argc, char **argv, const guide_count
     uint64_t *metal_target_codes = NULL;
 
     double phase_start_seconds = seconds_now();
+    const char **input_paths = calloc(reads.count + 7, sizeof(*input_paths));
+    if (input_paths == NULL) goto done;
+    size_t input_count = 0;
+    input_paths[input_count++] = targets_path;
+    input_paths[input_count++] = samples_path;
+    input_paths[input_count++] = report_unmatched_path;
+    char audit_input[4096];
+    if (report_audit_dir != NULL) {
+        int n = snprintf(audit_input, sizeof(audit_input), "%s/audit_summary.tsv", report_audit_dir);
+        if (n < 0 || (size_t)n >= sizeof(audit_input)) { free(input_paths); goto done; }
+        input_paths[input_count++] = audit_input;
+    }
+    for (size_t sample = 0; sample < reads.count; ++sample) input_paths[input_count++] = reads.items[sample];
+    if (compatible_output != NULL) {
+        for (size_t j = 0; j < 3; ++j) input_paths[input_count++] = compatible_output->input_paths[j];
+        const char *suffixes[] = {"counts.txt", "extended-counts.txt", "stats.txt"};
+        for (size_t j = 0; j < 3; ++j) {
+            int n = snprintf(compatible_paths[j], sizeof(compatible_paths[j]), "%s.%s", compatible_output->prefix, suffixes[j]);
+            if (n < 0 || (size_t)n >= sizeof(compatible_paths[j]) ||
+                count_output_add(&outputs, compatible_paths[j], input_paths, input_count) != 0) {
+                free(input_paths); goto done;
+            }
+        }
+    } else {
+        const char *output_paths[] = {out_path, assignments_path, ambiguous_path, unmatched_path,
+                                     target_counts_long_path, sample_qc_path, summary_path, report_path};
+        for (size_t j = 0; j < sizeof(output_paths) / sizeof(output_paths[0]); ++j) {
+            if (count_output_add(&outputs, output_paths[j], input_paths, input_count) != 0) {
+                free(input_paths); goto done;
+            }
+        }
+    }
+    free(input_paths);
+
     if (compatible_output != NULL) {
         targets = *compatible_output->prepared_targets;
         memset(compatible_output->prepared_targets, 0, sizeof(seq_table));
@@ -5427,30 +5665,27 @@ static int run_count(const char *argv0, int argc, char **argv, const guide_count
     }
 
     if (assignments_path != NULL) {
-        assignments = open_output_file(assignments_path);
+        assignments = count_output_stream(&outputs, assignments_path);
         if (assignments == NULL) {
             fprintf(stderr, "failed to open assignments output\n");
             goto done;
         }
-        assignments_created = 1;
         fprintf(assignments, "sample\tread_id\tobserved_seq\ttarget_index\ttarget_id\ttarget_seq\tbest_distance\tsecond_best_distance\tmatch_count\tstatus\tcorrection\n");
     }
     if (ambiguous_path != NULL) {
-        ambiguous_out = open_output_file(ambiguous_path);
+        ambiguous_out = count_output_stream(&outputs, ambiguous_path);
         if (ambiguous_out == NULL) {
             fprintf(stderr, "failed to open ambiguous output\n");
             goto done;
         }
-        ambiguous_created = 1;
         fprintf(ambiguous_out, "sample\tread_id\tobserved_seq\ttarget_index\ttarget_id\ttarget_seq\tbest_distance\tsecond_best_distance\tmatch_count\tstatus\tcorrection\n");
     }
     if (unmatched_path != NULL) {
-        unmatched_out = open_output_file(unmatched_path);
+        unmatched_out = count_output_stream(&outputs, unmatched_path);
         if (unmatched_out == NULL) {
             fprintf(stderr, "failed to open unmatched output\n");
             goto done;
         }
-        unmatched_created = 1;
         fprintf(unmatched_out, "sample\tread_id\tobserved_seq\ttarget_index\ttarget_id\ttarget_seq\tbest_distance\tsecond_best_distance\tmatch_count\tstatus\tcorrection\n");
     }
 
@@ -5638,7 +5873,7 @@ static int run_count(const char *argv0, int argc, char **argv, const guide_count
 
     counting_seconds = seconds_now() - phase_start_seconds;
     if (compatible_output != NULL) {
-        if (guide_counter_write_outputs(compatible_output, &targets, &reads, &labels, counts, stats_by_sample) != 0) {
+        if (guide_counter_write_outputs(&outputs, compatible_output, &targets, &reads, &labels, counts, stats_by_sample) != 0) {
             fprintf(stderr, "failed to write GuideCounter-compatible outputs\n");
             goto done;
         }
@@ -5651,12 +5886,11 @@ static int run_count(const char *argv0, int argc, char **argv, const guide_count
         }
     }
 
-    out = open_output_file(out_path);
+    out = count_output_stream(&outputs, out_path);
     if (out == NULL) {
         fprintf(stderr, "failed to open count output\n");
         goto done;
     }
-    out_created = 1;
     if (strcmp(format, "mageck") == 0) {
         fprintf(out, "sgRNA\tGene");
         for (size_t sample = 0; sample < reads.count; ++sample) fprintf(out, "\t%s", labels.items[sample]);
@@ -5692,7 +5926,7 @@ static int run_count(const char *argv0, int argc, char **argv, const guide_count
     }
 
     if (target_counts_long_path != NULL) {
-        FILE *long_out = open_output_file(target_counts_long_path);
+        FILE *long_out = count_output_stream(&outputs, target_counts_long_path);
         if (long_out == NULL) {
             fprintf(stderr, "failed to open long target-count output\n");
             goto done;
@@ -5710,11 +5944,10 @@ static int run_count(const char *argv0, int argc, char **argv, const guide_count
                         exact, sub, ins, del, other, exact + sub + ins + del + other, (int)ambiguous_nearby[t]);
             }
         }
-        fclose(long_out);
     }
 
     if (sample_qc_path != NULL) {
-        FILE *qc = open_output_file(sample_qc_path);
+        FILE *qc = count_output_stream(&outputs, sample_qc_path);
         if (qc == NULL) {
             fprintf(stderr, "failed to open sample QC output\n");
             goto done;
@@ -5723,7 +5956,6 @@ static int run_count(const char *argv0, int argc, char **argv, const guide_count
         for (size_t sample = 0; sample < reads.count; ++sample) {
             unsigned long long *target_totals = (unsigned long long *)calloc(targets.count == 0 ? 1 : targets.count, sizeof(unsigned long long));
             if (target_totals == NULL) {
-                fclose(qc);
                 fprintf(stderr, "out of memory\n");
                 goto done;
             }
@@ -5756,11 +5988,10 @@ static int run_count(const char *argv0, int argc, char **argv, const guide_count
                     s->candidates_verified);
             free(target_totals);
         }
-        fclose(qc);
     }
 
     if (summary_path != NULL) {
-        FILE *summary = open_output_file(summary_path);
+        FILE *summary = count_output_stream(&outputs, summary_path);
         if (summary == NULL) {
             fprintf(stderr, "failed to open summary output\n");
             goto done;
@@ -5828,10 +6059,9 @@ static int run_count(const char *argv0, int argc, char **argv, const guide_count
                     s->candidates_verified, sample + 1 == reads.count ? "" : ",");
         }
         fprintf(summary, "  ]\n}\n");
-        fclose(summary);
     }
     if (report_path != NULL) {
-        if (write_count_html_report(report_path, &targets, &reads, &labels, counts, stats_by_sample, selected_offsets,
+        if (write_count_html_report(count_output_stream(&outputs, report_path), &targets, &reads, &labels, counts, stats_by_sample, selected_offsets,
                                     k, metric, assignment_policy, target_len, report_audit_dir,
                                     report_unmatched_path) != 0) {
             fprintf(stderr, "failed to write HTML report\n");
@@ -5866,16 +6096,8 @@ done:
         for (size_t sample = 0; sample < reads.count; ++sample) count_progress_fini(&progress_by_sample[sample]);
         free(progress_by_sample);
     }
-    if (out != NULL) fclose(out);
-    if (assignments != NULL) fclose(assignments);
-    if (ambiguous_out != NULL) fclose(ambiguous_out);
-    if (unmatched_out != NULL) fclose(unmatched_out);
-    if (rc != 0) {
-        if (out_created) unlink(out_path);
-        if (assignments_created) unlink(assignments_path);
-        if (ambiguous_created) unlink(ambiguous_path);
-        if (unmatched_created) unlink(unmatched_path);
-    }
+    if (rc == 0 && count_output_commit(&outputs) != 0) rc = 1;
+    count_output_dispose(&outputs);
     qdaln_index_free(index);
     free_hamming_lookup(&hlookup);
     free_hamming_lookup(&offset_lookup);
@@ -5974,7 +6196,7 @@ static double round_positive_dp(double value, int places) {
     return (double)scaled / factor;
 }
 
-static int guide_counter_write_outputs(const guide_counter_output *output, const seq_table *targets,
+static int guide_counter_write_outputs(count_output_set *outputs, const guide_counter_output *output, const seq_table *targets,
                                        const string_list *reads, const string_list *labels,
                                        const unsigned long long *counts, const count_stats *stats_by_sample) {
     char counts_path[4096], extended_path[4096], stats_path[4096];
@@ -5990,11 +6212,9 @@ static int guide_counter_write_outputs(const guide_counter_output *output, const
         types[t] = guide_counter_type_for_target(&targets->records[t], output->essential_genes,
                                                 output->nonessential_genes, output->control_guides, output->control_re);
     }
-    FILE *count_file = open_output_file(counts_path);
-    FILE *extended = open_output_file(extended_path);
+    FILE *count_file = count_output_stream(outputs, counts_path);
+    FILE *extended = count_output_stream(outputs, extended_path);
     if (count_file == NULL || extended == NULL) {
-        if (count_file != NULL) fclose(count_file);
-        if (extended != NULL) fclose(extended);
         free(types);
         return -1;
     }
@@ -6017,10 +6237,8 @@ static int guide_counter_write_outputs(const guide_counter_output *output, const
         fprintf(count_file, "\n"); fprintf(extended, "\n");
     }
     int ok = !ferror(count_file) && !ferror(extended);
-    if (fclose(count_file) != 0) ok = 0;
-    if (fclose(extended) != 0) ok = 0;
     if (!ok) { free(types); return -1; }
-    FILE *stats = open_output_file(stats_path);
+    FILE *stats = count_output_stream(outputs, stats_path);
     if (stats == NULL) {
         free(types);
         return -1;
@@ -6068,7 +6286,6 @@ static int guide_counter_write_outputs(const guide_counter_output *output, const
                 frac, mean_all, mean_essential, mean_nonessential, mean_control, mean_other, zero);
     }
     ok = !ferror(stats);
-    if (fclose(stats) != 0) ok = 0;
     free(types);
     return ok ? 0 : -1;
 }
@@ -6262,7 +6479,8 @@ static int run_guide_counter_compatible(const char *argv0, int argc, char **argv
 
     guide_counter_output compatible = {
         output_prefix, &targets, &essential_genes, &nonessential_genes, &control_guides,
-        have_control_re ? &control_re : NULL
+        have_control_re ? &control_re : NULL,
+        {essential_path, nonessential_path, control_guides_path}
     };
     rc = run_count(argv0, (int)count_args.count, count_args.items, &compatible);
 

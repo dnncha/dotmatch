@@ -849,6 +849,8 @@ def _finish_assignment_summary(summary: dict[str, int | float]) -> dict[str, int
 
 def write_assignments_tsv(assignments: Iterable[StreamAssignment], path: str | Path) -> dict[str, int | float]:
     """Write streamed assignments to TSV and return ``assignment_summary``."""
+    from ._outputs import staged_outputs
+
     columns = [
         "read_id",
         "observed_seq",
@@ -866,7 +868,7 @@ def write_assignments_tsv(assignments: Iterable[StreamAssignment], path: str | P
     ambiguous = 0
     unmatched = 0
     invalid = 0
-    with _open_text(path, "wt") as fh:
+    with staged_outputs({'assignments': path}) as outputs, _open_text(outputs['assignments'], "wt") as fh:
         write = fh.write
         write("\t".join(columns) + "\n")
         for row in assignments:

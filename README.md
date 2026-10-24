@@ -65,6 +65,19 @@ basecaller, cell/UMI pipeline or gene-level hit-calling package.
 
 ## Install
 
+DotMatch 0.8.0 adds protected count outputs, an offline project setup review,
+and the installed `sensitivity-review` command. Install the source release with
+a C compiler and zlib development headers available:
+
+```bash
+python3 -m pip install https://github.com/dnncha/dotmatch/releases/download/v0.8.0/dotmatch-0.8.0.tar.gz
+dotmatch --version
+```
+
+The [0.8.0 release](https://github.com/dnncha/dotmatch/releases/tag/v0.8.0)
+includes verification evidence and checksums. PyPI and GHCR remain independently
+verified at 0.7.0; the commands below install that earlier release.
+
 Release 0.7.0 is published on PyPI and GHCR. It includes the six `dotmatch agent` tools
 described below:
 
@@ -120,8 +133,9 @@ dotmatch crispr quickstart \
   --out crispr_screen/
 ```
 
-This creates a draft project. Review `crispr_screen/inference_report.json` and
-`assay.toml`: confirm the guide window, orientation, library and sample files.
+This creates a draft project. In 0.8.0, open `crispr_screen/index.html` for the
+offline setup review. Confirm the guide window, orientation, library and sample
+files against `inference_report.json` and `assay.toml`.
 After confirming the settings, change the top-level `status = "draft"` to
 `status = "ready"` in `assay.toml`, then run and review:
 
@@ -162,9 +176,11 @@ This is sensitivity analysis, not an estimate of biological accuracy.
 [Explore the interactive review example](https://dnncha.github.io/dotmatch/assignment-sensitivity/)
 without installing anything. The example uses the public nine-read synthetic fixture.
 The interactive assignment review is published on the DotMatch 0.7.0 site.
-The installed `dotmatch sensitivity` command continues to write its static
-report. The synthetic fixture demonstrates software behavior, not biological
-accuracy.
+DotMatch 0.8.0 writes an interactive offline report from `dotmatch sensitivity`.
+Rebuild a checked bundle's viewer with
+`dotmatch sensitivity-review --bundle sensitivity-example --out review.html`.
+The command verifies the manifest and refuses to overwrite an existing viewer.
+The synthetic fixture demonstrates software behavior, not biological accuracy.
 
 ## Choose by task
 

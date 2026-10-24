@@ -2,6 +2,46 @@
 
 DotMatch releases should be specific, reproducible, and tied to checked evidence.
 
+## Local CI and publication
+
+Omarchy is the CI runner. Run the checks below locally through
+`/home/donncha/.codex/bin/resource-run`. Do not dispatch, wait for, or change
+GitHub Actions workflows. Legacy workflow files describe earlier releases and
+can supply check commands and pinned toolchains.
+
+Retain the source and intended base commits, checkout identity, toolchain and
+dependency versions, commands, exit codes, logs, and artifact SHA256 digests.
+Test the exact revision proposed for release. Independent review and installed
+artifact checks are required before publication. A skipped or deferred check
+does not pass.
+
+Build completed artifacts on Omarchy. Never move builds to the Atlas production
+VM. Native macOS acceptance requires a trusted Mac with Xcode or Xcode Cloud.
+Do not label a Linux wheel as verified on macOS or ARM64.
+
+Use the existing GitHub release API to publish the checked source distribution,
+verified platform artifacts, checksums, and local verification evidence. Keep the
+previous immutable release available for rollback. Download the published bytes,
+verify their hashes, and install them in a clean environment outside the checkout.
+Exercise the demo, counting, setup review, and affected recovery paths there.
+
+PyPI, GHCR, Bioconda, and Zenodo are separate publication channels. Record each
+channel's observed status. A GitHub release does not establish publication on
+another channel. PyPI trusted publishing configured for GitHub Actions cannot be
+used under the current local-only policy; use an already configured local
+credential when available, or report that channel as pending. Do not request
+GitHub billing changes or create a hosted CI dependency.
+
+The distribution record retains separate versions for the verified package and
+container channels and the GitHub source release. Source archives contain the
+prepublication snapshot. After public artifact verification, record the GitHub
+release as `github_released` with its source SHA and artifact digests. Before
+deploying a site that advertises it, require the verified record:
+
+```bash
+DOTMATCH_REQUIRE_PUBLISHED_GITHUB=1 npm run check:site
+```
+
 ## Pre-Tag Checks
 
 Run the consolidated local pre-tag gate:
@@ -61,12 +101,12 @@ git tag -a v<version> -m "DotMatch v<version>"
 git push origin v<version>
 ```
 
-Pushing `v*` tags runs `.github/workflows/release.yml`. The workflow starts
+The legacy `.github/workflows/release.yml` starts
 with a preflight job that runs `make test`, `make cli-test`, `make asan`,
 `make python-test`, installs the public docs toolchain, `make repository-ready`,
 `make release-ready`, and `make python-package-test`; artifact publication jobs
 depend on that preflight.
-The workflow builds:
+Earlier hosted releases built:
 
 - raw Linux wheel release artifact;
 - macOS wheel;
@@ -77,7 +117,7 @@ The workflow builds:
 - PyPI publication through trusted publishing for the sdist, macOS wheel, and repaired Linux wheels;
 - a draft GitHub release with generated notes.
 
-Keep the GitHub release as a draft until the release notes, artifacts, checksums, `CITATION.cff`, and `codemeta.json` have been checked.
+Keep the GitHub release as a draft until the release notes, artifacts, checksums, `CITATION.cff`, and `codemeta.json` have been checked. Do not invoke the legacy workflow for a new release.
 
 ## Release Notes
 
@@ -112,7 +152,7 @@ Avoid:
 - Update `docs/distribution-release.json` with verified public and evidence links, exact PyPI Linux wheel architectures, and exact GHCR platforms after public channels are live.
 - Update `docs/scientific-claims.md` only when new evidence is committed and a corresponding gate passes.
 
-## Current 0.7.0 handoff
+## Historical 0.7.0 handoff
 
 The user authorized all configured publication channels. DotMatch 0.7.0 is published on GitHub, PyPI and GHCR; the previous 0.6.4 distribution record is preserved in
 `releases/v0.6.4-distribution.json`. The current record verifies PyPI and GHCR against the completed release
@@ -122,9 +162,9 @@ BioContainers remain independently unverified.
 The approved-release workflow tagged checked commit
 `5736f9dd14fde44f3d89fa99966802af344bb0a0`; publication and public artifact
 verification passed after retrying an ARM64 build-image pull. GitHub API requests are blocked from this environment; git pushes and
-public workflow pages remain accessible. Hosted acceptance checks must pass
-before the workflow tags and publishes the exact main commit. Do not manually
-tag the local work branch.
+public workflow pages remain accessible. This historical handoff used hosted
+acceptance. Current releases use the local CI and publication policy above.
+Tag only the exact independently reviewed and locally verified release revision.
 
 After the public source archive exists, download the archive referenced by the
 recipe and run `scripts/prepare_bioconda_handoff.py --release-tarball

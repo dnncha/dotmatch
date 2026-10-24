@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.8.0 - 2026-10-08
+
+- Stage native count, CRISPR count, GuideCounter-compatible outputs, and Python
+  count artifacts until input processing and output writes succeed. Reject
+  input/output aliases, colliding outputs, symlinks, and special-file destinations.
+  Failed runs preserve previous results. Successful reruns replace them.
+- Check native buffered write and close failures before publishing count outputs.
+  Each file replacement is atomic; publication of the whole set is not
+  crash-atomic. Ordinary publication failures attempt to restore previous files.
+- Preserve the previous streamed-assignment file if its input iterator fails.
+- Read Python's detailed `count_total` output as one sample named `sample`,
+  excluding correction components and QC columns. Reject mixed detailed schemas.
+- Add an offline project setup review and clearer, responsive reliability reports
+  with actionable findings, available artifact links, and sample QC.
+- Expose the existing checked assignment viewer as `dotmatch sensitivity-review`.
+- Document local CI and publication independently from legacy hosted workflows.
+
+Matching policies, matching algorithms, and biological validation scope are unchanged.
+
 ## 0.7.0 — 2026-10-03
 
 - Add a guide-counter-compatible counting path, precision boundary fixes, and an audited five-repeat comparison with matching counts.
