@@ -33,12 +33,12 @@ export function InstallCommand() {
           onClick={copy}
           aria-label="Copy installation command"
         >
-          {copied ? "Copied" : "Copy"}
+          {copied ? "Command copied" : "Copy command"}
         </button>
       </div>
       <span className={styles.copyStatus} role="status">
         {failed
-          ? "Select the command above to copy it manually."
+          ? "Could not copy the command. Select it above and copy it manually."
           : copied
             ? "Installation command copied."
             : ""}
