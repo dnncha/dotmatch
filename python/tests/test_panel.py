@@ -411,3 +411,5 @@ def test_panel_check_accepts_sequence_levenshtein_metric(tmp_path: Path) -> None
     assert rc.returncode in {0, 1}, rc.stderr
     summary = json.loads((out_dir / "panel_summary.json").read_text(encoding="utf-8"))
     assert summary["assignment_metric"] == "sequence-levenshtein"
+    assert summary["minimum_hamming_distance"] == 8
+    assert summary["minimum_sequence_levenshtein_distance"] == 8

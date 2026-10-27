@@ -14,14 +14,14 @@ All notable user-facing changes are tracked here. Public statements in release n
 ## Unreleased
 
 ### Added
-- Strict typed Python surface: `py.typed`, `MatchStatus`, `Literal` policies, `TypedDict` summaries, a typed `TargetRow`, and strict mypy/pyright gates (`make typecheck`).
+- Strict typed Python surface: `py.typed`, `MatchStatus`, `Literal` policies, `TypedDict` summaries, a typed `TargetRow`, and mypy strict and pyright gates (`make typecheck`).
 - Example and snapshot testing flow: executable doctests, Rust `expect-test`-style snapshots, static API contract tests, and a typed quickstart (`make examples-test`).
 
 ### Changed
 - Assignment result records (`MatchResult`, `AssignmentStats`, `PosteriorAssignment`, `FastqRecord`, `StreamAssignment`) are immutable `NamedTuple`s. Field access and keyword construction are unchanged. They are now tuple-compatible, so equality with a plain tuple is true; `dataclasses.asdict`, `fields`, and `replace` no longer apply.
 
 ### Performance
-- Python binding path: immutable result records moved to `NamedTuple`, status conversion uses a lookup table, read marshalling has a `str`/`bytes` fast path, and `stream_assign` uses 256-read batches. Local median-of-31 developer measurement against main 91e162b (Apple M5, CPython 3.12, 40k reads/4,096 targets): Hamming 1,273,487 -> 1,683,587 reads/s (+32.2%), Levenshtein 596,400 -> 699,997 (+17.4%), exact 1,297,718 -> 1,968,851 (+51.7%), stream Hamming 296,564 -> 395,915 (+33.5%). See `docs/benchmarks/python-api-binding.md`; local measurement, not a public cross-machine claim.
+- Python binding path: immutable result records moved to `NamedTuple`, status conversion uses a lookup table, read marshalling has a `str`/`bytes` fast path, and `stream_assign` uses 256-read batches. Local median-of-31 developer measurement against 91e162b (Apple M5, CPython 3.12, 40k reads/4,096 targets): Hamming 1,300,623 -> 1,823,206 reads/s (+40.2%), Levenshtein 605,585 -> 699,968 (+15.6%), exact 1,341,603 -> 1,967,205 (+46.6%), stream Hamming 304,908 -> 398,864 (+30.8%). See `docs/benchmarks/python-api-binding.md`; local measurement, not a public cross-machine claim.
 
 ### Fixed
 
