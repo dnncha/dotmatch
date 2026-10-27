@@ -362,7 +362,8 @@
       "workload": "stream"
     }
   },
-  "final_state": "rebased typed branch; commit recorded after landing",
+  "final_commit": "fa41d0b",
+  "final_state": "commit fa41d0b",
   "harness": "scripts/bench_python_api.py",
   "host": {
     "cpu": "Apple M5",
