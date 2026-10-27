@@ -2,8 +2,6 @@
 from __future__ import annotations
 
 import argparse
-from email.parser import Parser
-from email.message import Message
 import hashlib
 import json
 import os
@@ -17,8 +15,9 @@ import tarfile
 import tempfile
 import venv
 import zipfile
+from email.message import Message
+from email.parser import Parser
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[1]
 REPAIRED_LINUX_WHEEL_ARCHITECTURES = ("x86_64", "aarch64")
@@ -1054,6 +1053,8 @@ def verify_existing_wheels(wheel_dir: Path, install_root: Path, expected_version
             raise SystemExit(f"{wheel.name} does not contain dotmatch/data/assay-evidence.json")
         if len(wheel_agent_discovery_members(wheel)) != 6:
             raise SystemExit(f"{wheel.name} does not contain all installed agent contract and skill files")
+        if len(wheel_py_typed_members(wheel)) != 2:
+            raise SystemExit(f"{wheel.name} must contain dotmatch/py.typed and quickdna/py.typed")
         check_distribution_metadata(wheel, expected_version)
         if not wheel_supported_by_current_platform(wheel):
             print(f"skipping clean install for unsupported wheel tag on this host: {wheel.name}")

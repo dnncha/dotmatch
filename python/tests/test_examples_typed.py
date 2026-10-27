@@ -129,14 +129,21 @@ def test_example_load_targets_is_typed(tmp_path: Path) -> None:
 def test_example_stream_fastq_end_to_end(tmp_path: Path) -> None:
     fastq = tmp_path / "reads.fastq"
     fastq.write_text(
-        "@r1\nACGTACGT\n+\nIIIIIIII\n"
-        "@r2\nACGTACGA\n+\nIIIIIIII\n"
+        "@r1\nTTTTTTTT\n+\nIIIIIIII\n"
+        "@r2\nACGTACGT\n+\nIIIIIIII\n"
         "@r3\nTTTT\n+\nIIII\n",
         encoding="ascii",
     )
     out = tmp_path / "assignments.tsv"
 
-    streamed = list(dm.stream_assign(fastq, ["ACGTACGT", "ACGTACGA"], metric="hamming", k=1))
+    streamed = list(
+        dm.stream_assign(
+            fastq,
+            ["ACGTACGT", "TTTTTTTT", "ACGTACGA"],
+            metric="hamming",
+            k=1,
+        )
+    )
     summary = dm.write_assignments_tsv(streamed, out)
 
     expect_snapshot(_json(summary), name="stream_summary")

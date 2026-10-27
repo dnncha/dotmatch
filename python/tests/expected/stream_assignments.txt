@@ -1,4 +1,4 @@
 read_id	observed_seq	target_id	target_seq	distance	status	match_count	second_best_distance
-r1	ACGTACGT			0	ambiguous	2	1
-r2	ACGTACGA			0	ambiguous	2	1
+r1	TTTTTTTT	target_1	TTTTTTTT	0	unique	1	-1
+r2	ACGTACGT			0	ambiguous	2	1
 r3				-1	invalid	0	-1

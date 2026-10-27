@@ -9,7 +9,7 @@ Harness:
 
 ```bash
 PYTHONPATH=python DOTMATCH_LIB=$PWD/libdotmatch.dylib \
-  python scripts/bench_python_api.py --workload hamming --repeats 11 --json
+  python scripts/bench_python_api.py --workload hamming --repeats 31 --json
 ```
 
 Workload: 40,000 reads, 4,096 targets, length 20, 70% one-substitution reads,
@@ -19,10 +19,10 @@ sample, min, and max: `benchmarks/raw/python_api_binding_20261027.json`.
 
 | workload | baseline reads/s | current reads/s | change |
 |---|---:|---:|---:|
-| Hamming, k=1 | 1,273,487 | 1,683,587 | +32.2% |
-| Levenshtein, k=1 | 596,400 | 699,997 | +17.4% |
-| Exact, k=0 | 1,297,718 | 1,968,851 | +51.7% |
-| Stream Hamming | 296,564 | 395,915 | +33.5% |
+| Hamming, k=1 | 1,300,623 | 1,823,206 | +40.2% |
+| Levenshtein, k=1 | 605,585 | 699,968 | +15.6% |
+| Exact, k=0 | 1,341,603 | 1,967,205 | +46.6% |
+| Stream Hamming | 304,908 | 398,864 | +30.8% |
 
 Changes measured: result records became `NamedTuple`s with a status lookup
 table; read marshalling got a fast `str`/`bytes` path and result records use

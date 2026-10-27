@@ -59,8 +59,8 @@ executed by the example tests.
 ## Current coverage
 
 The strict gate covers the assignment core, panel design, assay specs, CLI,
-`tl`, MultiQC helpers, the shared validators, `quickdna`, and the new type and
-example tests. Newer experimental modules (`dataframes`, `feature_matrix`,
+`tl`, MultiQC helpers, the shared validators, `fastq_io`, `quickdna`, and
+the new type and example tests. Newer experimental modules (`dataframes`, `feature_matrix`,
 `sensitivity`, `sensitivity_review`, `count_compare`, `count_io`,
 `assayruntime`, `first_run`, `agent_tools`, `calibration`, `assaysim`,
 `assayscript`) are excluded through explicit mypy/pyright overrides so they

@@ -7,16 +7,13 @@ from __future__ import annotations
 
 import gzip
 import re
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterator, TextIO
-
+from typing import Any, Iterator, NamedTuple, TextIO
 
 _INVALID_PRINTABLE_ASCII = re.compile(r"[^\x21-\x7e]")
 
 
-@dataclass(frozen=True)
-class FastqRecord:
+class FastqRecord(NamedTuple):
     read_id: str
     seq: str
     qual: str
