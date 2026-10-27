@@ -51,7 +51,18 @@ pandas = ["pandas>=1.0"]
 anndata = ["anndata>=0.8", "pandas>=1.0"]
 polars = ["polars>=0.19"]
 multiqc = ["multiqc>=1.20"]
-dev = ["pytest", "jsonschema>=4.18", "pandas>=1.0", "anndata>=0.8", "polars>=0.19", "multiqc>=1.20"]
+dev = [
+    "pytest",
+    "jsonschema>=4.18",
+    "mypy>=1.10",
+    "pyright>=1.1.380",
+    "ruff>=0.5",
+    "typing-extensions>=4.0",
+    "pandas>=1.0",
+    "anndata>=0.8",
+    "polars>=0.19",
+    "multiqc>=1.20",
+]
 
 [project.urls]
 Homepage = "https://dnncha.github.io/dotmatch/"
@@ -89,3 +100,82 @@ test-command = "python -c \"import dotmatch, quickdna; assert dotmatch.distance(
 
 [tool.pytest.ini_options]
 pythonpath = ["python"]
+
+
+[tool.mypy]
+python_version = "3.10"
+files = [
+    "python/dotmatch",
+    "python/quickdna",
+    "python/tests/typecheck_api.py",
+    "python/tests/expect.py",
+    "python/tests/test_examples_typed.py",
+    "python/tests/test_doctests.py",
+    "examples/python/typed_quickstart.py",
+    "scripts/bench_python_api.py",
+]
+mypy_path = "python"
+strict = true
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unused_configs = true
+show_error_codes = true
+pretty = true
+
+[tool.pyright]
+include = [
+    "python/dotmatch",
+    "python/quickdna",
+    "python/tests/typecheck_api.py",
+    "python/tests/expect.py",
+    "python/tests/test_examples_typed.py",
+    "python/tests/test_doctests.py",
+    "examples/python/typed_quickstart.py",
+    "scripts/bench_python_api.py",
+]
+pythonVersion = "3.9"
+typeCheckingMode = "standard"
+reportMissingImports = false
+exclude = [
+    "python/dotmatch/sensitivity_review.py",
+    "python/dotmatch/dataframes.py",
+    "python/dotmatch/sensitivity.py",
+    "python/dotmatch/count_compare.py",
+    "python/dotmatch/feature_matrix.py",
+    "python/dotmatch/assayruntime.py",
+    "python/dotmatch/first_run.py",
+    "python/dotmatch/agent_tools.py",
+    "python/dotmatch/calibration.py",
+    "python/dotmatch/count_io.py",
+    "python/dotmatch/assaysim.py",
+    "python/dotmatch/assayscript.py",
+]
+reportMissingTypeStubs = false
+venvPath = "."
+venv = ".venv"
+
+[tool.ruff]
+target-version = "py39"
+line-length = 120
+extend-exclude = ["build", "dist", "target", ".venv"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[[tool.mypy.overrides]]
+module = [
+    "dotmatch.sensitivity_review",
+    "dotmatch.dataframes",
+    "dotmatch.sensitivity",
+    "dotmatch.count_compare",
+    "dotmatch.feature_matrix",
+    "dotmatch.assayruntime",
+    "dotmatch.first_run",
+    "dotmatch.agent_tools",
+    "dotmatch.calibration",
+    "dotmatch.count_io",
+    "dotmatch.assaysim",
+    "dotmatch.assayscript",
+]
+ignore_errors = true

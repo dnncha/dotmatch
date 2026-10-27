@@ -11,8 +11,19 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from itertools import combinations
 from pathlib import Path
-from typing import Iterable, Iterator, Sequence
+from typing import Mapping, Optional, Sequence, TypedDict, Union, cast
 
+from ._types import (
+    AssignmentPolicy,
+    DistanceMetric,
+    PanelCertificate,
+    PanelMetric,
+    PanelStatus,
+    PanelTraceRow,
+    require_float,
+    require_int,
+    require_str,
+)
 
 DNA = "ACGT"
 COMPLEMENT = str.maketrans("ACGT", "TGCA")
@@ -35,11 +46,54 @@ class AssignmentOutcome:
     status: str
 
 
+class PanelContent(TypedDict):
+    gc: float
+    homopolymer_max: int
+    dinucleotide_repeat_max: int
+    forbidden_motifs: str
+    self_complement_score: float
+    warnings: list[str]
+    status: PanelStatus
+
+
+class NearestNeighbor(TypedDict):
+    distance: Optional[int]
+    neighbor: str
+
+
+class ContentRow(TypedDict):
+    barcode_id: str
+    sequence: str
+    length: int
+    gc: str
+    homopolymer_max: int
+    dinucleotide_repeat_max: int
+    self_complement_score: str
+    forbidden_motifs: str
+    nearest_hamming_neighbor: str
+    nearest_hamming_distance: Union[int, str, None]
+    status: PanelStatus
+    warnings: str
+
+
+class PairwiseRow(TypedDict):
+    barcode_id: str
+    sequence: str
+    other_id: str
+    other_sequence: str
+    hamming_distance: int
+    levenshtein_distance: int
+    sequence_levenshtein_distance: int
+    reverse_complement_distance: int
+    status: PanelStatus
+    warnings: str
+
+
 @dataclass
 class AssignmentConfig:
-    metric: str = "hamming"
+    metric: PanelMetric = "hamming"
     k: int = 1
-    ambiguity_policy: str = "radius"
+    ambiguity_policy: AssignmentPolicy = "radius"
     fixed_window: bool = True
     reverse_complement_mode: str = "warn"
 
@@ -669,7 +723,7 @@ def check_panel(
     out_dir: Path,
     *,
     source_panel: Path | None = None,
-) -> dict[str, object]:
+) -> PanelCertificate:
     if assignment.k < 0:
         raise ValueError("--k must be non-negative")
     if assignment.k > MAX_EXACT_CERTIFICATE_RADIUS:
@@ -703,7 +757,7 @@ def check_panel(
     has_suffix_fail = bool(suffix_rows) and constraints.avoid_suffix_collisions
     has_rc_fail = bool(rc_rows) and assignment.reverse_complement_mode == "fail"
     content_fail = any(row["status"] == "fail" for row in content_rows)
-    status = "pass"
+    status: PanelStatus = "pass"
     if duplicate_pairs or not configured_safe or has_prefix_fail or has_suffix_fail or has_rc_fail or content_fail:
         status = "fail"
     elif rc_rows or cycle_warning_count or context_rows or _narrow_margin(records, assignment):
@@ -713,15 +767,28 @@ def check_panel(
     min_lev = _minimum_pairwise_distance(records, "levenshtein")
     min_seqlev = _minimum_pairwise_distance(records, "sequence-levenshtein", constraints)
     certified_command = _certified_command(source_panel, assignment, lengths[0] if len(lengths) == 1 else "auto")
-    for rows in [pair_rows, prefix_rows, suffix_rows, rc_rows, content_rows, cycle_rows, context_rows, flanked_rows, ambiguous_rows, configured_risk, target_safety_rows]:
+    tables: list[Sequence[Mapping[str, object]]] = [
+        pair_rows,
+        prefix_rows,
+        suffix_rows,
+        rc_rows,
+        content_rows,
+        cycle_rows,
+        context_rows,
+        flanked_rows,
+        ambiguous_rows,
+        configured_risk,
+        target_safety_rows,
+    ]
+    for rows in tables:
         _stamp_command(rows, certified_command)
-    summary = {
+    summary: PanelCertificate = {
         "schema_version": PANEL_SCHEMA_VERSION,
         "status": status,
         "panel_grade": _panel_grade(status, records, assignment, constraints, min_hamming, min_lev, ambiguous_rows, silent_rows, rc_rows, prefix_rows, suffix_rows),
         "n_barcodes": len(records),
         "lengths": lengths,
-        "assignment_metric": _normalize_metric(assignment.metric),
+        "assignment_metric": _normalize_panel_metric(assignment.metric),
         "configured_assignment_k": assignment.k,
         "exact_error_sphere_radius": assignment.k,
         "maximum_exact_certificate_radius": MAX_EXACT_CERTIFICATE_RADIUS,
@@ -776,8 +843,7 @@ def check_panel(
 def design_panel(
     options: DesignOptions,
     assignment: AssignmentConfig,
-    constraints: PanelConstraints,
-) -> tuple[list[PanelRecord], list[dict[str, object]]]:
+    constraints: PanelConstraints,) -> tuple[list[PanelRecord], list[PanelTraceRow]]:
     if options.count <= 0:
         raise ValueError("--n must be positive")
     if options.length <= 0:
@@ -815,12 +881,11 @@ def generate_candidate_pool(options: DesignOptions, constraints: PanelConstraint
 def select_panel_from_candidates(
     candidates: Sequence[PanelRecord],
     options: DesignOptions,
-    constraints: PanelConstraints,
-) -> tuple[list[PanelRecord], list[dict[str, object]]]:
+    constraints: PanelConstraints,) -> tuple[list[PanelRecord], list[PanelTraceRow]]:
     rng = random.Random(options.seed)
     best: list[PanelRecord] = []
     best_score = -float("inf")
-    best_trace: list[dict[str, object]] = []
+    best_trace: list[PanelTraceRow] = []
     start = time.monotonic()
     working = list(candidates)
     working.sort(key=lambda record: (-individual_candidate_score(record.sequence, constraints), record.sequence))
@@ -831,7 +896,7 @@ def select_panel_from_candidates(
         if options.max_runtime and time.monotonic() - start > options.max_runtime:
             break
         selected: list[PanelRecord] = []
-        trace: list[dict[str, object]] = []
+        trace: list[PanelTraceRow] = []
         restart_pool = working[:]
         rng.shuffle(restart_pool)
         restart_pool.sort(key=lambda record: -(individual_candidate_score(record.sequence, constraints) + rng.random() * 0.0001))
@@ -879,14 +944,13 @@ def select_panel_from_candidates(
 def select_panel_graph(
     candidates: Sequence[PanelRecord],
     options: DesignOptions,
-    constraints: PanelConstraints,
-) -> tuple[list[PanelRecord], list[dict[str, object]]]:
+    constraints: PanelConstraints,) -> tuple[list[PanelRecord], list[PanelTraceRow]]:
     # Greedy clique over a compatibility graph. This is intentionally exact about edge
     # compatibility and heuristic about clique search, which keeps v1 predictable.
     top = list(candidates)[: min(len(candidates), max(800, options.count * 250))]
     top.sort(key=lambda record: (-individual_candidate_score(record.sequence, constraints), record.sequence))
     selected: list[PanelRecord] = []
-    trace: list[dict[str, object]] = []
+    trace: list[PanelTraceRow] = []
     start = time.monotonic()
     while len(selected) < options.count:
         if options.max_runtime and time.monotonic() - start > options.max_runtime:
@@ -914,8 +978,7 @@ def select_panel_graph(
 def select_panel_evolve(
     candidates: Sequence[PanelRecord],
     options: DesignOptions,
-    constraints: PanelConstraints,
-) -> tuple[list[PanelRecord], list[dict[str, object]]]:
+    constraints: PanelConstraints,) -> tuple[list[PanelRecord], list[PanelTraceRow]]:
     base_options = DesignOptions(**{**options.__dict__, "engine": "greedy", "restarts": max(3, min(options.restarts, 10))})
     best, trace = select_panel_from_candidates(candidates, base_options, constraints)
     rng = random.Random(options.seed + 13)
@@ -982,7 +1045,7 @@ def simulate_panel(
     ambiguous_examples: list[dict[str, object]] = []
     none_examples: list[dict[str, object]] = []
     confusion: dict[str, Counter[str]] = {record.barcode_id: Counter() for record in records}
-    counts = Counter()
+    counts: Counter[str] = Counter()
     for idx in range(reads):
         source_index = rng.randrange(len(records))
         source = records[source_index]
@@ -1048,7 +1111,7 @@ def simulate_panel(
         "total_reads": reads,
         "seed": seed,
         "quality_model": quality_model,
-        "assignment_metric": _normalize_metric(assignment.metric),
+        "assignment_metric": _normalize_panel_metric(assignment.metric),
         "k": assignment.k,
         "unique": counts["unique"],
         "ambiguous": counts["ambiguous"],
@@ -1193,7 +1256,7 @@ def compare_panels(
 def _write_design_outputs(
     out_dir: Path,
     records: Sequence[PanelRecord],
-    trace: Sequence[dict[str, object]],
+    trace: Sequence[PanelTraceRow],
     options: DesignOptions,
     assignment: AssignmentConfig,
     constraints: PanelConstraints,
@@ -1239,7 +1302,12 @@ def _write_design_outputs(
         _write_signal_outputs(out_dir, records, options, certificate)
 
 
-def write_barcode_table(path: Path, records: Sequence[PanelRecord], constraints: PanelConstraints, certificate: dict[str, object]) -> None:
+def write_barcode_table(
+    path: Path,
+    records: Sequence[PanelRecord],
+    constraints: PanelConstraints,
+    certificate: PanelCertificate,
+) -> None:
     nearest: dict[str, dict[str, object]] = {}
     for record in records:
         others = [item for item in records if item != record]
@@ -1294,7 +1362,7 @@ def _assignment_from_args(args: argparse.Namespace) -> AssignmentConfig:
     if getattr(args, "k", 0) < 0:
         raise ValueError("--k must be non-negative")
     return AssignmentConfig(
-        metric=_normalize_metric(args.metric),
+        metric=_normalize_panel_metric(args.metric),
         k=args.k,
         ambiguity_policy=args.ambiguity_policy,
         reverse_complement_mode=args.reverse_complement_mode,
@@ -1398,28 +1466,42 @@ def _design_from_args(args: argparse.Namespace) -> tuple[DesignOptions, Assignme
         merged["reverse_complement_mode"] = args.reverse_complement_mode
 
     options = DesignOptions(
-        panel_name=str(merged.get("panel_name", "dotmatch_panel")),
-        count=int(merged.get("count", 96)),
-        length=int(merged.get("length", 16)),
-        seed=int(merged.get("seed", 1)),
-        engine=str(merged.get("engine", "greedy")),
-        restarts=int(merged.get("restarts", 100)),
-        candidate_pool_size=int(merged.get("candidate_pool_size", 100000)),
-        objective=str(merged.get("objective", "strict-demux")),
-        max_runtime=float(merged["max_runtime"]) if merged.get("max_runtime") is not None else None,
-        target_count=int(merged["target_count"]) if merged.get("target_count") is not None else None,
-        population=int(merged.get("population", 500)),
-        iterations=int(merged.get("iterations", 1000)),
-        mutation_rate=float(merged.get("mutation_rate", 0.05)),
-        elite_fraction=float(merged.get("elite_fraction", 0.10)),
-        experimental_signal=bool(getattr(args, "experimental_signal", False) or getattr(args, "experimental", False)),
-        chemistry=str(getattr(args, "chemistry", "") or ""),
-        plate_format=int(merged.get("plate_format", 96)),
+        panel_name=require_str(merged.get("panel_name", "dotmatch_panel"), field="panel_name"),
+        count=require_int(merged.get("count", 96), field="count"),
+        length=require_int(merged.get("length", 16), field="length"),
+        seed=require_int(merged.get("seed", 1), field="seed"),
+        engine=require_str(merged.get("engine", "greedy"), field="engine"),
+        restarts=require_int(merged.get("restarts", 100), field="restarts"),
+        candidate_pool_size=require_int(
+            merged.get("candidate_pool_size", 100000), field="candidate_pool_size"
+        ),
+        objective=require_str(merged.get("objective", "strict-demux"), field="objective"),
+        max_runtime=(
+            require_float(merged["max_runtime"], field="max_runtime")
+            if merged.get("max_runtime") is not None
+            else None
+        ),
+        target_count=(
+            require_int(merged["target_count"], field="target_count")
+            if merged.get("target_count") is not None
+            else None
+        ),
+        population=require_int(merged.get("population", 500), field="population"),
+        iterations=require_int(merged.get("iterations", 1000), field="iterations"),
+        mutation_rate=require_float(merged.get("mutation_rate", 0.05), field="mutation_rate"),
+        elite_fraction=require_float(merged.get("elite_fraction", 0.10), field="elite_fraction"),
+        experimental_signal=bool(
+            getattr(args, "experimental_signal", False) or getattr(args, "experimental", False)
+        ),
+        chemistry=require_str(getattr(args, "chemistry", "") or "", field="chemistry"),
+        plate_format=require_int(merged.get("plate_format", 96), field="plate_format"),
     )
     assignment = AssignmentConfig(
-        metric=_normalize_metric(str(merged.get("metric", "hamming"))),
-        k=int(merged.get("k", 1)),
-        reverse_complement_mode=str(merged.get("reverse_complement_mode", "warn")),
+        metric=_normalize_panel_metric(require_str(merged.get("metric", "hamming"), field="metric")),
+        k=require_int(merged.get("k", 1), field="k"),
+        reverse_complement_mode=require_str(
+            merged.get("reverse_complement_mode", "warn"), field="reverse_complement_mode"
+        ),
     )
     constraints = _constraints_from_args(args, length=options.length)
     constraints.alphabet = str(merged.get("alphabet", DNA))
@@ -1519,10 +1601,16 @@ def _as_dict(value: object) -> dict[str, object]:
     return value if isinstance(value, dict) else {}
 
 
-def _normalize_metric(metric: str) -> str:
+def _normalize_metric(metric: str) -> DistanceMetric:
     if metric == "seqlev":
         return "sequence-levenshtein"
-    return metric
+    if metric in {"hamming", "levenshtein", "sequence-levenshtein"}:
+        return cast(DistanceMetric, metric)
+    raise ValueError("metric must be 'hamming', 'levenshtein', or 'sequence-levenshtein'")
+
+
+def _normalize_panel_metric(metric: str) -> PanelMetric:
+    return _normalize_metric(metric)
 
 
 def assign_query(
@@ -1572,12 +1660,30 @@ def metric_distance(a: str, b: str, metric: str, constraints: PanelConstraints |
 
 
 def hamming_distance(a: str, b: str) -> int:
+    """Return substitution distance, or the longer length for unequal lengths.
+
+    Examples
+    --------
+    >>> hamming_distance("ACGT", "AGGT")
+    1
+    >>> hamming_distance("ACGT", "ACGTA")
+    5
+    """
     if len(a) != len(b):
         return max(len(a), len(b))
     return sum(1 for x, y in zip(a, b) if x != y)
 
 
 def levenshtein_distance(a: str, b: str) -> int:
+    """Return unit-cost edit distance.
+
+    Examples
+    --------
+    >>> levenshtein_distance("ACGT", "AGGT")
+    1
+    >>> levenshtein_distance("ACGT", "ACGGT")
+    1
+    """
     if a == b:
         return 0
     if len(a) < len(b):
@@ -1644,7 +1750,7 @@ def _assignment_risk_rows(records: Sequence[PanelRecord], assignment: Assignment
                         "best_distance": outcome.best_distance,
                         "match_count": outcome.match_count,
                         "candidate_ids": ",".join(candidates),
-                        "metric": _normalize_metric(assignment.metric),
+                        "metric": _normalize_panel_metric(assignment.metric),
                         "k": assignment.k,
                         "certified_command": _certified_command(Path("barcodes.tsv"), assignment, constraints.length or len(source.sequence)),
                     }
@@ -1662,7 +1768,7 @@ def _assignment_risk_rows(records: Sequence[PanelRecord], assignment: Assignment
                         "best_distance": outcome.best_distance,
                         "match_count": outcome.match_count,
                         "candidate_ids": assigned.barcode_id,
-                        "metric": _normalize_metric(assignment.metric),
+                        "metric": _normalize_panel_metric(assignment.metric),
                         "k": assignment.k,
                         "certified_command": _certified_command(Path("barcodes.tsv"), assignment, constraints.length or len(source.sequence)),
                     }
@@ -1670,7 +1776,13 @@ def _assignment_risk_rows(records: Sequence[PanelRecord], assignment: Assignment
     return rows
 
 
-def _candidate_ids(query: str, records: Sequence[PanelRecord], metric: str, k: int, ambiguity_policy: str) -> list[str]:
+def _candidate_ids(
+    query: str,
+    records: Sequence[PanelRecord],
+    metric: DistanceMetric,
+    k: int,
+    ambiguity_policy: AssignmentPolicy,
+) -> list[str]:
     distances = [(record.barcode_id, metric_distance(query, record.sequence, metric)) for record in records if metric != "hamming" or len(query) == len(record.sequence)]
     within = [(barcode_id, dist) for barcode_id, dist in distances if dist <= k]
     if not within:
@@ -1681,7 +1793,12 @@ def _candidate_ids(query: str, records: Sequence[PanelRecord], metric: str, k: i
     return [barcode_id for barcode_id, dist in within if dist == best]
 
 
-def _safe_for_radius(records: Sequence[PanelRecord], metric: str, k: int, constraints: PanelConstraints) -> bool:
+def _safe_for_radius(
+    records: Sequence[PanelRecord],
+    metric: PanelMetric,
+    k: int,
+    constraints: PanelConstraints,
+) -> bool:
     assignment = AssignmentConfig(metric=metric, k=k)
     return not _assignment_risk_rows(records, assignment, constraints)
 
@@ -1691,7 +1808,6 @@ def _per_target_safe_hamming_radius(records: Sequence[PanelRecord], constraints:
     for source_index, source in enumerate(records):
         safe_radius = 0
         for radius in range(MAX_EXACT_CERTIFICATE_RADIUS + 1):
-            assignment = AssignmentConfig(metric="hamming", k=radius, ambiguity_policy="radius")
             unsafe = False
             for variant in variants_within(source.sequence, "hamming", radius):
                 outcome = assign_query(variant, records, "hamming", radius, "radius")
@@ -1761,13 +1877,13 @@ def candidate_filter_reason(seq: str, constraints: PanelConstraints) -> str:
     return "pass"
 
 
-def sequence_content(seq: str, constraints: PanelConstraints) -> dict[str, object]:
+def sequence_content(seq: str, constraints: PanelConstraints) -> PanelContent:
     gc = (seq.count("G") + seq.count("C")) / len(seq) if seq else 0.0
     homopolymer = max_homopolymer(seq)
     dinuc = max_dinucleotide_repeat(seq)
     motifs = [motif for motif in constraints.forbidden_motifs if motif and motif in seq]
     warnings: list[str] = []
-    status = "pass"
+    status: PanelStatus = "pass"
     if constraints.avoid_ambiguous_bases and any(base not in DNA for base in seq):
         warnings.append("ambiguous_base")
         status = "fail"
@@ -1826,6 +1942,15 @@ def max_dinucleotide_repeat(seq: str) -> int:
 
 
 def reverse_complement(seq: str) -> str:
+    """Return the reverse complement of an A/C/G/T sequence.
+
+    Examples
+    --------
+    >>> reverse_complement("ACGT")
+    'ACGT'
+    >>> reverse_complement("AACG")
+    'CGTT'
+    """
     return seq.translate(COMPLEMENT)[::-1]
 
 
@@ -1851,10 +1976,13 @@ def context_risk(seq: str, constraints: PanelConstraints) -> list[str]:
 
 def individual_candidate_score(seq: str, constraints: PanelConstraints) -> float:
     content = sequence_content(seq, constraints)
-    gc = float(content["gc"])
+    gc = content["gc"]
     gc_score = 1.0 - abs(gc - 0.5) * 2
     complexity = len(set(seq)) / 4
-    homopolymer_score = max(0.0, 1.0 - (int(content["homopolymer_max"]) - 1) / max(1, constraints.max_homopolymer))
+    homopolymer_score = max(
+        0.0,
+        1.0 - (content["homopolymer_max"] - 1) / max(1, constraints.max_homopolymer),
+    )
     return gc_score * 4 + complexity * 3 + homopolymer_score * 2 - len(content["warnings"]) * 5
 
 
@@ -1919,16 +2047,21 @@ def panel_objective(records: Sequence[PanelRecord], constraints: PanelConstraint
     return score
 
 
-def _pairwise_rows(records: Sequence[PanelRecord], constraints: PanelConstraints) -> tuple[list[dict[str, object]], dict[str, dict[str, object]]]:
-    rows: list[dict[str, object]] = []
-    nearest: dict[str, dict[str, object]] = {record.barcode_id: {"distance": None, "neighbor": ""} for record in records}
+def _pairwise_rows(
+    records: Sequence[PanelRecord],
+    constraints: PanelConstraints,
+) -> tuple[list[PairwiseRow], dict[str, NearestNeighbor]]:
+    rows: list[PairwiseRow] = []
+    nearest: dict[str, NearestNeighbor] = {
+        record.barcode_id: {"distance": None, "neighbor": ""} for record in records
+    }
     for a, b in combinations(records, 2):
         h = hamming_distance(a.sequence, b.sequence)
         lev = levenshtein_distance(a.sequence, b.sequence)
         seqlev = metric_distance(a.sequence, b.sequence, "sequence-levenshtein", constraints)
         rc_dist = hamming_distance(a.sequence, reverse_complement(b.sequence)) if len(a.sequence) == len(b.sequence) else levenshtein_distance(a.sequence, reverse_complement(b.sequence))
-        warnings = []
-        status = "pass"
+        warnings: list[str] = []
+        status: PanelStatus = "pass"
         if h == 0 or lev == 0:
             warnings.append("duplicate")
             status = "fail"
@@ -1960,20 +2093,27 @@ def _pairwise_rows(records: Sequence[PanelRecord], constraints: PanelConstraints
         )
         for record, other in [(a, b), (b, a)]:
             current = nearest[record.barcode_id]["distance"]
-            if current is None or h < int(current):
+            if current is None or h < current:
                 nearest[record.barcode_id] = {"distance": h, "neighbor": other.barcode_id}
-    rows.sort(key=lambda row: (int(row["hamming_distance"]), int(row["levenshtein_distance"]), row["barcode_id"], row["other_id"]))
+    rows.sort(
+        key=lambda row: (
+            row["hamming_distance"],
+            row["levenshtein_distance"],
+            row["barcode_id"],
+            row["other_id"],
+        )
+    )
     return rows, nearest
 
 
 def _target_safety_rows(
     records: Sequence[PanelRecord],
-    content_rows: Sequence[dict[str, object]],
-    risk_rows: Sequence[dict[str, object]],
+    content_rows: Sequence[Mapping[str, object]],
+    risk_rows: Sequence[Mapping[str, object]],
     per_target_hamming_radius: dict[str, int],
 ) -> list[dict[str, object]]:
     content_by_id = {str(row["barcode_id"]): row for row in content_rows}
-    risk_by_id: dict[str, list[dict[str, object]]] = defaultdict(list)
+    risk_by_id: dict[str, list[Mapping[str, object]]] = defaultdict(list)
     for row in risk_rows:
         risk_by_id[str(row["source_barcode_id"])].append(row)
     rows: list[dict[str, object]] = []
@@ -2017,7 +2157,7 @@ def _prefix_suffix_rows(records: Sequence[PanelRecord], assignment: AssignmentCo
                     "other_sequence": b.sequence,
                     "overlap_length": overlap,
                     "risk": "exact_overlap" if collision else "near_overlap",
-                    "metric": _normalize_metric(assignment.metric),
+                    "metric": _normalize_panel_metric(assignment.metric),
                     "k": assignment.k,
                 }
             )
@@ -2046,22 +2186,27 @@ def _reverse_complement_rows(records: Sequence[PanelRecord], assignment: Assignm
     return rows
 
 
-def _content_rows(records: Sequence[PanelRecord], constraints: PanelConstraints, nearest: dict[str, dict[str, object]]) -> list[dict[str, object]]:
-    rows = []
+def _content_rows(
+    records: Sequence[PanelRecord],
+    constraints: PanelConstraints,
+    nearest: dict[str, NearestNeighbor],
+) -> list[ContentRow]:
+    rows: list[ContentRow] = []
     for record in records:
         content = sequence_content(record.sequence, constraints)
+        near = nearest.get(record.barcode_id, NearestNeighbor(distance=None, neighbor=""))
         rows.append(
             {
                 "barcode_id": record.barcode_id,
                 "sequence": record.sequence,
                 "length": len(record.sequence),
-                "gc": f"{float(content['gc']):.8f}",
+                "gc": f"{content['gc']:.8f}",
                 "homopolymer_max": content["homopolymer_max"],
                 "dinucleotide_repeat_max": content["dinucleotide_repeat_max"],
-                "self_complement_score": f"{float(content['self_complement_score']):.8f}",
+                "self_complement_score": f"{content['self_complement_score']:.8f}",
                 "forbidden_motifs": content["forbidden_motifs"],
-                "nearest_hamming_neighbor": nearest.get(record.barcode_id, {}).get("neighbor", ""),
-                "nearest_hamming_distance": nearest.get(record.barcode_id, {}).get("distance", ""),
+                "nearest_hamming_neighbor": near["neighbor"],
+                "nearest_hamming_distance": near["distance"] if near["distance"] is not None else "",
                 "status": content["status"],
                 "warnings": ";".join(content["warnings"]),
             }
@@ -2227,7 +2372,7 @@ def _binomial_upper_bound(events: int, trials: int, confidence: float = 0.95) ->
     if trials <= 0:
         return 0.0
     if events <= 0:
-        return min(1.0, max(0.0, 1.0 - (1.0 - confidence) ** (1.0 / trials)))
+        return float(min(1.0, max(0.0, 1.0 - (1.0 - confidence) ** (1.0 / trials))))
     p = events / trials
     z = 1.96
     denom = 1.0 + z * z / trials
@@ -2261,7 +2406,7 @@ def _neighbor_rows(layout_rows: Sequence[dict[str, object]], records: Sequence[P
     for row in layout_rows:
         well = str(row["well"])
         row_letter = str(row["row"])
-        col = int(row["column"])
+        col = require_int(row["column"], field="column")
         for neighbor in [f"{row_letter}{col + 1}", f"{chr(ord(row_letter) + 1)}{col}" if len(row_letter) == 1 and row_letter < "Z" else ""]:
             if neighbor in by_well:
                 other = by_well[neighbor]
@@ -2334,7 +2479,12 @@ def _write_lab_readme(path: Path, records: Sequence[PanelRecord], assignment: As
     path.write_text(text, encoding="utf-8")
 
 
-def _write_signal_outputs(out_dir: Path, records: Sequence[PanelRecord], options: DesignOptions, certificate: dict[str, object]) -> None:
+def _write_signal_outputs(
+    out_dir: Path,
+    records: Sequence[PanelRecord],
+    options: DesignOptions,
+    certificate: PanelCertificate,
+) -> None:
     templates = []
     for record in records:
         signal = "-".join(str(_base_signal_value(base, options.chemistry)) for base in record.sequence)
@@ -2379,13 +2529,13 @@ def _base_signal_value(base: str, chemistry: str) -> float:
 
 def _write_panel_report(
     path: Path,
-    summary: dict[str, object],
+    summary: Mapping[str, object],
     records: Sequence[PanelRecord],
-    pair_rows: Sequence[dict[str, object]],
-    ambiguous_rows: Sequence[dict[str, object]],
-    rc_rows: Sequence[dict[str, object]],
-    prefix_rows: Sequence[dict[str, object]],
-    suffix_rows: Sequence[dict[str, object]],
+    pair_rows: Sequence[Mapping[str, object]],
+    ambiguous_rows: Sequence[Mapping[str, object]],
+    rc_rows: Sequence[Mapping[str, object]],
+    prefix_rows: Sequence[Mapping[str, object]],
+    suffix_rows: Sequence[Mapping[str, object]],
 ) -> None:
     closest = list(pair_rows)[:10]
     closest_rows = "".join(
@@ -2455,7 +2605,7 @@ def _write_json(path: Path, data: object) -> None:
     path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def _write_tsv(path: Path, columns: Sequence[str], rows: Sequence[dict[str, object]]) -> None:
+def _write_tsv(path: Path, columns: Sequence[str], rows: Sequence[Mapping[str, object]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=list(columns), delimiter="\t", extrasaction="ignore")
@@ -2469,8 +2619,10 @@ def _copy_if_exists(source: Path, dest: Path) -> None:
         dest.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
 
 
-def _stamp_command(rows: Sequence[dict[str, object]], command: str) -> None:
+def _stamp_command(rows: Sequence[Mapping[str, object]], command: str) -> None:
     for row in rows:
+        if not isinstance(row, dict):
+            raise TypeError("panel table rows must be mutable dictionaries")
         row["certified_command"] = command
 
 
@@ -2482,7 +2634,7 @@ def _certified_command(panel_path: Path, assignment: AssignmentConfig, length: i
         "--barcode-start 0 "
         f"--barcode-length {length} "
         f"--k {assignment.k} "
-        f"--metric {_normalize_metric(assignment.metric)} "
+        f"--metric {_normalize_panel_metric(assignment.metric)} "
         f"--ambiguity-policy {assignment.ambiguity_policy} "
         "--out-dir demuxed/"
     )

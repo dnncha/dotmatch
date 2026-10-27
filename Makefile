@@ -1,3 +1,22 @@
+PYTHON ?= python3
+TYPED_PYTHON_SOURCES ?= \
+	python/dotmatch/_optional.py \
+	python/dotmatch/_types.py \
+	python/dotmatch/_validation.py \
+	python/dotmatch/assayspec.py \
+	python/dotmatch/cli.py \
+	python/dotmatch/core.py \
+	python/dotmatch/multiqc.py \
+	python/dotmatch/panel.py \
+	python/dotmatch/tl.py \
+	python/quickdna \
+	python/tests/typecheck_api.py \
+	python/tests/expect.py \
+	python/tests/test_doctests.py \
+	python/tests/test_examples_typed.py \
+	examples/python/typed_quickstart.py \
+	scripts/bench_python_api.py
+TYPE_PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,$(PYTHON))
 CC ?= cc
 CXX ?= c++
 CFLAGS ?= -O3 -std=c11 -Wall -Wextra -Wpedantic -Iinclude
@@ -31,7 +50,7 @@ DOTMATCH_SHARED_FLAGS := -shared
 QDALIGN_SHARED_FLAGS := -shared
 endif
 
-.PHONY: all clean test cli-test coverage bench bench-batch bench-small bench-native-matrix bench-10x-control figures bench-real-report bench-gpu gpu-report gpu-evidence-gate bench-barcode-demux bench-barcode-panel-design bench-barcode-demux-competitors bench-barcode-comparison barcode-autopsy-demo barcode-panel-design-gate barcode-validation-ready barcode-comparison-report barcode-comparison-gate barcode-demux-report barcode-competitor-env fetch-barcode-demo fetch-barcode-demo-claim fetch-sanson-crispr fetch-10x-bcl-demo bench-bcl-small bench-bcl-10x bench-bcl-real bench-bcl-real-repeated bcl-figures bcl-competitor-env bcl-linux-env bcl-tiny-public-gate bcl-comparison-gate fetch-oligo-adapter-demo bench-oligo-adapter bench-oligo-adapter-public oligo-adapter-smoke-gate oligo-adapter-public-gate fetch-amplicon-panel-demo bench-amplicon-panel bench-amplicon-panel-public amplicon-panel-smoke-gate amplicon-panel-public-gate fetch-feature-barcode-demo bench-feature-barcode bench-feature-barcode-public feature-barcode-smoke-gate feature-barcode-public-gate fetch-perturb-seq-demo bench-perturb-seq bench-perturb-seq-public perturb-seq-smoke-gate perturb-seq-public-gate bench-perturb-seq-case-study-public perturb-seq-case-study-fixture-gate perturb-seq-case-study-public-gate bench-public-crispr-small bench-public-crispr bench-public-crispr-competitors bench-public-crispr-repeated bench-public-crispr-scaling bench-real-competitors bench-crispr-comparison bench-crispr-hamming-k23 crispr-comparison-report crispr-comparison-gate count-agreement count-agreement-comparison validate-public-crispr-edlib validate-crispr-comparison-edlib public-crispr-report public-crispr-evidence-gate public-crispr-smoke-gate competitor-env edlib edlib-tools bench-edlib-native benchmark-report benchmark-report-native native-exact-gate evidence-gallery evidence-gallery-ready repro repro-small asan shared python-test python-package-test workflow-integration-test docs-ready repository-ready release-ready pretag-ready assay-evidence-ready scientific-readiness-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready workflow-adoption-status reviewer-readiness-ready distribution-record-ready bioconda-recipe-ready distribution-channels download-metrics joss-paper-ready agent-discovery-ready
+.PHONY: all clean test cli-test coverage bench bench-batch bench-small bench-native-matrix bench-10x-control figures bench-real-report bench-gpu gpu-report gpu-evidence-gate bench-barcode-demux bench-barcode-panel-design bench-barcode-demux-competitors bench-barcode-comparison barcode-autopsy-demo barcode-panel-design-gate barcode-validation-ready barcode-comparison-report barcode-comparison-gate barcode-demux-report barcode-competitor-env fetch-barcode-demo fetch-barcode-demo-claim fetch-sanson-crispr fetch-10x-bcl-demo bench-bcl-small bench-bcl-10x bench-bcl-real bench-bcl-real-repeated bcl-figures bcl-competitor-env bcl-linux-env bcl-tiny-public-gate bcl-comparison-gate fetch-oligo-adapter-demo bench-oligo-adapter bench-oligo-adapter-public oligo-adapter-smoke-gate oligo-adapter-public-gate fetch-amplicon-panel-demo bench-amplicon-panel bench-amplicon-panel-public amplicon-panel-smoke-gate amplicon-panel-public-gate fetch-feature-barcode-demo bench-feature-barcode bench-feature-barcode-public feature-barcode-smoke-gate feature-barcode-public-gate fetch-perturb-seq-demo bench-perturb-seq bench-perturb-seq-public perturb-seq-smoke-gate perturb-seq-public-gate bench-perturb-seq-case-study-public perturb-seq-case-study-fixture-gate perturb-seq-case-study-public-gate bench-public-crispr-small bench-public-crispr bench-public-crispr-competitors bench-public-crispr-repeated bench-public-crispr-scaling bench-real-competitors bench-crispr-comparison bench-crispr-hamming-k23 crispr-comparison-report crispr-comparison-gate count-agreement count-agreement-comparison validate-public-crispr-edlib validate-crispr-comparison-edlib public-crispr-report public-crispr-evidence-gate public-crispr-smoke-gate competitor-env edlib edlib-tools bench-edlib-native benchmark-report benchmark-report-native native-exact-gate evidence-gallery evidence-gallery-ready repro repro-small asan shared python-test python-package-test typecheck lint examples-test quality workflow-integration-test docs-ready repository-ready release-ready pretag-ready assay-evidence-ready scientific-readiness-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready workflow-adoption-status reviewer-readiness-ready distribution-record-ready bioconda-recipe-ready distribution-channels download-metrics joss-paper-ready agent-discovery-ready
 
 all: dotmatch libdotmatch.a qda libqdalign.a
 
@@ -469,7 +488,19 @@ evidence-gallery-ready:
 	python3 scripts/check_evidence_gallery.py
 
 python-test: shared
-	DOTMATCH_LIB=$(CURDIR)/libdotmatch.$(SHARED_EXT) PYTHONPATH=$(CURDIR)/python python3 -m pytest python/tests
+	DOTMATCH_LIB=$(CURDIR)/libdotmatch.$(SHARED_EXT) PYTHONPATH=$(CURDIR)/python $(PYTHON) -m pytest python/tests
+
+typecheck:
+	MYPYPATH=$(CURDIR)/python $(TYPE_PYTHON) -m mypy
+	$(TYPE_PYTHON) -m pyright
+
+lint:
+	$(TYPE_PYTHON) -m ruff check $(TYPED_PYTHON_SOURCES)
+
+examples-test: shared
+	DOTMATCH_LIB=$(CURDIR)/libdotmatch.$(SHARED_EXT) PYTHONPATH=$(CURDIR)/python $(PYTHON) -m pytest python/tests/test_examples_typed.py python/tests/test_doctests.py
+
+quality: typecheck lint python-test
 
 python-package-test:
 	python3 scripts/check_python_wheel.py
@@ -503,10 +534,10 @@ repository-ready:
 	python3 scripts/check_reviewer_readiness_assets.py
 	$(MAKE) docs-ready
 
-release-ready: python-test python-package-test docs-ready scientific-readiness-ready assay-evidence-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready evidence-gallery-ready distribution-record-ready bioconda-recipe-ready gpu-evidence-gate native-exact-gate hamming-seed-layout-gate guide-counter-gate public-crispr-evidence-gate crispr-comparison-gate barcode-comparison-gate feature-barcode-public-gate perturb-seq-public-gate perturb-seq-case-study-fixture-gate perturb-seq-case-study-public-gate amplicon-panel-public-gate bcl-tiny-public-gate oligo-adapter-public-gate reviewer-readiness-ready assaycode-readiness-ready agent-tools-ready agent-skill-ready agent-reference-workflows-ready
+release-ready: typecheck lint examples-test python-test python-package-test docs-ready scientific-readiness-ready assay-evidence-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready evidence-gallery-ready distribution-record-ready bioconda-recipe-ready gpu-evidence-gate native-exact-gate hamming-seed-layout-gate guide-counter-gate public-crispr-evidence-gate crispr-comparison-gate barcode-comparison-gate feature-barcode-public-gate perturb-seq-public-gate perturb-seq-case-study-fixture-gate perturb-seq-case-study-public-gate amplicon-panel-public-gate bcl-tiny-public-gate oligo-adapter-public-gate reviewer-readiness-ready assaycode-readiness-ready agent-tools-ready agent-skill-ready agent-reference-workflows-ready
 	python3 scripts/check_release_readiness.py
 
-pretag-ready:
+pretag-ready: typecheck lint examples-test
 	$(MAKE) test
 	$(MAKE) cli-test
 	$(MAKE) asan

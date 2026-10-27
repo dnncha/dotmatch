@@ -1,31 +1,71 @@
 from __future__ import annotations
 
 import ctypes
-import csv
 import gzip
 import math
 import os
 import platform
 import threading
 from functools import wraps
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable, Iterator, Sequence, TextIO
+from types import TracebackType
+from typing import Any, Callable, Iterable, Iterator, NamedTuple, Sequence, TextIO, TypeVar, cast
 
 from ._optional import optional_module
+from ._types import (
+    MATCH_AMBIGUOUS,
+    MATCH_INVALID,
+    MATCH_NONE,
+    MATCH_UNIQUE,
+    STATUS_NAMES,
+    AssignmentCounts,
+    AssignmentPolicy,
+    AssignmentSummary,
+    MatchStatus,
+    Metric,
+    PosteriorSummary,
+    ReadInput,
+    StatusName,
+    TargetRow,
+)
 from ._validation import integer, named_targets
 from .fastq_io import FastqRecord, iter_fastq
 
+__all__ = [
+    "MATCH_AMBIGUOUS",
+    "MATCH_INVALID",
+    "MATCH_NONE",
+    "MATCH_UNIQUE",
+    "AssignmentStats",
+    "FastqRecord",
+    "MatchResult",
+    "MatchStatus",
+    "Matcher",
+    "PosteriorAssignment",
+    "StreamAssignment",
+    "alphabet_policy",
+    "assign",
+    "assign_dataframe",
+    "assign_exact",
+    "assign_hamming",
+    "assign_posterior",
+    "assignment_summary",
+    "assignments_to_anndata",
+    "counts_tsv_to_anndata",
+    "distance",
+    "distance_leq",
+    "iter_fastq",
+    "load_targets",
+    "results_to_dataframe",
+    "status_name",
+    "stream_assign",
+    "targets_from_dataframe",
+    "write_assignments_tsv",
+]
+
 pd, _HAS_PANDAS = optional_module("pandas")
-
 pl, _HAS_POLARS = optional_module("polars")
-
 ad, _HAS_ANNDATA = optional_module("anndata")
-
-MATCH_INVALID = -1
-MATCH_NONE = 0
-MATCH_UNIQUE = 1
-MATCH_AMBIGUOUS = 2
 
 
 class _CMatchResult(ctypes.Structure):
@@ -45,32 +85,40 @@ class _CIndexStats(ctypes.Structure):
     ]
 
 
-@dataclass(frozen=True)
-class MatchResult:
+class MatchResult(NamedTuple):
+    """One native assignment outcome with a closed status."""
+
     target_index: int
     best_distance: int
     second_best_distance: int
     match_count: int
-    status: int
+    status: MatchStatus
 
 
-@dataclass(frozen=True)
-class AssignmentStats:
+class AssignmentStats(NamedTuple):
     candidates_considered: int
     candidates_verified: int
 
 
-@dataclass(frozen=True)
-class PosteriorAssignment:
+class PosteriorAssignment(NamedTuple):
     target_index: int
     posterior: float
     second_posterior: float
-    status: int
+    status: MatchStatus
     posteriors: tuple[float, ...]
 
+    def as_dict(self) -> PosteriorSummary:
+        """Return a JSON-friendly view without tuples or enum objects."""
+        return {
+            "target_index": self.target_index,
+            "posterior": self.posterior,
+            "second_posterior": self.second_posterior,
+            "status": int(self.status),
+            "posteriors": list(self.posteriors),
+        }
 
-@dataclass(frozen=True)
-class StreamAssignment:
+
+class StreamAssignment(NamedTuple):
     read_id: str
     observed_seq: str
     target_index: int
@@ -79,8 +127,8 @@ class StreamAssignment:
     best_distance: int
     second_best_distance: int
     match_count: int
-    status: int
-    status_name: str
+    status: MatchStatus
+    status_name: StatusName
 
 
 def _platform_ext() -> str:
@@ -202,10 +250,10 @@ def alphabet_policy() -> str:
     policy = _LIB.qdaln_alphabet_policy()
     if policy is None:
         raise RuntimeError("DotMatch native library returned no alphabet policy")
-    return policy.decode("ascii")
+    return str(policy.decode("ascii"))
 
 
-def _as_bytes(seq: str | bytes) -> bytes:
+def _as_bytes(seq: ReadInput) -> bytes:
     if isinstance(seq, bytes):
         return seq
     if isinstance(seq, str):
@@ -213,24 +261,27 @@ def _as_bytes(seq: str | bytes) -> bytes:
     raise TypeError("sequence must be str or bytes")
 
 
-def status_name(status: int) -> str:
-    """Return the stable text name for a DotMatch assignment status."""
-    return _STATUS_NAMES.get(status, f"unknown:{status}")
+def status_name(status: int | MatchStatus) -> str:
+    """Return the stable text name for a DotMatch assignment status.
 
-
-_STATUS_NAMES = {
-        MATCH_INVALID: "invalid",
-        MATCH_NONE: "none",
-        MATCH_UNIQUE: "unique",
-        MATCH_AMBIGUOUS: "ambiguous",
-}
+    Examples
+    --------
+    >>> status_name(MATCH_UNIQUE)
+    'unique'
+    >>> status_name(99)
+    'unknown:99'
+    """
+    try:
+        return STATUS_NAMES[MatchStatus(status)]
+    except ValueError:
+        return f"unknown:{status}"
 
 
 def _open_text(path: str | Path, mode: str = "rt") -> TextIO:
     path = Path(path)
     if str(path).endswith(".gz"):
-        return gzip.open(path, mode, encoding="utf-8", newline="")
-    return path.open(mode, encoding="utf-8", newline="")
+        return cast(TextIO, gzip.open(path, mode, encoding="utf-8", newline=""))
+    return cast(TextIO, path.open(mode, encoding="utf-8", newline=""))
 
 
 def _looks_like_target_header(cols: Sequence[str]) -> bool:
@@ -240,17 +291,17 @@ def _looks_like_target_header(cols: Sequence[str]) -> bool:
     )
 
 
-def load_targets(path: str | Path) -> list[tuple[str, str]]:
+def load_targets(path: str | Path) -> list[TargetRow]:
     """Read plain/gzipped CSV or TSV with named or positional target columns.
 
     Duplicate sequences are retained; empty or duplicate IDs are rejected.
     """
     from .target_io import read_target_table
 
-    return [(row.target_id, row.sequence) for row in read_target_table(path)]
+    return [TargetRow(row.target_id, row.sequence) for row in read_target_table(path)]
 
 
-def _normalize_targets(targets: Any) -> list[tuple[str, str]]:
+def _normalize_targets(targets: Any) -> list[TargetRow]:
     if isinstance(targets, (str, Path)):
         return load_targets(targets)
     if hasattr(targets, "columns"):
@@ -261,7 +312,7 @@ def _normalize_targets(targets: Any) -> list[tuple[str, str]]:
             rows.append((item[0], item[1]))
         else:
             rows.append((f"target_{i}", item))
-    return named_targets(rows)
+    return [TargetRow(target_id, sequence) for target_id, sequence in named_targets(rows)]
 
 
 def _extract_window(seq: str, start: int, length: int) -> str | None:
@@ -288,7 +339,7 @@ def _chunks(items: Iterable[FastqRecord], size: int) -> Iterator[list[FastqRecor
         yield batch
 
 
-def distance(a: str | bytes, b: str | bytes) -> int:
+def distance(a: ReadInput, b: ReadInput) -> int:
     aa = _as_bytes(a)
     bb = _as_bytes(b)
     result = int(_LIB.qdaln_edit_distance(aa, len(aa), bb, len(bb)))
@@ -297,7 +348,16 @@ def distance(a: str | bytes, b: str | bytes) -> int:
     return result
 
 
-def distance_leq(a: str | bytes, b: str | bytes, k: int) -> bool:
+def distance_leq(a: ReadInput, b: ReadInput, k: int) -> bool:
+    """Return whether the edit distance is at most ``k``.
+
+    Examples
+    --------
+    >>> distance_leq("ACGT", "AGGT", 1)
+    True
+    >>> distance_leq("ACGT", "AGGT", 0)
+    False
+    """
     k = integer(k, "k")
     aa = _as_bytes(a)
     bb = _as_bytes(b)
@@ -307,38 +367,49 @@ def distance_leq(a: str | bytes, b: str | bytes, k: int) -> bool:
     return bool(result)
 
 
-def _array_inputs(seqs: Sequence[str | bytes]) -> tuple[list[bytes], ctypes.Array, ctypes.Array]:
+def _array_inputs(
+    seqs: Sequence[ReadInput],
+) -> tuple[list[bytes], ctypes.Array[Any], ctypes.Array[Any]]:
     if isinstance(seqs, (str, bytes, bytearray)) or not hasattr(seqs, "__len__"):
         raise TypeError("expected a sized sequence of sequences; wrap a single sequence in a list")
-    encoded = [_as_bytes(s) for s in seqs]
-    ptrs = (ctypes.c_char_p * len(encoded))()
-    lens = (ctypes.c_size_t * len(encoded))()
+    encoded = [
+        seq.encode("ascii") if type(seq) is str else seq if type(seq) is bytes else _as_bytes(seq)
+        for seq in seqs
+    ]
+    count = len(encoded)
+    ptrs = (ctypes.c_char_p * count)()
+    lens = (ctypes.c_size_t * count)()
     for i, seq in enumerate(encoded):
         ptrs[i] = seq
         lens[i] = len(seq)
     return encoded, ptrs, lens
 
 
-def _results_to_python(results: ctypes.Array) -> list[MatchResult]:
+_STATUS_BY_VALUE: dict[int, MatchStatus] = {
+    int(status): status for status in MatchStatus
+}
+
+
+def _results_to_python(results: ctypes.Array[Any]) -> list[MatchResult]:
     return [
         MatchResult(
-            target_index=r.target_index,
-            best_distance=r.best_distance,
-            second_best_distance=r.second_best_distance,
-            match_count=r.match_count,
-            status=r.status,
+            r.target_index,
+            r.best_distance,
+            r.second_best_distance,
+            r.match_count,
+            _STATUS_BY_VALUE[r.status],
         )
         for r in results
     ]
 
 
-def _normalize_policy(policy: str) -> str:
+def _normalize_policy(policy: str) -> AssignmentPolicy:
     if policy not in {"radius", "best"}:
         raise ValueError("policy must be 'radius' or 'best'")
-    return policy
+    return cast(AssignmentPolicy, policy)
 
 
-def _apply_policy(results: list[MatchResult], policy: str) -> list[MatchResult]:
+def _apply_policy(results: list[MatchResult], policy: AssignmentPolicy) -> list[MatchResult]:
     policy = _normalize_policy(policy)
     if policy == "best":
         return results
@@ -349,11 +420,11 @@ def _apply_policy(results: list[MatchResult], policy: str) -> list[MatchResult]:
                 applied = results[:i]
             applied.append(
                 MatchResult(
-                    target_index=r.target_index,
-                    best_distance=r.best_distance,
-                    second_best_distance=r.second_best_distance,
-                    match_count=r.match_count,
-                    status=MATCH_AMBIGUOUS,
+                    r.target_index,
+                    r.best_distance,
+                    r.second_best_distance,
+                    r.match_count,
+                    MATCH_AMBIGUOUS,
                 )
             )
         elif applied is not None:
@@ -362,11 +433,20 @@ def _apply_policy(results: list[MatchResult], policy: str) -> list[MatchResult]:
 
 
 def assign(
-    reads: Sequence[str | bytes],
-    barcodes: Sequence[str | bytes],
+    reads: Sequence[ReadInput],
+    barcodes: Sequence[ReadInput],
     k: int = 1,
-    policy: str = "radius",
+    policy: AssignmentPolicy = "radius",
 ) -> list[MatchResult]:
+    """Assign reads against a target list with the native scan kernel.
+
+    Examples
+    --------
+    >>> [result.status for result in assign(["ACGT", "TTTT"], ["ACGT", "GGGG"], k=1)]
+    [<MatchStatus.UNIQUE: 1>, <MatchStatus.NONE: 0>]
+    >>> assign(["ACGT"], ["ACGT", "AGGT"], k=1, policy="best")[0].match_count
+    2
+    """
     k = integer(k, "k")
     _normalize_policy(policy)
     _read_bytes, read_ptrs, read_lens = _array_inputs(reads)
@@ -392,24 +472,36 @@ def assign(
 
 
 def assign_hamming(
-    reads: Sequence[str | bytes],
-    barcodes: Sequence[str | bytes],
+    reads: Sequence[ReadInput],
+    barcodes: Sequence[ReadInput],
     k: int = 1,
-    policy: str = "radius",
+    policy: AssignmentPolicy = "radius",
 ) -> list[MatchResult]:
-    """Assign fixed-length reads by Hamming distance using the native Hamming index."""
+    """Assign fixed-length reads by Hamming distance using the native Hamming index.
+
+    Examples
+    --------
+    >>> assign_hamming(["ACGA"], ["ACGT", "TTTT"], k=1)[0].target_index
+    0
+    """
     with Matcher(barcodes) as matcher:
         return matcher.assign_hamming(reads, k=k, policy=policy)
 
 
 def assign_exact(
-    reads: Sequence[str | bytes],
-    barcodes: Sequence[str | bytes],
+    reads: Sequence[ReadInput],
+    barcodes: Sequence[ReadInput],
     *,
     ascii_fold: bool = False,
-    policy: str = "radius",
+    policy: AssignmentPolicy = "radius",
 ) -> list[MatchResult]:
-    """Assign exact fixed windows using the native exact lookup table."""
+    """Assign exact fixed windows using the native exact lookup table.
+
+    Examples
+    --------
+    >>> assign_exact(["acgt"], ["ACGT"], ascii_fold=True)[0].target_index
+    0
+    """
     with Matcher(barcodes) as matcher:
         return matcher.assign_exact(reads, ascii_fold=ascii_fold, policy=policy)
 
@@ -418,13 +510,13 @@ def _phred33_probability(ch: int) -> float:
     q = ch - 33
     if q < 0 or q > 93:
         raise ValueError("quality string must use Phred+33 ASCII characters 33–126")
-    return 10.0 ** (-q / 10.0)
+    return float(10.0 ** (-q / 10.0))
 
 
 def assign_posterior(
-    read: str | bytes,
-    targets: Sequence[str | bytes],
-    quality: str | bytes,
+    read: ReadInput,
+    targets: Sequence[ReadInput],
+    quality: ReadInput,
     *,
     min_posterior: float = 0.95,
     priors: Sequence[float] | None = None,
@@ -480,13 +572,17 @@ def assign_posterior(
     return PosteriorAssignment(best, posteriors[best], second, status, posteriors)
 
 
-def _synchronized(method):
+_CallableT = TypeVar("_CallableT", bound=Callable[..., Any])
+
+
+def _synchronized(method: _CallableT) -> _CallableT:
     @wraps(method)
-    def call(self, *args, **kwargs):
+    def call(self: Any, *args: Any, **kwargs: Any) -> Any:
         # ctypes releases the GIL: close() must never free an in-flight index.
         with self._lock:
             return method(self, *args, **kwargs)
-    return call
+
+    return cast(_CallableT, call)
 
 
 class Matcher:
@@ -495,7 +591,7 @@ class Matcher:
     Calls on one Matcher are serialized, including close(). Use an independent
     Matcher per worker when parallel assignment is required.
     """
-    def __init__(self, barcodes: Sequence[str | bytes]):
+    def __init__(self, barcodes: Sequence[ReadInput]):
         self._lock = threading.RLock()
         self._closed = True
         self._index = None
@@ -518,7 +614,12 @@ class Matcher:
             raise ValueError("matcher is closed")
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
         self.close()
 
     def __del__(self) -> None:
@@ -527,19 +628,29 @@ class Matcher:
         except Exception:
             pass
 
-    def assign(self, reads: Sequence[str | bytes], k: int = 1, policy: str = "radius") -> list[MatchResult]:
+    def assign(
+        self,
+        reads: Sequence[ReadInput],
+        k: int = 1,
+        policy: AssignmentPolicy = "radius",
+    ) -> list[MatchResult]:
         results, _stats = self.assign_with_stats(reads, k=k, policy=policy)
         return results
 
     def assign_with_stats(
         self,
-        reads: Sequence[str | bytes],
+        reads: Sequence[ReadInput],
         k: int = 1,
-        policy: str = "radius",
+        policy: AssignmentPolicy = "radius",
     ) -> tuple[list[MatchResult], AssignmentStats]:
         return self._assign_with_stats_func(_LIB.qdaln_index_assign_stats, reads, k=k, policy=policy)
 
-    def assign_hamming(self, reads: Sequence[str | bytes], k: int = 1, policy: str = "radius") -> list[MatchResult]:
+    def assign_hamming(
+        self,
+        reads: Sequence[ReadInput],
+        k: int = 1,
+        policy: AssignmentPolicy = "radius",
+    ) -> list[MatchResult]:
         """Assign fixed-length reads by Hamming distance with the native Hamming kernel.
 
         This is the fast path for one-mismatch guide or barcode workflows where
@@ -550,9 +661,9 @@ class Matcher:
 
     def assign_hamming_with_stats(
         self,
-        reads: Sequence[str | bytes],
+        reads: Sequence[ReadInput],
         k: int = 1,
-        policy: str = "radius",
+        policy: AssignmentPolicy = "radius",
     ) -> tuple[list[MatchResult], AssignmentStats]:
         k = integer(k, "k", maximum=3)
         if k == 0:
@@ -561,10 +672,10 @@ class Matcher:
 
     def assign_exact(
         self,
-        reads: Sequence[str | bytes],
+        reads: Sequence[ReadInput],
         *,
         ascii_fold: bool = False,
-        policy: str = "radius",
+        policy: AssignmentPolicy = "radius",
     ) -> list[MatchResult]:
         """Assign exact fixed windows using the native exact lookup table."""
         results, _stats = self.assign_exact_with_stats(reads, ascii_fold=ascii_fold, policy=policy)
@@ -573,10 +684,10 @@ class Matcher:
     @_synchronized
     def assign_exact_with_stats(
         self,
-        reads: Sequence[str | bytes],
+        reads: Sequence[ReadInput],
         *,
         ascii_fold: bool = False,
-        policy: str = "radius",
+        policy: AssignmentPolicy = "radius",
     ) -> tuple[list[MatchResult], AssignmentStats]:
         if self._closed:
             raise ValueError("matcher is closed")
@@ -605,9 +716,9 @@ class Matcher:
 
     def assign_status_with_stats(
         self,
-        reads: Sequence[str | bytes],
+        reads: Sequence[ReadInput],
         k: int = 1,
-        policy: str = "radius",
+        policy: AssignmentPolicy = "radius",
     ) -> tuple[list[MatchResult], AssignmentStats]:
         """Assign with an early-stop native path when only status/best target matters.
 
@@ -621,10 +732,10 @@ class Matcher:
     def _assign_with_stats_func(
         self,
         func: Any,
-        reads: Sequence[str | bytes],
+        reads: Sequence[ReadInput],
         *,
         k: int,
-        policy: str,
+        policy: AssignmentPolicy,
     ) -> tuple[list[MatchResult], AssignmentStats]:
         if self._closed:
             raise ValueError("matcher is closed")
@@ -661,9 +772,9 @@ def stream_assign(
     target_start: int = 0,
     target_length: int | None = None,
     k: int = 1,
-    metric: str = "levenshtein",
-    policy: str = "radius",
-    batch_size: int = 4096,
+    metric: Metric = "levenshtein",
+    policy: AssignmentPolicy = "radius",
+    batch_size: int = 256,
     include_invalid: bool = True,
 ) -> Iterator[StreamAssignment]:
     """Stream fixed-window FASTQ assignments without loading reads into memory.
@@ -712,7 +823,7 @@ def stream_assign(
                             second_best_distance=-1,
                             match_count=0,
                             status=MATCH_INVALID,
-                            status_name=status_name(MATCH_INVALID),
+                            status_name=STATUS_NAMES[MATCH_INVALID],
                         )
                     continue
                 observed.append(window)
@@ -747,14 +858,14 @@ def stream_assign(
                         second_best_distance=result.second_best_distance,
                         match_count=result.match_count,
                         status=result.status,
-                        status_name=status_name(result.status),
+                        status_name=STATUS_NAMES[result.status],
                 )
             for assignment in output:
                 if assignment is not None:
                     yield assignment
 
 
-def assignment_summary(assignments: Iterable[StreamAssignment]) -> dict[str, int | float]:
+def assignment_summary(assignments: Iterable[StreamAssignment]) -> AssignmentSummary:
     """Summarize streamed assignments into counts and core rates."""
     total_reads = 0
     assigned_unique = 0
@@ -788,7 +899,7 @@ def assignment_summary(assignments: Iterable[StreamAssignment]) -> dict[str, int
     )
 
 
-def _empty_assignment_summary() -> dict[str, int | float]:
+def _empty_assignment_summary() -> AssignmentCounts:
     return {
         "total_reads": 0,
         "assigned_unique": 0,
@@ -800,7 +911,7 @@ def _empty_assignment_summary() -> dict[str, int | float]:
     }
 
 
-def _add_assignment_to_summary(summary: dict[str, int | float], assignment: StreamAssignment) -> None:
+def _add_assignment_to_summary(summary: AssignmentCounts, assignment: StreamAssignment) -> None:
     summary["total_reads"] = int(summary["total_reads"]) + 1
     if assignment.status == MATCH_UNIQUE:
         summary["assigned_unique"] = int(summary["assigned_unique"]) + 1
@@ -824,7 +935,7 @@ def _summary_from_counts(
     ambiguous: int,
     unmatched: int,
     invalid: int,
-) -> dict[str, int | float]:
+) -> AssignmentSummary:
     return _finish_assignment_summary(
         {
             "total_reads": total_reads,
@@ -838,16 +949,18 @@ def _summary_from_counts(
     )
 
 
-def _finish_assignment_summary(summary: dict[str, int | float]) -> dict[str, int | float]:
-    total = int(summary["total_reads"])
-    summary["assignment_rate"] = int(summary["assigned_unique"]) / total if total else 0.0
-    summary["ambiguous_rate"] = int(summary["ambiguous"]) / total if total else 0.0
-    summary["no_match_rate"] = int(summary["unmatched"]) / total if total else 0.0
-    summary["invalid_rate"] = int(summary["invalid"]) / total if total else 0.0
-    return summary
+def _finish_assignment_summary(summary: AssignmentCounts) -> AssignmentSummary:
+    total = summary["total_reads"]
+    return {
+        **summary,
+        "assignment_rate": summary["assigned_unique"] / total if total else 0.0,
+        "ambiguous_rate": summary["ambiguous"] / total if total else 0.0,
+        "no_match_rate": summary["unmatched"] / total if total else 0.0,
+        "invalid_rate": summary["invalid"] / total if total else 0.0,
+    }
 
 
-def write_assignments_tsv(assignments: Iterable[StreamAssignment], path: str | Path) -> dict[str, int | float]:
+def write_assignments_tsv(assignments: Iterable[StreamAssignment], path: str | Path) -> AssignmentSummary:
     """Write streamed assignments to TSV and return ``assignment_summary``."""
     columns = [
         "read_id",
@@ -917,10 +1030,15 @@ def _to_pandas(df: Any) -> Any:
             pass
     return df
 
-def targets_from_dataframe(df: Any, id_col=None, seq_col=None) -> list[tuple[str, str]]:
+def targets_from_dataframe(
+    df: Any,
+    id_col: str | int | None = None,
+    seq_col: str | int | None = None,
+) -> list[TargetRow]:
     """Extract validated (ID, sequence) pairs; see dotmatch.dataframes."""
     from .dataframes import targets_from_dataframe as convert
-    return convert(df, id_col=id_col, seq_col=seq_col)
+
+    return [TargetRow(target_id, sequence) for target_id, sequence in convert(df, id_col=id_col, seq_col=seq_col)]
 
 
 def results_to_dataframe(
@@ -973,14 +1091,26 @@ def results_to_dataframe(
     return pd.DataFrame(rows, columns=columns)
 
 
-def assign_dataframe(reads: Any, targets: Any, k: int = 1, policy: str = "radius",
-                     metric: str = "levenshtein", read_ids=None, target_names=None, *,
-                     read_seq_col=None, read_id_col=None, target_seq_col=None, target_id_col=None):
+def assign_dataframe(reads: Any, targets: Any, k: int = 1, policy: AssignmentPolicy = "radius",
+                     metric: Metric = "levenshtein", read_ids: Sequence[str] | None = None, target_names: Sequence[str] | None = None, *,
+                     read_seq_col: str | int | None = None, read_id_col: str | int | None = None,
+                     target_seq_col: str | int | None = None, target_id_col: str | int | None = None) -> Any:
     """Assign lists, Series or named dataframes without lossy string coercion."""
     from .dataframes import assign_dataframe as convert
-    return convert(reads, targets, k, policy, metric, read_ids, target_names,
-                   read_seq_col=read_seq_col, read_id_col=read_id_col,
-                   target_seq_col=target_seq_col, target_id_col=target_id_col)
+
+    return cast(Any, convert)(
+        reads,
+        targets,
+        k,
+        policy,
+        metric,
+        read_ids,
+        target_names,
+        read_seq_col=read_seq_col,
+        read_id_col=read_id_col,
+        target_seq_col=target_seq_col,
+        target_id_col=target_id_col,
+    )
 
 
 def _ensure_anndata() -> None:
@@ -992,8 +1122,8 @@ def _ensure_anndata() -> None:
     _ensure_pandas()
 
 
-def counts_tsv_to_anndata(counts_path: str | Path, *, sample_cols=None,
-                         var_cols=("target_id", "target_seq", "gene")):
+def counts_tsv_to_anndata(counts_path: str | Path, *, sample_cols: list[str] | None = None,
+                         var_cols: Sequence[str] = ("target_id", "target_seq", "gene")) -> Any:
     """Load raw integer counts as sparse samples-by-targets AnnData.
 
     sample_cols selects source column names in the requested order. Detailed
@@ -1001,12 +1131,21 @@ def counts_tsv_to_anndata(counts_path: str | Path, *, sample_cols=None,
     fractional/negative counts and overflowing integers raise explicit errors.
     """
     from .dataframes import counts_tsv_to_anndata as convert
-    return convert(counts_path, sample_cols=sample_cols, var_cols=var_cols)
+
+    return cast(Any, convert)(counts_path, sample_cols=sample_cols, var_cols=var_cols)
 
 
-def assignments_to_anndata(assignments: Any, *, cell_col="cell_barcode", feature_col="target_name",
-                           status_col=None, count_unique_only=True, include_ambiguous_per_cell=False,
-                           cell_names=None, feature_names=None):
+def assignments_to_anndata(
+    assignments: Any,
+    *,
+    cell_col: str = "cell_barcode",
+    feature_col: str = "target_name",
+    status_col: str | None = None,
+    count_unique_only: bool = True,
+    include_ambiguous_per_cell: bool = False,
+    cell_names: Sequence[str] | None = None,
+    feature_names: Sequence[str] | None = None,
+) -> Any:
     """Count uniquely assigned observations in a sparse cell-by-feature matrix.
 
     Cell labels must be explicit; they are never inferred from read IDs. Keep

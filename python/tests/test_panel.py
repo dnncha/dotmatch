@@ -7,7 +7,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 LEGACY_ENV = {**os.environ, "DOTMATCH_PYTHON_NO_DELEGATE": "1", "PYTHONPATH": str(ROOT / "python")}
 
@@ -388,3 +387,27 @@ def test_panel_docs_scope_and_gate_exist() -> None:
     assert "DotMatch does not merely design barcodes" in docs
     assert (ROOT / "scripts/check_barcode_panel_design_gate.py").exists()
     assert (ROOT / "scripts/bench_barcode_panel_design.py").exists()
+
+
+def test_panel_check_accepts_sequence_levenshtein_metric(tmp_path: Path) -> None:
+    panel = tmp_path / "panel.tsv"
+    panel.write_text("barcode_id\tsequence\nA\tTACGACAC\nB\tCCATTGGT\n", encoding="utf-8")
+    out_dir = tmp_path / "check"
+
+    rc = _run_cli(
+        [
+            "panel",
+            "check",
+            str(panel),
+            "--k",
+            "1",
+            "--metric",
+            "seqlev",
+            "--out-dir",
+            str(out_dir),
+        ]
+    )
+
+    assert rc.returncode in {0, 1}, rc.stderr
+    summary = json.loads((out_dir / "panel_summary.json").read_text(encoding="utf-8"))
+    assert summary["assignment_metric"] == "sequence-levenshtein"

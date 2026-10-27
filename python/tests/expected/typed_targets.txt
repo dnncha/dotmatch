@@ -1,0 +1,10 @@
+[
+  {
+    "sequence": "ACGT",
+    "target_id": "G1"
+  },
+  {
+    "sequence": "AGGT",
+    "target_id": "G2"
+  }
+]

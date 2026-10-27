@@ -1,0 +1,12 @@
+{
+  "ambiguous_error_spheres": 8,
+  "assignment_metric": "hamming",
+  "certified_dotmatch_command": "dotmatch demux --barcodes barcodes.tsv --reads pooled.fastq.gz --barcode-start 0 --barcode-length 8 --k 1 --metric hamming --ambiguity-policy radius --out-dir demuxed/",
+  "lengths": [
+    8
+  ],
+  "minimum_hamming_distance": 1,
+  "n_barcodes": 2,
+  "safe_for_k1_hamming": false,
+  "status": "fail"
+}

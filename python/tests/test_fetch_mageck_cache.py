@@ -4,7 +4,6 @@ import importlib.util
 import zipfile
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 FETCHER = ROOT / "scripts" / "fetch_mageck_demo.py"
 

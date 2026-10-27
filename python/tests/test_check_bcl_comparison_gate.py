@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pytest
 
-
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / "scripts" / "check_bcl_comparison_gate.py"
 

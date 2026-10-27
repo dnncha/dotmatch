@@ -1,12 +1,11 @@
-import importlib.util
 import gzip
 import http.client
+import importlib.util
 import io
 import json
 import sys
 import zipfile
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[2]
 FETCHER = ROOT / "scripts" / "fetch_srp009896_barcode_demo.py"

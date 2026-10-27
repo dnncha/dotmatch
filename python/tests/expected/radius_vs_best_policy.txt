@@ -1,0 +1,10 @@
+{
+  "best": {
+    "match_count": 3,
+    "status": "unique"
+  },
+  "radius": {
+    "match_count": 3,
+    "status": "ambiguous"
+  }
+}

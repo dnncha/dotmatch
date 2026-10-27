@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import json
 import gzip
+import json
 import os
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
-
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -1713,7 +1712,6 @@ def test_assay_autopsy_reports_wrong_offset_findings(tmp_path: Path) -> None:
 
 
 def test_reliability_verdict_uses_project_relative_paths(tmp_path: Path) -> None:
-    import dotmatch.assayspec as assayspec
 
     subprocess.run(["make", "dotmatch"], cwd=ROOT, check=True)
     spec = _write_count_spec(tmp_path)

@@ -3,16 +3,18 @@ from __future__ import annotations
 
 import ctypes
 import operator
+from collections.abc import Iterable
+from typing import Any, cast
 
 C_INT_MAX = (1 << (ctypes.sizeof(ctypes.c_int) * 8 - 1)) - 1
 
 
-def integer(value, name: str, *, minimum: int = 0, maximum: int = C_INT_MAX) -> int:
+def integer(value: object, name: str, *, minimum: int = 0, maximum: int = C_INT_MAX) -> int:
     """Accept integer scalars, never booleans, rounding, or C integer wrapping."""
     if isinstance(value, bool) or type(value).__name__ == "bool_":
         raise TypeError(f"{name} must be an integer, not a boolean")
     try:
-        result = operator.index(value)
+        result = operator.index(cast(Any, value))
     except TypeError as exc:
         raise TypeError(f"{name} must be an integer") from exc
     if not minimum <= result <= maximum:
@@ -20,7 +22,7 @@ def integer(value, name: str, *, minimum: int = 0, maximum: int = C_INT_MAX) -> 
     return result
 
 
-def identifier(value, name: str = "identifier") -> str:
+def identifier(value: object, name: str = "identifier") -> str:
     """Preserve textual identifiers (including NA and leading zeros)."""
     if isinstance(value, bytes):
         value = value.decode("utf-8")
@@ -31,7 +33,7 @@ def identifier(value, name: str = "identifier") -> str:
         try:
             if isinstance(value, bool) or type(value).__name__ == "bool_":
                 raise TypeError
-            result = str(operator.index(value))
+            result = str(operator.index(cast(Any, value)))
         except TypeError as exc:
             raise ValueError(f"{name} must be nonempty text or an integer label") from exc
     if not result or any(ord(ch) < 32 or ord(ch) == 127 for ch in result):
@@ -39,7 +41,7 @@ def identifier(value, name: str = "identifier") -> str:
     return result
 
 
-def sequence(value, name: str = "sequence") -> str:
+def sequence(value: object, name: str = "sequence") -> str:
     """Normalize high-level sequence inputs without stringifying missing data."""
     if isinstance(value, bytes):
         value = value.decode("ascii")
@@ -50,7 +52,7 @@ def sequence(value, name: str = "sequence") -> str:
     return value.upper()
 
 
-def named_targets(rows) -> list[tuple[str, str]]:
+def named_targets(rows: Iterable[tuple[object, object]]) -> list[tuple[str, str]]:
     result, seen = [], set()
     for raw_id, raw_seq in rows:
         target_id = identifier(raw_id, "target ID")

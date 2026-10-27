@@ -1,7 +1,6 @@
 import importlib.util
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / "scripts" / "check_public_crispr_claim_gate.py"
 

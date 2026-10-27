@@ -1,13 +1,32 @@
 import re
-from importlib.metadata import PackageNotFoundError, version as _metadata_version
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _metadata_version
 from pathlib import Path
 from typing import Optional
 
-from .core import (
+# Advanced / optional integrations (import submodules to avoid heavy dep cost)
+# from . import anndata as anndata  # if you have the extra
+# from . import multiqc as multiqc
+from . import (
+    tl as tl,  # scverse-style tools (dotmatch.tl.assign_features, dotmatch.tl.feature_counts, ...)
+)
+from ._types import (
     MATCH_AMBIGUOUS,
     MATCH_INVALID,
     MATCH_NONE,
     MATCH_UNIQUE,
+    AssignmentCounts,
+    AssignmentPolicy,
+    AssignmentSummary,
+    DistanceMetric,
+    MatchStatus,
+    Metric,
+    PanelCertificate,
+    PanelStatus,
+    StatusName,
+    TargetRow,
+)
+from .core import (
     AssignmentStats,
     FastqRecord,
     Matcher,
@@ -19,8 +38,8 @@ from .core import (
     assign_dataframe,
     assign_exact,
     assign_hamming,
-    assignment_summary,
     assign_posterior,
+    assignment_summary,
     assignments_to_anndata,
     counts_tsv_to_anndata,
     distance,
@@ -34,12 +53,6 @@ from .core import (
     write_assignments_tsv,
 )
 from .feature_matrix import FeatureMatrixResult, build_feature_matrix
-
-# Advanced / optional integrations (import submodules to avoid heavy dep cost)
-# from . import anndata as anndata  # if you have the extra
-# from . import multiqc as multiqc
-
-from . import tl as tl  # scverse-style tools (dotmatch.tl.assign_features, dotmatch.tl.feature_counts, ...)
 
 
 def _source_tree_version() -> Optional[str]:
@@ -69,7 +82,17 @@ __all__ = [
     "MATCH_INVALID",
     "MATCH_NONE",
     "MATCH_UNIQUE",
+    "AssignmentCounts",
+    "AssignmentPolicy",
     "AssignmentStats",
+    "AssignmentSummary",
+    "DistanceMetric",
+    "MatchStatus",
+    "Metric",
+    "PanelCertificate",
+    "PanelStatus",
+    "StatusName",
+    "TargetRow",
     "FastqRecord",
     "Matcher",
     "MatchResult",

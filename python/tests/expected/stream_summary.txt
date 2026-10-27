@@ -1,0 +1,13 @@
+{
+  "ambiguous": 2,
+  "ambiguous_rate": 0.6666666666666666,
+  "assigned_corrected": 0,
+  "assigned_exact": 0,
+  "assigned_unique": 0,
+  "assignment_rate": 0.0,
+  "invalid": 1,
+  "invalid_rate": 0.3333333333333333,
+  "no_match_rate": 0.0,
+  "total_reads": 3,
+  "unmatched": 0
+}

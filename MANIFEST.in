@@ -23,3 +23,5 @@ include src/qdmetal.mm
 include src/qda.c
 
 include src/target_table.h
+include python/dotmatch/py.typed
+include python/quickdna/py.typed

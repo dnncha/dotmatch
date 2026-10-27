@@ -2,7 +2,6 @@ import importlib.util
 import json
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 GENERATOR = ROOT / "scripts" / "generate_evidence_gallery.py"
 CHECKER = ROOT / "scripts" / "check_evidence_gallery.py"

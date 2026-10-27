@@ -1,0 +1,5 @@
+{
+  "low_quality_status": "unique",
+  "posterior": 0.999967,
+  "status": "unique"
+}

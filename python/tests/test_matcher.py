@@ -1,6 +1,6 @@
 import dotmatch
-import quickdna
 import pytest
+import quickdna
 
 
 def test_matcher_assign_matches_scan_api():

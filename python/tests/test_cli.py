@@ -2,11 +2,10 @@ import csv
 import gzip
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
-import re
-
 
 ROOT = Path(__file__).resolve().parents[2]
 LEGACY_ENV = {**os.environ, "DOTMATCH_PYTHON_NO_DELEGATE": "1"}

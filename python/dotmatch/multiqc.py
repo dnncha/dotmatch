@@ -43,15 +43,21 @@ log = logging.getLogger(__name__)
 # After `pip install "dotmatch[multiqc]"`, `multiqc ...` should auto-discover it
 # (or use --module dotmatch explicitly).
 _HAS_MULTIQC = False
+BaseMultiqcModule: Any = object
+_mqc_table: Any = None
+_mqc_config: Any = None
 try:
-    from multiqc import BaseMultiqcModule  # type: ignore
-    from multiqc import config as _mqc_config  # type: ignore
-    from multiqc.plots import table as _mqc_table  # type: ignore
+    from importlib import import_module
+
+    _multiqc = import_module("multiqc")
+    BaseMultiqcModule = _multiqc.BaseMultiqcModule
+    _mqc_config = _multiqc.config
+    _mqc_table = import_module("multiqc.plots").table
     _HAS_MULTIQC = True
 except Exception:  # noqa: BLE001
-    BaseMultiqcModule = object  # type: ignore
-    _mqc_table = None  # type: ignore
-    _mqc_config = None  # type: ignore
+    BaseMultiqcModule = object
+    _mqc_table = None
+    _mqc_config = None
 
 
 DOTMATCH_SEARCH_PATTERNS: dict[str, dict[str, Any]] = {
@@ -127,7 +133,7 @@ def load_config() -> None:
         search_patterns.setdefault(key, pattern)
 
 
-def _get_table_plot():
+def _get_table_plot() -> Any:
     if not _HAS_MULTIQC or _mqc_table is None:
         raise ImportError("multiqc is required to use the DotMatch MultiQC module")
     return _mqc_table.plot
@@ -333,7 +339,7 @@ def parse_dotmatch_artifacts(paths: list[str | Path]) -> dict[str, dict[str, dic
     return {key: value for key, value in parsed.items() if value}
 
 
-class DotMatchModule(BaseMultiqcModule):
+class DotMatchModule(BaseMultiqcModule):  # type: ignore[misc]
     """
     DotMatch MultiQC module.
 
