@@ -238,5 +238,8 @@ class bdist_wheel(_bdist_wheel):
 setup(
     cmdclass={"build_py": build_py, "bdist_wheel": bdist_wheel, "sdist": sdist},
     distclass=BinaryDistribution,
-    package_data={"dotmatch": ["libdotmatch.*", "dotmatch-native", "data/*.json"]},
+    package_data={
+        "dotmatch": ["libdotmatch.*", "dotmatch-native", "data/*.json", "py.typed"],
+        "quickdna": ["py.typed"],
+    },
 )

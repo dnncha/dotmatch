@@ -5,16 +5,15 @@ from types import SimpleNamespace
 
 import dotmatch.multiqc as multiqc_module
 import pytest
-
 from dotmatch.multiqc import (
     DOTMATCH_SEARCH_PATTERNS,
     _multiqc_file_path,
-    parse_sample_qc_tsv,
-    parse_crispr_qc_summary_tsv,
     parse_assay_manifest_summary_tsv,
-    parse_summary_json,
-    parse_panel_summary_json,
+    parse_crispr_qc_summary_tsv,
     parse_dotmatch_artifacts,
+    parse_panel_summary_json,
+    parse_sample_qc_tsv,
+    parse_summary_json,
 )
 
 # Use the real fixtures that the workflow checks also validate

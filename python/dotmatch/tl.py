@@ -37,21 +37,28 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 from ._optional import optional_module
+from ._types import (
+    MATCH_AMBIGUOUS,
+    MATCH_NONE,
+    MATCH_UNIQUE,
+    AssignmentPolicy,
+    Metric,
+    TargetRow,
+)
+from .core import (
+    Matcher,
+    assignments_to_anndata,
+    targets_from_dataframe,
+)
+from .core import (
+    status_name as match_status_name,
+)
 
 ad, _HAS_ANNDATA = optional_module("anndata")
 pd, _HAS_PANDAS = optional_module("pandas")
-
-# Use absolute import from the installed package name to avoid relative import
-# issues when running under PYTHONPATH or pytest collection.
-from dotmatch.core import (
-    Matcher,
-    assignments_to_anndata,
-    counts_tsv_to_anndata,
-    targets_from_dataframe,
-)
 
 
 def _ensure_anndata() -> None:
@@ -62,7 +69,7 @@ def _ensure_anndata() -> None:
         )
 
 
-def _load_library(library: Any) -> list[tuple[str, str]]:
+def _load_library(library: Any) -> list[TargetRow]:
     """Accept a path, DataFrame, mappings, tuples, or sequences (auto ids)."""
     if isinstance(library, (str, Path)):
         # Assume tsv/csv with id,seq or just seqs
@@ -72,7 +79,7 @@ def _load_library(library: Any) -> list[tuple[str, str]]:
                 return targets_from_dataframe(df)
             else:
                 seqs = df.iloc[:, 0].astype(str).tolist()
-                return [(f"target_{i}", s) for i, s in enumerate(seqs)]
+                return [TargetRow(f"target_{i}", s) for i, s in enumerate(seqs)]
         except Exception:
             # fallback single column?
             pass
@@ -80,9 +87,9 @@ def _load_library(library: Any) -> list[tuple[str, str]]:
         return targets_from_dataframe(library)
     if isinstance(library, (list, tuple)):
         if library and isinstance(library[0], (list, tuple)) and len(library[0]) == 2:
-            return list(library)
+            return [TargetRow(str(item[0]), str(item[1])) for item in library]
         if library and isinstance(library[0], Mapping):
-            normalized: list[tuple[str, str]] = []
+            normalized: list[TargetRow] = []
             for index, item in enumerate(library):
                 if not isinstance(item, Mapping):
                     raise TypeError("library mappings cannot be mixed with other entry types")
@@ -104,10 +111,10 @@ def _load_library(library: Any) -> list[tuple[str, str]]:
                 )
                 if sequence is None:
                     raise ValueError(f"library mapping at position {index} has no sequence field")
-                normalized.append((str(target_id), str(sequence)))
+                normalized.append(TargetRow(str(target_id), str(sequence)))
             return normalized
         else:
-            return [(f"target_{i}", str(s)) for i, s in enumerate(library)]
+            return [TargetRow(f"target_{i}", str(s)) for i, s in enumerate(library)]
     raise TypeError("library must be path, DataFrame, or list of (id,seq) / seqs")
 
 
@@ -117,8 +124,8 @@ def assign_features(
     library: Any,
     seq_col: str,
     k: int = 1,
-    metric: str = "hamming",
-    ambiguity_policy: str = "radius",
+    metric: Metric = "hamming",
+    ambiguity_policy: AssignmentPolicy = "radius",
     result_col: str = "assigned_feature",
     distance_col: str = "feature_distance",
     status_col: str = "feature_status",
@@ -185,17 +192,17 @@ def assign_features(
     dists = []
     statuses = []
 
-    for r in results:
-        if r.status == 1 and r.target_index >= 0:  # UNIQUE
-            assigned.append(id_map.get(r.target_index, ""))
-            dists.append(r.best_distance)
+    for result in results:
+        if result.status == MATCH_UNIQUE and result.target_index >= 0:
+            assigned.append(id_map.get(result.target_index, ""))
+            dists.append(result.best_distance)
             statuses.append("unique")
         else:
             assigned.append("")
-            dists.append(r.best_distance if r.best_distance >= 0 else -1)
-            if r.status == 2:
+            dists.append(result.best_distance if result.best_distance >= 0 else -1)
+            if result.status == MATCH_AMBIGUOUS:
                 statuses.append("ambiguous")
-            elif r.status == 0:
+            elif result.status == MATCH_NONE:
                 statuses.append("none")
             else:
                 statuses.append("invalid")
@@ -224,9 +231,9 @@ def feature_counts(
     seq_col: str,
     cell_col: str | None = None,
     k: int = 1,
-    metric: str = "hamming",
-    ambiguity_policy: str = "radius",
-    **kwargs,
+    metric: Metric = "hamming",
+    ambiguity_policy: AssignmentPolicy = "radius",
+    **kwargs: Any,
 ) -> Any:
     """
     High-level convenience: from an AnnData that contains per-"read" (or per-UMI)
@@ -275,10 +282,7 @@ def feature_counts(
                 target_names[r.target_index] if r.target_index >= 0 else ""
                 for r in results
             ],
-            "status_name": [
-                {1: "unique", 2: "ambiguous", 0: "none", -1: "invalid"}.get(r.status, "invalid")
-                for r in results
-            ],
+            "status_name": [match_status_name(r.status) for r in results],
         }
     )
 

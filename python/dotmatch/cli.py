@@ -15,11 +15,12 @@ from collections import defaultdict
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
-from typing import Iterable, Iterator, Sequence, TextIO
+from typing import Iterable, Iterator, Sequence, TextIO, TypedDict, cast
 
 from . import __version__
-from .assayspec import FASTQ_SUFFIXES, AssaySpecError, command_assay, scaffold_assay_project
+from ._types import require_float
 from .agent_tools import command_agent
+from .assayspec import FASTQ_SUFFIXES, AssaySpecError, command_assay, scaffold_assay_project
 from .core import (
     MATCH_AMBIGUOUS,
     MATCH_INVALID,
@@ -31,8 +32,25 @@ from .core import (
     assign_posterior,
     distance,
 )
+from .core import (
+    status_name as _core_status_name,
+)
 from .feature_matrix import build_feature_matrix
 from .native import find_native_cli, run_native_cli
+
+
+class GuideCount(TypedDict):
+    id: str
+    gene: str
+    counts: dict[str, int]
+
+
+class CrisprCountMatrix(TypedDict):
+    guide_col: str
+    gene_col: str
+    samples: list[str]
+    guides: list[GuideCount]
+    sample_counts: dict[str, list[int]]
 
 
 DNA = "ACGT"
@@ -87,8 +105,8 @@ class BarcodeCandidate:
 def _open_text(path: str | Path, mode: str = "rt") -> TextIO:
     path = Path(path)
     if str(path).endswith(".gz"):
-        return gzip.open(path, mode)
-    return path.open(mode, encoding="utf-8")
+        return cast(TextIO, gzip.open(path, mode))
+    return cast(TextIO, path.open(mode, encoding="utf-8"))
 
 
 def _read_targets(path: str | Path) -> list[Target]:
@@ -111,12 +129,7 @@ def _iter_fastq(path: str | Path) -> Iterator[ReadRecord]:
 
 
 def _status_name(status: int) -> str:
-    return {
-        MATCH_INVALID: "invalid",
-        MATCH_NONE: "none",
-        MATCH_UNIQUE: "unique",
-        MATCH_AMBIGUOUS: "ambiguous",
-    }.get(status, f"unknown:{status}")
+    return _core_status_name(status)
 
 
 def _edit_kind(observed: str, target: str, dist: int) -> str:
@@ -1149,7 +1162,8 @@ def _native_completed(argv: Sequence[str]) -> dict[str, object]:
 
 def _require_native_success(result: dict[str, object]) -> None:
     if result["exit_code"] != 0:
-        command = " ".join(str(part) for part in result["argv"])
+        argv = result.get("argv", [])
+        command = " ".join(str(part) for part in argv) if isinstance(argv, list) else ""
         stderr = str(result.get("stderr", "")).strip()
         raise RuntimeError(f"native command failed ({command}): {stderr}")
 
@@ -1387,9 +1401,10 @@ def _barcode_autopsy(args: argparse.Namespace) -> int:
 
 
 def _public_command_result(result: dict[str, object]) -> dict[str, object]:
-    argv = list(result.get("argv", [])) if isinstance(result.get("argv", []), list) else []
+    raw_argv = result.get("argv", [])
+    argv = [str(part) for part in raw_argv] if isinstance(raw_argv, list) else []
     if argv:
-        argv[0] = Path(str(argv[0])).name
+        argv[0] = Path(argv[0]).name
     return {
         "argv": argv,
         "exit_code": result.get("exit_code", 0),
@@ -1599,7 +1614,7 @@ def _write_barcode_multiqc(path: Path, summary: dict[str, object], inference: di
         "plot_type: table\n"
         "data:\n"
         "  pooled:\n"
-        f"    assignment_rate: {_fmt_rate(float(inference.get('assignment_rate', 0.0)))}\n"
+        f"    assignment_rate: {_fmt_rate(require_float(inference.get('assignment_rate', 0.0), field='assignment_rate'))}\n"
         f"    ambiguous: {_as_int(summary.get('ambiguous'))}\n"
         f"    unmatched: {_as_int(summary.get('unmatched'))}\n"
         f"    invalid: {_as_int(summary.get('invalid'))}\n"
@@ -1608,17 +1623,21 @@ def _write_barcode_multiqc(path: Path, summary: dict[str, object], inference: di
 
 
 def _write_barcode_autopsy_reports(out_dir: Path, provenance: dict[str, object]) -> None:
-    inference = provenance.get("inference") if isinstance(provenance.get("inference"), dict) else {}
-    commands = provenance.get("commands") if isinstance(provenance.get("commands"), list) else []
-    artifacts = provenance.get("artifacts") if isinstance(provenance.get("artifacts"), list) else []
+    raw_inference = provenance.get("inference")
+    inference: dict[str, object] = raw_inference if isinstance(raw_inference, dict) else {}
+    raw_commands = provenance.get("commands")
+    commands: list[object] = raw_commands if isinstance(raw_commands, list) else []
+    raw_artifacts = provenance.get("artifacts")
+    artifacts: list[object] = raw_artifacts if isinstance(raw_artifacts, list) else []
     run_summary = _read_json_if_exists(out_dir / "summary.json")
     start = inference.get("recommended_start", provenance.get("recommended_start", ""))
     length = inference.get("recommended_length", provenance.get("recommended_length", ""))
     assignment_rate = inference.get("assignment_rate", "")
     inference_status = inference.get("status", "ready")
-    inference_warnings = inference.get("warnings") if isinstance(inference.get("warnings"), list) else []
-    ambiguous_rate = inference.get("ambiguous_rate", "")
-    no_match_rate = inference.get("no_match_rate", "")
+    raw_inference_warnings = inference.get("warnings")
+    inference_warnings: list[object] = (
+        raw_inference_warnings if isinstance(raw_inference_warnings, list) else []
+    )
     total_reads = _as_int(run_summary.get("total_reads"))
     assigned_unique = _as_int(run_summary.get("assigned_unique"))
     assigned_exact = _as_int(run_summary.get("assigned_exact"))
@@ -1654,7 +1673,7 @@ def _write_barcode_autopsy_reports(out_dir: Path, provenance: dict[str, object])
             f"- Inference status: `{inference_status}`",
             f"- Assignment rate: `{run_assignment_rate}`",
             f"- Top finding: `{findings[0]['finding'] if findings else diagnosis}`",
-            f"- Primary report: `report.html`",
+            "- Primary report: `report.html`",
             "",
             "## Comparator check",
             "",
@@ -1799,9 +1818,10 @@ def _add_crispr_qc_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--fail-on-review", action="store_true", help="exit nonzero when any QC warning is emitted")
 
 
-def _read_crispr_count_matrix(path: str | Path) -> dict[str, object]:
+def _read_crispr_count_matrix(path: str | Path) -> CrisprCountMatrix:
     from .count_io import read_crispr_count_matrix
-    return read_crispr_count_matrix(path)
+
+    return cast(CrisprCountMatrix, read_crispr_count_matrix(path))
 
 
 def _parse_count_value(text: str, guide_id: str, sample: str) -> int:
@@ -1886,7 +1906,7 @@ def _first_existing(normalized: dict[str, str], candidates: Sequence[str]) -> st
 
 
 def _build_crispr_qc_report(
-    counts: dict[str, object],
+    counts: CrisprCountMatrix,
     sample_qc: dict[str, dict[str, float | str]],
     library: Sequence[Target],
     k: int,
@@ -1894,9 +1914,9 @@ def _build_crispr_qc_report(
 ) -> dict[str, object]:
     if k < 0:
         raise ValueError("--k must be non-negative")
-    samples = list(counts["samples"])  # type: ignore[arg-type]
-    sample_counts: dict[str, list[int]] = counts["sample_counts"]  # type: ignore[assignment]
-    guide_count = len(counts["guides"])  # type: ignore[arg-type]
+    samples = counts["samples"]
+    sample_counts = counts["sample_counts"]
+    guide_count = len(counts["guides"])
     warnings: list[dict[str, object]] = []
     sample_report: dict[str, dict[str, object]] = {}
 
@@ -2592,7 +2612,7 @@ DOI URL: https://doi.org/{SOFTWARE_DOI}"""
 
 
 def _agent_capabilities() -> dict[str, object]:
-    data_path = resources.files("dotmatch").joinpath("data", "agent-capabilities.json")
+    data_path = resources.files("dotmatch").joinpath("data").joinpath("agent-capabilities.json")
     value = json.loads(data_path.read_text(encoding="utf-8"))
     if not isinstance(value, dict):
         raise ValueError("installed agent capability manifest must contain a JSON object")

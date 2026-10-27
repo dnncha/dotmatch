@@ -4,7 +4,6 @@ import io
 import json
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 FETCHER = ROOT / "scripts" / "fetch_10x_feature_barcode_demo.py"
 

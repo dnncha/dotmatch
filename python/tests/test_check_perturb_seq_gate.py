@@ -2,7 +2,6 @@ import csv
 import importlib.util
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / "scripts" / "check_perturb_seq_gate.py"
 

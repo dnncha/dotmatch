@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
-
 ROOT = Path(__file__).resolve().parents[2]
 FETCHER = ROOT / "scripts" / "fetch_10x_crispr_guide_demo.py"
 

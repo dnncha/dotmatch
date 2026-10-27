@@ -13,21 +13,22 @@ import shlex
 import shutil
 import subprocess
 import sys
-from importlib import resources as importlib_resources
 from collections import Counter
 from dataclasses import dataclass
+from importlib import resources as importlib_resources
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping, Sequence, TypedDict, cast
 from urllib.parse import quote
 
 from . import __version__ as PYTHON_PACKAGE_VERSION
+from ._types import AssayMode, AssayStatus, AssayType
 from .core import MATCH_AMBIGUOUS, MATCH_NONE, MATCH_UNIQUE, Matcher
 from .native import find_native_cli
 
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover - exercised on Python 3.9/3.10 through dependency
-    import tomli as tomllib  # type: ignore[no-redef]
+    import tomli as tomllib
 
 
 MODES = {"count", "demux", "pair-count"}
@@ -71,7 +72,16 @@ BACKEND_DEFAULTS: dict[str, Any] = {
     "mode": "auto",
     "allow_gpu": True,
 }
-GPU_BENCHMARK_PRIORS = [
+class GpuBenchmarkPrior(TypedDict):
+    workload: str
+    mode: str
+    assay_type: str
+    target_count: int
+    target_length: int
+    total_speedup: float
+
+
+GPU_BENCHMARK_PRIORS: list[GpuBenchmarkPrior] = [
     {
         "workload": "public_crispr_yusa_hamming",
         "mode": "count",
@@ -187,12 +197,12 @@ class AssaySpec:
     data: Mapping[str, Any]
 
     @property
-    def mode(self) -> str:
-        return str(self.data["mode"])
+    def mode(self) -> AssayMode:
+        return cast(AssayMode, str(self.data["mode"]))
 
     @property
-    def assay_type(self) -> str:
-        return str(self.data["assay_type"])
+    def assay_type(self) -> AssayType:
+        return cast(AssayType, str(self.data["assay_type"]))
 
     @property
     def out_dir(self) -> Path:
@@ -208,8 +218,8 @@ class AssaySpec:
         return int(_table(self.data, "assignment").get("k", 1))
 
     @property
-    def status(self) -> str:
-        return str(self.data.get("status", "ready"))
+    def status(self) -> AssayStatus:
+        return cast(AssayStatus, str(self.data.get("status", "ready")))
 
     @property
     def reliability(self) -> dict[str, Any]:
@@ -851,10 +861,12 @@ def scaffold_assay_project(
     reads_root.mkdir()
 
     if input_key == "barcodes":
+        assert barcodes is not None
         staged_table = inputs_dir / barcodes.name
         _stage_input_file(barcodes, staged_table, copy=True)
         staged_table_key = "barcodes"
     else:
+        assert targets is not None
         staged_table = inputs_dir / targets.name
         _stage_input_file(targets, staged_table, copy=True)
         staged_table_key = "targets"
@@ -3603,7 +3615,7 @@ def _gpu_public_evidence_validated(assay: AssaySpec) -> bool:
 def _evidence_boundary(assay: AssaySpec) -> dict[str, str]:
     evidence_id = ASSAY_EVIDENCE_IDS.get(assay.assay_type, "")
     try:
-        data = json.loads(importlib_resources.files("dotmatch").joinpath("data", "assay-evidence.json").read_text(encoding="utf-8"))
+        data = json.loads(importlib_resources.files("dotmatch").joinpath("data").joinpath("assay-evidence.json").read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError, ModuleNotFoundError, AttributeError):
         path = Path(__file__).resolve().parents[2] / "docs" / "assay-evidence.json"
         try:

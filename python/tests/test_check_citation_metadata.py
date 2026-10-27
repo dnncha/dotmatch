@@ -2,7 +2,6 @@ import importlib.util
 import json
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 CHECKER = ROOT / "scripts" / "check_citation_metadata.py"
 RELEASE_CHECKER = ROOT / "scripts" / "check_release_readiness.py"

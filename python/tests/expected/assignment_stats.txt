@@ -1,0 +1,8 @@
+{
+  "candidates_considered": 2,
+  "candidates_verified": 2,
+  "statuses": [
+    "unique",
+    "unique"
+  ]
+}

@@ -3,7 +3,6 @@ import json
 from pathlib import Path
 from typing import Optional
 
-
 ROOT = Path(__file__).resolve().parents[2]
 CHECKER = ROOT / "scripts" / "check_scientific_readiness.py"
 

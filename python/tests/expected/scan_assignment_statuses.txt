@@ -1,0 +1,34 @@
+[
+  {
+    "best_distance": 0,
+    "match_count": 3,
+    "read": "ACGT",
+    "status": "ambiguous",
+    "status_value": 2,
+    "target_index": 0
+  },
+  {
+    "best_distance": 1,
+    "match_count": 2,
+    "read": "ACGC",
+    "status": "ambiguous",
+    "status_value": 2,
+    "target_index": 0
+  },
+  {
+    "best_distance": -1,
+    "match_count": 0,
+    "read": "TTTT",
+    "status": "none",
+    "status_value": 0,
+    "target_index": -1
+  },
+  {
+    "best_distance": 1,
+    "match_count": 2,
+    "read": "ACGG",
+    "status": "ambiguous",
+    "status_value": 2,
+    "target_index": 0
+  }
+]

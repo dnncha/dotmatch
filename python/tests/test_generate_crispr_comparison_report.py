@@ -1,7 +1,6 @@
 import importlib.util
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 REPORT = ROOT / "scripts" / "generate_crispr_comparison_report.py"
 

@@ -108,6 +108,15 @@ def wheel_native_cli_members(wheel: Path) -> list[str]:
         return [name for name in archive.namelist() if name == "dotmatch/dotmatch-native"]
 
 
+def wheel_py_typed_members(wheel: Path) -> list[str]:
+    with zipfile.ZipFile(wheel) as archive:
+        return [
+            name
+            for name in archive.namelist()
+            if name in {"dotmatch/py.typed", "quickdna/py.typed"}
+        ]
+
+
 def wheel_assay_evidence_members(wheel: Path) -> list[str]:
     with zipfile.ZipFile(wheel) as archive:
         return [name for name in archive.namelist() if name == "dotmatch/data/assay-evidence.json"]
@@ -148,6 +157,8 @@ def check_sdist_members(sdist: Path) -> None:
         "/extensions/codex/dotmatch-agent/SKILL.md",
         "/docs/assay-evidence.json",
         "/LICENSE",
+        "/python/dotmatch/py.typed",
+        "/python/quickdna/py.typed",
     ]
     with tarfile.open(sdist, "r:gz") as archive:
         names = archive.getnames()
@@ -1018,11 +1029,14 @@ def build_and_verify_wheel(out_dir: Path, install_root: Path, expected_version: 
     agent_discovery_members = wheel_agent_discovery_members(wheel)
     if len(agent_discovery_members) != 6:
         raise SystemExit(f"{wheel.name} does not contain all installed agent contract and skill files")
+    py_typed_members = wheel_py_typed_members(wheel)
+    if len(py_typed_members) != 2:
+        raise SystemExit(f"{wheel.name} must contain dotmatch/py.typed and quickdna/py.typed")
     check_distribution_metadata(wheel, expected_version)
     check_macos_tag(wheel)
     check_macos_architecture(wheel, native_members[0])
     verify_clean_install(wheel, install_root, expected_version)
-    return wheel, native_members + native_cli_members + assay_evidence_members + agent_discovery_members
+    return wheel, native_members + native_cli_members + assay_evidence_members + agent_discovery_members + py_typed_members
 
 
 def verify_existing_wheels(wheel_dir: Path, install_root: Path, expected_version: str) -> list[Path]:

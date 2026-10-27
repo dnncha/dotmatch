@@ -99,3 +99,6 @@ examples/bcl_demux/output/
 # Native-generated public viewer demonstration (npm prebuild).
 /public/examples/assignment-review/
 /public/examples/.review-*
+
+decisions.tsv
+.audit/

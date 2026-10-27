@@ -17,10 +17,14 @@ make
 make shared
 make test
 make cli-test
-DOTMATCH_LIB=$PWD/libdotmatch.dylib PYTHONPATH=$PWD/python python3 -m pytest python/tests
+make quality
 make python-package-test
 make repository-ready
 ```
+
+`make quality` runs mypy strict, pyright, ruff, and the Python tests. See
+[Typed Python Surface and Test Flow](docs/typing-and-testing.md) for the type
+vocabulary, static type tests, doctests, and snapshot workflow.
 
 On Linux, use `DOTMATCH_LIB=$PWD/libdotmatch.so` for Python tests. The CI workflow runs native build/test, CLI fixtures, Python tests, sanitizers on Linux, coverage on Linux, and shared-library builds.
 
@@ -49,6 +53,8 @@ Before opening a PR:
 make test
 make cli-test
 make python-test
+make typecheck
+make lint
 make python-package-test
 make repository-ready
 ```
