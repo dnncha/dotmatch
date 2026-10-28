@@ -22,7 +22,7 @@ import time
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator, Sequence
+from typing import Any, Iterator, Sequence, TextIO
 
 from .core import (
     MATCH_AMBIGUOUS,
@@ -87,21 +87,21 @@ def compare_hamming_policies(
 
 
 class _HashReader(io.RawIOBase):
-    def __init__(self, raw, digest):
+    def __init__(self, raw: Any, digest: Any) -> None:
         super().__init__()
         self.raw, self.digest = raw, digest
 
-    def readable(self):
+    def readable(self) -> bool:
         return True
 
-    def readinto(self, buffer):
+    def readinto(self, buffer: Any) -> int | None:
         count = self.raw.readinto(buffer)
         if count:
             self.digest.update(memoryview(buffer)[:count])
-        return count
+        return int(count) if count is not None else None
 
 
-def _fastq(handle, source: Path) -> Iterator[tuple[str, str]]:
+def _fastq(handle: TextIO, source: Path) -> Iterator[tuple[str, str]]:
     from .fastq_io import iter_fastq_records
     for record in iter_fastq_records(handle, source):
         yield record.read_id, record.seq
@@ -115,15 +115,17 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _writer(path: Path, fields: Sequence[str]):
+def _writer(path: Path, fields: Sequence[str]) -> tuple[TextIO, Any]:
     handle = path.open("w", encoding="utf-8", newline="")
     writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
     writer.writerow(fields)
     return handle, writer
 
 
-def _report(summary: dict, changes: list[dict]) -> str:
-    escape = lambda value: html.escape(str(value))
+def _report(summary: dict[str, Any], changes: list[dict[str, Any]]) -> str:
+    def escape(value: object) -> str:
+        return html.escape(str(value))
+
     rows = "".join(
         "<tr><th>"
         + mode
@@ -162,7 +164,7 @@ def run_sensitivity(
     sample_label: str = "sample",
     batch_size: int = 4096,
     write_read_changes: bool = False,
-) -> dict:
+) -> dict[str, Any]:
     """Write a no-overwrite review bundle; reject incomplete/invalid input runs."""
     if target_start < 0 or target_length <= 0:
         raise ValueError(
@@ -197,14 +199,16 @@ def run_sensitivity(
         raise
     published: list[Path] = []
     started = time.perf_counter()
-    counts = {mode: [0] * len(library) for mode in MODES}
+    counts: dict[str, list[int]] = {mode: [0] * len(library) for mode in MODES}
     outcomes = {mode: Counter({state: 0 for state in STATES}) for mode in MODES}
-    transitions = {pair: Counter() for pair in PAIRS}
+    transitions: dict[tuple[str, str], Counter[tuple[str, str]]] = {
+        pair: Counter() for pair in PAIRS
+    }
     read_count = changed_reads = distinct_windows_queried = 0
     read_digest = hashlib.sha256()
-    changes_handle = None
+    changes_handle: TextIO | None = None
     try:
-        change_writer = None
+        change_writer: Any = None
         if write_read_changes:
             changes_handle, change_writer = _writer(
                 stage / "read_changes.tsv",
@@ -221,7 +225,7 @@ def run_sensitivity(
         ):
             before = os.fstat(raw.fileno())
             buffered = io.BufferedReader(_HashReader(raw, read_digest))
-            decoded = (
+            decoded: Any = (
                 gzip.GzipFile(fileobj=buffered, mode="rb")
                 if fastq_path.name.lower().endswith(".gz")
                 else buffered
@@ -279,12 +283,13 @@ def run_sensitivity(
                                 change_writer.writerow(values)
             after = os.fstat(raw.fileno())
             current = fastq_path.stat()
-            signature = lambda stat: (
-                stat.st_dev,
-                stat.st_ino,
-                stat.st_size,
-                stat.st_mtime_ns,
-            )
+            def signature(stat: os.stat_result) -> tuple[int, int, int, int]:
+                return (
+                    stat.st_dev,
+                    stat.st_ino,
+                    stat.st_size,
+                    stat.st_mtime_ns,
+                )
             if signature(before) != signature(after) or signature(after) != signature(
                 current
             ):
@@ -310,48 +315,48 @@ def run_sensitivity(
                     (row.target_id, row.gene, counts[mode][i])
                     for i, row in enumerate(library)
                 )
-        changed_guides = []
-        handle, writer = _writer(
+        changed_guides: list[dict[str, Any]] = []
+        delta_handle, delta_writer = _writer(
             stage / "guide_deltas.tsv",
             ["target_id", "gene", *MODES, "radius_minus_exact", "best_minus_exact"],
         )
-        with handle:
+        with delta_handle:
             for i, row in enumerate(library):
-                values = {mode: counts[mode][i] for mode in MODES}
-                writer.writerow(
+                mode_counts = {mode: counts[mode][i] for mode in MODES}
+                delta_writer.writerow(
                     [
                         row.target_id,
                         row.gene,
-                        *(values[mode] for mode in MODES),
-                        values["radius_k1"] - values["exact"],
-                        values["best_k1"] - values["exact"],
+                        *(mode_counts[mode] for mode in MODES),
+                        mode_counts["radius_k1"] - mode_counts["exact"],
+                        mode_counts["best_k1"] - mode_counts["exact"],
                     ]
                 )
-                if len(set(values.values())) > 1:
-                    changed_guides.append({"target_id": row.target_id, **values})
+                if len(set(mode_counts.values())) > 1:
+                    changed_guides.append({"target_id": row.target_id, **mode_counts})
         changed_guides.sort(
             key=lambda row: (
                 -(max(row[mode] for mode in MODES) - min(row[mode] for mode in MODES)),
                 row["target_id"],
             )
         )
-        handle, writer = _writer(
+        transition_handle, transition_writer = _writer(
             stage / "transitions.tsv",
             ["from_policy", "to_policy", "from_status", "to_status", "reads"],
         )
-        with handle:
+        with transition_handle:
             for pair in PAIRS:
                 for left in STATES:
                     for right in STATES:
-                        writer.writerow(
+                        transition_writer.writerow(
                             [*pair, left, right, transitions[pair][(left, right)]]
                         )
-        handle, writer = _writer(
+        sample_handle, sample_writer = _writer(
             stage / "sample_qc.tsv", ["sample", "policy", "reads", *STATES]
         )
-        with handle:
+        with sample_handle:
             for mode in MODES:
-                writer.writerow(
+                sample_writer.writerow(
                     [
                         sample_label,
                         mode,
@@ -362,7 +367,7 @@ def run_sensitivity(
         from . import __version__
         from .core import _LIB
 
-        summary = {
+        summary: dict[str, Any] = {
             "schema_version": "dotmatch.sensitivity.v1",
             "completion": "complete",
             "software_version": __version__,

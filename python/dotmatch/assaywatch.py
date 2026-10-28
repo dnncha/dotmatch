@@ -10,7 +10,6 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Iterable, Iterator, Mapping, TextIO
 
-
 STATUSES = {"unique", "ambiguous", "none", "invalid"}
 
 

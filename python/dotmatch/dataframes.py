@@ -2,22 +2,30 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Sequence, cast
 
+from ._types import AssignmentPolicy, Metric, TargetRow
 from ._validation import identifier, named_targets, sequence
 from .count_io import read_count_table
 from .target_io import ID_COLUMNS, SEQ_COLUMNS
 
 
-def _values(column) -> list:
+def _values(column: Any) -> list[Any]:
     if hasattr(column, "to_list"):
-        return column.to_list()
+        return cast(list[Any], column.to_list())
     if hasattr(column, "tolist"):
-        return column.tolist()
+        return cast(list[Any], column.tolist())
     return list(column)
 
 
-def _column(columns, explicit, aliases, *, fallback=None, name="column"):
+def _column(
+    columns: Sequence[Any],
+    explicit: str | int | None,
+    aliases: Sequence[str],
+    *,
+    fallback: Any = None,
+    name: str = "column",
+) -> Any:
     if explicit is not None:
         if explicit in columns:
             return explicit
@@ -30,7 +38,11 @@ def _column(columns, explicit, aliases, *, fallback=None, name="column"):
     return hits[0] if hits else fallback
 
 
-def targets_from_dataframe(df: Any, id_col=None, seq_col=None) -> list[tuple[str, str]]:
+def targets_from_dataframe(
+    df: Any,
+    id_col: str | int | None = None,
+    seq_col: str | int | None = None,
+) -> list[TargetRow]:
     """Read named or explicitly selected columns from pandas or Polars.
 
     A one-column sequence table receives target_0, target_1, ... IDs. With no
@@ -57,10 +69,14 @@ def targets_from_dataframe(df: Any, id_col=None, seq_col=None) -> list[tuple[str
     ids = _values(df[target_id]) if target_id is not None else [f"target_{i}" for i in range(len(seqs))]
     if len(ids) != len(seqs):
         raise ValueError("target ID and sequence columns have different lengths")
-    return named_targets(zip(ids, seqs))
+    return [TargetRow(target_id, seq) for target_id, seq in named_targets(zip(ids, seqs))]
 
 
-def _read_sequences(reads, seq_col=None, id_col=None):
+def _read_sequences(
+    reads: Any,
+    seq_col: str | int | None = None,
+    id_col: str | int | None = None,
+) -> tuple[list[str], list[Any] | None]:
     if isinstance(reads, (str, bytes, Path)):
         raise TypeError("reads must be a sequence collection or dataframe; use stream_assign for a FASTQ path")
     if hasattr(reads, "columns"):
@@ -84,9 +100,20 @@ def _read_sequences(reads, seq_col=None, id_col=None):
     return [sequence(value, f"read sequence {i}") for i, value in enumerate(values)], ids
 
 
-def assign_dataframe(reads, targets, k=1, policy="radius", metric="levenshtein",
-                     read_ids=None, target_names=None, *, read_seq_col=None,
-                     read_id_col=None, target_seq_col=None, target_id_col=None):
+def assign_dataframe(
+    reads: Any,
+    targets: Any,
+    k: int = 1,
+    policy: AssignmentPolicy = "radius",
+    metric: Metric = "levenshtein",
+    read_ids: Sequence[str] | None = None,
+    target_names: Sequence[str] | None = None,
+    *,
+    read_seq_col: str | int | None = None,
+    read_id_col: str | int | None = None,
+    target_seq_col: str | int | None = None,
+    target_id_col: str | int | None = None,
+) -> Any:
     """Assign lists, Series, or dataframes and return a labelled pandas table.
 
     High-level sequence inputs normalize ASCII case consistently. Use the low-
@@ -98,12 +125,14 @@ def assign_dataframe(reads, targets, k=1, policy="radius", metric="levenshtein",
     core._ensure_pandas()
     if hasattr(targets, "columns"):
         named = targets_from_dataframe(targets, target_id_col, target_seq_col)
-        names, sequences = map(list, zip(*named))
+        names = [row.target_id for row in named]
+        sequences = [row.sequence for row in named]
     else:
         if target_seq_col is not None or target_id_col is not None:
             raise ValueError("target column options require a dataframe")
         named = core._normalize_targets(targets if isinstance(targets, (str, Path)) else _values(targets))
-        names, sequences = map(list, zip(*named))
+        names = [row.target_id for row in named]
+        sequences = [row.sequence for row in named]
     if target_names is not None:
         names = [identifier(value, "target name") for value in target_names]
         if len(names) != len(sequences) or len(set(names)) != len(names):
@@ -128,8 +157,12 @@ def assign_dataframe(reads, targets, k=1, policy="radius", metric="levenshtein",
     return core.results_to_dataframe(results, target_names=names, read_ids=ids)
 
 
-def counts_tsv_to_anndata(counts_path, *, sample_cols=None,
-                         var_cols=("target_id", "target_seq", "gene")):
+def counts_tsv_to_anndata(
+    counts_path: str | Path,
+    *,
+    sample_cols: list[str] | None = None,
+    var_cols: Sequence[str] = ("target_id", "target_seq", "gene"),
+) -> Any:
     """Load lossless raw integer counts as a samples-by-targets sparse CSR matrix.
 
     Missing counts, duplicate axes, fractional counts and int64 overflow fail
@@ -143,7 +176,7 @@ def counts_tsv_to_anndata(counts_path, *, sample_cols=None,
     import pandas as pd
     from scipy import sparse
 
-    table = read_count_table(counts_path, sample_cols=sample_cols, var_cols=var_cols)
+    table = cast(Any, read_count_table)(counts_path, sample_cols=sample_cols, var_cols=var_cols)
     rows, cols, values = [], [], []
     for target, counts in enumerate(table.counts):
         for sample, value in enumerate(counts):
@@ -165,22 +198,23 @@ def counts_tsv_to_anndata(counts_path, *, sample_cols=None,
     return result
 
 
-def _axis(values, name):
+def _axis(values: Sequence[Any], name: str) -> list[str]:
     result = [identifier(value, name) for value in values]
     if len(set(result)) != len(result):
         raise ValueError(f"{name} values must be unique")
     return result
 
 
-def _read_assignment_table(path):
+def _read_assignment_table(path: str | Path) -> Any:
     """Reject ragged/duplicate-column TSV before pandas can infer a new index."""
     import csv
     import gzip
+
     import pandas as pd
 
     source = Path(path)
     opener = gzip.open if source.name.lower().endswith(".gz") else open
-    with opener(source, "rt", encoding="utf-8-sig", newline="") as handle:
+    with cast(Any, opener)(source, "rt", encoding="utf-8-sig", newline="") as handle:
         reader = csv.reader(handle, delimiter="\t", strict=True)
         header = next(reader, None)
         if not header or any(not name or name != name.strip() or any(ord(c) < 32 or ord(c) == 127 for c in name) for name in header):
@@ -195,9 +229,17 @@ def _read_assignment_table(path):
     return pd.DataFrame(rows, columns=header, dtype=object)
 
 
-def assignments_to_anndata(assignments, *, cell_col="cell_barcode", feature_col="target_name",
-                           status_col=None, count_unique_only=True, include_ambiguous_per_cell=False,
-                           cell_names: Sequence[str] | None = None, feature_names: Sequence[str] | None = None):
+def assignments_to_anndata(
+    assignments: Any,
+    *,
+    cell_col: str = "cell_barcode",
+    feature_col: str = "target_name",
+    status_col: str | None = None,
+    count_unique_only: bool = True,
+    include_ambiguous_per_cell: bool = False,
+    cell_names: Sequence[str] | None = None,
+    feature_names: Sequence[str] | None = None,
+) -> Any:
     """Build sparse cell-by-feature counts from explicitly cell-labelled rows.
 
     This counts observations, not molecules: it does not infer cells from read

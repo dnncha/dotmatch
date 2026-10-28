@@ -16,12 +16,13 @@ All notable user-facing changes are tracked here. Public statements in release n
 ### Added
 - Strict typed Python surface: `py.typed`, `MatchStatus`, `Literal` policies, `TypedDict` summaries, a typed `TargetRow`, and mypy strict and pyright gates (`make typecheck`).
 - Example and snapshot testing flow: executable doctests, Rust `expect-test`-style snapshots, static API contract tests, and a typed quickstart (`make examples-test`).
+- The whole `dotmatch`/`quickdna` package now passes the strict typed gate, with Hypothesis invariants and a Python 3.9 runtime compatibility check (`make compat39`).
 
 ### Changed
 - Assignment result records (`MatchResult`, `AssignmentStats`, `PosteriorAssignment`, `FastqRecord`, `StreamAssignment`) are immutable `NamedTuple`s. Field access and keyword construction are unchanged. They are now tuple-compatible, so equality with a plain tuple is true; `dataclasses.asdict`, `fields`, and `replace` no longer apply.
 
 ### Performance
-- Python binding path: immutable result records moved to `NamedTuple`, status conversion uses a lookup table, read marshalling has a `str`/`bytes` fast path, and `stream_assign` uses 256-read batches. Local median-of-31 developer measurement against 91e162b (Apple M5, CPython 3.12, 40k reads/4,096 targets): Hamming 1,300,623 -> 1,823,206 reads/s (+40.2%), Levenshtein 605,585 -> 699,968 (+15.6%), exact 1,341,603 -> 1,967,205 (+46.6%), stream Hamming 304,908 -> 398,864 (+30.8%). See `docs/benchmarks/python-api-binding.md`; local measurement, not a public cross-machine claim.
+- Python binding path: immutable result records moved to `NamedTuple`, status conversion uses a lookup table, read marshalling has a `str`/`bytes` fast path, `stream_assign` uses 256-read batches, and FASTQ validation avoids per-character regex scans. Local median-of-31 developer measurement against 91e162b (Apple M5, CPython 3.12, 40k reads/4,096 targets): Hamming 1,300,623 -> 1,804,162 reads/s (+38.7%), Levenshtein 605,585 -> 682,431 (+12.7%), exact 1,341,603 -> 1,916,164 (+42.8%), stream Hamming 304,908 -> 458,591 (+50.4%). See `docs/benchmarks/python-api-binding.md`; local measurement, not a public cross-machine claim.
 
 ### Fixed
 
@@ -351,6 +352,7 @@ Historical benchmark artifacts are unchanged; new comparison fields are additive
 
 ### Changed
 - Expanded optional extras (`[anndata]`, `[polars]`, `[multiqc]`) and top-level exposure.
+- Require `multiqc>=1.22`, where the integration's `BaseMultiqcModule` import is available.
 - nf-core module meta.yml files now document threads/cpus for better resource awareness.
 - README and proposals-and-roadmap.md updated with usage examples and status.
 

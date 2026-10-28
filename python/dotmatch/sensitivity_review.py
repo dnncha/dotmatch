@@ -15,11 +15,12 @@ import json
 import re
 import sys
 from pathlib import Path
+from typing import Any, Iterator, Sequence
 
 if __package__:
     from .sensitivity_review_assets import CSS, JS, SHELL
 else:  # Source-only report rebuilding does not load DotMatch's native engine.
-    from sensitivity_review_assets import CSS, JS, SHELL
+    from sensitivity_review_assets import CSS, JS, SHELL  # type: ignore[no-redef]
 
 MODES = ("exact", "radius_k1", "best_k1")
 STATES = ("unique", "ambiguous", "none", "invalid")
@@ -36,13 +37,13 @@ class ReviewCapacityError(ValueError):
     """Viewer capacity exceeded; preserve the producer's full static/TSV outputs."""
 
 
-def _integer(value, name: str, minimum: int = 0) -> int:
+def _integer(value: object, name: str, minimum: int = 0) -> int:
     if type(value) is not int or not minimum <= value <= MAX_INTEGER:
         raise ValueError(f"{name}: expected an integer in {minimum}..{MAX_INTEGER}")
     return value
 
 
-def _text(value, name: str, *, empty: bool = False) -> str:
+def _text(value: object, name: str, *, empty: bool = False) -> str:
     if not isinstance(value, str) or (not empty and not value):
         raise ValueError(f"{name}: missing text")
     if len(value) > 16_384:
@@ -61,14 +62,14 @@ def _number(value: str, name: str, *, signed: bool = False) -> int:
     return n
 
 
-def _hash(value, name: str) -> str:
+def _hash(value: object, name: str) -> str:
     if not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{64}", value):
         raise ValueError(f"{name}: invalid SHA-256")
     return value
 
 
-def _no_duplicate_keys(pairs):
-    result = {}
+def _no_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
     for key, value in pairs:
         if key in result:
             raise ValueError(f"Duplicate JSON key: {key}")
@@ -76,8 +77,8 @@ def _no_duplicate_keys(pairs):
     return result
 
 
-def _json(text: str):
-    def invalid(value):
+def _json(text: str) -> Any:
+    def invalid(value: object) -> Any:
         raise ValueError(f"Non-finite JSON value: {value}")
     return json.loads(text, object_pairs_hook=_no_duplicate_keys, parse_constant=invalid)
 
@@ -92,7 +93,9 @@ def _read(path: Path, limit: int) -> bytes:
     return data
 
 
-def _table(data: bytes, fields: list[str], name: str, limit: int):
+def _table(
+    data: bytes, fields: list[str], name: str, limit: int
+) -> Iterator[dict[str, str]]:
     # csv's process-wide field limit is intentionally left unchanged.
     reader = csv.reader(io.StringIO(data.decode("utf-8-sig"), newline=""), delimiter="\t", strict=True)
     if next(reader, None) != fields:
@@ -103,7 +106,9 @@ def _table(data: bytes, fields: list[str], name: str, limit: int):
         yield dict(zip(fields, row))
 
 
-def _source(directory: Path, name: str, manifest: dict, limit: int):
+def _source(
+    directory: Path, name: str, manifest: dict[str, Any], limit: int
+) -> tuple[bytes, dict[str, Any]]:
     data = _read(directory / name, limit)
     info = {"sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
     if "artifacts" in manifest:
@@ -117,7 +122,9 @@ def _source(directory: Path, name: str, manifest: dict, limit: int):
     return data, info
 
 
-def build_review_data(summary: dict, directory: str | Path, *, staged: bool = False) -> dict:
+def build_review_data(
+    summary: dict[str, Any], directory: str | Path, *, staged: bool = False
+) -> dict[str, Any]:
     """Read the exact v1 artifacts, reject contradictions, copy no raw reads.
 
     Called inside the producer's staging directory before publication, or on a
@@ -192,26 +199,32 @@ def build_review_data(summary: dict, directory: str | Path, *, staged: bool = Fa
             raise ValueError("Unknown or duplicate policy comparison")
         indexed[pair] = item
     for left, right in PAIRS:
-        a, b = MODES.index(left) + 2, MODES.index(right) + 2
-        differing = sum(g[a] != g[b] for g in guides)
+        left_index, right_index = MODES.index(left) + 2, MODES.index(right) + 2
+        differing = sum(g[left_index] != g[right_index] for g in guides)
         item = indexed[(left, right)]
         if (type(item.get("counts_identical")) is not bool or item["counts_identical"] != (differing == 0)
                 or _integer(item.get("differing_guides"), "differing_guides") != differing
                 or type(item.get("total_count_delta")) is not int
-                or item["total_count_delta"] != sums[b - 2] - sums[a - 2]):
+                or item["total_count_delta"] != sums[right_index - 2] - sums[left_index - 2]):
             raise ValueError("Recorded count comparison contradicts guide counts")
 
     data, transition_info = _source(directory, "transitions.tsv", summary, MAX_TABLE_BYTES)
-    transitions, matrix = [], {}
+    transitions: list[list[str | int]] = []
+    matrix: dict[tuple[str, str, str, str], int] = {}
     for row in _table(data, TRANSITION_FIELDS, "transitions.tsv", 48):
         pair = (row["from_policy"], row["to_policy"])
-        a, b = row["from_status"], row["to_status"]
-        key = (*pair, a, b)
-        if pair not in PAIRS or a not in STATES or b not in STATES or key in matrix:
+        from_status, to_status = row["from_status"], row["to_status"]
+        transition_key = (*pair, from_status, to_status)
+        if (
+            pair not in PAIRS
+            or from_status not in STATES
+            or to_status not in STATES
+            or transition_key in matrix
+        ):
             raise ValueError("Unknown or duplicate read-state transition")
         n = _number(row["reads"], "transition reads")
-        matrix[key] = n
-        transitions.append([*key, n])
+        matrix[transition_key] = n
+        transitions.append([*transition_key, n])
     if len(matrix) != 48:
         raise ValueError("Expected all 48 transitions, including zero cells")
     for left, right in PAIRS:
@@ -253,7 +266,9 @@ def build_review_data(summary: dict, directory: str | Path, *, staged: bool = Fa
             "source_manifest_checked": "artifacts" in summary and not staged}
 
 
-def render_sensitivity_report(summary: dict, directory: str | Path, *, staged: bool = False) -> str:
+def render_sensitivity_report(
+    summary: dict[str, Any], directory: str | Path, *, staged: bool = False
+) -> str:
     """Return one network-free HTML document with a useful no-JavaScript fallback."""
     data = build_review_data(summary, directory, staged=staged)
     payload = json.dumps(data, ensure_ascii=True, separators=(",", ":"), allow_nan=False).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
@@ -276,7 +291,7 @@ def render_sensitivity_report(summary: dict, directory: str | Path, *, staged: b
             f'<script type="text/javascript">{JS}</script></body></html>')
 
 
-def main(argv=None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--bundle", type=Path, required=True, help="Completed sensitivity output directory")
     parser.add_argument("--out", type=Path, required=True, help="New HTML file; never overwritten")

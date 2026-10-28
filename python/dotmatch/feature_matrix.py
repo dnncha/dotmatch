@@ -18,9 +18,61 @@ import tempfile
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable, Iterator, Sequence, TextIO
+from typing import Any, Iterable, Iterator, Optional, Sequence, TextIO, TypedDict, cast
 
-from .core import MATCH_AMBIGUOUS, MATCH_INVALID, MATCH_NONE, MATCH_UNIQUE, Matcher, MatchResult, load_targets, status_name
+from ._types import AssignmentPolicy, MatchStatus, Metric, TargetRow
+from .core import (
+    MATCH_AMBIGUOUS,
+    MATCH_INVALID,
+    MATCH_NONE,
+    MATCH_UNIQUE,
+    Matcher,
+    MatchResult,
+    load_targets,
+    status_name,
+)
+
+
+class FeatureMatrixInputs(TypedDict):
+    observations: str
+    observations_content_sha256: str
+    targets: str
+    targets_sha256: str
+
+
+class FeatureMatrixScope(TypedDict):
+    input: str
+    cell_calling: str
+    barcode_correction: str
+    umi_deduplication: str
+    paired_read_extraction: str
+
+
+class FeatureMatrixSummary(TypedDict):
+    schema_version: int
+    workflow: str
+    matrix_orientation: str
+    metric: Metric
+    k: int
+    ambiguity_policy: AssignmentPolicy
+    cell_column: str
+    sequence_column: str
+    id_column: Optional[str]
+    inputs: FeatureMatrixInputs
+    scope: FeatureMatrixScope
+    total_observations: int
+    valid_observations: int
+    assigned_unique: int
+    assigned_exact: int
+    assigned_corrected: int
+    ambiguous: int
+    unmatched: int
+    invalid: int
+    features: int
+    cells: int
+    nonzero_entries: int
+    assignment_rate: float
+    artifacts: list[str]
 
 
 @dataclass(frozen=True)
@@ -28,7 +80,7 @@ class FeatureMatrixResult:
     """Locations and summary data produced by :func:`build_feature_matrix`."""
 
     output_dir: Path
-    summary: dict[str, Any]
+    summary: FeatureMatrixSummary
 
 
 @dataclass(frozen=True)
@@ -43,8 +95,8 @@ def _open_text(path: str | Path, mode: str = "rt") -> TextIO:
     if str(source).endswith(".gz"):
         import gzip
 
-        return gzip.open(source, mode, encoding="utf-8", newline="")
-    return source.open(mode, encoding="utf-8", newline="")
+        return cast(TextIO, gzip.open(source, mode, encoding="utf-8", newline=""))
+    return cast(TextIO, source.open(mode, encoding="utf-8", newline=""))
 
 
 def _delimiter(path: str | Path) -> str:
@@ -135,9 +187,9 @@ def _assign(
     matcher: Matcher,
     sequences: Sequence[str],
     *,
-    metric: str,
+    metric: Metric,
     k: int,
-    ambiguity_policy: str,
+    ambiguity_policy: AssignmentPolicy,
 ) -> list[MatchResult]:
     if metric == "hamming":
         return matcher.assign_hamming(sequences, k=k, policy=ambiguity_policy)
@@ -178,7 +230,7 @@ def _new_qc() -> dict[str, int]:
     }
 
 
-def _increment_status(qc: dict[str, int], status: int) -> None:
+def _increment_status(qc: dict[str, int], status: MatchStatus) -> None:
     qc["total_observations"] += 1
     if status == MATCH_UNIQUE:
         qc["assigned_unique"] += 1
@@ -190,15 +242,15 @@ def _increment_status(qc: dict[str, int], status: int) -> None:
         qc["invalid"] += 1
 
 
-def _validate_targets(targets: Sequence[tuple[str, str]]) -> list[tuple[str, str]]:
+def _validate_targets(targets: Sequence[TargetRow]) -> list[TargetRow]:
     seen: set[str] = set()
-    normalized: list[tuple[str, str]] = []
+    normalized: list[TargetRow] = []
     for target_id, sequence in targets:
         target_id = _require_safe_field(target_id, field="target_id", row_number=len(normalized) + 1)
         if target_id in seen:
             raise ValueError(f"target library contains duplicate target_id '{target_id}'")
         seen.add(target_id)
-        normalized.append((target_id, sequence.upper()))
+        normalized.append(TargetRow(target_id, sequence.upper()))
     return normalized
 
 
@@ -211,8 +263,8 @@ def build_feature_matrix(
     sequence_column: str,
     id_column: str | None = None,
     k: int = 1,
-    metric: str = "hamming",
-    ambiguity_policy: str = "radius",
+    metric: Metric = "hamming",
+    ambiguity_policy: AssignmentPolicy = "radius",
     batch_size: int = 4096,
 ) -> FeatureMatrixResult:
     """Assign a pre-extracted observation table and write a sparse cell matrix.
@@ -261,7 +313,7 @@ def build_feature_matrix(
     assignments_path = staging_dir / "assignments.tsv"
     counts: Counter[tuple[str, str]] = Counter()
     qc_by_cell: defaultdict[str, dict[str, int]] = defaultdict(_new_qc)
-    summary = {
+    summary: FeatureMatrixSummary = {
         "schema_version": 1,
         "workflow": "feature_matrix",
         "matrix_orientation": "cells_by_features",
@@ -293,6 +345,10 @@ def build_feature_matrix(
         "unmatched": 0,
         "invalid": 0,
         "features": len(target_ids),
+        "cells": 0,
+        "nonzero_entries": 0,
+        "assignment_rate": 0.0,
+        "artifacts": [],
     }
 
     try:

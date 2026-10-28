@@ -15,10 +15,10 @@ from collections import defaultdict
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
-from typing import Iterable, Iterator, Sequence, TextIO, TypedDict, cast
+from typing import Iterable, Iterator, Sequence, TextIO, cast
 
 from . import __version__
-from ._types import require_float
+from ._types import CrisprCountMatrix, require_float
 from .agent_tools import command_agent
 from .assayspec import FASTQ_SUFFIXES, AssaySpecError, command_assay, scaffold_assay_project
 from .core import (
@@ -37,21 +37,6 @@ from .core import (
 )
 from .feature_matrix import build_feature_matrix
 from .native import find_native_cli, run_native_cli
-
-
-class GuideCount(TypedDict):
-    id: str
-    gene: str
-    counts: dict[str, int]
-
-
-class CrisprCountMatrix(TypedDict):
-    guide_col: str
-    gene_col: str
-    samples: list[str]
-    guides: list[GuideCount]
-    sample_counts: dict[str, list[int]]
-
 
 DNA = "ACGT"
 SOFTWARE_TITLE = "DotMatch: deterministic known-target short-DNA assignment for sequencing workflows"
@@ -1821,7 +1806,7 @@ def _add_crispr_qc_args(parser: argparse.ArgumentParser) -> None:
 def _read_crispr_count_matrix(path: str | Path) -> CrisprCountMatrix:
     from .count_io import read_crispr_count_matrix
 
-    return cast(CrisprCountMatrix, read_crispr_count_matrix(path))
+    return read_crispr_count_matrix(path)
 
 
 def _parse_count_value(text: str, guide_id: str, sample: str) -> int:

@@ -17,7 +17,7 @@ from typing import Any, Mapping, Sequence
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover
-    import tomli as tomllib  # type: ignore[no-redef]
+    import tomli as tomllib
 
 
 READS = {"R1", "R2", "I1", "I2"}

@@ -12,11 +12,10 @@ import heapq
 import html
 import io
 import json
-import sys
 import tempfile
 from dataclasses import replace
 from pathlib import Path
-from typing import Iterator, Sequence
+from typing import Any, Iterator, Sequence
 
 from .count_io import CountTable, read_count_table
 
@@ -31,7 +30,7 @@ BOUNDARY = (
 )
 
 
-def _read_snapshot(path: str | Path) -> tuple[CountTable, dict]:
+def _read_snapshot(path: str | Path) -> tuple[CountTable, dict[str, Any]]:
     """Hash the same private byte snapshot that is parsed, not a later reread."""
     source = Path(path)
     if not source.is_file():
@@ -49,7 +48,7 @@ def _read_snapshot(path: str | Path) -> tuple[CountTable, dict]:
     return table, {"sha256": digest.hexdigest(), "bytes": size}
 
 
-def _read_sample_map(path: str | Path, baseline: CountTable, candidate: CountTable) -> tuple[CountTable, dict]:
+def _read_sample_map(path: str | Path, baseline: CountTable, candidate: CountTable) -> tuple[CountTable, dict[str, Any]]:
     """Rename candidate sample labels in memory, with a recorded user assertion."""
     source = Path(path)
     raw = source.read_bytes()
@@ -84,7 +83,7 @@ def _read_sample_map(path: str | Path, baseline: CountTable, candidate: CountTab
     }
 
 
-def _read_guide_map(path: str | Path, baseline: CountTable, candidate: CountTable) -> tuple[CountTable, dict]:
+def _read_guide_map(path: str | Path, baseline: CountTable, candidate: CountTable) -> tuple[CountTable, dict[str, Any]]:
     """Align explicitly asserted guide IDs without changing either count matrix."""
     raw = Path(path).read_bytes()
     # Guide libraries commonly contain tens of thousands of rows. Build sets
@@ -120,7 +119,7 @@ def _read_guide_map(path: str | Path, baseline: CountTable, candidate: CountTabl
     }
 
 
-def _alignment(baseline: CountTable, candidate: CountTable, shared_only: bool) -> dict:
+def _alignment(baseline: CountTable, candidate: CountTable, shared_only: bool) -> dict[str, Any]:
     left_ids, right_ids = set(baseline.target_ids), set(candidate.target_ids)
     left_samples, right_samples = set(baseline.sample_names), set(candidate.sample_names)
     excluded = {
@@ -147,7 +146,7 @@ def _alignment(baseline: CountTable, candidate: CountTable, shared_only: bool) -
     }
 
 
-def _check_identity(baseline: CountTable, candidate: CountTable, guides: Sequence[str]) -> dict:
+def _check_identity(baseline: CountTable, candidate: CountTable, guides: Sequence[str]) -> dict[str, Any]:
     left = {name.casefold(): name for name in baseline.metadata if name.casefold() in IDENTITY_FIELDS}
     right = {name.casefold(): name for name in candidate.metadata if name.casefold() in IDENTITY_FIELDS}
     shared = sorted(left.keys() & right.keys())
@@ -168,7 +167,11 @@ def _check_identity(baseline: CountTable, candidate: CountTable, guides: Sequenc
     }
 
 
-def _cells(baseline: CountTable, candidate: CountTable, alignment: dict) -> Iterator[tuple]:
+def _cells(
+    baseline: CountTable,
+    candidate: CountTable,
+    alignment: dict[str, Any],
+) -> Iterator[tuple[str, str, int, int, int]]:
     li = {name: i for i, name in enumerate(baseline.target_ids)}
     ri = {name: i for i, name in enumerate(candidate.target_ids)}
     ls = {name: i for i, name in enumerate(baseline.sample_names)}
@@ -180,7 +183,12 @@ def _cells(baseline: CountTable, candidate: CountTable, alignment: dict) -> Iter
             yield guide, sample, before, after, after - before
 
 
-def compare_tables(baseline: CountTable, candidate: CountTable, *, shared_only: bool = False) -> dict:
+def compare_tables(
+    baseline: CountTable,
+    candidate: CountTable,
+    *,
+    shared_only: bool = False,
+) -> dict[str, Any]:
     """Compare validated CountTables in linear time, with bounded HTML previews.
 
     IDs and samples, not row/column positions, establish correspondence. The
@@ -189,7 +197,8 @@ def compare_tables(baseline: CountTable, candidate: CountTable, *, shared_only: 
     """
     alignment = _alignment(baseline, candidate, shared_only)
     identity = _check_identity(baseline, candidate, alignment["guides"])
-    summaries, previews = {}, {}
+    summaries: dict[str, dict[str, Any]] = {}
+    previews: dict[str, list[tuple[int, str, int, int, int]]] = {}
     baseline_totals = dict(zip(baseline.sample_names, map(sum, zip(*baseline.counts))))
     candidate_totals = dict(zip(candidate.sample_names, map(sum, zip(*candidate.counts))))
     for sample in alignment["samples"]:
@@ -240,8 +249,10 @@ def compare_tables(baseline: CountTable, candidate: CountTable, *, shared_only: 
     }
 
 
-def _report_html(report: dict) -> str:
-    escape = lambda value: html.escape(str(value), quote=True)
+def _report_html(report: dict[str, Any]) -> str:
+    def escape(value: object) -> str:
+        return html.escape(str(value), quote=True)
+
     changed = sum(row["changed_guides"] for row in report["samples"])
     masked = sum(row["same_total_different_counts"] for row in report["samples"])
     complete = report["scope"] == "complete"
@@ -327,7 +338,7 @@ th,td{{padding:10px 12px;border-bottom:1px solid var(--line);text-align:right;ov
 def write_comparison(baseline_path: str | Path, candidate_path: str | Path,
                      out_dir: str | Path, *, shared_only: bool = False,
                      sample_map: str | Path | None = None,
-                     guide_map: str | Path | None = None) -> dict:
+                     guide_map: str | Path | None = None) -> dict[str, Any]:
     """Validate before writing. Never reuse an output directory or overwrite files.
 
     manifest.json is written last and marks completed output. An I/O failure can
@@ -365,7 +376,10 @@ def write_comparison(baseline_path: str | Path, candidate_path: str | Path,
     for name in ("changes.tsv", "report.json", "report.html"):
         digest, size = hashlib.sha256(), 0
         with (output / name).open("rb") as handle:
-            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            while True:
+                chunk = handle.read(1024 * 1024)
+                if not chunk:
+                    break
                 digest.update(chunk)
                 size += len(chunk)
         files[name] = {"sha256": digest.hexdigest(), "bytes": size}

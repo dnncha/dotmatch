@@ -7,8 +7,9 @@ import re
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Sequence
+from typing import Sequence, TextIO, cast
 
+from ._types import CrisprCountMatrix, GuideCount
 from ._validation import identifier
 
 ID_COLUMNS = ("sgrna", "target_id", "guide_id", "feature_id", "guide", "id", "name")
@@ -71,8 +72,11 @@ def read_count_table(path: str | Path, *, sample_cols: Sequence[str] | None = No
     sample_cols names source columns and preserves the requested order.
     """
     source = Path(path)
-    opener = gzip.open if source.name.lower().endswith(".gz") else open
-    with opener(source, "rt", encoding="utf-8-sig", newline="") as handle:
+    if source.name.lower().endswith(".gz"):
+        handle = cast(TextIO, gzip.open(source, "rt", encoding="utf-8-sig", newline=""))
+    else:
+        handle = cast(TextIO, source.open("rt", encoding="utf-8-sig", newline=""))
+    with handle:
         reader = csv.reader(handle, delimiter="\t", strict=True)
         header = next(reader, None)
         if header is None or len(header) < (3 if mageck_only else 2):
@@ -98,7 +102,10 @@ def read_count_table(path: str | Path, *, sample_cols: Sequence[str] | None = No
         sample_names = [name[:-len("_count_total")] if detailed else name for name in selected]
         if any(not name for name in sample_names) or len(set(sample_names)) != len(sample_names):
             raise ValueError("sample names derived from count columns must be nonempty and unique")
-        ids, counts, metadata, seen = [], [], {name: [] for name in metadata_cols}, set()
+        ids: list[str] = []
+        counts: list[tuple[int, ...]] = []
+        metadata: dict[str, list[str]] = {name: [] for name in metadata_cols}
+        seen: set[str] = set()
         for fields in reader:
             if len(fields) != len(header):
                 raise ValueError(f"count matrix row {reader.line_num} has {len(fields)} fields; expected {len(header)}")
@@ -122,13 +129,18 @@ def read_count_table(path: str | Path, *, sample_cols: Sequence[str] | None = No
                       {key: tuple(values) for key, values in metadata.items()})
 
 
-def read_crispr_count_matrix(path: str | Path) -> dict[str, object]:
+def read_crispr_count_matrix(path: str | Path) -> CrisprCountMatrix:
     """Preserve the established CLI/QC dictionary contract."""
     table = read_count_table(path, mageck_only=True)
     gene_col = next(iter(table.metadata))
-    guides = [{"id": target_id, "gene": table.metadata[gene_col][i],
-               "counts": dict(zip(table.sample_names, table.counts[i]))}
-              for i, target_id in enumerate(table.target_ids)]
+    guides: list[GuideCount] = [
+        {
+            "id": target_id,
+            "gene": table.metadata[gene_col][i],
+            "counts": dict(zip(table.sample_names, table.counts[i])),
+        }
+        for i, target_id in enumerate(table.target_ids)
+    ]
     return {"guide_col": table.id_column, "gene_col": gene_col,
             "samples": list(table.sample_names), "guides": guides,
             "sample_counts": {name: [row[i] for row in table.counts] for i, name in enumerate(table.sample_names)}}
