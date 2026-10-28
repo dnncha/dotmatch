@@ -234,7 +234,9 @@ DotMatch provides a [Python streaming API](https://dotmatch.readthedocs.io/en/la
 The [ecosystem status ledger](https://dotmatch.readthedocs.io/en/latest/ecosystem-status.html)
 distinguishes local examples from accepted upstream integrations. Development
 typing and test commands are documented in
-[docs/typing-and-testing.md](docs/typing-and-testing.md).
+[docs/typing-and-testing.md](docs/typing-and-testing.md), and the assignment
+reliability contract is in
+[docs/scientific-reliability.md](docs/scientific-reliability.md).
 
 The six structured agent tools are included in release 0.5.0:
 

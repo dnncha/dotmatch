@@ -55,7 +55,8 @@ them for `dotmatch._types`, `core`, and `panel`.
 `python/tests/test_invariants.py` adds Hypothesis properties for distance
 symmetry and thresholds, equal-length Hamming/Levenshtein bounds, exact vs
 Hamming k=0 agreement, radius-vs-best policy direction, and stream batch-size
-invariance.
+invariance. `python/tests/test_scientific_invariants.py` adds a scalar oracle
+and count-conservation checks; see [Scientific Reliability](scientific-reliability.md).
 
 `examples/python/typed_quickstart.py` is a standalone, typed example and is
 executed by the example tests.

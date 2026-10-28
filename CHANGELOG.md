@@ -17,6 +17,7 @@ All notable user-facing changes are tracked here. Public statements in release n
 - Strict typed Python surface: `py.typed`, `MatchStatus`, `Literal` policies, `TypedDict` summaries, a typed `TargetRow`, and mypy strict and pyright gates (`make typecheck`).
 - Example and snapshot testing flow: executable doctests, Rust `expect-test`-style snapshots, static API contract tests, and a typed quickstart (`make examples-test`).
 - The whole `dotmatch`/`quickdna` package now passes the strict typed gate, with Hypothesis invariants and a Python 3.9 runtime compatibility check (`make compat39`).
+- Scientific reliability gate: scalar oracle equivalence across scan/indexed/exact/Hamming policies, stream count conservation, lossless integer count round-trips above float precision, gzip/plain FASTQ equivalence, and seeded panel determinism (`make scientific-tests`). See `docs/scientific-reliability.md`.
 
 ### Changed
 - Assignment result records (`MatchResult`, `AssignmentStats`, `PosteriorAssignment`, `FastqRecord`, `StreamAssignment`) are immutable `NamedTuple`s. Field access and keyword construction are unchanged. They are now tuple-compatible, so equality with a plain tuple is true; `dataclasses.asdict`, `fields`, and `replace` no longer apply.

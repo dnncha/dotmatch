@@ -178,6 +178,7 @@ yusa-independent-evaluation-request
 
 crisprworks
 trust-and-scope
+scientific-reliability
 scientific-audit
 benchmarks/README
 benchmarks/hamming_seed_layout/README
