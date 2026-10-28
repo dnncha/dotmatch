@@ -44,8 +44,9 @@ protects that contract; it does not by itself prove biological correctness.
 ## Enforced by
 
 ```bash
-make scientific-tests   # oracle, conservation, lossless counts, determinism
-make quality            # typecheck + lint + scientific tests + full tests + 3.9
+make scientific-tests   # oracle, conservation, lossless counts, determinism, fuzzing
+make mutation-scientific # four known-wrong semantic mutants must fail the tests
+make quality            # typecheck + lint + scientific/mutation gates + full tests + 3.9
 make python-test        # full Python suite
 ```
 
@@ -57,6 +58,10 @@ Key files:
 - `python/tests/test_scientific_fuzz.py`: FASTQ/count/AssaySpec fuzzing,
   deterministic assignment/panel/feature-matrix artifacts, and
   mutation-sensitivity cases.
+- `scripts/check_mutation_sensitivity.py`: applies four targeted source
+  mutations in throwaway package copies (radius-as-unique, disabled FASTQ
+  validation, float count parsing, ambiguous feature counting) and requires the
+  scientific tests to fail for each.
 - `python/tests/test_native_oracle_audit.py`: independent distance and policy
   oracle at length boundaries.
 - `python/tests/test_input_validation_boundaries.py`: FASTQ and count parsing
