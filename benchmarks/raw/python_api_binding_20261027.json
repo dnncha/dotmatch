@@ -362,8 +362,8 @@
       "workload": "stream"
     }
   },
-  "final_commit": "pending follow-up merge",
-  "final_state": "typed and fastq-parser work on main",
+  "final_commit": "c850d82",
+  "final_state": "merged PR #168",
   "harness": "scripts/bench_python_api.py",
   "host": {
     "cpu": "Apple M5",
