@@ -482,7 +482,7 @@ evidence-gallery-ready:
 	python3 scripts/check_evidence_gallery.py
 
 python-test: shared
-	DOTMATCH_LIB=$(CURDIR)/libdotmatch.$(SHARED_EXT) PYTHONPATH=$(CURDIR)/python $(PYTHON) -m pytest python/tests
+	DOTMATCH_LIB=$(CURDIR)/libdotmatch.$(SHARED_EXT) PYTHONPATH=$(CURDIR)/python $(TYPE_PYTHON) -m pytest python/tests
 
 typecheck:
 	MYPYPATH=$(CURDIR)/python $(TYPE_PYTHON) -m mypy
@@ -492,7 +492,7 @@ lint:
 	$(TYPE_PYTHON) -m ruff check $(TYPED_PYTHON_SOURCES)
 
 examples-test: shared
-	DOTMATCH_LIB=$(CURDIR)/libdotmatch.$(SHARED_EXT) PYTHONPATH=$(CURDIR)/python $(PYTHON) -m pytest python/tests/test_examples_typed.py python/tests/test_doctests.py
+	DOTMATCH_LIB=$(CURDIR)/libdotmatch.$(SHARED_EXT) PYTHONPATH=$(CURDIR)/python $(TYPE_PYTHON) -m pytest python/tests/test_examples_typed.py python/tests/test_doctests.py
 
 compat39: shared
 	DOTMATCH_LIB=$(CURDIR)/libdotmatch.$(SHARED_EXT) PYTHONPATH=$(CURDIR)/python PYTHON39=$(PYTHON39) bash scripts/check_python39.sh
