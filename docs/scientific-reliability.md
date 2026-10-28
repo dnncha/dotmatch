@@ -33,6 +33,10 @@ protects that contract; it does not by itself prove biological correctness.
 - **Mutation sensitivity.** Pinned cases prove the oracle and count tests
   distinguish radius-vs-best, exact-vs-k1, unique-only-vs-count-all, and
   lossless-vs-float count semantics.
+- **Path agreement.** Top-level scan functions and reusable `Matcher` indexed
+  paths return identical status, target, distance, and match-count records.
+- **Panel safety.** `safe_for_k1_hamming` matches the actual minimum pairwise
+  Hamming distance, and feature matrices contain only unique assignments.
 - **Typed public surface.** The entire `dotmatch` and `quickdna` package is
   checked by mypy strict and pyright at the Python 3.9 language level.
 
