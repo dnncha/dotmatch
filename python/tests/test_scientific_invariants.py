@@ -359,3 +359,41 @@ def test_sensitivity_artifacts_are_deterministic_except_wall_clock(tmp_path: Pat
         if name == "summary.json":
             continue
         assert (tmp_path / "first" / name).read_bytes() == (tmp_path / "second" / name).read_bytes(), name
+
+
+def test_feature_matrix_excludes_ambiguous_counts(tmp_path: Path) -> None:
+    targets = tmp_path / "targets.tsv"
+    targets.write_text("target_id\ttarget_seq\nA\tACGT\nB\tACGA\nC\tTTTT\n", encoding="utf-8")
+    observations = tmp_path / "observations.tsv"
+    observations.write_text(
+        "observation_id\tcell_barcode\tfeature_seq\n"
+        "o1\tcell_ambiguous\tACGT\n"
+        "o2\tcell_unique\tTTTT\n",
+        encoding="utf-8",
+    )
+    result = build_feature_matrix(
+        observations,
+        targets,
+        tmp_path / "matrix",
+        cell_column="cell_barcode",
+        sequence_column="feature_seq",
+        id_column="observation_id",
+        k=1,
+        metric="hamming",
+    )
+    rows = list(
+        csv.DictReader(
+            (result.output_dir / "cell_feature_counts.tsv").open(encoding="utf-8"),
+            delimiter="\t",
+        )
+    )
+
+    assert rows == [
+        {
+            "cell_barcode": "cell_unique",
+            "target_id": "C",
+            "count": "1",
+        }
+    ]
+    assert result.summary["ambiguous"] == 1
+    assert result.summary["assigned_unique"] == 1

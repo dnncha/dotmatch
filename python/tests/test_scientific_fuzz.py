@@ -75,11 +75,11 @@ def test_corrupt_fastq_is_rejected(
     elif corruption == "length":
         quality += "I"
     elif corruption == "control":
-        sequence = sequence[:1] + "\x01" + sequence[1:]
+        sequence = "\x01" + sequence[1:]
     elif corruption == "space":
-        quality = quality[:1] + " " + quality[1:]
+        quality = " " + quality[1:]
     elif corruption == "non-ascii":
-        sequence = sequence[:1] + "\u00e9" + sequence[1:]
+        sequence = "\u00e9" + sequence[1:]
     else:
         plus = "+some_other_id"
     text = f"{header}\n{sequence}\n{plus}\n{quality}\n"

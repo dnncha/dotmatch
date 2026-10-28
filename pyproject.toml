@@ -121,6 +121,7 @@ files = [
     "python/tests/test_scientific_fuzz.py",
     "examples/python/typed_quickstart.py",
     "scripts/bench_python_api.py",
+    "scripts/check_mutation_sensitivity.py",
 ]
 mypy_path = "python"
 strict = true
@@ -144,6 +145,7 @@ include = [
     "python/tests/test_scientific_fuzz.py",
     "examples/python/typed_quickstart.py",
     "scripts/bench_python_api.py",
+    "scripts/check_mutation_sensitivity.py",
 ]
 pythonVersion = "3.9"
 typeCheckingMode = "standard"
