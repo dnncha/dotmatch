@@ -20,6 +20,7 @@ from dotmatch.panel import (
     design_panel,
     hamming_distance,
 )
+from dotmatch.sensitivity import run_sensitivity
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -322,3 +323,39 @@ def test_feature_matrix_counts_only_unique_assignments(
             expected[key] = expected.get(key, 0) + 1
     observed = {(row["cell_barcode"], row["target_id"]): int(row["count"]) for row in rows}
     assert observed == expected
+
+
+def test_sensitivity_artifacts_are_deterministic_except_wall_clock(tmp_path: Path) -> None:
+    targets = tmp_path / "targets.tsv"
+    targets.write_text("target_id\ttarget_seq\nA\tACGTACGT\nB\tTTTTTTTT\n", encoding="utf-8")
+    reads = tmp_path / "reads.fastq"
+    reads.write_text(
+        "@r1\nACGTACGT\n+\nIIIIIIII\n"
+        "@r2\nACGTACGA\n+\nIIIIIIII\n"
+        "@r3\nTTTTTTTT\n+\nIIIIIIII\n",
+        encoding="ascii",
+    )
+    first = run_sensitivity(
+        targets=targets,
+        reads=reads,
+        target_start=0,
+        target_length=8,
+        out_dir=tmp_path / "first",
+        batch_size=2,
+    )
+    second = run_sensitivity(
+        targets=targets,
+        reads=reads,
+        target_start=0,
+        target_length=8,
+        out_dir=tmp_path / "second",
+        batch_size=2,
+    )
+
+    first.pop("execution", {}).pop("seconds", None)
+    second.pop("execution", {}).pop("seconds", None)
+    assert first == second
+    for name in sorted(path.name for path in (tmp_path / "first").iterdir()):
+        if name == "summary.json":
+            continue
+        assert (tmp_path / "first" / name).read_bytes() == (tmp_path / "second" / name).read_bytes(), name

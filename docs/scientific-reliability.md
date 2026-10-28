@@ -26,7 +26,8 @@ protects that contract; it does not by itself prove biological correctness.
   agreement, repeated-identifier agreement, gzip/plain equivalence, and target
   ID uniqueness are checked before assignment.
 - **Determinism.** Seeded panel design and feature-matrix artifacts are
-  reproducible for the same inputs; assignment TSVs are byte-identical.
+  reproducible for the same inputs; assignment TSVs are byte-identical, and
+  sensitivity artifacts are byte-identical apart from the recorded wall clock.
 - **Boundary fuzzing.** Generated valid and corrupted FASTQ, count TSV, and
   AssaySpec TOML inputs must either parse into typed records or raise a
   documented input error, never an unexpected exception.
