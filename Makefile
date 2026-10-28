@@ -540,7 +540,7 @@ repository-ready:
 	python3 scripts/check_reviewer_readiness_assets.py
 	$(MAKE) docs-ready
 
-release-ready: scientific-tests examples-test python-test python-package-test docs-ready scientific-readiness-ready assay-evidence-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready evidence-gallery-ready distribution-record-ready bioconda-recipe-ready gpu-evidence-gate native-exact-gate hamming-seed-layout-gate guide-counter-gate public-crispr-evidence-gate crispr-comparison-gate barcode-comparison-gate feature-barcode-public-gate perturb-seq-public-gate perturb-seq-case-study-fixture-gate perturb-seq-case-study-public-gate amplicon-panel-public-gate bcl-tiny-public-gate oligo-adapter-public-gate reviewer-readiness-ready assaycode-readiness-ready agent-tools-ready agent-skill-ready agent-reference-workflows-ready
+release-ready: scientific-tests mutation-scientific examples-test python-test python-package-test docs-ready scientific-readiness-ready assay-evidence-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready evidence-gallery-ready distribution-record-ready bioconda-recipe-ready gpu-evidence-gate native-exact-gate hamming-seed-layout-gate guide-counter-gate public-crispr-evidence-gate crispr-comparison-gate barcode-comparison-gate feature-barcode-public-gate perturb-seq-public-gate perturb-seq-case-study-fixture-gate perturb-seq-case-study-public-gate amplicon-panel-public-gate bcl-tiny-public-gate oligo-adapter-public-gate reviewer-readiness-ready assaycode-readiness-ready agent-tools-ready agent-skill-ready agent-reference-workflows-ready
 	python3 scripts/check_release_readiness.py
 
 pretag-ready: examples-test
