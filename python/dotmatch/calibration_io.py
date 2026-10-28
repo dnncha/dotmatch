@@ -5,7 +5,6 @@ from __future__ import annotations
 import csv
 import json
 from pathlib import Path
-from typing import Any, Mapping
 
 from .calibration import ErrorModel, decode, fit_error_model
 

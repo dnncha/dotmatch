@@ -15,7 +15,7 @@ from importlib import resources
 from pathlib import Path
 from typing import Sequence
 
-from .assayspec import AssaySpecError, FASTQ_SUFFIXES, command_assay, scaffold_assay_project
+from .assayspec import FASTQ_SUFFIXES, AssaySpecError, command_assay, scaffold_assay_project
 from .count_compare import write_comparison
 from .count_io import read_count_table
 from .sensitivity import MODES, run_sensitivity
@@ -128,7 +128,7 @@ def quickstart_main(argv: Sequence[str] | None = None) -> int:
         return 2
 
 
-def _hash_file(path: Path) -> dict:
+def _hash_file(path: Path) -> dict[str, object]:
     digest = hashlib.sha256()
     size = 0
     with path.open("rb") as handle:
@@ -182,9 +182,9 @@ dotmatch assay handoff crispr-screen/assay.toml</pre>
 </main></body></html>'''
 
 
-def run_demo(out_dir: str | Path) -> dict:
+def run_demo(out_dir: str | Path) -> dict[str, object]:
     """Run the committed nine-read fixture through real engines, not mock outputs."""
-    fixture_bytes = resources.files("dotmatch").joinpath("data", "first-run.json").read_bytes()
+    fixture_bytes = resources.files("dotmatch").joinpath("data").joinpath("first-run.json").read_bytes()
     fixture = json.loads(fixture_bytes)
     if fixture.get("schema_version") != 1 or fixture.get("synthetic") is not True:
         raise ValueError("unsupported first-run fixture")

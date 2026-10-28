@@ -109,7 +109,9 @@ def simulate_panel(
 
 
 def _cycle_rates(error_rate: float | Sequence[float], length: int) -> tuple[float, ...]:
-    if isinstance(error_rate, (int, float)) and not isinstance(error_rate, bool):
+    if isinstance(error_rate, bool):
+        raise TypeError("error_rate must be a number or a per-cycle sequence")
+    if isinstance(error_rate, (int, float)):
         rates = (float(error_rate),) * length
     else:
         rates = tuple(float(value) for value in error_rate)

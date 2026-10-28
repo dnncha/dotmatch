@@ -10,7 +10,6 @@ import math
 from dataclasses import asdict, dataclass
 from typing import Mapping, Sequence
 
-
 DNA = "ACGT"
 
 
@@ -287,14 +286,14 @@ def _emission_probability(
     weight = total / (total + model.prior_strength)
     error_rate = min(0.75, max(1e-9, weight * empirical_error + (1.0 - weight) * phred_error))
     if called == truth:
-        return max(1e-12, 1.0 - error_rate)
+        return float(max(1e-12, 1.0 - error_rate))
 
     substitution_row = model.substitution_counts.get(truth, {})
     substitution_total = sum(substitution_row.values())
     substitution_probability = (substitution_row.get(called, 0) + 1.0) / (
         substitution_total + 3.0
     )
-    return max(1e-12, error_rate * substitution_probability)
+    return float(max(1e-12, error_rate * substitution_probability))
 
 
 def _normalize_logs(scores: Mapping[str, float]) -> dict[str, float]:

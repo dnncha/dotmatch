@@ -14,13 +14,12 @@ import json
 import os
 import tempfile
 from collections import Counter
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterator, Mapping, Sequence
 
 from .assayscript import AssayScriptError, CompiledAssay, CompiledSegment
 from .core import FastqRecord, iter_fastq, load_targets
-
 
 STATUSES = {"unique", "ambiguous", "none", "invalid", "missing"}
 
@@ -169,14 +168,16 @@ def run_compiled_plan(
         events_path = temp / "events.jsonl"
         summary_path = temp / "summary.json"
         status_counts: Counter[str] = Counter()
-        segment_counts = {segment.compiled.name: Counter() for segment in runtime_segments}
+        segment_counts: dict[str, Counter[str]] = {
+            segment.compiled.name: Counter() for segment in runtime_segments
+        }
         combination_counts: Counter[tuple[tuple[str, str], ...]] = Counter()
         total_reads = 0
 
         with assignments_path.open("w", encoding="utf-8", newline="") as assignments_handle, events_path.open(
             "w", encoding="utf-8"
         ) as events_handle:
-            writer = csv.DictWriter(
+            writer: Any = csv.DictWriter(
                 assignments_handle,
                 fieldnames=_assignment_fields(runtime_segments),
                 delimiter="\t",

@@ -85,6 +85,20 @@ class AssignmentSummary(AssignmentCounts):
     invalid_rate: float
 
 
+class GuideCount(TypedDict):
+    id: str
+    gene: str
+    counts: dict[str, int]
+
+
+class CrisprCountMatrix(TypedDict):
+    guide_col: str
+    gene_col: str
+    samples: list[str]
+    guides: list[GuideCount]
+    sample_counts: dict[str, list[int]]
+
+
 class PosteriorSummary(TypedDict):
     """Serializable view of one posterior assignment call."""
 

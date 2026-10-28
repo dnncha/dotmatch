@@ -14,7 +14,6 @@ import copy
 import hashlib
 import io
 import json
-import os
 import re
 import resource
 import shutil
@@ -22,7 +21,7 @@ import sys
 import time
 from importlib import resources
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping, NoReturn, Sequence
 
 from . import __version__
 from .assayspec import (
@@ -33,7 +32,6 @@ from .assayspec import (
     load_assay_spec,
     scaffold_assay_project,
 )
-
 
 TOOL_CONTRACT_VERSION = "1.0"
 ENVELOPE_SCHEMA_VERSION = "1.0"
@@ -70,7 +68,7 @@ class AgentResourceError(AgentToolError):
 
 
 def _package_json(name: str) -> dict[str, Any]:
-    path = resources.files("dotmatch").joinpath("data", name)
+    path = resources.files("dotmatch").joinpath("data").joinpath(name)
     value = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(value, dict):
         raise AgentToolError(f"installed {name} must contain a JSON object")
@@ -701,7 +699,7 @@ def _read_input(source: str) -> dict[str, Any]:
 
 
 def _skill_source() -> Any:
-    return resources.files("dotmatch").joinpath("data", "codex-skill")
+    return resources.files("dotmatch").joinpath("data").joinpath("codex-skill")
 
 
 def _export_skill(target: str) -> dict[str, Any]:
@@ -723,7 +721,7 @@ def _export_skill(target: str) -> dict[str, Any]:
 
 
 class _AgentArgumentParser(argparse.ArgumentParser):
-    def error(self, message: str) -> None:
+    def error(self, message: str) -> NoReturn:
         raise AgentToolError(message)
 
 

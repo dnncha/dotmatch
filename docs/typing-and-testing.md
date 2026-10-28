@@ -52,21 +52,18 @@ and pins deterministic output with the Rust `expect-test` style helper in
 Public docstrings carry executable `>>>` examples. `test_doctests.py` runs
 them for `dotmatch._types`, `core`, and `panel`.
 
+`python/tests/test_invariants.py` adds Hypothesis properties for distance
+symmetry and thresholds, equal-length Hamming/Levenshtein bounds, exact vs
+Hamming k=0 agreement, radius-vs-best policy direction, and stream batch-size
+invariance.
+
 `examples/python/typed_quickstart.py` is a standalone, typed example and is
 executed by the example tests.
 
 
 ## Current coverage
 
-The strict gate covers the assignment core, panel design, assay specs, CLI,
-`tl`, MultiQC helpers, the shared validators, `fastq_io`, `quickdna`, and
-the new type and example tests. Newer experimental modules (`dataframes`, `feature_matrix`,
-`sensitivity`, `sensitivity_review`, `count_compare`, `count_io`,
-`assayruntime`, `first_run`, `agent_tools`, `calibration`, `assaysim`,
-`assayscript`) are excluded through explicit mypy/pyright overrides so they
-cannot silently block this surface. Moving a module onto the strict gate means
-deleting its override and fixing the reported errors.
-
-`pyright` checks the public surface at Python 3.9; mypy checks at 3.10 because
-current mypy no longer supports a 3.9 check target. Runtime imports and the
-example suites run on 3.9.
+The strict gate covers the whole `dotmatch` and `quickdna` packages, plus the
+type tests, snapshots, doctests, typed example, and binding benchmark. `pyright`
+checks at Python 3.9; mypy checks at 3.10 because current mypy no longer
+supports a 3.9 check target. Runtime imports and the example suites run on 3.9.

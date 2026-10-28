@@ -22,7 +22,8 @@ make python-package-test
 make repository-ready
 ```
 
-`make quality` runs mypy strict, pyright, ruff, and the Python tests. See
+`make quality` runs mypy strict, pyright, ruff, the Python tests, and the
+Python 3.9 compatibility check. `make compat39` runs that check alone. See
 [Typed Python Surface and Test Flow](docs/typing-and-testing.md) for the type
 vocabulary, static type tests, doctests, and snapshot workflow.
 

@@ -232,7 +232,9 @@ DotMatch provides a [Python streaming API](https://dotmatch.readthedocs.io/en/la
 [output schemas](https://dotmatch.readthedocs.io/en/latest/schemas.html), and
 [workflow examples](https://github.com/dnncha/dotmatch/tree/main/examples/workflows).
 The [ecosystem status ledger](https://dotmatch.readthedocs.io/en/latest/ecosystem-status.html)
-distinguishes local examples from accepted upstream integrations.
+distinguishes local examples from accepted upstream integrations. Development
+typing and test commands are documented in
+[docs/typing-and-testing.md](docs/typing-and-testing.md).
 
 The six structured agent tools are included in release 0.5.0:
 
