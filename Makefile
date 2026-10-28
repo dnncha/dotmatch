@@ -8,6 +8,7 @@ TYPED_PYTHON_SOURCES ?= \
 	python/tests/test_examples_typed.py \
 	python/tests/test_invariants.py \
 	python/tests/test_scientific_invariants.py \
+	python/tests/test_scientific_fuzz.py \
 	examples/python/typed_quickstart.py \
 	scripts/bench_python_api.py
 TYPE_PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,$(PYTHON))

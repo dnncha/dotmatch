@@ -26,7 +26,13 @@ protects that contract; it does not by itself prove biological correctness.
   agreement, repeated-identifier agreement, gzip/plain equivalence, and target
   ID uniqueness are checked before assignment.
 - **Determinism.** Seeded panel design and feature-matrix artifacts are
-  reproducible for the same inputs.
+  reproducible for the same inputs; assignment TSVs are byte-identical.
+- **Boundary fuzzing.** Generated valid and corrupted FASTQ, count TSV, and
+  AssaySpec TOML inputs must either parse into typed records or raise a
+  documented input error, never an unexpected exception.
+- **Mutation sensitivity.** Pinned cases prove the oracle and count tests
+  distinguish radius-vs-best, exact-vs-k1, unique-only-vs-count-all, and
+  lossless-vs-float count semantics.
 - **Typed public surface.** The entire `dotmatch` and `quickdna` package is
   checked by mypy strict and pyright at the Python 3.9 language level.
 
@@ -43,6 +49,9 @@ Key files:
 - `python/tests/test_scientific_invariants.py`: scalar oracle equivalence,
   stream conservation, count round-trips above float precision, gzip/plain
   equivalence, deterministic panel design.
+- `python/tests/test_scientific_fuzz.py`: FASTQ/count/AssaySpec fuzzing,
+  deterministic assignment/panel/feature-matrix artifacts, and
+  mutation-sensitivity cases.
 - `python/tests/test_native_oracle_audit.py`: independent distance and policy
   oracle at length boundaries.
 - `python/tests/test_input_validation_boundaries.py`: FASTQ and count parsing
