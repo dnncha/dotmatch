@@ -2,17 +2,23 @@
 
 from __future__ import annotations
 
+import csv
 import gzip
+import tempfile
 from pathlib import Path
 
 import dotmatch as dm
 import pytest
 from dotmatch.count_io import read_count_table
+from dotmatch.feature_matrix import build_feature_matrix
 from dotmatch.panel import (
     AssignmentConfig,
     DesignOptions,
     PanelConstraints,
+    PanelRecord,
+    check_panel,
     design_panel,
+    hamming_distance,
 )
 from hypothesis import given, settings
 from hypothesis import strategies as st
@@ -203,3 +209,116 @@ def test_panel_design_is_deterministic_for_a_seed() -> None:
     assert first_records == second_records
     assert first_trace == second_trace
     assert len(first_records) == 4
+
+
+@settings(max_examples=80, deadline=None)
+@given(TARGETS, READS, st.sampled_from(("levenshtein", "hamming", "exact")), st.integers(0, 2), st.sampled_from(("radius", "best")))
+def test_indexed_and_scan_paths_match(
+    targets: list[str], reads: list[str], metric: dm.Metric, k: int, policy: dm.AssignmentPolicy
+) -> None:
+    if metric == "exact":
+        k = 0
+        scan = dm.assign_exact(reads, targets, policy=policy)
+        with dm.Matcher(targets) as matcher:
+            indexed = matcher.assign_exact(reads, policy=policy)
+    elif metric == "hamming":
+        scan = dm.assign_hamming(reads, targets, k=k, policy=policy)
+        with dm.Matcher(targets) as matcher:
+            indexed = matcher.assign_hamming(reads, k=k, policy=policy)
+    else:
+        scan = dm.assign(reads, targets, k=k, policy=policy)
+        with dm.Matcher(targets) as matcher:
+            indexed = matcher.assign(reads, k=k, policy=policy)
+
+    assert scan == indexed
+
+
+def _panel_records() -> st.SearchStrategy[list[str]]:
+    return st.integers(min_value=2, max_value=4).flatmap(
+        lambda length: st.lists(
+            st.text(alphabet=ALPHABET, min_size=length, max_size=length),
+            min_size=2,
+            max_size=4,
+        )
+    )
+
+
+@settings(max_examples=40, deadline=None)
+@given(_panel_records())
+def test_panel_k1_safety_matches_pairwise_distance(sequences: list[str]) -> None:
+    records = [PanelRecord(f"BC{i}", sequence) for i, sequence in enumerate(sequences)]
+    constraints = PanelConstraints(
+        length=len(sequences[0]),
+        alphabet=ALPHABET,
+        min_hamming_distance=0,
+        min_levenshtein_distance=0,
+        min_sequence_levenshtein_distance=0,
+        gc_min=0.0,
+        gc_max=1.0,
+        max_homopolymer=len(sequences[0]),
+        max_dinucleotide_repeat=len(sequences[0]),
+        avoid_self_complementarity=False,
+        avoid_ambiguous_bases=False,
+        avoid_reverse_complements=False,
+        avoid_prefix_collisions=False,
+        avoid_suffix_collisions=False,
+        forbidden_motifs=[],
+        cycle_balance_enabled=False,
+    )
+    with tempfile.TemporaryDirectory(prefix="dotmatch-panel-science-") as temporary:
+        certificate = check_panel(
+            records,
+            AssignmentConfig(metric="hamming", k=1),
+            constraints,
+            Path(temporary),
+            source_panel=Path("barcodes.tsv"),
+        )
+
+    minimum = min(
+        hamming_distance(left, right)
+        for i, left in enumerate(sequences)
+        for right in sequences[i + 1 :]
+    )
+    assert certificate["minimum_hamming_distance"] == minimum
+    assert certificate["safe_for_k1_hamming"] is (minimum >= 3)
+
+
+@settings(max_examples=25, deadline=None)
+@given(_fixed_length_case())
+def test_feature_matrix_counts_only_unique_assignments(
+    case: tuple[list[str], list[str]]
+) -> None:
+    targets, reads = case
+    target_rows = [f"t{i}\t{sequence}" for i, sequence in enumerate(targets)]
+    observation_rows = [f"o{i}\tcell_{i}\t{read}" for i, read in enumerate(reads)]
+    with tempfile.TemporaryDirectory(prefix="dotmatch-feature-science-") as temporary:
+        root = Path(temporary)
+        target_path = root / "targets.tsv"
+        observation_path = root / "observations.tsv"
+        target_path.write_text("target_id\ttarget_seq\n" + "\n".join(target_rows) + "\n", encoding="utf-8")
+        observation_path.write_text(
+            "observation_id\tcell_barcode\tfeature_seq\n"
+            + "\n".join(observation_rows)
+            + "\n",
+            encoding="utf-8",
+        )
+        result = build_feature_matrix(
+            observation_path,
+            target_path,
+            root / "matrix",
+            cell_column="cell_barcode",
+            sequence_column="feature_seq",
+            id_column="observation_id",
+            k=1,
+            metric="hamming",
+        )
+        rows = list(csv.DictReader((result.output_dir / "cell_feature_counts.tsv").open(encoding="utf-8"), delimiter="\t"))
+
+    results = dm.assign_hamming(reads, targets, k=1)
+    expected: dict[tuple[str, str], int] = {}
+    for index, assignment in enumerate(results):
+        if assignment.status == dm.MATCH_UNIQUE:
+            key = (f"cell_{index}", f"t{assignment.target_index}")
+            expected[key] = expected.get(key, 0) + 1
+    observed = {(row["cell_barcode"], row["target_id"]): int(row["count"]) for row in rows}
+    assert observed == expected
