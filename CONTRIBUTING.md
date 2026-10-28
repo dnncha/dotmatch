@@ -60,6 +60,10 @@ make python-package-test
 make repository-ready
 ```
 
+Run `make scientific-tests` for any change that touches assignment semantics,
+count parsing, FASTQ input, panel design, or output schemas, and read
+[docs/scientific-reliability.md](docs/scientific-reliability.md).
+
 Run `make coverage` for changes that touch `src/qdalign.c`, `src/qda.c`, CLI parsing, assignment semantics, or report generation. Run the relevant validation or comparison gate when changing benchmark artifacts or wording.
 
 ## Contributor Certification

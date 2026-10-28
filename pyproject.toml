@@ -101,6 +101,10 @@ test-command = "python -c \"import dotmatch, quickdna; assert dotmatch.distance(
 
 [tool.pytest.ini_options]
 pythonpath = ["python"]
+markers = [
+    "scientific: scientific invariants and oracle checks",
+    "slow: long-running benchmark or integration coverage",
+]
 
 
 [tool.mypy]
@@ -113,6 +117,7 @@ files = [
     "python/tests/test_examples_typed.py",
     "python/tests/test_doctests.py",
     "python/tests/test_invariants.py",
+    "python/tests/test_scientific_invariants.py",
     "examples/python/typed_quickstart.py",
     "scripts/bench_python_api.py",
 ]
@@ -134,6 +139,7 @@ include = [
     "python/tests/test_examples_typed.py",
     "python/tests/test_doctests.py",
     "python/tests/test_invariants.py",
+    "python/tests/test_scientific_invariants.py",
     "examples/python/typed_quickstart.py",
     "scripts/bench_python_api.py",
 ]
