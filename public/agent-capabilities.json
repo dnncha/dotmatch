@@ -293,6 +293,9 @@
     "llms_full": "https://dnncha.github.io/dotmatch/llms-full.txt",
     "agent_tools": "https://dnncha.github.io/dotmatch/agent-tools.json",
     "agent_tools_schema": "https://dnncha.github.io/dotmatch/agent-tools.schema.json",
-    "codex_skill": "https://github.com/dnncha/dotmatch/tree/main/extensions/codex/dotmatch-agent"
+    "codex_skill": "https://github.com/dnncha/dotmatch/tree/main/extensions/codex/dotmatch-agent",
+    "mcp_server": "dotmatch mcp",
+    "mcp_server_no_install": "uvx --from git+https://github.com/dnncha/dotmatch dotmatch mcp",
+    "claude_plugin": "https://github.com/dnncha/dotmatch/tree/main/extensions/claude/dotmatch"
   }
 }

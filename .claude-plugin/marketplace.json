@@ -1,0 +1,19 @@
+{
+  "name": "dotmatch",
+  "owner": {
+    "name": "DotMatch",
+    "url": "https://github.com/dnncha/dotmatch"
+  },
+  "metadata": {
+    "description": "DotMatch tools for agents: known-target FASTQ assignment for CRISPR guides, barcodes and feature tags."
+  },
+  "plugins": [
+    {
+      "name": "dotmatch",
+      "source": "./extensions/claude/dotmatch",
+      "description": "Count CRISPR guides, demultiplex inline barcodes, assign feature barcodes and audit target libraries from FASTQ through a local MCP server and skill.",
+      "category": "science",
+      "keywords": ["bioinformatics", "crispr", "fastq", "barcode-demultiplexing", "guide-counting", "perturb-seq", "mcp"]
+    }
+  ]
+}

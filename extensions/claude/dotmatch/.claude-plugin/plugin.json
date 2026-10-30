@@ -1,0 +1,21 @@
+{
+  "name": "dotmatch",
+  "version": "0.1.0",
+  "description": "Count CRISPR guides, demultiplex inline barcodes, assign feature barcodes and audit target libraries from FASTQ through a local DotMatch MCP server and skill.",
+  "author": {
+    "name": "DotMatch",
+    "url": "https://github.com/dnncha/dotmatch"
+  },
+  "homepage": "https://dnncha.github.io/dotmatch/",
+  "repository": "https://github.com/dnncha/dotmatch",
+  "license": "Apache-2.0",
+  "keywords": [
+    "bioinformatics",
+    "crispr",
+    "fastq",
+    "barcode-demultiplexing",
+    "guide-counting",
+    "perturb-seq",
+    "mcp"
+  ]
+}

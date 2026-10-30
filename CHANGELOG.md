@@ -13,6 +13,9 @@ All notable user-facing changes are tracked here. Public statements in release n
 
 ## Unreleased
 
+- Add `dotmatch mcp`, a dependency-free local stdio MCP server exposing `route_task`, `count_targets`, `demux_barcodes`, `audit_targets`, `edit_distance` and the six assay tools to Claude Code, Codex, Cursor and other MCP clients.
+- Add a Claude Code plugin marketplace (`/plugin install dotmatch --marketplace dnncha/dotmatch`) bundling the MCP server and a routing skill.
+
 ### Added
 - Strict typed Python surface: `py.typed`, `MatchStatus`, `Literal` policies, `TypedDict` summaries, a typed `TargetRow`, and mypy strict and pyright gates (`make typecheck`).
 - Example and snapshot testing flow: executable doctests, Rust `expect-test`-style snapshots, static API contract tests, and a typed quickstart (`make examples-test`).

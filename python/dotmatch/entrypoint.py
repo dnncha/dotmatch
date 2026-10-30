@@ -7,6 +7,9 @@ from collections.abc import Sequence
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
+    if args[:1] == ["mcp"]:
+        from .mcp_server import main as mcp_main
+        return mcp_main(args[1:])
     if args[:1] == ["demo"]:
         from .first_run import demo_main
         return demo_main(args[1:])
@@ -23,7 +26,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     from .cli import main as existing_main
     result = existing_main(args)
     if args[:1] and args[0] in {"--help", "-h", "help"}:
-        print("First run and workflow evaluation:\n"
+        print("Agents and MCP clients:\n"
+              "  dotmatch mcp\n"
+              "      Serve DotMatch tools to Claude, Codex, Cursor, or any MCP client over stdio.\n"
+              "First run and workflow evaluation:\n"
               "  dotmatch demo --out-dir first-run/\n"
               "      Run a bundled synthetic example and check its expected results offline.\n"
               "  dotmatch compare-counts --help\n"

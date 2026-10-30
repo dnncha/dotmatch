@@ -238,6 +238,25 @@ typing and test commands are documented in
 reliability contract is in
 [docs/scientific-reliability.md](docs/scientific-reliability.md).
 
+### Use DotMatch from an AI agent
+
+Add DotMatch as a local MCP server in Claude Code, Codex, Cursor or any MCP client:
+
+```bash
+claude mcp add dotmatch -- uvx --from git+https://github.com/dnncha/dotmatch dotmatch mcp
+codex mcp add dotmatch -- uvx --from git+https://github.com/dnncha/dotmatch dotmatch mcp
+```
+
+Claude Code users can install the plugin, which bundles the MCP server and a routing skill:
+
+```text
+/plugin install dotmatch --marketplace dnncha/dotmatch
+```
+
+On older Claude Code versions, run `/plugin marketplace add dnncha/dotmatch` and then `/plugin install dotmatch@dotmatch`. Other MCP clients use `{"mcpServers": {"dotmatch": {"command": "uvx", "args": ["--from", "git+https://github.com/dnncha/dotmatch", "dotmatch", "mcp"]}}}`. With DotMatch already installed from source, `dotmatch mcp` serves the same tools.
+
+The server exposes `route_task`, `count_targets`, `demux_barcodes`, `audit_targets` and `edit_distance` for known-window work, plus the six assay tools above for reviewed CRISPR and Perturb-seq runs. Every tool runs locally, takes structured arguments only, refuses to overwrite existing outputs, and returns the JSON envelope as MCP structured content. `dotmatch mcp` ships on the main branch ahead of the next PyPI release, so the commands above install from source and need a C compiler.
+
 The six structured agent tools are included in release 0.5.0:
 
 ```bash
