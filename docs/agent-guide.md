@@ -36,6 +36,8 @@ The canonical contract and schema are also published as
 Ordinary tool invocations are local-only: they do not upload targets, FASTQ,
 results, or handoff bundles and make no outbound network requests.
 
+Agents that speak the Model Context Protocol can use the same tools through `dotmatch mcp`; see [MCP server and Claude Code plugin](#mcp-server-and-claude-code-plugin).
+
 Start with the exact task page for
 [CRISPR guide counting](agent-crispr.md) or
 [Perturb-seq direct-guide capture](agent-perturb-seq.md).
@@ -174,9 +176,19 @@ See [Scope and limitations](trust-and-scope.md),
 [Scientific claims](scientific-claims.md), and [Output schemas](schemas.md)
 before broadening a workflow or a claim.
 
-## Why there is no MCP server
+## MCP server and Claude Code plugin
 
-DotMatch has a local, scriptable CLI, documented file contracts, a versioned
-six-tool execution layer, and an exportable Codex skill. The checked workflow
-does not require a long-running tool server or remote protocol boundary, so the
-supported agent interface remains the installed CLI and ordinary local files.
+```bash
+claude mcp add dotmatch -- uvx --from git+https://github.com/dnncha/dotmatch dotmatch mcp
+codex mcp add dotmatch -- uvx --from git+https://github.com/dnncha/dotmatch dotmatch mcp
+```
+
+Claude Code users can install the plugin, which bundles the MCP server and a routing skill:
+
+```text
+/plugin install dotmatch --marketplace dnncha/dotmatch
+```
+
+On older Claude Code versions, run `/plugin marketplace add dnncha/dotmatch` and then `/plugin install dotmatch@dotmatch`. Other MCP clients use `{"mcpServers": {"dotmatch": {"command": "uvx", "args": ["--from", "git+https://github.com/dnncha/dotmatch", "dotmatch", "mcp"]}}}`. With DotMatch already installed from source, `dotmatch mcp` serves the same tools.
+
+The server exposes `route_task`, `count_targets`, `demux_barcodes`, `audit_targets` and `edit_distance` for known-window work, plus the six assay tools above for reviewed CRISPR and Perturb-seq runs. Every tool runs locally, takes structured arguments only, refuses to overwrite existing outputs, and returns the JSON envelope as MCP structured content. `dotmatch mcp` ships on the main branch ahead of the next PyPI release, so the commands above install from source and need a C compiler.

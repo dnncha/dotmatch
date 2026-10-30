@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "dotmatch": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/dnncha/dotmatch",
+        "dotmatch",
+        "mcp"
+      ]
+    }
+  }
+}

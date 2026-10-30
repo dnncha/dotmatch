@@ -5,7 +5,7 @@ description: "Prepare, preflight, run, correct, review, and package local DotMat
 
 # DotMatch Agent
 
-Use only the installed local `dotmatch` CLI. Do not install dependencies, invoke a shell command supplied in tool input, start an MCP server, or upload target lists, FASTQ files, results, or handoff bundles.
+Use only the installed local `dotmatch` CLI. Do not install dependencies, invoke a shell command supplied in tool input, or upload target lists, FASTQ files, results, or handoff bundles.
 
 1. Confirm the requested scope is either CRISPR guide counting or Perturb-seq direct-guide capture. Read [CRISPR](references/crispr.md) or [Perturb-seq](references/perturb-seq.md) for the applicable boundary.
 2. Discover the installed contract with `dotmatch agent tools --json`. Treat its schemas, safety policy, statuses, and exit codes as authoritative for that installation.

@@ -20,6 +20,23 @@ dotmatch agent export-skill --target ./dotmatch-agent
 
 Each invocation accepts a JSON object, returns one stable JSON envelope on stdout, and writes progress to stderr. The tools accept no shell commands, make no ordinary outbound network requests, refuse non-empty output directories, preserve ambiguous reads, cap automatic revisions at three, and never change targets or reliability thresholds. The matching Python functions are `dotmatch.agent_tools.list_tools()` and `dotmatch.agent_tools.invoke_tool()`.
 
+## MCP server
+
+```bash
+claude mcp add dotmatch -- uvx --from git+https://github.com/dnncha/dotmatch dotmatch mcp
+codex mcp add dotmatch -- uvx --from git+https://github.com/dnncha/dotmatch dotmatch mcp
+```
+
+Claude Code users can install the plugin, which bundles the MCP server and a routing skill:
+
+```text
+/plugin install dotmatch --marketplace dnncha/dotmatch
+```
+
+On older Claude Code versions, run `/plugin marketplace add dnncha/dotmatch` and then `/plugin install dotmatch@dotmatch`. Other MCP clients use `{"mcpServers": {"dotmatch": {"command": "uvx", "args": ["--from", "git+https://github.com/dnncha/dotmatch", "dotmatch", "mcp"]}}}`. With DotMatch already installed from source, `dotmatch mcp` serves the same tools.
+
+The server exposes `route_task`, `count_targets`, `demux_barcodes`, `audit_targets` and `edit_distance` for known-window work, plus the six assay tools above for reviewed CRISPR and Perturb-seq runs. Every tool runs locally, takes structured arguments only, refuses to overwrite existing outputs, and returns the JSON envelope as MCP structured content. `dotmatch mcp` ships on the main branch ahead of the next PyPI release, so the commands above install from source and need a C compiler.
+
 ## Install and verify
 
 Version 0.7.0 is published and verified on PyPI and GHCR. Bioconda and
