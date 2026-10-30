@@ -2519,6 +2519,19 @@ def _unquote_cff_value(value: str) -> str:
     return value
 
 
+def _methods_selection_sentence(ambiguity_policy: str) -> str:
+    if ambiguity_policy == "best":
+        return (
+            "Reads were assigned when exactly one known target had the smallest distance within the edit radius, "
+            "even if other targets also lay within the radius; reads tied at the best distance were ambiguous, and "
+            "ambiguous reads were not silently counted."
+        )
+    return (
+        "Reads were assigned only when exactly one known target was within the edit radius; "
+        "ambiguous reads were not silently counted."
+    )
+
+
 def _write_methods_md(path: Path, plan: AssayPlan, manifest: Mapping[str, Any], metadata: Mapping[str, str]) -> None:
     assignment = _table(plan.spec.data, "assignment")
     reliability = plan.spec.reliability
@@ -2541,7 +2554,7 @@ def _write_methods_md(path: Path, plan: AssayPlan, manifest: Mapping[str, Any], 
             "",
             f"DotMatch {PYTHON_PACKAGE_VERSION} was used for deterministic known-target short-DNA assignment.",
             f"The assay mode was `{plan.spec.mode}` and the assay type was `{plan.spec.assay_type}`.",
-            "Reads were assigned only when exactly one known target was compatible under the configured policy; ambiguous reads were not silently counted.",
+            _methods_selection_sentence(str(assignment.get("ambiguity_policy", "radius"))),
             "",
             "## Assignment Configuration",
             "",

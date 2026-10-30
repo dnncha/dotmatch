@@ -1,5 +1,3 @@
-"""Scientific invariants: oracle equivalence, count conservation, determinism."""
-
 from __future__ import annotations
 
 import csv
@@ -219,19 +217,27 @@ def test_indexed_and_scan_paths_match(
 ) -> None:
     if metric == "exact":
         k = 0
-        scan = dm.assign_exact(reads, targets, policy=policy)
         with dm.Matcher(targets) as matcher:
             indexed = matcher.assign_exact(reads, policy=policy)
     elif metric == "hamming":
-        scan = dm.assign_hamming(reads, targets, k=k, policy=policy)
         with dm.Matcher(targets) as matcher:
             indexed = matcher.assign_hamming(reads, k=k, policy=policy)
     else:
-        scan = dm.assign(reads, targets, k=k, policy=policy)
         with dm.Matcher(targets) as matcher:
             indexed = matcher.assign(reads, k=k, policy=policy)
 
-    assert scan == indexed
+    if metric == "levenshtein":
+        assert indexed == dm.assign(reads, targets, k=k, policy=policy)
+    assert [
+        (
+            result.status,
+            result.target_index,
+            result.best_distance,
+            result.second_best_distance,
+            result.match_count,
+        )
+        for result in indexed
+    ] == [_reference(read, targets, metric, k, policy) for read in reads]
 
 
 def _panel_records() -> st.SearchStrategy[list[str]]:
@@ -355,7 +361,9 @@ def test_sensitivity_artifacts_are_deterministic_except_wall_clock(tmp_path: Pat
     first.pop("execution", {}).pop("seconds", None)
     second.pop("execution", {}).pop("seconds", None)
     assert first == second
-    for name in sorted(path.name for path in (tmp_path / "first").iterdir()):
+    first_names = sorted(path.name for path in (tmp_path / "first").iterdir())
+    assert first_names == sorted(path.name for path in (tmp_path / "second").iterdir())
+    for name in first_names:
         if name == "summary.json":
             continue
         assert (tmp_path / "first" / name).read_bytes() == (tmp_path / "second" / name).read_bytes(), name

@@ -1976,3 +1976,16 @@ def test_pairwise_correlation_gate_only_applies_to_declared_replicates(tmp_path:
     findings = _crispr_qc_reliability_findings(SimpleNamespace(spec=undeclared, artifacts={"crispr_qc": qc}), "postrun")
     assert findings == []
 
+
+
+def test_methods_selection_sentence_matches_ambiguity_policy() -> None:
+    from dotmatch.assayspec import _methods_selection_sentence
+
+    radius = _methods_selection_sentence("radius")
+    best = _methods_selection_sentence("best")
+    assert "exactly one known target was within the edit radius" in radius
+    assert "smallest distance" in best
+    assert "other targets also lay within the radius" in best
+    assert "exactly one known target was within the edit radius" not in best
+    for sentence in (radius, best):
+        assert "ambiguous reads were not silently counted" in sentence

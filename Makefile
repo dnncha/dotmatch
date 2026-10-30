@@ -544,6 +544,8 @@ release-ready: scientific-tests mutation-scientific examples-test python-test py
 	python3 scripts/check_release_readiness.py
 
 pretag-ready: examples-test
+	$(MAKE) typecheck
+	$(MAKE) lint
 	$(MAKE) test
 	$(MAKE) cli-test
 	$(MAKE) asan
