@@ -13,11 +13,14 @@ make pretag-ready
 It is a local readiness gate and intentionally does not include
 `make distribution-channels`, `make workflow-adoption-status`, or
 `make bcl-comparison-gate`. Those gates require public/external evidence and
-are listed below.
+are listed below. Its static-analysis steps need the `dev` extra
+(`pip install -e '.[dev]'`) so mypy, pyright, and Ruff are available.
 
 The target runs:
 
 ```bash
+make typecheck
+make lint
 make test
 make cli-test
 make asan

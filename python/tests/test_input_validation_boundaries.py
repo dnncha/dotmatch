@@ -1,4 +1,3 @@
-"""Input throughput changes must preserve lossless counts and literal symbols."""
 import io
 import sys
 
@@ -6,6 +5,8 @@ import pytest
 
 from dotmatch.count_io import parse_count_value, read_count_table
 from dotmatch.fastq_io import iter_fastq_records
+
+pytestmark = pytest.mark.scientific
 
 
 @pytest.mark.parametrize("field", ["sequence", "quality"])

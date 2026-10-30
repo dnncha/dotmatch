@@ -1,6 +1,7 @@
-"""Real optional-stack integration; CI installs and exercises these dependencies."""
 import pytest
 import dotmatch
+
+pytestmark = pytest.mark.scientific
 
 pd = pytest.importorskip('pandas')
 

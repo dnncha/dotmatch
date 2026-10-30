@@ -1,5 +1,3 @@
-"""Fuzz and mutation-sensitivity checks for the scientific input boundary."""
-
 from __future__ import annotations
 
 import csv
@@ -172,9 +170,8 @@ def test_assignment_tsv_is_byte_deterministic_and_conserves_counts(tmp_path: Pat
             "".join(f"@r{i}\n{read}\n+\n{'I' * len(read)}\n" for i, read in enumerate(reads)),
             encoding="ascii",
         )
-        streamed = list(dm.stream_assign(fastq, targets, metric="hamming", k=1))
-        summary_one = dm.write_assignments_tsv(streamed, first)
-        summary_two = dm.write_assignments_tsv(streamed, second)
+        summary_one = dm.write_assignments_tsv(list(dm.stream_assign(fastq, targets, metric="hamming", k=1)), first)
+        summary_two = dm.write_assignments_tsv(list(dm.stream_assign(fastq, targets, metric="hamming", k=1)), second)
     assert first.read_bytes() == second.read_bytes()
     assert summary_one == summary_two
     assert summary_one["total_reads"] == len(reads)
@@ -193,6 +190,15 @@ def test_panel_certificate_is_deterministic_and_complete(tmp_path: Path) -> None
     assert certificate_one == certificate_two
     assert certificate_one["status"] in {"pass", "warn", "fail"}
     assert certificate_one["n_barcodes"] == 2
+    _assert_directories_byte_identical(first, second)
+
+
+def _assert_directories_byte_identical(first: Path, second: Path) -> None:
+    names = sorted(path.relative_to(first).as_posix() for path in first.rglob("*") if path.is_file())
+    assert names
+    assert names == sorted(path.relative_to(second).as_posix() for path in second.rglob("*") if path.is_file())
+    for name in names:
+        assert (first / name).read_bytes() == (second / name).read_bytes(), name
 
 
 def test_feature_matrix_artifacts_are_byte_deterministic(tmp_path: Path) -> None:

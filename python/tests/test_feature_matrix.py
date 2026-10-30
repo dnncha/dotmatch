@@ -8,6 +8,8 @@ import pytest
 
 from dotmatch.feature_matrix import build_feature_matrix
 
+pytestmark = pytest.mark.scientific
+
 
 ROOT = Path(__file__).resolve().parents[2]
 LEGACY_ENV = {**os.environ, "DOTMATCH_PYTHON_NO_DELEGATE": "1"}

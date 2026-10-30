@@ -1,7 +1,8 @@
-"""Seeded scalar dynamic-programming oracle independent of the native kernels."""
 import random
 import pytest
 import dotmatch
+
+pytestmark = pytest.mark.scientific
 
 
 def levenshtein(a, b):

@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-"""Targeted mutation gate for the scientific invariants.
-
-Each mutant is applied to a throwaway copy of the package, then the scientific
-tests must fail. A surviving mutant means the invariant tests do not distinguish
-a known-wrong semantic change from correct behaviour.
-"""
-
 from __future__ import annotations
 
 import os
@@ -18,6 +11,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TEST_FILES = ("test_scientific_invariants.py", "test_scientific_fuzz.py")
+PYTEST_EXIT_OK = 0
+PYTEST_EXIT_TESTS_FAILED = 1
 
 
 @dataclass(frozen=True)
@@ -72,6 +67,50 @@ def _library_path() -> Path:
     raise SystemExit("build the shared library first: make shared")
 
 
+def _run_pytest(root: Path, library: Path) -> subprocess.CompletedProcess[str]:
+    env = {
+        **os.environ,
+        "PYTHONPATH": str(root / "python"),
+        "DOTMATCH_LIB": str(library),
+    }
+    return subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            str(root / "tests"),
+            "-q",
+            "-c",
+            os.devnull,
+            "-p",
+            "no:cacheprovider",
+        ],
+        cwd=root,
+        env=env,
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+
+def _report_output(completed: subprocess.CompletedProcess[str]) -> None:
+    print(completed.stdout[-4000:], file=sys.stderr)
+    print(completed.stderr[-4000:], file=sys.stderr)
+
+
+def _require_clean_baseline(library: Path) -> None:
+    with tempfile.TemporaryDirectory(prefix="dotmatch-baseline-") as temporary:
+        root = Path(temporary)
+        _copy_source(root)
+        completed = _run_pytest(root, library)
+        if completed.returncode != PYTEST_EXIT_OK:
+            _report_output(completed)
+            raise SystemExit(
+                f"unmutated baseline must pass before mutants are meaningful (pytest exit {completed.returncode})"
+            )
+
+
 def _run_mutant(mutant: Mutant, library: Path) -> bool:
     with tempfile.TemporaryDirectory(prefix="dotmatch-mutant-") as temporary:
         root = Path(temporary)
@@ -81,40 +120,21 @@ def _run_mutant(mutant: Mutant, library: Path) -> bool:
         if mutant.before not in source:
             raise SystemExit(f"mutant {mutant.name}: source pattern not found in {mutant.relative_path}")
         target.write_text(source.replace(mutant.before, mutant.after, 1), encoding="utf-8")
-        env = {
-            **os.environ,
-            "PYTHONPATH": str(root / "python"),
-            "DOTMATCH_LIB": str(library),
-        }
-        completed = subprocess.run(
-            [
-                sys.executable,
-                "-m",
-                "pytest",
-                str(root / "tests"),
-                "-q",
-                "-c",
-                os.devnull,
-                "-p",
-                "no:cacheprovider",
-            ],
-            cwd=root,
-            env=env,
-            check=False,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        if completed.returncode == 0:
+        completed = _run_pytest(root, library)
+        if completed.returncode == PYTEST_EXIT_TESTS_FAILED:
+            print(f"killed: {mutant.name}")
+            return True
+        if completed.returncode == PYTEST_EXIT_OK:
             print(f"survived: {mutant.name}", file=sys.stderr)
-            print(completed.stdout[-4000:], file=sys.stderr)
-            return False
-        print(f"killed: {mutant.name}")
-        return True
+        else:
+            print(f"invalid run: {mutant.name} (pytest exit {completed.returncode})", file=sys.stderr)
+        _report_output(completed)
+        return False
 
 
 def main() -> int:
     library = _library_path()
+    _require_clean_baseline(library)
     killed = [_run_mutant(mutant, library) for mutant in MUTANTS]
     if not all(killed):
         return 1
