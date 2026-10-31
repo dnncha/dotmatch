@@ -35,7 +35,7 @@ optree==0.20.0
 packaging==26.3
 pandas==2.3.3
 patsy==1.0.3
-pillow==12.3.0
+pillow==13.0.0
 protobuf==7.36.2
 Pygments==2.21.0
 pyparsing==3.3.3
