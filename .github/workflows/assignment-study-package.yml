@@ -1,0 +1,40 @@
+name: Assignment study source handoff
+on:
+  push:
+    branches: [research/assignment-robustness-2026-09]
+    paths:
+      - .github/workflows/assignment-study-package.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-handoff:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.11'
+      - name: Validate all offline research tests and parse evidence ledger
+        run: |
+          set -euo pipefail
+          python research/assignment_robustness/pilot.py test
+          python research/assignment_robustness/full_yusa.py test
+          python research/assignment_robustness/library_aliases.py test
+          python research/assignment_robustness/test_summary.py
+          python -m compileall -q research/assignment_robustness
+          python -m json.tool research/assignment_robustness/evidence.json > /dev/null
+          git rev-parse HEAD > research-handoff-commit.txt
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: assignment-study-source-${{ github.sha }}
+          retention-days: 30
+          path: |
+            research/assignment_robustness/**
+            !research/assignment_robustness/__pycache__/**
+            .github/workflows/assignment*.yml
+            research-handoff-commit.txt
+          include-hidden-files: true

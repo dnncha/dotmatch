@@ -1,0 +1,51 @@
+name: Full Yusa assignment research
+on:
+  push:
+    branches: [research/assignment-robustness-2026-09]
+    paths:
+      - research/assignment_robustness/full_yusa.py
+      - .github/workflows/assignment-full-yusa-research.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: assignment-full-yusa-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  full-yusa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.11'
+      - name: Check independent decoders and input contracts
+        run: |
+          python research/assignment_robustness/pilot.py test
+          python research/assignment_robustness/full_yusa.py test
+      - name: Install pinned comparator and source baseline
+        run: |
+          cargo install guide-counter --version 0.1.3 --locked
+          python -m pip install --no-deps .
+          python -m pip freeze > full-environment.txt
+          cargo --version >> full-environment.txt
+          rustc --version >> full-environment.txt
+          git rev-parse HEAD >> full-environment.txt
+      - name: Verify full archives and reconstruct every guide count
+        env:
+          PYTHONUNBUFFERED: '1'
+        run: python research/assignment_robustness/full_yusa.py --out full-yusa-output
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: full-yusa-assignment-${{ github.sha }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            full-yusa-output/**
+            !full-yusa-output/work/**
+            research/assignment_robustness/**
+            full-environment.txt
