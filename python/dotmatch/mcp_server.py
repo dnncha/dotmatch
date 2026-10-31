@@ -539,7 +539,7 @@ def main(argv: Sequence[str] = ()) -> int:
             "  claude mcp add dotmatch -- dotmatch mcp\n"
             "  codex mcp add dotmatch -- dotmatch mcp\n"
             '  {"mcpServers": {"dotmatch": {"command": "dotmatch", "args": ["mcp"]}}}\n'
-            "Or without installing: uvx --from git+https://github.com/dnncha/dotmatch dotmatch mcp"
+            "Or without installing: uvx dotmatch mcp"
         )
         return 0
     if argv:

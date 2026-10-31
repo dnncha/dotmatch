@@ -23,8 +23,8 @@ Each invocation accepts a JSON object, returns one stable JSON envelope on stdou
 ## MCP server
 
 ```bash
-claude mcp add dotmatch -- uvx --from git+https://github.com/dnncha/dotmatch dotmatch mcp
-codex mcp add dotmatch -- uvx --from git+https://github.com/dnncha/dotmatch dotmatch mcp
+claude mcp add dotmatch -- uvx dotmatch mcp
+codex mcp add dotmatch -- uvx dotmatch mcp
 ```
 
 Claude Code users can install the plugin, which bundles the MCP server and a routing skill:
@@ -35,12 +35,12 @@ Claude Code users can install the plugin, which bundles the MCP server and a rou
 
 On older Claude Code versions, run `/plugin marketplace add dnncha/dotmatch` and then `/plugin install dotmatch@dotmatch`. Other MCP clients use `{"mcpServers": {"dotmatch": {"command": "uvx", "args": ["--from", "git+https://github.com/dnncha/dotmatch", "dotmatch", "mcp"]}}}`. With DotMatch already installed from source, `dotmatch mcp` serves the same tools.
 
-The server exposes `route_task`, `count_targets`, `demux_barcodes`, `audit_targets` and `edit_distance` for known-window work, plus the six assay tools above for reviewed CRISPR and Perturb-seq runs. Every tool runs locally, takes structured arguments only, refuses to overwrite existing outputs, and returns the JSON envelope as MCP structured content. `dotmatch mcp` ships on the main branch ahead of the next PyPI release, so the commands above install from source and need a C compiler.
+The server exposes `route_task`, `count_targets`, `demux_barcodes`, `audit_targets` and `edit_distance` for known-window work, plus the six assay tools above for reviewed CRISPR and Perturb-seq runs. Every tool runs locally, takes structured arguments only, refuses to overwrite existing outputs, and returns the JSON envelope as MCP structured content. `dotmatch mcp` ships in DotMatch 0.8.0 and later.
 
 ## Install and verify
 
-Version 0.7.0 is published and verified on PyPI and GHCR. Bioconda and
-BioContainers 0.7.0 still require upstream submission and public verification.
+Version 0.8.0 is published and verified on PyPI (GHCR has 0.7.0). Bioconda and
+BioContainers 0.8.0 still require upstream submission and public verification.
 
 Linux x86_64 and macOS 11 or newer:
 
@@ -48,7 +48,7 @@ Linux x86_64 and macOS 11 or newer:
 mkdir -p smoke-output
 python3 -m venv .venv
 . .venv/bin/activate
-python3 -m pip install dotmatch==0.7.0
+python3 -m pip install dotmatch==0.8.0
 dotmatch --version
 ```
 
@@ -226,7 +226,7 @@ After cloning this repository, this recipe installs the release into a new virtu
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
-python3 -m pip install dotmatch==0.7.0
+python3 -m pip install dotmatch==0.8.0
 dotmatch count \
   --targets demo-data/crispr_guides.tsv \
   --reads demo-data/reads.fastq \

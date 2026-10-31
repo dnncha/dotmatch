@@ -65,11 +65,11 @@ basecaller, cell/UMI pipeline or gene-level hit-calling package.
 
 ## Install
 
-Release 0.7.0 is published on PyPI and GHCR. It includes the six `dotmatch agent` tools
+Release 0.8.0 is published on PyPI (GHCR has 0.7.0). It includes the six `dotmatch agent` tools
 described below:
 
 ```bash
-python3 -m pip install dotmatch==0.7.0
+python3 -m pip install dotmatch==0.8.0
 dotmatch --version
 ```
 
@@ -143,10 +143,10 @@ best-distance Hamming assignment using the same windows in **one FASTQ pass**.
 It produces three count matrices, per-guide deltas, read-state transitions,
 checksums and a self-contained HTML report. It never selects a policy for you.
 
-Run the included synthetic example from a checkout of the v0.7.0 release:
+Run the included synthetic example from a checkout of the v0.8.0 release:
 
 ```bash
-python3 -m pip install dotmatch==0.7.0
+python3 -m pip install dotmatch==0.8.0
 dotmatch sensitivity \
   --targets examples/assignment_sensitivity/targets.tsv \
   --reads examples/assignment_sensitivity/reads.fastq \
@@ -161,7 +161,7 @@ This is sensitivity analysis, not an estimate of biological accuracy.
 
 [Explore the interactive review example](https://dnncha.github.io/dotmatch/assignment-sensitivity/)
 without installing anything. The example uses the public nine-read synthetic fixture.
-The interactive assignment review is published on the DotMatch 0.7.0 site.
+The interactive assignment review is published on the DotMatch 0.8.0 site.
 The installed `dotmatch sensitivity` command continues to write its static
 report. The synthetic fixture demonstrates software behavior, not biological
 accuracy.
@@ -243,8 +243,8 @@ reliability contract is in
 Add DotMatch as a local MCP server in Claude Code, Codex, Cursor or any MCP client:
 
 ```bash
-claude mcp add dotmatch -- uvx --from git+https://github.com/dnncha/dotmatch dotmatch mcp
-codex mcp add dotmatch -- uvx --from git+https://github.com/dnncha/dotmatch dotmatch mcp
+claude mcp add dotmatch -- uvx dotmatch mcp
+codex mcp add dotmatch -- uvx dotmatch mcp
 ```
 
 Claude Code users can install the plugin, which bundles the MCP server and a routing skill:
@@ -255,7 +255,7 @@ Claude Code users can install the plugin, which bundles the MCP server and a rou
 
 On older Claude Code versions, run `/plugin marketplace add dnncha/dotmatch` and then `/plugin install dotmatch@dotmatch`. Other MCP clients use `{"mcpServers": {"dotmatch": {"command": "uvx", "args": ["--from", "git+https://github.com/dnncha/dotmatch", "dotmatch", "mcp"]}}}`. With DotMatch already installed from source, `dotmatch mcp` serves the same tools.
 
-The server exposes `route_task`, `count_targets`, `demux_barcodes`, `audit_targets` and `edit_distance` for known-window work, plus the six assay tools above for reviewed CRISPR and Perturb-seq runs. Every tool runs locally, takes structured arguments only, refuses to overwrite existing outputs, and returns the JSON envelope as MCP structured content. `dotmatch mcp` ships on the main branch ahead of the next PyPI release, so the commands above install from source and need a C compiler.
+The server exposes `route_task`, `count_targets`, `demux_barcodes`, `audit_targets` and `edit_distance` for known-window work, plus the six assay tools above for reviewed CRISPR and Perturb-seq runs. Every tool runs locally, takes structured arguments only, refuses to overwrite existing outputs, and returns the JSON envelope as MCP structured content. `dotmatch mcp` ships in DotMatch 0.8.0 and later.
 
 The six structured agent tools are included in release 0.5.0:
 

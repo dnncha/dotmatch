@@ -1,17 +1,8 @@
 # Changelog
 
-## 0.7.0 — 2026-10-03
-
-- Add a guide-counter-compatible counting path, precision boundary fixes, and an audited five-repeat comparison with matching counts.
-- Add experimental joint gene-level inference and whole-gene control calibration to CRISPRWorks Fit, with convergence and attainable-FDR diagnostics.
-- Stage Fit output bundles, verify consumed inputs, prevent overlapping publication, and reject malformed MLE counts before fitting.
-- Add first-run tutorials, scientific audit findings, benchmark graphs and scoped comparison callouts.
-- Keep biological validation limitations explicit; experimental Fit is not evidence of general scientific superiority.
-
-
 All notable user-facing changes are tracked here. Public statements in release notes must stay aligned with `docs/scientific-claims.md`.
 
-## Unreleased
+## 0.8.0 — 2026-10-31
 
 - Add `dotmatch mcp`, a dependency-free local stdio MCP server exposing `route_task`, `count_targets`, `demux_barcodes`, `audit_targets`, `edit_distance` and the six assay tools to Claude Code, Codex, Cursor and other MCP clients.
 - Add a Claude Code plugin marketplace (`/plugin install dotmatch --marketplace dnncha/dotmatch`) bundling the MCP server and a routing skill.
@@ -35,6 +26,14 @@ All notable user-facing changes are tracked here. Public statements in release n
   metadata, avoiding claims that already-published packages were rewritten.
 - Update the hosted demo's fallback install from DotMatch 0.6.3 to the current
   0.6.4 release.
+
+## 0.7.0 — 2026-10-03
+
+- Add a guide-counter-compatible counting path, precision boundary fixes, and an audited five-repeat comparison with matching counts.
+- Add experimental joint gene-level inference and whole-gene control calibration to CRISPRWorks Fit, with convergence and attainable-FDR diagnostics.
+- Stage Fit output bundles, verify consumed inputs, prevent overlapping publication, and reject malformed MLE counts before fitting.
+- Add first-run tutorials, scientific audit findings, benchmark graphs and scoped comparison callouts.
+- Keep biological validation limitations explicit; experimental Fit is not evidence of general scientific superiority.
 
 ## 0.6.4 - 2026-09-29
 
