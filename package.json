@@ -18,7 +18,7 @@
   "license": "Apache-2.0",
   "overrides": {
     "postcss": "^8.5.10",
-    "sharp": "^0.35.4",
+    "sharp": "^0.35.5",
     "baseline-browser-mapping": "^2.11.0"
   },
   "dependencies": {
