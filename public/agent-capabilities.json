@@ -1,7 +1,7 @@
 {
   "$schema": "https://dnncha.github.io/dotmatch/agent-capabilities.schema.json",
   "schema_version": "1.1",
-  "generated_for_version": "0.7.0",
+  "generated_for_version": "0.8.0",
   "project": {
     "name": "DotMatch",
     "package": "dotmatch",
@@ -27,7 +27,7 @@
     ]
   },
   "install": {
-    "recommended": "python3 -m pip install dotmatch==0.7.0",
+    "recommended": "python3 -m pip install dotmatch==0.8.0",
     "verify": "dotmatch --version",
     "platforms": [
       "Linux x86_64 or aarch64 with glibc or musl",
@@ -295,7 +295,7 @@
     "agent_tools_schema": "https://dnncha.github.io/dotmatch/agent-tools.schema.json",
     "codex_skill": "https://github.com/dnncha/dotmatch/tree/main/extensions/codex/dotmatch-agent",
     "mcp_server": "dotmatch mcp",
-    "mcp_server_no_install": "uvx --from git+https://github.com/dnncha/dotmatch dotmatch mcp",
+    "mcp_server_no_install": "uvx dotmatch mcp",
     "claude_plugin": "https://github.com/dnncha/dotmatch/tree/main/extensions/claude/dotmatch"
   }
 }

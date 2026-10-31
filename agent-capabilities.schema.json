@@ -91,7 +91,7 @@
         "agent_tools_schema": {"type": "string", "format": "uri"},
         "codex_skill": {"type": "string", "format": "uri"},
         "mcp_server": {"const": "dotmatch mcp"},
-        "mcp_server_no_install": {"const": "uvx --from git+https://github.com/dnncha/dotmatch dotmatch mcp"},
+        "mcp_server_no_install": {"const": "uvx dotmatch mcp"},
         "claude_plugin": {"type": "string", "format": "uri"}
       }
     }

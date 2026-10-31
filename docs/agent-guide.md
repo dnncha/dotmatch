@@ -25,10 +25,10 @@ JSON envelope to stdout and progress or diagnostics to stderr. The Python API
 exposes the same contract through `dotmatch.agent_tools.list_tools()` and
 `dotmatch.agent_tools.invoke_tool()`.
 
-Version 0.7.0 is verified on PyPI and GHCR; verify other channels separately. This six-tool interface is included in release 0.7.0.
+Version 0.8.0 is verified on PyPI (GHCR has 0.7.0); verify other channels separately. This six-tool interface is included in release 0.8.0.
 Check `dotmatch --version` before following this route. If a channel provides
 an older package, use the ordinary CLI commands or `dotmatch capabilities
---json` until that channel reaches 0.7.0.
+--json` until that channel reaches 0.8.0.
 
 The canonical contract and schema are also published as
 [`agent-tools.json`](https://dnncha.github.io/dotmatch/agent-tools.json) and
@@ -179,8 +179,8 @@ before broadening a workflow or a claim.
 ## MCP server and Claude Code plugin
 
 ```bash
-claude mcp add dotmatch -- uvx --from git+https://github.com/dnncha/dotmatch dotmatch mcp
-codex mcp add dotmatch -- uvx --from git+https://github.com/dnncha/dotmatch dotmatch mcp
+claude mcp add dotmatch -- uvx dotmatch mcp
+codex mcp add dotmatch -- uvx dotmatch mcp
 ```
 
 Claude Code users can install the plugin, which bundles the MCP server and a routing skill:
@@ -191,4 +191,4 @@ Claude Code users can install the plugin, which bundles the MCP server and a rou
 
 On older Claude Code versions, run `/plugin marketplace add dnncha/dotmatch` and then `/plugin install dotmatch@dotmatch`. Other MCP clients use `{"mcpServers": {"dotmatch": {"command": "uvx", "args": ["--from", "git+https://github.com/dnncha/dotmatch", "dotmatch", "mcp"]}}}`. With DotMatch already installed from source, `dotmatch mcp` serves the same tools.
 
-The server exposes `route_task`, `count_targets`, `demux_barcodes`, `audit_targets` and `edit_distance` for known-window work, plus the six assay tools above for reviewed CRISPR and Perturb-seq runs. Every tool runs locally, takes structured arguments only, refuses to overwrite existing outputs, and returns the JSON envelope as MCP structured content. `dotmatch mcp` ships on the main branch ahead of the next PyPI release, so the commands above install from source and need a C compiler.
+The server exposes `route_task`, `count_targets`, `demux_barcodes`, `audit_targets` and `edit_distance` for known-window work, plus the six assay tools above for reviewed CRISPR and Perturb-seq runs. Every tool runs locally, takes structured arguments only, refuses to overwrite existing outputs, and returns the JSON envelope as MCP structured content. `dotmatch mcp` ships in DotMatch 0.8.0 and later.
