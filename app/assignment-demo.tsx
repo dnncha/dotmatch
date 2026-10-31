@@ -30,7 +30,7 @@ export function AssignmentDemo() {
     >
       <div className={styles.instrumentHeading}>
         <span>Read assignment example</span>
-        <span>Radius-one Hamming</span>
+        <span>Up to one substitution</span>
       </div>
       <div
         className={styles.exampleControls}
