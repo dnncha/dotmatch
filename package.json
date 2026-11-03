@@ -22,7 +22,7 @@
     "baseline-browser-mapping": "^2.11.0"
   },
   "dependencies": {
-    "next": "^16.3.6",
+    "next": "^16.4.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
