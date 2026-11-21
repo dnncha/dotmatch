@@ -47,7 +47,7 @@ rich==15.0.0
 scikit-learn==1.7.2
 scipy==1.17.0
 seaborn==0.13.2
-setuptools==84.0.0
+setuptools==84.1.0
 six==1.17.0
 statsmodels==0.15.0
 sympy==1.14.0
