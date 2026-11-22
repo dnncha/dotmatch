@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "release": "DepMap 24Q4 Public",
+  "figshare_article": 27993248,
+  "chronos_commit": "d85e55f4caabaea240d58c8355894613e5410b5a",
+  "jacks_commit": "dd5c4be5e83baa5ee79a589b0a8c3a2ac3f7d6ad",
+  "seed": 1729,
+  "folds": 5,
+  "chronos_epochs": 1001,
+  "selection": "first 24 sorted ModelIDs in Avana and KY with >=2 passing 2D untreated replicates, one screen and one pDNA batch",
+  "scope": "genome-wide: every UsedByChronos single-alignment gene with the modal guide count",
+  "sources": {
+    "AchillesCommonEssentialControls.csv": "a1a48ad516011c521b1981769e2f78de84d1410371f8517a7428349be6e6b98a",
+    "AchillesNonessentialControls.csv": "c7add12af5a37912997fdab0a7aabeef8d811b1ac7ee23dfcffa3a06471ce097",
+    "AvanaGuideMap.csv": "fad40ace063d0d61815bcb7719a2bc017cec6b29103a8fed3653742e834a3755",
+    "AvanaRawReadcounts.csv": "fffcb189096f5234201950233bdf7aa38ffe95ec230f0a1d466ba96931f0ec23",
+    "KYGuideMap.csv": "ae34b14f04dbaa90dc961f57dba4a8619ebf842f8365b8cd72854a1441539337",
+    "KYRawReadcounts.csv": "ffee39ffc29d1cdc3e496ee35355c49e57eace73fd82ef98b30a50149dd44daa",
+    "ScreenSequenceMap.csv": "ed2cbceee14ed0955420fa87a77a9adeef1214ae08ffdd5dc02a069d4a70be83"
+  },
+  "libraries": {
+    "Avana": {
+      "genes": 14843,
+      "guides": 59372,
+      "guide_count": 4,
+      "samples": 61,
+      "evaluated_genes": 1565,
+      "counts_sha256": "af9f492abbac4ce4e4035d18604d338399e8bee7dd2cea2622317940ffe32119"
+    },
+    "KY": {
+      "genes": 13445,
+      "guides": 67225,
+      "guide_count": 5,
+      "samples": 66,
+      "evaluated_genes": 1388,
+      "counts_sha256": "41163964f5b79b115f87d0d1ecd0bc0ce18a6a5f2c8f10a374e6c1d9041afa69"
+    }
+  },
+  "cell_lines": [
+    "ACH-000007",
+    "ACH-000009",
+    "ACH-000019",
+    "ACH-000024",
+    "ACH-000030",
+    "ACH-000035",
+    "ACH-000042",
+    "ACH-000048",
+    "ACH-000060",
+    "ACH-000067",
+    "ACH-000075",
+    "ACH-000098",
+    "ACH-000108",
+    "ACH-000111",
+    "ACH-000113",
+    "ACH-000118",
+    "ACH-000120",
+    "ACH-000137",
+    "ACH-000147",
+    "ACH-000148",
+    "ACH-000183",
+    "ACH-000200",
+    "ACH-000204",
+    "ACH-000207"
+  ],
+  "eligible_shared_cells": 176,
+  "scores_sha256": "7b86e26e7125b1fd68b873847668485497f688cfbfb0082d399007374d99775e",
+  "unconverged_joint_genes": [
+    {
+      "library": "Avana",
+      "fold": 0,
+      "gene": "OR5D14 (219436)"
+    },
+    {
+      "library": "Avana",
+      "fold": 1,
+      "gene": "OR5D14 (219436)"
+    },
+    {
+      "library": "Avana",
+      "fold": 1,
+      "gene": "PRRC1 (133619)"
+    },
+    {
+      "library": "Avana",
+      "fold": 2,
+      "gene": "OR5D14 (219436)"
+    },
+    {
+      "library": "Avana",
+      "fold": 3,
+      "gene": "OR5D14 (219436)"
+    },
+    {
+      "library": "Avana",
+      "fold": 4,
+      "gene": "OR5D14 (219436)"
+    },
+    {
+      "library": "KY",
+      "fold": 3,
+      "gene": "TMPRSS13 (84000)"
+    },
+    {
+      "library": "KY",
+      "fold": 4,
+      "gene": "TMPRSS13 (84000)"
+    }
+  ]
+}
