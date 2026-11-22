@@ -1,10 +1,6 @@
 # Scope and limitations
 
-DotMatch is built around a small promise: for a configured short read window and
-a known target table, it reports how each read relates to the targets under
-explicit edit-distance rules. The software is useful when that promise matches
-the assay. It should not be stretched into claims about tasks it does not
-perform.
+DotMatch focuses on one job: given a configured read window and a table of known short DNA targets, it classifies every read under explicit edit-distance rules. Keep downstream analysis and unsupported tasks in dedicated tools rather than stretching these outputs beyond their scope.
 
 ## What DotMatch does
 

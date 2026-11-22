@@ -1,48 +1,32 @@
-# CRISPRWorks Count
+# DotMatch
 
-CRISPR guide counts and assignment QC from FASTQ reads.
+**Known-target DNA read assignment and QC from FASTQ.**
 
-**CRISPRWorks Count** is the guide-counting component of **CRISPRWorks**,
-a family of open-source tools for pooled CRISPR screen analysis. Count is powered
-by **DotMatch**, the package and command used throughout this documentation.
-See the [family overview](crisprworks.md) for the available component and the
-experimental Fit gene-inference package and planned Review tool.
+DotMatch assigns a fixed window from each FASTQ read to a known table of short DNA sequences: CRISPR guides, inline barcodes, feature tags, primers, adapter prefixes, or panel targets. It runs locally on Linux and macOS and keeps ambiguous, unmatched, and invalid reads visible instead of collapsing them into target counts.
 
-DotMatch assigns a short window from each FASTQ read to a known list of DNA
-sequences. It is made for CRISPR guides, sample barcodes, feature tags, primers,
-adapter checks, and other assays where the expected targets are already known.
+DotMatch is the guide-counting engine for **CRISPRWorks Count**; see the [CRISPRWorks family overview](crisprworks.md) for component status and experimental gene-level inference tools.
 
-:::{admonition} Benchmark spotlight: faster counting, identical counts
+:::{admonition} Benchmark spotlight: faster one-mismatch counting with identical counts
 :class: tip
 
-The benchmarked source checkout's `dotmatch guide-counter count` is
-**1.6–5.5× faster with 11.3–14.4× lower peak memory** than guide-counter 0.1.3
-in the tested one-mismatch workflows, with identical full count matrices.
-Controlled 100k/1M-read FASTQs, the public 87,437-guide Yusa library, one CPU
-thread and five paired repeats define this result. Guide-counter is faster in
-the tested exact-mode million-read cases; full experimental-screen performance
-and biological accuracy require separate validation.
-[Explore the graphs, protocol and raw results](benchmarks/guide_counter/README.md).
+In paired benchmarks on the source checkout, `dotmatch guide-counter count` ran **1.6–5.5× faster with 11.3–14.4× lower peak memory** than unmodified `guide-counter` 0.1.3 on tested one-mismatch workflows, producing identical full guide-by-sample count matrices.
+
+Controlled 100k-read and 1M-read FASTQs, the public 87,437-guide Yusa library, one CPU thread, and five paired repeats define this result. `guide-counter` is faster in the tested exact-mode 1M-read cases; full experimental-screen performance and biological accuracy require separate validation.
+[Explore the graphs, protocol, and raw results](benchmarks/guide_counter/README.md).
 :::
 
 For every read, DotMatch records one of four outcomes:
 
-- `unique`: exactly one target is compatible;
-- `ambiguous`: several targets are compatible;
-- `none`: no target is within the selected distance;
-- `invalid`: the requested window could not be extracted.
-
-Ambiguous and invalid reads stay visible in the outputs. They are not quietly
-added to a target count.
+- `unique`: exactly one target fits the configured rule (added to target counts by default);
+- `ambiguous`: two or more targets fit;
+- `none`: no target lies within the selected distance;
+- `invalid`: the configured read window could not be extracted.
 
 ## Choose the inputs and assignment rule
 
-A useful run starts with a known target library, a defined read window, and an
-explicit matching policy. Review those choices before interpreting a count
-matrix. A uniquely assigned read is compatible with one target under that
-policy; it does not establish the read's biological origin.
+A reliable run starts with a known target library, a defined read window, and an explicit matching policy. Review those choices before interpreting a count matrix: a `unique` assignment reflects compatibility under the selected rules rather than proof of biological origin.
 
-## Start with a real run
+## Install and verify
 
 Install the current PyPI package:
 
@@ -51,17 +35,9 @@ python3 -m pip install dotmatch
 dotmatch --version
 ```
 
-Release 0.8.0 is published on PyPI (GHCR has 0.7.0) and includes the six `dotmatch agent`
-tools described below. Confirm that `dotmatch --version` reports 0.8.0 before
-using them. Bioconda and BioContainers may lag PyPI; check the installed
-version when using those channels.
+Release 0.8.0 is published on PyPI (GHCR has 0.7.0) and includes the six `dotmatch agent` tools and the local `dotmatch mcp` server described in the [Agent guide](agent-guide.md). Confirm that `dotmatch --version` reports `0.8.0` before relying on those tools; Bioconda and BioContainers can lag PyPI.
 
-To verify the installed package before using study data, run the offline
-synthetic check with `dotmatch demo --out-dir first-run/`. Then follow
-[Getting started](getting-started.md) for a small count or demultiplexing run. If you already know which command you need, go straight to
-the [command reference](command-reference.md). Coding and scientific agents can
-use the [Agent guide](agent-guide.md) or the public capability manifest for
-versioned task routing with explicit inputs, outputs, and limitations. Use `dotmatch agent tools --json` to inspect the tools available in your installed version.
+Before running on study data, verify your installation offline with `dotmatch demo --out-dir first-run/`, then follow [Getting started](getting-started.md) for your first count or demultiplexing run. Use the [Command reference](command-reference.md) to look up flags, or run `dotmatch agent tools --json` to inspect the structured tool contracts in your installed version.
 
 ## Choose a workflow
 
@@ -72,7 +48,7 @@ versioned task routing with explicit inputs, outputs, and limitations. Use `dotm
 | Reproduce a public CRISPR example | [Public CRISPR guide-counting example](../examples/crispr_guides/README.md) |
 | Reproduce the multi-guide Perturb-seq case study | [GSE146194 direct-guide-capture report](benchmarks/perturb_seq_gse146194/README.md) |
 | Try the workflow without a local install | [Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb) or [Google Colab](https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb) |
-| Compare my existing counts with DotMatch | [Count comparison](count-comparison.md) |
+| Compare existing count tables with DotMatch | [Count comparison](count-comparison.md) |
 | Compare guide-counting workflows | [Guide-counting workflow comparison](usability-comparison.md) |
 | Build a checked assay project | [AssaySpec workflows](assayspec.md) |
 | Evaluate and hand off a run | [Lab evaluation and handoff](lab-evaluation.md) |
@@ -97,34 +73,20 @@ versioned task routing with explicit inputs, outputs, and limitations. Use `dotm
 
 ## Scope and limitations
 
-DotMatch compares fixed read windows with a finite target list. It is not a
-genome aligner, basecaller, UMI pipeline, variant caller, or downstream screen
-analysis package.
+DotMatch compares fixed read windows with a finite target list. It is not a genome aligner, basecaller, UMI pipeline, variant caller, or downstream screen-analysis package.
 
-Performance and correctness results are tied to the commands, datasets, and
-hardware recorded in the [benchmark reports](benchmarks/README.md). The most
-developed paths are native fixed-window assignment, public CRISPR guide-counting
-comparisons, checked inline-barcode examples, and the bounded GSE146194
-multi-guide direct-capture case study. Other assay types and
-experimental backends have narrower test coverage; those limits are described
-in [Scope and limitations](trust-and-scope.md).
+Performance and correctness results apply to the commands, datasets, and hardware recorded in the [benchmark reports](benchmarks/README.md). The strongest evidence covers native fixed-window assignment, public CRISPR guide-counting comparisons, checked inline-barcode lanes, and the bounded GSE146194 multi-guide direct-capture case study. Narrower experimental paths and their limits are documented in [Scope and limitations](trust-and-scope.md).
 
 ## Related research
 
-[Cheerful Duck Research](https://cheerfulduck.com/research) collects our
-bioinformatics investigations, reproduction material, and corrections. Use the
-project's benchmark reports for DotMatch-specific evidence and the methods guide
-below when citing a run.
+[Cheerful Duck Research](https://cheerfulduck.com/research) collects our bioinformatics investigations, reproduction materials, and corrections. Cite the specific DotMatch release and assignment policy used in your analysis via the methods guide below.
 
 ## Help and citation
 
-- Report a bug or request a feature on
-  [GitHub Issues](https://github.com/dnncha/dotmatch/issues).
-- Use `dotmatch citation` for the installed release.
-- See [Methods and citation](methods-and-citation.md) for `CITATION.cff`, DOI,
-  and methods text.
-- See [Packaging](packaging.md) for PyPI, Bioconda, containers, and source
-  builds.
+- Report a bug or request a feature on [GitHub Issues](https://github.com/dnncha/dotmatch/issues).
+- Run `dotmatch citation` to print the installed release citation.
+- See [Methods and citation](methods-and-citation.md) for `CITATION.cff`, DOI metadata, and methods wording.
+- See [Packaging](packaging.md) for PyPI, Bioconda, containers, and source builds.
 
 ```{toctree}
 :maxdepth: 2

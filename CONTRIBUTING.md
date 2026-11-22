@@ -1,16 +1,16 @@
 # Contributing to DotMatch
 
-DotMatch is an open source toolkit for deterministic short-DNA known-target assignment. Contributions are welcome when they improve correctness, reproducibility, performance, documentation, or usability without weakening the evidence boundary.
+DotMatch is an open-source toolkit for deterministic short-DNA known-target assignment. Contributions are welcome when they improve correctness, reproducibility, performance, documentation, or usability within the project's documented scope.
 
-## Good First Contributions
+## Good first contributions
 
-- Improve examples, error messages, and documentation for real bioinformatics workflows.
+- Improve examples, error messages, and documentation for bioinformatics workflows.
 - Add small deterministic tests for CLI behavior, file schemas, ambiguity handling, and edge cases.
-- Add benchmark comparators when their semantics are documented and reproducible.
-- Improve packaging for source installs, Docker, PyPI wheels, or Bioconda.
-- Tighten validation, audit, or report outputs that help scientists trust a run.
+- Add reproducible benchmark comparators with documented semantics.
+- Improve packaging for source builds, Docker, PyPI wheels, or Bioconda.
+- Tighten validation, audit, or report outputs that make runs easier to inspect.
 
-## Development Setup
+## Development setup
 
 ```bash
 make
@@ -29,9 +29,9 @@ vocabulary, static type tests, doctests, and snapshot workflow.
 
 On Linux, use `DOTMATCH_LIB=$PWD/libdotmatch.so` for Python tests. The CI workflow runs native build/test, CLI fixtures, Python tests, sanitizers on Linux, coverage on Linux, and shared-library builds.
 
-## Evidence Discipline
+## Evidence discipline
 
-Performance and comparative wording need evidence in the repository. A statement is ready only when:
+Performance and comparative wording require checked-in evidence in the repository. A statement is ready when:
 
 - the exact command is documented;
 - the raw CSV artifact is checked in under `benchmarks/raw/`;
@@ -42,11 +42,11 @@ Performance and comparative wording need evidence in the repository. A statement
 
 Do not broaden statements from one workflow to another. In particular, DotMatch is not currently a genome aligner, and barcode/BCL comparison wording should stay within the evidence documented in `docs/scientific-claims.md`.
 
-## Benchmark Artifacts
+## Benchmark artifacts
 
-Commit reproducible evidence, not large working datasets. Keep curated CSVs under `benchmarks/raw/`, figures under `benchmarks/figures/`, and reports under `docs/benchmarks/`. Downloaded FASTQ/BCL data, generated demultiplexed FASTQs, competitor environments, and scratch outputs should stay in ignored paths.
+Commit reproducible evidence rather than large working datasets. Keep curated CSVs under `benchmarks/raw/`, figures under `benchmarks/figures/`, and reports under `docs/benchmarks/`. Downloaded FASTQ/BCL data, generated demultiplexed FASTQs, competitor environments, and scratch outputs should stay in ignored paths.
 
-## Pull Requests
+## Pull requests
 
 Before opening a PR:
 
@@ -66,7 +66,7 @@ count parsing, FASTQ input, panel design, or output schemas, and read
 
 Run `make coverage` for changes that touch `src/qdalign.c`, `src/qda.c`, CLI parsing, assignment semantics, or report generation. Run the relevant validation or comparison gate when changing benchmark artifacts or wording.
 
-## Contributor Certification
+## Contributor certification
 
 Normal contributions are accepted under the same Apache-2.0 terms as DotMatch
 unless otherwise agreed in writing before the contribution is submitted.

@@ -32,8 +32,9 @@ export default function SensitivityPage() {
             Assignment sensitivity
           </h1>
           <p className={styles.lede}>
-            Compare exact, radius-one Hamming and best-distance Hamming
-            assignments on a nine-read synthetic dataset.
+            Compare exact, radius-one, and best-distance Hamming rules on the
+            same read windows to see where individual guide counts shift, even
+            when total assigned reads stay the same.
           </p>
           <div className={styles.actions}>
             <a className={styles.primary} href={siteAsset("examples/assignment-review/report.html")}>
@@ -44,9 +45,9 @@ export default function SensitivityPage() {
             </a>
           </div>
           <p className={styles.note}>
-            The report uses results computed by the native matcher. The site
-            viewer reviews the bundled synthetic example. The installed
-            sensitivity command still writes its static report.
+            Browser preview of the bundled nine-read synthetic example, computed
+            with DotMatch’s native matcher; the installed sensitivity command
+            still writes its static report.
           </p>
         </header>
         <section className={styles.section} aria-labelledby="try-review">
@@ -108,10 +109,10 @@ export default function SensitivityPage() {
             </table>
           </div>
           <p className={styles.note}>
-            Exact and radius-one each produce three unique assignments. But{" "}
-            {demo.changed_reads} reads change outcome somewhere across the three
-            policies. Equal totals do not establish equivalent count matrices—or
-            equivalent read assignments.
+            Exact and radius-one each produce three unique assignments, yet{" "}
+            {demo.changed_reads} reads change outcome across the three
+            policies. Equal assigned totals can still hide different guide
+            counts and different per-read decisions.
           </p>
           <div
             className={styles.scroll}
@@ -177,19 +178,18 @@ export default function SensitivityPage() {
             </article>
           </div>
           <p className={styles.note}>
-            None of these rules establishes a read’s true biological origin.
-            This is a software and method-selection example, not an accuracy
-            benchmark or an automatic recommendation to use a more permissive
-            policy.
+            These rules define deterministic matching behavior rather than a
+            read’s true biological origin, so a more permissive policy is not
+            automatically more accurate.
           </p>
         </section>
         <section className={styles.section}>
           <h2>Run on local data</h2>
           <p>
-            <code>dotmatch sensitivity</code> is included in published {publishedVersion}.
-            It produces the count tables and a static report. The interactive
-            review on this page is a website example; it does not replace the
-            local command's report.
+            <code>dotmatch sensitivity</code> is included in published {publishedVersion} and
+            writes count tables alongside its static HTML report. (The
+            interactive review linked at the top of this page is a browser
+            example and does not replace the local command&apos;s static report.)
           </p>
           <pre className={styles.code}>
             <code>{`python3 -m pip install dotmatch==${publishedVersion}\n\ndotmatch sensitivity \\\n  --targets guides.tsv \\\n  --reads sample.fastq.gz \\\n  --target-start 23 \\\n  --target-length 20 \\\n  --sample-label sample_1 \\\n  --out-dir sensitivity/`}</code>

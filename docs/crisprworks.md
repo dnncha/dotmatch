@@ -44,14 +44,8 @@ short-DNA assays. Those capabilities remain documented under DotMatch.
 :::{admonition} Count benchmark spotlight: faster one-mismatch workflows
 :class: tip
 
-The benchmarked source checkout's `dotmatch guide-counter count` is
-**1.6–5.5× faster with 11.3–14.4× lower peak memory** than guide-counter 0.1.3,
-with identical full count matrices. The comparison uses controlled 100k/1M-read
-FASTQs, the public Yusa library, one CPU thread and five paired repeats.
-Guide-counter is faster in the tested exact-mode million-read cases.
-These measurements concern guide counting; gene-effect accuracy and full
-experimental-screen performance require separate validation.
-[See both modes, graphs and reproduction commands](benchmarks/guide_counter/README.md).
+In paired benchmarks on the source checkout, `dotmatch guide-counter count` ran **1.6–5.5× faster with 11.3–14.4× lower peak memory** than unmodified `guide-counter` 0.1.3, producing identical full count matrices. Controlled 100k/1M-read FASTQs, the public Yusa library, one CPU thread, and five paired repeats define this result. `guide-counter` is faster in the tested exact-mode 1M-read cases; gene-effect accuracy and full experimental-screen performance require separate validation.
+[See both modes, graphs, and reproduction commands](benchmarks/guide_counter/README.md).
 :::
 
 ## Try Fit from source
@@ -114,15 +108,9 @@ remain outside the current validation.
 
 ## Names and compatibility
 
-Use **CRISPRWorks** for the family, and **CRISPRWorks Count**, **CRISPRWorks Fit**
-and **CRISPRWorks Review** for its components. Spell the family name as one word,
-with uppercase `CRISPR` and an uppercase `W`.
+**DotMatch** is the primary name for the repository, Python package, CLI command, website, and documentation. **CRISPRWorks** is the broader pooled-CRISPR suite name: **CRISPRWorks Count** describes DotMatch's guide-counting role alongside **CRISPRWorks Fit** (experimental source alpha) and **CRISPRWorks Review** (planned). Spell the suite name as one word with uppercase `CRISPR` and `W`.
 
-For the existing engine, use **“CRISPRWorks Count, powered by DotMatch”** on
-introductions and product pages. Use **DotMatch** for package names, commands,
-Python imports, methods and citations.
-
-The branding change preserves the existing identifiers:
+Use **DotMatch** for package names, CLI commands, Python imports, methods sections, and software citations, and optionally note **"CRISPRWorks Count, powered by DotMatch"** when describing how the counting and gene-inference tools fit together. All published identifiers remain unchanged:
 
 | Identifier | Value |
 | --- | --- |

@@ -11,7 +11,7 @@ cell/UMI quantifier, or downstream CRISPR screen-statistics package.
 
 ## Machine-readable tools
 
-DotMatch 0.4 adds a local execution contract with six composable tools:
+DotMatch provides a local execution contract with six composable tools:
 
 ```bash
 dotmatch agent tools --json
@@ -25,40 +25,40 @@ JSON envelope to stdout and progress or diagnostics to stderr. The Python API
 exposes the same contract through `dotmatch.agent_tools.list_tools()` and
 `dotmatch.agent_tools.invoke_tool()`.
 
-Version 0.8.0 is verified on PyPI (GHCR has 0.7.0); verify other channels separately. This six-tool interface is included in release 0.8.0.
-Check `dotmatch --version` before following this route. If a channel provides
+Release 0.8.0 is verified on PyPI (GHCR has 0.7.0); verify other channels separately. This six-tool interface is included in release 0.8.0.
+Check `dotmatch --version` before following this route: if a channel provides
 an older package, use the ordinary CLI commands or `dotmatch capabilities
 --json` until that channel reaches 0.8.0.
 
-The canonical contract and schema are also published as
+The canonical contract and schema are published as
 [`agent-tools.json`](https://dnncha.github.io/dotmatch/agent-tools.json) and
 [`agent-tools.schema.json`](https://dnncha.github.io/dotmatch/agent-tools.schema.json).
-Ordinary tool invocations are local-only: they do not upload targets, FASTQ,
-results, or handoff bundles and make no outbound network requests.
+Tool invocations run locally without uploading targets, FASTQs, results, or
+handoff bundles and make no outbound network requests.
 
-Agents that speak the Model Context Protocol can use the same tools through `dotmatch mcp`; see [MCP server and Claude Code plugin](#mcp-server-and-claude-code-plugin).
+Agents speaking the Model Context Protocol can invoke the same tools plus direct
+windowed utilities through `dotmatch mcp`; see
+[MCP server and Claude Code plugin](#mcp-server-and-claude-code-plugin).
 
-Start with the exact task page for
+Start with the dedicated task guide for
 [CRISPR guide counting](agent-crispr.md) or
 [Perturb-seq direct-guide capture](agent-perturb-seq.md).
 
 ## Capability routing
 
-Packages that include the agent interface can print the versioned capability
-record:
+Installed packages print the versioned capability record with:
 
 ```bash
 dotmatch capabilities --json
 ```
 
-The same record is published as
+The same manifest is published as
 [`agent-capabilities.json`](https://dnncha.github.io/dotmatch/agent-capabilities.json)
 and validated against
 [`agent-capabilities.schema.json`](https://dnncha.github.io/dotmatch/agent-capabilities.schema.json).
-Use an intent's exact `entrypoint`, then read its `inputs`, `outputs`, and
-`limitations` before constructing a command. DotMatch 0.3.0 and later include
-the same capability record in the installed package. Consumers pinned to the
-1.0 shape can keep using the immutable
+Match your task to an intent's `entrypoint`, then inspect its `inputs`,
+`outputs`, and `limitations` before constructing a command. Consumers pinned to
+the 1.0 schema can continue using the immutable
 [`agent-capabilities.v1.json`](https://dnncha.github.io/dotmatch/agent-capabilities.v1.json)
 and
 [`agent-capabilities.v1.schema.json`](https://dnncha.github.io/dotmatch/agent-capabilities.v1.schema.json)

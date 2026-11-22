@@ -10,27 +10,30 @@ const examples = [
   ["unmatched", "Unmatched"],
   ["short", "Short read"],
 ] as const;
+
 const explanations: Record<string, string> = {
-  unique: "One target within one substitution. Adds one count to that target.",
+  unique: "Matches one target within one substitution, adding one count to that target.",
   ambiguous:
-    "Multiple targets within one substitution. No count is added.",
-  none: "No target within one substitution. Recorded as unmatched.",
+    "Matches multiple targets within one substitution, so no count is added.",
+  none: "Matches no target within one substitution; recorded as unmatched.",
   invalid:
-    "The read is shorter than the required 20-base window. Recorded as invalid.",
+    "Shorter than the required 20-base window; recorded as invalid.",
 };
+
 export function AssignmentDemo() {
   const [selected, setSelected] = useState<string>("one_mismatch");
   const record = demo.records.find((row) => row.id === selected)!;
   const result = record.calls.radius_k1;
   const target = demo.targets.find((row) => row.id === result.target_id);
+
   return (
     <div
       className={styles.instrument}
       aria-label="Interactive synthetic assignment example"
     >
       <div className={styles.instrumentHeading}>
-        <span>Read assignment example</span>
-        <span>Radius-one Hamming</span>
+        <span>Read matcher</span>
+        <span className={styles.instrumentBadge}>Hamming k=1 (radius)</span>
       </div>
       <div
         className={styles.exampleControls}
@@ -53,21 +56,23 @@ export function AssignmentDemo() {
         aria-live="polite"
         aria-atomic="true"
       >
-        <span className={styles.sequenceLabel}>Observed read window</span>
-        <code className={styles.sequence}>
-          {record.sequence.split("").map((base, i) => (
-            <span
-              key={i}
-              className={
-                target && base !== target.sequence[i]
-                  ? styles.mismatch
-                  : undefined
-              }
-            >
-              {base}
-            </span>
-          ))}
-        </code>
+        <div className={styles.sequenceBox}>
+          <span className={styles.sequenceLabel}>Observed read window</span>
+          <code className={styles.sequence}>
+            {record.sequence.split("").map((base, i) => (
+              <span
+                key={i}
+                className={
+                  target && base !== target.sequence[i]
+                    ? styles.mismatch
+                    : undefined
+                }
+              >
+                {base}
+              </span>
+            ))}
+          </code>
+        </div>
         <div className={styles.matchRule}>
           <span>
             {result.status === "invalid"
@@ -90,8 +95,8 @@ export function AssignmentDemo() {
         <p className={styles.explanation}>{explanations[result.status]}</p>
       </div>
       <p className={styles.instrumentFoot}>
-        Synthetic example, checked against the native matcher.{" "}
-        <a href="#evidence">Example inputs and tests</a>
+        Synthetic fixture verified against the native matcher.{" "}
+        <a href="#evidence">Inspect inputs and tests</a>
       </p>
     </div>
   );

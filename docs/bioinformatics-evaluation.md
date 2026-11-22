@@ -1,73 +1,61 @@
-# Bioinformatics Evaluation Packet
+# Bioinformatics evaluation packet
 
-This packet is for bioinformatics teams, core facilities, workflow maintainers,
-and assay-development groups evaluating whether DotMatch is appropriate for a
-known-target sequencing workflow. It records what is available now, what is
-validated by repository checks, and what should not be inferred from the current
-release.
+This packet helps bioinformatics teams, core facilities, workflow maintainers, and assay-development groups evaluate whether DotMatch fits a known-target sequencing workflow. It records what is published today, what repository checks cover, and what falls outside the current scope.
 
-DotMatch should be evaluated as a local command-line and Python package for
-deterministic assignment of fixed read windows to known short DNA targets. It is
-not a genome aligner, basecaller, variant caller, adapter trimmer, cell/UMI
-quantifier, or screen-level statistical analysis package.
+Evaluate DotMatch as a local CLI and Python package for deterministic assignment of fixed read windows to known short DNA targets. It is not a genome aligner, basecaller, variant caller, adapter trimmer, cell or UMI quantifier, or downstream screen-statistics package.
 
-## Current Package Surface
+## Current package surface
 
-For release `0.4.1`, the package surface is:
+For release `0.8.0`:
 
 | Surface | Current state | Evidence or source |
 | --- | --- | --- |
-| PyPI | Version 0.4.1 is public with an sdist, a universal macOS wheel, and repaired manylinux/musllinux wheels for x86_64 and aarch64 | `docs/distribution-release.json` |
-| Bioconda | Version 0.2.2 remains published for linux-64, linux-aarch64, osx-64, and osx-arm64; 0.4.1 is not published there yet | `docs/distribution-release.json` |
-| GHCR container | Version 0.4.1 is public for linux/amd64 and linux/arm64 at the recorded manifest digest | `docs/distribution-release.json` |
-| BioContainers | The 0.2.2 images remain public on Quay; 0.4.1 depends on Bioconda propagation | `docs/distribution-release.json` |
-| Documentation | Sphinx docs and public schemas in repository | `docs/index.md`, `docs/schemas.md` |
-| Citation | `CITATION.cff`, the Zenodo concept DOI, the prior 0.4.0 Zenodo record, and generated run artifacts; a version-specific 0.4.1 DOI is pending | `docs/methods-and-citation.md` |
-| Python API | `dotmatch` package, streaming helpers, pandas/polars/AnnData interop, a MultiQC parser entry point, and the structured local agent-tool API | `pyproject.toml`, `docs/streaming-api.md`, `docs/agent-guide.md` |
+| PyPI | `dotmatch==0.8.0` is published with sdist, universal macOS wheel, and manylinux/musllinux wheels for x86_64 and aarch64 | `pyproject.toml`, PyPI release workflow |
+| GHCR container | `ghcr.io/dnncha/dotmatch:v0.7.0` is verified for `linux/amd64` and `linux/arm64` | `docs/distribution-release.json` |
+| Bioconda and BioContainers | Downstream recipes can lag PyPI and GHCR; check `dotmatch --version` after Conda or Quay installs | `docs/distribution-release.json`, `docs/packaging.md` |
+| Documentation | Sphinx documentation, output schemas, and machine-readable agent contracts (`llms.txt`, `agent-capabilities.json`, `agent-tools.json`) | `docs/index.md`, `docs/schemas.md`, `docs/agent-guide.md` |
+| Citation | `CITATION.cff`, Zenodo concept DOI (`10.5281/zenodo.20541628`), release DOI records, and `dotmatch citation` | `docs/methods-and-citation.md` |
+| Python and agent APIs | Streaming Python API, pandas/polars/AnnData interop, MultiQC plugin entry point, six structured `dotmatch agent` tools, and `dotmatch mcp` local MCP server | `pyproject.toml`, `docs/streaming-api.md`, `docs/agent-guide.md` |
 | R interface | Reticulate-backed package skeleton and vignette | `R/`, `vignettes/dotmatch.Rmd` |
 
-Do not describe a channel as verified until `make distribution-channels` passes
-for that channel and the release record is updated.
+Verify channel status against `docs/distribution-release.json` and `make distribution-channels` before citing a channel as verified for a given release.
 
-## Validated Assay Scope
+## Validated assay scope
 
-Use `docs/assay-evidence.json` and `docs/scientific-claims.md` as the source of
-truth. A short evaluator summary:
+`docs/assay-evidence.json` and `docs/scientific-claims.md` remain the canonical reference:
 
 | Assay or workflow area | Current public status | Boundary |
 | --- | --- | --- |
 | CRISPR guide counting | Supported for checked public lanes and comparator semantics | Not screen-level effect analysis |
 | Fixed-position inline barcode demultiplexing | Supported for checked SRP009896 exact-prefix and fixed-length Hamming lanes | Not arbitrary adapter trimming or raw BCL replacement |
 | Feature-barcode assignment | Supported for checked per-read 10x TotalSeq-B fixed-window assignment | Not Cell Ranger feature-matrix parity |
-| Perturb-seq guide capture | Gated fixed-window per-read evidence | Not guide-per-cell quantification or perturbation-effect inference |
+| Perturb-seq guide capture | Gated fixed-window per-read evidence (GSE146194 single-guide capture) | Not guide-per-cell quantification or perturbation-effect inference |
 | Amplicon or panel primer-start assignment | Supported for checked fixed-window ARTIC primer-start lane | Not consensus generation, variant calling, or clinical interpretation |
 | Oligo or adapter-prefix assignment | Supported for checked fixed-window adapter-prefix assignment | Not adapter trimming, read merging, or UMI grouping |
 | Classic BCL milestone | Narrow checked tiny-BCL milestone | Not production Illumina demultiplexing or CBCL/NovaSeq support |
 
-If a statement would affect a procurement decision, manuscript claim, pipeline
-replacement, or regulated workflow, link it to the relevant raw artifact,
-benchmark report, and gate.
+Link any procurement decision, manuscript claim, pipeline replacement, or regulated workflow statement to the matching raw artifact, benchmark report, and gate.
 
-## Minimum Local Evaluation
+## Minimum local evaluation
 
-Start from the released package, not an unpublished checkout, unless the
-evaluation is explicitly for development work:
+Start from the published PyPI package and run the offline synthetic smoke check:
 
 ```bash
-python3 -m pip install dotmatch==0.4.1
+python3 -m pip install dotmatch==0.8.0
 dotmatch --version
 dotmatch dist ACGT AGGT
+dotmatch demo --out-dir first-run/
 ```
 
-For Conda-based environments:
+For Conda environments (checking the installed version against your target release):
 
 ```bash
-conda create -n dotmatch -c conda-forge -c bioconda dotmatch=0.2.2
+conda create -n dotmatch -c conda-forge -c bioconda dotmatch
 conda activate dotmatch
 dotmatch --version
 ```
 
-For a first source-level review:
+For a source-level verification run:
 
 ```bash
 make test
@@ -77,58 +65,34 @@ make workflow-examples-ready
 make repository-ready
 ```
 
-For scope-sensitive review, run the specific evidence gates named in
-`docs/methods-and-citation.md` and `docs/scientific-claims.md`; do not infer
-broader assay coverage from a generic test pass.
+For scope-sensitive review, run the specific evidence gates named in `docs/methods-and-citation.md` and `docs/scientific-claims.md`; a generic test pass does not imply broader assay coverage.
 
-## Outputs To Inspect
+## Outputs to inspect
 
-A useful evaluation should inspect the files a lab or workflow system would
-actually receive:
+Evaluate the actual files a lab or pipeline consumes:
 
-- `sample_qc.tsv`: assignment rate, ambiguous reads, unmatched reads, invalid
-  windows, rescue counts, and representation fields.
-- `summary.json`: command, version, policy, target-window configuration, and
-  provenance.
-- `assignments.tsv`: per-read states when requested.
-- `top_unmatched.tsv`: recurring unmatched sequences for assay review.
-- `assay_report.html` or workflow report HTML: human-readable reliability
-  review.
-- `methods.md`, `CITATION.bib`, and `software_versions.yml`: methods and
-  software citation artifacts produced by AssaySpec run paths.
-- `assay_manifest.summary.tsv`: workflow-facing contract for run artifacts.
+- `sample_qc.tsv`: assignment rate, rescue rate, ambiguous reads, unmatched reads, invalid windows, and representation metrics.
+- `summary.json`: command, version, matching policy, target-window configuration, and provenance.
+- `assignments.tsv`: per-read assignment outcomes when requested.
+- `top_unmatched.tsv`: recurring unmatched windows for assay troubleshooting.
+- `reliability_report.html` or workflow HTML reports: self-contained review pages.
+- `methods.md`, `CITATION.bib`, and `software_versions.yml`: reproducible citation and software metadata written by AssaySpec runs.
+- `assay_manifest.summary.tsv`: machine-readable artifact manifest.
 
-The central contract is that `ambiguous`, `none`, and `invalid` outcomes remain
-visible instead of being silently collapsed into target counts.
+The core contract is that `ambiguous`, `none`, and `invalid` reads stay visible rather than being folded silently into target counts.
 
-## Workflow Integration Status
+## Workflow integration status
 
-`docs/workflow-adoption.json` is currently `not_ready` because no external
-workflow-manager integration has been accepted yet. This is separate from
-Spack package-recipe acceptance and from PyPI or Bioconda distribution.
+`docs/workflow-adoption.json` records `not_ready` until an external workflow project accepts an upstream DotMatch integration. This status is distinct from Spack, PyPI, or Bioconda package distribution.
 
-Public submissions are open in nf-core/modules, Galaxy IUC, Snakemake wrappers,
-and MultiQC. Their exact heads, check state, and acceptance gates are recorded
-in `docs/ecosystem-status.md` and `docs/workflow-submissions.md`. None of those
-open pull requests is described as accepted or released. The bio.tools metadata
-remains an unsubmitted local draft, and no exact DotMatch workflow was found in
-WorkflowHub on 2026-08-28.
+Upstream submissions for nf-core/modules, Galaxy IUC, Snakemake wrappers, and MultiQC are tracked in `docs/ecosystem-status.md` and `docs/workflow-submissions.md`. Treat them as open or local examples rather than accepted upstream integrations until recorded in `docs/workflow-adoption.json`. Public user records require approved wording and a public URL.
 
-Record accepted integrations only in `docs/workflow-adoption.json`. Public use
-records require approved wording and a public URL.
+## Language rules for public surfaces
 
-## Language Rules For Public Surfaces
+Keep public documentation plain and technical:
 
-Use plain technical language:
-
-- say "known-target assignment", not broad "sequencing analysis";
-- say "checked public lane", "gated", or "experimental" when evidence is
-  narrow;
-- say "workflow artifact", "schema", "gate", "report", and "command" when
-  there is a concrete file or check;
-- avoid broad replacement claims, superlatives, and launch copy;
-- do not imply external workflow integration before
-  `docs/workflow-adoption.json` records an accepted public integration.
-
-The project should feel like a bioinformatics package first: installable,
-auditable, scoped, reproducible, and cautious about unsupported claims.
+- Say "known-target assignment" rather than broad "sequencing analysis".
+- Label narrow evidence clearly as "checked public lane", "gated", or "experimental".
+- Refer to concrete artifacts ("workflow artifact", "schema", "gate", "report", "command").
+- Avoid broad replacement claims, superlatives, and launch copy.
+- Never imply accepted upstream workflow integration before `docs/workflow-adoption.json` records it.

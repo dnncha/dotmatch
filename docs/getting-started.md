@@ -1,21 +1,17 @@
 # Getting started
 
-This page is the fastest useful path from installation to a checked DotMatch
-run. It assumes you have FASTQ or FASTQ.gz reads and a table of expected short
-DNA targets such as guides, sample barcodes, feature barcodes, primers, or
-adapter prefixes.
+This guide walks from installation to a verified DotMatch run. It assumes you have FASTQ or FASTQ.gz reads and a table of expected short DNA targets such as CRISPR guides, sample barcodes, feature barcodes, primers, or adapter prefixes.
 
 ## Install
 
-For the current PyPI release:
+From PyPI:
 
 ```bash
 python3 -m pip install dotmatch
 dotmatch --version
 ```
 
-For Conda-based environments, install the version currently published by
-Bioconda:
+From Bioconda:
 
 ```bash
 conda create -n dotmatch -c conda-forge -c bioconda dotmatch
@@ -23,7 +19,7 @@ conda activate dotmatch
 dotmatch --version
 ```
 
-From a source checkout:
+From a source checkout (requires a C compiler, `make`, Python 3.9+, and zlib for FASTQ.gz support):
 
 ```bash
 git clone https://github.com/dnncha/dotmatch.git
@@ -33,49 +29,45 @@ python3 -m pip install .
 dotmatch --version
 ```
 
-The source build needs a C compiler, `make`, Python 3.9 or newer, and zlib for
-FASTQ.gz support.
+PyPI normally receives new releases first. Bioconda can lag a release tag while its recipe builds, so check `dotmatch --version` when an exact release matters.
 
-PyPI is normally the first channel to receive a new release. Bioconda can lag a
-tag while its recipe is reviewed and built, so check the version printed by
-`dotmatch --version` when an exact release matters.
+## Verify your install offline
 
-## Recommended Workflow: Assay Project
-
-The default scientist path is scaffold → check → run → open the reliability
-report. Start from a guide or target table plus a directory of FASTQ files:
+Run the packaged synthetic check without using study data or making network requests:
 
 ```bash
-dotmatch assay new crispr \
-  --library guides.tsv \
-  --reads-dir fastqs/ \
+dotmatch demo --out-dir first-run/
+```
+
+Open `first-run/index.html` to inspect the generated review bundle.
+
+## Count a CRISPR screen
+
+`crispr quickstart` turns one or more FASTQ paths and a guide table into a self-contained AssaySpec project. It infers the guide window, writes an inference report, and leaves the project in `draft` status for review:
+
+```bash
+dotmatch crispr quickstart \
+  --library guides.csv \
+  --fastq 'fastqs/*.fastq.gz' \
   --out crispr_screen/
 ```
 
-Review `crispr_screen/inference_report.json`, then run the project:
+Inspect `crispr_screen/inference_report.json` and `crispr_screen/assay.toml` to confirm the read window, orientation, library, and sample files. Change `status = "draft"` to `status = "ready"` in `assay.toml`, then run the count and build a raw-FASTQ-free handoff bundle:
 
 ```bash
-cd crispr_screen
-./run.sh
+dotmatch assay start crispr_screen/assay.toml
+
+# Package config, QC, methods, and checksums without raw FASTQs:
+dotmatch assay handoff crispr_screen/assay.toml
 ```
 
-`run.sh` calls `dotmatch assay start assay.toml`, which runs preflight `check`,
-executes the assay, and prints the reliability verdict. Open
-`assay_out/reliability_report.html` first. If the verdict is not `passed`, apply
-the suggested edits in `assay_out/assay_fixes.tsv` and rerun `./run.sh`.
+To skip the draft pause on an already-known layout, pass `--accept-inference` to `crispr quickstart` (or `--no-run` for a review-only setup). A non-zero exit code after execution means a reliability gate needs inspection: open `assay_out/reliability_report.html` and apply `assay_out/assay_fixes.tsv` before using counts downstream.
 
-The CRISPR namespace exposes the same scaffold:
+When starting from an entire directory of FASTQs, `dotmatch assay new crispr --library guides.tsv --reads-dir fastqs/ --out crispr_screen/` (or `dotmatch crispr new`) scaffolds the same project layout with a `./run.sh` wrapper.
 
-```bash
-dotmatch crispr new --library guides.tsv --reads-dir fastqs/ --out crispr_screen/
-dotmatch crispr start crispr_screen/assay.toml
-```
+## Prepare and audit a target table
 
-## Prepare Targets
-
-Targets are ordinary tabular records with an identifier and sequence. Keep the
-file small and explicit: one expected guide, barcode, primer, feature tag, or
-panel target per row.
+Targets are tab-separated records with an identifier and a sequence: one expected guide, barcode, primer, feature tag, or panel target per row.
 
 ```text
 target_id	sequence
@@ -84,7 +76,7 @@ guide_002	ACGTACGTACGTACGTAGGT
 guide_003	TGCATGCATGCATGCATGCA
 ```
 
-Before allowing error correction, audit the target table:
+Before enabling mismatch correction (`--k 1` or higher), audit the target set for duplicates and near neighbors:
 
 ```bash
 dotmatch audit \
@@ -94,36 +86,11 @@ dotmatch audit \
   --out-dir audit/
 ```
 
-Review duplicate sequences, near-neighbor targets, and ambiguous example
-queries before using `--k 1` or higher in production. A target set that is not
-safe for correction should usually be counted exactly or redesigned.
+Review duplicate sequences, near-neighbor pairs, and ambiguous example queries before running correction in production. Count unsafe target sets exactly (`--k 0`) or redesign the panel.
 
-## Count Known Targets From FASTQ
+## Count known targets directly from FASTQ
 
-### Fastest safe CRISPR evaluation
-
-For a first CRISPR-screen evaluation, `crispr quickstart` turns one or more
-FASTQ paths into the same reviewable AssaySpec project used by production runs.
-It infers the guide window, writes an inference report, and copies the selected
-FASTQs into a self-contained project. By default the project stays in draft
-status for review:
-
-```bash
-dotmatch crispr quickstart \
-  --library guides.csv \
-  --fastq 'fastqs/*.fastq.gz' \
-  --out crispr_screen/
-```
-
-Review `crispr_screen/inference_report.json`. Then set `status = "ready"` in
-`assay.toml` and run `dotmatch assay start crispr_screen/assay.toml`. For an
-immediate explicit run, pass `--accept-inference` on the initial quickstart
-command. A non-zero result means the run completed but a
-reliability gate needs review; inspect `assay_out/reliability_report.html` and
-`assay_out/assay_fixes.tsv` before using counts downstream. `--no-run` is an
-explicit review-only form.
-
-Use `dotmatch count` when reads contain one fixed target window.
+Use `dotmatch count` when reads contain one fixed target window:
 
 ```bash
 dotmatch count \
@@ -142,9 +109,7 @@ dotmatch count \
   --summary summary.json
 ```
 
-Use Hamming distance when all targets and read windows have the same length and
-only substitutions should be corrected. Use Levenshtein distance when one-base
-insertions or deletions should be considered:
+Use `--metric hamming` when all targets and read windows share the same length and only substitutions should be corrected. Use `--metric levenshtein --indel-window 1` when one-base insertions or deletions should be considered:
 
 ```bash
 dotmatch count \
@@ -161,11 +126,9 @@ dotmatch count \
   --summary summary.json
 ```
 
-The default `radius` ambiguity policy is conservative: a read is counted only
-when exactly one target lies inside the configured radius. Use `best` only when
-you deliberately need best-distance compatibility with an existing workflow.
+The default `radius` ambiguity policy counts a read only when a single target lies inside the configured distance radius. Pass `--ambiguity-policy best` only when you intentionally want nearest-target compatibility with another tool.
 
-## Demultiplex Inline Barcodes
+## Demultiplex inline barcodes
 
 For fixed-position inline barcodes:
 
@@ -186,13 +149,11 @@ dotmatch demux \
   --unmatched-out unmatched.fastq
 ```
 
-Open the summary and assignment tables before trusting the split FASTQs. High
-unmatched, ambiguous, or invalid rates usually mean the barcode start, barcode
-length, sample sheet, or correction policy needs review.
+Inspect `demux.summary.json` and `demux.assignments.tsv` before using the split FASTQs. High unmatched, ambiguous, or invalid rates usually point to a wrong barcode offset, length mismatch, sample-sheet error, or overly permissive correction radius.
 
-## Diagnose a Barcode Run
+## Diagnose a barcode run
 
-`barcode autopsy` is the quickest way to inspect common failure modes:
+`dotmatch barcode autopsy` diagnoses common demultiplexing failures in one pass:
 
 ```bash
 dotmatch barcode autopsy \
@@ -203,36 +164,24 @@ dotmatch barcode autopsy \
   --out-dir autopsy/
 ```
 
-Start with `autopsy/report.html`, then use the TSV and JSON files for pipeline
-records, lab handoff, or methods review.
+Open `autopsy/report.html` first, and archive the accompanying TSV and JSON tables for pipeline logs or lab handoff.
 
-## Read the Outputs
-
-The most important files are:
+## Read the outputs
 
 - `counts.tsv` or `target_counts.long.tsv`: counts for uniquely assigned reads.
-- `sample_qc.tsv`: assignment rate, rescue rate, ambiguous reads, unmatched
-  reads, invalid windows, target coverage, and representation metrics.
+- `sample_qc.tsv`: assignment rate, rescue rate, ambiguous reads, unmatched reads, invalid windows, target coverage, and representation metrics.
 - `assignments.tsv`: per-read assignment states when requested.
 - `summary.json`: run configuration, assignment policy, and provenance.
-- HTML reports: human-readable review pages for assay, barcode, panel, and QC
-  workflows.
+- HTML reports: self-contained review pages for assay, barcode, panel, and QC workflows.
 
-Ambiguous reads remain visible and are not added to target counts under the
-default policy.
+Ambiguous reads stay separate and never contribute silently to target counts under the default policy.
 
-## Next Steps
+## Next steps
 
-- Use [AssaySpec](assayspec.md) for the full `assay new`, `start`, `check`, and
-  `run` command reference.
-- Use [Lab Evaluation and Handoff](lab-evaluation.md) when a completed run
-  needs a review package without moving raw reads.
-- Use [Command Reference](command-reference.md) for the current command map.
-- Use [CRISPR Count QC](crispr-qc.md) before downstream screen statistics.
-- Use [Barcode Panel Design](barcode-panel-design.md) when creating or checking
-  barcode panels.
-- Use [Public Schemas](schemas.md) when integrating DotMatch with Snakemake,
-  Nextflow, MultiQC, notebooks, or LIMS exports.
-- Use [Methods and Citation](methods-and-citation.md) and `dotmatch citation`
-  when recording the software version in methods sections, reports, or workflow
-  provenance. Release citation metadata is kept in `CITATION.cff`.
+- [AssaySpec](assayspec.md): full reference for `assay new`, `start`, `check`, and `run`.
+- [Lab evaluation and handoff](lab-evaluation.md): create portable review bundles without copying raw reads.
+- [Command reference](command-reference.md): complete CLI command map.
+- [CRISPR count QC](crispr-qc.md): checks to review before downstream screen statistics.
+- [Barcode panel design](barcode-panel-design.md): design, check, and export barcode sets.
+- [Public schemas](schemas.md): output file contracts for Snakemake, Nextflow, MultiQC, and LIMS exports.
+- [Methods and citation](methods-and-citation.md): release citation guidance, `CITATION.cff`, and `dotmatch citation`.

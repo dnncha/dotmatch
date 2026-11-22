@@ -14,7 +14,7 @@ export function LibraryExplorer() {
   function replaceText(value: string) {
     generation.current++; setText(value); setReport(null); setError(""); setStatus(""); setBusy(false);
   }
-  function cancel() { generation.current++; setBusy(false); setStatus("Audit cancelled. No partial result is presented."); }
+  function cancel() { generation.current++; setBusy(false); setStatus("Audit canceled. No partial result is presented."); }
   async function run() {
     const id = ++generation.current;
     setReport(null); setError(""); setStatus("Checking the complete input…"); setBusy(true);
@@ -24,7 +24,7 @@ export function LibraryExplorer() {
         if (generation.current !== id) { iterator.return(undefined as never); return; }
         const next = iterator.next();
         if (next.done) { setReport(next.value); setStatus(`Complete: all ${next.value.target_count.toLocaleString()} targets checked.`); break; }
-        setStatus(`${next.value.phase === "indexing" ? "Enumerating target neighbourhoods" : "Reviewing observations"}: ${next.value.completed.toLocaleString()} / ${next.value.total.toLocaleString()}`);
+        setStatus(`${next.value.phase === "indexing" ? "Enumerating target neighborhoods" : "Reviewing observations"}: ${next.value.completed.toLocaleString()} / ${next.value.total.toLocaleString()}`);
         await new Promise<void>(resolve => setTimeout(resolve, 0));
       }
     } catch (cause) {
@@ -50,7 +50,7 @@ export function LibraryExplorer() {
     </form>
     {report && <div aria-labelledby="result-title"><h2 id="result-title">Library geometry, not an error-rate estimate.</h2>
       <dl className={styles.stats}><div className={styles.stat}><dt>Targets checked</dt><dd>{report.target_count.toLocaleString()}</dd></div><div className={styles.stat}><dt>Targets with ambiguous exact reads at radius one</dt><dd>{report.targets_with_ambiguous_exact_reads.toLocaleString()}</dd></div><div className={styles.stat}><dt>Distinct ambiguous observations</dt><dd>{report.ambiguous_observations.toLocaleString()}</dd></div></dl>
-      <p className={styles.readout}>{report.ambiguous_observations > 0 ? "Some target neighbourhoods overlap. Review the affected IDs and the matching policy before enabling correction." : "No overlapping radius-one neighbourhoods were found in the supplied library. This does not establish biological accuracy or cover errors outside this model."}</p>
+      <p className={styles.readout}>{report.ambiguous_observations > 0 ? "Some target neighborhoods overlap. Review the affected IDs and matching policy before enabling mismatch correction." : "No overlapping radius-one neighborhoods were found in the supplied library. This checks library geometry only; it does not establish biological accuracy or cover errors outside this model."}</p>
       <p className={styles.help}>Hamming radius 1 · supplied orientation · radius ambiguity policy · {report.sequence_length} bases · {report.distinct_observations.toLocaleString()} distinct exact or one-substitution observations.</p>
       <div className={styles.actions}><button type="button" className={styles.secondary} onClick={download}>Save complete JSON report</button></div><p className={styles.caption}>The report includes your target IDs and sequences. Review it before sharing. No sequences are sent to DotMatch by this tool.</p>
       <div className={styles.scroll} tabIndex={0} role="region" aria-label="Per-target collision audit"><table className={styles.table}><caption>{report.target_count > 100 ? `Showing the first 100 of ${report.target_count} checked targets, ordered by ambiguity. All target results are in the JSON report.` : "All checked targets, ordered by ambiguity"}</caption><thead><tr><th scope="col">Target</th><th scope="col">Sequence</th><th scope="col">Exact read ambiguous at k=0</th><th scope="col">Exact read ambiguous at k=1</th><th scope="col">Ambiguous single substitutions</th></tr></thead><tbody>{rows.map(row => <tr key={row.id}><th scope="row">{row.id}</th><td><code>{row.sequence}</code></td><td>{row.exact_ambiguous_k0 ? "Yes" : "No"}</td><td>{row.exact_ambiguous_k1 ? "Yes" : "No"}</td><td>{row.ambiguous_single_substitutions} of {row.possible_single_substitutions}</td></tr>)}</tbody></table></div>

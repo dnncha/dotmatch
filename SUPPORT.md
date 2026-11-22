@@ -1,8 +1,8 @@
 # Support
 
-Use GitHub issues for reproducible bugs, documentation problems, feature requests, and benchmark questions.
+Open a GitHub issue for reproducible bugs, documentation gaps, feature requests, or benchmark questions.
 
-## Useful Issue Contents
+## What to include in an issue
 
 - DotMatch commit or release.
 - Operating system and CPU.

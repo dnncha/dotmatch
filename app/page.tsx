@@ -14,6 +14,7 @@ import { AssignmentDemo } from "./assignment-demo";
 import { InstallCommand } from "./install-command";
 import { GuideCounterBenchmark } from "./guide-counter-benchmark";
 import styles from "./home.module.css";
+
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
@@ -47,15 +48,17 @@ const structuredData = {
         "explicit ambiguous-read outcomes",
       ],
       description:
-        "Count known CRISPR guides from FASTQ and inspect unique, ambiguous, unmatched and invalid read outcomes before downstream analysis.",
+        "Assign fixed read windows from FASTQ to known CRISPR guides, barcodes, and short DNA targets while keeping unique, ambiguous, unmatched, and invalid outcomes visible.",
     },
   ],
 };
+
 const policyRows = [
   ["exact", "Exact"],
   ["radius_k1", "One target within k=1"],
   ["best_k1", "Nearest target, k=1"],
 ] as const;
+
 export default function Home() {
   return (
     <>
@@ -67,51 +70,52 @@ export default function Home() {
       <main id="main-content" className={styles.home}>
         <section id="top" className={styles.hero} aria-labelledby="hero-title">
           <div>
-            <p className={styles.eyebrow}>
-              DotMatch
-            </p>
             <h1 id="hero-title">
-              CRISPR guide counting and barcode assignment
+              CRISPR guide counting and barcode assignment you can audit
             </h1>
             <p className={styles.lede}>
-              Count known guides from FASTQ files and export MAGeCK-compatible
-              tables. Review unique, ambiguous, unmatched and invalid reads.
+              DotMatch matches a fixed window from every FASTQ read against your
+              known target library locally on Linux and macOS. Export
+              MAGeCK-ready count tables or split FASTQs while keeping ambiguous,
+              unmatched, and invalid reads visible.
             </p>
             <div className={styles.actions}>
               <a
                 className={styles.primary}
                 href={sitePath("crispr-guide-counting")}
               >
-                Count guides
+                Count CRISPR guides
               </a>
               <a
-                className={styles.textLink}
+                className={styles.secondary}
                 href={sitePath("tools/library-safety")}
               >
                 Check a library
               </a>
-              <a
-                className={styles.textLink}
-                href={`${docsUrl}tutorials/crispr-count-first-run.html`}
-              >
-                Try a checked first run
-              </a>
+            </div>
+            <div className={styles.secondaryLinks}>
               <a
                 className={styles.textLink}
                 href={siteAsset("examples/assignment-review/report.html")}
               >
                 Open example report
               </a>
+              <a
+                className={styles.textLink}
+                href={`${docsUrl}tutorials/crispr-count-first-run.html`}
+              >
+                First-run tutorial
+              </a>
             </div>
             <p className={styles.facts}>
               <span>Apache-2.0</span>
-              <span>Linux & macOS</span>
-              <span>Local processing</span>
+              <span>Linux and macOS</span>
+              <span>Runs locally (no uploads)</span>
             </p>
           </div>
           <AssignmentDemo />
         </section>
-        <GuideCounterBenchmark />
+
         <section
           id="install"
           className={styles.installStrip}
@@ -122,54 +126,15 @@ export default function Home() {
             <p>
               Published CLI {publishedVersion} ·{" "}
               <a href={`${docsUrl}getting-started.html`}>
-                Conda, containers & installation help
+                Conda, containers, and source builds
               </a>
             </p>
           </div>
           <InstallCommand />
         </section>
-        <section
-          id="workflow"
-          className={styles.section}
-          aria-labelledby="workflow-title"
-        >
-          <h2 id="workflow-title">Counting workflow</h2>
-          <ol className={styles.steps}>
-            <li>
-              <span className={styles.stepNumber}>01 / PREPARE</span>
-              <h3>Prepare inputs</h3>
-              <p>
-                Give DotMatch your library and FASTQs. Review the proposed read
-                window before the analysis starts.
-              </p>
-              <a href={`${docsUrl}tutorials/crispr-count-first-run.html`}>
-                Follow the first-run tutorial
-              </a>
-            </li>
-            <li>
-              <span className={styles.stepNumber}>02 / COUNT</span>
-              <h3>Run assignment</h3>
-              <p>
-                Use exact, substitution-tolerant or indel-aware matching. Keep
-                ambiguous and unmatched reads separate from unique counts.
-              </p>
-              <a href={sitePath("assignment-sensitivity")}>
-                Compare matching policies
-              </a>
-            </li>
-            <li>
-              <span className={styles.stepNumber}>03 / ANALYSE</span>
-              <h3>Export counts and QC</h3>
-              <p>
-                Take the raw count matrix into MAGeCK. Carry configuration, QC
-                and methods with the result in a local review bundle.
-              </p>
-              <a href={`${docsUrl}lab-evaluation.html`}>
-                Inspect the handoff workflow
-              </a>
-            </li>
-          </ol>
-        </section>
+
+        <GuideCounterBenchmark />
+
         <section
           id="failure-modes"
           className={styles.section}
@@ -177,23 +142,28 @@ export default function Home() {
         >
           <div className={styles.proof}>
             <div>
-              <p className={styles.eyebrow}>
-                Assignment sensitivity
-              </p>
               <h2 id="sensitivity-title">
-                Compare matching policies
+                Why mapped-read totals hide count shifts
               </h2>
               <p>
-                In this nine-read example, exact and radius-one matching each
-                uniquely assign three reads, but produce different per-guide
-                counts.
+                In this nine-read synthetic fixture, exact matching and
+                radius-one matching both produce three unique assignments, yet
+                they disagree on individual guide counts.
               </p>
-              <a
-                className={styles.textLink}
-                href={siteAsset("examples/assignment-review/report.html")}
-              >
-                Open example report
-              </a>
+              <div className={styles.proofLinks}>
+                <a
+                  className={styles.textLink}
+                  href={siteAsset("examples/assignment-review/report.html")}
+                >
+                  Open example report
+                </a>
+                <a
+                  className={styles.textLink}
+                  href={sitePath("assignment-sensitivity")}
+                >
+                  Explore sensitivity
+                </a>
+              </div>
             </div>
             <div>
               <div
@@ -204,8 +174,8 @@ export default function Home() {
               >
                 <table>
                   <caption>
-                    Synthetic example · {demo.read_count} reads ·{" "}
-                    {demo.target_count} target IDs
+                    Synthetic fixture ({demo.read_count} reads,{" "}
+                    {demo.target_count} target IDs)
                   </caption>
                   <thead>
                     <tr>
@@ -228,44 +198,95 @@ export default function Home() {
                 </table>
               </div>
               <p className={styles.proofNote}>
-                One additional read has an invalid window under every policy.{" "}
-                {demo.changed_reads} reads change outcome between policies.
-                Calculated with the native matcher; not a biological accuracy
-                benchmark.
+                One additional read has an invalid window under every policy, and{" "}
+                {demo.changed_reads} reads change outcome across policies.
+                Calculated with the native matcher to demonstrate assignment
+                behavior rather than biological accuracy.
               </p>
             </div>
           </div>
         </section>
+
+        <section
+          id="workflow"
+          className={styles.section}
+          aria-labelledby="workflow-title"
+        >
+          <h2 id="workflow-title">How a counting run works</h2>
+          <ol className={styles.steps}>
+            <li>
+              <span className={styles.stepMarker} aria-hidden="true">
+                1
+              </span>
+              <h3>Confirm library and read window</h3>
+              <p>
+                Provide your guide or barcode table alongside FASTQ files, and
+                review the inferred window and orientation before counting.
+              </p>
+              <a href={`${docsUrl}tutorials/crispr-count-first-run.html`}>
+                Follow the first-run tutorial
+              </a>
+            </li>
+            <li>
+              <span className={styles.stepMarker} aria-hidden="true">
+                2
+              </span>
+              <h3>Assign reads under explicit rules</h3>
+              <p>
+                Run exact, Hamming, or Levenshtein matching while keeping
+                ambiguous and unmatched reads out of target counts.
+              </p>
+              <a href={sitePath("assignment-sensitivity")}>
+                Compare matching policies
+              </a>
+            </li>
+            <li>
+              <span className={styles.stepMarker} aria-hidden="true">
+                3
+              </span>
+              <h3>Export counts and a portable QC bundle</h3>
+              <p>
+                Pass MAGeCK-ready counts to downstream statistics, and archive
+                config, QC, and SHA-256 provenance without copying raw FASTQs.
+              </p>
+              <a href={`${docsUrl}lab-evaluation.html`}>
+                Inspect the handoff workflow
+              </a>
+            </li>
+          </ol>
+        </section>
+
         <section
           id="use-cases"
           className={styles.section}
           aria-labelledby="use-title"
         >
-          <h2 id="use-title">Supported assays</h2>
+          <h2 id="use-title">Where DotMatch fits</h2>
           <div className={styles.routes}>
             <article>
               <h3>Pooled CRISPR screens</h3>
               <p>
-                Count known guides, inspect assignment QC and export a
-                guide-by-sample matrix.
+                Count known guides, review assignment QC, and export a
+                MAGeCK-compatible guide-by-sample matrix.
               </p>
               <a href={sitePath("crispr-guide-counting")}>CRISPR counting</a>
             </article>
             <article>
-              <h3>Barcodes & sequencing cores</h3>
+              <h3>Inline barcodes and sequencing cores</h3>
               <p>
-                Demultiplex inline barcodes and investigate collisions or
-                unexpected unmatched reads.
+                Split pooled FASTQs by inline barcode and run{" "}
+                <code>barcode autopsy</code> to diagnose shifted offsets or
+                unsafe correction.
               </p>
               <a href={`${docsUrl}getting-started.html#diagnose-a-barcode-run`}>
                 Barcode diagnostics
               </a>
             </article>
             <article>
-              <h3>Feature & guide capture</h3>
+              <h3>Feature and guide capture</h3>
               <p>
-                Assign known features and build matrices from observations with
-                explicit cell identifiers.
+                Assign known feature tags and build sparse cell-by-feature
+                matrices from extracted observations with cell IDs.
               </p>
               <a href={`${docsUrl}tutorials/scverse-perturb-seq.html`}>
                 Feature-matrix workflow
@@ -273,63 +294,65 @@ export default function Home() {
             </article>
           </div>
         </section>
+
         <section
           id="evidence"
           className={styles.section}
           aria-labelledby="evidence-title"
         >
-          <h2 id="evidence-title">Benchmarks and examples</h2>
+          <h2 id="evidence-title">Benchmarks and reproducible examples</h2>
           <p>
-            Reproduce a public example, inspect count differences and compare
-            DotMatch with your current workflow.
+            Reproduce public comparisons, inspect count differences, and check
+            DotMatch alongside your existing pipeline.
           </p>
           <div className={styles.evidenceRows}>
             <article className={styles.evidenceRow}>
-              <h3>Yusa & Brunello CRISPR data</h3>
+              <h3>Yusa and Brunello CRISPR data</h3>
               <p>
-                Recorded comparisons with MAGeCK, guide-counter and reference
-                matchers. Runtime, memory, settings and count differences are
-                reported together.
+                Paired comparisons against MAGeCK, guide-counter, and reference
+                matchers reporting runtime, memory, parameters, and count
+                differences together.
               </p>
               <a href={`${docsUrl}benchmarks/crispr_comparison/README.html`}>
-                Read the results →
+                Read the results
               </a>
             </article>
             <article className={styles.evidenceRow}>
-              <h3>Public direct-guide capture</h3>
+              <h3>GSE146194 direct-guide capture</h3>
               <p>
-                A GSE146194 example with separate discovery and evaluation
-                reads. Evidence for per-read guide assignment, not completed
-                single-cell analysis.
+                Public benchmark separating discovery and evaluation reads to
+                check per-read guide assignment (separate from full single-cell
+                analysis).
               </p>
               <a href={`${repoUrl}/tree/main/examples/perturb_seq_gse146194`}>
-                Reproduce the case study →
+                Reproduce the case study
               </a>
             </article>
             <article className={styles.evidenceRow}>
-              <h3>The example on this page</h3>
+              <h3>Nine-read sensitivity fixture</h3>
               <p>
-                Nine synthetic reads exercise close targets, duplicate
-                sequences, a literal N, an unmatched read and a short read.
-                Expected assignments are checked against the native matcher.
+                Checked fixture exercising close targets, duplicate IDs, a
+                literal N, an unmatched read, and a short read against the
+                native matcher.
               </p>
               <a href={`${repoUrl}/tree/main/examples/assignment_sensitivity`}>
-                Inspect the fixture →
+                Inspect the fixture
               </a>
             </article>
           </div>
         </section>
+
         <section
           id="agent-workflow"
           className={styles.automation}
           aria-label="Automation and scientific scope"
         >
           <details>
-            <summary>Pipelines and local agents</summary>
+            <summary>Pipelines, MCP server, and local AI agents</summary>
             <p>
-              Use stable files and structured tools to prepare, preflight, run
-              and review an assay. Inspect the installed contract before
-              choosing a workflow.
+              Connect DotMatch as a local MCP server with{" "}
+              <code>dotmatch mcp</code>, or inspect the structured CLI tools and
+              output schemas before wiring a pipeline.
             </p>
             <pre>
               <code>{`dotmatch agent tools --json\ndotmatch agent export-skill --target ./dotmatch-agent`}</code>
@@ -344,14 +367,17 @@ export default function Home() {
             </p>
           </details>
           <p className={styles.boundary}>
-            DotMatch handles known-target sequence assignment. Genome alignment,
-            cell/UMI processing and downstream screen statistics remain separate
-            steps.{" "}
-            <a href={`${docsUrl}trust-and-scope.html`}>Methods & scope</a> ·{" "}
+            DotMatch handles fixed-window known-target sequence assignment and
+            powers{" "}
+            <a href={`${docsUrl}crisprworks.html`}>CRISPRWorks Count</a>. Genome
+            alignment, cell/UMI processing, and downstream screen statistics
+            remain separate steps.{" "}
+            <a href={`${docsUrl}trust-and-scope.html`}>Methods and scope</a> ·{" "}
             <a href={`${docsUrl}methods-and-citation.html`}>Cite DotMatch</a>
-            <br />
-            Published package {publishedVersion}; website source version{" "}
-            {packageMetadata.version}.
+            <span className={styles.boundaryVersion}>
+              Published package {publishedVersion}; website source version{" "}
+              {packageMetadata.version}.
+            </span>
           </p>
         </section>
       </main>
