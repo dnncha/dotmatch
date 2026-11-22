@@ -246,6 +246,16 @@ subset enriched for controls; several paired intervals overlap zero. Exact
 same-dependency JACKS parity, versions and cross-version differences are
 recorded in the [frontier report](benchmarks/FRONTIER.md).
 
+A [genome-wide panel](benchmarks/FRONTIER-GENOMEWIDE.md) repeats the comparison
+on DepMap 24Q4 raw counts: 24 cell lines screened in both libraries, every
+eligible gene (14,843 Avana, 13,445 KY). Across cell lines, the joint engine
+ties Chronos on Avana (mean AP difference -0.0002, 95% interval -0.0026 to
++0.0019) and exceeds it on KY (+0.0033, +0.0019 to +0.0046; 21/24 cells). At
+gene-BH q<=0.05 the joint caller recovers 65% of held-out KY essentials against
+Chronos's 42%, with 0.2% and 0.3% nonessential call rates. Per-cell Fit MLE
+trails Chronos in both libraries, and its native q-values call 2.8% of
+held-out nonessentials. With two or more screens, use the joint model.
+
 For the earlier HAP1 analysis, five external gene folds exclude evaluation genes from both BAGEL2 training
 and Fit's nonessential controls. With finite tails, using control genes for
 normalization and the permutation null raised reference-essential recall at
