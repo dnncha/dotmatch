@@ -21,6 +21,7 @@ from run_public_crispr_benchmark import (
     dotmatch_stats,
     guide_counter_stats,
     guide_counter_hamming_policy_args,
+    guide_counter_offset_args as guide_counter_offset_args,
     mageck_stats,
     make_row,
     n_targets,
