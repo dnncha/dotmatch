@@ -57,6 +57,11 @@ struct qdaln_index {
 
 #define QDALN_HASH_EMPTY SIZE_MAX
 
+static void *malloc_array(size_t count, size_t size) {
+    if (size != 0 && count > SIZE_MAX / size) return NULL;
+    return malloc(count * size);
+}
+
 static inline int min3_int(int x, int y, int z) {
     int m = x < y ? x : y;
     return m < z ? m : z;
@@ -350,8 +355,8 @@ int qdaln_edit_distance_dp(const char *a, size_t a_len, const char *b, size_t b_
     if (a_len == 0) return (int)b_len;
     if (b_len == 0) return (int)a_len;
 
-    int *prev = (int *)malloc((b_len + 1) * sizeof(int));
-    int *curr = (int *)malloc((b_len + 1) * sizeof(int));
+    int *prev = (int *)malloc_array(b_len + 1, sizeof(int));
+    int *curr = (int *)malloc_array(b_len + 1, sizeof(int));
     if (prev == NULL || curr == NULL) {
         free(prev);
         free(curr);
@@ -573,8 +578,8 @@ int qdaln_edit_distance_leq(const char *a, size_t a_len, const char *b, size_t b
         return qdaln_edit_distance_myers64(b, b_len, a, a_len) <= k ? 1 : 0;
     }
 
-    int *prev = (int *)malloc((b_len + 1) * sizeof(int));
-    int *curr = (int *)malloc((b_len + 1) * sizeof(int));
+    int *prev = (int *)malloc_array(b_len + 1, sizeof(int));
+    int *curr = (int *)malloc_array(b_len + 1, sizeof(int));
     if (prev == NULL || curr == NULL) {
         free(prev);
         free(curr);
@@ -890,9 +895,9 @@ qdaln_index *qdaln_index_build(const char *const *targets, const size_t *target_
     idx->codes = (uint64_t *)calloc(n_targets, sizeof(uint64_t));
     idx->encodable = (unsigned char *)calloc(n_targets, sizeof(unsigned char));
     idx->hash_cap = next_pow2_size(n_targets * 2 + 1);
-    idx->hash_heads = (size_t *)malloc(idx->hash_cap * sizeof(size_t));
-    idx->hash_next = (size_t *)malloc(n_targets * sizeof(size_t));
-    idx->nonencodable_targets = (size_t *)malloc(n_targets * sizeof(size_t));
+    idx->hash_heads = (size_t *)malloc_array(idx->hash_cap, sizeof(size_t));
+    idx->hash_next = (size_t *)malloc_array(n_targets, sizeof(size_t));
+    idx->nonencodable_targets = (size_t *)malloc_array(n_targets, sizeof(size_t));
     if (idx->targets == NULL || idx->target_lens == NULL || idx->codes == NULL ||
         idx->encodable == NULL || idx->hash_heads == NULL || idx->hash_next == NULL ||
         idx->nonencodable_targets == NULL) {
@@ -907,7 +912,7 @@ qdaln_index *qdaln_index_build(const char *const *targets, const size_t *target_
     idx->exact_hash_cap = next_pow2_size(n_targets * 2 + 1);
     idx->exact_codes = (uint64_t *)calloc(idx->exact_hash_cap, sizeof(uint64_t));
     idx->exact_lens = (size_t *)calloc(idx->exact_hash_cap, sizeof(size_t));
-    idx->exact_first_targets = (size_t *)malloc(idx->exact_hash_cap * sizeof(size_t));
+    idx->exact_first_targets = (size_t *)malloc_array(idx->exact_hash_cap, sizeof(size_t));
     idx->exact_counts = (size_t *)calloc(idx->exact_hash_cap, sizeof(size_t));
     if (idx->exact_codes == NULL || idx->exact_lens == NULL || idx->exact_first_targets == NULL ||
         idx->exact_counts == NULL) {
@@ -952,11 +957,11 @@ qdaln_index *qdaln_index_build(const char *const *targets, const size_t *target_
     }
     if (deletion_need != 0) {
         idx->deletion_hash_cap = next_pow2_size(deletion_need * 2 + 1);
-        idx->deletion_codes = (uint64_t *)malloc(deletion_need * sizeof(uint64_t));
-        idx->deletion_lens = (size_t *)malloc(deletion_need * sizeof(size_t));
-        idx->deletion_targets = (size_t *)malloc(deletion_need * sizeof(size_t));
-        idx->deletion_next = (size_t *)malloc(deletion_need * sizeof(size_t));
-        idx->deletion_heads = (size_t *)malloc(idx->deletion_hash_cap * sizeof(size_t));
+        idx->deletion_codes = (uint64_t *)malloc_array(deletion_need, sizeof(uint64_t));
+        idx->deletion_lens = (size_t *)malloc_array(deletion_need, sizeof(size_t));
+        idx->deletion_targets = (size_t *)malloc_array(deletion_need, sizeof(size_t));
+        idx->deletion_next = (size_t *)malloc_array(deletion_need, sizeof(size_t));
+        idx->deletion_heads = (size_t *)malloc_array(idx->deletion_hash_cap, sizeof(size_t));
         if (idx->deletion_codes == NULL || idx->deletion_lens == NULL || idx->deletion_targets == NULL ||
             idx->deletion_next == NULL || idx->deletion_heads == NULL) {
             qdaln_index_free(idx);
@@ -988,7 +993,7 @@ qdaln_index *qdaln_index_build(const char *const *targets, const size_t *target_
     }
     if (hamming_seed_need != 0) {
         idx->hamming_seed_hash_cap = next_pow2_size(hamming_seed_need * 2 + 1);
-        idx->hamming_seeds = (qdaln_hamming_seed_entry *)malloc(hamming_seed_need * sizeof(qdaln_hamming_seed_entry));
+        idx->hamming_seeds = (qdaln_hamming_seed_entry *)malloc_array(hamming_seed_need, sizeof(qdaln_hamming_seed_entry));
         idx->hamming_seed_heads = (size_t *)calloc(idx->hamming_seed_hash_cap + 1U, sizeof(size_t));
         if (idx->hamming_seeds == NULL || idx->hamming_seed_heads == NULL) {
             qdaln_index_free(idx);
@@ -1266,7 +1271,7 @@ static int candidate_seen_add(candidate_seen *seen, size_t target_index) {
     }
     if (seen->count == seen->cap) {
         size_t next_cap = seen->cap * 2;
-        size_t *next = (size_t *)malloc(next_cap * sizeof(size_t));
+        size_t *next = (size_t *)malloc_array(next_cap, sizeof(size_t));
         if (next == NULL) return -1;
         memcpy(next, seen->ids, seen->count * sizeof(size_t));
         if (seen->ids != seen->inline_ids) free(seen->ids);

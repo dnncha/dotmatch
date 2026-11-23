@@ -45,10 +45,45 @@ def line_of(text: str, offset: int) -> int:
     return text.count("\n", 0, offset) + 1
 
 
+def call_args(text: str, open_paren: int) -> str:
+    depth = 0
+    for index in range(open_paren, len(text)):
+        if text[index] == "(":
+            depth += 1
+        elif text[index] == ")":
+            depth -= 1
+            if depth == 0:
+                return text[open_paren + 1 : index]
+    return text[open_paren + 1 :]
+
+
+def top_level_has(expr: str, needle: str) -> bool:
+    depth = 0
+    for ch in expr:
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+        elif ch == needle and depth == 0:
+            return True
+    return False
+
+
 def lint(path: Path) -> list[str]:
     text = path.read_text(encoding="utf-8")
     rel = path.relative_to(ROOT)
     problems: list[str] = []
+    for match in re.finditer(r"(?<![A-Za-z0-9_])(malloc|realloc)\s*\(", text):
+        enclosing = text.rfind("\nstatic ", 0, match.start())
+        if re.match(r"\nstatic void \*(malloc|realloc)_array\(", text[enclosing:]):
+            continue
+        args = call_args(text, match.end() - 1)
+        size_arg = args.split(",")[-1] if match.group(1) == "realloc" else args
+        if top_level_has(size_arg, "*") or re.search(r"\)\s*\*|\*\s*\(", size_arg):
+            problems.append(
+                f"{rel}:{line_of(text, match.start())}: {match.group(1)} with a multiplied size can overflow; use "
+                f"{match.group(1)}_array(count, size)"
+            )
     for name, why in BANNED_CALLS.items():
         for match in re.finditer(rf"(?<![A-Za-z0-9_]){name}\s*\(", text):
             problems.append(f"{rel}:{line_of(text, match.start())}: banned call {name}(): {why}")

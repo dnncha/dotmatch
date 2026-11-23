@@ -356,6 +356,16 @@ static int offset_count_for_range(size_t range, size_t *out) {
     return 0;
 }
 
+static void *malloc_array(size_t count, size_t size) {
+    if (size != 0 && count > SIZE_MAX / size) return NULL;
+    return malloc(count * size);
+}
+
+static void *realloc_array(void *ptr, size_t count, size_t size) {
+    if (size != 0 && count > SIZE_MAX / size) return NULL;
+    return realloc(ptr, count * size);
+}
+
 static int checked_mul_size(size_t a, size_t b, size_t *out) {
     if (a != 0 && b > SIZE_MAX / a) return -1;
     *out = a * b;
@@ -389,7 +399,7 @@ static int push_record_gene(seq_table *table, const char *id, size_t id_len, con
                             const char *gene, size_t gene_len) {
     if (table->count == table->cap) {
         size_t next_cap = table->cap == 0 ? 16 : table->cap * 2;
-        seq_record *next = (seq_record *)realloc(table->records, next_cap * sizeof(seq_record));
+        seq_record *next = (seq_record *)realloc_array(table->records, next_cap, sizeof(seq_record));
         if (next == NULL) return -1;
         table->records = next;
         table->cap = next_cap;
@@ -566,11 +576,11 @@ static int run_batch(const char *argv0, int argc, char **argv, const char *mode)
         goto done;
     }
 
-    const char **read_ptrs = (const char **)malloc(reads.count * sizeof(char *));
-    const char **target_ptrs = (const char **)malloc(targets.count * sizeof(char *));
-    size_t *read_lens = (size_t *)malloc(reads.count * sizeof(size_t));
-    size_t *target_lens = (size_t *)malloc(targets.count * sizeof(size_t));
-    qdaln_match_result *results = (qdaln_match_result *)malloc(reads.count * sizeof(qdaln_match_result));
+    const char **read_ptrs = (const char **)malloc_array(reads.count, sizeof(char *));
+    const char **target_ptrs = (const char **)malloc_array(targets.count, sizeof(char *));
+    size_t *read_lens = (size_t *)malloc_array(reads.count, sizeof(size_t));
+    size_t *target_lens = (size_t *)malloc_array(targets.count, sizeof(size_t));
+    qdaln_match_result *results = (qdaln_match_result *)malloc_array(reads.count, sizeof(qdaln_match_result));
     if ((reads.count != 0 && (read_ptrs == NULL || read_lens == NULL || results == NULL)) ||
         (targets.count != 0 && (target_ptrs == NULL || target_lens == NULL))) {
         fprintf(stderr, "out of memory\n");
@@ -985,7 +995,7 @@ static void free_string_list(string_list *list) {
 static int push_string(string_list *list, const char *s) {
     if (list->count == list->cap) {
         size_t next_cap = list->cap == 0 ? 4 : list->cap * 2;
-        char **next = (char **)realloc(list->items, next_cap * sizeof(char *));
+        char **next = (char **)realloc_array(list->items, next_cap, sizeof(char *));
         if (next == NULL) return -1;
         list->items = next;
         list->cap = next_cap;
@@ -1051,7 +1061,7 @@ static int compare_seq_id_entry(const void *a, const void *b) {
 
 static int validate_unique_seq_ids(const seq_table *targets, const char *record_kind) {
     if (targets->count < 2) return 0;
-    seq_id_entry *entries = (seq_id_entry *)malloc(targets->count * sizeof(seq_id_entry));
+    seq_id_entry *entries = (seq_id_entry *)malloc_array(targets->count, sizeof(seq_id_entry));
     if (entries == NULL) return -1;
     for (size_t i = 0; i < targets->count; ++i) {
         entries[i].id = targets->records[i].id;
@@ -1322,7 +1332,7 @@ static int push_offset_unique(offset_list *list, size_t offset) {
     if (offset_list_contains(list, offset)) return 0;
     if (list->count == list->cap) {
         size_t next_cap = list->cap == 0 ? 8 : list->cap * 2;
-        size_t *next = (size_t *)realloc(list->items, next_cap * sizeof(size_t));
+        size_t *next = (size_t *)realloc_array(list->items, next_cap, sizeof(size_t));
         if (next == NULL) return -1;
         list->items = next;
         list->cap = next_cap;
@@ -1635,7 +1645,7 @@ static const hamming_lookup_entry *levenshtein1_lookup_find(const hamming_lookup
 }
 
 static hamming_lookup_entry *alloc_hamming_table(size_t cap) {
-    hamming_lookup_entry *table = (hamming_lookup_entry *)malloc(cap * sizeof(hamming_lookup_entry));
+    hamming_lookup_entry *table = (hamming_lookup_entry *)malloc_array(cap, sizeof(hamming_lookup_entry));
     if (table == NULL) return NULL;
     for (size_t i = 0; i < cap; ++i) {
         table[i].code = 0;
@@ -1871,9 +1881,9 @@ static int build_hamming_seed_lookup(const seq_table *targets, size_t target_len
     lookup->exact_cap = next_pow2_local(exact_need);
     lookup->seed_hash_cap = next_pow2_local(seed_need * 2 + 1);
     lookup->exact = alloc_hamming_table(lookup->exact_cap);
-    lookup->seeds = (hamming_seed_entry *)malloc(seed_need * sizeof(hamming_seed_entry));
-    lookup->seed_heads = (int *)malloc(lookup->seed_hash_cap * sizeof(int));
-    lookup->target_codes = (uint64_t *)malloc((targets->count == 0 ? 1 : targets->count) * sizeof(uint64_t));
+    lookup->seeds = (hamming_seed_entry *)malloc_array(seed_need, sizeof(hamming_seed_entry));
+    lookup->seed_heads = (int *)malloc_array(lookup->seed_hash_cap, sizeof(int));
+    lookup->target_codes = (uint64_t *)malloc_array(targets->count == 0 ? 1 : targets->count, sizeof(uint64_t));
     if (lookup->exact == NULL || lookup->seeds == NULL || lookup->seed_heads == NULL || lookup->target_codes == NULL) {
         free_hamming_lookup(lookup);
         return -1;
@@ -1920,7 +1930,7 @@ static int cmp_ull_asc(const void *a, const void *b) {
 
 static double gini_from_counts(const unsigned long long *values, size_t n) {
     if (n == 0) return 0.0;
-    unsigned long long *tmp = (unsigned long long *)malloc(n * sizeof(unsigned long long));
+    unsigned long long *tmp = (unsigned long long *)malloc_array(n, sizeof(unsigned long long));
     if (tmp == NULL) return 0.0;
     unsigned long long sum = 0;
     for (size_t i = 0; i < n; ++i) {
@@ -1944,7 +1954,7 @@ static double gini_from_counts(const unsigned long long *values, size_t n) {
 
 static double top_fraction_from_counts(const unsigned long long *values, size_t n, double fraction) {
     if (n == 0) return 0.0;
-    unsigned long long *tmp = (unsigned long long *)malloc(n * sizeof(unsigned long long));
+    unsigned long long *tmp = (unsigned long long *)malloc_array(n, sizeof(unsigned long long));
     if (tmp == NULL) return 0.0;
     unsigned long long sum = 0;
     for (size_t i = 0; i < n; ++i) {
@@ -2318,8 +2328,8 @@ static void html_escape(FILE *out, const char *s) {
 }
 
 static int build_target_arrays(const seq_table *targets, const char ***target_ptrs_out, size_t **target_lens_out) {
-    const char **target_ptrs = (const char **)malloc(targets->count * sizeof(char *));
-    size_t *target_lens = (size_t *)malloc(targets->count * sizeof(size_t));
+    const char **target_ptrs = (const char **)malloc_array(targets->count, sizeof(char *));
+    size_t *target_lens = (size_t *)malloc_array(targets->count, sizeof(size_t));
     if (targets->count != 0 && (target_ptrs == NULL || target_lens == NULL)) {
         free(target_ptrs);
         free(target_lens);
@@ -2348,7 +2358,7 @@ static int cmp_size_asc(const void *a, const void *b) {
 }
 
 static int collect_target_lengths(const seq_table *targets, size_t **lengths_out, size_t *count_out) {
-    size_t *lengths = (size_t *)malloc((targets->count == 0 ? 1 : targets->count) * sizeof(size_t));
+    size_t *lengths = (size_t *)malloc_array(targets->count == 0 ? 1 : targets->count, sizeof(size_t));
     if (lengths == NULL) return -1;
     size_t count = 0;
     for (size_t i = 0; i < targets->count; ++i) {
@@ -2405,7 +2415,7 @@ static void copy_merge_observed(char *dst, size_t dst_cap, const char *src) {
 
 static int merge_state_grow(match_merge_state *state) {
     size_t next_cap = state->cap * 2;
-    match_merge_hit *next = (match_merge_hit *)malloc(next_cap * sizeof(match_merge_hit));
+    match_merge_hit *next = (match_merge_hit *)malloc_array(next_cap, sizeof(match_merge_hit));
     if (next == NULL) return -1;
     memcpy(next, state->hits, state->count * sizeof(match_merge_hit));
     if (state->hits != state->inline_hits) free(state->hits);
@@ -3244,15 +3254,15 @@ static void reset_seq_buffer(seq_buffer *buffer) {
 static int grow_seq_buffer(seq_buffer *buffer) {
     size_t old_cap = buffer->cap;
     size_t next_cap = buffer->cap == 0 ? 1024 : buffer->cap * 2;
-    char **next_items = (char **)realloc(buffer->items, next_cap * sizeof(char *));
+    char **next_items = (char **)realloc_array(buffer->items, next_cap, sizeof(char *));
     if (next_items == NULL) return -1;
     buffer->items = next_items;
-    size_t *next_lens = (size_t *)realloc(buffer->lens, next_cap * sizeof(size_t));
+    size_t *next_lens = (size_t *)realloc_array(buffer->lens, next_cap, sizeof(size_t));
     if (next_lens == NULL) return -1;
     buffer->lens = next_lens;
     buffer->cap = next_cap;
     if (buffer->fixed_active) {
-        char *next_fixed = (char *)realloc(buffer->fixed_items, next_cap * (buffer->fixed_len + 1));
+        char *next_fixed = (char *)realloc_array(buffer->fixed_items, next_cap, buffer->fixed_len + 1);
         if (next_fixed == NULL) {
             buffer->cap = old_cap;
             return -1;
@@ -3268,15 +3278,15 @@ static int grow_seq_buffer(seq_buffer *buffer) {
 
 static int reserve_seq_buffer(seq_buffer *buffer, size_t requested_cap) {
     if (requested_cap <= buffer->cap) return 0;
-    char **next_items = (char **)realloc(buffer->items, requested_cap * sizeof(char *));
+    char **next_items = (char **)realloc_array(buffer->items, requested_cap, sizeof(char *));
     if (next_items == NULL) return -1;
     buffer->items = next_items;
-    size_t *next_lens = (size_t *)realloc(buffer->lens, requested_cap * sizeof(size_t));
+    size_t *next_lens = (size_t *)realloc_array(buffer->lens, requested_cap, sizeof(size_t));
     if (next_lens == NULL) return -1;
     buffer->lens = next_lens;
     buffer->cap = requested_cap;
     if (buffer->fixed_active) {
-        char *next_fixed = (char *)realloc(buffer->fixed_items, requested_cap * (buffer->fixed_len + 1));
+        char *next_fixed = (char *)realloc_array(buffer->fixed_items, requested_cap, buffer->fixed_len + 1);
         if (next_fixed == NULL) return -1;
         buffer->fixed_items = next_fixed;
         buffer->fixed_cap = requested_cap;
@@ -3290,7 +3300,7 @@ static int reserve_seq_buffer(seq_buffer *buffer, size_t requested_cap) {
 static int push_seq_buffer(seq_buffer *buffer, const char *seq, size_t len) {
     if (buffer->count == buffer->cap && grow_seq_buffer(buffer) != 0) return -1;
     if (buffer->count == 0 && buffer->fixed_items == NULL && len <= 8191) {
-        buffer->fixed_items = (char *)malloc(buffer->cap * (len + 1));
+        buffer->fixed_items = (char *)malloc_array(buffer->cap, len + 1);
         if (buffer->fixed_items != NULL) {
             buffer->fixed_len = len;
             buffer->fixed_cap = buffer->cap;
@@ -3394,7 +3404,7 @@ static int mark_count_dirty_slot(count_dirty_slots *dirty, size_t slot) {
 
     if (dirty->count == dirty->cap) {
         size_t next_cap = dirty->cap == 0 ? 16 : dirty->cap * 2;
-        count_dirty_slot *next = (count_dirty_slot *)realloc(dirty->items, next_cap * sizeof(count_dirty_slot));
+        count_dirty_slot *next = (count_dirty_slot *)realloc_array(dirty->items, next_cap, sizeof(count_dirty_slot));
         if (next == NULL) return -1;
         dirty->items = next;
         dirty->cap = next_cap;
@@ -3781,7 +3791,7 @@ static int direct_hamming_count_seq(count_sample_job *job, const char *seq, size
     unsigned char *invalid_counts = inline_invalid_counts;
     unsigned char *bad_positions = inline_bad_positions;
     if (n_offsets > sizeof(inline_codes) / sizeof(inline_codes[0])) {
-        codes = (uint64_t *)malloc(n_offsets * sizeof(uint64_t));
+        codes = (uint64_t *)malloc_array(n_offsets, sizeof(uint64_t));
         valid = (unsigned char *)malloc(n_offsets);
         invalid_counts = (unsigned char *)malloc(n_offsets);
         bad_positions = (unsigned char *)malloc(n_offsets);
@@ -4005,9 +4015,9 @@ static int process_exact_hamming_window_buffer(count_sample_job *job, const seq_
             ? job->target_start
             : job->selected_offsets->items[0];
     size_t alloc_count = alloc_count_or_one(buffer->count);
-    const char **windows = (const char **)malloc(alloc_count * sizeof(char *));
-    size_t *window_lens = (size_t *)malloc(alloc_count * sizeof(size_t));
-    qdaln_match_result *results = (qdaln_match_result *)malloc(alloc_count * sizeof(qdaln_match_result));
+    const char **windows = (const char **)malloc_array(alloc_count, sizeof(char *));
+    size_t *window_lens = (size_t *)malloc_array(alloc_count, sizeof(size_t));
+    qdaln_match_result *results = (qdaln_match_result *)malloc_array(alloc_count, sizeof(qdaln_match_result));
     if (windows == NULL || window_lens == NULL || results == NULL) {
         free(windows);
         free(window_lens);
@@ -4199,7 +4209,7 @@ static int count_sample_worker_direct_hamming(count_sample_job *job) {
             return 1;
         }
         seq_buffer buffered = {0};
-        if (reserve_seq_buffer(&buffered, job->auto_offset_sample) != 0) {
+        if (reserve_seq_buffer(&buffered, job->auto_offset_sample < 1048576 ? job->auto_offset_sample : 1048576) != 0) {
             free_seq_buffer(&buffered);
             free(scores);
             fastq_reader_close(&reader);
@@ -4314,9 +4324,9 @@ static int count_sample_worker_metal_hamming(count_sample_job *job) {
             ? job->target_start
             : job->selected_offsets->items[0];
     const size_t batch_cap = 262144;
-    uint64_t *read_codes = (uint64_t *)malloc(batch_cap * sizeof(uint64_t));
+    uint64_t *read_codes = (uint64_t *)malloc_array(batch_cap, sizeof(uint64_t));
     qdmetal_match_result *metal_results =
-            (qdmetal_match_result *)malloc(batch_cap * sizeof(qdmetal_match_result));
+            (qdmetal_match_result *)malloc_array(batch_cap, sizeof(qdmetal_match_result));
     if (read_codes == NULL || metal_results == NULL) {
         free(read_codes);
         free(metal_results);
@@ -6344,8 +6354,8 @@ static int run_fastq_assign(const char *argv0, int argc, char **argv) {
         goto done;
     }
 
-    const char **target_ptrs = (const char **)malloc(targets.count * sizeof(char *));
-    size_t *target_lens = (size_t *)malloc(targets.count * sizeof(size_t));
+    const char **target_ptrs = (const char **)malloc_array(targets.count, sizeof(char *));
+    size_t *target_lens = (size_t *)malloc_array(targets.count, sizeof(size_t));
     if (targets.count != 0 && (target_ptrs == NULL || target_lens == NULL)) {
         fprintf(stderr, "out of memory\n");
         goto done;
@@ -6576,7 +6586,7 @@ static void free_variant_record_list(variant_record_list *list) {
 static int push_variant_record(variant_record_list *list, const char *key, size_t target) {
     if (list->count == list->cap) {
         size_t next_cap = list->cap == 0 ? 1024 : list->cap * 2;
-        variant_record *next = (variant_record *)realloc(list->items, next_cap * sizeof(variant_record));
+        variant_record *next = (variant_record *)realloc_array(list->items, next_cap, sizeof(variant_record));
         if (next == NULL) return -1;
         list->items = next;
         list->cap = next_cap;
@@ -6629,7 +6639,7 @@ static int push_pair_record(pair_record_list *list, size_t a, size_t b) {
     }
     if (list->count == list->cap) {
         size_t next_cap = list->cap == 0 ? 1024 : list->cap * 2;
-        pair_record *next = (pair_record *)realloc(list->items, next_cap * sizeof(pair_record));
+        pair_record *next = (pair_record *)realloc_array(list->items, next_cap, sizeof(pair_record));
         if (next == NULL) return -1;
         list->items = next;
         list->cap = next_cap;
@@ -6654,7 +6664,7 @@ static int cmp_seq_ref(const void *a, const void *b) {
 
 static size_t count_unique_target_sequences(const seq_table *targets) {
     if (targets->count == 0) return 0;
-    seq_ref *refs = (seq_ref *)malloc(targets->count * sizeof(seq_ref));
+    seq_ref *refs = (seq_ref *)malloc_array(targets->count, sizeof(seq_ref));
     if (refs == NULL) return 0;
     for (size_t i = 0; i < targets->count; ++i) {
         refs[i].seq = targets->records[i].seq;
@@ -6744,10 +6754,10 @@ static int audit_fast_outputs(const seq_table *targets, const char *out_dir, int
     FILE *variants_out = NULL;
     char path[4096];
 
-    nearest_dist = (int *)malloc((targets->count == 0 ? 1 : targets->count) * sizeof(int));
-    nearest_idx = (size_t *)malloc((targets->count == 0 ? 1 : targets->count) * sizeof(size_t));
+    nearest_dist = (int *)malloc_array(targets->count == 0 ? 1 : targets->count, sizeof(int));
+    nearest_idx = (size_t *)malloc_array(targets->count == 0 ? 1 : targets->count, sizeof(size_t));
     near_k1 = (unsigned long long *)calloc(targets->count == 0 ? 1 : targets->count, sizeof(unsigned long long));
-    parent = (size_t *)malloc((targets->count == 0 ? 1 : targets->count) * sizeof(size_t));
+    parent = (size_t *)malloc_array(targets->count == 0 ? 1 : targets->count, sizeof(size_t));
     if (nearest_dist == NULL || nearest_idx == NULL || near_k1 == NULL || parent == NULL) goto done;
     for (size_t i = 0; i < targets->count; ++i) {
         nearest_dist[i] = -1;
@@ -7020,10 +7030,10 @@ static int run_audit(const char *argv0, int argc, char **argv) {
         if (rc == 0) printf("%s\n", out_dir);
         goto done;
     }
-    nearest_dist = (int *)malloc((targets.count == 0 ? 1 : targets.count) * sizeof(int));
-    nearest_idx = (size_t *)malloc((targets.count == 0 ? 1 : targets.count) * sizeof(size_t));
+    nearest_dist = (int *)malloc_array(targets.count == 0 ? 1 : targets.count, sizeof(int));
+    nearest_idx = (size_t *)malloc_array(targets.count == 0 ? 1 : targets.count, sizeof(size_t));
     near_k1 = (unsigned long long *)calloc(targets.count == 0 ? 1 : targets.count, sizeof(unsigned long long));
-    parent = (size_t *)malloc((targets.count == 0 ? 1 : targets.count) * sizeof(size_t));
+    parent = (size_t *)malloc_array(targets.count == 0 ? 1 : targets.count, sizeof(size_t));
     if (nearest_dist == NULL || nearest_idx == NULL || near_k1 == NULL || parent == NULL) {
         fprintf(stderr, "out of memory\n");
         goto done;
@@ -7283,7 +7293,7 @@ static int add_unmatched_observation(unmatched_table *table, const char *seq, in
     }
     if (table->count == table->cap) {
         size_t next_cap = table->cap == 0 ? 16 : table->cap * 2;
-        unmatched_entry *next = (unmatched_entry *)realloc(table->entries, next_cap * sizeof(unmatched_entry));
+        unmatched_entry *next = (unmatched_entry *)realloc_array(table->entries, next_cap, sizeof(unmatched_entry));
         if (next == NULL) return -1;
         table->entries = next;
         table->cap = next_cap;
@@ -8416,7 +8426,7 @@ static int add_bcl_unknown_count(bcl_unknown_table *table, const char *index, un
     }
     if (table->count == table->cap) {
         size_t next_cap = table->cap == 0 ? 64 : table->cap * 2;
-        bcl_unknown_barcode *next = (bcl_unknown_barcode *)realloc(table->items, next_cap * sizeof(bcl_unknown_barcode));
+        bcl_unknown_barcode *next = (bcl_unknown_barcode *)realloc_array(table->items, next_cap, sizeof(bcl_unknown_barcode));
         if (next == NULL) return -1;
         table->items = next;
         table->cap = next_cap;
@@ -8519,7 +8529,7 @@ static int push_bcl_sample(bcl_sample_table *table, const char *id, const char *
     }
     if (table->count == table->cap) {
         size_t next_cap = table->cap == 0 ? 16 : table->cap * 2;
-        bcl_sample *next = (bcl_sample *)realloc(table->items, next_cap * sizeof(bcl_sample));
+        bcl_sample *next = (bcl_sample *)realloc_array(table->items, next_cap, sizeof(bcl_sample));
         if (next == NULL) return -1;
         table->items = next;
         table->cap = next_cap;
