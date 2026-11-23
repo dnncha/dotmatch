@@ -37,6 +37,8 @@ INVALID = {
     "mismatched-plus-id": (b"@bad\nACGTACGT\n+other\nIIIIIIII\n", 3),
     "quality-space": (b"@bad\nACGTACGT\n+bad\nIIIIIII \n", 4),
     "truncated": (b"@bad\nACGTACGT\n+bad\n", 4),
+    "nul-in-sequence-and-quality": (b"@bad\nACGTACGT\x00GG\n+bad\nIIIIIIII\x00II\n", 2),
+    "truncated-header-only": (b"@bad\n", 2),
 }
 
 

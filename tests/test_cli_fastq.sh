@@ -2685,3 +2685,23 @@ else
     exit 1
   fi
 fi
+
+printf 'id\tseq\ng0\tACGTACGT\ng1\tTTTTGGGG\n' > "$TMPDIR/qual_targets.tsv"
+printf '@high\nNNACGTACGAAA\n+\nIIIIIIIIIIII\n@low\nNNACGTACGAAA\n+\nIIIIIIIII#II\n' > "$TMPDIR/qual_deletion.fastq"
+for metric_args in "--metric hamming" "--metric levenshtein --indel-window 1"; do
+  "$DOTMATCH_BIN" count \
+    --targets "$TMPDIR/qual_targets.tsv" \
+    --reads "$TMPDIR/qual_deletion.fastq" \
+    --sample-label s \
+    --target-start 2 \
+    --target-length 8 \
+    --k 1 \
+    $metric_args \
+    --max-correction-qual 20 \
+    --out "$TMPDIR/qual_deletion_counts.tsv" \
+    --summary "$TMPDIR/qual_deletion_summary.json" 2>/dev/null
+  if ! grep '"assigned_unique": 1,' "$TMPDIR/qual_deletion_summary.json" >/dev/null; then
+    echo "--max-correction-qual must reject a Q40 correction for $metric_args, including deletion explanations" >&2
+    exit 1
+  fi
+done

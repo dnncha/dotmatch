@@ -1543,7 +1543,7 @@ static int window_matches_observed_folded(const char *seq, size_t seq_len, size_
 
 static int observed_base_qualities_within_edit(const char *observed, size_t observed_len,
                                                const char *target, size_t target_len,
-                                               const char *qual, size_t qual_start,
+                                               const char *qual, size_t qual_len, size_t qual_start,
                                                int max_correction_qual) {
     if (observed_len == target_len) {
         int saw_mismatch = 0;
@@ -1572,7 +1572,22 @@ static int observed_base_qualities_within_edit(const char *observed, size_t obse
     }
 
     if (observed_len + 1 == target_len) {
-        return 1;
+        for (size_t missing = 0; missing < target_len; ++missing) {
+            size_t oi = 0;
+            int matches = 1;
+            for (size_t ti = 0; ti < target_len; ++ti) {
+                if (ti == missing) continue;
+                if (observed[oi++] != target[ti]) {
+                    matches = 0;
+                    break;
+                }
+            }
+            if (!matches) continue;
+            size_t flank = qual_start + missing;
+            if (flank < qual_len && phred33_quality(qual[flank]) <= max_correction_qual) return 1;
+            if (missing > 0 && phred33_quality(qual[flank - 1]) <= max_correction_qual) return 1;
+        }
+        return 0;
     }
 
     return 0;
@@ -2316,7 +2331,7 @@ static int quality_allows_unique_correction(const char *seq, size_t seq_len, con
                                       k, observed, observed_len, &qual_start)) {
         return 0;
     }
-    return observed_base_qualities_within_edit(observed, observed_len, target->seq, target->len, qual,
+    return observed_base_qualities_within_edit(observed, observed_len, target->seq, target->len, qual, seq_len,
                                                qual_start, max_correction_qual);
 }
 
