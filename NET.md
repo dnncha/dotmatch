@@ -1,7 +1,7 @@
 # Feedback net
 
 Inner loop: `make inner` (about 15 s warm on the Linux worker; also the pre-commit hook)
-Gate: `make gate` (about 8 min on the Linux worker; also the pre-push hook)
+Gate: `make gate` (84 s warm, about 8 min cold on the Linux worker; also the pre-push hook)
 Scheduled: `make nightly` (weekly T3 scheduled task on a Linux worker, red files a GitHub issue)
 
 Enable the hooks once per checkout with `make hooks`. GitHub Actions are billing-blocked and are not part of this net; local gate results with the commit SHA are the CI record.
