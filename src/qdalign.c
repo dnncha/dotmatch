@@ -1171,7 +1171,11 @@ static int index_verify_seed_candidate(const qdaln_index *index, size_t target_i
 }
 
 static int ambiguity_settled(int stop_on_ambiguous, int best_tie_count, const qdaln_match_result *result) {
-    return stop_on_ambiguous && best_tie_count > 1 && result->best_distance == 0;
+    return stop_on_ambiguous > 0 && best_tie_count > 1 && result->best_distance <= stop_on_ambiguous - 1;
+}
+
+static int stop_once_tied_within(int stop_on_ambiguous, int remaining_floor) {
+    return stop_on_ambiguous ? remaining_floor + 1 : 0;
 }
 
 static int index_visit_exact_seed_candidates(const qdaln_index *index, uint64_t code, size_t len,
@@ -1435,31 +1439,6 @@ static int index_assign_single_unknown_one(const qdaln_index *index, const char 
     candidate_seen seen;
     candidate_seen_init(&seen);
 
-    if (n_bad == 1) {
-        memcpy(tmp, read, read_len);
-        for (size_t b = 0; b < 4; ++b) {
-            uint64_t code = 0;
-            tmp[bad_pos] = bases[b];
-            if (dna2_code(tmp, read_len, &code)) {
-                if (index_visit_exact_seed_candidates(index, code, read_len, &seen, read, read_len, 1,
-                                                      result, &best_tie_count, stats, stop_on_ambiguous) != 0) {
-                    candidate_seen_free(&seen);
-                    return 0;
-                }
-                if (ambiguity_settled(stop_on_ambiguous, best_tie_count, result)) goto done;
-            }
-        }
-        uint64_t code = 0;
-        if (code_without_base(read, read_len, bad_pos, &code)) {
-            if (index_visit_exact_seed_candidates(index, code, read_len - 1, &seen, read, read_len, 1,
-                                                  result, &best_tie_count, stats, stop_on_ambiguous) != 0) {
-                candidate_seen_free(&seen);
-                return 0;
-            }
-            if (ambiguity_settled(stop_on_ambiguous, best_tie_count, result)) goto done;
-        }
-    }
-
     if (index->n_nonencodable != 0) {
         for (size_t ni = 0; ni < index->n_nonencodable; ++ni) {
             size_t j = index->nonencodable_targets[ni];
@@ -1477,6 +1456,32 @@ static int index_assign_single_unknown_one(const qdaln_index *index, const char 
             if (d < 0) continue;
             index_update_verified(result, (int)j, d, &best_tie_count);
             if (ambiguity_settled(stop_on_ambiguous, best_tie_count, result)) goto done;
+        }
+    }
+
+    int one_edit_stop = stop_once_tied_within(stop_on_ambiguous, 1);
+    if (n_bad == 1) {
+        memcpy(tmp, read, read_len);
+        for (size_t b = 0; b < 4; ++b) {
+            uint64_t code = 0;
+            tmp[bad_pos] = bases[b];
+            if (dna2_code(tmp, read_len, &code)) {
+                if (index_visit_exact_seed_candidates(index, code, read_len, &seen, read, read_len, 1,
+                                                      result, &best_tie_count, stats, one_edit_stop) != 0) {
+                    candidate_seen_free(&seen);
+                    return 0;
+                }
+                if (ambiguity_settled(one_edit_stop, best_tie_count, result)) goto done;
+            }
+        }
+        uint64_t code = 0;
+        if (code_without_base(read, read_len, bad_pos, &code)) {
+            if (index_visit_exact_seed_candidates(index, code, read_len - 1, &seen, read, read_len, 1,
+                                                  result, &best_tie_count, stats, one_edit_stop) != 0) {
+                candidate_seen_free(&seen);
+                return 0;
+            }
+            if (ambiguity_settled(one_edit_stop, best_tie_count, result)) goto done;
         }
     }
 
@@ -1505,6 +1510,7 @@ static int index_assign_neighbor_one_impl(const qdaln_index *index, const char *
         return 0;
     }
     if (stop_on_ambiguous && result->best_distance == 0) goto done;
+    int one_edit_stop = stop_once_tied_within(stop_on_ambiguous, 1);
 
     uint64_t seen_sub_codes[128];
     size_t n_seen_sub_codes = 0;
@@ -1521,20 +1527,20 @@ static int index_assign_neighbor_one_impl(const qdaln_index *index, const char *
                 seen_sub_codes[n_seen_sub_codes++] = code;
             }
             if (index_visit_exact_seed_candidates(index, code, read_len, &seen, read, read_len, 1, result,
-                                                  &best_tie_count, stats, stop_on_ambiguous) != 0) {
+                                                  &best_tie_count, stats, one_edit_stop) != 0) {
                 candidate_seen_free(&seen);
                 return 0;
             }
-            if (ambiguity_settled(stop_on_ambiguous, best_tie_count, result)) goto done;
+            if (ambiguity_settled(one_edit_stop, best_tie_count, result)) goto done;
         }
     }
 
     if (index_visit_deletion_seed_candidates(index, read_code, read_len, &seen, read, read_len, 1, result,
-                                             &best_tie_count, stats, stop_on_ambiguous) != 0) {
+                                             &best_tie_count, stats, one_edit_stop) != 0) {
         candidate_seen_free(&seen);
         return 0;
     }
-    if (ambiguity_settled(stop_on_ambiguous, best_tie_count, result)) goto done;
+    if (ambiguity_settled(one_edit_stop, best_tie_count, result)) goto done;
 
     uint64_t seen_del_codes[64];
     size_t n_seen_del_codes = 0;
@@ -1545,11 +1551,11 @@ static int index_assign_neighbor_one_impl(const qdaln_index *index, const char *
             seen_del_codes[n_seen_del_codes++] = code;
         }
         if (index_visit_exact_seed_candidates(index, code, read_len - 1, &seen, read, read_len, 1, result,
-                                              &best_tie_count, stats, stop_on_ambiguous) != 0) {
+                                              &best_tie_count, stats, one_edit_stop) != 0) {
             candidate_seen_free(&seen);
             return 0;
         }
-        if (ambiguity_settled(stop_on_ambiguous, best_tie_count, result)) goto done;
+        if (ambiguity_settled(one_edit_stop, best_tie_count, result)) goto done;
     }
 
     for (size_t ni = 0; ni < index->n_nonencodable; ++ni) {
@@ -1567,7 +1573,7 @@ static int index_assign_neighbor_one_impl(const qdaln_index *index, const char *
         if (stats != NULL) ++stats->candidates_verified;
         if (d < 0) continue;
         index_update_verified(result, (int)j, d, &best_tie_count);
-        if (ambiguity_settled(stop_on_ambiguous, best_tie_count, result)) goto done;
+        if (ambiguity_settled(one_edit_stop, best_tie_count, result)) goto done;
     }
 
 done:
@@ -1680,14 +1686,22 @@ static int index_assign_neighbor_two_impl(const qdaln_index *index, const char *
         return 0;
     }
     if (rc > 0) goto done;
-    rc = index_visit_one_edit_codes(read_code, read_len, visit_k2_first_edit_code, &ctx);
+    ctx.stop_on_ambiguous = stop_once_tied_within(stop_on_ambiguous, 1);
+    rc = index_visit_one_edit_codes(read_code, read_len, visit_k2_exact_code, &ctx);
     if (rc < 0) {
         candidate_seen_free(&seen);
         return 0;
     }
     if (rc > 0) goto done;
     rc = index_scan_nonencodable_seed_candidates(index, &seen, read, read_len, 2, result, &best_tie_count,
-                                                stats, stop_on_ambiguous);
+                                                stats, ctx.stop_on_ambiguous);
+    if (rc < 0) {
+        candidate_seen_free(&seen);
+        return 0;
+    }
+    if (rc > 0) goto done;
+    ctx.stop_on_ambiguous = stop_once_tied_within(stop_on_ambiguous, 2);
+    rc = index_visit_one_edit_codes(read_code, read_len, visit_k2_first_edit_code, &ctx);
     if (rc < 0) {
         candidate_seen_free(&seen);
         return 0;
@@ -1722,48 +1736,6 @@ static int index_assign_single_unknown_two(const qdaln_index *index, const char 
     int best_tie_count = 0;
     *result = empty_match_result(QDALN_MATCH_NONE);
 
-    static const char bases[] = {'A', 'C', 'G', 'T'};
-    char tmp[32];
-    memcpy(tmp, read, read_len);
-    k2_exact_visit_ctx ctx = {index, &seen, read, read_len, result, &best_tie_count, stats, stop_on_ambiguous};
-    for (size_t b = 0; b < 4; ++b) {
-        uint64_t code = 0;
-        tmp[bad_pos] = bases[b];
-        if (!dna2_code(tmp, read_len, &code)) {
-            candidate_seen_free(&seen);
-            return 0;
-        }
-        int rc = visit_k2_exact_code(code, read_len, &ctx);
-        if (rc < 0) {
-            candidate_seen_free(&seen);
-            return 0;
-        }
-        if (rc > 0) goto done;
-        rc = index_visit_one_edit_codes(code, read_len, visit_k2_exact_code, &ctx);
-        if (rc < 0) {
-            candidate_seen_free(&seen);
-            return 0;
-        }
-        if (rc > 0) goto done;
-    }
-    if (read_len > 0) {
-        uint64_t deleted_code = 0;
-        if (code_without_base(read, read_len, bad_pos, &deleted_code)) {
-            int rc = visit_k2_exact_code(deleted_code, read_len - 1, &ctx);
-            if (rc < 0) {
-                candidate_seen_free(&seen);
-                return 0;
-            }
-            if (rc > 0) goto done;
-            rc = index_visit_one_edit_codes(deleted_code, read_len - 1, visit_k2_exact_code, &ctx);
-            if (rc < 0) {
-                candidate_seen_free(&seen);
-                return 0;
-            }
-            if (rc > 0) goto done;
-        }
-    }
-
     int rc = index_scan_nonencodable_seed_candidates(index, &seen, read, read_len, 2, result, &best_tie_count,
                                                      stats, stop_on_ambiguous);
     if (rc < 0) {
@@ -1771,6 +1743,57 @@ static int index_assign_single_unknown_two(const qdaln_index *index, const char 
         return 0;
     }
     if (rc > 0) goto done;
+
+    static const char bases[] = {'A', 'C', 'G', 'T'};
+    char tmp[32];
+    uint64_t base_codes[4];
+    memcpy(tmp, read, read_len);
+    for (size_t b = 0; b < 4; ++b) {
+        tmp[bad_pos] = bases[b];
+        if (!dna2_code(tmp, read_len, &base_codes[b])) {
+            candidate_seen_free(&seen);
+            return 0;
+        }
+    }
+    uint64_t deleted_code = 0;
+    int have_deleted = read_len > 0 && code_without_base(read, read_len, bad_pos, &deleted_code);
+
+    k2_exact_visit_ctx ctx = {index, &seen, read, read_len, result, &best_tie_count, stats,
+                              stop_once_tied_within(stop_on_ambiguous, 1)};
+    for (size_t b = 0; b < 4; ++b) {
+        rc = visit_k2_exact_code(base_codes[b], read_len, &ctx);
+        if (rc < 0) {
+            candidate_seen_free(&seen);
+            return 0;
+        }
+        if (rc > 0) goto done;
+    }
+    if (have_deleted) {
+        rc = visit_k2_exact_code(deleted_code, read_len - 1, &ctx);
+        if (rc < 0) {
+            candidate_seen_free(&seen);
+            return 0;
+        }
+        if (rc > 0) goto done;
+    }
+
+    ctx.stop_on_ambiguous = stop_once_tied_within(stop_on_ambiguous, 2);
+    for (size_t b = 0; b < 4; ++b) {
+        rc = index_visit_one_edit_codes(base_codes[b], read_len, visit_k2_exact_code, &ctx);
+        if (rc < 0) {
+            candidate_seen_free(&seen);
+            return 0;
+        }
+        if (rc > 0) goto done;
+    }
+    if (have_deleted) {
+        rc = index_visit_one_edit_codes(deleted_code, read_len - 1, visit_k2_exact_code, &ctx);
+        if (rc < 0) {
+            candidate_seen_free(&seen);
+            return 0;
+        }
+        if (rc > 0) goto done;
+    }
 
 done:
     index_finalize_result(result, best_tie_count);
