@@ -403,13 +403,40 @@ static int push_record_gene(seq_table *table, const char *id, size_t id_len, con
     return 0;
 }
 
+static int read_text_line(FILE *fp, const char *path, size_t *line_no, char *buf, size_t cap) {
+    size_t n = 0;
+    int c = EOF;
+    ++*line_no;
+    while ((c = getc_unlocked(fp)) != EOF) {
+        if (c == '\0') {
+            fprintf(stderr, "%s:%zu: line contains a NUL byte\n", path, *line_no);
+            return -1;
+        }
+        if (n + 1 >= cap) {
+            fprintf(stderr, "%s:%zu: line is longer than %zu bytes\n", path, *line_no, cap - 2);
+            return -1;
+        }
+        buf[n++] = (char)c;
+        if (c == '\n') break;
+    }
+    if (c == EOF && ferror(fp)) {
+        fprintf(stderr, "%s:%zu: read error\n", path, *line_no);
+        return -1;
+    }
+    if (n == 0) return 0;
+    buf[n] = '\0';
+    return 1;
+}
+
 static int read_table(const char *path, seq_table *table) {
     FILE *fp = fopen(path, "r");
     if (fp == NULL) return -1;
 
     char buf[8192];
     size_t row = 0;
-    while (fgets(buf, sizeof(buf), fp) != NULL) {
+    size_t line_no = 0;
+    int line_rc = 0;
+    while ((line_rc = read_text_line(fp, path, &line_no, buf, sizeof(buf))) == 1) {
         trim_line(buf);
         if (buf[0] == '\0') continue;
 
@@ -449,7 +476,7 @@ static int read_table(const char *path, seq_table *table) {
         ++row;
     }
 
-    if (ferror(fp)) {
+    if (line_rc < 0 || ferror(fp)) {
         fclose(fp);
         return -1;
     }
@@ -1041,7 +1068,9 @@ static int read_samples_file(const char *path, string_list *labels, string_list 
     int sample_col = 0;
     int reads_col = 1;
     int first_data = 1;
-    while (fgets(buf, sizeof(buf), fp) != NULL) {
+    size_t line_no = 0;
+    int line_rc = 0;
+    while ((line_rc = read_text_line(fp, path, &line_no, buf, sizeof(buf))) == 1) {
         trim_line(buf);
         if (buf[0] == '\0' || buf[0] == '#') continue;
 
@@ -1077,7 +1106,7 @@ static int read_samples_file(const char *path, string_list *labels, string_list 
             return -1;
         }
     }
-    if (ferror(fp)) {
+    if (line_rc < 0 || ferror(fp)) {
         fclose(fp);
         return -1;
     }
@@ -2017,7 +2046,8 @@ static void write_tsv_preview_table(FILE *out, const char *title, const char *pa
     fprintf(out, "</h2><table>\n");
     char line[16384];
     size_t row = 0;
-    while (row <= max_rows && fgets(line, sizeof(line), in) != NULL) {
+    size_t line_no = 0;
+    while (row <= max_rows && read_text_line(in, path, &line_no, line, sizeof(line)) == 1) {
         trim_line(line);
         fprintf(out, "<tr>");
         char *fields[128];
@@ -8582,7 +8612,9 @@ static int read_bcl_sample_sheet(const char *path, bcl_sample_table *samples) {
     int index2_col = -1;
     int lane_col = -1;
     size_t row = 0;
-    while (fgets(buf, sizeof(buf), fp) != NULL) {
+    size_t line_no = 0;
+    int line_rc = 0;
+    while ((line_rc = read_text_line(fp, path, &line_no, buf, sizeof(buf))) == 1) {
         ++row;
         trim_line(buf);
         if (buf[0] == '\0') continue;
@@ -8634,7 +8666,7 @@ static int read_bcl_sample_sheet(const char *path, bcl_sample_table *samples) {
         }
     }
     fclose(fp);
-    return samples->count == 0 ? -1 : 0;
+    return line_rc < 0 || samples->count == 0 ? -1 : 0;
 }
 
 static int hamming_distance_limit(const char *a, const char *b, int limit) {
