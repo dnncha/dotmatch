@@ -11,7 +11,7 @@ Enable the hooks once per checkout with `make hooks`. GitHub Actions are billing
 | Tier | Signal | Command | Runs | Time | Status |
 |---|---|---|---|---|---|
 | edit | C banned-API and output-close rules, Makefile pipefail rule | `make lint-c` (`tools/lint_c.py`) | hook, inner, gate | 0.3 s | honest |
-| edit | Strict C build: `-Wall -Wextra -Wpedantic -Wformat=2 -Wconversion -Wvla -Wimplicit-fallthrough -Werror` | `make strict` | hook, inner, gate | 40 s cold, 0 s warm | honest |
+| edit | Strict C build: `-Wall -Wextra -Wpedantic -Wformat=2 -Wconversion -Wvla -Wimplicit-fallthrough -Wshadow -Werror` | `make strict` | hook, inner, gate | 40 s cold, 0 s warm | honest |
 | edit | Python lint (typed sources full set, pyflakes everywhere) | `make lint` | hook, inner, gate | 1 s | honest |
 | inner | C unit tests | `make test` | hook, inner, gate | 3 s warm | honest |
 | inner | qdalign differential fuzz vs O(nm) reference, ASan/UBSan, 3k cases | `make fuzz-smoke` | hook, inner, gate | 3 s | honest |
@@ -37,18 +37,15 @@ Enable the hooks once per checkout with `make hooks`. GitHub Actions are billing
 | Allocation sizes | `src/qda.c`, `src/qdalign.c` | low × high | lint-c multiplied-size rule | covered |
 | Quality-gated corrections | `src/qda.c` (`quality_allows_unique_correction`) | med × med | cli-test regression | late: regression test only |
 | Paired reads | `src/qda.c` (`run_pair_count`), `python/dotmatch/assayruntime.py` | med × med | cli-test, `python/tests/test_assayruntime.py` | late: regression tests only |
-| Python CLI fallback vs native CLI | `python/dotmatch/cli.py`, `python/dotmatch/core.py` | med × med | python-test unit tests | hole: no CLI-level differential in the gate |
+| Python CLI fallback vs native CLI | `python/dotmatch/cli.py`, `python/dotmatch/core.py` | med × med | `python/tests/test_python_native_differential.py` (30 seeds across 14 metric/k/policy combinations) in `make python-test` | covered |
 | Release records and evidence claims | `docs/distribution-release.json`, `CITATION.cff`, `README.md` | med × med | python-test readiness checks, pre-push gate | covered |
 
 ## Holes, ranked
 
-1. Python fallback CLI vs native CLI has no gate-level differential. Next step: turn the audit's `randdiff.py` (stream_assign vs native count, 14 metric/k/policy combinations) into `tests/test_python_native_differential.py` with a 30-seed slice in python-test.
-2. No mutation testing of the C core (`mutation-scientific` mutates Python only). Next step: a small mutant runner over `src/qdalign.c` comparison operators scored by `make test fuzz-smoke`, weekly.
-3. Coverage-guided fuzzing is unavailable on the worker toolchain (clang 14 without compiler-rt). The random harnesses stand in. Next step: a libFuzzer target over `fastq_next_record` on a machine with compiler-rt.
-4. Python and native FASTQ/target parsers still differ on edge bytes: bare `\r` line endings (Python accepts), `\x1c` in headers, NBSP in IDs, reads over 8,191 bases (native rejects with a positioned error, Python accepts). Next step: decide one contract per case and add each to `tests/test_native_fastq_validation.py`.
-5. `-Wshadow` reports 25 loop-variable shadows in `src/qda.c`. Next step: rename and add `-Wshadow` to `STRICT_WARNINGS`.
-6. `levenshtein1_lookup_insert` can over-count `match_count` when a higher-index target produces the same indel code twice (status unaffected). Next step: dedupe by target in the insert.
-7. `COVERAGE_MIN ?= 75` in the Makefile fails `make coverage` on a fitted number with no stated user-facing reason. It is only reached from `pretag-ready`; next step: print the number instead of failing.
+1. No mutation testing of the C core (`mutation-scientific` mutates Python only). Next step: a small mutant runner over `src/qdalign.c` comparison operators scored by `make test fuzz-smoke`, weekly.
+2. Coverage-guided fuzzing is unavailable on the worker toolchain (clang 14 without compiler-rt). The random harnesses stand in. Next step: a libFuzzer target over `fastq_next_record` on a machine with compiler-rt.
+3. Python and native FASTQ/target parsers still differ on edge bytes: bare `\r` line endings (Python accepts), `\x1c` in headers, NBSP in IDs, reads over 8,191 bases (native rejects with a positioned error, Python accepts). Next step: decide one contract per case and add each to `tests/test_native_fastq_validation.py`.
+4. `COVERAGE_MIN ?= 75` in the Makefile fails `make coverage` on a fitted number with no stated user-facing reason. It is only reached from `pretag-ready`; next step: print the number instead of failing.
 
 ## Escape log
 

@@ -597,9 +597,9 @@ static int run_batch(const char *argv0, int argc, char **argv, const char *mode)
         read_ptrs[i] = reads.records[i].seq;
         read_lens[i] = reads.records[i].len;
     }
-    for (size_t i = 0; i < targets.count; ++i) {
-        target_ptrs[i] = targets.records[i].seq;
-        target_lens[i] = targets.records[i].len;
+    for (size_t ti = 0; ti < targets.count; ++ti) {
+        target_ptrs[ti] = targets.records[ti].seq;
+        target_lens[ti] = targets.records[ti].len;
     }
 
     if (qdaln_match_many(read_ptrs, read_lens, reads.count, target_ptrs, target_lens, targets.count, k, results) != 0) {
@@ -836,14 +836,20 @@ static int fastq_store_record_id(fastq_reader *reader, const char *header, size_
     return 0;
 }
 
+static int fastq_all_printable_no_space(const char *s, size_t len) {
+    unsigned int invalid = 0;
+    for (size_t i = 0; i < len; ++i) {
+        unsigned char c = (unsigned char)s[i];
+        invalid |= (unsigned int)(c < 33 || c > 126);
+    }
+    return invalid == 0;
+}
+
 static int fastq_validate_sequence(fastq_reader *reader, const char *seq, size_t seq_len) {
     if (seq_len == 0) return fastq_error(reader, 2, "sequence is empty");
-    unsigned int invalid = 0;
-    for (size_t i = 0; i < seq_len; ++i) {
-        unsigned char c = (unsigned char)seq[i];
-        invalid |= (unsigned int)(c <= 32 || c >= 127);
+    if (!fastq_all_printable_no_space(seq, seq_len)) {
+        return fastq_error(reader, 2, "sequence must be printable ASCII without whitespace");
     }
-    if (invalid) return fastq_error(reader, 2, "sequence must be printable ASCII without whitespace");
     return 0;
 }
 
@@ -867,12 +873,9 @@ static int fastq_validate_quality(fastq_reader *reader, const char *qual, size_t
     if (qual_len != seq_len) {
         return fastq_error(reader, 4, "sequence and quality lengths differ");
     }
-    unsigned int invalid = 0;
-    for (size_t i = 0; i < qual_len; ++i) {
-        unsigned char c = (unsigned char)qual[i];
-        invalid |= (unsigned int)(c < 33 || c > 126);
+    if (!fastq_all_printable_no_space(qual, qual_len)) {
+        return fastq_error(reader, 4, "quality must use Phred+33 ASCII 33-126");
     }
-    if (invalid) return fastq_error(reader, 4, "quality must use Phred+33 ASCII 33-126");
     return 0;
 }
 
@@ -940,6 +943,83 @@ static int fastq_read_record_len(fastq_reader *reader, char *header, char *seq, 
 
 static int fastq_read_sequence_record_len(fastq_reader *reader, char *seq, size_t cap, size_t *seq_len_out) {
     return fastq_next_record(reader, NULL, seq, NULL, NULL, cap, seq_len_out);
+}
+
+static int fastq_read_sequence_view(fastq_reader *reader, char *fallback_seq, size_t fallback_cap,
+                                    const char **seq_out, size_t *seq_len_out) {
+    if (reader->gz_pos < reader->gz_len) {
+        unsigned char *p = reader->gz_buf + reader->gz_pos;
+        unsigned char *end = reader->gz_buf + reader->gz_len;
+        unsigned char *nl1 = (unsigned char *)memchr(p, '\n', (size_t)(end - p));
+        if (nl1 != NULL) {
+            unsigned char *p2 = nl1 + 1;
+            unsigned char *nl2 = (unsigned char *)memchr(p2, '\n', (size_t)(end - p2));
+            if (nl2 != NULL) {
+                unsigned char *p3 = nl2 + 1;
+                unsigned char *nl3 = (unsigned char *)memchr(p3, '\n', (size_t)(end - p3));
+                if (nl3 != NULL) {
+                    unsigned char *p4 = nl3 + 1;
+                    unsigned char *nl4 = (unsigned char *)memchr(p4, '\n', (size_t)(end - p4));
+                    if (nl4 != NULL) {
+                        ++reader->record_ordinal;
+                        const char *header = (const char *)p;
+                        size_t header_len = fastq_trimmed_span_len(header, (size_t)(nl1 - p) + 1);
+                        if (header_len == 0 || header[0] != '@') {
+                            return fastq_error(reader, 1, "expected @ header");
+                        }
+                        size_t id_start = 1;
+                        while (id_start < header_len && fastq_ascii_space((unsigned char)header[id_start])) ++id_start;
+                        size_t id_end = id_start;
+                        while (id_end < header_len && !fastq_ascii_space((unsigned char)header[id_end])) {
+                            unsigned char c = (unsigned char)header[id_end];
+                            if (c < 33 || c > 126) return fastq_error(reader, 1, "invalid read identifier");
+                            ++id_end;
+                        }
+                        if (id_end == id_start) return fastq_error(reader, 1, "missing read identifier");
+
+                        const char *seq = (const char *)p2;
+                        size_t seq_len = fastq_trimmed_span_len(seq, (size_t)(nl2 - p2) + 1);
+                        if (fastq_validate_sequence(reader, seq, seq_len) != 0) return -1;
+                        if (seq_len >= fallback_cap) {
+                            char reason[64];
+                            snprintf(reason, sizeof(reason), "sequence is longer than %zu bases", fallback_cap - 1);
+                            return fastq_error(reader, 2, reason);
+                        }
+
+                        const char *plus = (const char *)p3;
+                        size_t plus_len = fastq_trimmed_span_len(plus, (size_t)(nl3 - p3) + 1);
+                        if (!(plus_len == 1 && plus[0] == '+')) {
+                            if (plus_len == 0 || plus[0] != '+') {
+                                return fastq_error(reader, 3, "expected + separator");
+                            }
+                            size_t ps = 1;
+                            while (ps < plus_len && fastq_ascii_space((unsigned char)plus[ps])) ++ps;
+                            if (ps < plus_len) {
+                                size_t pe = ps;
+                                while (pe < plus_len && !fastq_ascii_space((unsigned char)plus[pe])) ++pe;
+                                if (pe - ps != id_end - id_start ||
+                                    memcmp(plus + ps, header + id_start, id_end - id_start) != 0) {
+                                    return fastq_error(reader, 3, "repeated read identifier does not match header");
+                                }
+                            }
+                        }
+
+                        const char *qual = (const char *)p4;
+                        size_t qual_len = fastq_trimmed_span_len(qual, (size_t)(nl4 - p4) + 1);
+                        if (fastq_validate_quality(reader, qual, qual_len, seq_len) != 0) return -1;
+
+                        reader->gz_pos = (size_t)((nl4 + 1) - reader->gz_buf);
+                        *seq_out = seq;
+                        *seq_len_out = seq_len;
+                        return 1;
+                    }
+                }
+            }
+        }
+    }
+    int got = fastq_next_record(reader, NULL, fallback_seq, NULL, NULL, fallback_cap, seq_len_out);
+    if (got == 1) *seq_out = fallback_seq;
+    return got;
 }
 
 static void fastq_read_id(const char *header, char *out, size_t out_cap) {
@@ -1363,7 +1443,7 @@ typedef struct hamming_lookup_entry {
 } hamming_lookup_entry;
 
 typedef struct hamming_seed_entry {
-    uint64_t code;
+    uint64_t target_code;
     int target_index;
     int next;
     unsigned char seed_id;
@@ -1374,7 +1454,8 @@ typedef struct hamming_lookup {
     hamming_lookup_entry *mismatch;
     hamming_seed_entry *seeds;
     int *seed_heads;
-    uint64_t *target_codes;
+    uint64_t *exact_bits;
+    uint64_t *seed_bits;
     size_t exact_cap;
     size_t mismatch_cap;
     size_t seed_hash_cap;
@@ -1453,6 +1534,9 @@ static int hamming_code_distance_local(uint64_t a, uint64_t b, size_t len) {
 /* Values are encoded plus one so every other byte has the invalid value zero.
  * This avoids a branch cascade for each base in guide lookup and offset scans. */
 static const unsigned char acgt_code_values[256] = {['A'] = 1, ['C'] = 2, ['G'] = 3, ['T'] = 4};
+static const unsigned char acgt_fold_code_values[256] = {
+    ['A'] = 1, ['a'] = 1, ['C'] = 2, ['c'] = 2, ['G'] = 3, ['g'] = 3, ['T'] = 4, ['t'] = 4
+};
 
 static int dna2_code_local(const char *s, size_t len, uint64_t *code_out) {
     if (s == NULL && len != 0) return 0;
@@ -1472,55 +1556,22 @@ static int dna2_code_local_fold(const char *s, size_t len, uint64_t *code_out) {
     if (len > 32) return 0;
     uint64_t code = 0;
     for (size_t i = 0; i < len; ++i) {
-        uint64_t v;
-        switch (s[i]) {
-            case 'A':
-            case 'a':
-                v = 0;
-                break;
-            case 'C':
-            case 'c':
-                v = 1;
-                break;
-            case 'G':
-            case 'g':
-                v = 2;
-                break;
-            case 'T':
-            case 't':
-                v = 3;
-                break;
-            default:
-                return 0;
-        }
-        code |= v << (2 * i);
+        uint64_t value = acgt_fold_code_values[(unsigned char)s[i]];
+        if (value == 0) return 0;
+        code |= (value - 1) << (2 * i);
     }
     *code_out = code;
     return 1;
 }
 
-static int dna2_base_fold_value(char c, uint64_t *value_out) {
-    switch (c) {
-        case 'A':
-        case 'a':
-            *value_out = 0;
-            return 1;
-        case 'C':
-        case 'c':
-            *value_out = 1;
-            return 1;
-        case 'G':
-        case 'g':
-            *value_out = 2;
-            return 1;
-        case 'T':
-        case 't':
-            *value_out = 3;
-            return 1;
-        default:
-            *value_out = 0;
-            return 0;
+static inline int dna2_base_fold_value(char c, uint64_t *value_out) {
+    uint64_t value = acgt_fold_code_values[(unsigned char)c];
+    if (value == 0) {
+        *value_out = 0;
+        return 0;
     }
+    *value_out = value - 1;
+    return 1;
 }
 
 static void copy_upper_ascii_window(char *dst, size_t dst_cap, const char *src, size_t len) {
@@ -1636,6 +1687,28 @@ static const hamming_lookup_entry *hamming_lookup_find(const hamming_lookup_entr
     }
 }
 
+static inline const hamming_lookup_entry *hamming_lookup_find_exact(const hamming_lookup *lookup, uint64_t code) {
+    if (lookup == NULL || lookup->exact == NULL || lookup->exact_cap == 0) return NULL;
+    size_t slot = code_hash_local(code, 0, lookup->exact_cap);
+    if (lookup->exact_bits != NULL && ((lookup->exact_bits[slot >> 6] >> (slot & 63)) & 1ULL) == 0) {
+        return NULL;
+    }
+    for (;;) {
+        const hamming_lookup_entry *entry = &lookup->exact[slot];
+        if (entry->target_index < 0) return NULL;
+        if (entry->code == code) return entry;
+        slot = (slot + 1) & (lookup->exact_cap - 1);
+    }
+}
+
+static inline void bitset_set_local(uint64_t *bits, size_t idx) {
+    if (bits != NULL) bits[idx >> 6] |= 1ULL << (idx & 63);
+}
+
+static inline int bitset_test_local(const uint64_t *bits, size_t idx) {
+    return bits == NULL || ((bits[idx >> 6] >> (idx & 63)) & 1ULL) != 0;
+}
+
 static int levenshtein1_lookup_insert(hamming_lookup_entry *table, size_t cap, uint64_t code, size_t len,
                                       int target_index) {
     size_t slot = code_hash_local(code, len, cap);
@@ -1681,16 +1754,18 @@ static hamming_lookup_entry *alloc_hamming_table(size_t cap) {
     return table;
 }
 
-static int hamming_seed_insert(hamming_lookup *lookup, unsigned char seed_id, uint64_t code, int target_index) {
+static int hamming_seed_insert(hamming_lookup *lookup, unsigned char seed_id, uint64_t seed_code,
+                               uint64_t target_code, int target_index) {
     if (lookup->n_seeds > (size_t)INT32_MAX) return -1;
     size_t seed_len = seed_id == 0 ? lookup->seed0_len : lookup->target_len - lookup->seed0_len;
-    size_t slot = seed_hash_local(code, seed_len, seed_id, lookup->seed_hash_cap);
+    size_t slot = seed_hash_local(seed_code, seed_len, seed_id, lookup->seed_hash_cap);
     size_t e = lookup->n_seeds++;
-    lookup->seeds[e].code = code;
+    lookup->seeds[e].target_code = target_code;
     lookup->seeds[e].target_index = target_index;
     lookup->seeds[e].seed_id = seed_id;
     lookup->seeds[e].next = lookup->seed_heads[slot];
     lookup->seed_heads[slot] = (int)e;
+    bitset_set_local(lookup->seed_bits, slot);
     return 0;
 }
 
@@ -1700,12 +1775,14 @@ static void free_hamming_lookup(hamming_lookup *lookup) {
     free(lookup->mismatch);
     free(lookup->seeds);
     free(lookup->seed_heads);
-    free(lookup->target_codes);
+    free(lookup->exact_bits);
+    free(lookup->seed_bits);
     lookup->exact = NULL;
     lookup->mismatch = NULL;
     lookup->seeds = NULL;
     lookup->seed_heads = NULL;
-    lookup->target_codes = NULL;
+    lookup->exact_bits = NULL;
+    lookup->seed_bits = NULL;
     lookup->exact_cap = 0;
     lookup->mismatch_cap = 0;
     lookup->seed_hash_cap = 0;
@@ -1795,15 +1872,18 @@ static int build_levenshtein1_lookup(const seq_table *targets, size_t target_len
                     return -1;
                 }
             }
-            uint64_t deleted = code_remove_base_local(code, pos, target_len);
-            if (levenshtein1_lookup_insert(lookup->target_deletion, lookup->target_deletion_cap, deleted,
-                                           target_len - 1, (int)i) != 0) {
-                free_levenshtein1_lookup(lookup);
-                return -1;
+            if (pos == 0 || ((code >> (2 * pos)) & 3ULL) != ((code >> (2 * (pos - 1))) & 3ULL)) {
+                uint64_t deleted = code_remove_base_local(code, pos, target_len);
+                if (levenshtein1_lookup_insert(lookup->target_deletion, lookup->target_deletion_cap, deleted,
+                                               target_len - 1, (int)i) != 0) {
+                    free_levenshtein1_lookup(lookup);
+                    return -1;
+                }
             }
         }
         for (size_t pos = 0; pos <= target_len; ++pos) {
             for (uint64_t b = 0; b < 4; ++b) {
+                if (pos > 0 && ((code >> (2 * (pos - 1))) & 3ULL) == b) continue;
                 uint64_t inserted = code_insert_base_local(code, pos, target_len, b);
                 if (levenshtein1_lookup_insert(lookup->target_insertion, lookup->target_insertion_cap, inserted,
                                                target_len + 1, (int)i) != 0) {
@@ -1834,7 +1914,8 @@ static int build_hamming_lookup(const seq_table *targets, size_t target_len, ham
     lookup->mismatch_cap = next_pow2_local(mismatch_need);
     lookup->exact = alloc_hamming_table(lookup->exact_cap);
     lookup->mismatch = alloc_hamming_table(lookup->mismatch_cap);
-    if (lookup->exact == NULL || lookup->mismatch == NULL) {
+    lookup->exact_bits = (uint64_t *)calloc((lookup->exact_cap + 63) / 64, sizeof(uint64_t));
+    if (lookup->exact == NULL || lookup->mismatch == NULL || lookup->exact_bits == NULL) {
         free_hamming_lookup(lookup);
         return -1;
     }
@@ -1850,6 +1931,7 @@ static int build_hamming_lookup(const seq_table *targets, size_t target_len, ham
             free_hamming_lookup(lookup);
             return -1;
         }
+        bitset_set_local(lookup->exact_bits, code_hash_local(code, 0, lookup->exact_cap));
         for (size_t pos = 0; pos < target_len; ++pos) {
             uint64_t shift = (uint64_t)2 * pos;
             uint64_t old_base = (code >> shift) & 3ULL;
@@ -1880,7 +1962,8 @@ static int build_hamming_exact_lookup(const seq_table *targets, size_t target_le
     size_t exact_need = targets->count * 2 + 16;
     lookup->exact_cap = next_pow2_local(exact_need);
     lookup->exact = alloc_hamming_table(lookup->exact_cap);
-    if (lookup->exact == NULL) {
+    lookup->exact_bits = (uint64_t *)calloc((lookup->exact_cap + 63) / 64, sizeof(uint64_t));
+    if (lookup->exact == NULL || lookup->exact_bits == NULL) {
         free_hamming_lookup(lookup);
         return -1;
     }
@@ -1896,6 +1979,7 @@ static int build_hamming_exact_lookup(const seq_table *targets, size_t target_le
             free_hamming_lookup(lookup);
             return -1;
         }
+        bitset_set_local(lookup->exact_bits, code_hash_local(code, 0, lookup->exact_cap));
     }
     lookup->ready = 1;
     return 0;
@@ -1917,8 +2001,10 @@ static int build_hamming_seed_lookup(const seq_table *targets, size_t target_len
     lookup->exact = alloc_hamming_table(lookup->exact_cap);
     lookup->seeds = (hamming_seed_entry *)malloc_array(seed_need, sizeof(hamming_seed_entry));
     lookup->seed_heads = (int *)malloc_array(lookup->seed_hash_cap, sizeof(int));
-    lookup->target_codes = (uint64_t *)malloc_array(targets->count == 0 ? 1 : targets->count, sizeof(uint64_t));
-    if (lookup->exact == NULL || lookup->seeds == NULL || lookup->seed_heads == NULL || lookup->target_codes == NULL) {
+    lookup->exact_bits = (uint64_t *)calloc((lookup->exact_cap + 63) / 64, sizeof(uint64_t));
+    lookup->seed_bits = (uint64_t *)calloc((lookup->seed_hash_cap + 63) / 64, sizeof(uint64_t));
+    if (lookup->exact == NULL || lookup->seeds == NULL || lookup->seed_heads == NULL ||
+        lookup->exact_bits == NULL || lookup->seed_bits == NULL) {
         free_hamming_lookup(lookup);
         return -1;
     }
@@ -1932,15 +2018,15 @@ static int build_hamming_seed_lookup(const seq_table *targets, size_t target_len
             free_hamming_lookup(lookup);
             return 0;
         }
-        lookup->target_codes[i] = code;
         if (hamming_lookup_insert(lookup->exact, lookup->exact_cap, code, (int)i) != 0) {
             free_hamming_lookup(lookup);
             return -1;
         }
+        bitset_set_local(lookup->exact_bits, code_hash_local(code, 0, lookup->exact_cap));
         uint64_t seed0 = code_segment_local(code, 0, lookup->seed0_len);
         uint64_t seed1 = code_segment_local(code, lookup->seed0_len, target_len - lookup->seed0_len);
-        if (hamming_seed_insert(lookup, 0, seed0, (int)i) != 0 ||
-            hamming_seed_insert(lookup, 1, seed1, (int)i) != 0) {
+        if (hamming_seed_insert(lookup, 0, seed0, code, (int)i) != 0 ||
+            hamming_seed_insert(lookup, 1, seed1, code, (int)i) != 0) {
             free_hamming_lookup(lookup);
             return -1;
         }
@@ -3142,14 +3228,18 @@ static int direct_hamming_merge_lookup_entry(match_merge_state *merge, const ham
 static int direct_hamming_collect_seed_hits(count_sample_job *job, match_merge_state *merge, unsigned char seed_id,
                                             uint64_t seed_code, uint64_t read_code) {
     const hamming_lookup *lookup = job->hlookup;
+    size_t seed_start = seed_id == 0 ? 0 : lookup->seed0_len;
     size_t seed_len = seed_id == 0 ? lookup->seed0_len : lookup->target_len - lookup->seed0_len;
     size_t slot = seed_hash_local(seed_code, seed_len, seed_id, lookup->seed_hash_cap);
+    if (!bitset_test_local(lookup->seed_bits, slot)) return 0;
     for (int e = lookup->seed_heads[slot]; e >= 0; e = lookup->seeds[e].next) {
         const hamming_seed_entry *entry = &lookup->seeds[e];
-        if (entry->seed_id != seed_id || entry->code != seed_code || entry->target_index < 0) continue;
+        if (entry->seed_id != seed_id ||
+            code_segment_local(entry->target_code, seed_start, seed_len) != seed_code ||
+            entry->target_index < 0) continue;
         job->stats->candidates_considered += 1;
         job->stats->candidates_verified += 1;
-        if (hamming_code_distance_local(read_code, lookup->target_codes[entry->target_index], lookup->target_len) > 1) {
+        if (hamming_code_distance_local(read_code, entry->target_code, lookup->target_len) > 1) {
             continue;
         }
         qdaln_match_result r = {entry->target_index, 1, -1, 1, QDALN_MATCH_UNIQUE};
@@ -3501,12 +3591,15 @@ static int direct_hamming_apply_match_result(count_sample_job *job, qdaln_match_
 static void direct_hamming_visit_seed(const count_sample_job *job, unsigned char seed_id, uint64_t seed_code,
                                       uint64_t read_code, int *best_target, int *ambiguous) {
     const hamming_lookup *lookup = job->hlookup;
+    size_t seed_start = seed_id == 0 ? 0 : lookup->seed0_len;
     size_t seed_len = seed_id == 0 ? lookup->seed0_len : lookup->target_len - lookup->seed0_len;
     size_t slot = seed_hash_local(seed_code, seed_len, seed_id, lookup->seed_hash_cap);
+    if (!bitset_test_local(lookup->seed_bits, slot)) return;
     for (int e = lookup->seed_heads[slot]; e >= 0; ) {
         int nexte = lookup->seeds[e].next;
         const hamming_seed_entry *entry = &lookup->seeds[e];
-        if (entry->seed_id != seed_id || entry->code != seed_code) {
+        if (entry->seed_id != seed_id ||
+            code_segment_local(entry->target_code, seed_start, seed_len) != seed_code) {
             e = nexte;
             continue;
         }
@@ -3517,7 +3610,7 @@ static void direct_hamming_visit_seed(const count_sample_job *job, unsigned char
         }
         job->stats->candidates_considered += 1;
         job->stats->candidates_verified += 1;
-        if (hamming_code_distance_local(read_code, lookup->target_codes[target_index], lookup->target_len) > 1) {
+        if (hamming_code_distance_local(read_code, entry->target_code, lookup->target_len) > 1) {
             e = nexte;
             continue;
         }
@@ -3530,7 +3623,7 @@ static void direct_hamming_visit_seed(const count_sample_job *job, unsigned char
  * uppercase ACGT and preferring exact hits over unique distance-one hits. */
 static int guide_counter_lookup_target(const hamming_lookup *lookup, uint64_t code, int k,
                                        count_stats *stats, int *distance) {
-    const hamming_lookup_entry *entry = hamming_lookup_find(lookup->exact, lookup->exact_cap, code);
+    const hamming_lookup_entry *entry = hamming_lookup_find_exact(lookup, code);
     if (entry != NULL) {
         if (stats != NULL) {
             stats->candidates_considered += (unsigned long long)entry->match_count;
@@ -3556,15 +3649,16 @@ static int guide_counter_lookup_target(const hamming_lookup *lookup, uint64_t co
         size_t len = seed_id == 0 ? lookup->seed0_len : lookup->target_len - start;
         uint64_t seed = code_segment_local(code, start, len);
         size_t slot = seed_hash_local(seed, len, seed_id, lookup->seed_hash_cap);
+        if (!bitset_test_local(lookup->seed_bits, slot)) continue;
         for (int e = lookup->seed_heads[slot]; e >= 0; e = lookup->seeds[e].next) {
             const hamming_seed_entry *candidate = &lookup->seeds[e];
-            if (candidate->seed_id != seed_id || candidate->code != seed) continue;
+            if (candidate->seed_id != seed_id ||
+                code_segment_local(candidate->target_code, start, len) != seed) continue;
             if (stats != NULL) {
                 ++stats->candidates_considered;
                 ++stats->candidates_verified;
             }
-            if (hamming_code_distance_local(code, lookup->target_codes[candidate->target_index],
-                                           lookup->target_len) > 1) continue;
+            if (hamming_code_distance_local(code, candidate->target_code, lookup->target_len) > 1) continue;
             direct_hamming_record_hit(candidate->target_index, 1, &target, &ambiguous);
             if (ambiguous) return -1;
         }
@@ -3572,16 +3666,68 @@ static int guide_counter_lookup_target(const hamming_lookup *lookup, uint64_t co
     return target;
 }
 
+static int selected_offsets_are_sorted(const offset_list *offsets) {
+    if (offsets == NULL || offsets->count < 2) return 1;
+    for (size_t i = 1; i < offsets->count; ++i) {
+        if (offsets->items[i] < offsets->items[i - 1]) return 0;
+    }
+    return 1;
+}
+
 static int guide_counter_count_seq(count_sample_job *job, const char *seq, size_t seq_len) {
     ++job->stats->total;
     count_progress_tick(job->progress);
     int mapped = 0;
-    if (job->selected_offsets != NULL) {
-        for (size_t i = 0; i < job->selected_offsets->count; ++i) {
+    if (job->selected_offsets != NULL && job->selected_offsets->count != 0) {
+        size_t n_offsets = job->selected_offsets->count;
+        size_t target_len = job->target_len;
+        if (n_offsets > 1 && target_len > 0 && target_len <= 32 &&
+            selected_offsets_are_sorted(job->selected_offsets)) {
+            size_t first_off = job->selected_offsets->items[0];
+            size_t last_off = job->selected_offsets->items[n_offsets - 1];
+            if (first_off <= seq_len && target_len <= seq_len - first_off &&
+                last_off - first_off < target_len * n_offsets) {
+                size_t end_p = last_off + target_len;
+                if (end_p > seq_len) end_p = seq_len;
+                uint64_t code = 0;
+                size_t valid_run = 0;
+                uint64_t mask = target_len == 32 ? UINT64_MAX : (1ULL << (2 * target_len)) - 1ULL;
+                size_t oi = 0;
+                for (size_t p = first_off; p < end_p; ++p) {
+                    uint64_t value = acgt_code_values[(unsigned char)seq[p]];
+                    if (value == 0) {
+                        code = 0;
+                        valid_run = 0;
+                    } else {
+                        code = ((code >> 2) | ((value - 1) << (2 * (target_len - 1)))) & mask;
+                        ++valid_run;
+                    }
+                    if (p + 1 < target_len) continue;
+                    size_t offset = p + 1 - target_len;
+                    while (oi < n_offsets && job->selected_offsets->items[oi] < offset) ++oi;
+                    if (oi >= n_offsets) break;
+                    if (job->selected_offsets->items[oi] != offset) continue;
+                    ++oi;
+                    if (valid_run < target_len) continue;
+                    int distance = 0;
+                    int target = guide_counter_lookup_target(job->hlookup, code, job->k, job->stats, &distance);
+                    if (target < 0) continue;
+                    size_t slot = (job->sample_index * job->targets->count + (size_t)target) * 5 + (size_t)distance;
+                    if (increment_count_slot(job, slot) != 0) return -1;
+                    ++job->stats->unique;
+                    if (distance == 0) ++job->stats->exact;
+                    else ++job->stats->corrected;
+                    mapped = 1;
+                }
+                if (!mapped) ++job->stats->unmatched;
+                return 0;
+            }
+        }
+        for (size_t i = 0; i < n_offsets; ++i) {
             size_t offset = job->selected_offsets->items[i];
-            if (offset > seq_len || job->target_len > seq_len - offset) continue;
+            if (offset > seq_len || target_len > seq_len - offset) continue;
             uint64_t code = 0;
-            if (!dna2_code_local(seq + offset, job->target_len, &code)) continue;
+            if (!dna2_code_local(seq + offset, target_len, &code)) continue;
             int distance = 0;
             int target = guide_counter_lookup_target(job->hlookup, code, job->k, job->stats, &distance);
             if (target < 0) continue;
@@ -3599,14 +3745,6 @@ static int guide_counter_count_seq(count_sample_job *job, const char *seq, size_
 
 static size_t selected_offset_at(const offset_list *offsets, size_t fallback_offset, size_t i) {
     return offsets == NULL || offsets->count == 0 ? fallback_offset : offsets->items[i];
-}
-
-static int selected_offsets_are_sorted(const offset_list *offsets) {
-    if (offsets == NULL || offsets->count < 2) return 1;
-    for (size_t i = 1; i < offsets->count; ++i) {
-        if (offsets->items[i] < offsets->items[i - 1]) return 0;
-    }
-    return 1;
 }
 
 static void fill_direct_hamming_codes(const char *seq, size_t seq_len, const offset_list *offsets,
@@ -3743,8 +3881,7 @@ static int direct_hamming_count_seq(count_sample_job *job, const char *seq, size
         int exact_target = -1;
         int exact_ambiguous = 0;
         if (invalid_count == 0) {
-            const hamming_lookup_entry *entry =
-                    hamming_lookup_find(job->hlookup->exact, job->hlookup->exact_cap, code);
+            const hamming_lookup_entry *entry = hamming_lookup_find_exact(job->hlookup, code);
             if (entry != NULL) {
                 job->stats->candidates_considered += (unsigned long long)entry->match_count;
                 job->stats->candidates_verified += (unsigned long long)entry->match_count;
@@ -4184,23 +4321,25 @@ static void score_offsets_for_seq(const hamming_lookup *lookup, const char *seq,
                                   unsigned long long *scores) {
     if (lookup == NULL || !lookup->ready || lookup->target_len != target_len) return;
     if (lookup->guide_counter_compatible) {
-        /* Roll through the sequence once instead of encoding every window from
-         * scratch. A non-ACGT byte invalidates every window containing it. */
+        /* Roll through only the slice covering [lower .. target_start + range + target_len).
+         * A non-ACGT byte invalidates every window containing it. */
+        size_t lower = target_start > range ? target_start - range : 0;
+        if (lower >= seq_len || target_len > seq_len - lower) return;
+        size_t end_p = target_start + range + target_len;
+        if (end_p > seq_len) end_p = seq_len;
         uint64_t code = 0;
         size_t valid_run = 0;
         uint64_t mask = target_len == 32 ? UINT64_MAX : (1ULL << (2 * target_len)) - 1ULL;
-        for (size_t p = 0; p < seq_len; ++p) {
+        int k = lookup->seed_ready || lookup->mismatch_cap != 0 ? 1 : 0;
+        for (size_t p = lower; p < end_p; ++p) {
             uint64_t value = acgt_code_values[(unsigned char)seq[p]];
             if (value == 0) { code = 0; valid_run = 0; continue; }
             code = ((code >> 2) | ((value - 1) << (2 * (target_len - 1)))) & mask;
             ++valid_run;
             if (valid_run < target_len) continue;
             size_t offset = p + 1 - target_len;
-            size_t lower = target_start > range ? target_start - range : 0;
-            if (offset < lower || offset > target_start + range) continue;
             size_t oi = range + offset - target_start;
             int distance = 0;
-            int k = lookup->seed_ready || lookup->mismatch_cap != 0 ? 1 : 0;
             if (guide_counter_lookup_target(lookup, code, k, NULL, &distance) >= 0) ++scores[oi];
         }
         return;
@@ -4214,7 +4353,7 @@ static void score_offsets_for_seq(const hamming_lookup *lookup, const char *seq,
         if (offset > seq_len || target_len > seq_len - offset) continue;
         uint64_t code = 0;
         if (!dna2_code_local_fold(seq + offset, target_len, &code)) continue;
-        const hamming_lookup_entry *entry = hamming_lookup_find(lookup->exact, lookup->exact_cap, code);
+        const hamming_lookup_entry *entry = hamming_lookup_find_exact(lookup, code);
         if (entry != NULL && entry->match_count == 1) ++scores[oi];
     }
 }
@@ -4249,6 +4388,7 @@ static int count_sample_worker_direct_hamming(count_sample_job *job) {
     }
 
     char seq[8192];
+    const char *seq_view = NULL;
     int got = 0;
 
     if (job->fused_offset_detection) {
@@ -4272,10 +4412,10 @@ static int count_sample_worker_direct_hamming(count_sample_job *job) {
         size_t checked = 0;
         size_t seq_len = 0;
         while (checked < job->auto_offset_sample &&
-               (got = fastq_read_sequence_record_len(&reader, seq, sizeof(seq), &seq_len)) == 1) {
-            score_offsets_for_seq(job->hlookup, seq, seq_len, job->target_start, job->target_len,
+               (got = fastq_read_sequence_view(&reader, seq, sizeof(seq), &seq_view, &seq_len)) == 1) {
+            score_offsets_for_seq(job->hlookup, seq_view, seq_len, job->target_start, job->target_len,
                                   job->auto_offset, scores);
-            if (push_seq_buffer(&buffered, seq, seq_len) != 0) {
+            if (push_seq_buffer(&buffered, seq_view, seq_len) != 0) {
                 free_seq_buffer(&buffered);
                 free(scores);
                 fastq_reader_close(&reader);
@@ -4305,8 +4445,8 @@ static int count_sample_worker_direct_hamming(count_sample_job *job) {
 
     size_t seq_len = 0;
     if (job->read_threads <= 1) {
-        while ((got = fastq_read_sequence_record_len(&reader, seq, sizeof(seq), &seq_len)) == 1) {
-            if (direct_hamming_count_seq(job, seq, seq_len) != 0) {
+        while ((got = fastq_read_sequence_view(&reader, seq, sizeof(seq), &seq_view, &seq_len)) == 1) {
+            if (direct_hamming_count_seq(job, seq_view, seq_len) != 0) {
                 fastq_reader_close(&reader);
                 return 1;
             }
@@ -4319,8 +4459,8 @@ static int count_sample_worker_direct_hamming(count_sample_job *job) {
             fastq_reader_close(&reader);
             return 1;
         }
-        while ((got = fastq_read_sequence_record_len(&reader, seq, sizeof(seq), &seq_len)) == 1) {
-            if (push_seq_buffer(&batch, seq, seq_len) != 0) {
+        while ((got = fastq_read_sequence_view(&reader, seq, sizeof(seq), &seq_view, &seq_len)) == 1) {
+            if (push_seq_buffer(&batch, seq_view, seq_len) != 0) {
                 free_seq_buffer(&batch);
                 fastq_reader_close(&reader);
                 return 1;
@@ -5283,8 +5423,8 @@ static int run_count(const char *argv0, int argc, char **argv, const guide_count
         goto fail_args;
     }
     if (labels.count == 0) {
-        for (size_t i = 0; i < reads.count; ++i) {
-            if (push_string(&labels, path_basename(reads.items[i])) != 0) {
+        for (size_t ri = 0; ri < reads.count; ++ri) {
+            if (push_string(&labels, path_basename(reads.items[ri])) != 0) {
                 fprintf(stderr, "out of memory\n");
                 goto fail_args;
             }
@@ -5420,7 +5560,7 @@ static int run_count(const char *argv0, int argc, char **argv, const guide_count
         }
     }
 
-    int need_general_index = !direct_hamming_counts || strcmp(format, "dotmatch") == 0;
+    int need_general_index = !direct_hamming_counts || (auto_offset != 0 && may_use_metal && offsets_mode != OFFSET_MODE_MULTI);
     if (need_general_index) {
         phase_start_seconds = seconds_now();
         if (build_target_arrays(&targets, &target_ptrs, &target_lens) != 0) {
@@ -5458,19 +5598,57 @@ static int run_count(const char *argv0, int argc, char **argv, const guide_count
     }
 
     if (strcmp(format, "dotmatch") == 0) {
-        for (size_t i = 0; i < targets.count; ++i) {
-            qdaln_match_result r;
-            qdaln_index_stats s;
-            const char *seq_ptr = targets.records[i].seq;
-            size_t seq_len = targets.records[i].len;
-            int assign_rc = metric == COUNT_METRIC_HAMMING
-                    ? qdaln_index_assign_hamming_stats(index, &seq_ptr, &seq_len, 1, k, &r, &s)
-                    : qdaln_index_assign_stats(index, &seq_ptr, &seq_len, 1, k, &r, &s);
-            if (assign_rc != 0) {
-                fprintf(stderr, "target ambiguity check failed\n");
-                goto done;
+        if (direct_hamming_counts && hlookup.ready && metric == COUNT_METRIC_HAMMING && (k == 0 || k == 1)) {
+            for (size_t ti = 0; ti < targets.count; ++ti) {
+                uint64_t code = 0;
+                if (!dna2_code_local(targets.records[ti].seq, hlookup.target_len, &code)) continue;
+                const hamming_lookup_entry *exact_entry = hamming_lookup_find_exact(&hlookup, code);
+                if (exact_entry != NULL && exact_entry->match_count > 1) {
+                    ambiguous_nearby[ti] = 1;
+                    continue;
+                }
+                if (k == 0) continue;
+                if (!hlookup.seed_ready) {
+                    if (hamming_lookup_find(hlookup.mismatch, hlookup.mismatch_cap, code) != NULL) {
+                        ambiguous_nearby[ti] = 1;
+                    }
+                    continue;
+                }
+                int found_other = 0;
+                for (unsigned char seed_id = 0; seed_id < 2 && !found_other; ++seed_id) {
+                    size_t start = seed_id == 0 ? 0 : hlookup.seed0_len;
+                    size_t len = seed_id == 0 ? hlookup.seed0_len : hlookup.target_len - start;
+                    uint64_t seed = code_segment_local(code, start, len);
+                    size_t slot = seed_hash_local(seed, len, seed_id, hlookup.seed_hash_cap);
+                    if (!bitset_test_local(hlookup.seed_bits, slot)) continue;
+                    for (int e = hlookup.seed_heads[slot]; e >= 0; e = hlookup.seeds[e].next) {
+                        const hamming_seed_entry *candidate = &hlookup.seeds[e];
+                        if (candidate->seed_id != seed_id ||
+                            candidate->target_index == (int)ti ||
+                            code_segment_local(candidate->target_code, start, len) != seed) continue;
+                        if (hamming_code_distance_local(code, candidate->target_code, hlookup.target_len) <= 1) {
+                            found_other = 1;
+                            break;
+                        }
+                    }
+                }
+                ambiguous_nearby[ti] = found_other ? 1 : 0;
             }
-            ambiguous_nearby[i] = r.match_count > 1 ? 1 : 0;
+        } else {
+            for (size_t ti = 0; ti < targets.count; ++ti) {
+                qdaln_match_result r;
+                qdaln_index_stats s;
+                const char *seq_ptr = targets.records[ti].seq;
+                size_t seq_len = targets.records[ti].len;
+                int assign_rc = metric == COUNT_METRIC_HAMMING
+                        ? qdaln_index_assign_hamming_stats(index, &seq_ptr, &seq_len, 1, k, &r, &s)
+                        : qdaln_index_assign_stats(index, &seq_ptr, &seq_len, 1, k, &r, &s);
+                if (assign_rc != 0) {
+                    fprintf(stderr, "target ambiguity check failed\n");
+                    goto done;
+                }
+                ambiguous_nearby[ti] = r.match_count > 1 ? 1 : 0;
+            }
         }
     }
 
@@ -6415,9 +6593,9 @@ static int run_fastq_assign(const char *argv0, int argc, char **argv) {
         fprintf(stderr, "out of memory\n");
         goto done;
     }
-    for (size_t i = 0; i < targets.count; ++i) {
-        target_ptrs[i] = targets.records[i].seq;
-        target_lens[i] = targets.records[i].len;
+    for (size_t ti = 0; ti < targets.count; ++ti) {
+        target_ptrs[ti] = targets.records[ti].seq;
+        target_lens[ti] = targets.records[ti].len;
     }
     index = qdaln_index_build(target_ptrs, target_lens, targets.count);
     free(target_ptrs);
@@ -7093,10 +7271,10 @@ static int run_audit(const char *argv0, int argc, char **argv) {
         fprintf(stderr, "out of memory\n");
         goto done;
     }
-    for (size_t i = 0; i < targets.count; ++i) {
-        nearest_dist[i] = -1;
-        nearest_idx[i] = (size_t)-1;
-        parent[i] = i;
+    for (size_t ti = 0; ti < targets.count; ++ti) {
+        nearest_dist[ti] = -1;
+        nearest_idx[ti] = (size_t)-1;
+        parent[ti] = ti;
     }
 
     if (path_join(path, sizeof(path), out_dir, "collision_pairs.tsv") != 0) goto done;
@@ -7104,19 +7282,19 @@ static int run_audit(const char *argv0, int argc, char **argv) {
     if (pairs == NULL) goto done;
     fprintf(pairs, "target_a\ttarget_b\tsequence_a\tsequence_b\tdistance\trisk_at_k1\trisk_at_k2\texample_ambiguous_query\n");
 
-    for (size_t i = 0; i < targets.count; ++i) {
-        for (size_t j = i + 1; j < targets.count; ++j) {
-            int d = qdaln_edit_distance(targets.records[i].seq, targets.records[i].len,
+    for (size_t ti = 0; ti < targets.count; ++ti) {
+        for (size_t j = ti + 1; j < targets.count; ++j) {
+            int d = qdaln_edit_distance(targets.records[ti].seq, targets.records[ti].len,
                                         targets.records[j].seq, targets.records[j].len);
             if (d < 0) goto done;
             if (min_dist < 0 || d < min_dist) min_dist = d;
-            if (nearest_dist[i] < 0 || d < nearest_dist[i]) {
-                nearest_dist[i] = d;
-                nearest_idx[i] = j;
+            if (nearest_dist[ti] < 0 || d < nearest_dist[ti]) {
+                nearest_dist[ti] = d;
+                nearest_idx[ti] = j;
             }
             if (nearest_dist[j] < 0 || d < nearest_dist[j]) {
                 nearest_dist[j] = d;
-                nearest_idx[j] = i;
+                nearest_idx[j] = ti;
             }
             if (d == 0) ++pairs_d0;
             if (d == 1) ++pairs_d1;
@@ -7124,12 +7302,12 @@ static int run_audit(const char *argv0, int argc, char **argv) {
             if (d <= k) ++pairs_within_k;
             if (d <= 2) {
                 ++risk_pairs_k1;
-                ++near_k1[i];
+                ++near_k1[ti];
                 ++near_k1[j];
-                uf_union(parent, i, j);
+                uf_union(parent, ti, j);
             }
             if (d <= 4) ++risk_pairs_k2;
-            int hd = hamming_distance_cli(targets.records[i].seq, targets.records[i].len,
+            int hd = hamming_distance_cli(targets.records[ti].seq, targets.records[ti].len,
                                           targets.records[j].seq, targets.records[j].len);
             if (hd >= 0) {
                 if (min_hamming_dist < 0 || hd < min_hamming_dist) min_hamming_dist = hd;
@@ -7137,9 +7315,9 @@ static int run_audit(const char *argv0, int argc, char **argv) {
                 if (hd <= 6) ++risk_pairs_hamming_k3;
             }
             if (d <= 2 || d <= 2 * k) {
-                const char *example = d == 0 ? targets.records[i].seq : "";
+                const char *example = d == 0 ? targets.records[ti].seq : "";
                 fprintf(pairs, "%s\t%s\t%s\t%s\t%d\t%s\t%s\t%s\n",
-                        targets.records[i].id, targets.records[j].id, targets.records[i].seq, targets.records[j].seq,
+                        targets.records[ti].id, targets.records[j].id, targets.records[ti].seq, targets.records[j].seq,
                         d, d <= 2 ? "yes" : "no", d <= 4 ? "yes" : "no", example);
             }
         }
@@ -7154,14 +7332,14 @@ static int run_audit(const char *argv0, int argc, char **argv) {
     safety = open_output_file(path);
     if (safety == NULL) goto done;
     fprintf(safety, "target_id\tsequence\tnearest_target\tnearest_distance\tsafe_at_k1\tsafe_at_k2\tnum_nearby_k1_risk_targets\n");
-    for (size_t i = 0; i < targets.count; ++i) {
-        const char *near_id = nearest_idx[i] == (size_t)-1 ? "" : targets.records[nearest_idx[i]].id;
-        int nd = nearest_dist[i];
+    for (size_t ti = 0; ti < targets.count; ++ti) {
+        const char *near_id = nearest_idx[ti] == (size_t)-1 ? "" : targets.records[nearest_idx[ti]].id;
+        int nd = nearest_dist[ti];
         fprintf(safety, "%s\t%s\t%s\t%d\t%s\t%s\t%llu\n",
-                targets.records[i].id, targets.records[i].seq, near_id, nd,
+                targets.records[ti].id, targets.records[ti].seq, near_id, nd,
                 (nd < 0 || nd >= 3) ? "yes" : "no",
                 (nd < 0 || nd >= 5) ? "yes" : "no",
-                near_k1[i]);
+                near_k1[ti]);
     }
     if (close_output_file(safety) != 0) {
         safety = NULL;
@@ -7173,9 +7351,9 @@ static int run_audit(const char *argv0, int argc, char **argv) {
     clusters = open_output_file(path);
     if (clusters == NULL) goto done;
     fprintf(clusters, "cluster_id\ttarget_id\tsequence\n");
-    for (size_t i = 0; i < targets.count; ++i) {
-        if (near_k1[i] == 0) continue;
-        fprintf(clusters, "%zu\t%s\t%s\n", uf_find(parent, i), targets.records[i].id, targets.records[i].seq);
+    for (size_t ti = 0; ti < targets.count; ++ti) {
+        if (near_k1[ti] == 0) continue;
+        fprintf(clusters, "%zu\t%s\t%s\n", uf_find(parent, ti), targets.records[ti].id, targets.records[ti].seq);
     }
     if (close_output_file(clusters) != 0) {
         clusters = NULL;
@@ -7184,11 +7362,11 @@ static int run_audit(const char *argv0, int argc, char **argv) {
     clusters = NULL;
 
     size_t unique_sequences = 0;
-    for (size_t i = 0; i < targets.count; ++i) {
+    for (size_t ti = 0; ti < targets.count; ++ti) {
         int seen = 0;
-        for (size_t j = 0; j < i; ++j) {
-            if (targets.records[i].len == targets.records[j].len &&
-                memcmp(targets.records[i].seq, targets.records[j].seq, targets.records[i].len) == 0) {
+        for (size_t j = 0; j < ti; ++j) {
+            if (targets.records[ti].len == targets.records[j].len &&
+                memcmp(targets.records[ti].seq, targets.records[j].seq, targets.records[ti].len) == 0) {
                 seen = 1;
                 break;
             }
@@ -7200,8 +7378,8 @@ static int run_audit(const char *argv0, int argc, char **argv) {
     variants_out = open_output_file(path);
     if (variants_out == NULL) goto done;
     fprintf(variants_out, "query_variant\ttargets_within_k1\n");
-    for (size_t i = 0; i < targets.count; ++i) {
-        if (add_k1_variants_for_target(&k1_variants, targets.records[i].seq, targets.records[i].len) != 0) {
+    for (size_t ti = 0; ti < targets.count; ++ti) {
+        if (add_k1_variants_for_target(&k1_variants, targets.records[ti].seq, targets.records[ti].len) != 0) {
             fprintf(stderr, "failed to enumerate k=1 variants\n");
             goto done;
         }
@@ -7626,7 +7804,7 @@ static int run_inspect_unmatched(const char *argv0, int argc, char **argv) {
     }
     fprintf(out, "sequence\tcount\tlength\tnearest_target\tnearest_distance\tnearest_edit_class\tpossible_reason\treverse_complement\trevcomp_nearest_target\trevcomp_nearest_distance\toffset_hint\tadapter_hint\n");
     size_t limit = unmatched.count < top_n ? unmatched.count : top_n;
-    for (size_t i = 0; i < limit; ++i) {
+    for (size_t ui = 0; ui < limit; ++ui) {
         int nearest_index = -1;
         int nearest_dist = -1;
         int rc_nearest_index = -1;
@@ -7636,38 +7814,38 @@ static int run_inspect_unmatched(const char *argv0, int argc, char **argv) {
         const char *edit_class = "invalid";
         const char *reason = "wrong_length";
         char rc_seq[8192] = "";
-        if (strcmp(unmatched.entries[i].seq, "<invalid>") != 0 &&
-            nearest_target_for_query(&targets, unmatched.entries[i].seq, &nearest_index, &nearest_dist) == 0) {
+        if (strcmp(unmatched.entries[ui].seq, "<invalid>") != 0 &&
+            nearest_target_for_query(&targets, unmatched.entries[ui].seq, &nearest_index, &nearest_dist) == 0) {
             if (nearest_index >= 0) {
                 nearest_id = targets.records[nearest_index].id;
-                int kind = correction_kind(unmatched.entries[i].seq, strlen(unmatched.entries[i].seq),
+                int kind = correction_kind(unmatched.entries[ui].seq, strlen(unmatched.entries[ui].seq),
                                            targets.records[nearest_index].seq, targets.records[nearest_index].len,
                                            nearest_dist);
                 edit_class = correction_name(kind);
             }
-            if (contains_base_n(unmatched.entries[i].seq)) reason = "contains_N";
+            if (contains_base_n(unmatched.entries[ui].seq)) reason = "contains_N";
             else if (nearest_dist > k) reason = "near_known_target_above_k";
             else reason = "unknown";
-            if (unmatched.entries[i].low_quality_count != 0) reason = "low_quality_candidate";
-            if (unmatched.entries[i].adapter_hint != NULL && unmatched.entries[i].adapter_hint[0] != '\0') {
+            if (unmatched.entries[ui].low_quality_count != 0) reason = "low_quality_candidate";
+            if (unmatched.entries[ui].adapter_hint != NULL && unmatched.entries[ui].adapter_hint[0] != '\0') {
                 reason = "adapter_or_primer_candidate";
             }
-            if (unmatched.entries[i].offset_hint != 0) reason = "offset_shift_candidate";
-            if (reverse_complement_seq(unmatched.entries[i].seq, rc_seq, sizeof(rc_seq)) == 0 &&
+            if (unmatched.entries[ui].offset_hint != 0) reason = "offset_shift_candidate";
+            if (reverse_complement_seq(unmatched.entries[ui].seq, rc_seq, sizeof(rc_seq)) == 0 &&
                 nearest_target_for_query(&targets, rc_seq, &rc_nearest_index, &rc_nearest_dist) == 0 &&
                 rc_nearest_index >= 0) {
                 rc_nearest_id = targets.records[rc_nearest_index].id;
-                if (unmatched.entries[i].offset_hint == 0 &&
+                if (unmatched.entries[ui].offset_hint == 0 &&
                     rc_nearest_dist <= k && (nearest_dist < 0 || rc_nearest_dist < nearest_dist)) {
                     reason = "reverse_complement_candidate";
                 }
             }
         }
         fprintf(out, "%s\t%llu\t%zu\t%s\t%d\t%s\t%s\t%s\t%s\t%d\t",
-                unmatched.entries[i].seq, unmatched.entries[i].count, strlen(unmatched.entries[i].seq),
+                unmatched.entries[ui].seq, unmatched.entries[ui].count, strlen(unmatched.entries[ui].seq),
                 nearest_id, nearest_dist, edit_class, reason, rc_seq, rc_nearest_id, rc_nearest_dist);
-        if (unmatched.entries[i].offset_hint != 0) fprintf(out, "%d", unmatched.entries[i].offset_hint);
-        fprintf(out, "\t%s\n", unmatched.entries[i].adapter_hint == NULL ? "" : unmatched.entries[i].adapter_hint);
+        if (unmatched.entries[ui].offset_hint != 0) fprintf(out, "%d", unmatched.entries[ui].offset_hint);
+        fprintf(out, "\t%s\n", unmatched.entries[ui].adapter_hint == NULL ? "" : unmatched.entries[ui].adapter_hint);
     }
     rc = 0;
 
@@ -8370,11 +8548,11 @@ static int run_demux(const char *argv0, int argc, char **argv) {
         unsigned long long top_count = 0;
         size_t top_target = 0;
         size_t nonempty = 0;
-        for (size_t i = 0; i < targets.count; ++i) {
-            if (target_counts[i] != 0) ++nonempty;
-            if (target_counts[i] > top_count) {
-                top_count = target_counts[i];
-                top_target = i;
+        for (size_t ti = 0; ti < targets.count; ++ti) {
+            if (target_counts[ti] != 0) ++nonempty;
+            if (target_counts[ti] > top_count) {
+                top_count = target_counts[ti];
+                top_target = ti;
             }
         }
         fprintf(summary,
@@ -8389,8 +8567,8 @@ static int run_demux(const char *argv0, int argc, char **argv) {
         fprintf(summary,
                 ",\n  \"indel_window\": %zu,\n  \"barcode_start\": %zu,\n  \"barcode_length\": %zu,\n  \"barcode_length_mode\": \"%s\",\n  \"barcode_lengths\": [",
                 indel_window, barcode_start, barcode_len, auto_barcode_len ? "auto" : "fixed");
-        for (size_t i = 0; i < barcode_lens_count; ++i) {
-            fprintf(summary, "%s%zu", i == 0 ? "" : ", ", barcode_lens[i]);
+        for (size_t bi = 0; bi < barcode_lens_count; ++bi) {
+            fprintf(summary, "%s%zu", bi == 0 ? "" : ", ", barcode_lens[bi]);
         }
         fprintf(summary,
                 "],\n  \"n_barcodes\": %zu,\n  \"total_reads\": %llu,\n  \"assigned_unique\": %llu,\n  \"assigned_exact\": %llu,\n  \"assigned_corrected\": %llu,\n  \"ambiguous\": %llu,\n  \"unmatched\": %llu,\n  \"invalid\": %llu,\n  \"nonempty_outputs\": %zu,\n  \"top_barcode_id\": \"%s\",\n  \"top_barcode_count\": %llu,\n  \"candidates_considered\": %llu,\n  \"candidates_verified\": %llu\n}\n",
@@ -8405,8 +8583,8 @@ static int run_demux(const char *argv0, int argc, char **argv) {
 
 done:
     if (target_files != NULL) {
-        for (size_t i = 0; i < targets.count; ++i) {
-            if (close_output_file(target_files[i]) != 0) rc = 1;
+        for (size_t ti = 0; ti < targets.count; ++ti) {
+            if (close_output_file(target_files[ti]) != 0) rc = 1;
         }
     }
     if (close_output_file(assignments) != 0) rc = 1;
@@ -9297,13 +9475,13 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
         fprintf(stderr, "out of memory\n");
         goto done;
     }
-    for (size_t i = 0; i < samples.count; ++i) {
-        if (samples.items[i].is_alias) continue;
+    for (size_t si = 0; si < samples.count; ++si) {
+        if (samples.items[si].is_alias) continue;
         for (size_t r = 0; r < run.read_count; ++r) {
             bcl_read_info *ri = &run.reads[r];
             if (!bcl_output_enabled(ri, emit_index_fastqs)) continue;
-            gzFile *slot = bcl_output_slot(sample_fastqs, i, r, run.read_count);
-            *slot = open_bcl_fastq(out_dir, samples.items[i].id, i + 1, 1, bcl_output_kind(ri),
+            gzFile *slot = bcl_output_slot(sample_fastqs, si, r, run.read_count);
+            *slot = open_bcl_fastq(out_dir, samples.items[si].id, si + 1, 1, bcl_output_kind(ri),
                                    bcl_output_number(&run, r), gzip_level);
             if (*slot == NULL) {
                 fprintf(stderr, "failed to open sample FASTQ\n");
@@ -9418,26 +9596,26 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
                 block_start = block_end;
             }
             if (threads > 1) {
-                for (size_t i = 0; i < batch; ++i) pthread_join(thread_ids[i], NULL);
+                for (size_t bi = 0; bi < batch; ++bi) pthread_join(thread_ids[bi], NULL);
             }
-            for (size_t i = 0; i < batch; ++i) {
-                if (results[i].error != 0) {
+            for (size_t bi = 0; bi < batch; ++bi) {
+                if (results[bi].error != 0) {
                     fprintf(stderr, "failed to format BCL block\n");
                     goto done;
                 }
-                passed_clusters += results[i].passed_clusters;
-                filtered_clusters += results[i].filtered_clusters;
-                undetermined_reads += results[i].undetermined_reads;
-                for (size_t s = 0; s < samples.count; ++s) samples.items[s].assigned += results[i].sample_assigned[s];
-                if (merge_bcl_unknowns(&unknowns, &results[i].unknowns) != 0) {
+                passed_clusters += results[bi].passed_clusters;
+                filtered_clusters += results[bi].filtered_clusters;
+                undetermined_reads += results[bi].undetermined_reads;
+                for (size_t s = 0; s < samples.count; ++s) samples.items[s].assigned += results[bi].sample_assigned[s];
+                if (merge_bcl_unknowns(&unknowns, &results[bi].unknowns) != 0) {
                     fprintf(stderr, "out of memory\n");
                     goto done;
                 }
-                if (write_bcl_block_result(&results[i], sample_fastqs, undetermined_fastqs, samples.count, run.read_count) != 0) {
+                if (write_bcl_block_result(&results[bi], sample_fastqs, undetermined_fastqs, samples.count, run.read_count) != 0) {
                     fprintf(stderr, "failed to write BCL block\n");
                     goto done;
                 }
-                free_bcl_block_result(&results[i], samples.count, run.read_count);
+                free_bcl_block_result(&results[bi], samples.count, run.read_count);
             }
             free(thread_ids);
             free(jobs);
@@ -9459,12 +9637,12 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
     }
     fprintf(stats, "\n");
     unsigned long long assigned_reads = 0;
-    for (size_t i = 0; i < samples.count; ++i) {
-        if (samples.items[i].is_alias) continue;
-        fprintf(stats, "%s,%llu", samples.items[i].id, samples.items[i].assigned);
-        for (int r = 0; r < non_index_read_count; ++r) fprintf(stats, ",%llu", samples.items[i].assigned);
+    for (size_t si = 0; si < samples.count; ++si) {
+        if (samples.items[si].is_alias) continue;
+        fprintf(stats, "%s,%llu", samples.items[si].id, samples.items[si].assigned);
+        for (int r = 0; r < non_index_read_count; ++r) fprintf(stats, ",%llu", samples.items[si].assigned);
         fprintf(stats, "\n");
-        assigned_reads += samples.items[i].assigned;
+        assigned_reads += samples.items[si].assigned;
     }
     fprintf(stats, "Undetermined,%llu", undetermined_reads);
     for (int r = 0; r < non_index_read_count; ++r) fprintf(stats, ",%llu", undetermined_reads);
@@ -9479,7 +9657,7 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
         if (unknown == NULL) goto done;
         fprintf(unknown, "index,count\n");
         size_t n = unknowns.count < 100 ? unknowns.count : 100;
-        for (size_t i = 0; i < n; ++i) fprintf(unknown, "%s,%llu\n", unknowns.items[i].index, unknowns.items[i].count);
+        for (size_t ui = 0; ui < n; ++ui) fprintf(unknown, "%s,%llu\n", unknowns.items[ui].index, unknowns.items[ui].count);
         if (close_output_file(unknown) != 0) goto done;
     }
 
@@ -9488,9 +9666,9 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
     FILE *normalized = open_output_file(normalized_path);
     if (normalized != NULL) {
         fprintf(normalized, "sample_id,sample_name,lane,index,index2\n");
-        for (size_t i = 0; i < samples.count; ++i) {
-            fprintf(normalized, "%s,%s,%d,%s,%s\n", samples.items[i].id, samples.items[i].name,
-                    samples.items[i].lane, samples.items[i].index1, samples.items[i].index2);
+        for (size_t si = 0; si < samples.count; ++si) {
+            fprintf(normalized, "%s,%s,%d,%s,%s\n", samples.items[si].id, samples.items[si].name,
+                    samples.items[si].lane, samples.items[si].index1, samples.items[si].index2);
         }
         if (close_output_file(normalized) != 0) goto done;
     }
@@ -9509,10 +9687,10 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
 
 done:
     if (sample_fastqs != NULL) {
-        for (size_t i = 0; i < samples.count; ++i) {
-            if (samples.items[i].is_alias) continue;
+        for (size_t si = 0; si < samples.count; ++si) {
+            if (samples.items[si].is_alias) continue;
             for (size_t r = 0; r < run.read_count; ++r) {
-                gzFile *slot = bcl_output_slot(sample_fastqs, i, r, run.read_count);
+                gzFile *slot = bcl_output_slot(sample_fastqs, si, r, run.read_count);
                 if (*slot != NULL) gzclose(*slot);
             }
         }
@@ -9523,7 +9701,7 @@ done:
         }
     }
     if (tiles != NULL) {
-        for (size_t i = 0; i < tile_count; ++i) free(tiles[i]);
+        for (size_t ti = 0; ti < tile_count; ++ti) free(tiles[ti]);
         free(tiles);
     }
     free(sample_fastqs);
@@ -9876,9 +10054,9 @@ static int run_validate(const char *argv0, int argc, char **argv) {
     }
     printf("{\n  \"oracle\": \"native_scan\",\n  \"checked_reads\": %zu,\n  \"mismatches\": %zu,\n  \"k\": %d,\n  \"metric\": \"%s\",\n  \"target_start\": %zu,\n  \"target_length\": %zu,\n  \"offset_mode\": \"%s\",\n  \"selected_target_starts\": [",
            checked, mismatches, k, metric_name(metric), target_start, target_len, offset_mode_name(offsets_mode));
-    for (size_t i = 0; i < offsets.count; ++i) {
-        if (i != 0) printf(", ");
-        printf("%zu", offsets.items[i]);
+    for (size_t oi = 0; oi < offsets.count; ++oi) {
+        if (oi != 0) printf(", ");
+        printf("%zu", offsets.items[oi]);
     }
     printf("]\n}\n");
     rc = mismatches == 0 ? 0 : 1;

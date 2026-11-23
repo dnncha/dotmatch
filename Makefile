@@ -631,7 +631,7 @@ repro repro-small:
 	python3 scripts/repro_small.py
 
 SAN_FLAGS = -O1 -g -fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer
-STRICT_WARNINGS = -Wall -Wextra -Wpedantic -Wformat=2 -Wconversion -Wno-sign-conversion -Wvla -Wimplicit-fallthrough -Werror
+STRICT_WARNINGS = -Wall -Wextra -Wpedantic -Wformat=2 -Wconversion -Wno-sign-conversion -Wvla -Wimplicit-fallthrough -Wshadow -Werror
 ASAN_ENV = ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1
 ARCH_FLAGS = $(filter -mavx2,$(CFLAGS))
 C_SOURCES = src/qda.c src/qdalign.c src/target_table.h include/qdalign.h include/qdmetal.h src/qdmetal_stub.c

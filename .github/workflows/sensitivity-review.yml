@@ -30,9 +30,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             browser: chromium
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             browser: firefox
           - os: macos-latest
             browser: webkit
