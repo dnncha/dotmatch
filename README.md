@@ -134,7 +134,7 @@ Additional checked reports and examples:
 - [Hamming k=3 engine comparison](https://dotmatch.readthedocs.io/en/latest/benchmarks/hamming_seed_layout/README.html): 5.2–5.7× faster complete `k=3` counting than the prior engine on 30,000 simulated reads and the Yusa library with identical counts, plus 136,096 oracle checks.
 - [Public CRISPR comparisons](https://dotmatch.readthedocs.io/en/latest/benchmarks/crispr_comparison/README.html): Yusa and Brunello runs comparing exact, Hamming, and Levenshtein semantics separately.
 - [GSE146194 direct-guide-capture case study](https://github.com/dnncha/dotmatch/tree/main/examples/perturb_seq_gse146194): per-read assignment checked against independent reference implementations across discovery and evaluation reads (does not establish guide-per-cell or perturbation-effect accuracy).
-- [Cheerful Duck Research](https://cheerfulduck.com/research): published bioinformatics investigations, reproducible examples, and follow-up corrections.
+- [Bunsen](https://bunsen.science/): published bioinformatics investigations, reproducible examples, and follow-up corrections.
 
 Try an installation-free synthetic smoke demo on [Binder](https://mybinder.org/v2/gh/dnncha/dotmatch/main?labpath=demo.ipynb) or [Google Colab](https://colab.research.google.com/github/dnncha/dotmatch/blob/main/demo.ipynb), or share a de-identified discrepancy fixture in the [public validation thread](https://github.com/dnncha/dotmatch/issues/82) (never post private reads or unpublished guide libraries).
 

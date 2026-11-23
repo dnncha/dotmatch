@@ -79,7 +79,7 @@ Performance and correctness results apply to the commands, datasets, and hardwar
 
 ## Related research
 
-[Cheerful Duck Research](https://cheerfulduck.com/research) collects our bioinformatics investigations, reproduction materials, and corrections. Cite the specific DotMatch release and assignment policy used in your analysis via the methods guide below.
+[Bunsen](https://bunsen.science/) collects our bioinformatics investigations, reproduction materials, and corrections. Cite the specific DotMatch release and assignment policy used in your analysis via the methods guide below.
 
 ## Help and citation
 
