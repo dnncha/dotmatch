@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from .calibration import ErrorModel, decode, fit_error_model
+from .target_io import read_target_table
 
 
 def fit_model_tsv(path: str | Path, *, prior_strength: float = 100.0) -> ErrorModel:
@@ -122,25 +123,20 @@ def decode_tsv(
 
 
 def _dict_rows(path: str | Path) -> list[dict[str, str]]:
-    with Path(path).open("rt", encoding="utf-8", newline="") as handle:
+    with Path(path).open("rt", encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle, delimiter="\t")
         if reader.fieldnames is None:
             raise ValueError(f"{path}: missing TSV header")
-        return [dict(row) for row in reader]
+        rows: list[dict[str, str]] = []
+        for row in reader:
+            if None in row or any(value is None for value in row.values()):
+                raise ValueError(f"{path}: line {reader.line_num} has a different number of fields from the header")
+            rows.append(dict(row))
+        return rows
 
 
 def _read_targets(path: str | Path) -> list[str]:
-    rows = _dict_rows(path)
-    if not rows:
+    targets = [record.sequence for record in read_target_table(path)]
+    if not targets:
         raise ValueError("target table contains no targets")
-    candidates = ["target_seq", "guide_seq", "barcode_seq", "sequence", "seq"]
-    fieldnames = list(rows[0])
-    sequence_column = next((column for column in candidates if column in fieldnames), None)
-    if sequence_column is None:
-        if len(fieldnames) < 2:
-            raise ValueError("target table requires a sequence column")
-        sequence_column = fieldnames[1]
-    targets = [str(row.get(sequence_column, "")).strip().upper() for row in rows]
-    if any(not target for target in targets):
-        raise ValueError("target table contains an empty sequence")
     return targets

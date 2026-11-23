@@ -6,6 +6,7 @@ printable ASCII, not whether a read originated from a particular DNA target.
 from __future__ import annotations
 
 import gzip
+import zlib
 from pathlib import Path
 from typing import Any, Iterator, NamedTuple, TextIO
 
@@ -62,5 +63,8 @@ def iter_fastq(path: str | Path, *, content_digest: Any = None) -> Iterator[Fast
     """
     source = Path(path)
     opener = gzip.open if source.name.lower().endswith(".gz") else open
-    with opener(source, "rt", encoding="utf-8", newline="") as handle:
-        yield from iter_fastq_records(handle, source, content_digest=content_digest)
+    try:
+        with opener(source, "rt", encoding="utf-8", newline="") as handle:
+            yield from iter_fastq_records(handle, source, content_digest=content_digest)
+    except (EOFError, zlib.error, gzip.BadGzipFile) as exc:
+        raise ValueError(f"corrupt or truncated gzip FASTQ {source}: {exc}") from exc

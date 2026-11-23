@@ -4,6 +4,7 @@ from __future__ import annotations
 import csv
 import gzip
 import re
+import zlib
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -71,6 +72,14 @@ def read_count_table(path: str | Path, *, sample_cols: Sequence[str] | None = No
     exact/corrected components and QC fields must not become additional samples.
     sample_cols names source columns and preserves the requested order.
     """
+    try:
+        return _read_count_table(path, sample_cols=sample_cols, var_cols=var_cols, mageck_only=mageck_only)
+    except (EOFError, zlib.error, gzip.BadGzipFile) as exc:
+        raise ValueError(f"corrupt or truncated gzip count table {path}: {exc}") from exc
+
+
+def _read_count_table(path: str | Path, *, sample_cols: Sequence[str] | None,
+                      var_cols: Sequence[str], mageck_only: bool) -> CountTable:
     source = Path(path)
     if source.name.lower().endswith(".gz"):
         handle = cast(TextIO, gzip.open(source, "rt", encoding="utf-8-sig", newline=""))
@@ -94,6 +103,8 @@ def read_count_table(path: str | Path, *, sample_cols: Sequence[str] | None = No
             candidates = header[2:]
         elif detailed:
             candidates = [name for name in header if name.endswith("_count_total")]
+        elif "target_seq" in lower and "count_total" in header:
+            candidates = ["count_total"]
         else:
             candidates = [name for name in header if name != id_col and name not in metadata_cols]
         selected = list(candidates) if sample_cols is None else list(sample_cols)
