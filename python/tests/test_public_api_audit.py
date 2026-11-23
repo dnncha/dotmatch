@@ -8,7 +8,6 @@ from concurrent.futures import ThreadPoolExecutor
 import pytest
 import dotmatch
 from dotmatch import core
-from dotmatch.fastq_io import iter_fastq_records
 
 
 @pytest.mark.parametrize('bad', [True, False, 0.5, 1.9, '1', -1, 2**31, 2**32, 2**32+1])

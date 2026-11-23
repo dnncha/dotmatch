@@ -3,7 +3,6 @@ import json
 
 import pytest
 
-import dotmatch
 from dotmatch.calibration_io import _dict_rows, _read_targets
 from dotmatch.count_io import read_count_table
 from dotmatch.fastq_io import iter_fastq
