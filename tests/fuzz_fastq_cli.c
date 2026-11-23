@@ -51,7 +51,7 @@ static void fuzz_putc(fuzz_buf *b, char c) {
 }
 
 static const char *const fuzz_targets[] = {
-    "ACGTACGTAC", "ACGTACGTAA", "TTGCAAGGCT", "GGGGCCCCAA", "CATGCATGCA", "CATGCTTGCA",
+    "ACGTACGTAC", "ACGTACGTAA", "TTGCAAGGCT", "GGGGCCCCAA", "CATGCATGCA", "CATGCTTGCA", "CATGCNTGCA",
 };
 static const size_t fuzz_target_count = sizeof(fuzz_targets) / sizeof(fuzz_targets[0]);
 static const size_t fuzz_target_len = 10;
@@ -73,6 +73,11 @@ static void fuzz_sequence(fuzz_rng *rng, fuzz_buf *seq) {
         size_t edits = fuzz_below(rng, 3);
         for (size_t e = 0; e < edits; ++e) {
             seq->data[fuzz_target_start + fuzz_below(rng, fuzz_target_len)] = "ACGT"[fuzz_below(rng, 4)];
+        }
+        if (fuzz_chance(rng, 10)) seq->data[fuzz_target_start + fuzz_below(rng, fuzz_target_len + 1)] = 'N';
+        if (fuzz_chance(rng, 5)) {
+            size_t at = fuzz_target_start + fuzz_below(rng, fuzz_target_len);
+            if (seq->data[at] >= 'A' && seq->data[at] <= 'Z') seq->data[at] = (char)(seq->data[at] + ('a' - 'A'));
         }
         if (fuzz_chance(rng, 15)) {
             size_t at = fuzz_target_start + fuzz_below(rng, fuzz_target_len);
@@ -155,6 +160,7 @@ static void fuzz_fastq(fuzz_rng *rng, fuzz_buf *out, size_t records) {
 }
 
 static char fuzz_dir[512];
+static const char *fuzz_targets_file = "targets.tsv";
 static int fuzz_report_fd = 2;
 
 static void fuzz_path(char *out, size_t cap, const char *name) {
@@ -241,7 +247,7 @@ static int fuzz_count(const char *reads, const char *out, const char *k, const c
     char targets_path[600];
     char reads_path[600];
     char out_path[600];
-    fuzz_path(targets_path, sizeof(targets_path), "targets.tsv");
+    fuzz_path(targets_path, sizeof(targets_path), fuzz_targets_file);
     fuzz_path(reads_path, sizeof(reads_path), reads);
     fuzz_path(out_path, sizeof(out_path), out);
     unlink(out_path);
@@ -250,11 +256,33 @@ static int fuzz_count(const char *reads, const char *out, const char *k, const c
                     index, "--offset-mode", "best", "--out", out_path, (const char *)NULL);
 }
 
+static int fuzz_count_engine(const char *out, const char *k, const char *indel, const char *policy, int generic) {
+    char targets_path[600];
+    char reads_path[600];
+    char out_path[600];
+    char assignments_path[600];
+    fuzz_path(targets_path, sizeof(targets_path), fuzz_targets_file);
+    fuzz_path(reads_path, sizeof(reads_path), "reads.fastq");
+    fuzz_path(out_path, sizeof(out_path), out);
+    fuzz_path(assignments_path, sizeof(assignments_path), "engine_assignments.tsv");
+    unlink(out_path);
+    if (generic) {
+        return fuzz_run(0, "dotmatch", "count", "--targets", targets_path, "--reads", reads_path, "--sample-label", "s",
+                        "--target-start", "3", "--target-length", "10", "--k", k, "--metric", "levenshtein",
+                        "--indel-window", indel, "--ambiguity-policy", policy, "--offset-mode", "best", "--out",
+                        out_path, "--assignments", assignments_path, (const char *)NULL);
+    }
+    return fuzz_run(0, "dotmatch", "count", "--targets", targets_path, "--reads", reads_path, "--sample-label", "s",
+                    "--target-start", "3", "--target-length", "10", "--k", k, "--metric", "levenshtein",
+                    "--indel-window", indel, "--ambiguity-policy", policy, "--offset-mode", "best", "--out", out_path,
+                    (const char *)NULL);
+}
+
 static int fuzz_assign(const char *reads, const char *out, const char *k) {
     char targets_path[600];
     char reads_path[600];
     char out_path[600];
-    fuzz_path(targets_path, sizeof(targets_path), "targets.tsv");
+    fuzz_path(targets_path, sizeof(targets_path), fuzz_targets_file);
     fuzz_path(reads_path, sizeof(reads_path), reads);
     fuzz_path(out_path, sizeof(out_path), out);
     unlink(out_path);
@@ -266,7 +294,7 @@ static int fuzz_assign(const char *reads, const char *out, const char *k) {
 static int fuzz_validate(const char *reads, const char *k, const char *metric) {
     char targets_path[600];
     char reads_path[600];
-    fuzz_path(targets_path, sizeof(targets_path), "targets.tsv");
+    fuzz_path(targets_path, sizeof(targets_path), fuzz_targets_file);
     fuzz_path(reads_path, sizeof(reads_path), reads);
     return fuzz_run(0, "dotmatch", "validate", "--targets", targets_path, "--reads", reads_path, "--target-start", "3",
                     "--target-length", "10", "--k", k, "--metric", metric, "--threads", "1", "--oracle", "scan",
@@ -283,6 +311,7 @@ static void fuzz_one(uint64_t seed) {
 
     static const char *const metrics[] = {"hamming", "levenshtein"};
     static const char *const ks[] = {"0", "1"};
+    fuzz_targets_file = fuzz_chance(&rng, 50) ? "targets.tsv" : "targets_acgt.tsv";
     const char *metric = metrics[fuzz_below(&rng, 2)];
     const char *k = ks[fuzz_below(&rng, 2)];
 
@@ -305,6 +334,22 @@ static void fuzz_one(uint64_t seed) {
                          indexes[i], rc);
                 fuzz_fail(seed, what, &fastq);
             }
+        }
+    }
+
+    if (plain_rc == 0) {
+        static const char *const indels[] = {"0", "1"};
+        static const char *const policies[] = {"radius", "best"};
+        const char *indel = strcmp(k, "0") == 0 ? "0" : indels[fuzz_below(&rng, 2)];
+        const char *policy = policies[fuzz_below(&rng, 2)];
+        int fast_rc = fuzz_count_engine("engine_fast.tsv", k, indel, policy, 0);
+        int generic_rc = fuzz_count_engine("engine_generic.tsv", k, indel, policy, 1);
+        if (fast_rc != 0 || generic_rc != 0 || !fuzz_same_file("engine_fast.tsv", "engine_generic.tsv")) {
+            snprintf(what, sizeof(what),
+                     "count levenshtein k=%s --indel-window %s --ambiguity-policy %s: lookup engine (rc %d) and "
+                     "generic engine with --assignments (rc %d) give different counts",
+                     k, indel, policy, fast_rc, generic_rc);
+            fuzz_fail(seed, what, &fastq);
         }
     }
 
@@ -342,15 +387,18 @@ int main(int argc, char **argv) {
         perror("mkdtemp");
         return 2;
     }
-    fuzz_buf targets = {0};
-    fuzz_put(&targets, "id\tseq\n", 7);
-    for (size_t i = 0; i < fuzz_target_count; ++i) {
-        char line[64];
-        int n = snprintf(line, sizeof(line), "t%zu\t%s\n", i, fuzz_targets[i]);
-        fuzz_put(&targets, line, (size_t)n);
+    for (int acgt_only = 0; acgt_only < 2; ++acgt_only) {
+        fuzz_buf targets = {0};
+        fuzz_put(&targets, "id\tseq\n", 7);
+        for (size_t i = 0; i < fuzz_target_count; ++i) {
+            if (acgt_only && strchr(fuzz_targets[i], 'N') != NULL) continue;
+            char line[64];
+            int n = snprintf(line, sizeof(line), "t%zu\t%s\n", i, fuzz_targets[i]);
+            fuzz_put(&targets, line, (size_t)n);
+        }
+        fuzz_write_file(acgt_only ? "targets_acgt.tsv" : "targets.tsv", targets.data, targets.len, 0);
+        free(targets.data);
     }
-    fuzz_write_file("targets.tsv", targets.data, targets.len, 0);
-    free(targets.data);
 
     fuzz_report_fd = dup(2);
     int devnull = open("/dev/null", O_WRONLY);
@@ -362,7 +410,9 @@ int main(int argc, char **argv) {
     for (uint64_t s = first; s < first + iterations; ++s) fuzz_one(s);
 
     static const char *const names[] = {"reads.fastq", "reads.fastq.gz", "plain.tsv", "gz.tsv", "index.tsv",
-                                        "assign_plain.tsv", "assign_gz.tsv"};
+                                        "assign_plain.tsv", "assign_gz.tsv", "engine_fast.tsv",
+                                        "engine_generic.tsv", "engine_assignments.tsv", "targets.tsv",
+                                        "targets_acgt.tsv"};
     for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); ++i) fuzz_unlink(names[i]);
     rmdir(fuzz_dir);
     dprintf(fuzz_report_fd, "fuzz_fastq_cli: %llu seeds from %llu passed\n", (unsigned long long)iterations,

@@ -1699,17 +1699,25 @@ static void free_levenshtein1_lookup(levenshtein1_lookup *lookup) {
     memset(lookup, 0, sizeof(*lookup));
 }
 
+static uint64_t shift_left_bits(uint64_t value, size_t bits) {
+    return bits >= 64 ? 0 : value << bits;
+}
+
+static uint64_t shift_right_bits(uint64_t value, size_t bits) {
+    return bits >= 64 ? 0 : value >> bits;
+}
+
 static uint64_t code_remove_base_local(uint64_t code, size_t pos, size_t len) {
     uint64_t low = code & code_low_mask_local(pos);
-    uint64_t high = code >> (2 * (pos + 1));
+    uint64_t high = shift_right_bits(code, 2 * (pos + 1));
     (void)len;
-    return low | (high << (2 * pos));
+    return low | shift_left_bits(high, 2 * pos);
 }
 
 static uint64_t code_insert_base_local(uint64_t code, size_t pos, size_t len, uint64_t base) {
     uint64_t low = code & code_low_mask_local(pos);
-    uint64_t high = (code >> (2 * pos)) & code_low_mask_local(len - pos);
-    return low | (base << (2 * pos)) | (high << (2 * (pos + 1)));
+    uint64_t high = shift_right_bits(code, 2 * pos) & code_low_mask_local(len - pos);
+    return low | shift_left_bits(base, 2 * pos) | shift_left_bits(high, 2 * (pos + 1));
 }
 
 static int build_levenshtein1_lookup(const seq_table *targets, size_t target_len, levenshtein1_lookup *lookup) {
@@ -2264,6 +2272,13 @@ static void write_assignment_like_row(FILE *out, const seq_table *targets, const
             r.second_best_distance, r.match_count, status_name(r.status), correction);
 }
 
+static size_t window_len_for_step(size_t target_len, size_t min_len, size_t max_len, size_t step) {
+    if (step == 0) return target_len;
+    size_t delta = (step + 1) / 2;
+    if (step % 2 == 1) return target_len >= delta && target_len - delta >= min_len ? target_len - delta : SIZE_MAX;
+    return target_len + delta <= max_len ? target_len + delta : SIZE_MAX;
+}
+
 static int find_observed_quality_window(const char *seq, size_t seq_len, const offset_list *offsets,
                                         size_t fallback_offset, size_t target_len, count_metric metric,
                                         size_t indel_window, int k, const char *observed,
@@ -2559,7 +2574,9 @@ static int assign_count_window(const qdaln_index *index, const char *seq, size_t
         max_len = target_len + indel_window;
     }
 
-    for (size_t len = min_len; len <= max_len; ++len) {
+    for (size_t step = 0; step <= 2 * (max_len - min_len); ++step) {
+        size_t len = window_len_for_step(target_len, min_len, max_len, step);
+        if (len == SIZE_MAX) continue;
         if (len >= observed_cap) continue;
         if (target_start > seq_len || len > seq_len - target_start) continue;
 
@@ -2820,7 +2837,9 @@ static int scan_count_window(const char *const *targets, const size_t *target_le
         max_len = target_len + indel_window;
     }
 
-    for (size_t len = min_len; len <= max_len; ++len) {
+    for (size_t step = 0; step <= 2 * (max_len - min_len); ++step) {
+        size_t len = window_len_for_step(target_len, min_len, max_len, step);
+        if (len == SIZE_MAX) continue;
         if (len >= observed_cap) continue;
         if (target_start > seq_len || len > seq_len - target_start) continue;
         char candidate[8192];
@@ -2904,6 +2923,9 @@ static int assign_levenshtein1_lookup_offset(const levenshtein1_lookup *lookup, 
 
     size_t target_len = lookup->target_len;
     if (offset > seq_len || target_len - 1 > seq_len - offset) return 1;
+    size_t encodable_span = target_len + 1 <= seq_len - offset ? target_len + 1 : seq_len - offset;
+    uint64_t span_code = 0;
+    if (!dna2_code_local_fold(seq + offset, encodable_span, &span_code)) return 0;
 
     uint64_t code = 0;
     const hamming_lookup_entry *entry = NULL;
