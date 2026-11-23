@@ -340,15 +340,19 @@ static void fuzz_one(uint64_t seed) {
     if (plain_rc == 0) {
         static const char *const indels[] = {"0", "1"};
         static const char *const policies[] = {"radius", "best"};
-        const char *indel = strcmp(k, "0") == 0 ? "0" : indels[fuzz_below(&rng, 2)];
+        const char *engine_k = fuzz_chance(&rng, 80) ? "1" : k;
+        const char *indel = strcmp(engine_k, "0") == 0 ? "0" : indels[fuzz_below(&rng, 2)];
         const char *policy = policies[fuzz_below(&rng, 2)];
-        int fast_rc = fuzz_count_engine("engine_fast.tsv", k, indel, policy, 0);
-        int generic_rc = fuzz_count_engine("engine_generic.tsv", k, indel, policy, 1);
+        const char *saved_targets = fuzz_targets_file;
+        if (fuzz_chance(&rng, 75)) fuzz_targets_file = "targets_acgt.tsv";
+        int fast_rc = fuzz_count_engine("engine_fast.tsv", engine_k, indel, policy, 0);
+        int generic_rc = fuzz_count_engine("engine_generic.tsv", engine_k, indel, policy, 1);
+        fuzz_targets_file = saved_targets;
         if (fast_rc != 0 || generic_rc != 0 || !fuzz_same_file("engine_fast.tsv", "engine_generic.tsv")) {
             snprintf(what, sizeof(what),
                      "count levenshtein k=%s --indel-window %s --ambiguity-policy %s: lookup engine (rc %d) and "
                      "generic engine with --assignments (rc %d) give different counts",
-                     k, indel, policy, fast_rc, generic_rc);
+                     engine_k, indel, policy, fast_rc, generic_rc);
             fuzz_fail(seed, what, &fastq);
         }
     }

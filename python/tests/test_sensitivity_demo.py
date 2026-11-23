@@ -1,7 +1,6 @@
 """Native-produced public demo, provenance and no-clobber regression checks."""
 from pathlib import Path
 import hashlib
-import importlib.util
 import json
 import sys
 import zipfile

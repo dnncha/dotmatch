@@ -179,7 +179,6 @@ def write_report(edlib_df: pd.DataFrame, batch_df: pd.DataFrame) -> None:
     threshold = speedup_frame(edlib_df, "threshold")
 
     exact_summary = exact.groupby("len")["speedup_vs_edlib"].mean().reset_index()
-    threshold_summary = threshold.groupby(["len", "k"])["speedup_vs_edlib"].mean().reset_index()
 
     best_threshold = threshold.sort_values("speedup_vs_edlib", ascending=False).head(8)
     batch_summary = (

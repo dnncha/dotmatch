@@ -1,3 +1,5 @@
+SHELL := /bin/bash
+.SHELLFLAGS := -o pipefail -ec
 PYTHON ?= python3
 TYPED_PYTHON_SOURCES ?= \
 	python/dotmatch \
@@ -47,7 +49,7 @@ DOTMATCH_SHARED_FLAGS := -shared
 QDALIGN_SHARED_FLAGS := -shared
 endif
 
-.PHONY: all clean test cli-test coverage bench bench-batch bench-small bench-native-matrix bench-10x-control figures bench-real-report bench-gpu gpu-report gpu-evidence-gate bench-barcode-demux bench-barcode-panel-design bench-barcode-demux-competitors bench-barcode-comparison barcode-autopsy-demo barcode-panel-design-gate barcode-validation-ready barcode-comparison-report barcode-comparison-gate barcode-demux-report barcode-competitor-env fetch-barcode-demo fetch-barcode-demo-claim fetch-sanson-crispr fetch-10x-bcl-demo bench-bcl-small bench-bcl-10x bench-bcl-real bench-bcl-real-repeated bcl-figures bcl-competitor-env bcl-linux-env bcl-tiny-public-gate bcl-comparison-gate fetch-oligo-adapter-demo bench-oligo-adapter bench-oligo-adapter-public oligo-adapter-smoke-gate oligo-adapter-public-gate fetch-amplicon-panel-demo bench-amplicon-panel bench-amplicon-panel-public amplicon-panel-smoke-gate amplicon-panel-public-gate fetch-feature-barcode-demo bench-feature-barcode bench-feature-barcode-public feature-barcode-smoke-gate feature-barcode-public-gate fetch-perturb-seq-demo bench-perturb-seq bench-perturb-seq-public perturb-seq-smoke-gate perturb-seq-public-gate bench-perturb-seq-case-study-public perturb-seq-case-study-fixture-gate perturb-seq-case-study-public-gate bench-public-crispr-small bench-public-crispr bench-public-crispr-competitors bench-public-crispr-repeated bench-public-crispr-scaling bench-real-competitors bench-crispr-comparison bench-crispr-hamming-k23 crispr-comparison-report crispr-comparison-gate count-agreement count-agreement-comparison validate-public-crispr-edlib validate-crispr-comparison-edlib public-crispr-report public-crispr-evidence-gate public-crispr-smoke-gate competitor-env edlib edlib-tools bench-edlib-native benchmark-report benchmark-report-native native-exact-gate evidence-gallery evidence-gallery-ready repro repro-small asan shared python-test python-package-test typecheck lint examples-test compat39 scientific-tests mutation-scientific quality workflow-integration-test docs-ready repository-ready release-ready pretag-ready assay-evidence-ready scientific-readiness-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready workflow-adoption-status reviewer-readiness-ready distribution-record-ready bioconda-recipe-ready distribution-channels download-metrics joss-paper-ready agent-discovery-ready
+.PHONY: all clean test cli-test coverage strict lint-c fuzz-smoke fuzz-long netcheck inner gate nightly hooks bench bench-batch bench-small bench-native-matrix bench-10x-control figures bench-real-report bench-gpu gpu-report gpu-evidence-gate bench-barcode-demux bench-barcode-panel-design bench-barcode-demux-competitors bench-barcode-comparison barcode-autopsy-demo barcode-panel-design-gate barcode-validation-ready barcode-comparison-report barcode-comparison-gate barcode-demux-report barcode-competitor-env fetch-barcode-demo fetch-barcode-demo-claim fetch-sanson-crispr fetch-10x-bcl-demo bench-bcl-small bench-bcl-10x bench-bcl-real bench-bcl-real-repeated bcl-figures bcl-competitor-env bcl-linux-env bcl-tiny-public-gate bcl-comparison-gate fetch-oligo-adapter-demo bench-oligo-adapter bench-oligo-adapter-public oligo-adapter-smoke-gate oligo-adapter-public-gate fetch-amplicon-panel-demo bench-amplicon-panel bench-amplicon-panel-public amplicon-panel-smoke-gate amplicon-panel-public-gate fetch-feature-barcode-demo bench-feature-barcode bench-feature-barcode-public feature-barcode-smoke-gate feature-barcode-public-gate fetch-perturb-seq-demo bench-perturb-seq bench-perturb-seq-public perturb-seq-smoke-gate perturb-seq-public-gate bench-perturb-seq-case-study-public perturb-seq-case-study-fixture-gate perturb-seq-case-study-public-gate bench-public-crispr-small bench-public-crispr bench-public-crispr-competitors bench-public-crispr-repeated bench-public-crispr-scaling bench-real-competitors bench-crispr-comparison bench-crispr-hamming-k23 crispr-comparison-report crispr-comparison-gate count-agreement count-agreement-comparison validate-public-crispr-edlib validate-crispr-comparison-edlib public-crispr-report public-crispr-evidence-gate public-crispr-smoke-gate competitor-env edlib edlib-tools bench-edlib-native benchmark-report benchmark-report-native native-exact-gate evidence-gallery evidence-gallery-ready repro repro-small asan shared python-test python-package-test typecheck lint examples-test compat39 scientific-tests mutation-scientific quality workflow-integration-test docs-ready repository-ready release-ready pretag-ready assay-evidence-ready scientific-readiness-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready workflow-adoption-status reviewer-readiness-ready distribution-record-ready bioconda-recipe-ready distribution-channels download-metrics joss-paper-ready agent-discovery-ready
 
 all: dotmatch libdotmatch.a qda libqdalign.a
 
@@ -493,6 +495,7 @@ typecheck:
 
 lint:
 	$(TYPE_PYTHON) -m ruff check $(TYPED_PYTHON_SOURCES)
+	$(TYPE_PYTHON) -m ruff check --select F python scripts tests tools examples
 
 examples-test: shared
 	DOTMATCH_LIB=$(CURDIR)/libdotmatch.$(SHARED_EXT) PYTHONPATH=$(CURDIR)/python $(TYPE_PYTHON) -m pytest python/tests/test_examples_typed.py python/tests/test_doctests.py
@@ -627,10 +630,73 @@ joss-paper-ready:
 repro repro-small:
 	python3 scripts/repro_small.py
 
-asan:
-	$(MAKE) clean
-	$(MAKE) CFLAGS='-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -std=c11 -Wall -Wextra -Wpedantic -Iinclude' LDFLAGS='-fsanitize=address,undefined' test
-	$(MAKE) clean
+SAN_FLAGS = -O1 -g -fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer
+STRICT_WARNINGS = -Wall -Wextra -Wpedantic -Wformat=2 -Wconversion -Wno-sign-conversion -Wvla -Wimplicit-fallthrough -Werror
+ASAN_ENV = ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1
+ARCH_FLAGS = $(filter -mavx2,$(CFLAGS))
+C_SOURCES = src/qda.c src/qdalign.c src/target_table.h include/qdalign.h include/qdmetal.h src/qdmetal_stub.c
+FUZZ_SMOKE_ITERS ?= 3000
+FUZZ_SMOKE_SEEDS ?= 80
+FUZZ_LONG_ITERS ?= 400000
+FUZZ_LONG_SEEDS ?= 6000
+
+build/asan build/strict:
+	mkdir -p $@
+
+build/strict/ok: $(C_SOURCES) tests/test_qdalign.c tests/fuzz_fastq_cli.c tests/fuzz_qdalign_diff.c | build/strict
+	$(CC) -O2 -std=c11 $(STRICT_WARNINGS) $(ARCH_FLAGS) -Iinclude $(DOTMATCH_VERSION_CFLAGS) -c src/qda.c -o build/strict/qda.o
+	$(CC) -O2 -std=c11 $(STRICT_WARNINGS) $(ARCH_FLAGS) -Iinclude -c src/qdalign.c -o build/strict/qdalign.o
+	$(CC) -O2 -std=c11 $(STRICT_WARNINGS) -Iinclude -c src/qdmetal_stub.c -o build/strict/qdmetal_stub.o
+	$(CC) -O2 -std=gnu11 -Wall -Wextra -Werror $(ARCH_FLAGS) -Iinclude $(DOTMATCH_VERSION_CFLAGS) -c tests/fuzz_fastq_cli.c -o build/strict/fuzz_fastq_cli.o
+	$(CC) -O2 -std=c11 -Wall -Wextra -Werror -Iinclude -c tests/fuzz_qdalign_diff.c -o build/strict/fuzz_qdalign_diff.o
+	touch $@
+
+strict: build/strict/ok
+
+lint-c:
+	python3 tools/lint_c.py
+
+build/asan/dotmatch: $(C_SOURCES) | build/asan
+	$(CC) $(SAN_FLAGS) -std=c11 -Wall -Wextra -Wpedantic $(ARCH_FLAGS) -Iinclude $(DOTMATCH_VERSION_CFLAGS) src/qda.c src/qdalign.c src/qdmetal_stub.c -o $@ $(ZLIB_LIBS) $(PTHREAD_LIBS)
+
+build/asan/test_qdalign: tests/test_qdalign.c src/qdalign.c include/qdalign.h | build/asan
+	$(CC) $(SAN_FLAGS) -std=c11 -Wall -Wextra -Wpedantic $(ARCH_FLAGS) -Iinclude tests/test_qdalign.c src/qdalign.c -o $@
+
+build/asan/test_qdalign_threshold_alloc: tests/test_qdalign_threshold_alloc.c src/qdalign.c include/qdalign.h | build/asan
+	$(CC) $(SAN_FLAGS) -std=c11 -Wall -Wextra -Wpedantic $(ARCH_FLAGS) -Iinclude tests/test_qdalign_threshold_alloc.c -o $@
+
+build/asan/fuzz_fastq_cli: tests/fuzz_fastq_cli.c $(C_SOURCES) | build/asan
+	$(CC) $(SAN_FLAGS) -std=gnu11 -Wall -Wextra $(ARCH_FLAGS) -Iinclude $(DOTMATCH_VERSION_CFLAGS) tests/fuzz_fastq_cli.c src/qdalign.c src/qdmetal_stub.c -o $@ $(ZLIB_LIBS) $(PTHREAD_LIBS)
+
+build/asan/fuzz_qdalign_diff: tests/fuzz_qdalign_diff.c src/qdalign.c include/qdalign.h | build/asan
+	$(CC) $(SAN_FLAGS) -std=c11 -Wall -Wextra $(ARCH_FLAGS) -Iinclude tests/fuzz_qdalign_diff.c src/qdalign.c -o $@
+
+fuzz-smoke: build/asan/fuzz_fastq_cli build/asan/fuzz_qdalign_diff
+	$(ASAN_ENV) ./build/asan/fuzz_qdalign_diff $(FUZZ_SMOKE_ITERS) $${FUZZ_SEED:-1}
+	$(ASAN_ENV) ./build/asan/fuzz_fastq_cli $${FUZZ_SEED:-1} $(FUZZ_SMOKE_SEEDS)
+
+fuzz-long: build/asan/fuzz_fastq_cli build/asan/fuzz_qdalign_diff
+	$(ASAN_ENV) ./build/asan/fuzz_qdalign_diff $(FUZZ_LONG_ITERS) $${FUZZ_SEED:-$$(date +%s)}
+	$(ASAN_ENV) ./build/asan/fuzz_fastq_cli $${FUZZ_SEED:-$$(date +%s)} $(FUZZ_LONG_SEEDS)
+
+asan: build/asan/dotmatch build/asan/test_qdalign build/asan/test_qdalign_threshold_alloc
+	$(ASAN_ENV) ./build/asan/test_qdalign
+	$(ASAN_ENV) ./build/asan/test_qdalign_threshold_alloc
+	$(ASAN_ENV) DOTMATCH_BIN="$(CURDIR)/build/asan/dotmatch" sh tests/test_cli_fastq.sh >/dev/null
+	$(ASAN_ENV) PYTHONPATH=python DOTMATCH_BIN="$(CURDIR)/build/asan/dotmatch" python3 tests/test_native_fastq_validation.py
+	$(ASAN_ENV) DOTMATCH_BIN="$(CURDIR)/build/asan/dotmatch" python3 tests/test_guide_counter_compatibility.py
+
+netcheck:
+	python3 tools/netcheck.py NET.md
+
+inner: lint-c lint strict test fuzz-smoke
+
+gate: inner netcheck cli-test asan typecheck python-test
+
+nightly: gate fuzz-long mutation-scientific
+
+hooks:
+	git config core.hooksPath .githooks
 
 clean:
 	rm -rf build dotmatch qda libdotmatch.a libdotmatch.so libdotmatch.dylib libqdalign.a libqdalign.so libqdalign.dylib

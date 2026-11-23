@@ -106,9 +106,18 @@ def lint(path: Path) -> list[str]:
     return problems
 
 
+def lint_makefile(path: Path) -> list[str]:
+    text = path.read_text(encoding="utf-8")
+    if re.search(r"^\.SHELLFLAGS\s*:=\s*-o pipefail", text, flags=re.MULTILINE):
+        return []
+    return [f"{path.relative_to(ROOT)}:1: recipes must run with .SHELLFLAGS := -o pipefail so a piped check cannot hide its exit code"]
+
+
 def main() -> int:
     paths = [Path(arg).resolve() for arg in sys.argv[1:]] or SOURCES
     problems = [problem for path in paths for problem in lint(path)]
+    if not sys.argv[1:]:
+        problems.extend(lint_makefile(ROOT / "Makefile"))
     for problem in problems:
         print(problem, file=sys.stderr)
     if problems:

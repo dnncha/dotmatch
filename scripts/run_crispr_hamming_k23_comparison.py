@@ -9,7 +9,6 @@ import json
 import os
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -17,7 +16,6 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 from run_public_crispr_benchmark import (
     ROOT,
-    command_text,
     count_fastq_gz,
     dotmatch_stats,
     make_row,
