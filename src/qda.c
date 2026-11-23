@@ -293,6 +293,14 @@ static FILE *open_output_file(const char *path) {
     return out;
 }
 
+static int close_output_file(FILE *out) {
+    if (out == NULL) return 0;
+    int failed = ferror(out) != 0;
+    if (fclose(out) != 0) failed = 1;
+    if (failed) fprintf(stderr, "failed to write an output file\n");
+    return failed ? -1 : 0;
+}
+
 static void uppercase_ascii(char *s) {
     for (; *s != '\0'; ++s) {
         if (*s >= 'a' && *s <= 'z') *s = (char)(*s - 'a' + 'A');
@@ -2178,7 +2186,7 @@ static int write_count_html_report(const char *path, const seq_table *targets, c
     }
 
     fprintf(out, "</main></body></html>\n");
-    fclose(out);
+    return close_output_file(out);
     return 0;
 }
 
@@ -4730,7 +4738,7 @@ static void *count_sample_worker(void *arg) {
     char header[8192];
     char seq[8192];
     char plus[8192];
-    char qual[8192];
+    char qual[8192] = {0};
     char read_id[8192];
     int got = 0;
     int need_read_id = job->assignments != NULL || job->ambiguous_out != NULL || job->unmatched_out != NULL;
@@ -5686,7 +5694,7 @@ static int run_count(const char *argv0, int argc, char **argv, const guide_count
                         exact, sub, ins, del, other, exact + sub + ins + del + other, (int)ambiguous_nearby[t]);
             }
         }
-        fclose(long_out);
+        if (close_output_file(long_out) != 0) goto done;
     }
 
     if (sample_qc_path != NULL) {
@@ -5699,7 +5707,7 @@ static int run_count(const char *argv0, int argc, char **argv, const guide_count
         for (size_t sample = 0; sample < reads.count; ++sample) {
             unsigned long long *target_totals = (unsigned long long *)calloc(targets.count == 0 ? 1 : targets.count, sizeof(unsigned long long));
             if (target_totals == NULL) {
-                fclose(qc);
+                close_output_file(qc);
                 fprintf(stderr, "out of memory\n");
                 goto done;
             }
@@ -5732,7 +5740,7 @@ static int run_count(const char *argv0, int argc, char **argv, const guide_count
                     s->candidates_verified);
             free(target_totals);
         }
-        fclose(qc);
+        if (close_output_file(qc) != 0) goto done;
     }
 
     if (summary_path != NULL) {
@@ -5804,7 +5812,7 @@ static int run_count(const char *argv0, int argc, char **argv, const guide_count
                     s->candidates_verified, sample + 1 == reads.count ? "" : ",");
         }
         fprintf(summary, "  ]\n}\n");
-        fclose(summary);
+        if (close_output_file(summary) != 0) goto done;
     }
     if (report_path != NULL) {
         if (write_count_html_report(report_path, &targets, &reads, &labels, counts, stats_by_sample, selected_offsets,
@@ -5842,10 +5850,10 @@ done:
         for (size_t sample = 0; sample < reads.count; ++sample) count_progress_fini(&progress_by_sample[sample]);
         free(progress_by_sample);
     }
-    if (out != NULL) fclose(out);
-    if (assignments != NULL) fclose(assignments);
-    if (ambiguous_out != NULL) fclose(ambiguous_out);
-    if (unmatched_out != NULL) fclose(unmatched_out);
+    if (close_output_file(out) != 0) rc = 1;
+    if (close_output_file(assignments) != 0) rc = 1;
+    if (close_output_file(ambiguous_out) != 0) rc = 1;
+    if (close_output_file(unmatched_out) != 0) rc = 1;
     if (rc != 0) {
         if (out_created) unlink(out_path);
         if (assignments_created) unlink(assignments_path);
@@ -5969,8 +5977,8 @@ static int guide_counter_write_outputs(const guide_counter_output *output, const
     FILE *count_file = open_output_file(counts_path);
     FILE *extended = open_output_file(extended_path);
     if (count_file == NULL || extended == NULL) {
-        if (count_file != NULL) fclose(count_file);
-        if (extended != NULL) fclose(extended);
+        close_output_file(count_file);
+        close_output_file(extended);
         free(types);
         return -1;
     }
@@ -5993,8 +6001,8 @@ static int guide_counter_write_outputs(const guide_counter_output *output, const
         fprintf(count_file, "\n"); fprintf(extended, "\n");
     }
     int ok = !ferror(count_file) && !ferror(extended);
-    if (fclose(count_file) != 0) ok = 0;
-    if (fclose(extended) != 0) ok = 0;
+    if (close_output_file(count_file) != 0) ok = 0;
+    if (close_output_file(extended) != 0) ok = 0;
     if (!ok) { free(types); return -1; }
     FILE *stats = open_output_file(stats_path);
     if (stats == NULL) {
@@ -6044,7 +6052,7 @@ static int guide_counter_write_outputs(const guide_counter_output *output, const
                 frac, mean_all, mean_essential, mean_nonessential, mean_control, mean_other, zero);
     }
     ok = !ferror(stats);
-    if (fclose(stats) != 0) ok = 0;
+    if (close_output_file(stats) != 0) ok = 0;
     free(types);
     return ok ? 0 : -1;
 }
@@ -6399,7 +6407,7 @@ static int run_fastq_assign(const char *argv0, int argc, char **argv) {
     rc = 0;
 
 done:
-    if (out != NULL) fclose(out);
+    if (close_output_file(out) != 0) rc = 1;
     fastq_reader_close(&reader);
     qdaln_index_free(index);
     free_table(&targets);
@@ -6709,7 +6717,7 @@ static int write_audit_summary_json(const char *out_dir, const char *audit_mode,
             pairs_d0, pairs_d1, pairs_d2, pairs_within_k, risk_pairs_k1, risk_pairs_k2_json,
             risk_pairs_hamming_k2_json, risk_pairs_hamming_k3_json,
             ambiguous_query_variants_k1, recommended_k);
-    if (fclose(out) != 0) return -1;
+    if (close_output_file(out) != 0) return -1;
     return 0;
 }
 
@@ -6794,7 +6802,10 @@ static int audit_fast_outputs(const seq_table *targets, const char *out_dir, int
         }
         start = end;
     }
-    fclose(variants_out);
+    if (close_output_file(variants_out) != 0) {
+        variants_out = NULL;
+        goto done;
+    }
     variants_out = NULL;
 
     qsort(candidate_pairs.items, candidate_pairs.count, sizeof(pair_record), cmp_pair_record);
@@ -6840,7 +6851,10 @@ static int audit_fast_outputs(const seq_table *targets, const char *out_dir, int
                 targets->records[i].id, targets->records[j].id, targets->records[i].seq, targets->records[j].seq,
                 d, d <= 2 ? "yes" : "no");
     }
-    fclose(pairs);
+    if (close_output_file(pairs) != 0) {
+        pairs = NULL;
+        goto done;
+    }
     pairs = NULL;
 
     if (path_join(path, sizeof(path), out_dir, "target_safety.tsv") != 0) goto done;
@@ -6854,7 +6868,10 @@ static int audit_fast_outputs(const seq_table *targets, const char *out_dir, int
                 targets->records[i].id, targets->records[i].seq, near_id, nd,
                 (nd < 0 || nd >= 3) ? "yes" : "no", near_k1[i]);
     }
-    fclose(safety);
+    if (close_output_file(safety) != 0) {
+        safety = NULL;
+        goto done;
+    }
     safety = NULL;
 
     if (path_join(path, sizeof(path), out_dir, "collision_clusters.tsv") != 0) goto done;
@@ -6865,7 +6882,10 @@ static int audit_fast_outputs(const seq_table *targets, const char *out_dir, int
         if (near_k1[i] == 0) continue;
         fprintf(clusters, "%zu\t%s\t%s\n", uf_find(parent, i), targets->records[i].id, targets->records[i].seq);
     }
-    fclose(clusters);
+    if (close_output_file(clusters) != 0) {
+        clusters = NULL;
+        goto done;
+    }
     clusters = NULL;
 
     size_t unique_sequences = count_unique_target_sequences(targets);
@@ -6893,7 +6913,10 @@ static int audit_fast_outputs(const seq_table *targets, const char *out_dir, int
     fprintf(summary, "risk_pairs_for_hamming_k3\tnot_computed\n");
     fprintf(summary, "ambiguous_query_variants_k1\t%llu\n", ambiguous_query_variants_k1);
     fprintf(summary, "recommended_k\t%d\n", pairs_d0 == 0 && (k == 0 || risk_pairs_k1 == 0) ? k : 0);
-    fclose(summary);
+    if (close_output_file(summary) != 0) {
+        summary = NULL;
+        goto done;
+    }
     summary = NULL;
     if (write_audit_summary_json(out_dir, "fast", k, targets->count, unique_sequences,
                                  min_dist < 0 ? "\">=3\"" : (min_dist == 0 ? "0" : (min_dist == 1 ? "1" : "2")),
@@ -6909,11 +6932,11 @@ static int audit_fast_outputs(const seq_table *targets, const char *out_dir, int
     rc = 0;
 
 done:
-    if (pairs != NULL) fclose(pairs);
-    if (clusters != NULL) fclose(clusters);
-    if (safety != NULL) fclose(safety);
-    if (summary != NULL) fclose(summary);
-    if (variants_out != NULL) fclose(variants_out);
+    if (close_output_file(pairs) != 0) rc = 1;
+    if (close_output_file(clusters) != 0) rc = 1;
+    if (close_output_file(safety) != 0) rc = 1;
+    if (close_output_file(summary) != 0) rc = 1;
+    if (close_output_file(variants_out) != 0) rc = 1;
     free(nearest_dist);
     free(nearest_idx);
     free(near_k1);
@@ -7056,7 +7079,10 @@ static int run_audit(const char *argv0, int argc, char **argv) {
             }
         }
     }
-    fclose(pairs);
+    if (close_output_file(pairs) != 0) {
+        pairs = NULL;
+        goto done;
+    }
     pairs = NULL;
 
     if (path_join(path, sizeof(path), out_dir, "target_safety.tsv") != 0) goto done;
@@ -7072,7 +7098,10 @@ static int run_audit(const char *argv0, int argc, char **argv) {
                 (nd < 0 || nd >= 5) ? "yes" : "no",
                 near_k1[i]);
     }
-    fclose(safety);
+    if (close_output_file(safety) != 0) {
+        safety = NULL;
+        goto done;
+    }
     safety = NULL;
 
     if (path_join(path, sizeof(path), out_dir, "collision_clusters.tsv") != 0) goto done;
@@ -7083,7 +7112,10 @@ static int run_audit(const char *argv0, int argc, char **argv) {
         if (near_k1[i] == 0) continue;
         fprintf(clusters, "%zu\t%s\t%s\n", uf_find(parent, i), targets.records[i].id, targets.records[i].seq);
     }
-    fclose(clusters);
+    if (close_output_file(clusters) != 0) {
+        clusters = NULL;
+        goto done;
+    }
     clusters = NULL;
 
     size_t unique_sequences = 0;
@@ -7123,7 +7155,10 @@ static int run_audit(const char *argv0, int argc, char **argv) {
             fprintf(variants_out, "%s\t%llu\n", k1_variants.items[vi], within);
         }
     }
-    fclose(variants_out);
+    if (close_output_file(variants_out) != 0) {
+        variants_out = NULL;
+        goto done;
+    }
     variants_out = NULL;
 
     if (path_join(path, sizeof(path), out_dir, "audit_summary.tsv") != 0) goto done;
@@ -7155,7 +7190,10 @@ static int run_audit(const char *argv0, int argc, char **argv) {
     fprintf(summary, "risk_pairs_for_hamming_k3\t%llu\n", risk_pairs_hamming_k3);
     fprintf(summary, "ambiguous_query_variants_k1\t%llu\n", ambiguous_query_variants_k1);
     fprintf(summary, "recommended_k\t%d\n", pairs_d0 == 0 && (k == 0 || risk_pairs_k1 == 0) ? k : 0);
-    fclose(summary);
+    if (close_output_file(summary) != 0) {
+        summary = NULL;
+        goto done;
+    }
     summary = NULL;
     char min_dist_json[32];
     char min_hamming_dist_json[32];
@@ -7184,11 +7222,11 @@ static int run_audit(const char *argv0, int argc, char **argv) {
     rc = 0;
 
 done:
-    if (pairs != NULL) fclose(pairs);
-    if (clusters != NULL) fclose(clusters);
-    if (safety != NULL) fclose(safety);
-    if (summary != NULL) fclose(summary);
-    if (variants_out != NULL) fclose(variants_out);
+    if (close_output_file(pairs) != 0) rc = 1;
+    if (close_output_file(clusters) != 0) rc = 1;
+    if (close_output_file(safety) != 0) rc = 1;
+    if (close_output_file(summary) != 0) rc = 1;
+    if (close_output_file(variants_out) != 0) rc = 1;
     free_string_list(&k1_variants);
     free(nearest_dist);
     free(nearest_idx);
@@ -7569,7 +7607,7 @@ static int run_inspect_unmatched(const char *argv0, int argc, char **argv) {
     rc = 0;
 
 done:
-    if (out != NULL) fclose(out);
+    if (close_output_file(out) != 0) rc = 1;
     fastq_reader_close(&reader);
     qdaln_index_free(index);
     free(target_ptrs);
@@ -7901,9 +7939,9 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
     rc = 0;
 
 done:
-    if (out != NULL) fclose(out);
-    if (summary != NULL) fclose(summary);
-    if (assignments != NULL) fclose(assignments);
+    if (close_output_file(out) != 0) rc = 1;
+    if (close_output_file(summary) != 0) rc = 1;
+    if (close_output_file(assignments) != 0) rc = 1;
     fastq_reader_close(&left_reader);
     fastq_reader_close(&right_reader);
     qdaln_index_free(left_index);
@@ -8286,7 +8324,7 @@ static int run_demux(const char *argv0, int argc, char **argv) {
                 stats.unique, stats.exact, stats.corrected, stats.ambiguous, stats.unmatched, stats.invalid,
                 nonempty, targets.count == 0 ? "" : targets.records[top_target].id, top_count,
                 stats.candidates_considered, stats.candidates_verified);
-        fclose(summary);
+        if (close_output_file(summary) != 0) goto done;
     }
 
     rc = 0;
@@ -8294,12 +8332,12 @@ static int run_demux(const char *argv0, int argc, char **argv) {
 done:
     if (target_files != NULL) {
         for (size_t i = 0; i < targets.count; ++i) {
-            if (target_files[i] != NULL) fclose(target_files[i]);
+            if (close_output_file(target_files[i]) != 0) rc = 1;
         }
     }
-    if (assignments != NULL) fclose(assignments);
-    if (ambiguous_out != NULL) fclose(ambiguous_out);
-    if (unmatched_out != NULL) fclose(unmatched_out);
+    if (close_output_file(assignments) != 0) rc = 1;
+    if (close_output_file(ambiguous_out) != 0) rc = 1;
+    if (close_output_file(unmatched_out) != 0) rc = 1;
     fastq_reader_close(&reader);
     qdaln_index_free(index);
     free_hamming_lookup(&hlookup);
@@ -9357,7 +9395,7 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
     fprintf(stats, "Undetermined,%llu", undetermined_reads);
     for (int r = 0; r < non_index_read_count; ++r) fprintf(stats, ",%llu", undetermined_reads);
     fprintf(stats, "\n");
-    fclose(stats);
+    if (close_output_file(stats) != 0) goto done;
 
     if (unknowns.count > 0) {
         qsort(unknowns.items, unknowns.count, sizeof(unknowns.items[0]), cmp_bcl_unknown_desc);
@@ -9368,7 +9406,7 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
         fprintf(unknown, "index,count\n");
         size_t n = unknowns.count < 100 ? unknowns.count : 100;
         for (size_t i = 0; i < n; ++i) fprintf(unknown, "%s,%llu\n", unknowns.items[i].index, unknowns.items[i].count);
-        fclose(unknown);
+        if (close_output_file(unknown) != 0) goto done;
     }
 
     char normalized_path[4096];
@@ -9380,7 +9418,7 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
             fprintf(normalized, "%s,%s,%d,%s,%s\n", samples.items[i].id, samples.items[i].name,
                     samples.items[i].lane, samples.items[i].index1, samples.items[i].index2);
         }
-        fclose(normalized);
+        if (close_output_file(normalized) != 0) goto done;
     }
 
     if (summary_path != NULL) {
@@ -9390,7 +9428,7 @@ static int run_bcl_demux(const char *argv0, int argc, char **argv) {
                 "{\n  \"workflow\": \"bcl-demux\",\n  \"format\": \"classic_bcl\",\n  \"lanes\": 1,\n  \"tiles\": %zu,\n  \"total_clusters\": %llu,\n  \"passed_filter_clusters\": %llu,\n  \"filtered_clusters\": %llu,\n  \"assigned_reads\": %llu,\n  \"undetermined_reads\": %llu,\n  \"barcode_mismatches_index1\": %d,\n  \"barcode_mismatches_index2\": %d,\n  \"requested_threads\": %zu,\n  \"effective_threads\": %zu,\n  \"gzip_level\": %d,\n  \"emit_index_fastqs\": %s\n}\n",
                 tile_count, total_clusters, passed_clusters, filtered_clusters, assigned_reads, undetermined_reads,
                 k1, k2, requested_threads, effective_threads, gzip_level, emit_index_fastqs ? "true" : "false");
-        fclose(summary);
+        if (close_output_file(summary) != 0) goto done;
     }
 
     rc = 0;
@@ -9781,7 +9819,7 @@ done:
     return rc;
 }
 
-int main(int argc, char **argv) {
+static int dispatch_command(int argc, char **argv) {
     if (argc < 2) {
         usage(argv[0]);
         return 2;
@@ -9896,4 +9934,13 @@ int main(int argc, char **argv) {
 
     usage(argv[0]);
     return 2;
+}
+
+int main(int argc, char **argv) {
+    int rc = dispatch_command(argc, argv);
+    if (fflush(stdout) != 0 || ferror(stdout)) {
+        fprintf(stderr, "failed to write standard output\n");
+        return rc == 0 ? 1 : rc;
+    }
+    return rc;
 }
