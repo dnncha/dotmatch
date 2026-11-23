@@ -75,7 +75,7 @@ Before running on study data, verify your installation offline with `dotmatch de
 
 DotMatch compares fixed read windows with a finite target list. It is not a genome aligner, basecaller, UMI pipeline, variant caller, or downstream screen-analysis package.
 
-Performance and correctness results apply to the commands, datasets, and hardware recorded in the [benchmark reports](benchmarks/README.md). The strongest evidence covers native fixed-window assignment, public CRISPR guide-counting comparisons, checked inline-barcode lanes, and the bounded GSE146194 multi-guide direct-capture case study. Narrower experimental paths and their limits are documented in [Scope and limitations](trust-and-scope.md).
+Performance and correctness results apply to the commands, datasets, and hardware recorded in the [benchmark reports](benchmarks/README.md). The strongest evidence covers native fixed-window assignment, public CRISPR guide-counting comparisons, checked inline-barcode lanes, and the bounded GSE146194 multi-guide direct-capture case study. GPU and other experimental backends have narrower test coverage; those paths and their limits are documented in [Scope and limitations](trust-and-scope.md).
 
 ## Related research
 

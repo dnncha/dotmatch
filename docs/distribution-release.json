@@ -1,78 +1,77 @@
 {
   "schema_version": 1,
   "status": "partially_verified",
-  "release_version": "0.7.0",
+  "release_version": "0.8.0",
   "publication_authorized": true,
-  "release_tag": "v0.7.0",
+  "release_tag": "v0.8.0",
   "post_release_gate": "make distribution-channels",
   "channels": [
     {
       "id": "pypi",
-      "status": "verified",
-      "expected_url": "https://pypi.org/project/dotmatch/0.7.0/",
+      "status": "blocked",
+      "expected_url": "https://pypi.org/project/dotmatch/0.8.0/",
       "verification_command": "make distribution-channels",
-      "public_url": "https://pypi.org/project/dotmatch/0.7.0/",
-      "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/37109177013",
-      "verified_date": "2026-10-03",
       "installed_citation_doi": "10.5281/zenodo.20541628",
       "linux_wheel_architectures": [
         "x86_64",
         "aarch64"
-      ]
+      ],
+      "blocker": "PyPI 0.8.0 is published without the repaired musllinux_x86_64 wheel; make distribution-channels reports it missing on 2026-11-23.",
+      "next_action": "Build and upload the repaired musllinux_x86_64 wheel for 0.8.0, then rerun make distribution-channels."
     },
     {
       "id": "ghcr",
-      "status": "verified",
+      "status": "blocked",
       "expected_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
       "verification_command": "make distribution-channels",
-      "public_url": "https://github.com/dnncha/dotmatch/pkgs/container/dotmatch",
-      "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/37109177013",
-      "verified_date": "2026-10-03",
       "platforms": [
         "linux/amd64",
         "linux/arm64"
       ],
-      "manifest_digest": "sha256:78aeae6cb78bd0dcc7d70954a7cf8614e7cb7b300de4dca9629826cc5bacfb3f",
-      "installed_citation_doi": "10.5281/zenodo.20541628"
+      "installed_citation_doi": "10.5281/zenodo.20541628",
+      "blocker": "ghcr.io/dnncha/dotmatch:v0.8.0 returns HTTP 404 on 2026-11-23.",
+      "next_action": "Publish the v0.8.0 multi-platform image to GHCR, then rerun make distribution-channels."
     },
     {
       "id": "bioconda",
       "status": "prepared",
       "expected_url": "https://anaconda.org/bioconda/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "The exact 0.7.0 recipe is prepared using the public immutable archive, but recipe-fork pushes fail with HTTP 401 and GitHub API access is blocked.",
-      "next_action": "Update existing upstream PR #68663 after restoring write access, then verify public channel artifacts."
+      "blocker": "No 0.8.0 Bioconda recipe has been submitted; the last prepared recipe targets 0.7.0 and recipe-fork pushes failed with HTTP 401.",
+      "next_action": "Prepare the checksum-backed 0.8.0 recipe, update upstream PR #68663 after restoring write access, then verify public channel artifacts."
     },
     {
       "id": "bioconda-assaycode",
       "status": "prepared",
       "expected_url": "https://anaconda.org/bioconda/assaycode",
       "verification_command": "make distribution-channels",
-      "blocker": "The exact 0.7.0 recipe is prepared using the public immutable archive, but recipe-fork pushes fail with HTTP 401 and GitHub API access is blocked.",
-      "next_action": "Update existing upstream PR #68663 after restoring write access, then verify public channel artifacts."
+      "blocker": "No 0.8.0 AssayCode metapackage recipe has been submitted; it depends on the dotmatch 0.8.0 Bioconda recipe.",
+      "next_action": "Submit the AssayCode metapackage after dotmatch 0.8.0 is on Bioconda, then verify public channel artifacts."
     },
     {
       "id": "biocontainers",
       "status": "prepared",
       "expected_url": "https://quay.io/repository/biocontainers/dotmatch",
       "verification_command": "make distribution-channels",
-      "blocker": "No generated 0.7.0 image has been independently verified.",
+      "blocker": "No generated 0.8.0 image has been independently verified.",
       "next_action": "Verify the generated image after the matching Bioconda recipes merge and propagate."
     },
     {
       "id": "zenodo",
       "status": "verified",
-      "expected_url": "https://doi.org/10.5281/zenodo.23118107",
+      "expected_url": "https://doi.org/10.5281/zenodo.23834456",
       "verification_command": "make distribution-channels",
-      "public_url": "https://zenodo.org/records/23118107",
-      "evidence_url": "https://github.com/dnncha/dotmatch/actions/runs/37112296284",
-      "verified_date": "2026-10-03",
-      "version_doi": "10.5281/zenodo.23118107"
+      "public_url": "https://zenodo.org/records/23834456",
+      "evidence_url": "https://zenodo.org/api/records/23834456",
+      "verified_date": "2026-11-23",
+      "version_doi": "10.5281/zenodo.23834456"
     }
   ],
   "blockers": [
-    "Bioconda 0.7.0 and its AssayCode metapackage have not been submitted or propagated: the working environment cannot push to the recipe fork (HTTP 401).",
-    "BioContainers 0.7.0 depends on the matching Bioconda build and is not independently verified."
+    "PyPI 0.8.0 lacks the repaired musllinux_x86_64 wheel.",
+    "GHCR has no v0.8.0 image tag.",
+    "Bioconda 0.8.0 and its AssayCode metapackage have not been submitted or propagated.",
+    "BioContainers 0.8.0 depends on the matching Bioconda build and is not independently verified."
   ],
-  "next_action": "Restore recipe-fork write access and GitHub API access, update existing bioconda-recipes PR #68663 with the checksum-backed 0.7.0 patch, then verify Anaconda and BioContainers propagation."
+  "next_action": "Publish the missing PyPI wheel and GHCR v0.8.0 image, submit the 0.8.0 Bioconda recipe, then verify every channel with make distribution-channels."
 }

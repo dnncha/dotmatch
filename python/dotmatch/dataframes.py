@@ -226,7 +226,7 @@ def _read_assignment_table(path: str | Path) -> Any:
             if len(row) != len(header):
                 raise ValueError(f"assignment row {reader.line_num} has {len(row)} fields; expected {len(header)}")
             rows.append(row)
-    return pd.DataFrame(rows, columns=header, dtype=object)
+    return pd.DataFrame(rows, columns=pd.Index(header), dtype=object)
 
 
 def assignments_to_anndata(

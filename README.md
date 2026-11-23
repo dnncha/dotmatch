@@ -130,7 +130,7 @@ Feature matrices require upstream cell identifiers and extracted feature windows
 
 Additional checked reports and examples:
 
-- [Benchmark reports](https://dotmatch.readthedocs.io/en/latest/benchmarks/README.html): recorded commands, hardware, and assignment rules for every benchmarked workload.
+- [Benchmark reports](https://dotmatch.readthedocs.io/en/latest/benchmarks/README.html): recorded commands, hardware, and assignment rules for every benchmarked workload. Those reports cover the tested workloads; they are not universal speed or biological-accuracy guarantees. Read the benchmark reports before quoting a number.
 - [Hamming k=3 engine comparison](https://dotmatch.readthedocs.io/en/latest/benchmarks/hamming_seed_layout/README.html): 5.2–5.7× faster complete `k=3` counting than the prior engine on 30,000 simulated reads and the Yusa library with identical counts, plus 136,096 oracle checks.
 - [Public CRISPR comparisons](https://dotmatch.readthedocs.io/en/latest/benchmarks/crispr_comparison/README.html): Yusa and Brunello runs comparing exact, Hamming, and Levenshtein semantics separately.
 - [GSE146194 direct-guide-capture case study](https://github.com/dnncha/dotmatch/tree/main/examples/perturb_seq_gse146194): per-read assignment checked against independent reference implementations across discovery and evaluation reads (does not establish guide-per-cell or perturbation-effect accuracy).
