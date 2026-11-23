@@ -2728,3 +2728,13 @@ for pair in "mate1.fastq mate2.fastq 0" "mate2.fastq mate1.fastq 1" "mate1.fastq
     exit 1
   fi
 done
+
+printf 'id\tseq\nshort\tACGA\nlong\tACGTCC\n' > "$TMPDIR/auto_len_barcodes.tsv"
+printf '@r\nACGTCCGGGG\n+\nIIIIIIIIII\n' > "$TMPDIR/auto_len.fastq"
+"$DOTMATCH_BIN" demux --barcodes "$TMPDIR/auto_len_barcodes.tsv" --reads "$TMPDIR/auto_len.fastq" \
+  --barcode-start 0 --barcode-length auto --k 1 --metric hamming \
+  --out-dir "$TMPDIR/auto_len_demux" --summary "$TMPDIR/auto_len_summary.json" >/dev/null 2>&1
+if ! grep '"ambiguous": 1,' "$TMPDIR/auto_len_summary.json" >/dev/null; then
+  echo "demux --barcode-length auto must keep every within-radius barcode across lengths" >&2
+  exit 1
+fi

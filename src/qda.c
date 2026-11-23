@@ -2694,21 +2694,27 @@ static int assign_count_length_set(const qdaln_index *index, const char *seq, si
         stats->candidates_verified = 0;
     }
     if (observed_cap != 0) observed[0] = '\0';
-    for (size_t i = 0; i < n_lengths; ++i) {
+    match_merge_state merge;
+    merge_state_init(&merge);
+    int rc = 0;
+    for (size_t i = 0; i < n_lengths && rc == 0; ++i) {
         qdaln_match_result r = {-1, -1, -1, 0, QDALN_MATCH_INVALID};
         qdaln_index_stats s = {0, 0};
         char candidate[8192];
         if (assign_count_window(index, seq, seq_len, target_start, lengths[i], k, metric, indel_window,
                                 &r, &s, candidate, sizeof(candidate), best_exact_shortcut) != 0) {
-            return -1;
+            rc = -1;
+            break;
         }
         if (stats != NULL) {
             stats->candidates_considered += s.candidates_considered;
             stats->candidates_verified += s.candidates_verified;
         }
-        merge_summary_result(result, observed, observed_cap, candidate, r);
+        rc = merge_state_add_result(&merge, observed, observed_cap, candidate, r);
     }
-    return 0;
+    merge_state_finish(&merge, result);
+    merge_state_free(&merge);
+    return rc;
 }
 
 static int assign_count_offsets(const qdaln_index *index, const char *seq, size_t seq_len,
