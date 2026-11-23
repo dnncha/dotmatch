@@ -1263,3 +1263,14 @@ def test_crispr_namespace_infer_writes_crispr_assayspec(tmp_path):
     assert inference["status"] == "draft"
     assert inference["chosen"]["orientation"] == "forward"
     assert any("review orientation" in warning for warning in inference["warnings"])
+
+
+def test_ambiguity_flags_cover_non_acgt_neighbours_and_every_k2_pair():
+    from dotmatch.cli import Target, _near_target_pairs, _target_ambiguity_flags
+
+    def targets(*seqs):
+        return [Target(f"t{i}", seq) for i, seq in enumerate(seqs)]
+
+    assert _target_ambiguity_flags(targets("ACGTACGT", "ACGTACGN"), 1) == [1, 1]
+    assert _target_ambiguity_flags(targets("AAAAAAAA", "AAAAAACC", "CCAAAAAA"), 2) == [1, 1, 1]
+    assert list(_near_target_pairs(targets("ACGN", "ACGR"), 1)) == [(0, 1, 1)]

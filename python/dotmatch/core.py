@@ -722,11 +722,12 @@ class Matcher:
     ) -> tuple[list[MatchResult], AssignmentStats]:
         """Assign with an early-stop native path when only status/best target matters.
 
-        For ambiguous calls, ``match_count`` and ``second_best_distance`` may be
-        lower-bound values. Use ``assign_with_stats`` when exact ambiguity counts
-        are required.
+        ``match_count`` and ``second_best_distance`` may be lower-bound values
+        under ``policy="best"``. The ``radius`` policy needs every target inside
+        the radius, so it runs the complete search.
         """
-        return self._assign_with_stats_func(_LIB.qdaln_index_assign_status_stats, reads, k=k, policy=policy)
+        func = _LIB.qdaln_index_assign_stats if _normalize_policy(policy) == "radius" else _LIB.qdaln_index_assign_status_stats
+        return self._assign_with_stats_func(func, reads, k=k, policy=policy)
 
     @_synchronized
     def _assign_with_stats_func(

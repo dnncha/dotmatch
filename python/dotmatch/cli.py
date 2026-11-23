@@ -189,17 +189,9 @@ def _target_ambiguity_flags(targets: Sequence[Target], k: int) -> list[int]:
                 seen[target.seq] = i
         return flags
 
-    for i, j, _dist in _near_target_pairs(targets, min(k, 1)):
+    for i, j, _dist in _near_target_pairs(targets, k):
         flags[i] = 1
         flags[j] = 1
-    if k > 1:
-        for i in range(len(targets)):
-            if flags[i]:
-                continue
-            for j in range(i + 1, len(targets)):
-                if distance(targets[i].seq, targets[j].seq) <= k:
-                    flags[i] = flags[j] = 1
-                    break
     return flags
 
 
@@ -232,18 +224,30 @@ def _near_target_pairs(targets: Sequence[Target], k: int) -> Iterator[tuple[int,
         by_seq[target.seq].append(i)
 
     emitted: set[tuple[int, int]] = set()
+    literal = [i for i, target in enumerate(targets) if any(base not in DNA for base in target.seq)]
+    for i in literal:
+        for j in range(len(targets)):
+            if i == j:
+                continue
+            pair = (min(i, j), max(i, j))
+            if pair in emitted:
+                continue
+            dist = distance(targets[i].seq, targets[j].seq)
+            if dist <= k:
+                emitted.add(pair)
+                yield pair[0], pair[1], dist
     for i, target in enumerate(targets):
         for neighbor in _neighbors_k1(target.seq):
             for j in by_seq.get(neighbor, []):
-                if i >= j:
+                if i == j:
                     continue
-                pair = (i, j)
+                pair = (min(i, j), max(i, j))
                 if pair in emitted:
                     continue
                 dist = distance(target.seq, targets[j].seq)
                 if dist <= k:
                     emitted.add(pair)
-                    yield i, j, dist
+                    yield pair[0], pair[1], dist
 
 
 def _write_assignment_header(fh: TextIO, include_posterior: bool = False) -> None:
@@ -359,15 +363,17 @@ def command_count(args: argparse.Namespace) -> int:
                         if qual is None:
                             result = MatchResult(-1, -1, -1, 0, MATCH_INVALID)
                         else:
+                            same_length = [i for i, target in enumerate(targets) if len(target.seq) == len(obs)]
                             posterior = assign_posterior(
                                 obs,
-                                [target.seq for target in targets],
+                                [targets[i].seq for i in same_length],
                                 qual,
                                 min_posterior=args.posterior_min,
                             )
                             posterior_value = posterior.posterior
                             second_posterior = posterior.second_posterior
-                            if posterior.status != MATCH_UNIQUE or posterior.target_index != result.target_index:
+                            posterior_target = same_length[posterior.target_index] if posterior.target_index >= 0 else -1
+                            if posterior.status != MATCH_UNIQUE or posterior_target != result.target_index:
                                 result = MatchResult(
                                     result.target_index,
                                     result.best_distance,

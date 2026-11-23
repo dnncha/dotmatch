@@ -166,3 +166,13 @@ def test_assign_posterior_validates_quality_length():
         assert "same length" in str(exc)
     else:
         raise AssertionError("expected quality length validation")
+
+
+def test_status_path_honours_radius_policy():
+    matcher = dotmatch.Matcher(["A", "AA"])
+
+    radius, _ = matcher.assign_status_with_stats(["A"], k=1)
+    best, _ = matcher.assign_status_with_stats(["A"], k=1, policy="best")
+
+    assert radius[0].status == dotmatch.MATCH_AMBIGUOUS
+    assert best[0].status == dotmatch.MATCH_UNIQUE
