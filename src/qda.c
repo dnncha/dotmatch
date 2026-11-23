@@ -282,13 +282,6 @@ static void trim_line(char *line) {
     }
 }
 
-static size_t trim_line_len(char *line, size_t n) {
-    while (n > 0 && (line[n - 1] == '\n' || line[n - 1] == '\r')) {
-        line[--n] = '\0';
-    }
-    return n;
-}
-
 static FILE *open_output_file(const char *path) {
     int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
     if (fd < 0) return NULL;
@@ -600,14 +593,12 @@ done:
 }
 
 typedef struct fastq_reader {
-    FILE *fp;
     gzFile gz;
     unsigned char *gz_buf;
     size_t gz_pos;
     size_t gz_len;
     size_t gz_cap;
     int gz_eof;
-    int is_gz;
     char *scratch_line;
     size_t scratch_cap;
     char *record_id;
@@ -623,124 +614,88 @@ static int ends_with(const char *s, const char *suffix) {
     return n >= m && strcmp(s + n - m, suffix) == 0;
 }
 
-static int ends_with_case(const char *s, const char *suffix) {
-    size_t n = strlen(s);
-    size_t m = strlen(suffix);
-    return n >= m && strcasecmp(s + n - m, suffix) == 0;
-}
-
 static int fastq_reader_open(fastq_reader *reader, const char *path) {
     memset(reader, 0, sizeof(*reader));
     reader->path = path;
-    reader->is_gz = ends_with_case(path, ".gz");
-    if (reader->is_gz) {
-        reader->gz = gzopen(path, "rb");
-        if (reader->gz == NULL) return -1;
-        gzbuffer(reader->gz, 1 << 20);
-        reader->gz_cap = 1 << 20;
-        reader->gz_buf = (unsigned char *)malloc(reader->gz_cap);
-        if (reader->gz_buf == NULL) {
-            gzclose(reader->gz);
-            memset(reader, 0, sizeof(*reader));
-            return -1;
-        }
-        return 0;
+    reader->gz = gzopen(path, "rb");
+    if (reader->gz == NULL) return -1;
+    gzbuffer(reader->gz, 1 << 20);
+    reader->gz_cap = 1 << 20;
+    reader->gz_buf = (unsigned char *)malloc(reader->gz_cap);
+    if (reader->gz_buf == NULL) {
+        gzclose(reader->gz);
+        memset(reader, 0, sizeof(*reader));
+        return -1;
     }
-    reader->fp = fopen(path, "r");
-    return reader->fp == NULL ? -1 : 0;
+    return 0;
 }
 
 static void fastq_reader_close(fastq_reader *reader) {
-    if (reader->is_gz && reader->gz != NULL) gzclose(reader->gz);
-    if (!reader->is_gz && reader->fp != NULL) fclose(reader->fp);
+    if (reader->gz != NULL) gzclose(reader->gz);
     free(reader->gz_buf);
     free(reader->scratch_line);
     free(reader->record_id);
     memset(reader, 0, sizeof(*reader));
 }
 
-static int fastq_getline_len(fastq_reader *reader, char *buf, size_t cap, size_t *len_out) {
-    if (reader->is_gz) {
-        if (cap == 0) return -1;
-        size_t out = 0;
-        for (;;) {
-            if (reader->gz_pos == reader->gz_len) {
-                if (reader->gz_eof) {
-                    if (out == 0) return 0;
-                    buf[out] = '\0';
-                    if (len_out != NULL) *len_out = out;
-                    return 1;
-                }
-                int n = gzread(reader->gz, reader->gz_buf, (unsigned int)reader->gz_cap);
-                int zerr = Z_OK;
-                (void)gzerror(reader->gz, &zerr);
-                if (n < 0 || (zerr != Z_OK && zerr != Z_STREAM_END)) return -1;
-                if (n == 0) {
-                    int zerr = Z_OK;
-                    (void)gzerror(reader->gz, &zerr);
-                    if (zerr != Z_OK && zerr != Z_STREAM_END) return -1;
-                    reader->gz_eof = 1;
-                    continue;
-                }
-                reader->gz_pos = 0;
-                reader->gz_len = (size_t)n;
-            }
+static int fastq_refill(fastq_reader *reader) {
+    if (reader->gz_eof) return 0;
+    int n = gzread(reader->gz, reader->gz_buf, (unsigned int)reader->gz_cap);
+    int zerr = Z_OK;
+    (void)gzerror(reader->gz, &zerr);
+    if (n < 0 || (zerr != Z_OK && zerr != Z_STREAM_END)) return -1;
+    reader->gz_pos = 0;
+    reader->gz_len = (size_t)n;
+    if (n == 0) {
+        reader->gz_eof = 1;
+        return 0;
+    }
+    return 1;
+}
 
-            size_t avail = reader->gz_len - reader->gz_pos;
-            unsigned char *src = reader->gz_buf + reader->gz_pos;
-            unsigned char *nl = (unsigned char *)memchr(src, '\n', avail);
-            size_t take = nl == NULL ? avail : (size_t)(nl - src) + 1;
-            if (out + take >= cap) return -1;
-            memcpy(buf + out, src, take);
-            out += take;
-            reader->gz_pos += take;
-            if (nl != NULL) {
+static int fastq_getline_len(fastq_reader *reader, char *buf, size_t cap, size_t *len_out) {
+    if (cap == 0) return -1;
+    size_t out = 0;
+    for (;;) {
+        if (reader->gz_pos == reader->gz_len) {
+            int got = fastq_refill(reader);
+            if (got < 0) return -1;
+            if (got == 0) {
+                if (out == 0) return 0;
                 buf[out] = '\0';
                 if (len_out != NULL) *len_out = out;
                 return 1;
             }
         }
-        return 1;
+        size_t avail = reader->gz_len - reader->gz_pos;
+        unsigned char *src = reader->gz_buf + reader->gz_pos;
+        unsigned char *nl = (unsigned char *)memchr(src, '\n', avail);
+        size_t take = nl == NULL ? avail : (size_t)(nl - src) + 1;
+        if (out + take >= cap) return -1;
+        memcpy(buf + out, src, take);
+        out += take;
+        reader->gz_pos += take;
+        if (nl != NULL) {
+            buf[out] = '\0';
+            if (len_out != NULL) *len_out = out;
+            return 1;
+        }
     }
-    if (fgets(buf, (int)cap, reader->fp) == NULL) {
-        return ferror(reader->fp) ? -1 : 0;
-    }
-    if (len_out != NULL) *len_out = strlen(buf);
-    return 1;
 }
 
 static int fastq_getline_alloc(fastq_reader *reader, char **buf, size_t *cap, size_t *len_out) {
-    if (!reader->is_gz) {
-        ssize_t n = getline(buf, cap, reader->fp);
-        if (n < 0) return ferror(reader->fp) ? -1 : 0;
-        if (len_out != NULL) *len_out = (size_t)n;
-        return 1;
-    }
-
     size_t out = 0;
     for (;;) {
         if (reader->gz_pos == reader->gz_len) {
-            if (reader->gz_eof) {
+            int got = fastq_refill(reader);
+            if (got < 0) return -1;
+            if (got == 0) {
                 if (out == 0) return 0;
                 (*buf)[out] = '\0';
                 if (len_out != NULL) *len_out = out;
                 return 1;
             }
-            int n = gzread(reader->gz, reader->gz_buf, (unsigned int)reader->gz_cap);
-            int zerr = Z_OK;
-            (void)gzerror(reader->gz, &zerr);
-            if (n < 0 || (zerr != Z_OK && zerr != Z_STREAM_END)) return -1;
-            if (n == 0) {
-                int zerr = Z_OK;
-                (void)gzerror(reader->gz, &zerr);
-                if (zerr != Z_OK && zerr != Z_STREAM_END) return -1;
-                reader->gz_eof = 1;
-                continue;
-            }
-            reader->gz_pos = 0;
-            reader->gz_len = (size_t)n;
         }
-
         size_t avail = reader->gz_len - reader->gz_pos;
         unsigned char *src = reader->gz_buf + reader->gz_pos;
         unsigned char *nl = (unsigned char *)memchr(src, '\n', avail);
@@ -768,42 +723,23 @@ static int fastq_getline_alloc(fastq_reader *reader, char **buf, size_t *cap, si
 }
 
 static int fastq_getline_view(fastq_reader *reader, const char **line_out, size_t *len_out) {
-    if (!reader->is_gz) {
-        int got = fastq_getline_alloc(reader, &reader->scratch_line, &reader->scratch_cap, len_out);
-        if (got == 1) *line_out = reader->scratch_line;
-        return got;
+    if (reader->gz_pos == reader->gz_len) {
+        int got = fastq_refill(reader);
+        if (got <= 0) return got;
     }
-    for (;;) {
-        if (reader->gz_pos == reader->gz_len) {
-            if (reader->gz_eof) return 0;
-            int n = gzread(reader->gz, reader->gz_buf, (unsigned int)reader->gz_cap);
-            int zerr = Z_OK;
-            (void)gzerror(reader->gz, &zerr);
-            if (n < 0 || (zerr != Z_OK && zerr != Z_STREAM_END)) return -1;
-            if (n == 0) {
-                int zerr = Z_OK;
-                (void)gzerror(reader->gz, &zerr);
-                if (zerr != Z_OK && zerr != Z_STREAM_END) return -1;
-                reader->gz_eof = 1;
-                continue;
-            }
-            reader->gz_pos = 0;
-            reader->gz_len = (size_t)n;
-        }
-        size_t avail = reader->gz_len - reader->gz_pos;
-        unsigned char *src = reader->gz_buf + reader->gz_pos;
-        unsigned char *nl = (unsigned char *)memchr(src, '\n', avail);
-        if (nl != NULL) {
-            size_t take = (size_t)(nl - src) + 1;
-            *line_out = (const char *)src;
-            *len_out = take;
-            reader->gz_pos += take;
-            return 1;
-        }
-        int got = fastq_getline_alloc(reader, &reader->scratch_line, &reader->scratch_cap, len_out);
-        if (got == 1) *line_out = reader->scratch_line;
-        return got;
+    size_t avail = reader->gz_len - reader->gz_pos;
+    unsigned char *src = reader->gz_buf + reader->gz_pos;
+    unsigned char *nl = (unsigned char *)memchr(src, '\n', avail);
+    if (nl != NULL) {
+        size_t take = (size_t)(nl - src) + 1;
+        *line_out = (const char *)src;
+        *len_out = take;
+        reader->gz_pos += take;
+        return 1;
     }
+    int got = fastq_getline_alloc(reader, &reader->scratch_line, &reader->scratch_cap, len_out);
+    if (got == 1) *line_out = reader->scratch_line;
+    return got;
 }
 
 static size_t fastq_trimmed_span_len(const char *line, size_t len) {
@@ -894,60 +830,70 @@ static int fastq_validate_quality(fastq_reader *reader, const char *qual, size_t
     return 0;
 }
 
-static int fastq_read_record_len(fastq_reader *reader, char *header, char *seq, char *plus, char *qual,
-                                 size_t cap, size_t *seq_len_out) {
+static int fastq_take_line(fastq_reader *reader, const char **line_out, size_t *len_out) {
+    size_t len = 0;
+    int got = fastq_getline_view(reader, line_out, &len);
+    if (got != 1) return got;
+    *len_out = fastq_trimmed_span_len(*line_out, len);
+    return 1;
+}
+
+static void fastq_copy_prefix(char *copy, size_t cap, const char *line, size_t len) {
+    if (copy == NULL) return;
+    size_t n = len < cap ? len : cap - 1;
+    memcpy(copy, line, n);
+    copy[n] = '\0';
+}
+
+static int fastq_line_error(fastq_reader *reader, size_t line_offset, int got, const char *missing) {
+    if (got < 0) return fastq_error(reader, line_offset, "read or decompression error");
+    return fastq_error(reader, line_offset, missing);
+}
+
+static int fastq_next_record(fastq_reader *reader, char *header, char *seq, char *plus, char *qual, size_t cap,
+                             size_t *seq_len_out) {
+    const char *line = NULL;
     size_t header_len = 0;
-    size_t seq_len = 0;
-    size_t plus_len = 0;
-    size_t qual_len = 0;
-    int got = fastq_getline_len(reader, header, cap, &header_len);
-    if (got <= 0) return got;
+    int got = fastq_take_line(reader, &line, &header_len);
+    if (got == 0) return 0;
     ++reader->record_ordinal;
-    if (fastq_getline_len(reader, seq, cap, &seq_len) != 1)
-        return fastq_error(reader, 2, "truncated record: missing sequence");
-    if (fastq_getline_len(reader, plus, cap, &plus_len) != 1)
-        return fastq_error(reader, 3, "truncated record: missing separator");
-    if (fastq_getline_len(reader, qual, cap, &qual_len) != 1)
-        return fastq_error(reader, 4, "truncated record: missing quality");
-    header_len = trim_line_len(header, header_len);
-    seq_len = trim_line_len(seq, seq_len);
-    plus_len = trim_line_len(plus, plus_len);
-    qual_len = trim_line_len(qual, qual_len);
-    if (fastq_store_record_id(reader, header, header_len) != 0 ||
-        fastq_validate_sequence(reader, seq, seq_len) != 0 ||
-        fastq_validate_plus(reader, plus, plus_len) != 0 ||
-        fastq_validate_quality(reader, qual, qual_len, seq_len) != 0) return -1;
+    if (got != 1) return fastq_line_error(reader, 1, got, "expected @ header");
+    if (fastq_store_record_id(reader, line, header_len) != 0) return -1;
+    fastq_copy_prefix(header, cap, line, header_len);
+
+    size_t seq_len = 0;
+    got = fastq_take_line(reader, &line, &seq_len);
+    if (got != 1) return fastq_line_error(reader, 2, got, "truncated record: missing sequence");
+    if (fastq_validate_sequence(reader, line, seq_len) != 0) return -1;
+    if (seq_len >= cap) {
+        char reason[64];
+        snprintf(reason, sizeof(reason), "sequence is longer than %zu bases", cap - 1);
+        return fastq_error(reader, 2, reason);
+    }
+    fastq_copy_prefix(seq, cap, line, seq_len);
+
+    size_t plus_len = 0;
+    got = fastq_take_line(reader, &line, &plus_len);
+    if (got != 1) return fastq_line_error(reader, 3, got, "truncated record: missing separator");
+    if (fastq_validate_plus(reader, line, plus_len) != 0) return -1;
+    fastq_copy_prefix(plus, cap, line, plus_len);
+
+    size_t qual_len = 0;
+    got = fastq_take_line(reader, &line, &qual_len);
+    if (got != 1) return fastq_line_error(reader, 4, got, "truncated record: missing quality");
+    if (fastq_validate_quality(reader, line, qual_len, seq_len) != 0) return -1;
+    fastq_copy_prefix(qual, cap, line, qual_len);
     if (seq_len_out != NULL) *seq_len_out = seq_len;
     return 1;
 }
 
+static int fastq_read_record_len(fastq_reader *reader, char *header, char *seq, char *plus, char *qual,
+                                 size_t cap, size_t *seq_len_out) {
+    return fastq_next_record(reader, header, seq, plus, qual, cap, seq_len_out);
+}
+
 static int fastq_read_sequence_record_len(fastq_reader *reader, char *seq, size_t cap, size_t *seq_len_out) {
-    const char *line = NULL;
-    size_t header_len = 0;
-    int got = fastq_getline_view(reader, &line, &header_len);
-    if (got <= 0) return got;
-    ++reader->record_ordinal;
-    header_len = fastq_trimmed_span_len(line, header_len);
-    if (fastq_store_record_id(reader, line, header_len) != 0) return -1;
-
-    size_t seq_len = 0;
-    if (fastq_getline_len(reader, seq, cap, &seq_len) != 1)
-        return fastq_error(reader, 2, "truncated record: missing sequence");
-    seq_len = trim_line_len(seq, seq_len);
-    if (fastq_validate_sequence(reader, seq, seq_len) != 0) return -1;
-
-    size_t plus_len = 0;
-    size_t qual_len = 0;
-    if (fastq_getline_view(reader, &line, &plus_len) != 1)
-        return fastq_error(reader, 3, "truncated record: missing separator");
-    plus_len = fastq_trimmed_span_len(line, plus_len);
-    if (fastq_validate_plus(reader, line, plus_len) != 0) return -1;
-    if (fastq_getline_view(reader, &line, &qual_len) != 1)
-        return fastq_error(reader, 4, "truncated record: missing quality");
-    qual_len = fastq_trimmed_span_len(line, qual_len);
-    if (fastq_validate_quality(reader, line, qual_len, seq_len) != 0) return -1;
-    if (seq_len_out != NULL) *seq_len_out = seq_len;
-    return 1;
+    return fastq_next_record(reader, NULL, seq, NULL, NULL, cap, seq_len_out);
 }
 
 static void fastq_read_id(const char *header, char *out, size_t out_cap) {
