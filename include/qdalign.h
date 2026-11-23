@@ -149,10 +149,9 @@ int qdaln_index_assign_stats(const qdaln_index *index, const char *const *reads,
  * Count/status-oriented indexed assignment.
  *
  * Preserves target_index for UNIQUE, best_distance, and UNIQUE/AMBIGUOUS/NONE/
- * INVALID status. For AMBIGUOUS results, match_count and second_best_distance
- * may be lower-bound values because the search can stop once ambiguity at the
- * best distance is proven. Use qdaln_index_assign_stats when exact match_count
- * reporting is required.
+ * INVALID status. match_count and second_best_distance may be lower-bound
+ * values because the search stops once an exact match settles the status.
+ * Use qdaln_index_assign_stats when exact match_count reporting is required.
  */
 int qdaln_index_assign_status_stats(const qdaln_index *index, const char *const *reads,
                                     const size_t *read_lens, size_t n_reads, int k,
@@ -195,8 +194,8 @@ int qdaln_index_lookup_exact_ascii_many_stats(const qdaln_index *index, const ch
                                               qdaln_match_result *results, qdaln_index_stats *stats);
 
 /*
- * Direct exact lookup that folds ASCII a/c/g/t to A/C/G/T while preserving
- * literal-byte behavior for other symbols through the non-encodable fallback.
+ * Direct exact lookup that compares the read and the targets after folding
+ * ASCII lowercase letters to uppercase; every other byte compares literally.
  * This matches DotMatch FASTQ window normalization without requiring callers
  * to copy and uppercase the read window before lookup.
  */

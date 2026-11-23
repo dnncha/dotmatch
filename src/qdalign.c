@@ -50,9 +50,11 @@ struct qdaln_index {
     size_t n_hamming_seeds;
     int hamming_seed_ready;
     size_t *nonencodable_targets;
+    size_t *foldable_targets;
     size_t hash_cap;
     size_t n_targets;
     size_t n_nonencodable;
+    size_t n_foldable;
 };
 
 #define QDALN_HASH_EMPTY SIZE_MAX
@@ -555,7 +557,7 @@ int qdaln_edit_distance_leq(const char *a, size_t a_len, const char *b, size_t b
     } else if (b_len - a_len > (size_t)k) {
         return 0;
     }
-    if (k == 0) return a_len == b_len && memcmp(a, b, a_len) == 0 ? 1 : 0;
+    if (k == 0) return a_len == b_len && (a_len == 0 || memcmp(a, b, a_len) == 0) ? 1 : 0;
     if (a_len == 0) return b_len <= (size_t)k ? 1 : 0;
     if (b_len == 0) return a_len <= (size_t)k ? 1 : 0;
     if ((size_t)k >= (a_len > b_len ? a_len : b_len)) return 1;
@@ -664,7 +666,7 @@ static int assignment_edit_class(const char *read, size_t read_len,
 static int candidate_distance_within_k(const char *read, size_t read_len,
                                        const char *target, size_t target_len, int k) {
     if (k == 0) {
-        return read_len == target_len && memcmp(read, target, read_len) == 0 ? 0 : -1;
+        return read_len == target_len && (read_len == 0 || memcmp(read, target, read_len) == 0) ? 0 : -1;
     }
 
     if (k == 1) {
@@ -881,6 +883,18 @@ static int index_exact_table_find(const qdaln_index *index, uint64_t code, size_
     }
 }
 
+static int target_is_acgt_any_case(const char *target, size_t len) {
+    for (size_t i = 0; i < len; ++i) {
+        switch (target[i]) {
+            case 'A': case 'C': case 'G': case 'T': case 'a': case 'c': case 'g': case 't':
+                break;
+            default:
+                return 0;
+        }
+    }
+    return 1;
+}
+
 qdaln_index *qdaln_index_build(const char *const *targets, const size_t *target_lens, size_t n_targets) {
     if (n_targets != 0 && (targets == NULL || target_lens == NULL)) return NULL;
 
@@ -898,9 +912,10 @@ qdaln_index *qdaln_index_build(const char *const *targets, const size_t *target_
     idx->hash_heads = (size_t *)malloc_array(idx->hash_cap, sizeof(size_t));
     idx->hash_next = (size_t *)malloc_array(n_targets, sizeof(size_t));
     idx->nonencodable_targets = (size_t *)malloc_array(n_targets, sizeof(size_t));
+    idx->foldable_targets = (size_t *)malloc_array(n_targets, sizeof(size_t));
     if (idx->targets == NULL || idx->target_lens == NULL || idx->codes == NULL ||
         idx->encodable == NULL || idx->hash_heads == NULL || idx->hash_next == NULL ||
-        idx->nonencodable_targets == NULL) {
+        idx->nonencodable_targets == NULL || idx->foldable_targets == NULL) {
         qdaln_index_free(idx);
         return NULL;
     }
@@ -946,6 +961,10 @@ qdaln_index *qdaln_index_build(const char *const *targets, const size_t *target_
         } else {
             idx->nonencodable_targets[idx->n_nonencodable] = i;
             ++idx->n_nonencodable;
+            if (target_is_acgt_any_case(idx->targets[i], target_lens[i])) {
+                idx->foldable_targets[idx->n_foldable] = i;
+                ++idx->n_foldable;
+            }
         }
     }
 
@@ -1067,6 +1086,7 @@ void qdaln_index_free(qdaln_index *index) {
     free(index->hamming_seeds);
     free(index->hamming_seed_heads);
     free(index->nonencodable_targets);
+    free(index->foldable_targets);
     free(index);
 }
 
@@ -1150,6 +1170,10 @@ static int index_verify_seed_candidate(const qdaln_index *index, size_t target_i
     return 0;
 }
 
+static int ambiguity_settled(int stop_on_ambiguous, int best_tie_count, const qdaln_match_result *result) {
+    return stop_on_ambiguous && best_tie_count > 1 && result->best_distance == 0;
+}
+
 static int index_visit_exact_seed_candidates(const qdaln_index *index, uint64_t code, size_t len,
                                              candidate_seen *seen, const char *read, size_t read_len, int k,
                                              qdaln_match_result *result, int *best_tie_count,
@@ -1160,7 +1184,7 @@ static int index_visit_exact_seed_candidates(const qdaln_index *index, uint64_t 
         if (index_verify_seed_candidate(index, j, seen, read, read_len, k, result, best_tie_count, stats) != 0) {
             return -1;
         }
-        if (stop_on_ambiguous && *best_tie_count > 1) return 0;
+        if (ambiguity_settled(stop_on_ambiguous, *best_tie_count, result)) return 0;
     }
     return 0;
 }
@@ -1177,7 +1201,7 @@ static int index_visit_deletion_seed_candidates(const qdaln_index *index, uint64
         if (index_verify_seed_candidate(index, j, seen, read, read_len, k, result, best_tie_count, stats) != 0) {
             return -1;
         }
-        if (stop_on_ambiguous && *best_tie_count > 1) return 0;
+        if (ambiguity_settled(stop_on_ambiguous, *best_tie_count, result)) return 0;
     }
     return 0;
 }
@@ -1399,6 +1423,10 @@ static int index_assign_single_unknown_one(const qdaln_index *index, const char 
     if ((read == NULL && read_len != 0) || read_len > 32) return 0;
     size_t n_bad = count_non_acgt(read, read_len, &bad_pos);
     if (n_bad == 0) return 0;
+    if (index->n_targets == 0) {
+        *result = empty_match_result(QDALN_MATCH_NONE);
+        return 1;
+    }
 
     static const char bases[] = {'A', 'C', 'G', 'T'};
     char tmp[32];
@@ -1418,7 +1446,7 @@ static int index_assign_single_unknown_one(const qdaln_index *index, const char 
                     candidate_seen_free(&seen);
                     return 0;
                 }
-                if (stop_on_ambiguous && best_tie_count > 1) goto done;
+                if (ambiguity_settled(stop_on_ambiguous, best_tie_count, result)) goto done;
             }
         }
         uint64_t code = 0;
@@ -1428,7 +1456,7 @@ static int index_assign_single_unknown_one(const qdaln_index *index, const char 
                 candidate_seen_free(&seen);
                 return 0;
             }
-            if (stop_on_ambiguous && best_tie_count > 1) goto done;
+            if (ambiguity_settled(stop_on_ambiguous, best_tie_count, result)) goto done;
         }
     }
 
@@ -1448,7 +1476,7 @@ static int index_assign_single_unknown_one(const qdaln_index *index, const char 
             if (stats != NULL) ++stats->candidates_verified;
             if (d < 0) continue;
             index_update_verified(result, (int)j, d, &best_tie_count);
-            if (stop_on_ambiguous && best_tie_count > 1) goto done;
+            if (ambiguity_settled(stop_on_ambiguous, best_tie_count, result)) goto done;
         }
     }
 
@@ -1497,7 +1525,7 @@ static int index_assign_neighbor_one_impl(const qdaln_index *index, const char *
                 candidate_seen_free(&seen);
                 return 0;
             }
-            if (stop_on_ambiguous && best_tie_count > 1) goto done;
+            if (ambiguity_settled(stop_on_ambiguous, best_tie_count, result)) goto done;
         }
     }
 
@@ -1506,7 +1534,7 @@ static int index_assign_neighbor_one_impl(const qdaln_index *index, const char *
         candidate_seen_free(&seen);
         return 0;
     }
-    if (stop_on_ambiguous && best_tie_count > 1) goto done;
+    if (ambiguity_settled(stop_on_ambiguous, best_tie_count, result)) goto done;
 
     uint64_t seen_del_codes[64];
     size_t n_seen_del_codes = 0;
@@ -1521,7 +1549,7 @@ static int index_assign_neighbor_one_impl(const qdaln_index *index, const char *
             candidate_seen_free(&seen);
             return 0;
         }
-        if (stop_on_ambiguous && best_tie_count > 1) goto done;
+        if (ambiguity_settled(stop_on_ambiguous, best_tie_count, result)) goto done;
     }
 
     for (size_t ni = 0; ni < index->n_nonencodable; ++ni) {
@@ -1539,7 +1567,7 @@ static int index_assign_neighbor_one_impl(const qdaln_index *index, const char *
         if (stats != NULL) ++stats->candidates_verified;
         if (d < 0) continue;
         index_update_verified(result, (int)j, d, &best_tie_count);
-        if (stop_on_ambiguous && best_tie_count > 1) goto done;
+        if (ambiguity_settled(stop_on_ambiguous, best_tie_count, result)) goto done;
     }
 
 done:
@@ -1603,7 +1631,7 @@ static int visit_k2_exact_code(uint64_t code, size_t len, void *ctx) {
                                           v->stop_on_ambiguous) != 0) {
         return -1;
     }
-    return v->stop_on_ambiguous && *v->best_tie_count > 1 ? 1 : 0;
+    return ambiguity_settled(v->stop_on_ambiguous, *v->best_tie_count, v->result) ? 1 : 0;
 }
 
 static int visit_k2_first_edit_code(uint64_t code, size_t len, void *ctx) {
@@ -1627,7 +1655,7 @@ static int index_scan_nonencodable_seed_candidates(const qdaln_index *index, can
         if (index_verify_seed_candidate(index, j, seen, read, read_len, k, result, best_tie_count, stats) != 0) {
             return -1;
         }
-        if (stop_on_ambiguous && *best_tie_count > 1) return 1;
+        if (ambiguity_settled(stop_on_ambiguous, *best_tie_count, result)) return 1;
     }
     return 0;
 }
@@ -1806,15 +1834,40 @@ static int index_assign_neighbor_two_long_read(const qdaln_index *index, const c
 
 typedef int (*qdaln_encoder)(const char *s, size_t len, uint64_t *code_out);
 
-static int bytes_equal_ascii_upper(const char *a, const char *b, size_t len) {
+static unsigned char ascii_upper_byte(unsigned char c) {
+    return c >= 'a' && c <= 'z' ? (unsigned char)(c - ('a' - 'A')) : c;
+}
+
+static int bytes_equal_ascii_folded(const char *a, const char *b, size_t len) {
     for (size_t i = 0; i < len; ++i) {
-        unsigned char ca = (unsigned char)a[i];
-        unsigned char cb = (unsigned char)b[i];
-        if (ca >= 'a' && ca <= 'z') ca = (unsigned char)(ca - ('a' - 'A'));
-        if (cb >= 'a' && cb <= 'z') cb = (unsigned char)(cb - ('a' - 'A'));
-        if (ca != cb) return 0;
+        if (ascii_upper_byte((unsigned char)a[i]) != ascii_upper_byte((unsigned char)b[i])) return 0;
     }
     return 1;
+}
+
+static void index_scan_targets_exact(const qdaln_index *index, const size_t *candidates, size_t n_candidates,
+                                     const char *read, size_t read_len, qdaln_match_result *result,
+                                     qdaln_index_stats *stats, int fold) {
+    for (size_t ni = 0; ni < n_candidates; ++ni) {
+        size_t j = candidates[ni];
+        if (index->target_lens[j] != read_len) continue;
+        if (stats != NULL) ++stats->candidates_considered;
+        if (stats != NULL) ++stats->candidates_verified;
+        int equal = fold ? bytes_equal_ascii_folded(index->targets[j], read, read_len)
+                         : (read_len == 0 || memcmp(index->targets[j], read, read_len) == 0);
+        if (!equal) continue;
+        ++result->match_count;
+        result->best_distance = 0;
+        if (result->target_index < 0 || (int)j < result->target_index) result->target_index = (int)j;
+    }
+}
+
+static void exact_status_from_count(qdaln_match_result *result) {
+    if (result->match_count == 0) {
+        *result = empty_match_result(QDALN_MATCH_NONE);
+    } else {
+        result->status = result->match_count > 1 ? QDALN_MATCH_AMBIGUOUS : QDALN_MATCH_UNIQUE;
+    }
 }
 
 static int index_assign_exact_one_impl(const qdaln_index *index, const char *read, size_t read_len,
@@ -1824,28 +1877,9 @@ static int index_assign_exact_one_impl(const qdaln_index *index, const char *rea
     *result = empty_match_result(QDALN_MATCH_NONE);
     if (index->n_targets == 0) return 1;
     if (!encode(read, read_len, &read_code)) {
-        if (index->n_nonencodable == 0) return 1;
-        for (size_t ni = 0; ni < index->n_nonencodable; ++ni) {
-            size_t j = index->nonencodable_targets[ni];
-            if (index->target_lens[j] != read_len) continue;
-            if (stats != NULL) ++stats->candidates_considered;
-            if (stats != NULL) ++stats->candidates_verified;
-            if (fold_ascii_fallback) {
-                if (!bytes_equal_ascii_upper(index->targets[j], read, read_len)) continue;
-            } else if (memcmp(index->targets[j], read, read_len) != 0) {
-                continue;
-            }
-            ++result->match_count;
-            result->best_distance = 0;
-            if (result->target_index < 0 || (int)j < result->target_index) result->target_index = (int)j;
-        }
-        if (result->match_count == 0) {
-            result->status = QDALN_MATCH_NONE;
-        } else if (result->match_count > 1) {
-            result->status = QDALN_MATCH_AMBIGUOUS;
-        } else {
-            result->status = QDALN_MATCH_UNIQUE;
-        }
+        index_scan_targets_exact(index, index->nonencodable_targets, index->n_nonencodable, read, read_len, result,
+                                 stats, fold_ascii_fallback);
+        exact_status_from_count(result);
         return 1;
     }
 
@@ -1859,17 +1893,11 @@ static int index_assign_exact_one_impl(const qdaln_index *index, const char *rea
         result->target_index = (int)exact_first;
         result->best_distance = 0;
         result->match_count = (int)exact_count;
-        result->status = exact_count > 1 ? QDALN_MATCH_AMBIGUOUS : QDALN_MATCH_UNIQUE;
-        return 1;
     }
-
-    if (result->match_count == 0) {
-        result->status = QDALN_MATCH_NONE;
-    } else if (result->match_count > 1) {
-        result->status = QDALN_MATCH_AMBIGUOUS;
-    } else {
-        result->status = QDALN_MATCH_UNIQUE;
+    if (fold_ascii_fallback && index->n_foldable > 0) {
+        index_scan_targets_exact(index, index->foldable_targets, index->n_foldable, read, read_len, result, stats, 1);
     }
+    exact_status_from_count(result);
     return 1;
 }
 
