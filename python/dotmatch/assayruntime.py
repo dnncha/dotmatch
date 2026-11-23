@@ -277,6 +277,9 @@ def _synchronized_records(read_paths: Mapping[str, Path]) -> Iterator[tuple[str,
     if not read_paths:
         raise AssayScriptError("at least one FASTQ input is required")
     names = sorted(read_paths)
+    resolved = [read_paths[name].resolve() for name in names]
+    if len(set(resolved)) != len(resolved):
+        raise AssayScriptError(f"the same FASTQ file is supplied for more than one read: {dict(zip(names, resolved))}")
     iterators = [iter_fastq(read_paths[name]) for name in names]
     sentinel = object()
     for index, group in enumerate(itertools.zip_longest(*iterators, fillvalue=sentinel), start=1):
@@ -287,7 +290,8 @@ def _synchronized_records(read_paths: Mapping[str, Path]) -> Iterator[tuple[str,
             )
         records = {name: record for name, record in zip(names, group) if isinstance(record, FastqRecord)}
         canonical = {_canonical_read_id(record.read_id) for record in records.values()}
-        if len(canonical) != 1:
+        mates = [record.read_id[-1] for record in records.values() if record.read_id.endswith(("/1", "/2"))]
+        if len(canonical) != 1 or len(mates) != len(set(mates)):
             observed = {name: record.read_id for name, record in records.items()}
             raise AssayScriptError(f"FASTQ read ids are not synchronized at record {index}: {observed}")
         yield next(iter(canonical)), records

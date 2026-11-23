@@ -2705,3 +2705,26 @@ for metric_args in "--metric hamming" "--metric levenshtein --indel-window 1"; d
     exit 1
   fi
 done
+
+printf 'id\tseq\nL\tACGT\n' > "$TMPDIR/mate_left.tsv"
+printf 'id\tseq\nR\tTTTT\n' > "$TMPDIR/mate_right.tsv"
+printf '@frag/1\nACGTAA\n+\nIIIIII\n' > "$TMPDIR/mate1.fastq"
+printf '@frag/1\nACGTAA\n+\nIIIIII\n' > "$TMPDIR/mate1_copy.fastq"
+printf '@frag/2\nTTTTAA\n+\nIIIIII\n' > "$TMPDIR/mate2.fastq"
+for pair in "mate1.fastq mate2.fastq 0" "mate2.fastq mate1.fastq 1" "mate1.fastq mate1_copy.fastq 1" "mate1.fastq mate1.fastq 1"; do
+  set -- $pair
+  status=0
+  "$DOTMATCH_BIN" pair-count \
+    --left-targets "$TMPDIR/mate_left.tsv" --right-targets "$TMPDIR/mate_right.tsv" \
+    --left-reads "$TMPDIR/$1" --right-reads "$TMPDIR/$2" \
+    --left-start 0 --left-length 4 --right-start 0 --right-length 4 \
+    --k 0 --metric hamming --out "$TMPDIR/mate_pairs.tsv" 2>/dev/null || status=$?
+  if [ "$3" = 0 ] && [ "$status" != 0 ]; then
+    echo "pair-count rejected correctly ordered mates $1 $2" >&2
+    exit 1
+  fi
+  if [ "$3" = 1 ] && [ "$status" = 0 ]; then
+    echo "pair-count accepted mismatched mates $1 $2" >&2
+    exit 1
+  fi
+done

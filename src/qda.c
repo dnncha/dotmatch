@@ -957,12 +957,22 @@ static void fastq_read_id(const char *header, char *out, size_t out_cap) {
  * identifier in both forms while retaining fastq_read_id behavior for
  * single-read commands.
  */
-static void fastq_pair_read_id(const char *header, char *out, size_t out_cap) {
+static char fastq_pair_read_id(const char *header, char *out, size_t out_cap) {
     fastq_read_id(header, out, out_cap);
     size_t n = strlen(out);
     if (n >= 2 && out[n - 2] == '/' && (out[n - 1] == '1' || out[n - 1] == '2')) {
+        char mate = out[n - 1];
         out[n - 2] = '\0';
+        return mate;
     }
+    return '\0';
+}
+
+static int same_input_file(const char *a, const char *b) {
+    struct stat sa;
+    struct stat sb;
+    if (stat(a, &sa) != 0 || stat(b, &sb) != 0) return 0;
+    return sa.st_dev == sb.st_dev && sa.st_ino == sb.st_ino;
 }
 
 static void print_fastq_row(FILE *out, const seq_table *targets, const char *read_id,
@@ -7850,6 +7860,10 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
         fprintf(stderr, "out of memory\n");
         goto done;
     }
+    if (paired_fastq && same_input_file(left_reads_path, right_reads_path)) {
+        fprintf(stderr, "--left-reads and --right-reads name the same file\n");
+        goto done;
+    }
     if (fastq_reader_open(&left_reader, paired_fastq ? left_reads_path : reads_path) != 0 ||
         (paired_fastq && fastq_reader_open(&right_reader, right_reads_path) != 0)) {
         fprintf(stderr, "failed to open FASTQ input\n");
@@ -7898,10 +7912,15 @@ static int run_pair_count(const char *argv0, int argc, char **argv) {
                 goto done;
             }
             if (left_got == 0) break;
-            fastq_pair_read_id(left_header, read_id, sizeof(read_id));
-            fastq_pair_read_id(right_header, right_read_id, sizeof(right_read_id));
+            char left_mate = fastq_pair_read_id(left_header, read_id, sizeof(read_id));
+            char right_mate = fastq_pair_read_id(right_header, right_read_id, sizeof(right_read_id));
             if (read_id[0] == '\0' || right_read_id[0] == '\0') {
                 fprintf(stderr, "paired FASTQ records require non-empty read IDs\n");
+                goto done;
+            }
+            if ((left_mate != '\0' && left_mate != '1') || (right_mate != '\0' && right_mate != '2')) {
+                fprintf(stderr, "paired FASTQ mates are out of order: left read %s must not end in /2 and right read must not end in /1\n",
+                        read_id);
                 goto done;
             }
             if (strcmp(read_id, right_read_id) != 0) {

@@ -249,3 +249,18 @@ def test_runtime_rejects_non_integer_max_reads(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="positive integer"):
         run_compiled_plan(plan, {}, tmp_path / "out", max_reads=1.5, accept_findings=True)
+
+
+def test_synchronized_records_reject_swapped_or_repeated_mates(tmp_path: Path) -> None:
+    from dotmatch.assayruntime import _synchronized_records
+
+    first = tmp_path / "r1.fastq"
+    second = tmp_path / "r2.fastq"
+    first.write_text("@frag/1\nACGT\n+\nIIII\n", encoding="utf-8")
+    second.write_text("@frag/1\nACGT\n+\nIIII\n", encoding="utf-8")
+    with pytest.raises(AssayScriptError, match="not synchronized"):
+        list(_synchronized_records({"R1": first, "R2": second}))
+    with pytest.raises(AssayScriptError, match="same FASTQ file"):
+        list(_synchronized_records({"R1": first, "R2": first}))
+    second.write_text("@frag/2\nACGT\n+\nIIII\n", encoding="utf-8")
+    assert [read_id for read_id, _ in _synchronized_records({"R1": first, "R2": second})] == ["frag"]
