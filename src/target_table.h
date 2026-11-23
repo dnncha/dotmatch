@@ -1,19 +1,18 @@
-/* Internal target-table reader. Included by qda.c after seq_table helpers.
- * Keep this input contract aligned with python/dotmatch/target_io.py.
- * gzip is detected by zlib; no compressed bytes become literal target rows.
- */
 #ifndef DOTMATCH_TARGET_TABLE_H
 #define DOTMATCH_TARGET_TABLE_H
 
 #define TARGET_TABLE_MAX_LINE (1024U * 1024U)
 #define TARGET_TABLE_MAX_FIELDS 128U
 
+static const char *const target_table_id_columns[] = {"target_id", "guide_id", "barcode_id", "id", "name", "sgrna", "guide", "sgrnaid", "sgrna_id", NULL};
+static const char *const target_table_seq_columns[] = {"target_seq", "guide_seq", "barcode_seq", "sequence", "seq", "grna.sequence", "bases", "sgrna.sequence", "sgrna_sequence", "sgrna_seq", "guide_sequence", "guidesequence", NULL};
+static const char *const target_table_gene_columns[] = {"gene", "gene_id", "gene_symbol", "gene.symbol", "target_gene", NULL};
+
 static int target_table_line(gzFile input, char **buf, size_t *capacity) {
     size_t used = 0;
     int c;
     while ((c = gzgetc(input)) != -1) {
-        /* A read can return data with a trailer error that later reads clear. */
-        int error = Z_OK;
+                int error = Z_OK;
         (void)gzerror(input, &error);
         if (error != Z_OK && error != Z_STREAM_END) return -1;
         if (c == '\0' || used >= TARGET_TABLE_MAX_LINE) return -1;
@@ -46,9 +45,6 @@ static void target_table_trim(char *text) {
     text[length - start] = '\0';
 }
 
-/* Decode one CSV/TSV row in place. Reject unclosed/stray quotes and overflow
- * rather than splitting a quoted identifier or silently discarding columns.
- */
 static int target_table_fields(char *line, char delimiter, char **fields) {
     char *read = line, *write = line;
     size_t count = 0;
@@ -105,9 +101,6 @@ static int target_table_valid_text(const char *text, int is_sequence) {
 }
 
 static int read_target_table(const char *path, seq_table *table) {
-    static const char *const ids[] = {"target_id", "guide_id", "barcode_id", "id", "name", "sgrna", "guide", "sgrnaid", "sgrna_id", NULL};
-    static const char *const seqs[] = {"target_seq", "guide_seq", "barcode_seq", "sequence", "seq", "grna.sequence", "bases", "sgrna.sequence", "sgrna_sequence", "sgrna_seq", "guide_sequence", "guidesequence", NULL};
-    static const char *const genes[] = {"gene", "gene_id", "gene_symbol", "gene.symbol", "target_gene", NULL};
     gzFile input = gzopen(path, "rb");
     if (input == NULL) return -1;
     (void)gzbuffer(input, 128 * 1024);
@@ -135,12 +128,15 @@ static int read_target_table(const char *path, seq_table *table) {
         if (parsed < 1) { failure = "malformed quoted row or more than 128 columns"; goto invalid; }
         size_t nf = (size_t)parsed;
         if (first) {
-            int id = target_table_column(fields, nf, ids);
-            int seq = target_table_column(fields, nf, seqs);
-            int gene = target_table_column(fields, nf, genes);
+            int id = target_table_column(fields, nf, target_table_id_columns);
+            int seq = target_table_column(fields, nf, target_table_seq_columns);
+            int gene = target_table_column(fields, nf, target_table_gene_columns);
             if (id == -2 || seq == -2 || gene == -2) { failure = "multiple possible ID, sequence or gene columns; provide an unambiguous library"; goto invalid; }
             sequence_only = nf == 1 && seq == 0;
             named = sequence_only || (id >= 0 && seq >= 0);
+            if (!named && (id >= 0 || seq >= 0)) {
+                failure = "header names an ID or sequence column but not both; add the missing column header"; goto invalid;
+            }
             width = nf;
             first = 0;
             if (named) {
@@ -187,5 +183,18 @@ invalid:
     free(line);
     (void)gzclose(input);
     return -1;
+}
+
+static void drop_recognised_header_row(seq_table *table) {
+    if (table->count == 0) return;
+    seq_record *first = &table->records[0];
+    if (!target_table_alias(first->id, target_table_id_columns) || !target_table_alias(first->seq, target_table_seq_columns)) {
+        return;
+    }
+    free(first->id);
+    free(first->seq);
+    free(first->gene);
+    memmove(table->records, table->records + 1, (table->count - 1) * sizeof(seq_record));
+    --table->count;
 }
 #endif

@@ -61,3 +61,23 @@ def test_quoted_csv_and_reordered_headers(tmp_path):
     path = tmp_path / "library.csv"
     path.write_text('gene,id,sequence\n"Gene, annotation",a,ACGT\n')
     assert read_target_table(path)[0].gene == "Gene, annotation"
+
+
+def test_comma_content_in_tsv_name_is_sniffed_like_native(tmp_path):
+    path = tmp_path / "library.tsv"
+    path.write_text("target_id,target_seq\nt0,ACGTACGT\n", encoding="utf-8")
+    assert [(record.target_id, record.sequence) for record in read_target_table(path)] == [("t0", "ACGTACGT")]
+
+
+def test_half_header_is_rejected_instead_of_becoming_a_target(tmp_path):
+    path = tmp_path / "library.tsv"
+    path.write_text("sequence\tgene\nACGTACGT\tG1\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="not both"):
+        read_target_table(path)
+
+
+def test_truncated_gzip_target_table_raises_value_error(tmp_path):
+    path = tmp_path / "library.tsv.gz"
+    path.write_bytes(gzip.compress(b"target_id\ttarget_seq\nt0\tACGTACGT\n" * 50)[:30])
+    with pytest.raises(ValueError, match="truncated gzip"):
+        read_target_table(path)

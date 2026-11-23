@@ -575,6 +575,7 @@ static int run_batch(const char *argv0, int argc, char **argv, const char *mode)
         fprintf(stderr, "failed to read input files\n");
         goto done;
     }
+    drop_recognised_header_row(&targets);
 
     const char **read_ptrs = (const char **)malloc_array(reads.count, sizeof(char *));
     const char **target_ptrs = (const char **)malloc_array(targets.count, sizeof(char *));
@@ -6401,6 +6402,7 @@ static int run_fastq_assign(const char *argv0, int argc, char **argv) {
         fprintf(stderr, "failed to read barcode file\n");
         goto done;
     }
+    drop_recognised_header_row(&targets);
     int barcode_id_check = validate_unique_seq_ids(&targets, "barcode");
     if (barcode_id_check != 0) {
         if (barcode_id_check == -1) fprintf(stderr, "out of memory\n");

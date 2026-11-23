@@ -2738,3 +2738,18 @@ if ! grep '"ambiguous": 1,' "$TMPDIR/auto_len_summary.json" >/dev/null; then
   echo "demux --barcode-length auto must keep every within-radius barcode across lengths" >&2
   exit 1
 fi
+
+printf 'barcode_id\tbarcode_seq\nt1\tACGTACGT\n' > "$TMPDIR/headered_barcodes.tsv"
+printf '@r\nNNACGTACGTNN\n+\nIIIIIIIIIIII\n' > "$TMPDIR/headered_reads.fastq"
+"$DOTMATCH_BIN" fastq-assign --barcodes "$TMPDIR/headered_barcodes.tsv" --reads "$TMPDIR/headered_reads.fastq" \
+  --barcode-start 2 --barcode-length 8 --k 0 --out "$TMPDIR/headered_assign.tsv"
+grep '^r	ACGTACGT	0	t1	ACGTACGT	0	-1	1	unique$' "$TMPDIR/headered_assign.tsv" >/dev/null
+
+printf 'sequence\tgene\nACGTACGT\tG1\n' > "$TMPDIR/half_header_targets.tsv"
+if "$DOTMATCH_BIN" count --targets "$TMPDIR/half_header_targets.tsv" --reads "$TMPDIR/headered_reads.fastq" \
+  --sample-label s --target-start 2 --target-length 8 --k 0 --metric hamming \
+  --out "$TMPDIR/half_header_counts.tsv" 2> "$TMPDIR/half_header.err"; then
+  echo "a header with a sequence column but no ID column must not become a target row" >&2
+  exit 1
+fi
+grep 'header names an ID or sequence column but not both' "$TMPDIR/half_header.err" >/dev/null

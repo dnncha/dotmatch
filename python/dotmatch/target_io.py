@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import csv
 import gzip
+import io
+import zlib
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -32,7 +34,6 @@ def read_target_table(path: str | Path) -> list[TargetRecord]:
     compressed = name.endswith(".gz")
     if compressed:
         name = name[:-3]
-    delimiter = "," if name.endswith(".csv") else "\t"
     opener = gzip.open if compressed else open
     targets: list[TargetRecord] = []
     seen: set[str] = set()
@@ -41,82 +42,93 @@ def read_target_table(path: str | Path) -> list[TargetRecord]:
     id_col, seq_col, gene_col = 0, 1, 2
     sequence_only = False
     width = None
-    with opener(source, "rt", encoding="utf-8-sig", newline="") as handle:
-        reader = csv.reader(handle, delimiter=delimiter, strict=True)
-        for row in reader:
-            cols = [cell.strip() for cell in row]
-            if not cols or not any(cols) or cols[0].startswith("#"):
+    try:
+        with opener(source, "rt", encoding="utf-8-sig", newline="") as handle:
+            text = handle.read()
+    except (EOFError, zlib.error, gzip.BadGzipFile) as exc:
+        raise ValueError(f"corrupt or truncated gzip target table {source}: {exc}") from exc
+    first_line = next(
+        (line for line in text.split("\n") if line.strip(" \t\r") and not line.lstrip(" \t").startswith("#")), ""
+    )
+    delimiter = "," if name.endswith(".csv") or ("," in first_line and "\t" not in first_line) else "\t"
+    reader = csv.reader(io.StringIO(text, newline=""), delimiter=delimiter, strict=True)
+    for row in reader:
+        cols = [cell.strip() for cell in row]
+        if not cols or not any(cols) or cols[0].startswith("#"):
+            continue
+        if width is None:
+            width = len(cols)
+        if len(cols) != width:
+            raise ValueError(f"row has a different number of fields in {source} at line {reader.line_num}")
+        if first:
+            header = [cell.lower() for cell in cols]
+            sequence_only = len(header) == 1 and header[0] in SEQ_COLUMNS
+            has_id = any(c in header for c in ID_COLUMNS)
+            has_seq = any(c in header for c in SEQ_COLUMNS)
+            named = sequence_only or (has_id and has_seq)
+            if not named and (has_id or has_seq):
+                raise ValueError(
+                    f"header names an ID or sequence column but not both in {source}; add the missing column header"
+                )
+            first = False
+            if named:
+                if any(sum(name in group for name in header) > 1 for group in (ID_COLUMNS, SEQ_COLUMNS, GENE_COLUMNS)):
+                    raise ValueError(f"multiple possible ID, sequence or gene columns in {source}; provide an unambiguous library")
+                if len(set(header)) != len(header) or any(not name for name in header):
+                    raise ValueError(f"duplicate header columns in {source}")
+                if sequence_only:
+                    seq_col = 0
+                else:
+                    id_col = next(
+                        header.index(c) for c in ID_COLUMNS if c in header
+                    )
+                    seq_col = next(
+                        header.index(c) for c in SEQ_COLUMNS if c in header
+                    )
+                gene_col = next(
+                    (header.index(c) for c in GENE_COLUMNS if c in header), -1
+                )
                 continue
-            if width is None:
-                width = len(cols)
-            if len(cols) != width:
-                raise ValueError(f"row has a different number of fields in {source} at line {reader.line_num}")
-            if first:
-                header = [cell.lower() for cell in cols]
-                sequence_only = len(header) == 1 and header[0] in SEQ_COLUMNS
-                named = sequence_only or (
-                    any(c in header for c in ID_COLUMNS)
-                    and any(c in header for c in SEQ_COLUMNS)
-                )
-                first = False
-                if named:
-                    if any(sum(name in group for name in header) > 1 for group in (ID_COLUMNS, SEQ_COLUMNS, GENE_COLUMNS)):
-                        raise ValueError(f"multiple possible ID, sequence or gene columns in {source}; provide an unambiguous library")
-                    if len(set(header)) != len(header) or any(not name for name in header):
-                        raise ValueError(f"duplicate header columns in {source}")
-                    if sequence_only:
-                        seq_col = 0
-                    else:
-                        id_col = next(
-                            header.index(c) for c in ID_COLUMNS if c in header
-                        )
-                        seq_col = next(
-                            header.index(c) for c in SEQ_COLUMNS if c in header
-                        )
-                    gene_col = next(
-                        (header.index(c) for c in GENE_COLUMNS if c in header), -1
-                    )
-                    continue
-            if sequence_only or (not named and len(cols) == 1):
-                if len(cols) != 1:
-                    raise ValueError(
-                        f"expected one sequence column in {source} at line {reader.line_num}"
-                    )
-                target_id, sequence, gene = f"target_{len(targets)}", cols[0], ""
-            else:
-                required = max(id_col, seq_col, gene_col if named else -1)
-                if required >= len(cols):
-                    raise ValueError(
-                        f"missing target columns in {source} at line {reader.line_num}"
-                    )
-                target_id, sequence = cols[id_col], cols[seq_col]
-                gene = cols[gene_col] if 0 <= gene_col < len(cols) else ""
-            if target_id.startswith('"') or gene.startswith('"'):
-                raise ValueError("target ID and gene may not start with a literal double quote (TSV identity boundary)")
-            if not target_id:
+        if sequence_only or (not named and len(cols) == 1):
+            if len(cols) != 1:
                 raise ValueError(
-                    f"empty target ID in {source} at line {reader.line_num}"
+                    f"expected one sequence column in {source} at line {reader.line_num}"
                 )
-            if target_id in seen:
+            target_id, sequence, gene = f"target_{len(targets)}", cols[0], ""
+        else:
+            required = max(id_col, seq_col, gene_col if named else -1)
+            if required >= len(cols):
                 raise ValueError(
-                    f"duplicate target ID {target_id!r} in {source}; use distinct IDs, even for duplicate sequences"
+                    f"missing target columns in {source} at line {reader.line_num}"
                 )
-            if not sequence:
-                raise ValueError(
-                    f"empty target sequence in {source} at line {reader.line_num}"
-                )
-            if not sequence.isascii() or any(
-                ch.isspace() or ord(ch) < 32 or ord(ch) == 127 for ch in sequence
-            ):
-                raise ValueError(
-                    f"target sequence must contain ASCII symbols without whitespace in {source} at line {reader.line_num}"
-                )
-            if any(ord(ch) < 32 or ord(ch) == 127 for ch in target_id + gene):
-                raise ValueError(
-                    f"target ID and gene must not contain control characters in {source} at line {reader.line_num}"
-                )
-            seen.add(target_id)
-            targets.append(TargetRecord(target_id, sequence.upper(), gene))
+            target_id, sequence = cols[id_col], cols[seq_col]
+            gene = cols[gene_col] if 0 <= gene_col < len(cols) else ""
+        if target_id.startswith('"') or gene.startswith('"'):
+            raise ValueError("target ID and gene may not start with a literal double quote (TSV identity boundary)")
+        if not target_id:
+            raise ValueError(
+                f"empty target ID in {source} at line {reader.line_num}"
+            )
+        if target_id in seen:
+            raise ValueError(
+                f"duplicate target ID {target_id!r} in {source}; use distinct IDs, even for duplicate sequences"
+            )
+        if not sequence:
+            raise ValueError(
+                f"empty target sequence in {source} at line {reader.line_num}"
+            )
+        if not sequence.isascii() or any(
+            ch.isspace() or ord(ch) < 32 or ord(ch) == 127 for ch in sequence
+        ):
+            raise ValueError(
+                f"target sequence must contain ASCII symbols without whitespace in {source} at line {reader.line_num}"
+            )
+        if any(ord(ch) < 32 or ord(ch) == 127 for ch in target_id + gene):
+            raise ValueError(
+                f"target ID and gene must not contain control characters in {source} at line {reader.line_num}"
+            )
+        seen.add(target_id)
+        targets.append(TargetRecord(target_id, sequence.upper(), gene))
     if not targets:
         raise ValueError(f"no targets found in {source}")
     return targets
