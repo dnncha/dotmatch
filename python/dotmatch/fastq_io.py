@@ -10,7 +10,6 @@ import zlib
 from pathlib import Path
 from typing import Any, Iterator, NamedTuple, TextIO
 
-
 NATIVE_MAX_READ_BASES = 8191
 _NATIVE_SPACE = " \t\n\r\v\f"
 
