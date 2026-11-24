@@ -22,15 +22,16 @@ def _rpc(message_id: int, method: str, params: dict[str, object] | None = None) 
 
 def test_lists_direct_and_assay_tools_with_schemas() -> None:
     names = [tool["name"] for tool in tool_definitions()]
-    assert names[:6] == [
+    assert names[:7] == [
         "route_task",
         "count_targets",
         "demux_barcodes",
         "audit_targets",
         "triage_run",
+        "decode_segments",
         "edit_distance",
     ]
-    assert set(names[6:]) == {"discover", "prepare_assay", "inspect_assay", "run_assay", "review_assay", "handoff_assay"}
+    assert set(names[7:]) == {"discover", "prepare_assay", "inspect_assay", "run_assay", "review_assay", "handoff_assay"}
     for tool in tool_definitions():
         assert tool["description"]
         assert tool["inputSchema"]["type"] == "object"
@@ -128,6 +129,35 @@ def test_triage_run_mcp_tool_returns_structured_verdict_and_refuses_overwrite(tm
     assert "empty directory" in again["structuredContent"]["error"]
 
 
+def test_decode_segments_mcp_tool_decodes_and_refuses_overwrite(tmp_path: Path) -> None:
+    cells = tmp_path / "cells.tsv"
+    cells.write_text("id\tsequence\nC1\tAAAA\n", encoding="utf-8")
+    guides = tmp_path / "guides.tsv"
+    guides.write_text("id\tsequence\nG1\tGGGGGG\n", encoding="utf-8")
+    reads = tmp_path / "reads.fastq"
+    reads.write_text("@r0\nAAAAACGTGGGGGG\n+\nIIIIIIIIIIIIII\n", encoding="utf-8")
+    out_dir = tmp_path / "seg_out"
+    arguments = {
+        "reads": str(reads),
+        "out_dir": str(out_dir),
+        "segments": [
+            {"name": "cell", "kind": "target", "start": 0, "length": 4, "targets": str(cells), "k": 0},
+            {"name": "umi", "kind": "umi", "start": 4, "length": 4, "scope": ["cell"]},
+            {"name": "guide", "kind": "target", "start": 8, "length": 6, "targets": str(guides), "k": 0},
+        ],
+    }
+    res = call_tool("decode_segments", arguments)
+    assert res["isError"] is False, res["structuredContent"]
+    body = res["structuredContent"]
+    assert body["status"] == "passed"
+    assert body["report"]["schema_version"] == "dotmatch.segments.v1"
+    assert body["report"]["unique_molecules"] == 1
+
+    again = call_tool("decode_segments", arguments)
+    assert again["isError"] is True
+    assert "empty directory" in again["structuredContent"]["error"]
+
+
 def test_cli_subcommand_speaks_mcp_over_stdio() -> None:
     request = json.dumps(_rpc(1, "tools/list")) + "\n"
     completed = subprocess.run(
@@ -136,4 +166,4 @@ def test_cli_subcommand_speaks_mcp_over_stdio() -> None:
     assert completed.returncode == 0, completed.stderr
     lines = completed.stdout.splitlines()
     assert len(lines) == 1
-    assert len(json.loads(lines[0])["result"]["tools"]) == 12
+    assert len(json.loads(lines[0])["result"]["tools"]) == 13

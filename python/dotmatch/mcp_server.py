@@ -145,6 +145,40 @@ TRIAGE_SCHEMA: dict[str, Any] = {
     },
 }
 
+SEGMENTS_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["reads", "segments", "out_dir"],
+    "properties": {
+        "reads": {"type": "string", "description": "R1 FASTQ or FASTQ.GZ path."},
+        "reads_r2": {"type": "string", "description": "Optional R2 FASTQ or FASTQ.GZ path for paired-end grammars."},
+        "out_dir": {"type": "string", "description": "New or empty directory for segment counts and summary."},
+        "batch_size": {"type": "integer", "minimum": 1, "maximum": 65536, "default": 4096},
+        "segments": {
+            "type": "array",
+            "minItems": 1,
+            "description": "Ordered list of fixed-window target or umi segment specifications.",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["name", "kind", "start", "length"],
+                "properties": {
+                    "name": {"type": "string", "minLength": 1},
+                    "kind": {"enum": ["target", "umi"]},
+                    "start": {"type": "integer", "minimum": 0},
+                    "length": {"type": "integer", "minimum": 1},
+                    "read": {"enum": [1, 2], "default": 1},
+                    "targets": {"type": "string"},
+                    "k": {"type": "integer", "minimum": 0, "maximum": 3, "default": 0},
+                    "metric": {"enum": ["hamming", "levenshtein", "exact"], "default": "hamming"},
+                    "policy": {"enum": ["radius", "best"], "default": "radius"},
+                    "scope": {"type": "array", "items": {"type": "string"}},
+                },
+            },
+        },
+    },
+}
+
 DISTANCE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
@@ -378,6 +412,62 @@ def _triage_run(arguments: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _decode_segments(arguments: Mapping[str, Any]) -> dict[str, Any]:
+    _require_keys(arguments, SEGMENTS_SCHEMA)
+    from .segments import ReadGrammar, SegmentSpec, decode_segments
+
+    raw_segments = arguments["segments"]
+    if not isinstance(raw_segments, list) or not raw_segments:
+        raise McpToolInputError("segments must be a non-empty array")
+    seg_schema = SEGMENTS_SCHEMA["properties"]["segments"]["items"]
+    specs: list[SegmentSpec] = []
+    for item in raw_segments:
+        if not isinstance(item, Mapping):
+            raise McpToolInputError("each segment must be an object")
+        _require_keys(item, seg_schema)
+        kind = _choice(item, "kind", seg_schema)
+        read_mate = item.get("read", 1)
+        if read_mate not in (1, 2) or isinstance(read_mate, bool):
+            raise McpToolInputError("segment read must be 1 or 2")
+        targets_arg = item.get("targets")
+        targets_path = _existing_file(targets_arg, f"segment {item['name']} targets") if targets_arg is not None else None
+        raw_scope = item.get("scope", [])
+        if not isinstance(raw_scope, list) or not all(isinstance(s, str) for s in raw_scope):
+            raise McpToolInputError("segment scope must be an array of strings")
+        metric = _choice(item, "metric", seg_schema)
+        policy = _choice(item, "policy", seg_schema)
+        specs.append(
+            SegmentSpec(
+                name=str(item["name"]),
+                kind="target" if kind == "target" else "umi",
+                start=_integer(item, "start", 0, 0),
+                length=_integer(item, "length", 0, 1),
+                read=1 if read_mate == 1 else 2,
+                targets=targets_path,
+                k=_integer(item, "k", 0, 0, 3),
+                metric="exact" if metric == "exact" else ("levenshtein" if metric == "levenshtein" else "hamming"),
+                policy="best" if policy == "best" else "radius",
+                scope=tuple(raw_scope),
+            )
+        )
+    grammar = ReadGrammar(segments=tuple(specs))
+    reads_r2 = _existing_file(arguments["reads_r2"], "reads_r2") if "reads_r2" in arguments else None
+    report = decode_segments(
+        grammar=grammar,
+        reads=_existing_file(arguments["reads"], "reads"),
+        reads_r2=reads_r2,
+        out_dir=_empty_dir(arguments["out_dir"], "out_dir"),
+        batch_size=_integer(arguments, "batch_size", 4096, 1, 65536),
+    )
+    payload = report.to_dict()
+    return {
+        "status": "passed",
+        "exit_code": 0,
+        "report": payload,
+        "outputs": payload["artifacts"],
+    }
+
+
 def _edit_distance(arguments: Mapping[str, Any]) -> dict[str, Any]:
     _require_keys(arguments, DISTANCE_SCHEMA)
     from .core import distance
@@ -422,6 +512,14 @@ DIRECT_TOOLS: dict[str, tuple[str, dict[str, Any], Callable[[Mapping[str, Any]],
         "verdict (healthy, review_required, likely_misconfigured), ranked findings, and offline artifacts.",
         TRIAGE_SCHEMA,
         _triage_run,
+        False,
+    ),
+    "decode_segments": (
+        "Decode multi-segment single-end or paired-end FASTQ reads (Perturb-seq Cell+UMI+Guide, Pharma DEL "
+        "multi-tag libraries, or dual-guide screens) using native known-target assignment and explicit "
+        "UMI-conflict tracking. Writes segment_counts.tsv, umi_conflicts.tsv, and segments_summary.json.",
+        SEGMENTS_SCHEMA,
+        _decode_segments,
         False,
     ),
     "edit_distance": (
