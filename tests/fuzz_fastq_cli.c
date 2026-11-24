@@ -325,6 +325,17 @@ static void fuzz_one(uint64_t seed) {
         snprintf(what, sizeof(what), "count %s k=%s: plain and gzip counts differ", metric, k);
         fuzz_fail(seed, what, &fastq);
     }
+    size_t small_buffer = 1 + fuzz_below(&rng, 96);
+    fastq_reader_buffer_bytes = small_buffer;
+    int small_rc = fuzz_count("reads.fastq.gz", "small_buffer.tsv", k, metric, "auto");
+    fastq_reader_buffer_bytes = (size_t)1 << 20;
+    if ((plain_rc == 0) != (small_rc == 0) || (plain_rc == 0 && !fuzz_same_file("plain.tsv", "small_buffer.tsv"))) {
+        snprintf(what, sizeof(what),
+                 "count %s k=%s: a %zu-byte reader buffer (rc %d) disagrees with the 1 MiB buffer (rc %d); records "
+                 "split across a refill take a different path",
+                 metric, k, small_buffer, small_rc, plain_rc);
+        fuzz_fail(seed, what, &fastq);
+    }
     if (plain_rc == 0 && strcmp(metric, "hamming") == 0) {
         static const char *const indexes[] = {"query", "precompute"};
         for (size_t i = 0; i < 2; ++i) {
@@ -414,7 +425,7 @@ int main(int argc, char **argv) {
     for (uint64_t s = first; s < first + iterations; ++s) fuzz_one(s);
 
     static const char *const names[] = {"reads.fastq", "reads.fastq.gz", "plain.tsv", "gz.tsv", "index.tsv",
-                                        "assign_plain.tsv", "assign_gz.tsv", "engine_fast.tsv",
+                                        "assign_plain.tsv", "assign_gz.tsv", "small_buffer.tsv", "engine_fast.tsv",
                                         "engine_generic.tsv", "engine_assignments.tsv", "targets.tsv",
                                         "targets_acgt.tsv"};
     for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); ++i) fuzz_unlink(names[i]);

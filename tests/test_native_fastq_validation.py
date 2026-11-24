@@ -7,6 +7,7 @@ import gzip
 import csv
 import importlib.util
 import os
+import random
 from pathlib import Path
 import subprocess
 import sys
@@ -39,6 +40,10 @@ INVALID = {
     "truncated": (b"@bad\nACGTACGT\n+bad\n", 4),
     "nul-in-sequence-and-quality": (b"@bad\nACGTACGT\x00GG\n+bad\nIIIIIIII\x00II\n", 2),
     "truncated-header-only": (b"@bad\n", 2),
+    "bare-cr-line-endings": (b"@bad\rACGTACGT\r+bad\rIIIIIIII\r", 2),
+    "file-separator-in-id": (b"@bad\x1cx\nACGTACGT\n+\nIIIIIIII\n", 1),
+    "nbsp-in-id": (b"@bad\xc2\xa0x\nACGTACGT\n+\nIIIIIIII\n", 1),
+    "read-over-native-limit": (b"@bad\n" + b"A" * 8192 + b"\n+\n" + b"I" * 8192 + b"\n", 2),
 }
 
 
@@ -77,6 +82,50 @@ def count_command(targets: Path, reads: Path, output: Path, *, full_record: bool
     if full_record:
         command.extend(["--assignments", str(output.with_suffix(".assignments.tsv"))])
     return command
+
+
+MUTATION_BYTES = [b"\r", b"\n", b"\x00", b"\x1c", b" ", b"\t", b"\x0b", b"\x0c", b"\xc2\xa0", b"\xff", b"@", b"+", b"I", b"A", b"x"]
+
+
+def mutated_fastq(seed: int) -> bytes:
+    rng = random.Random(seed)
+    data = bytearray(b"@r1 d\nACGTACGT\n+\nIIIIIIII\n@r2\nACGTACGA\n+r2\nIIIIIIII\n@r3\nTCGTACGT\n+\nIIIIIIII\n")
+    for _ in range(rng.randint(1, 3)):
+        position = rng.randrange(len(data) + 1)
+        action = rng.randrange(3)
+        if action == 0 or position == len(data):
+            data[position:position] = rng.choice(MUTATION_BYTES)
+        elif action == 1:
+            del data[position]
+        else:
+            data[position : position + 1] = rng.choice(MUTATION_BYTES)
+    return bytes(data)
+
+
+def python_accepts(path: Path) -> bool:
+    try:
+        list(iter_fastq(path))
+    except (UnicodeDecodeError, ValueError, EOFError, gzip.BadGzipFile):
+        return False
+    return True
+
+
+def check_mutation_parity(tmp: Path, targets: Path, seeds: range) -> None:
+    for seed in seeds:
+        payload = mutated_fastq(seed)
+        reads = tmp / f"mutant-{seed}.fastq"
+        write_fastq(reads, payload)
+        output = tmp / f"mutant-{seed}.tsv"
+        native = subprocess.run(
+            count_command(targets, reads, output, full_record=False), text=True, capture_output=True, check=False
+        )
+        if python_accepts(reads) != (native.returncode == 0):
+            raise AssertionError(
+                f"seed {seed}: Python {'accepts' if python_accepts(reads) else 'rejects'} but native "
+                f"{'accepts' if native.returncode == 0 else 'rejects'} {payload!r}\n{native.stderr}"
+            )
+        reads.unlink()
+        output.unlink(missing_ok=True)
 
 
 def main() -> None:
@@ -192,6 +241,8 @@ def main() -> None:
                     rows = list(csv.DictReader(handle, delimiter="\t"))
                 counts = {row["sgRNA"]: int(row["sample"]) for row in rows}
                 assert counts == {"shifted": 0, "closest": 1 if policy == "best" else 0}
+
+        check_mutation_parity(tmp, targets, range(int(os.environ.get("FASTQ_PARITY_SEEDS", "300"))))
 
     print("native FASTQ validation parity: PASS")
 

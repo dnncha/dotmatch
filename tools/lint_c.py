@@ -103,6 +103,26 @@ def lint(path: Path) -> list[str]:
                     f"{rel}:{line_of(text, start)}: output file {name} is never closed with close_output_file, so "
                     "a failed write can still exit 0"
                 )
+    problems.extend(duplicate_fastq_validation(text, rel))
+    return problems
+
+
+FASTQ_ERROR_REASON = re.compile(r'fastq_error\(\s*reader\s*,\s*\d+\s*,\s*"([^"]+)"')
+
+
+def duplicate_fastq_validation(text: str, rel: Path) -> list[str]:
+    first_seen: dict[str, int] = {}
+    problems: list[str] = []
+    for match in FASTQ_ERROR_REASON.finditer(text):
+        reason = match.group(1)
+        line = line_of(text, match.start())
+        if reason in first_seen:
+            problems.append(
+                f"{rel}:{line}: FASTQ check \"{reason}\" is already written at line {first_seen[reason]}; a second "
+                "copy of a record check lets two readers disagree, so call the shared fastq_validate_* helper"
+            )
+        else:
+            first_seen[reason] = line
     return problems
 
 

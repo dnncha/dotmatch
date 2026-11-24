@@ -278,10 +278,10 @@ def _count_targets(arguments: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(reads_value, list) or not reads_value:
         raise McpToolInputError("reads must be a non-empty array of FASTQ paths")
     reads = [_existing_file(item, "reads") for item in reads_value]
-    labels_value = arguments.get("sample_labels") or [Path(item).name.split(".")[0] for item in reads]
-    if not isinstance(labels_value, list) or len(labels_value) != len(reads):
+    labels_value = arguments.get("sample_labels")
+    if labels_value is not None and (not isinstance(labels_value, list) or len(labels_value) != len(reads)):
         raise McpToolInputError("sample_labels must have one entry per reads path")
-    labels = [str(label) for label in labels_value]
+    labels = [str(label) for label in labels_value or []]
     if any("," in label or not label for label in labels):
         raise McpToolInputError("sample_labels must be non-empty and contain no commas")
     metric = _choice(arguments, "metric", COUNT_SCHEMA)
@@ -291,8 +291,9 @@ def _count_targets(arguments: Mapping[str, Any]) -> dict[str, Any]:
     argv = ["count", "--targets", _existing_file(arguments["targets"], "targets")]
     for path in reads:
         argv += ["--reads", path]
+    if labels:
+        argv += ["--sample-label", ",".join(labels)]
     argv += [
-        "--sample-label", ",".join(labels),
         "--target-start", str(_integer(arguments, "target_start", 0, 0)),
         "--target-length", str(_integer(arguments, "target_length", 0, 1)),
         "--k", str(k),

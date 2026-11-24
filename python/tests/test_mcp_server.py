@@ -82,6 +82,22 @@ def test_count_audit_and_refusals(tmp_path: Path) -> None:
     assert unknown["structuredContent"]["status"] == "invalid_input"
 
 
+def test_count_paired_lane_files_without_labels(tmp_path: Path) -> None:
+    lanes = []
+    for name in ("sample.R1.fastq", "sample.R2.fastq"):
+        lane = tmp_path / name
+        lane.write_bytes(READS.read_bytes())
+        lanes.append(str(lane))
+    out = tmp_path / "lanes.tsv"
+    counted = call_tool(
+        "count_targets",
+        {"targets": str(TARGETS), "reads": lanes, "target_start": 0, "target_length": 4, "k": 1, "out": str(out)},
+    )
+    assert counted["isError"] is False, counted["structuredContent"]
+    header = out.read_text().splitlines()[0].split("\t")
+    assert len(set(header)) == len(header)
+
+
 def test_assay_tools_pass_through_contract_envelope() -> None:
     result = call_tool("discover", {"intent": "crispr-guide-counting"})
     assert result["isError"] is False

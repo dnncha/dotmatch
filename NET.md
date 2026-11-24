@@ -1,36 +1,41 @@
 # Feedback net
 
 Inner loop: `make inner` (about 15 s warm on the Linux worker; also the pre-commit hook)
-Gate: `make gate` (84 s warm, about 8 min cold on the Linux worker; also the pre-push hook)
-Scheduled: `make nightly` (weekly T3 scheduled task on a Linux worker, red files a GitHub issue)
+Gate: `make gate` (about 5 min on a fresh Agent37 worker including the one-time `.venv` build from `make dev-env`; also the pre-push hook)
+Scheduled: `make nightly` (T3 scheduled task `scheduled-task:a6f21d78-376d-437c-ac89-70f464fceaf5`, Mondays 03:00, on a pool worker through gate-run; red files a `nightly-red` GitHub issue)
 
-Enable the hooks once per checkout with `make hooks`. GitHub Actions are billing-blocked and are not part of this net; local gate results with the commit SHA are the CI record.
+Enable the hooks once per checkout with `make hooks`. The gate builds its own Python tool environment (`.venv`, from pyproject's runtime and dev requirements), so it runs on any worker with python3 and a C compiler. GitHub Actions are billing-blocked and are not part of this net; local gate results with the commit SHA are the CI record.
 
 ## Signals by tier
 
 | Tier | Signal | Command | Runs | Time | Status |
 |---|---|---|---|---|---|
-| edit | C banned-API and output-close rules, Makefile pipefail rule | `make lint-c` (`tools/lint_c.py`) | hook, inner, gate | 0.3 s | honest |
+| edit | C banned-API and output-close rules, one copy of each FASTQ record check, Makefile pipefail rule | `make lint-c` (`tools/lint_c.py`) | hook, inner, gate | 0.3 s | honest |
 | edit | Strict C build: `-Wall -Wextra -Wpedantic -Wformat=2 -Wconversion -Wvla -Wimplicit-fallthrough -Wshadow -Werror` | `make strict` | hook, inner, gate | 40 s cold, 0 s warm | honest |
 | edit | Python lint (typed sources full set, pyflakes everywhere) | `make lint` | hook, inner, gate | 1 s | honest |
 | inner | C unit tests | `make test` | hook, inner, gate | 3 s warm | honest |
 | inner | qdalign differential fuzz vs O(nm) reference, ASan/UBSan, 3k cases | `make fuzz-smoke` | hook, inner, gate | 3 s | honest |
-| inner | FASTQ/CLI differential fuzz (plain vs gzip, count vs fastq-assign, lookup vs generic engine, lookup vs scan), ASan/UBSan, 80 seeds | `make fuzz-smoke` | hook, inner, gate | 2 s | honest |
+| inner | FASTQ/CLI differential fuzz (plain vs gzip, 1 MiB vs 1-96 byte reader buffer, count vs fastq-assign, lookup vs generic engine, lookup vs scan), ASan/UBSan, 80 seeds | `make fuzz-smoke` | hook, inner, gate | 2 s | honest |
 | gate | NET.md wiring and rung check | `make netcheck` (`tools/netcheck.py`) | hook, gate | 0.1 s | honest |
-| gate | CLI behaviour tests | `make cli-test` | hook, gate | 95 s | honest |
+| gate | C mutants on the lines this change touched in `src/qdalign.c`, killed by test_qdalign + fuzz_qdalign_diff | `make mutation-c-changed` (`tools/mutate_c.py --changed-since origin/main`) | hook, gate | 2 s per mutant; prints SKIPPED where origin/main is absent (pool snapshots) | honest |
+| gate | libFuzzer FASTQ reader differential (refill vs buffered view vs small-buffer view), ASan/UBSan, 20 s | `make libfuzz-fastq` (`tests/libfuzz_fastq.c`) | hook, gate | 25 s on the Mac; prints SKIPPED on toolchains without libFuzzer | honest |
+| gate | CLI behaviour tests, including the Python-vs-native FASTQ contract and a 300-seed byte-mutation accept/reject differential | `make cli-test` | hook, gate | 95 s | honest |
 | gate | ASan/UBSan unit tests plus the CLI suites against the sanitizer binary | `make asan` | hook, gate | 3 min | honest |
 | gate | mypy strict and pyright | `make typecheck` | hook, gate | 80 s | honest |
 | gate | Python suite (2,160+ tests incl. readiness and packaging checks) | `make python-test` | hook, gate | 50-145 s | honest |
 | release | Full pre-tag gate | `make pretag-ready` | release | 30+ min | honest |
 | weekly | Long fuzz (400k qdalign cases, 6,000 FASTQ seeds, time-based seed) | `make fuzz-long` via `make nightly` | scheduled: T3 schedule_task on a Linux worker, Mondays 03:00 UTC, red files a GitHub issue | 25 min | honest |
 | weekly | Mutation sensitivity of the scientific invariants | `make mutation-scientific` via `make nightly` | scheduled: T3 schedule_task on a Linux worker, Mondays 03:00 UTC, red files a GitHub issue | 5 min | honest |
+| weekly | Full C mutation sweep of `src/qdalign.c` (660 comparison mutants), survivors posted to the "C mutation survivors" issue | `make mutation-c` via `make nightly` | scheduled: T3 schedule_task on a Linux worker, Mondays 03:00 UTC | 22 min on a 4-core worker | honest |
+| weekly | npm advisories for the website dependencies, plus the latest `ci` run on main read by the scheduled task | `make web-audit` via `make nightly` | scheduled: T3 schedule_task on a Linux worker, Mondays 03:00 UTC, red files a GitHub issue | 10 s | honest |
+| weekly | libFuzzer FASTQ differential, 15 min | `make libfuzz-fastq LIBFUZZ_SECONDS=900` | scheduled: T3 schedule_task on the Mac (Homebrew LLVM), Mondays 03:00 UTC, red files a GitHub issue | 15 min | honest |
 | human | Distribution channel verification | `make distribution-channels` | human, per release | 1 min | red until the 0.8.0 PyPI wheel, GHCR tag and Bioconda recipe land |
 
 ## Risk surfaces
 
 | Surface | Paths | Risk (L×I) | Covered by | Status |
 |---|---|---|---|---|
-| FASTQ reader and record validation | `src/qda.c` (`fastq_*`), `python/dotmatch/fastq_io.py` | high × high | one reader, fuzz-smoke, `tests/test_native_fastq_validation.py` | covered |
+| FASTQ reader and record validation | `src/qda.c` (`fastq_*`), `python/dotmatch/fastq_io.py` | high × high | shared field validators (lint-c), small-buffer fuzz, libfuzz-fastq, `tests/test_native_fastq_validation.py` mutation differential | covered |
 | Assignment engines (lookup, generic, scan, status shortcut) | `src/qda.c` (`assign_*`, `*_lookup_*`), `src/qdalign.c` | high × high | fuzz-smoke differential (both harnesses), `make test` | covered |
 | Target, sample and barcode tables | `src/target_table.h`, `src/qda.c` (`read_table`, `read_samples_file`), `python/dotmatch/target_io.py` | med × high | lint-c fgets ban, cli-test, `python/tests/test_target_io.py` | covered |
 | Output files and exit codes | `src/qda.c` (`open_output_file`, `close_output_file`) | med × high | lint-c close rule, /dev/full checks in history | covered |
@@ -38,14 +43,16 @@ Enable the hooks once per checkout with `make hooks`. GitHub Actions are billing
 | Quality-gated corrections | `src/qda.c` (`quality_allows_unique_correction`) | med × med | cli-test regression | late: regression test only |
 | Paired reads | `src/qda.c` (`run_pair_count`), `python/dotmatch/assayruntime.py` | med × med | cli-test, `python/tests/test_assayruntime.py` | late: regression tests only |
 | Python CLI fallback vs native CLI | `python/dotmatch/cli.py`, `python/dotmatch/core.py` | med × med | `python/tests/test_python_native_differential.py` (30 seeds across 14 metric/k/policy combinations) in `make python-test` | covered |
+| MCP server tools | `python/dotmatch/mcp_server.py` | med × med | `python/tests/test_mcp_server.py` | late: unit tests only |
+| Website dependencies | `package.json`, `package-lock.json` | low × med | public CI `npm audit`, Dependabot | late: CI only, not in the local gate |
 | Release records and evidence claims | `docs/distribution-release.json`, `CITATION.cff`, `README.md` | med × med | python-test readiness checks, pre-push gate | covered |
 
 ## Holes, ranked
 
-1. No mutation testing of the C core (`mutation-scientific` mutates Python only). Next step: a small mutant runner over `src/qdalign.c` comparison operators scored by `make test fuzz-smoke`, weekly.
-2. Coverage-guided fuzzing is unavailable on the worker toolchain (clang 14 without compiler-rt). The random harnesses stand in. Next step: a libFuzzer target over `fastq_next_record` on a machine with compiler-rt.
-3. Python and native FASTQ/target parsers still differ on edge bytes: bare `\r` line endings (Python accepts), `\x1c` in headers, NBSP in IDs, reads over 8,191 bases (native rejects with a positioned error, Python accepts). Next step: decide one contract per case and add each to `tests/test_native_fastq_validation.py`.
-4. `COVERAGE_MIN ?= 75` in the Makefile fails `make coverage` on a fitted number with no stated user-facing reason. It is only reached from `pretag-ready`; next step: print the number instead of failing.
+1. The first full C mutation sweep (2026-11-24, before the not-built filter) killed 424 of 660 mutants in `src/qdalign.c`: 236 survivors, so test_qdalign and fuzz_qdalign_diff miss whole areas. Largest groups: `stats != NULL` counter updates (no test asserts index stats), NULL-argument guards in the public API (`qdaln_match_many`, `qdaln_index_*`, `qdaln_edit_distance*`), the bounded Hamming helpers' `d > k` boundaries (lines 251-300), and the radius-2 neighbour visitor (lines 2120-2140). Next step: assert `qdaln_index_stats` in the unit tests, add a NULL/zero-length table test over every public entry point, and test each bounded helper at d == k and d == k + 1; the weekly task posts the count to the "C mutation survivors" issue.
+2. The workflow-manager integration (Nextflow, nf-test, Snakemake, Galaxy) runs only on GitHub Actions; the weekly task reads its result but nothing local runs it. Next step: a conda env on a pool worker running `make workflow-integration-test` weekly.
+3. The pool worker toolchain (clang 14 without compiler-rt) cannot run libFuzzer, so the gate's `libfuzz-fastq` step only fires on the Mac pre-push hook. Next step: install compiler-rt on the Agent37 image (`apt install libclang-rt-14-dev`) through the fleet-ops profile.
+4. `mutation-c-changed` skips in pool snapshots because they carry no `origin/main`. Next step: have gate-run export the base SHA (`MUTATION_BASE`) into the snapshot, or run the slice from the pre-push hook only and say so.
 
 ## Escape log
 
@@ -65,3 +72,10 @@ Enable the hooks once per checkout with `make hooks`. GitHub Actions are billing
 | 2026-11-23 | Python ambiguity flags, status-path radius, posterior with mixed lengths, readers raising EOFError | one-sided neighbour search, early-stop counts used for radius, whole library passed to a same-length model, missing exception mapping | Python helper semantics | Python audit | 21b3469, df9af2b | regressions in `python/tests/test_cli.py`, `test_matcher.py`, `test_io_boundaries.py` | 7 regression test; above: each is a single-call-site semantic rule; the parser-level gap is hole 1 | 50 s | yes: red with the fixes stashed |
 | 2026-11-23 | 70a4900 left make test red; a piped fuzz check could not fail the gate | test output filtered through grep while iterating; `cmd \| tail -1` in a recipe | hidden check exit code | make inner | 198d21f, this commit | `.SHELLFLAGS := -o pipefail -ec` and a lint rule requiring it | 3 rule | 0.3 s | yes: lint red with pipefail removed; fuzz-smoke red on a planted stop |
 | 2026-11-23 | pyflakes autofix removed `guide_counter_offset_args`, which a test reads as a module attribute of the benchmark script | `ruff --fix` cannot see attribute access through a dynamically loaded script | lost re-export | pre-push `make gate` (python-test) | this commit | explicit `name as name` re-export, which ruff treats as used; the gate test stays | 7 regression test; above: the use is a getattr on a module loaded by path, invisible to static analysis | 113 s | yes: gate red on cecfc26 |
+| 2026-11-24 | #188's zero-copy FASTQ fast path carried its own copy of the header, plus and length checks | a perf change re-implemented validation instead of calling the shared helpers | divergent duplicate readers | dragnet review of #188 | 3149eb0 | `tools/lint_c.py` rejects a second copy of any `fastq_error` reason; fuzz-smoke compares a 1-96 byte reader buffer with 1 MiB; `make libfuzz-fastq` compares refill and view paths | 3 rule | 0.3 s lint, 2 s fuzz | yes: lint red at five sites on 4e7db47; fuzz red at seed 15 and libFuzzer red at once with the view's quality check removed |
+| 2026-11-24 | `make gate` failed in 30 s on a fresh pool worker (No module named ruff) | the gate assumed a machine with the Python dev tools preinstalled | gate depends on machine state | dragnet recon | 44960d2 | lint, typecheck and python-test depend on `make dev-env`, which builds `.venv` from pyproject | 3 rule (build dependency) | n/a | yes: gate red on 4e7db47, green on the same tree plus dev-env |
+| 2026-11-24 | pre-commit `make inner` could never pass on the Mac | ASan aborts on Darwin when detect_leaks=1 | gate depends on machine state | dragnet recon | 44960d2 | `ASAN_DETECT_LEAKS` chosen from `uname` | 3 rule (build dependency) | 2 s | yes: fuzz-smoke aborted before, passes after |
+| 2026-11-24 | Python accepted FASTQ files native rejects (bare CR, 0x1c or NBSP in IDs, reads over 8,191 bases) | Python's universal newlines and Unicode `str.split()` differ from native byte rules | Python vs native parser divergence | NET.md hole, then the new mutation differential | d741cca | 300-seed byte-mutation accept/reject differential in `tests/test_native_fastq_validation.py` plus four named cases | 6 property or fuzz; above: the two parsers are separate implementations in two languages, so no type or lint rule can relate them, and deleting the Python reader would remove the pure-Python install path | 28 s | yes: red at seed 170 on the old reader |
+| 2026-11-24 | MCP count_targets failed on sample.R1.fastq + sample.R2.fastq with no labels | the server invented labels from the text before the first dot | wrapper default differs from the CLI | dragnet MCP audit | 4349249 | the invented default is deleted; the CLI names samples | 2 deleted path | n/a | yes: new test red before, green after |
+| 2026-11-24 | public CI red on main: npm audit (next, sharp, source-map-js), Python 3.9 on Ubuntu 26.04, Galaxy on Python 3.14 | dependency advisories and runner-image moves land outside the local gate | external drift seen only in Actions | dragnet recon | this branch | lockfile bumped, runners and Python pinned; `make web-audit` in the weekly `make nightly`, and the weekly task files an issue when the latest `ci` run on main is red | 4 sweep (every advisory, every CI job, weekly) | n/a | yes: `npm audit` 3 advisories before, 0 after |
+| 2026-11-24 | NET.md listed `make nightly` as a weekly T3 scheduled task, but no such task existed, so fuzz-long and mutation-scientific had never run on a schedule | the schedule was written into the doc without being created | unwired signal documented as wired | dragnet recon (`list_scheduled_tasks`) | this branch | the task now exists and its ID is in the NET.md header, so the next session can check it by ID | 7 regression test; above: the scheduler lives in the T3 app, outside the repo, so no check the gate runs can see whether it exists | n/a | yes: `list_scheduled_tasks` had no dotmatch task before, one after |

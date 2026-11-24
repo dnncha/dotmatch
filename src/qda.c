@@ -660,13 +660,15 @@ static int ends_with(const char *s, const char *suffix) {
     return n >= m && strcmp(s + n - m, suffix) == 0;
 }
 
+static size_t fastq_reader_buffer_bytes = (size_t)1 << 20;
+
 static int fastq_reader_open(fastq_reader *reader, const char *path) {
     memset(reader, 0, sizeof(*reader));
     reader->path = path;
     reader->gz = gzopen(path, "rb");
     if (reader->gz == NULL) return -1;
     gzbuffer(reader->gz, 1 << 20);
-    reader->gz_cap = 1 << 20;
+    reader->gz_cap = fastq_reader_buffer_bytes;
     reader->gz_buf = (unsigned char *)malloc(reader->gz_cap);
     if (reader->gz_buf == NULL) {
         gzclose(reader->gz);
@@ -805,7 +807,8 @@ static int fastq_error(const fastq_reader *reader, size_t line_offset, const cha
     return -1;
 }
 
-static int fastq_store_record_id(fastq_reader *reader, const char *header, size_t header_len) {
+static int fastq_header_id_span(const fastq_reader *reader, const char *header, size_t header_len,
+                                size_t *start_out, size_t *end_out) {
     if (header_len == 0 || header[0] != '@') {
         return fastq_error(reader, 1, "expected @ header");
     }
@@ -818,6 +821,15 @@ static int fastq_store_record_id(fastq_reader *reader, const char *header, size_
         ++end;
     }
     if (end == start) return fastq_error(reader, 1, "missing read identifier");
+    *start_out = start;
+    *end_out = end;
+    return 0;
+}
+
+static int fastq_store_record_id(fastq_reader *reader, const char *header, size_t header_len) {
+    size_t start = 0;
+    size_t end = 0;
+    if (fastq_header_id_span(reader, header, header_len, &start, &end) != 0) return -1;
     size_t need = end - start + 1;
     if (need > reader->record_id_cap) {
         size_t next_cap = reader->record_id_cap == 0 ? 64 : reader->record_id_cap;
@@ -845,15 +857,21 @@ static int fastq_all_printable_no_space(const char *s, size_t len) {
     return invalid == 0;
 }
 
-static int fastq_validate_sequence(fastq_reader *reader, const char *seq, size_t seq_len) {
+static int fastq_validate_sequence(const fastq_reader *reader, const char *seq, size_t seq_len, size_t cap) {
     if (seq_len == 0) return fastq_error(reader, 2, "sequence is empty");
     if (!fastq_all_printable_no_space(seq, seq_len)) {
         return fastq_error(reader, 2, "sequence must be printable ASCII without whitespace");
     }
+    if (seq_len >= cap) {
+        char reason[64];
+        snprintf(reason, sizeof(reason), "sequence is longer than %zu bases", cap - 1);
+        return fastq_error(reader, 2, reason);
+    }
     return 0;
 }
 
-static int fastq_validate_plus(fastq_reader *reader, const char *plus, size_t plus_len) {
+static int fastq_validate_plus(const fastq_reader *reader, const char *plus, size_t plus_len, const char *id,
+                               size_t id_len) {
     if (plus_len == 0 || plus[0] != '+') {
         return fastq_error(reader, 3, "expected + separator");
     }
@@ -862,14 +880,13 @@ static int fastq_validate_plus(fastq_reader *reader, const char *plus, size_t pl
     if (start == plus_len) return 0;
     size_t end = start;
     while (end < plus_len && !fastq_ascii_space((unsigned char)plus[end])) ++end;
-    if (end - start != reader->record_id_len ||
-        memcmp(plus + start, reader->record_id, reader->record_id_len) != 0) {
+    if (end - start != id_len || memcmp(plus + start, id, id_len) != 0) {
         return fastq_error(reader, 3, "repeated read identifier does not match header");
     }
     return 0;
 }
 
-static int fastq_validate_quality(fastq_reader *reader, const char *qual, size_t qual_len, size_t seq_len) {
+static int fastq_validate_quality(const fastq_reader *reader, const char *qual, size_t qual_len, size_t seq_len) {
     if (qual_len != seq_len) {
         return fastq_error(reader, 4, "sequence and quality lengths differ");
     }
@@ -913,18 +930,13 @@ static int fastq_next_record(fastq_reader *reader, char *header, char *seq, char
     size_t seq_len = 0;
     got = fastq_take_line(reader, &line, &seq_len);
     if (got != 1) return fastq_line_error(reader, 2, got, "truncated record: missing sequence");
-    if (fastq_validate_sequence(reader, line, seq_len) != 0) return -1;
-    if (seq_len >= cap) {
-        char reason[64];
-        snprintf(reason, sizeof(reason), "sequence is longer than %zu bases", cap - 1);
-        return fastq_error(reader, 2, reason);
-    }
+    if (fastq_validate_sequence(reader, line, seq_len, cap) != 0) return -1;
     fastq_copy_prefix(seq, cap, line, seq_len);
 
     size_t plus_len = 0;
     got = fastq_take_line(reader, &line, &plus_len);
     if (got != 1) return fastq_line_error(reader, 3, got, "truncated record: missing separator");
-    if (fastq_validate_plus(reader, line, plus_len) != 0) return -1;
+    if (fastq_validate_plus(reader, line, plus_len, reader->record_id, reader->record_id_len) != 0) return -1;
     fastq_copy_prefix(plus, cap, line, plus_len);
 
     size_t qual_len = 0;
@@ -945,81 +957,44 @@ static int fastq_read_sequence_record_len(fastq_reader *reader, char *seq, size_
     return fastq_next_record(reader, NULL, seq, NULL, NULL, cap, seq_len_out);
 }
 
+static int fastq_buffered_line(const unsigned char *p, const unsigned char *end, const unsigned char **next_out,
+                               size_t *trimmed_len_out) {
+    if (p >= end) return 0;
+    const unsigned char *nl = (const unsigned char *)memchr(p, '\n', (size_t)(end - p));
+    if (nl == NULL) return 0;
+    *trimmed_len_out = fastq_trimmed_span_len((const char *)p, (size_t)(nl - p) + 1);
+    *next_out = nl + 1;
+    return 1;
+}
+
 static int fastq_read_sequence_view(fastq_reader *reader, char *fallback_seq, size_t fallback_cap,
                                     const char **seq_out, size_t *seq_len_out) {
-    if (reader->gz_pos < reader->gz_len) {
-        unsigned char *p = reader->gz_buf + reader->gz_pos;
-        unsigned char *end = reader->gz_buf + reader->gz_len;
-        unsigned char *nl1 = (unsigned char *)memchr(p, '\n', (size_t)(end - p));
-        if (nl1 != NULL) {
-            unsigned char *p2 = nl1 + 1;
-            unsigned char *nl2 = (unsigned char *)memchr(p2, '\n', (size_t)(end - p2));
-            if (nl2 != NULL) {
-                unsigned char *p3 = nl2 + 1;
-                unsigned char *nl3 = (unsigned char *)memchr(p3, '\n', (size_t)(end - p3));
-                if (nl3 != NULL) {
-                    unsigned char *p4 = nl3 + 1;
-                    unsigned char *nl4 = (unsigned char *)memchr(p4, '\n', (size_t)(end - p4));
-                    if (nl4 != NULL) {
-                        ++reader->record_ordinal;
-                        const char *header = (const char *)p;
-                        size_t header_len = fastq_trimmed_span_len(header, (size_t)(nl1 - p) + 1);
-                        if (header_len == 0 || header[0] != '@') {
-                            return fastq_error(reader, 1, "expected @ header");
-                        }
-                        size_t id_start = 1;
-                        while (id_start < header_len && fastq_ascii_space((unsigned char)header[id_start])) ++id_start;
-                        size_t id_end = id_start;
-                        while (id_end < header_len && !fastq_ascii_space((unsigned char)header[id_end])) {
-                            unsigned char c = (unsigned char)header[id_end];
-                            if (c < 33 || c > 126) return fastq_error(reader, 1, "invalid read identifier");
-                            ++id_end;
-                        }
-                        if (id_end == id_start) return fastq_error(reader, 1, "missing read identifier");
-
-                        const char *seq = (const char *)p2;
-                        size_t seq_len = fastq_trimmed_span_len(seq, (size_t)(nl2 - p2) + 1);
-                        if (fastq_validate_sequence(reader, seq, seq_len) != 0) return -1;
-                        if (seq_len >= fallback_cap) {
-                            char reason[64];
-                            snprintf(reason, sizeof(reason), "sequence is longer than %zu bases", fallback_cap - 1);
-                            return fastq_error(reader, 2, reason);
-                        }
-
-                        const char *plus = (const char *)p3;
-                        size_t plus_len = fastq_trimmed_span_len(plus, (size_t)(nl3 - p3) + 1);
-                        if (!(plus_len == 1 && plus[0] == '+')) {
-                            if (plus_len == 0 || plus[0] != '+') {
-                                return fastq_error(reader, 3, "expected + separator");
-                            }
-                            size_t ps = 1;
-                            while (ps < plus_len && fastq_ascii_space((unsigned char)plus[ps])) ++ps;
-                            if (ps < plus_len) {
-                                size_t pe = ps;
-                                while (pe < plus_len && !fastq_ascii_space((unsigned char)plus[pe])) ++pe;
-                                if (pe - ps != id_end - id_start ||
-                                    memcmp(plus + ps, header + id_start, id_end - id_start) != 0) {
-                                    return fastq_error(reader, 3, "repeated read identifier does not match header");
-                                }
-                            }
-                        }
-
-                        const char *qual = (const char *)p4;
-                        size_t qual_len = fastq_trimmed_span_len(qual, (size_t)(nl4 - p4) + 1);
-                        if (fastq_validate_quality(reader, qual, qual_len, seq_len) != 0) return -1;
-
-                        reader->gz_pos = (size_t)((nl4 + 1) - reader->gz_buf);
-                        *seq_out = seq;
-                        *seq_len_out = seq_len;
-                        return 1;
-                    }
-                }
-            }
-        }
+    const unsigned char *end = reader->gz_buf + reader->gz_len;
+    const unsigned char *line[5];
+    size_t len[4];
+    line[0] = reader->gz_buf + reader->gz_pos;
+    int buffered = 1;
+    for (int i = 0; i < 4 && buffered; ++i) buffered = fastq_buffered_line(line[i], end, &line[i + 1], &len[i]);
+    if (!buffered) {
+        int got = fastq_next_record(reader, NULL, fallback_seq, NULL, NULL, fallback_cap, seq_len_out);
+        if (got == 1) *seq_out = fallback_seq;
+        return got;
     }
-    int got = fastq_next_record(reader, NULL, fallback_seq, NULL, NULL, fallback_cap, seq_len_out);
-    if (got == 1) *seq_out = fallback_seq;
-    return got;
+    ++reader->record_ordinal;
+    const char *header = (const char *)line[0];
+    const char *seq = (const char *)line[1];
+    size_t id_start = 0;
+    size_t id_end = 0;
+    if (fastq_header_id_span(reader, header, len[0], &id_start, &id_end) != 0) return -1;
+    if (fastq_validate_sequence(reader, seq, len[1], fallback_cap) != 0) return -1;
+    if (fastq_validate_plus(reader, (const char *)line[2], len[2], header + id_start, id_end - id_start) != 0) {
+        return -1;
+    }
+    if (fastq_validate_quality(reader, (const char *)line[3], len[3], len[1]) != 0) return -1;
+    reader->gz_pos = (size_t)(line[4] - reader->gz_buf);
+    *seq_out = seq;
+    *seq_len_out = len[1];
+    return 1;
 }
 
 static void fastq_read_id(const char *header, char *out, size_t out_cap) {
