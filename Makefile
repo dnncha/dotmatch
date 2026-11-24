@@ -48,7 +48,7 @@ DOTMATCH_SHARED_FLAGS := -shared
 QDALIGN_SHARED_FLAGS := -shared
 endif
 
-.PHONY: all clean test cli-test coverage strict lint-c fuzz-smoke fuzz-long netcheck inner gate nightly hooks dev-env bench bench-batch bench-small bench-native-matrix bench-10x-control figures bench-real-report bench-gpu gpu-report gpu-evidence-gate bench-barcode-demux bench-barcode-panel-design bench-barcode-demux-competitors bench-barcode-comparison barcode-autopsy-demo barcode-panel-design-gate barcode-validation-ready barcode-comparison-report barcode-comparison-gate barcode-demux-report barcode-competitor-env fetch-barcode-demo fetch-barcode-demo-claim fetch-sanson-crispr fetch-10x-bcl-demo bench-bcl-small bench-bcl-10x bench-bcl-real bench-bcl-real-repeated bcl-figures bcl-competitor-env bcl-linux-env bcl-tiny-public-gate bcl-comparison-gate fetch-oligo-adapter-demo bench-oligo-adapter bench-oligo-adapter-public oligo-adapter-smoke-gate oligo-adapter-public-gate fetch-amplicon-panel-demo bench-amplicon-panel bench-amplicon-panel-public amplicon-panel-smoke-gate amplicon-panel-public-gate fetch-feature-barcode-demo bench-feature-barcode bench-feature-barcode-public feature-barcode-smoke-gate feature-barcode-public-gate fetch-perturb-seq-demo bench-perturb-seq bench-perturb-seq-public perturb-seq-smoke-gate perturb-seq-public-gate bench-perturb-seq-case-study-public perturb-seq-case-study-fixture-gate perturb-seq-case-study-public-gate bench-public-crispr-small bench-public-crispr bench-public-crispr-competitors bench-public-crispr-repeated bench-public-crispr-scaling bench-real-competitors bench-crispr-comparison bench-crispr-hamming-k23 crispr-comparison-report crispr-comparison-gate count-agreement count-agreement-comparison validate-public-crispr-edlib validate-crispr-comparison-edlib public-crispr-report public-crispr-evidence-gate public-crispr-smoke-gate competitor-env edlib edlib-tools bench-edlib-native benchmark-report benchmark-report-native native-exact-gate evidence-gallery evidence-gallery-ready repro repro-small asan shared python-test python-package-test typecheck lint examples-test compat39 scientific-tests mutation-scientific quality workflow-integration-test docs-ready repository-ready release-ready pretag-ready assay-evidence-ready scientific-readiness-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready workflow-adoption-status reviewer-readiness-ready distribution-record-ready bioconda-recipe-ready distribution-channels download-metrics joss-paper-ready agent-discovery-ready
+.PHONY: all clean test cli-test coverage strict lint-c fuzz-smoke fuzz-long netcheck inner gate nightly hooks dev-env mutation-c mutation-c-changed libfuzz-fastq web-audit bench bench-batch bench-small bench-native-matrix bench-10x-control figures bench-real-report bench-gpu gpu-report gpu-evidence-gate bench-barcode-demux bench-barcode-panel-design bench-barcode-demux-competitors bench-barcode-comparison barcode-autopsy-demo barcode-panel-design-gate barcode-validation-ready barcode-comparison-report barcode-comparison-gate barcode-demux-report barcode-competitor-env fetch-barcode-demo fetch-barcode-demo-claim fetch-sanson-crispr fetch-10x-bcl-demo bench-bcl-small bench-bcl-10x bench-bcl-real bench-bcl-real-repeated bcl-figures bcl-competitor-env bcl-linux-env bcl-tiny-public-gate bcl-comparison-gate fetch-oligo-adapter-demo bench-oligo-adapter bench-oligo-adapter-public oligo-adapter-smoke-gate oligo-adapter-public-gate fetch-amplicon-panel-demo bench-amplicon-panel bench-amplicon-panel-public amplicon-panel-smoke-gate amplicon-panel-public-gate fetch-feature-barcode-demo bench-feature-barcode bench-feature-barcode-public feature-barcode-smoke-gate feature-barcode-public-gate fetch-perturb-seq-demo bench-perturb-seq bench-perturb-seq-public perturb-seq-smoke-gate perturb-seq-public-gate bench-perturb-seq-case-study-public perturb-seq-case-study-fixture-gate perturb-seq-case-study-public-gate bench-public-crispr-small bench-public-crispr bench-public-crispr-competitors bench-public-crispr-repeated bench-public-crispr-scaling bench-real-competitors bench-crispr-comparison bench-crispr-hamming-k23 crispr-comparison-report crispr-comparison-gate count-agreement count-agreement-comparison validate-public-crispr-edlib validate-crispr-comparison-edlib public-crispr-report public-crispr-evidence-gate public-crispr-smoke-gate competitor-env edlib edlib-tools bench-edlib-native benchmark-report benchmark-report-native native-exact-gate evidence-gallery evidence-gallery-ready repro repro-small asan shared python-test python-package-test typecheck lint examples-test compat39 scientific-tests mutation-scientific quality workflow-integration-test docs-ready repository-ready release-ready pretag-ready assay-evidence-ready scientific-readiness-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready workflow-adoption-status reviewer-readiness-ready distribution-record-ready bioconda-recipe-ready distribution-channels download-metrics joss-paper-ready agent-discovery-ready
 
 all: dotmatch libdotmatch.a qda libqdalign.a
 
@@ -691,9 +691,38 @@ netcheck:
 
 inner: lint-c lint strict test fuzz-smoke
 
-gate: inner netcheck cli-test asan typecheck python-test
+MUTATION_BASE ?= origin/main
 
-nightly: gate fuzz-long mutation-scientific
+mutation-c-changed:
+	python3 tools/mutate_c.py --changed-since $(MUTATION_BASE)
+
+mutation-c:
+	python3 tools/mutate_c.py --report-only
+
+LIBFUZZ_CC ?= $(firstword $(wildcard /opt/homebrew/opt/llvm/bin/clang /usr/local/opt/llvm/bin/clang) clang)
+LIBFUZZ_SECONDS ?= 20
+
+build/libfuzz:
+	mkdir -p $@
+
+libfuzz-fastq: | build/libfuzz
+	if printf 'int LLVMFuzzerTestOneInput(const unsigned char *d, unsigned long n) { (void)d; (void)n; return 0; }\n' | $(LIBFUZZ_CC) -fsanitize=fuzzer -x c - -o build/libfuzz/probe 2>/dev/null; then \
+		$(LIBFUZZ_CC) -O1 -g -fsanitize=fuzzer,address,undefined -std=gnu11 -Iinclude $(DOTMATCH_VERSION_CFLAGS) tests/libfuzz_fastq.c src/qdalign.c src/qdmetal_stub.c -o build/libfuzz/fastq $(ZLIB_LIBS) $(PTHREAD_LIBS); \
+		mkdir -p build/libfuzz/corpus; \
+		printf '\005@r1\nACGT\n+\nIIII\n@r2 x\nACGA\n+r2\nIIII\n' > build/libfuzz/corpus/seed; \
+		ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 ./build/libfuzz/fastq -close_fd_mask=2 -max_total_time=$(LIBFUZZ_SECONDS) -artifact_prefix=build/libfuzz/ build/libfuzz/corpus > build/libfuzz/run.log 2>&1 || { tail -40 build/libfuzz/run.log; echo "libfuzz-fastq: FAILED, crashing input in build/libfuzz/crash-*"; exit 1; }; \
+		tail -1 build/libfuzz/run.log; \
+	else \
+		echo "libfuzz-fastq: SKIPPED, $(LIBFUZZ_CC) has no libFuzzer runtime (install Homebrew llvm or compiler-rt)"; \
+	fi
+
+gate: inner netcheck mutation-c-changed libfuzz-fastq cli-test asan typecheck python-test
+
+web-audit:
+	npm audit --audit-level=moderate
+
+nightly: gate fuzz-long mutation-scientific mutation-c web-audit
+	$(MAKE) libfuzz-fastq LIBFUZZ_SECONDS=900
 
 hooks:
 	git config core.hooksPath .githooks
