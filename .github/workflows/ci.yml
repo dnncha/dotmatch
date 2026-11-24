@@ -23,7 +23,7 @@ jobs:
       - name: CLI test
         run: make cli-test
       - name: Python test dependencies
-        run: python3 -m pip install pytest -r docs/requirements.txt
+        run: python3 -m pip install pytest hypothesis -r docs/requirements.txt
       - name: Python tests
         run: make python-test
       - name: Python package build
@@ -112,7 +112,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Python test dependencies
-        run: python3 -m pip install build pytest
+        run: python3 -m pip install build pytest hypothesis
       - name: Python tests
         run: make python-test
       - name: Python package smoke test
