@@ -230,7 +230,7 @@ def run_sensitivity(
                 if fastq_path.name.lower().endswith(".gz")
                 else buffered
             )
-            with io.TextIOWrapper(decoded, encoding="utf-8", newline="") as handle:
+            with io.TextIOWrapper(decoded, encoding="utf-8", newline="\n") as handle:
                 iterator = iter(_fastq(handle, fastq_path))
                 while True:
                     batch = []
