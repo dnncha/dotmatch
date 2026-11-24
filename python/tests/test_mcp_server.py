@@ -22,8 +22,15 @@ def _rpc(message_id: int, method: str, params: dict[str, object] | None = None) 
 
 def test_lists_direct_and_assay_tools_with_schemas() -> None:
     names = [tool["name"] for tool in tool_definitions()]
-    assert names[:5] == ["route_task", "count_targets", "demux_barcodes", "audit_targets", "edit_distance"]
-    assert set(names[5:]) == {"discover", "prepare_assay", "inspect_assay", "run_assay", "review_assay", "handoff_assay"}
+    assert names[:6] == [
+        "route_task",
+        "count_targets",
+        "demux_barcodes",
+        "audit_targets",
+        "triage_run",
+        "edit_distance",
+    ]
+    assert set(names[6:]) == {"discover", "prepare_assay", "inspect_assay", "run_assay", "review_assay", "handoff_assay"}
     for tool in tool_definitions():
         assert tool["description"]
         assert tool["inputSchema"]["type"] == "object"
@@ -114,6 +121,29 @@ def test_serve_writes_only_jsonrpc_lines() -> None:
     assert responses[3]["error"]["code"] == -32700
 
 
+def test_triage_run_mcp_tool_returns_structured_verdict_and_refuses_overwrite(tmp_path: Path) -> None:
+    out_dir = tmp_path / "triage"
+    arguments = {
+        "targets": str(TARGETS),
+        "reads": str(READS),
+        "target_start": 0,
+        "target_length": 4,
+        "out_dir": str(out_dir),
+    }
+    res = call_tool("triage_run", arguments)
+    assert res["isError"] is False, res["structuredContent"]
+    body = res["structuredContent"]
+    assert body["status"] == "passed"
+    assert body["exit_code"] == 0
+    assert body["verdict"] in {"healthy", "review_required", "likely_misconfigured"}
+    assert body["report"]["schema_version"] == "dotmatch.triage.v1"
+    assert (out_dir / "triage_report.json").is_file()
+
+    again = call_tool("triage_run", arguments)
+    assert again["isError"] is True
+    assert "empty directory" in again["structuredContent"]["error"]
+
+
 def test_cli_subcommand_speaks_mcp_over_stdio() -> None:
     request = json.dumps(_rpc(1, "tools/list")) + "\n"
     completed = subprocess.run(
@@ -122,4 +152,4 @@ def test_cli_subcommand_speaks_mcp_over_stdio() -> None:
     assert completed.returncode == 0, completed.stderr
     lines = completed.stdout.splitlines()
     assert len(lines) == 1
-    assert len(json.loads(lines[0])["result"]["tools"]) == 11
+    assert len(json.loads(lines[0])["result"]["tools"]) == 12
