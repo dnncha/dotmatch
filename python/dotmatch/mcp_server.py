@@ -117,6 +117,34 @@ AUDIT_SCHEMA: dict[str, Any] = {
     },
 }
 
+TRIAGE_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["targets", "reads", "target_start", "target_length", "out_dir"],
+    "properties": {
+        "targets": {"type": "string", "description": "CSV or TSV target table with id and sequence columns."},
+        "reads": {"type": "string", "description": "FASTQ or FASTQ.GZ path to diagnose."},
+        "target_start": {"type": "integer", "minimum": 0, "description": "Zero-based start of the target window."},
+        "target_length": {"type": "integer", "minimum": 1, "description": "Length of the target window."},
+        "out_dir": {"type": "string", "description": "New or empty directory for triage and sensitivity artifacts."},
+        "sample_label": {"type": "string", "default": "sample", "description": "Sample label for sensitivity tables."},
+        "offset_window": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 64,
+            "default": 8,
+            "description": "Half-width around target_start to scan for offset shifts.",
+        },
+        "sample_limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200000,
+            "default": 10000,
+            "description": "Maximum reads to sample for offset-shift and reverse-complement checks.",
+        },
+    },
+}
+
 DISTANCE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
@@ -324,6 +352,32 @@ def _audit_targets(arguments: Mapping[str, Any]) -> dict[str, Any]:
     return result
 
 
+def _triage_run(arguments: Mapping[str, Any]) -> dict[str, Any]:
+    _require_keys(arguments, TRIAGE_SCHEMA)
+    from .triage import triage_run
+
+    sample_label = str(arguments.get("sample_label", "sample"))
+    report = triage_run(
+        targets=_existing_file(arguments["targets"], "targets"),
+        reads=_existing_file(arguments["reads"], "reads"),
+        target_start=_integer(arguments, "target_start", 0, 0),
+        target_length=_integer(arguments, "target_length", 0, 1),
+        out_dir=_empty_dir(arguments["out_dir"], "out_dir"),
+        sample_label=sample_label,
+        offset_window=_integer(arguments, "offset_window", 8, 0, 64),
+        sample_limit=_integer(arguments, "sample_limit", 10000, 1, 200000),
+    )
+    payload = report.to_dict()
+    return {
+        "status": "passed",
+        "exit_code": 0,
+        "verdict": report.verdict,
+        "findings": payload["findings"],
+        "report": payload,
+        "outputs": payload["artifacts"],
+    }
+
+
 def _edit_distance(arguments: Mapping[str, Any]) -> dict[str, Any]:
     _require_keys(arguments, DISTANCE_SCHEMA)
     from .core import distance
@@ -360,6 +414,14 @@ DIRECT_TOOLS: dict[str, tuple[str, dict[str, Any], Callable[[Mapping[str, Any]],
         "ambiguous. Reports min Hamming distance and safe_at_hamming_k2/k3. Run before choosing a correction radius.",
         AUDIT_SCHEMA,
         _audit_targets,
+        False,
+    ),
+    "triage_run": (
+        "Run deterministic library collision, three-policy sensitivity (exact, radius k=1, best k=1), and "
+        "unmatched-read diagnostics (offset shift and reverse complement) in one local call. Returns a structured "
+        "verdict (healthy, review_required, likely_misconfigured), ranked findings, and offline artifacts.",
+        TRIAGE_SCHEMA,
+        _triage_run,
         False,
     ),
     "edit_distance": (
