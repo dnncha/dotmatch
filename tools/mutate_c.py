@@ -18,6 +18,8 @@ TARGET = ROOT / "src" / "qdalign.c"
 SWAPS = {"<": "<=", "<=": "<", ">": ">=", ">=": ">", "==": "!=", "!=": "=="}
 OPERATOR = re.compile(r"(?<![<>=!\-])(<=|>=|==|!=|<|>)(?![<>=])")
 CC = os.environ.get("CC", "cc")
+EXTRA_CFLAGS = os.environ.get("MUTATE_CFLAGS", "").split()
+COMMENT = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
 
 
 @dataclass(frozen=True)
@@ -29,16 +31,22 @@ class Mutant:
     source_line: str
 
 
+def without_comments(text: str) -> str:
+    return COMMENT.sub(lambda m: re.sub(r"[^\n]", " ", m.group(0)), text)
+
+
 def mutants(text: str) -> list[Mutant]:
     found: list[Mutant] = []
+    code_text = without_comments(text)
     line_starts = [0] + [m.end() for m in re.finditer("\n", text)]
     for line_index, start in enumerate(line_starts):
         end = text.find("\n", start)
-        line = text[start : end if end >= 0 else len(text)]
-        stripped = line.lstrip()
-        if stripped.startswith("#") or stripped.startswith("//") or stripped.startswith("*"):
+        stop = end if end >= 0 else len(text)
+        line = text[start:stop]
+        code = code_text[start:stop]
+        if code.lstrip().startswith("#"):
             continue
-        code = re.sub(r'"(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\'', lambda m: " " * len(m.group(0)), line)
+        code = re.sub(r'"(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\'', lambda m: " " * len(m.group(0)), code)
         for match in OPERATOR.finditer(code):
             op = match.group(1)
             found.append(Mutant(start + match.start(), line_index + 1, op, SWAPS[op], line.strip()))
@@ -52,19 +60,35 @@ def run(argv: list[str], cwd: Path, timeout: float) -> bool:
         return False
 
 
-def killed(mutant: Mutant, text: str, fuzz_iters: int) -> bool:
+def compile_object(source: Path, output: Path) -> bool:
+    return run([CC, "-O1", "-std=c11", *EXTRA_CFLAGS, f"-I{ROOT / 'include'}", "-c", str(source), "-o", str(output)],
+               source.parent, 120)
+
+
+def baseline_object(text: str, work: Path) -> bytes:
+    (work / "baseline.c").write_text(text, encoding="utf-8")
+    if not compile_object(work / "baseline.c", work / "baseline.o"):
+        raise SystemExit("mutate_c: unmutated src/qdalign.c does not compile")
+    return (work / "baseline.o").read_bytes()
+
+
+def outcome(mutant: Mutant, text: str, baseline: bytes, fuzz_iters: int) -> str:
     mutated = text[: mutant.offset] + mutant.replacement + text[mutant.offset + len(mutant.original) :]
     with tempfile.TemporaryDirectory(prefix="dotmatch-mutant-") as raw:
         work = Path(raw)
         (work / "qdalign.c").write_text(mutated, encoding="utf-8")
+        if not compile_object(work / "qdalign.c", work / "qdalign.o"):
+            return "killed"
+        if (work / "qdalign.o").read_bytes() == baseline:
+            return "not built"
         include = f"-I{ROOT / 'include'}"
-        unit = [CC, "-O1", "-std=c11", include, str(ROOT / "tests" / "test_qdalign.c"), "qdalign.c", "-o", "unit"]
-        fuzz = [CC, "-O1", "-std=c11", include, str(ROOT / "tests" / "fuzz_qdalign_diff.c"), "qdalign.c", "-o", "fuzz"]
-        if not run(unit, work, 120) or not run(fuzz, work, 120):
-            return True
+        for name, harness in (("unit", "test_qdalign.c"), ("fuzz", "fuzz_qdalign_diff.c")):
+            argv = [CC, "-O1", "-std=c11", *EXTRA_CFLAGS, include, str(ROOT / "tests" / harness), "qdalign.o", "-o", name]
+            if not run(argv, work, 120):
+                return "killed"
         if not run(["./unit"], work, 60):
-            return True
-        return not run(["./fuzz", str(fuzz_iters), "1"], work, 60)
+            return "killed"
+        return "survived" if run(["./fuzz", str(fuzz_iters), "1"], work, 60) else "killed"
 
 
 EQUIVALENT = ROOT / "tools" / "mutate_c_equivalent.tsv"
@@ -119,8 +143,12 @@ def main() -> int:
         pool = [m for m in pool if m.line in lines]
     if args.sample and len(pool) > args.sample:
         pool = sorted(random.Random(args.seed).sample(pool, args.sample), key=lambda m: m.offset)
+    with tempfile.TemporaryDirectory(prefix="dotmatch-mutant-base-") as raw:
+        baseline = baseline_object(text, Path(raw))
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as executor:
-        results = list(executor.map(lambda m: (m, killed(m, text, args.fuzz_iters)), pool))
+        outcomes = list(executor.map(lambda m: (m, outcome(m, text, baseline, args.fuzz_iters)), pool))
+    results = [(m, state != "survived") for m, state in outcomes if state != "not built"]
+    not_built = len(outcomes) - len(results)
     known = equivalent_mutants()
     survivors = [m for m, dead in results if not dead]
     equivalent = [m for m in survivors if (m.source_line, m.original, m.replacement) in known]
@@ -130,7 +158,8 @@ def main() -> int:
         print(f"{rel}:{m.line}: mutant survived: '{m.original}' -> '{m.replacement}' in: {m.source_line}")
     print(
         f"mutate_c: {len(results) - len(survivors)}/{len(results)} mutants killed by test_qdalign + fuzz_qdalign_diff, "
-        f"{len(equivalent)} listed as equivalent in {EQUIVALENT.relative_to(ROOT)}, {len(missed)} missing assertions"
+        f"{len(equivalent)} listed as equivalent in {EQUIVALENT.relative_to(ROOT)}, {len(missed)} missing assertions, "
+        f"{not_built} not compiled into this build"
     )
     return 1 if missed and not args.report_only else 0
 

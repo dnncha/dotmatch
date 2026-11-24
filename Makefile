@@ -694,10 +694,10 @@ inner: lint-c lint strict test fuzz-smoke
 MUTATION_BASE ?= origin/main
 
 mutation-c-changed:
-	python3 tools/mutate_c.py --changed-since $(MUTATION_BASE)
+	MUTATE_CFLAGS='$(ARCH_FLAGS)' python3 tools/mutate_c.py --changed-since $(MUTATION_BASE)
 
 mutation-c:
-	python3 tools/mutate_c.py --report-only
+	MUTATE_CFLAGS='$(ARCH_FLAGS)' python3 tools/mutate_c.py --report-only
 
 LIBFUZZ_CC ?= $(firstword $(wildcard /opt/homebrew/opt/llvm/bin/clang /usr/local/opt/llvm/bin/clang) clang)
 LIBFUZZ_SECONDS ?= 20
