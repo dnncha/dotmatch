@@ -38,6 +38,7 @@ jobs:
           create-args: >-
             -c conda-forge
             -c bioconda
+            python=3.12
             openjdk=17
             galaxy-tool-util=25.0.4
             galaxy-tool-util-models=25.0.4
