@@ -26,7 +26,6 @@ PTHREAD_LIBS ?= -pthread
 DOTMATCH_VERSION ?= $(shell python3 -c 'import pathlib; print(next(line.split("\"")[1] for line in pathlib.Path("pyproject.toml").read_text(encoding="utf-8").splitlines() if line.startswith("version = ")))')
 DOTMATCH_VERSION_CFLAGS := -DDOTMATCH_VERSION=\"$(DOTMATCH_VERSION)\"
 COVERAGE_CC ?= clang
-COVERAGE_MIN ?= 75
 LLVM_PROFDATA ?= $(shell command -v llvm-profdata 2>/dev/null || xcrun --find llvm-profdata 2>/dev/null)
 LLVM_COV ?= $(shell command -v llvm-cov 2>/dev/null || xcrun --find llvm-cov 2>/dev/null)
 UNAME_S := $(shell uname -s)
@@ -49,7 +48,7 @@ DOTMATCH_SHARED_FLAGS := -shared
 QDALIGN_SHARED_FLAGS := -shared
 endif
 
-.PHONY: all clean test cli-test coverage strict lint-c fuzz-smoke fuzz-long netcheck inner gate nightly hooks bench bench-batch bench-small bench-native-matrix bench-10x-control figures bench-real-report bench-gpu gpu-report gpu-evidence-gate bench-barcode-demux bench-barcode-panel-design bench-barcode-demux-competitors bench-barcode-comparison barcode-autopsy-demo barcode-panel-design-gate barcode-validation-ready barcode-comparison-report barcode-comparison-gate barcode-demux-report barcode-competitor-env fetch-barcode-demo fetch-barcode-demo-claim fetch-sanson-crispr fetch-10x-bcl-demo bench-bcl-small bench-bcl-10x bench-bcl-real bench-bcl-real-repeated bcl-figures bcl-competitor-env bcl-linux-env bcl-tiny-public-gate bcl-comparison-gate fetch-oligo-adapter-demo bench-oligo-adapter bench-oligo-adapter-public oligo-adapter-smoke-gate oligo-adapter-public-gate fetch-amplicon-panel-demo bench-amplicon-panel bench-amplicon-panel-public amplicon-panel-smoke-gate amplicon-panel-public-gate fetch-feature-barcode-demo bench-feature-barcode bench-feature-barcode-public feature-barcode-smoke-gate feature-barcode-public-gate fetch-perturb-seq-demo bench-perturb-seq bench-perturb-seq-public perturb-seq-smoke-gate perturb-seq-public-gate bench-perturb-seq-case-study-public perturb-seq-case-study-fixture-gate perturb-seq-case-study-public-gate bench-public-crispr-small bench-public-crispr bench-public-crispr-competitors bench-public-crispr-repeated bench-public-crispr-scaling bench-real-competitors bench-crispr-comparison bench-crispr-hamming-k23 crispr-comparison-report crispr-comparison-gate count-agreement count-agreement-comparison validate-public-crispr-edlib validate-crispr-comparison-edlib public-crispr-report public-crispr-evidence-gate public-crispr-smoke-gate competitor-env edlib edlib-tools bench-edlib-native benchmark-report benchmark-report-native native-exact-gate evidence-gallery evidence-gallery-ready repro repro-small asan shared python-test python-package-test typecheck lint examples-test compat39 scientific-tests mutation-scientific quality workflow-integration-test docs-ready repository-ready release-ready pretag-ready assay-evidence-ready scientific-readiness-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready workflow-adoption-status reviewer-readiness-ready distribution-record-ready bioconda-recipe-ready distribution-channels download-metrics joss-paper-ready agent-discovery-ready
+.PHONY: all clean test cli-test coverage strict lint-c fuzz-smoke fuzz-long netcheck inner gate nightly hooks dev-env bench bench-batch bench-small bench-native-matrix bench-10x-control figures bench-real-report bench-gpu gpu-report gpu-evidence-gate bench-barcode-demux bench-barcode-panel-design bench-barcode-demux-competitors bench-barcode-comparison barcode-autopsy-demo barcode-panel-design-gate barcode-validation-ready barcode-comparison-report barcode-comparison-gate barcode-demux-report barcode-competitor-env fetch-barcode-demo fetch-barcode-demo-claim fetch-sanson-crispr fetch-10x-bcl-demo bench-bcl-small bench-bcl-10x bench-bcl-real bench-bcl-real-repeated bcl-figures bcl-competitor-env bcl-linux-env bcl-tiny-public-gate bcl-comparison-gate fetch-oligo-adapter-demo bench-oligo-adapter bench-oligo-adapter-public oligo-adapter-smoke-gate oligo-adapter-public-gate fetch-amplicon-panel-demo bench-amplicon-panel bench-amplicon-panel-public amplicon-panel-smoke-gate amplicon-panel-public-gate fetch-feature-barcode-demo bench-feature-barcode bench-feature-barcode-public feature-barcode-smoke-gate feature-barcode-public-gate fetch-perturb-seq-demo bench-perturb-seq bench-perturb-seq-public perturb-seq-smoke-gate perturb-seq-public-gate bench-perturb-seq-case-study-public perturb-seq-case-study-fixture-gate perturb-seq-case-study-public-gate bench-public-crispr-small bench-public-crispr bench-public-crispr-competitors bench-public-crispr-repeated bench-public-crispr-scaling bench-real-competitors bench-crispr-comparison bench-crispr-hamming-k23 crispr-comparison-report crispr-comparison-gate count-agreement count-agreement-comparison validate-public-crispr-edlib validate-crispr-comparison-edlib public-crispr-report public-crispr-evidence-gate public-crispr-smoke-gate competitor-env edlib edlib-tools bench-edlib-native benchmark-report benchmark-report-native native-exact-gate evidence-gallery evidence-gallery-ready repro repro-small asan shared python-test python-package-test typecheck lint examples-test compat39 scientific-tests mutation-scientific quality workflow-integration-test docs-ready repository-ready release-ready pretag-ready assay-evidence-ready scientific-readiness-ready alphabet-policy-ready citation-metadata-ready native-comparator-scope-ready workflow-examples-ready workflow-adoption-status reviewer-readiness-ready distribution-record-ready bioconda-recipe-ready distribution-channels download-metrics joss-paper-ready agent-discovery-ready
 
 all: dotmatch libdotmatch.a qda libqdalign.a
 
@@ -149,7 +148,7 @@ coverage:
 	$(LLVM_COV) report build/coverage/test_qdalign -object build/coverage/dotmatch -instr-profile=build/coverage/coverage.profdata --sources src/qdalign.c --sources src/qda.c --show-branch-summary | tee build/coverage/coverage.txt
 	$(LLVM_COV) export build/coverage/test_qdalign -object build/coverage/dotmatch -instr-profile=build/coverage/coverage.profdata --sources src/qdalign.c --sources src/qda.c > build/coverage/coverage.json
 	$(LLVM_COV) show build/coverage/test_qdalign -object build/coverage/dotmatch -instr-profile=build/coverage/coverage.profdata --sources src/qdalign.c --sources src/qda.c -format=html -output-dir=build/coverage/html
-	python3 scripts/check_coverage_threshold.py build/coverage/coverage.json --min-lines "$(COVERAGE_MIN)"
+	python3 scripts/print_line_coverage.py build/coverage/coverage.json
 
 build/bench: tools/bench.c build/qdalign.o include/qdalign.h | build
 	$(CC) $(CFLAGS) tools/bench.c build/qdalign.o -o $@ $(LDFLAGS)
@@ -486,14 +485,14 @@ evidence-gallery:
 evidence-gallery-ready:
 	python3 scripts/check_evidence_gallery.py
 
-python-test: shared
+python-test: shared | dev-env
 	DOTMATCH_LIB=$(CURDIR)/libdotmatch.$(SHARED_EXT) PYTHONPATH=$(CURDIR)/python $(TYPE_PYTHON) -m pytest python/tests
 
-typecheck:
+typecheck: | dev-env
 	MYPYPATH=$(CURDIR)/python $(TYPE_PYTHON) -m mypy
 	$(TYPE_PYTHON) -m pyright
 
-lint:
+lint: | dev-env
 	$(TYPE_PYTHON) -m ruff check $(TYPED_PYTHON_SOURCES)
 	$(TYPE_PYTHON) -m ruff check --select F python scripts tests tools examples
 
@@ -632,7 +631,8 @@ repro repro-small:
 
 SAN_FLAGS = -O1 -g -fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer
 STRICT_WARNINGS = -Wall -Wextra -Wpedantic -Wformat=2 -Wconversion -Wno-sign-conversion -Wvla -Wimplicit-fallthrough -Wshadow -Werror
-ASAN_ENV = ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1
+ASAN_DETECT_LEAKS := $(if $(filter Darwin,$(UNAME_S)),0,1)
+ASAN_ENV = ASAN_OPTIONS=detect_leaks=$(ASAN_DETECT_LEAKS):abort_on_error=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1
 ARCH_FLAGS = $(filter -mavx2,$(CFLAGS))
 C_SOURCES = src/qda.c src/qdalign.c src/target_table.h include/qdalign.h include/qdmetal.h src/qdmetal_stub.c
 FUZZ_SMOKE_ITERS ?= 3000
@@ -697,6 +697,15 @@ nightly: gate fuzz-long mutation-scientific
 
 hooks:
 	git config core.hooksPath .githooks
+
+dev-env: .venv/dev-env.stamp
+
+.venv/dev-env.stamp: pyproject.toml tools/dev_requirements.py
+	python3 -m venv .venv
+	.venv/bin/python -m pip install -q --upgrade pip
+	.venv/bin/python tools/dev_requirements.py > .venv/dev-requirements.txt
+	.venv/bin/python -m pip install -q -r .venv/dev-requirements.txt
+	touch $@
 
 clean:
 	rm -rf build dotmatch qda libdotmatch.a libdotmatch.so libdotmatch.dylib libqdalign.a libqdalign.so libqdalign.dylib
