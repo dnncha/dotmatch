@@ -54,7 +54,7 @@ multiqc = ["multiqc>=1.22"]
 dev = [
     "pytest",
     "hypothesis>=6.100",
-    "jsonschema>=4.18",
+    "jsonschema>=4.26.0",
     "mypy>=1.10",
     "pyright>=1.1.380",
     "ruff>=0.5",
